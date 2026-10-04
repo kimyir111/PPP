@@ -2398,6 +2398,14 @@
    "reason": "G10a-2b: S4 hands-v1.1 (group context + G5a hard term; docs/GOALS/G10 section 26)",
    "sqi_all": 81.792036,
    "usable_all": 0.5
+  },
+  {
+   "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
+   "date": "2026-10-04",
+   "git_sha": "739b1f87a7076f7cf8ad3a465e919b2d92e9b389",
+   "reason": "G10a-2b: S4 hands-v1.1 and S6 retrained on its hands (docs/GOALS/G10 section 26)",
+   "sqi_all": 81.792036,
+   "usable_all": 0.5
   }
  ],
  "known_failures": {
@@ -2746,7 +2754,7 @@
   "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
   "date": "2026-10-04",
   "git_dirty": true,
-  "git_sha": "90f769b3b6d3b7e6262ff0a06b30c0c82ac1ebe2",
+  "git_sha": "739b1f87a7076f7cf8ad3a465e919b2d92e9b389",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"

@@ -487,7 +487,7 @@
     "n": 63
    },
    "rec.stability": {
-    "mean": 0.515172,
+    "mean": 0.515044,
     "n": 144
    },
    "rec.tuplet.false_per_100_beats": {
@@ -1099,7 +1099,7 @@
      "n": 63
     },
     "rec.stability": {
-     "mean": 0.515172,
+     "mean": 0.515044,
      "n": 144
     },
     "rec.tuplet.false_per_100_beats": {
@@ -2277,7 +2277,7 @@
      "n": 9
     },
     "rec.stability": {
-     "mean": 0.675194,
+     "mean": 0.673137,
      "n": 9
     },
     "rec.tuplet.false_per_100_beats": {
@@ -4629,7 +4629,7 @@
      "n": 18
     },
     "rec.stability": {
-     "mean": 0.584382,
+     "mean": 0.583353,
      "n": 18
     },
     "rec.tuplet.false_per_100_beats": {
@@ -5819,7 +5819,7 @@
      "n": 18
     },
     "rec.stability": {
-     "mean": 0.556928,
+     "mean": 0.556242,
      "n": 27
     },
     "rec.tuplet.false_per_100_beats": {
@@ -9944,7 +9944,7 @@
      "n": 9
     },
     "rec.stability": {
-     "mean": 0.643153,
+     "mean": 0.642124,
      "n": 18
     },
     "rec.tuplet.false_per_100_beats": {
@@ -11737,7 +11737,7 @@
      "n": 9
     },
     "rec.stability": {
-     "mean": 0.643153,
+     "mean": 0.642124,
      "n": 18
     },
     "rec.tuplet.false_per_100_beats": {
@@ -15295,7 +15295,7 @@
      "n": 9
     },
     "rec.stability": {
-     "mean": 0.675194,
+     "mean": 0.673137,
      "n": 9
     },
     "rec.tuplet.false_per_100_beats": {
@@ -17120,7 +17120,7 @@
      "n": 21
     },
     "rec.stability": {
-     "mean": 0.152876,
+     "mean": 0.15249,
      "n": 48
     },
     "rec.tuplet.false_per_100_beats": {
@@ -18921,7 +18921,7 @@
      "n": 21
     },
     "rec.stability": {
-     "mean": 0.465239,
+     "mean": 0.464853,
      "n": 48
     },
     "rec.tuplet.false_per_100_beats": {
@@ -19532,7 +19532,7 @@
      "n": 63
     },
     "rec.stability": {
-     "mean": 0.515172,
+     "mean": 0.515044,
      "n": 144
     },
     "rec.tuplet.false_per_100_beats": {
@@ -21297,7 +21297,7 @@
      "n": 9
     },
     "rec.stability": {
-     "mean": 0.643153,
+     "mean": 0.642124,
      "n": 18
     },
     "rec.tuplet.false_per_100_beats": {
@@ -22499,7 +22499,7 @@
      "n": 9
     },
     "rec.stability": {
-     "mean": 0.675194,
+     "mean": 0.673137,
      "n": 9
     },
     "rec.tuplet.false_per_100_beats": {
@@ -24300,7 +24300,7 @@
      "n": 63
     },
     "rec.stability": {
-     "mean": 0.515172,
+     "mean": 0.515044,
      "n": 144
     },
     "rec.tuplet.false_per_100_beats": {
@@ -29067,7 +29067,7 @@
     "rec.rest.false_per_100_bars": 83.333333,
     "rec.rest.precision": 0.0625,
     "rec.rest.recall": 0.0,
-    "rec.stability": 0.12037,
+    "rec.stability": 0.101852,
     "rec.tuplet.false_per_100_beats": 0.694444,
     "rec.tuplet.precision": 0.0,
     "rec.tuplet.recall": null,
@@ -35956,6 +35956,14 @@
    "reason": "G10a-2b: S4 hands-v1.1 (group context + G5a hard term; docs/GOALS/G10 section 26)",
    "sqi_all": 77.682815,
    "usable_all": 0.25
+  },
+  {
+   "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
+   "date": "2026-10-04",
+   "git_sha": "739b1f87a7076f7cf8ad3a465e919b2d92e9b389",
+   "reason": "G10a-2b: S4 hands-v1.1 and S6 retrained on its hands (docs/GOALS/G10 section 26)",
+   "sqi_all": 77.682815,
+   "usable_all": 0.25
   }
  ],
  "known_failures": {
@@ -36304,7 +36312,7 @@
   "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
   "date": "2026-10-04",
   "git_dirty": true,
-  "git_sha": "90f769b3b6d3b7e6262ff0a06b30c0c82ac1ebe2",
+  "git_sha": "739b1f87a7076f7cf8ad3a465e919b2d92e9b389",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"

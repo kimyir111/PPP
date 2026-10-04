@@ -2041,6 +2041,10 @@ classic hands.
     hand never gets an impossible note unless every choice gives one.
 - **`rec/weights/hands-v1.json` = hands-v1.1** (32.6 KB; the four rec/ models 71.7 KB of the 200 KB budget; file name kept: the
   page loads it by that name). Weights re-tuned by the same coordinate search on the training references' truth.
+- **S6 retrained on the new hands** (`train_rests.js`, no other change): the silence classifier's candidates are each staff's
+  silences of the v2 conversion, so they follow S4 (22,122 -> 22,101 rows); its accuracy on its own rows 0.816 -> 0.812 (training),
+  0.758 -> 0.752 (hold-out; precision 0.630 -> 0.634, recall 0.502 -> 0.493), threshold 0.45 as before. `train_rests.js --check`
+  in the gate requires it. Every v2 number below is with both.
 - **Data and trainer**: `hands_data.py` writes the three textures of every non-hymn reference (training and hold-out) and their
   performances (cover, cover+of; seed 201); `train_hands.js` reports accuracy and G5a hard violations per 100 onset groups (the
   written hands, the legacy split, S4) for the references and for each texture, and S4's real input on the textured performances.
@@ -2069,23 +2073,23 @@ Hold-out by family: Beyer 0.9916 -> 0.9891, Burgmüller 0.9965 -> 1.000, Czerny 
 Hanon 0.9936 -> 0.9995, hymns 0.9874 -> 0.9871, sonatina 0.9487 -> 0.9642. S4's real input by family: every family within 0.002
 of v1 or above it (Hanon 0.9825 -> 0.9809, hymns 0.9833 -> 0.9816; catalogue 0.887 -> 0.899, Burgmüller 0.907 -> 0.914).
 
-**The suites** (`run.py ab --a git:origin/main --b worktree`; v2 rows; the legacy and app rows of every suite identical case by
-case, 26.7):
+**The suites** (main `0a19ba4` against the branch: `run.py ab` and the rebaselined runs; v2 rows, with S6 retrained; the legacy
+and app rows of every suite identical case by case, 26.7):
 
 | suite (v2 rows) | n | hand accuracy | critical.hands | other |
 | --- | --- | --- | --- | --- |
-| rec-core | 846 | 0.9730 -> **0.9751** | 0.9811 -> **0.9835** | usable 0.416 -> 0.418, rec.usable 0.209 -> 0.207 (2 cases), voice F1 0.896 -> 0.898, rest recall 0.353 -> 0.347 |
+| rec-core | 846 | 0.9730 -> **0.9751** | 0.9811 -> **0.9835** | usable 0.416 -> 0.420, rec.usable 0.209 -> 0.213, note values 0.813 -> 0.816, voice F1 0.896 -> 0.898, rest precision 0.476 -> 0.478, rest recall 0.353 -> 0.349 |
 | rec-robust | 282 | 0.9775 -> **0.9786** | 0.9787 -> **0.9858** | usable 0.543 -> 0.546 |
 | rec-smoke | 48 | 0.9888 -> **0.9898** | 1.000 -> 1.000 | |
 | rec-hands (S4 alone, app path) | 1,128 | 0.9699 -> **0.9724** | 0.9805 -> **0.9849** | |
-| hold-out slice (52 hold-out refs, 6 families, seeds 11, 12) | 624 | 0.9644 -> **0.9647** | 0.9455 -> 0.9455 | rec.usable 0.212 -> 0.215 |
+| hold-out slice (52 hold-out refs, 6 families, seeds 11, 12) | 624 | 0.9644 -> **0.9647** | 0.9455 -> 0.9455 | rec.usable 0.212 -> 0.216, rest precision 0.443 -> 0.444, recall 0.359 -> 0.359 |
 | rec-grid (v2 / v2-s3legacy) | 705 + 705 | 0.9752 -> 0.9772 / 0.9713 -> 0.9734 | 0.9830 -> 0.9830 / 0.9816 -> 0.9830 | |
 | replay-of-v2 (the browser model on rendered audio) | 20 | 0.9656 -> **0.9684** | 0.95 -> **1.00** | |
-| replay-public-v2 | 6 | PASS, 1 case writes different music | | |
-| rec-arrange-core | 84 | arr.made 0.988 -> 0.988 | | melody kept 0.965 -> 0.968, melody in the left hand before arranging 0.0185 -> 0.0142, harmony 0.761 -> 0.761, hard violations 0 |
-| rec-arrange-smoke | 32 | arr.made 0.938 -> 0.938 | | kept 0.951 -> 0.951, harmony 0.780 -> 0.776 |
-| rec-arrange-full (nightly, against its old baseline) | 141 | arr.made 0.979 -> 0.979 | | kept 0.978 -> 0.979, melody in the left hand 0.0145 -> 0.0114, harmony 0.774 -> 0.773, hard violations 0 |
-| rec-full (nightly, 4 shards, against its old baseline) | 11,196 (v2 3,732) | v2 0.9774 -> **0.9787** | v2 0.9896 -> 0.9903 | v2 usable 0.436 -> 0.440; hold-out (every option set) 0.8892 -> 0.8893 |
+| replay-public-v2 | 6 | 0.9901 -> 0.9991 | 1.00 -> 1.00 | |
+| rec-arrange-core | 84 | arr.made 0.988 -> 0.988 | | melody kept 0.965 -> 0.968, melody in the left hand before arranging 0.0185 -> 0.0142, harmony 0.761 -> 0.762, hard violations 0 |
+| rec-arrange-smoke | 32 | arr.made 0.938 -> 0.938 | | kept 0.951 -> 0.951, harmony 0.780 -> 0.775 |
+| rec-arrange-full (nightly, against its old baseline) | 141 | arr.made 0.979 -> 0.979 | | kept 0.978 -> 0.979, melody in the left hand 0.0145 -> 0.0114, harmony 0.774 -> 0.774, hard violations 0 |
+| rec-full (nightly, 4 shards, against its old baseline) | 11,196 (v2 3,732) | v2 0.9774 -> **0.9787** | v2 0.9896 -> 0.9903 | v2 usable 0.436 -> 0.440, rec.usable 0.186 -> 0.189; hold-out (every option set) 0.8892 -> 0.8893 |
 
 By book on rec-core: Burgmüller 0.906 -> 0.919, Czerny 849 0.963 -> 0.972, sonatina 0.973 -> 0.976, micro 0.990 -> 0.993, samples
 0.947 -> 1.000; Hanon 0.9828 -> 0.9823, hymns 0.9869 -> 0.9856, catalogue 0.911 -> 0.904 (Gymnopédie loses the hands gate in one
@@ -2103,7 +2107,7 @@ none; `rec-arrange-play`: rec-arrange-core's references textured `octaves`):
 | hand accuracy | 0.977 -> **0.980** (0.889) | 0.810 -> **0.916** (0.949) | 0.809 -> **0.897** (0.940) |
 | critical.hands | 0.986 -> 0.986 (0.809) | 0.426 -> **0.809** (0.979) | 0.462 -> **0.750** (0.981) |
 | rec.hands.crossing (share of two-hand moments) | 0.13 % -> **0.09 %** (0.04 %) | 0.65 % -> **0.46 %** (0.19 %) | 0.32 % -> **0.22 %** (0.10 %) |
-| pieces crossing above 1 % | 4.3 % -> 3.5 % (1.4 %) | 17.7 % -> 13.5 % (7.1 %) | 13.5 % -> 9.6 % (5.8 %) |
+| pieces crossing above 1 % | 4.3 % -> 3.5 % (1.4 %) | 17.7 % -> 14.2 % (7.1 %) | 13.5 % -> 9.6 % (5.8 %) |
 | G5a hard violations / 100 bars | 12.0 -> **10.2** (2.1) | 234 -> **51** (18) | 236 -> **40** (7.7) |
 | outer-line VELOCITY / 100 bars | 0.88 -> **0** (0.33) | 53.7 -> **4.7** (8.4) | 40.0 -> **4.8** (5.7) |
 | one-note arranger, levels made (rec-arrange-play) | | 0.906 -> **0.953** (0.969): refused 6 -> 3 pieces (2) | |
@@ -2158,23 +2162,27 @@ variants of 26.6), so the hands fallback (25.8) must stay: a recording like this
 - **Classic and `hands: 'legacy'` byte-identical**: `ab` against `origin/main`, case by case (status, metrics, prediction): smoke 44,
   core 553, robust 282, smoke-app 44, core-app 553, robust-app 282, replay-public 6, replay-of 20, replay-of-app 20 all the same
   (`ab_identical.py`); the legacy and app rows of rec-core (846 + 846), rec-robust (282 + 282), rec-smoke (48 + 48), the app rows of
-  rec-arrange-core (84) and rec-arrange-smoke (32), and the `app` and `v2-handslegacy` rows of rec-hands-play (386 + 386) and
-  rec-arrange-play (64) identical. No module of the arranger, `audio-score.js` or the page changed (the 975 catalogue
+  rec-arrange-core (84), rec-arrange-smoke (32) and rec-hands-play (386) identical. **`hands: 'legacy'` under v2** (the Song
+  Arranger's fallback): its hands are the classic split's, byte for byte (hand accuracy, crossing and hard violations of the
+  `v2-handslegacy` rows unchanged); its rests are S6's, retrained (26.3), so 33 of 386 rec-hands-play cases and 3 of 64
+  rec-arrange-play cases write different rests (usable 0.342 -> 0.347; levels made unchanged; the teacher's piece through the
+  fallback: the same 0.72 %). No module of the arranger, `audio-score.js` or the page changed (the 975 catalogue
   `arrangeSingleNote` requests load none of the changed files). A model without `params.ctx` / `params.play` decodes as before:
   `train_hands.js --check` reproduced hands-v1 byte for byte with the new `rec/hands.js`.
 - **Mutation coverage**: `rec-mutation-play` (`mutation-check --rec`): no hard term -> REGRESSION (hard violations 39 -> 283 per
   100 bars, outer-line VELOCITY 3.9 -> 41.8, hand accuracy 0.928 -> 0.787); no context -> REGRESSION (hard violations 39.2 -> 40.8,
   micro pieces' hands); the no-op byte-identical. S4's four G10a-2 defects on rec-mutation-v2 still caught (legacy split 0.989 ->
   0.894, no motion -> 0.985, one style -> 0.937, no partition prior -> 0.967); the partition defect's anchor follows the new line.
-- **Determinism**: `results.json` byte-identical over three runs on Windows (Python 3.13.5, Node 24.17): rec-smoke `f4b676865b6f887c`,
-  replay-of-v2 `625174f5044e9848`, replay-public-v2 `af33554b77fcc005`; rec-hands-play `1360f67538eb81de` (two runs). Linux (`node:24-bookworm`, offline, an LF clone of `7ff88b9`, the README's
-  recipe): the same four hashes, every `check` PASS, `train_hands.js --check` "same" for the weights and the evaluation.
+- **Determinism**: `results.json` byte-identical over three runs on Windows (Python 3.13.5, Node 24.17): rec-smoke `817c47234ac8132f`,
+  replay-of-v2 `29d94a8050235047`, replay-public-v2 `af33554b77fcc005`; rec-hands-play `76a94cb17650825b` (two runs). Linux
+  (`node:24-bookworm`, offline, an LF clone of the branch head, the README's recipe): [[LINUX]]
 - **Budget (section 11)**: S4 on the teacher's piece 27 ms (as v1), on the 1,800-note synthetic piece 29 ms (v1 27); model 32.6 KB.
 
 ### 26.8 Verification
 
 - `python tests/bench/tools/hands_data.py && node tests/bench/tools/train_hands.js --check` (gate; the textures are in the cache);
   `node tests/bench/tools/train_hands.js --eval-only` (the evaluation, with S4's real input when `hands_data.py --perfs` ran).
+  `node tests/bench/tools/train_rests.js --check` (gate: S6 retrained on the new hands).
 - `node --test tests/rec/hands.test.js` (15: the model file, cover octaves, the hard term with and without it, `hardOf`, the
   context); `npm run test:rec` (118 pass, 1 todo); `python -m unittest discover -s tests/bench/unit -t tests/bench` (425, among them
   `unit/test_hands_play.py`: the textures, texture cases, `rec.hands.*`, the metric tool);

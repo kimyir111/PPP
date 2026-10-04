@@ -79,15 +79,15 @@
     "n": 20
    },
    "notation.duration.accuracy": {
-    "mean": 0.902252,
+    "mean": 0.901495,
     "n": 20
    },
    "notation.duration.accuracy_ref": {
-    "mean": 0.838047,
+    "mean": 0.837289,
     "n": 20
    },
    "notation.duration.page_accuracy": {
-    "mean": 0.902252,
+    "mean": 0.901495,
     "n": 20
    },
    "notation.hand.accuracy": {
@@ -203,7 +203,7 @@
     "n": 11
    },
    "nq.ned": {
-    "mean": 0.348435,
+    "mean": 0.349717,
     "n": 20
    },
    "nq.range.ledger4_rate": {
@@ -215,7 +215,7 @@
     "n": 20
    },
    "nq.rest.per_measure_delta": {
-    "mean": -0.073346,
+    "mean": -0.070221,
     "n": 20
    },
    "nq.rhythm.hidden_beat_rate": {
@@ -359,11 +359,11 @@
     "n": 20
    },
    "read.rests_per_measure": {
-    "mean": 0.148529,
+    "mean": 0.151654,
     "n": 20
    },
    "read.rests_per_measure.delta": {
-    "mean": -0.073346,
+    "mean": -0.070221,
     "n": 20
    },
    "read.short_notes_rate": {
@@ -375,11 +375,11 @@
     "n": 20
    },
    "read.ties_per_note": {
-    "mean": 0.039286,
+    "mean": 0.038736,
     "n": 20
    },
    "read.ties_per_note.delta": {
-    "mean": 0.028368,
+    "mean": 0.027818,
     "n": 20
    },
    "read.tuplets_per_note": {
@@ -391,7 +391,7 @@
     "n": 20
    },
    "sqi": {
-    "mean": 87.081394,
+    "mean": 87.073819,
     "n": 20
    },
    "struct.downbeat.f1": {
@@ -571,15 +571,15 @@
      "n": 20
     },
     "notation.duration.accuracy": {
-     "mean": 0.902252,
+     "mean": 0.901495,
      "n": 20
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.838047,
+     "mean": 0.837289,
      "n": 20
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.902252,
+     "mean": 0.901495,
      "n": 20
     },
     "notation.hand.accuracy": {
@@ -695,7 +695,7 @@
      "n": 11
     },
     "nq.ned": {
-     "mean": 0.348435,
+     "mean": 0.349717,
      "n": 20
     },
     "nq.range.ledger4_rate": {
@@ -707,7 +707,7 @@
      "n": 20
     },
     "nq.rest.per_measure_delta": {
-     "mean": -0.073346,
+     "mean": -0.070221,
      "n": 20
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -851,11 +851,11 @@
      "n": 20
     },
     "read.rests_per_measure": {
-     "mean": 0.148529,
+     "mean": 0.151654,
      "n": 20
     },
     "read.rests_per_measure.delta": {
-     "mean": -0.073346,
+     "mean": -0.070221,
      "n": 20
     },
     "read.short_notes_rate": {
@@ -867,11 +867,11 @@
      "n": 20
     },
     "read.ties_per_note": {
-     "mean": 0.039286,
+     "mean": 0.038736,
      "n": 20
     },
     "read.ties_per_note.delta": {
-     "mean": 0.028368,
+     "mean": 0.027818,
      "n": 20
     },
     "read.tuplets_per_note": {
@@ -883,7 +883,7 @@
      "n": 20
     },
     "sqi": {
-     "mean": 87.081394,
+     "mean": 87.073819,
      "n": 20
     },
     "struct.downbeat.f1": {
@@ -1062,15 +1062,15 @@
      "n": 20
     },
     "notation.duration.accuracy": {
-     "mean": 0.902252,
+     "mean": 0.901495,
      "n": 20
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.838047,
+     "mean": 0.837289,
      "n": 20
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.902252,
+     "mean": 0.901495,
      "n": 20
     },
     "notation.hand.accuracy": {
@@ -1186,7 +1186,7 @@
      "n": 11
     },
     "nq.ned": {
-     "mean": 0.348435,
+     "mean": 0.349717,
      "n": 20
     },
     "nq.range.ledger4_rate": {
@@ -1198,7 +1198,7 @@
      "n": 20
     },
     "nq.rest.per_measure_delta": {
-     "mean": -0.073346,
+     "mean": -0.070221,
      "n": 20
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -1342,11 +1342,11 @@
      "n": 20
     },
     "read.rests_per_measure": {
-     "mean": 0.148529,
+     "mean": 0.151654,
      "n": 20
     },
     "read.rests_per_measure.delta": {
-     "mean": -0.073346,
+     "mean": -0.070221,
      "n": 20
     },
     "read.short_notes_rate": {
@@ -1358,11 +1358,11 @@
      "n": 20
     },
     "read.ties_per_note": {
-     "mean": 0.039286,
+     "mean": 0.038736,
      "n": 20
     },
     "read.ties_per_note.delta": {
-     "mean": 0.028368,
+     "mean": 0.027818,
      "n": 20
     },
     "read.tuplets_per_note": {
@@ -1374,7 +1374,7 @@
      "n": 20
     },
     "sqi": {
-     "mean": 87.081394,
+     "mean": 87.073819,
      "n": 20
     },
     "struct.downbeat.f1": {
@@ -2952,9 +2952,9 @@
     "critical.structure": 1.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 1.0,
-    "notation.duration.accuracy_ref": 1.0,
-    "notation.duration.page_accuracy": 1.0,
+    "notation.duration.accuracy": 0.984848,
+    "notation.duration.accuracy_ref": 0.984848,
+    "notation.duration.page_accuracy": 0.984848,
     "notation.hand.accuracy": 1.0,
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
@@ -2974,7 +2974,7 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 100.0,
+    "sqi": 99.848485,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -2993,8 +2993,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "dc8c250b0e79e717",
-   "sqi": 100.0,
+   "semantic": "eb12b38941768379",
+   "sqi": 99.848485,
    "status": "ok"
   },
   "replay/method/beyer/031|salamander-v2|cover-pedal|s1|of": {
@@ -3273,6 +3273,14 @@
    "git_sha": "90f769b3b6d3b7e6262ff0a06b30c0c82ac1ebe2",
    "reason": "G10a-2b: S4 hands-v1.1 (group context + G5a hard term; docs/GOALS/G10 section 26)",
    "sqi_all": 87.081394,
+   "usable_all": 0.3
+  },
+  {
+   "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
+   "date": "2026-10-04",
+   "git_sha": "739b1f87a7076f7cf8ad3a465e919b2d92e9b389",
+   "reason": "G10a-2b: S4 hands-v1.1 and S6 retrained on its hands (docs/GOALS/G10 section 26)",
+   "sqi_all": 87.073819,
    "usable_all": 0.3
   }
  ],
@@ -3622,7 +3630,7 @@
   "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
   "date": "2026-10-04",
   "git_dirty": true,
-  "git_sha": "90f769b3b6d3b7e6262ff0a06b30c0c82ac1ebe2",
+  "git_sha": "739b1f87a7076f7cf8ad3a465e919b2d92e9b389",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"

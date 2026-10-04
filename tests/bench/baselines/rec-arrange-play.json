@@ -34,11 +34,11 @@
     "n": 123
    },
    "arr.harmony.agreement": {
-    "mean": 0.731177,
+    "mean": 0.731149,
     "n": 123
    },
    "arr.level.distance": {
-    "mean": 0.211503,
+    "mean": 0.211393,
     "n": 123
    },
    "arr.level.distinct": {
@@ -167,7 +167,7 @@
     "n": 128
    },
    "src.harmony.agreement": {
-    "mean": 0.827303,
+    "mean": 0.827214,
     "n": 128
    },
    "src.melody.heard": {
@@ -214,11 +214,11 @@
      "n": 123
     },
     "arr.harmony.agreement": {
-     "mean": 0.731177,
+     "mean": 0.731149,
      "n": 123
     },
     "arr.level.distance": {
-     "mean": 0.211503,
+     "mean": 0.211393,
      "n": 123
     },
     "arr.level.distinct": {
@@ -347,7 +347,7 @@
      "n": 128
     },
     "src.harmony.agreement": {
-     "mean": 0.827303,
+     "mean": 0.827214,
      "n": 128
     },
     "src.melody.heard": {
@@ -393,7 +393,7 @@
      "n": 10
     },
     "arr.harmony.agreement": {
-     "mean": 0.693289,
+     "mean": 0.691726,
      "n": 10
     },
     "arr.level.distance": {
@@ -526,7 +526,7 @@
      "n": 10
     },
     "src.harmony.agreement": {
-     "mean": 0.738051,
+     "mean": 0.736488,
      "n": 10
     },
     "src.melody.heard": {
@@ -705,7 +705,7 @@
      "n": 8
     },
     "src.harmony.agreement": {
-     "mean": 0.783183,
+     "mean": 0.782199,
      "n": 8
     },
     "src.melody.heard": {
@@ -1288,11 +1288,11 @@
      "n": 4
     },
     "arr.harmony.agreement": {
-     "mean": 0.530774,
+     "mean": 0.533823,
      "n": 4
     },
     "arr.level.distance": {
-     "mean": 0.285121,
+     "mean": 0.281406,
      "n": 4
     },
     "arr.level.distinct": {
@@ -1421,7 +1421,7 @@
      "n": 4
     },
     "src.harmony.agreement": {
-     "mean": 0.624375,
+     "mean": 0.627423,
      "n": 4
     },
     "src.melody.heard": {
@@ -1471,7 +1471,7 @@
      "n": 76
     },
     "arr.level.distance": {
-     "mean": 0.199809,
+     "mean": 0.199826,
      "n": 76
     },
     "arr.level.distinct": {
@@ -2137,7 +2137,7 @@
      "n": 6
     },
     "src.harmony.agreement": {
-     "mean": 0.690001,
+     "mean": 0.688689,
      "n": 6
     },
     "src.melody.heard": {
@@ -2187,7 +2187,7 @@
      "n": 28
     },
     "arr.level.distance": {
-     "mean": 0.344983,
+     "mean": 0.345029,
      "n": 28
     },
     "arr.level.distinct": {
@@ -2541,7 +2541,7 @@
      "n": 13
     },
     "arr.harmony.agreement": {
-     "mean": 0.545967,
+     "mean": 0.544765,
      "n": 13
     },
     "arr.level.distance": {
@@ -2674,7 +2674,7 @@
      "n": 14
     },
     "src.harmony.agreement": {
-     "mean": 0.685059,
+     "mean": 0.683381,
      "n": 14
     },
     "src.melody.heard": {
@@ -2853,7 +2853,7 @@
      "n": 10
     },
     "src.harmony.agreement": {
-     "mean": 0.675539,
+     "mean": 0.674752,
      "n": 10
     },
     "src.melody.heard": {
@@ -2903,7 +2903,7 @@
      "n": 14
     },
     "arr.level.distance": {
-     "mean": 0.313633,
+     "mean": 0.313724,
      "n": 14
     },
     "arr.level.distinct": {
@@ -3471,11 +3471,11 @@
      "n": 64
     },
     "arr.harmony.agreement": {
-     "mean": 0.732657,
+     "mean": 0.732604,
      "n": 64
     },
     "arr.level.distance": {
-     "mean": 0.148007,
+     "mean": 0.147775,
      "n": 64
     },
     "arr.level.distinct": {
@@ -3604,7 +3604,7 @@
      "n": 64
     },
     "src.harmony.agreement": {
-     "mean": 0.813336,
+     "mean": 0.813283,
      "n": 64
     },
     "src.melody.heard": {
@@ -3783,7 +3783,7 @@
      "n": 20
     },
     "src.harmony.agreement": {
-     "mean": 0.8695,
+     "mean": 0.869106,
      "n": 20
     },
     "src.melody.heard": {
@@ -5082,11 +5082,11 @@
      "n": 55
     },
     "arr.harmony.agreement": {
-     "mean": 0.757816,
+     "mean": 0.757754,
      "n": 55
     },
     "arr.level.distance": {
-     "mean": 0.227931,
+     "mean": 0.227684,
      "n": 55
     },
     "arr.level.distinct": {
@@ -5215,7 +5215,7 @@
      "n": 58
     },
     "src.harmony.agreement": {
-     "mean": 0.886367,
+     "mean": 0.886172,
      "n": 58
     },
     "src.melody.heard": {
@@ -6335,11 +6335,11 @@
      "n": 55
     },
     "arr.harmony.agreement": {
-     "mean": 0.757816,
+     "mean": 0.757754,
      "n": 55
     },
     "arr.level.distance": {
-     "mean": 0.227931,
+     "mean": 0.227684,
      "n": 55
     },
     "arr.level.distinct": {
@@ -6468,7 +6468,7 @@
      "n": 58
     },
     "src.harmony.agreement": {
-     "mean": 0.886367,
+     "mean": 0.886172,
      "n": 58
     },
     "src.melody.heard": {
@@ -6872,11 +6872,11 @@
      "n": 88
     },
     "arr.harmony.agreement": {
-     "mean": 0.760237,
+     "mean": 0.760059,
      "n": 88
     },
     "arr.level.distance": {
-     "mean": 0.242181,
+     "mean": 0.242195,
      "n": 88
     },
     "arr.level.distinct": {
@@ -7005,7 +7005,7 @@
      "n": 90
     },
     "src.harmony.agreement": {
-     "mean": 0.871385,
+     "mean": 0.871212,
      "n": 90
     },
     "src.melody.heard": {
@@ -7230,11 +7230,11 @@
      "n": 25
     },
     "arr.harmony.agreement": {
-     "mean": 0.590944,
+     "mean": 0.591431,
      "n": 25
     },
     "arr.level.distance": {
-     "mean": 0.065478,
+     "mean": 0.064884,
      "n": 25
     },
     "arr.level.distinct": {
@@ -7363,7 +7363,7 @@
      "n": 28
     },
     "src.harmony.agreement": {
-     "mean": 0.653815,
+     "mean": 0.65397,
      "n": 28
     },
     "src.melody.heard": {
@@ -7542,7 +7542,7 @@
      "n": 64
     },
     "src.harmony.agreement": {
-     "mean": 0.802614,
+     "mean": 0.802491,
      "n": 64
     },
     "src.melody.heard": {
@@ -7588,11 +7588,11 @@
      "n": 62
     },
     "arr.harmony.agreement": {
-     "mean": 0.748525,
+     "mean": 0.748469,
      "n": 62
     },
     "arr.level.distance": {
-     "mean": 0.216299,
+     "mean": 0.21608,
      "n": 62
     },
     "arr.level.distinct": {
@@ -7721,7 +7721,7 @@
      "n": 64
     },
     "src.harmony.agreement": {
-     "mean": 0.851991,
+     "mean": 0.851938,
      "n": 64
     },
     "src.melody.heard": {
@@ -7767,11 +7767,11 @@
      "n": 123
     },
     "arr.harmony.agreement": {
-     "mean": 0.731177,
+     "mean": 0.731149,
      "n": 123
     },
     "arr.level.distance": {
-     "mean": 0.211503,
+     "mean": 0.211393,
      "n": 123
     },
     "arr.level.distinct": {
@@ -7900,7 +7900,7 @@
      "n": 128
     },
     "src.harmony.agreement": {
-     "mean": 0.827303,
+     "mean": 0.827214,
      "n": 128
     },
     "src.melody.heard": {
@@ -7946,11 +7946,11 @@
      "n": 123
     },
     "arr.harmony.agreement": {
-     "mean": 0.731177,
+     "mean": 0.731149,
      "n": 123
     },
     "arr.level.distance": {
-     "mean": 0.211503,
+     "mean": 0.211393,
      "n": 123
     },
     "arr.level.distinct": {
@@ -8079,7 +8079,7 @@
      "n": 128
     },
     "src.harmony.agreement": {
-     "mean": 0.827303,
+     "mean": 0.827214,
      "n": 128
     },
     "src.melody.heard": {
@@ -8308,7 +8308,7 @@
      "n": 20
     },
     "arr.level.distance": {
-     "mean": 0.27955,
+     "mean": 0.279613,
      "n": 20
     },
     "arr.level.distinct": {
@@ -8483,11 +8483,11 @@
      "n": 49
     },
     "arr.harmony.agreement": {
-     "mean": 0.680704,
+     "mean": 0.680634,
      "n": 49
     },
     "arr.level.distance": {
-     "mean": 0.076815,
+     "mean": 0.076511,
      "n": 49
     },
     "arr.level.distinct": {
@@ -8616,7 +8616,7 @@
      "n": 52
     },
     "src.harmony.agreement": {
-     "mean": 0.745606,
+     "mean": 0.745388,
      "n": 52
     },
     "src.melody.heard": {
@@ -9020,11 +9020,11 @@
      "n": 27
     },
     "arr.harmony.agreement": {
-     "mean": 0.593153,
+     "mean": 0.593605,
      "n": 27
     },
     "arr.level.distance": {
-     "mean": 0.073607,
+     "mean": 0.073056,
      "n": 27
     },
     "arr.level.distinct": {
@@ -9153,7 +9153,7 @@
      "n": 30
     },
     "src.harmony.agreement": {
-     "mean": 0.665783,
+     "mean": 0.665927,
      "n": 30
     },
     "src.melody.heard": {
@@ -9199,11 +9199,11 @@
      "n": 68
     },
     "arr.harmony.agreement": {
-     "mean": 0.790522,
+     "mean": 0.790293,
      "n": 68
     },
     "arr.level.distance": {
-     "mean": 0.210538,
+     "mean": 0.210557,
      "n": 68
     },
     "arr.level.distinct": {
@@ -9332,7 +9332,7 @@
      "n": 70
     },
     "src.harmony.agreement": {
-     "mean": 0.892773,
+     "mean": 0.892549,
      "n": 70
     },
     "src.melody.heard": {
@@ -9557,11 +9557,11 @@
      "n": 123
     },
     "arr.harmony.agreement": {
-     "mean": 0.731177,
+     "mean": 0.731149,
      "n": 123
     },
     "arr.level.distance": {
-     "mean": 0.211503,
+     "mean": 0.211393,
      "n": 123
     },
     "arr.level.distinct": {
@@ -9690,7 +9690,7 @@
      "n": 128
     },
     "src.harmony.agreement": {
-     "mean": 0.827303,
+     "mean": 0.827214,
      "n": 128
     },
     "src.melody.heard": {
@@ -9736,11 +9736,11 @@
      "n": 123
     },
     "arr.harmony.agreement": {
-     "mean": 0.731177,
+     "mean": 0.731149,
      "n": 123
     },
     "arr.level.distance": {
-     "mean": 0.211503,
+     "mean": 0.211393,
      "n": 123
     },
     "arr.level.distinct": {
@@ -9869,7 +9869,7 @@
      "n": 128
     },
     "src.harmony.agreement": {
-     "mean": 0.827303,
+     "mean": 0.827214,
      "n": 128
     },
     "src.melody.heard": {
@@ -10497,7 +10497,7 @@
     "arr.check.7": 0,
     "arr.hard.violations": 0,
     "arr.harmony.agreement": 0.864198,
-    "arr.level.distance": 0.598077,
+    "arr.level.distance": 0.599348,
     "arr.level.distinct": 1,
     "arr.lh.notes_per_bar": 7.958333,
     "arr.made": 1,
@@ -10860,7 +10860,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 1,
+    "arr.harmony.agreement": 0.984375,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 1.875,
@@ -12005,8 +12005,8 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.803523,
-    "arr.level.distance": 0.309098,
+    "arr.harmony.agreement": 0.815718,
+    "arr.level.distance": 0.294236,
     "arr.level.distinct": 0.5,
     "arr.lh.notes_per_bar": 4.016129,
     "arr.made": 1,
@@ -13321,6 +13321,14 @@
    "reason": "G10a-2b: S4 hands-v1.1 (group context + G5a hard term; docs/GOALS/G10 section 26)",
    "sqi_all": null,
    "usable_all": null
+  },
+  {
+   "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
+   "date": "2026-10-04",
+   "git_sha": "739b1f87a7076f7cf8ad3a465e919b2d92e9b389",
+   "reason": "G10a-2b: S4 hands-v1.1 and S6 retrained on its hands (docs/GOALS/G10 section 26)",
+   "sqi_all": null,
+   "usable_all": null
   }
  ],
  "known_failures": null,
@@ -13329,7 +13337,7 @@
   "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
   "date": "2026-10-04",
   "git_dirty": true,
-  "git_sha": "90f769b3b6d3b7e6262ff0a06b30c0c82ac1ebe2",
+  "git_sha": "739b1f87a7076f7cf8ad3a465e919b2d92e9b389",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"

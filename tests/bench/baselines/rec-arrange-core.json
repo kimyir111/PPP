@@ -34,11 +34,11 @@
     "n": 166
    },
    "arr.harmony.agreement": {
-    "mean": 0.666073,
+    "mean": 0.666764,
     "n": 166
    },
    "arr.level.distance": {
-    "mean": 0.171134,
+    "mean": 0.171016,
     "n": 166
    },
    "arr.level.distinct": {
@@ -167,7 +167,7 @@
     "n": 168
    },
    "src.harmony.agreement": {
-    "mean": 0.780021,
+    "mean": 0.780679,
     "n": 168
    },
    "src.melody.heard": {
@@ -214,11 +214,11 @@
      "n": 166
     },
     "arr.harmony.agreement": {
-     "mean": 0.666073,
+     "mean": 0.666764,
      "n": 166
     },
     "arr.level.distance": {
-     "mean": 0.171134,
+     "mean": 0.171016,
      "n": 166
     },
     "arr.level.distinct": {
@@ -347,7 +347,7 @@
      "n": 168
     },
     "src.harmony.agreement": {
-     "mean": 0.780021,
+     "mean": 0.780679,
      "n": 168
     },
     "src.melody.heard": {
@@ -393,11 +393,11 @@
      "n": 24
     },
     "arr.harmony.agreement": {
-     "mean": 0.678109,
+     "mean": 0.677675,
      "n": 24
     },
     "arr.level.distance": {
-     "mean": 0.381482,
+     "mean": 0.380666,
      "n": 24
     },
     "arr.level.distinct": {
@@ -705,7 +705,7 @@
      "n": 8
     },
     "src.harmony.agreement": {
-     "mean": 0.713531,
+     "mean": 0.71172,
      "n": 8
     },
     "src.melody.heard": {
@@ -1779,7 +1779,7 @@
      "n": 14
     },
     "src.harmony.agreement": {
-     "mean": 0.694063,
+     "mean": 0.693028,
      "n": 14
     },
     "src.melody.heard": {
@@ -1825,7 +1825,7 @@
      "n": 6
     },
     "arr.harmony.agreement": {
-     "mean": 0.770585,
+     "mean": 0.791419,
      "n": 6
     },
     "arr.level.distance": {
@@ -1958,7 +1958,7 @@
      "n": 6
     },
     "src.harmony.agreement": {
-     "mean": 0.803571,
+     "mean": 0.824405,
      "n": 6
     },
     "src.melody.heard": {
@@ -2541,11 +2541,11 @@
      "n": 18
     },
     "arr.harmony.agreement": {
-     "mean": 0.578048,
+     "mean": 0.57747,
      "n": 18
     },
     "arr.level.distance": {
-     "mean": 0.25315,
+     "mean": 0.252062,
      "n": 18
     },
     "arr.level.distinct": {
@@ -2674,7 +2674,7 @@
      "n": 18
     },
     "src.harmony.agreement": {
-     "mean": 0.680746,
+     "mean": 0.679941,
      "n": 18
     },
     "src.melody.heard": {
@@ -2899,7 +2899,7 @@
      "n": 16
     },
     "arr.harmony.agreement": {
-     "mean": 0.578939,
+     "mean": 0.586751,
      "n": 16
     },
     "arr.level.distance": {
@@ -3032,7 +3032,7 @@
      "n": 16
     },
     "src.harmony.agreement": {
-     "mean": 0.733037,
+     "mean": 0.740849,
      "n": 16
     },
     "src.melody.heard": {
@@ -3211,7 +3211,7 @@
      "n": 14
     },
     "src.harmony.agreement": {
-     "mean": 0.74619,
+     "mean": 0.745155,
      "n": 14
     },
     "src.melody.heard": {
@@ -3471,11 +3471,11 @@
      "n": 84
     },
     "arr.harmony.agreement": {
-     "mean": 0.682035,
+     "mean": 0.681911,
      "n": 84
     },
     "arr.level.distance": {
-     "mean": 0.16945,
+     "mean": 0.169217,
      "n": 84
     },
     "arr.level.distinct": {
@@ -4187,11 +4187,11 @@
      "n": 40
     },
     "arr.harmony.agreement": {
-     "mean": 0.681286,
+     "mean": 0.681025,
      "n": 40
     },
     "arr.level.distance": {
-     "mean": 0.261231,
+     "mean": 0.260741,
      "n": 40
     },
     "arr.level.distinct": {
@@ -5261,11 +5261,11 @@
      "n": 78
     },
     "arr.harmony.agreement": {
-     "mean": 0.700045,
+     "mean": 0.701514,
      "n": 78
     },
     "arr.level.distance": {
-     "mean": 0.232293,
+     "mean": 0.232042,
      "n": 78
     },
     "arr.level.distinct": {
@@ -5394,7 +5394,7 @@
      "n": 80
     },
     "src.harmony.agreement": {
-     "mean": 0.835182,
+     "mean": 0.836563,
      "n": 80
     },
     "src.melody.heard": {
@@ -6514,11 +6514,11 @@
      "n": 78
     },
     "arr.harmony.agreement": {
-     "mean": 0.700045,
+     "mean": 0.701514,
      "n": 78
     },
     "arr.level.distance": {
-     "mean": 0.232293,
+     "mean": 0.232042,
      "n": 78
     },
     "arr.level.distinct": {
@@ -6647,7 +6647,7 @@
      "n": 80
     },
     "src.harmony.agreement": {
-     "mean": 0.835182,
+     "mean": 0.836563,
      "n": 80
     },
     "src.melody.heard": {
@@ -7230,11 +7230,11 @@
      "n": 126
     },
     "arr.harmony.agreement": {
-     "mean": 0.701664,
+     "mean": 0.702573,
      "n": 126
     },
     "arr.level.distance": {
-     "mean": 0.209631,
+     "mean": 0.209475,
      "n": 126
     },
     "arr.level.distinct": {
@@ -7363,7 +7363,7 @@
      "n": 128
     },
     "src.harmony.agreement": {
-     "mean": 0.831878,
+     "mean": 0.832854,
      "n": 128
     },
     "src.melody.heard": {
@@ -7542,7 +7542,7 @@
      "n": 12
     },
     "src.harmony.agreement": {
-     "mean": 0.81938,
+     "mean": 0.818172,
      "n": 12
     },
     "src.melody.heard": {
@@ -7946,11 +7946,11 @@
      "n": 83
     },
     "arr.harmony.agreement": {
-     "mean": 0.760706,
+     "mean": 0.762086,
      "n": 83
     },
     "arr.level.distance": {
-     "mean": 0.253188,
+     "mean": 0.252952,
      "n": 83
     },
     "arr.level.distinct": {
@@ -8079,7 +8079,7 @@
      "n": 84
     },
     "src.harmony.agreement": {
-     "mean": 0.876645,
+     "mean": 0.87796,
      "n": 84
     },
     "src.melody.heard": {
@@ -8125,7 +8125,7 @@
      "n": 126
     },
     "arr.harmony.agreement": {
-     "mean": 0.661244,
+     "mean": 0.662236,
      "n": 126
     },
     "arr.level.distance": {
@@ -8258,7 +8258,7 @@
      "n": 128
     },
     "src.harmony.agreement": {
-     "mean": 0.76883,
+     "mean": 0.769694,
      "n": 128
     },
     "src.melody.heard": {
@@ -8304,11 +8304,11 @@
      "n": 40
     },
     "arr.harmony.agreement": {
-     "mean": 0.681286,
+     "mean": 0.681025,
      "n": 40
     },
     "arr.level.distance": {
-     "mean": 0.261231,
+     "mean": 0.260741,
      "n": 40
     },
     "arr.level.distinct": {
@@ -8483,7 +8483,7 @@
      "n": 126
     },
     "arr.harmony.agreement": {
-     "mean": 0.661244,
+     "mean": 0.662236,
      "n": 126
     },
     "arr.level.distance": {
@@ -8616,7 +8616,7 @@
      "n": 128
     },
     "src.harmony.agreement": {
-     "mean": 0.76883,
+     "mean": 0.769694,
      "n": 128
     },
     "src.melody.heard": {
@@ -9020,11 +9020,11 @@
      "n": 66
     },
     "arr.harmony.agreement": {
-     "mean": 0.603763,
+     "mean": 0.603605,
      "n": 66
     },
     "arr.level.distance": {
-     "mean": 0.175165,
+     "mean": 0.174868,
      "n": 66
     },
     "arr.level.distinct": {
@@ -9153,7 +9153,7 @@
      "n": 66
     },
     "src.harmony.agreement": {
-     "mean": 0.670393,
+     "mean": 0.670174,
      "n": 66
     },
     "src.melody.heard": {
@@ -9199,7 +9199,7 @@
      "n": 46
     },
     "arr.harmony.agreement": {
-     "mean": 0.760532,
+     "mean": 0.763249,
      "n": 46
     },
     "arr.level.distance": {
@@ -9332,7 +9332,7 @@
      "n": 48
     },
     "src.harmony.agreement": {
-     "mean": 0.877963,
+     "mean": 0.880567,
      "n": 48
     },
     "src.melody.heard": {
@@ -9869,7 +9869,7 @@
      "n": 84
     },
     "src.harmony.agreement": {
-     "mean": 0.798754,
+     "mean": 0.798581,
      "n": 84
     },
     "src.melody.heard": {
@@ -9915,11 +9915,11 @@
      "n": 60
     },
     "arr.harmony.agreement": {
-     "mean": 0.756285,
+     "mean": 0.758194,
      "n": 60
     },
     "arr.level.distance": {
-     "mean": 0.208705,
+     "mean": 0.208379,
      "n": 60
     },
     "arr.level.distinct": {
@@ -10048,7 +10048,7 @@
      "n": 62
     },
     "src.harmony.agreement": {
-     "mean": 0.850368,
+     "mean": 0.852384,
      "n": 62
     },
     "src.melody.heard": {
@@ -10094,11 +10094,11 @@
      "n": 166
     },
     "arr.harmony.agreement": {
-     "mean": 0.666073,
+     "mean": 0.666764,
      "n": 166
     },
     "arr.level.distance": {
-     "mean": 0.171134,
+     "mean": 0.171016,
      "n": 166
     },
     "arr.level.distinct": {
@@ -10227,7 +10227,7 @@
      "n": 168
     },
     "src.harmony.agreement": {
-     "mean": 0.780021,
+     "mean": 0.780679,
      "n": 168
     },
     "src.melody.heard": {
@@ -13238,7 +13238,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.75,
+    "arr.harmony.agreement": 0.875,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 0.875,
@@ -14538,8 +14538,8 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.984375,
-    "arr.level.distance": 0.82498,
+    "arr.harmony.agreement": 0.973958,
+    "arr.level.distance": 0.805385,
     "arr.level.distinct": 1,
     "arr.lh.notes_per_bar": 7.291667,
     "arr.made": 1,
@@ -14834,6 +14834,14 @@
    "reason": "G10a-2b: S4 hands-v1.1 (group context + G5a hard term; docs/GOALS/G10 section 26)",
    "sqi_all": null,
    "usable_all": null
+  },
+  {
+   "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
+   "date": "2026-10-04",
+   "git_sha": "739b1f87a7076f7cf8ad3a465e919b2d92e9b389",
+   "reason": "G10a-2b: S4 hands-v1.1 and S6 retrained on its hands (docs/GOALS/G10 section 26)",
+   "sqi_all": null,
+   "usable_all": null
   }
  ],
  "known_failures": null,
@@ -14842,7 +14850,7 @@
   "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
   "date": "2026-10-04",
   "git_dirty": true,
-  "git_sha": "90f769b3b6d3b7e6262ff0a06b30c0c82ac1ebe2",
+  "git_sha": "739b1f87a7076f7cf8ad3a465e919b2d92e9b389",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"
