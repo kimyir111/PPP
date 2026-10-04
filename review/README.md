@@ -1,4 +1,4 @@
-# review/ - blind review tooling for G9 (H-8 and H-9)
+# review/ - blind review tooling for G9 (H-8 and H-9) and, further down, for G10a-5 (H-10)
 
 Builds the packets for the two human reviews the G9 design leaves to the user's own time
 (`docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md` section 5 G9c, section 12 "G9c - blind review tooling"):
@@ -212,6 +212,76 @@ units and wide intervals, on one legacy engine. They say nothing about touch, pe
 or medium hands (only `large` is reachable), or whether the difference would survive the notation each engine would produce in
 the app. The H-9 bar for flipping the default is not fixed here.
 
+## H-10 - the blind review of the recording conversion (G10a-5)
+
+A different review, built on the same page conventions: the teacher compares **how PPP writes a recording down** - the new conversion (`recording: 'v2'`)
+against the classic one - on pieces she chose, blind, on a phone, in Korean (`docs/GOALS/G10_AUDIO_TO_SCORE.md` sections 10 and 27). Nothing here touches the
+app or the server; packets and keys are written outside every git tree, never committed.
+
+```
+# 1. the heard notes of YouTube pieces, as the app's own browser transcription gives them (about 6 minutes a piece; 2 or 3 at a time)
+node review/h10/collect.js --items links.json --out <heard-dir> [--parallel 2] [--max-minutes 15] [--force] [--only id1,id2]
+# 2. the packet
+node review/build.js --mode h10 --heard <heard-dir> --out <packet-dir> --key-out <key-dir> [--seed <secret>] [--jobs 3]
+                     [--excerpt-bars 12] [--excerpt-seconds N] [--level intermediate] [--no-titles]
+# 3. the answers
+node review/decode.js --mode h10 --key <key-dir>/key.json --ratings ratings-h10-<id>.json [--out summary.json]
+node review/decode.js --mode h10 --key <key-dir>/key.json --db rows.json        # answers read out of the artifact database
+```
+
+- **links.json** is `[{ id, url, title?, excerpt?: { bars?, seconds?, start? }, inputClass?: "CLEAN_INPUT" | "UPSTREAM_ERROR" }]`; `id` is letters, digits, `-`, `_`.
+- **The collector** (`review/h10/collect.js`) serves THIS tree with `tests/serve-free.js` (a free port, `NODE_ENV=production`, nothing on 8788) and drives the real page
+  under puppeteer as a person would (My Songs, the add card, the link, "Make sheet music"), one browser process and one port per piece. The local server cannot download
+  audio, so the page's `GET /api/youtube-audio` is answered by the production endpoint (`--audio-base`, default `https://ppp-web-2o99.onrender.com`): the only request it makes of
+  production, a read-only GET; any other request of the page goes where the page sends it and nothing but GETs leaves this machine. It writes ONLY in `--out`: `<id>.json` (the
+  heard notes, the shape of the app's `PPP.app._heard`, the same as a `heard-*.json` kept from an earlier run), `collect-status.json` (per piece: status `ok` / `refused` /
+  `too-long` / `no-notes` / `failed`, model, notes, duration, `truncated`, download and transcription seconds, the reason) and `items.json` (the list; later runs add to it).
+  **Nothing is dropped silently**: a refused link, a piece whose decoded audio is longer than `--max-minutes` (15 = the app's own limit, checked before the model starts so
+  no 40 minutes are spent), a piece the app cut at its limit, one that hears no notes, a timeout - each is in the status and on the console. A piece whose `<id>.json` exists is skipped
+  (resumable; `--force`). `--stub-dir <dir>` replaces the model by notes from `<dir>/<id>.json` and the audio by a tiny wav (tests of the tool itself). Run for real on the teacher's 2:19 piece it took 446 s
+  (71 s download, 367 s model) and wrote notes byte-identical to the earlier saved run.
+- **The builder** (`review/h10/packet.js`, called by `build.js --mode h10`) reads that folder. Per piece, in its own process (`--jobs`, default 3): the heard notes go through the
+  page's own conversion twice (`review/lib/appcode.js`: the options are read out of `Piano Coach App.dc.html`'s `finishHeard` call, `closeGaps` and `exactBars` in both, the page's
+  plausibility check applied to v2), and each result - and the Song Arranger's one-note-per-hand copy of it at the middle level, made by the page's own
+  `arrangeSingleNoteWithHandsFallback` (so a v2 graph the arranger refuses for hard violations is arranged from the same heard notes with the classic hands, as in the app) - becomes
+  one score. Two parts per piece: **(T)** the transcription as the review screen holds it, **(A)** the arranger's copy of it. A piece whose arranger refused one of the two ways has no
+  part A (said in the key). **X or Y is decided per piece by `HMAC(seed, id)`** (`lib/blind.js assignArms`, an even split, the same sides for T and A); the order of the pieces is a
+  second HMAC; the seed rules are those of H-8/H-9 (at least 20 characters, random when omitted, in the key only).
+- **What a score is.** The arm's graph through the app's own engraver (`engrave/`: `plan`, `createEngraver`, `layout` with the `window` of the excerpt's bars, `svg`), at the two
+  layouts of the G9 page (the engraver's phone configuration up to 720 px, its desktop one with 2 bars a system above) - **not** re-derived from notes as in H-8/H-9: a recording's
+  rests, ties, tuplets and bars are what is judged. The sound is the app's own player plan for the app's own Score of that graph (`Score.finalize(toScore(graph))`, `PianoScore`:
+  ties joined, written pedal, the app's velocities and tempo map) played through the sampled piano of the G9 page. The builder refuses an item (and says so) whose drawing shows
+  a different number of note heads or rests than the Score holds for the same bars; the key records both numbers.
+- **The excerpt** (`lib/h10-excerpt.js`) is chosen in TIME from the heard notes alone, so both ways show the same seconds although their bar numbers differ: the length is
+  `--excerpt-seconds` (or an item's `excerpt.seconds`), else `--excerpt-bars` (default 12) times the mean of the two arms' median bar length (6-60 s, never longer than the
+  piece); the start is an item's `excerpt.start`, else the window that is sounding for at least 95% of its length, holds at least 60% of the piece's usual onset density, and lies
+  closest to the middle of the piece (no silence; the earlier of two equally close). Each arm shows the bars that hold those seconds (at most a bar of margin at each end; the key
+  has each arm's bars and the seconds they cover). A link `원곡 열기` opens the YouTube video in a new tab at the excerpt's first second; **no audio of the recording is in the page**.
+- **The page** (`lib/page-h10.js`; one file, offline): per piece and part, X and Y one under the other (a 360 px column, targets at least 44 px), for each side Play (+ speed) and
+  "would you give this to a student? (small fixes are fine)", seven tags (rests, hand split, bars and metre, note lengths, pitch and octave, missing or extra notes, other), an
+  optional note; then which is better (X / Y / similar). Progress bar, "continue" button, resume where left off (it scrolls to the first part left open), a closing screen that
+  lists what is open and exports. **Keeping the answers**: memory, `localStorage` on every tap (the page works with storage refused), and - when the file is published as an
+  Artifact with the `db` capability (`capabilities: { db: {}, downloads: true }`) - the artifact database through the small adapter `store` (documents
+  `answers/<packetId>/items/<id>` and `answers/<packetId>` for the role; per item the newer `t` wins on load, so another device resumes; a failed write says so and the answer
+  stays on the device). Export: ratings JSON (`ppp-review-ratings/2`) by download (through the `downloads` capability when it answers), copy, or a text box.
+  `decode.js --db rows.json` reads the database rows (`review/h10/db-to-ratings.js`).
+- **Size and time**: the drawings of a page are packed (`lib/svgpack.js`: one glyph-id prefix, so the glyphs are written once, and the markup repeated between numbers becomes
+  one character each); the piano recordings are embedded once as before. Measured: 10 pieces of the size of the teacher's (1,214 heard notes, 14-bar excerpts) 3.4 MB, built in
+  101 s with 3 processes; 10 small fixture pieces 3.2 MB in 7.5 s. The packet says about 5.5 minutes a piece, so 10 pieces about an hour; to cut it, `--excerpt-bars 8`, or
+  tell the reviewer part 1 alone is enough.
+- **Blinding**: the page, the manifest and every drawing (after unpacking) are scanned by the tests for arm names, `v2`, version or build stamps, the seed and
+  the way a score was made; the two sides of every part have one markup, one set of ids and classes; no side repeats a side of another piece (the builder refuses it); titles are the
+  same for both sides (`--no-titles` leaves them out); the key alone holds the sides, the hands-fallback and plausibility facts, bars shown and the drawn/written counts. **What blinding does not hide: the
+  music.** v2 usually writes far fewer rests and tuplet brackets and reads the bars differently; `decode.js` prints how many pieces each way draws more rests or brackets in, so a
+  preference can be read against it.
+- **Decode** prints, per arm: wins, losses and ties (per part and over both), pass rates with Wilson intervals, tag counts (per part, per piece), the per-piece table, the
+  arranger's outcome (which pieces have no part A, which v2 copies came through the hands fallback, a v2 result the page threw away), the CLEAN_INPUT / UPSTREAM_ERROR split when the
+  items were labelled, the notes in the teacher's words, and **the starting rule of G10 section 10 as the key fixed it before any answer existed** (v2 at least as good on 80% of
+  the pieces answered, no piece where only v2 fails, v2 handed to a student on 60%), on part T and, for information, on part A. It decides nothing.
+- **Limits**: one excerpt per piece (the rest of the piece is not seen); no recording audio; one reviewer; the model is the browser Onsets and Frames path (no helper, no pedal);
+  part A of a v2 piece the arranger refused is made through the hands fallback, so it judges that conversion and not v2's own hand split; the page does not show the review
+  screen's amber "not sure" bars (they would give v2 away); the fingering the arranger writes is drawn, as the app draws it.
+
 ## Files
 
 - `build.js` - packet builder CLI and `buildPacket()`; `decode.js` - ratings + key.
@@ -220,3 +290,6 @@ the app. The H-9 bar for flipping the default is not fixed here.
   (forms, both drawings, and the sampled-piano player).
 - Tests: `tests/review/` (`npm run test:review`), including rest and tie counts, the clef rule, the two layouts and the media
   query, and that the sound list is unchanged by any drawing rule.
+- H-10: `h10/collect.js` (the collector), `h10/packet.js` (the packet), `h10/item-worker.js` (one piece in its own process), `h10/decode-h10.js`, `h10/db-to-ratings.js`;
+  `lib/appcode.js` (the page's own options, Score, player and arranger, read out of the app file), `lib/h10-item.js`, `lib/h10-draw.js`, `lib/h10-excerpt.js`, `lib/svgpack.js`, `lib/page-h10.js`.
+  Tests: `tests/review/h10-*.test.js` (excerpt, pack and the page's own code, packets and decode, the page in a browser, the collector).
