@@ -48,8 +48,12 @@
   /* ---- the common core.
      list: [{hand: 1|2, voice, bar (1-based), at, dur, kind: 'note'|'rest', type, dots, tm: {a, n}|null, tup: group id|null, midi: [..], tieStart, tieStop, measureRest, grace}] in units (1/192 whole), `at` in the bar.
      barLen[i] is the length of bar i + 1 in units. Returns {classes: {1: {count, bars: [..], items: [..]}, ...}, voiceBars, notes, rests} */
-  function checkEvents(list, barLen, opts) {
+  function checkEvents(list, barLen, opts, barBeat) {
     opts = opts || {};
+    /* the beat of each bar for class 3's standard tiling, in 32nd units: scoregraph/gaps.js mergeRests' beatUnits (a quarter in x/4, a half in x/2, a dotted quarter in
+       6/8, 9/8, 12/8 and 3/8). Without the metre (an app Score, an additive metre) a quarter, as before (G10a-3: a quarter in every metre flagged compound bars written
+       with the tiling mergeRests itself writes) */
+    const beatOf = bar => (barBeat && barBeat[bar - 1]) || { B: 8, compound: false };
     const restMin = Math.round((opts.restMin !== undefined ? opts.restMin : REST_MIN) * U);
     const classes = {};
     for (let c = 1; c <= 10; c++) classes[c] = { name: CLASS_NAMES[c], count: 0, bars: [], items: [] };
@@ -72,7 +76,9 @@
     ev.forEach(e => {
       const d = drawnOf(e);
       if (e.kind === 'rest' && !e.measureRest) {
-        if (e.dur < U / 16 - 1e-6) hit(2, e.bar, e.hand, { at: e.at / U, dur: e.dur / U, type: e.type });
+        /* a rest inside a tuplet that is printed as a 16th or longer (a triplet-16th rest under its 3:2 bracket, as editions print six to a quarter) is not
+           the noise this class is about (G10a-3); a plain rest that short is */
+        if (e.dur < U / 16 - 1e-6 && !(e.tm && d !== null && BASE[e.type] !== undefined && BASE[e.type] >= U / 16 - 1e-6)) hit(2, e.bar, e.hand, { at: e.at / U, dur: e.dur / U, type: e.type });
         if (e.dots > 0 && BASE[e.type] !== undefined && BASE[e.type] < U / 8 - 1e-6) hit(4, e.bar, e.hand, { at: e.at / U, type: e.type + ' dotted' });
       }
       if (d !== null && !e.measureRest && !near(d, e.dur)) hit(6, e.bar, e.hand, { at: e.at / U, kind: e.kind, drawn: d / U, dur: e.dur / U, type: e.type + (e.dots ? '.' : '') });
@@ -110,7 +116,8 @@
           if (run.length >= 2 && run.every(r => !r.tm && !r.measureRest)) {
             const a = run[0].at, b = run[run.length - 1].at + run[run.length - 1].dur;
             if (Math.abs(a / 6 - Math.round(a / 6)) < 1e-6 && Math.abs(b / 6 - Math.round(b / 6)) < 1e-6 && len % 6 === 0) {
-              const exp = GAPS.tile(Math.round(a / 6), Math.round(b / 6), 8, false, len / 6, a === 0 && b === len);
+              const bb = beatOf(bar);
+              const exp = GAPS.tile(Math.round(a / 6), Math.round(b / 6), bb.B, bb.compound, len / 6, a === 0 && b === len);
               const same = exp.length === run.length && exp.every((p, i) => Math.abs(p.at * 6 - run[i].at) < 1e-6 && Math.abs(p.len * 6 - run[i].dur) < 1e-6);
               if (!same) hit(3, bar, hand, { at: a / U, pieces: run.map(r => r.type + (r.dots ? '.' : '')).join('+') });
             }
@@ -150,7 +157,10 @@
       g.sort((a, b) => a.abs - b.abs);
       const first = g[0], ratio = first.tm || { a: 3, n: 2 };
       const total = g.reduce((s, e) => s + e.dur, 0), contiguous = g.every((e, i) => i === 0 || near(g[i - 1].abs + g[i - 1].dur, e.abs));
-      const beat = U / 4, onBeat = near(((first.at % beat) + beat) % beat, 0) || near(((first.at % beat) + beat) % beat, beat);
+      /* a bracket of triplet 16ths over half a beat (three 16ths in the time of two, the way editions print six to a quarter: G10a-3) is a complete
+         tuplet of its half beat; anything else must hold whole beats */
+      const half = U / 8, halfBracket = near(total, half);
+      const beat = halfBracket ? half : U / 4, onBeat = near(((first.at % beat) + beat) % beat, 0) || near(((first.at % beat) + beat) % beat, beat);
       const drawnSum = g.reduce((s, e) => s + (baseOf(e.type, e.dots) || 0), 0);
       let why = null;
       if (!contiguous) why = 'the events of the bracket are not contiguous';
@@ -202,6 +212,17 @@
     const measures = g.timeline.measures;
     const mIdx = new Map(measures.map((m, i) => [m.id, i]));
     const barLen = measures.map(m => Math.round(parseRat(m.dur) * U));
+    /* the metre in force in each bar, as its beat in 32nd units (scoregraph/gaps.js beatUnits); null where it is additive or unusual (a quarter then) */
+    const byM = new Map(((g.timeline && g.timeline.meters) || []).map(x => [x.m, x]));
+    let cur = null;
+    const barBeat = measures.map(m => {
+      if (byM.has(m.id)) cur = byM.get(m.id);
+      if (!cur || !Array.isArray(cur.beats) || cur.beats.length !== 1 || !Number.isInteger(cur.beatType) || (Array.isArray(cur.groups) && cur.groups.length)) return null;
+      const n = cur.beats[0], bt = cur.beatType, compound = bt >= 8 && n % 3 === 0;
+      if (bt >= 8 && !compound && n > 4) return null;
+      const B = 32 / bt * (compound ? 3 : 1);
+      return Number.isInteger(B) && B >= 2 ? { B: B, compound: compound } : null;
+    });
     (g.parts || []).forEach(part => {
       const limb = new Map((part.staves || []).map((s, i) => [s.id, s.limb === 'LH' ? 2 : s.limb === 'RH' ? 1 : (i === 0 ? 1 : 2)]));
       const tupById = new Map(part.spanners.filter(s => s.type === 'tuplet').map(t => [t.id, t]));
@@ -226,7 +247,7 @@
         });
       });
     });
-    return { list: list, barLen: barLen };
+    return { list: list, barLen: barLen, barBeat: barBeat };
   }
 
   function scoreEvents(S) {
@@ -264,7 +285,7 @@
   }
 
   function wrap(src, opts) {
-    const r = checkEvents(src.list, src.barLen, opts);
+    const r = checkEvents(src.list, src.barLen, opts, src.barBeat);
     r.bars = src.barLen.length;
     r.total = [1, 2, 3, 4, 5, 6, 7].reduce((s, c) => s + r.classes[c].count, 0);
     r.restMin = opts && opts.restMin !== undefined ? opts.restMin : REST_MIN;

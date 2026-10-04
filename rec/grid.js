@@ -25,7 +25,7 @@
 
    OUTPUT
      beats   GridPlan: one entry per beat that holds an onset, in beat order:
-               {beat: k, kind: '16'|'32'|'3'|'swing8', conf: posterior of the kind (0-1), post: {kind: p},
+               {beat: k, kind: '16'|'32'|'3'|'swing8'|'6', conf: posterior of the kind (0-1), post: {kind: p},
                 n: onsets in the beat, swing: the long-short ratio point (swing8 only)}
      onsets  one entry per input note (same order): {beat, tick, frac, kind, err}
                tick  the written onset in ticks from beats[0] (beat k starts at k * ticksPerBeat): ON the chosen
@@ -63,7 +63,7 @@
 
   const VERSION = '0.1.0';
   const SCHEMA = 'ppp.rec-grid-model/1';
-  const KINDS = ['16', '32', '3', 'swing8'];
+  const KINDS = ['16', '32', '3', 'swing8', '6'];   /* '6': triplet 16ths, six to a quarter (G10a-3; a model without them never proposes them) */
   /* a compound metre's beat is a dotted quarter: its eighths (thirds) or its 16ths (sixths; a duplet's half is one of them) */
   const CKINDS = ['c8', 'c16'];
   const SIXTHS = [0, 1 / 6, 1 / 3, 0.5, 2 / 3, 5 / 6];
@@ -73,6 +73,7 @@
      3 to 1, must stay a dotted rhythm) */
   const SLOT = 0.008;               /* seconds: notes this close are one frame of a transcription */
   const SWING_POINTS = [0.6, 0.62, 0.64, 2 / 3];
+  const SIX_MIN_ONSETS = 5, SIX_MIN_CONF = 0.9;   /* the evidence a triplet-16th beat needs (see plan) */
 
   /* the grid points of each kind (fractions of a beat, the next beat's start 1.0 excluded: it is shared, below) and
      the written point each one becomes (as a fraction: swing8's long-short eighths are written straight) */
@@ -81,7 +82,7 @@
       case '16': return { pts: [0, 0.25, 0.5, 0.75], written: [0, 0.25, 0.5, 0.75] };
       case '32': return { pts: [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875], written: [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875] };
       case '3': case 'c8': return { pts: [0, 1 / 3, 2 / 3], written: [0, 1 / 3, 2 / 3] };
-      case 'c16': return { pts: SIXTHS, written: SIXTHS };
+      case 'c16': case '6': return { pts: SIXTHS, written: SIXTHS };
       case 'swing8': {
         const s = swing || 0.65;
         return { pts: [0, s / 2, s, s + (1 - s) / 2], written: [0, 0.25, 0.5, 0.75] };
@@ -105,10 +106,11 @@
       '32even': [0.01, 0.30, 0.01, 0.01, 0.01, 0.25, 0.01, 0.01, 0.01, 0.05, 0.01, 0.01, 0.01, 0.04, 0.01, 0.25],
       '32odd': [0.5, 0.5, 0.5, 0.5],
       'c8': [0.01, 0.3, 0.01, 0.1, 0.01, 0.2, 0.02, 0.35],
-      'c16': (function () { const t = []; for (let m = 0; m < 64; m++) t.push(m === 63 ? 0.2 : m === 1 ? 0.1 : 0.7 / 62); return t; })()
+      'c16': (function () { const t = []; for (let m = 0; m < 64; m++) t.push(m === 63 ? 0.2 : m === 1 ? 0.1 : 0.7 / 62); return t; })(),
+      '6': (function () { const t = []; for (let m = 0; m < 64; m++) t.push(m === 63 ? 0.5 : 0.5 / 63); return t; })()
     },
-    prior: { '16': 0.955, '32': 0.015, '3': 0.025, 'swing8': 0.005, 'c8': 0.85, 'c16': 0.15 },
-    stay: { '16': 0.98, '32': 0.85, '3': 0.85, 'swing8': 0.9, 'c8': 0.9, 'c16': 0.8 },
+    prior: { '16': 0.955, '32': 0.015, '3': 0.025, 'swing8': 0.005, '6': 0.005, 'c8': 0.85, 'c16': 0.15 },
+    stay: { '16': 0.98, '32': 0.85, '3': 0.85, 'swing8': 0.9, '6': 0.85, 'c8': 0.9, 'c16': 0.8 },
     minSpacing32: 0.055
   };
 
@@ -213,7 +215,7 @@
     odd.forEach(r => { none *= 1 - r; });
     const out = {
       '16': lg(P['16']), '3': lg(P['3']), 'swing8': lg(P['swing8']), '32even': lg(P['32even']),
-      'c8': P.c8 ? lg(P.c8) : null, 'c16': P.c16 ? lg(P.c16) : null,
+      'c8': P.c8 ? lg(P.c8) : null, 'c16': P.c16 ? lg(P.c16) : null, '6': P['6'] ? lg(P['6']) : null,
       oddUse: odd.map(r => logp(r)), oddSkip: odd.map(r => logp(1 - r)), oddNorm: -Math.log(Math.max(1e-12, 1 - none)),
       early: logp(model.early), notEarly: logp(1 - model.early), out: Math.log(model.outlier), split: Math.log(model.split)
     };
@@ -411,6 +413,14 @@
         e.post = posts[t];
         let best = null;
         kinds.forEach(k => { if (e.lik[k] && (best === null || e.post[k] > e.post[best])) best = k; });
+        /* triplet 16ths are the densest grid: six points absorb straight 16ths that a noisy beat map moved off their points.
+           A beat is written in sixths only when it holds at least SIX_MIN_ONSETS heard onsets and the chain is sure
+           (SIX_MIN_CONF); otherwise it takes the best other kind (G10a-3, section 22) */
+        if (best === '6' && (e.idx.length < SIX_MIN_ONSETS || e.post['6'] < SIX_MIN_CONF)) {
+          best = null;
+          kinds.forEach(k => { if (k !== '6' && e.lik[k] && (best === null || e.post[k] > e.post[best])) best = k; });
+          if (best === null) best = '6';
+        }
         e.kind = best;
       });
       if (pass === 0) {
@@ -493,14 +503,15 @@
     let errSum = 0;
     const q = notes.map((n, i) => {
       const o = r.onsets[i];
-      const trip = o.kind === '3';
-      const sub = trip ? 3 : (o.kind === '32' ? 8 : 4);
+      const trip = o.kind === '3', six = o.kind === '6';
+      const sub = trip ? 3 : six ? 6 : (o.kind === '32' ? 8 : 4);
       const tOn = n.attack != null ? n.attack : n.on;
-      const endPos = snapEnd(beatPosition(beats, n.off), trip ? 4 : sub);
+      const endPos = snapEnd(beatPosition(beats, n.off), trip || six ? 4 : sub);
       let endTick = Math.round(endPos * Q);
-      if (trip) {
-        const base = o.beat * Q;
-        endTick = Math.max(o.tick + 8, base + Math.round((endTick - base) / 8) * 8);
+      if (trip || six) {
+        /* a triplet beat's release on its thirds, a triplet-16th beat's on its sixths */
+        const base = o.beat * Q, u = trip ? 8 : 4;
+        endTick = Math.max(o.tick + u, base + Math.round((endTick - base) / u) * u);
       } else {
         const unit = sub === 8 ? 3 : 6;
         endTick = Math.max(o.tick + unit, Math.round(endTick / unit) * unit);
@@ -508,7 +519,7 @@
       errSum += o.err;
       return {
         midi: n.midi, vel: n.vel, on: n.on, off: n.off, attack: tOn,
-        tick: o.tick, endTick: endTick, err: o.err, tuplet: trip, subdivision: sub, lenTicks: Math.max(1, endTick - o.tick),
+        tick: o.tick, endTick: endTick, err: o.err, tuplet: trip || six, subdivision: sub, lenTicks: Math.max(1, endTick - o.tick),
         dTick: beatPosition(beats, n.on) * Q - o.tick                   /* heard minus written, in ticks (writable() reads it) */
       };
     });

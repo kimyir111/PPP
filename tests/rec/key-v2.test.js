@@ -101,7 +101,8 @@ test('a note tied over the bar line brings no accidental into force: the next on
   const flats = xml => (xml.match(/<accidental>flat<\/accidental>/g) || []).length;
   const ties = xml => (xml.match(/<tie type="stop"/g) || []).length;
   const a = AS.toMusicXml({ notes: notes }, Object.assign({}, v2));
-  const b = AS.toMusicXml({ notes: notes }, Object.assign({ keys: 'legacy' }, v2));
+  /* the comparison arm is the legacy key AND the legacy writer: v2's writer (rec/writer.js, G10a-3 lane A) applies the tied-over rule whatever S8 does */
+  const b = AS.toMusicXml({ notes: notes }, Object.assign({ keys: 'legacy', writer: 'legacy' }, v2));
   assert.deepEqual(keysOf(a.xml), [0]);
   assert.deepEqual(keysOf(b.xml), [0], 'both arms read C major, so the only difference is the accidentals');
   assert.equal(ties(a.xml), 5, 'a B flat tied over the bar line in each of the five pairs');

@@ -443,7 +443,9 @@
       /* "Recording notation: tuplets and the grid" (docs/GOALS/G09 section 12): the arrangement copies the events of a recording verbatim, and the copy has no tuplet (realize/ copies ties only), so
          the bracket of every triplet beat is written again here, on the finished arrangement of a transcription (scoregraph/rec-tuplet.js; a page that has not loaded it: none). BEFORE the gaps
          pass: a rest a tuplet holds is left as it is by mergeRests (a quarter rest and the triplet rest after it are not one dotted rest with a hole) */
-      const tt = RECTUP && RECTUP.addTriplets ? RECTUP.addTriplets(r.graph) : null;
+      /* a v2 recording's writer (G10a-3) also brackets triplet-16th half beats and the triplet beats of x/2 bars: for the arrangement of one, the pass writes those too
+         (opts.v2); every other source exactly as before */
+      const tt = RECTUP && RECTUP.addTriplets ? RECTUP.addTriplets(r.graph, RECTUP.isV2Recording && RECTUP.isV2Recording(g) ? { v2: true } : undefined) : null;
       const g1 = tt && tt.changed ? tt.graph : r.graph;
       const tr = GAPS && GAPS.tidyRests ? GAPS.tidyRests(g1) : (() => { const c = closeSmallGaps(g1); return { graph: c.graph, stats: c.stats }; })();
       return Object.assign({ ok: true, ctx: ctx }, r, { graph: tr.graph, report: r.report ? Object.assign({}, r.report, { closedGaps: tr.stats }, tr.rests ? { mergedRests: tr.rests } : {}, tt ? { tuplets: tt.stats } : {}) : r.report });
