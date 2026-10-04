@@ -2,7 +2,7 @@
  "align": {
   "window_s": 0.3
  },
- "description": "G10 recording gate: the core references x the calibrated humanizer's families (cover, cover-pedal, human-real, and the browser model's and the helper's error overlays; swing is in rec-full) x beats none (production) / oracle-noisy (helper) x stage options legacy / app / v2",
+ "description": "Gate sensitivity of the key and spelling stage S8 (G10a-3, mutation-check --rec): the rec-mutation references and four more, cover / cover-pedal / cover+of (beats none) and cover (oracle-noisy), v2 options only",
  "gate": {
   "case_fail_drop": 10.0,
   "case_flip_max": 2,
@@ -277,27 +277,6 @@
  "matrix": [
   {
    "beats": "none",
-   "opt_name": "legacy",
-   "opts": {},
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
-   },
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
    "opt_name": "v2",
    "opts": {
     "closeGaps": true,
@@ -305,61 +284,6 @@
     "recording": "v2"
    },
    "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
-   "opt_name": "legacy",
-   "opts": {},
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
-   },
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
-   "opt_name": "v2",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true,
-    "recording": "v2"
-   },
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "legacy",
-   "opts": {},
-   "profile": "cover-pedal",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
-   },
-   "profile": "cover-pedal",
    "seeds": [
     1
    ]
@@ -379,61 +303,6 @@
   },
   {
    "beats": "none",
-   "opt_name": "legacy",
-   "opts": {},
-   "profile": "human-real",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
-   },
-   "profile": "human-real",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "v2",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true,
-    "recording": "v2"
-   },
-   "profile": "human-real",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "legacy",
-   "opts": {},
-   "profile": "cover+of",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
-   },
-   "profile": "cover+of",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
    "opt_name": "v2",
    "opts": {
     "closeGaps": true,
@@ -447,86 +316,43 @@
   },
   {
    "beats": "oracle-noisy",
-   "opt_name": "legacy",
-   "opts": {},
-   "profile": "cover-pedal+helper",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
-   },
-   "profile": "cover-pedal+helper",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "oracle-noisy",
    "opt_name": "v2",
    "opts": {
     "closeGaps": true,
     "exactBars": true,
     "recording": "v2"
    },
-   "profile": "cover-pedal+helper",
+   "profile": "cover",
    "seeds": [
     1
    ]
   }
  ],
- "name": "rec-core",
+ "name": "rec-mutation-keys",
  "rec": true,
  "references": [
   "catalog/fur-elise",
-  "catalog/gymnopedie-1",
-  "catalog/happy-birthday",
   "hymns/all-hail-the-power",
-  "hymns/angels-we-have-heard",
   "hymns/beneath-the-cross",
-  "hymns/blessed-assurance",
   "hymns/come-holy-spirit",
   "hymns/come-thou-fount",
   "hymns/come-thou-long",
-  "hymns/go-to-dark-gethsemane",
-  "hymns/god-rest-ye-merry",
-  "hymns/god-will-take-care",
   "hymns/hark-the-voice",
   "hymns/holy-holy-holy",
   "hymns/how-firm-a-foundation",
-  "hymns/hyfrydol-alleluia",
-  "hymns/i-am-jesus-little-lamb",
   "hymns/i-know-whom",
   "hymns/immortal-invisible",
   "hymns/jesus-christ-is-risen",
   "hymns/jesus-is-all-the-world",
-  "hymns/jesus-shall-reign",
   "hymns/joy-to-the-world",
   "hymns/joyful-joyful",
-  "hymns/lamp-of-our-feet",
   "hymns/lo-he-comes",
-  "hymns/midnight-clear",
-  "hymns/my-faith-looks-up",
-  "hymns/my-hope-is-built",
   "hymns/nearer-my-god",
   "hymns/no-not-one",
   "hymns/o-holy-spirit-enter",
-  "hymns/pass-me-not",
-  "hymns/rescue-the-perishing",
-  "hymns/silent-night",
   "hymns/take-my-life",
-  "hymns/the-churchs-one-foundation",
-  "hymns/the-lords-my-shepherd",
-  "hymns/to-god-be-the-glory",
   "hymns/under-his-wings",
   "hymns/we-gather-together",
-  "hymns/what-child-is-this",
-  "method/beyer/016",
   "method/beyer/025",
   "method/beyer/027",
   "method/beyer/028",
@@ -538,17 +364,6 @@
   "method/beyer/035",
   "method/beyer/036",
   "method/beyer/037",
-  "method/beyer/052",
-  "method/beyer/053",
-  "method/beyer/059",
-  "method/beyer/067",
-  "method/burgmuller25/003",
-  "method/burgmuller25/005",
-  "method/burgmuller25/006",
-  "method/burgmuller25/013",
-  "method/burgmuller25/015",
-  "method/burgmuller25/016",
-  "method/burgmuller25/019",
   "method/burgmuller25/021",
   "method/burgmuller25/023",
   "method/czerny599/021",
@@ -567,16 +382,10 @@
   "method/czerny599/045",
   "method/czerny599/048",
   "method/czerny599/049",
-  "method/czerny849/001",
   "method/czerny849/002",
-  "method/czerny849/005",
   "method/czerny849/006",
-  "method/czerny849/007",
-  "method/czerny849/008",
   "method/czerny849/011",
   "method/czerny849/013",
-  "method/czerny849/019",
-  "method/czerny849/020",
   "method/hanon/001",
   "method/hanon/002",
   "method/hanon/004",
@@ -585,20 +394,7 @@
   "method/hanon/008",
   "method/hanon/009",
   "method/hanon/020",
-  "method/sonatina/002",
-  "method/sonatina/003",
-  "method/sonatina/006",
-  "method/sonatina/009",
   "method/sonatina/010",
-  "method/sonatina/012",
-  "method/sonatina/014",
-  "method/sonatina/017",
-  "method/sonatina/018",
-  "method/sonatina/021",
-  "method/sonatina/025",
-  "method/sonatina/026",
-  "method/sonatina/027",
-  "method/sonatina/028",
   "micro/M01-waltz-3-4",
   "micro/M02-alberti-4-4",
   "micro/M03-jig-6-8",
@@ -622,8 +418,7 @@
   "micro/M21-five-four",
   "micro/M22-tempo-change",
   "micro/M23-repeated-notes",
-  "micro/M24-block-chords",
-  "samples/prelude-fragment"
+  "micro/M24-block-chords"
  ],
  "schema": "ppp.bench-suite/1",
  "stage": {

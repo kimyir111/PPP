@@ -64,7 +64,7 @@ MUTATIONS = {
         """    return lo + (t - beats[lo]) / (beats[lo + 1] - beats[lo]);\n  }\n\n  function ibiOf(beats) {""",
         """    return (t - beats[0]) / ((beats[beats.length - 1] - beats[0]) / (beats.length - 1));\n  }\n\n  function ibiOf(beats) {"""),
     "ADV-NO-PEDAL": (  # pedal marks never written (the app's playback sustains from written pedals)
-        """    (extra.pedals || []).forEach(p => {""",
+        """    (pedalV2 ? pedalV2.spans : (extra.pedals || [])).forEach(p => {""",
         """    ([]).forEach(p => {"""),
     "ADV-MINOR-LEADING-TONE": (  # every minor key spells its raised 7th flat (A minor: Ab, not G#)
         """    minor: { 1: -1, 4: 1, 6: 1, 9: 1, 11: 1 }""",
