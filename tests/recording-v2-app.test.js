@@ -22,6 +22,7 @@
        nothing else is retried
      - a v2 result the page cannot believe (a tempo outside the rhythm controls' range) is written the classic way and said so; Write again changes nothing
      - the flags: amber cells and a legend for the bars PPP was not sure about, kept in the saved report
+     - "Play as recorded": the heard notes at their own times and velocities through the piano, the highlight follows, the ordinary Play and it stop each other, a song without heard notes says so
      - the classic path: a fresh page, an import and a rewrite with PPP.recording = 'legacy' have no v2 mark and no v2 request
 
    Runs against its own server on a free port (tests/serve-free.js); PPP_URL=... runs it against another build. node tests/recording-v2-app.test.js

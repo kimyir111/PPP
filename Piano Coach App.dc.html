@@ -1219,6 +1219,9 @@
             <div class="ppp-transport" style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); padding: 16px;">
               <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                 <button type="button" class="ppp-playbtn" onClick="{{ togglePlay }}" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; min-width: 104px; justify-content: center;">{{ playLabel }}</button>
+                <sc-if value="{{ showAsRecorded }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ toggleAsRecorded }}" data-as-recorded title="{{ asRecordedHint }}" style="{{ asRecordedStyle }}">{{ asRecordedLabel }}</button>
+                </sc-if>
                 <button onClick="{{ toggleFollow }}" style="{{ followBtnStyle }}">{{ followLabel }}</button>
                 <button onClick="{{ toggleTellRight }}" style="{{ tellRightBtnStyle }}" title="{{ tellRightHint }}">{{ tellRightLabel }}</button>
                 <button onClick="{{ restart }}" style="padding: 10px 14px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 13px; cursor: pointer;" style-hover="border-color: var(--ink3);">Restart</button>
@@ -2310,9 +2313,13 @@
                     </sc-if>
                   </div>
                   <p style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ writeAgainHint }}</p>
-                  <sc-if value="{{ hasNotationStatus }}" hint-placeholder-val="{{ false }}">
-                    <p data-notation-status style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink2);">{{ notationStatus }}</p>
-                  </sc-if>
+                </sc-if>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                  <button type="button" onClick="{{ toggleAsRecorded }}" data-as-recorded style="{{ asRecordedStyle }}">{{ asRecordedLabel }}</button>
+                  <span style="font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ asRecordedHint }}</span>
+                </div>
+                <sc-if value="{{ hasNotationStatus }}" hint-placeholder-val="{{ false }}">
+                  <p data-notation-status style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink2);">{{ notationStatus }}</p>
                 </sc-if>
               </div>
             </sc-if>
@@ -4935,8 +4942,8 @@ function loadRecordingModules() {
   })().then(ok => { _recPromise = null; return ok; });
   return _recPromise;
 }
-/* rec/app.js alone: the heard notes of a kept graph (for "Write the notation again" on a song opened from My Songs), the flags. It needs none of the stages, so a song written the classic way
-   can be written again the classic way without v2's stages or weights. */
+/* rec/app.js alone: the heard notes of a kept graph, "Play as recorded", the flags. It needs none of the stages, so a song written the classic way can play as recorded
+   without the weights. */
 function loadRecApp() {
   if (typeof window !== 'undefined' && window.PPPRecApp) return Promise.resolve(true);
   if (_recAppPromise) return _recAppPromise;
@@ -13889,6 +13896,7 @@ class Component extends DCLogic {
   }
 
   togglePlay() {
+    if (this._ar) this.stopAsRecorded(); /* G10a-4: the ordinary Play and "Play as recorded" never sound together */
     this.wake();
     const s = this.state;
     if (s.playing) { this.stopTransport(); this.setState({ playing: false }); return; }
@@ -13915,6 +13923,7 @@ class Component extends DCLogic {
   /* Start (or jump) playback at beat q and run to the end of the current
      range. A click on the score in start-to-finish lands here. */
   playFromBeat(q) {
+    if (this._ar) this.stopAsRecorded();
     this.wake();
     const s = this.state;
     const sc = s.score;
@@ -14363,6 +14372,89 @@ class Component extends DCLogic {
         }
       }, 60);
     }
+  }
+  /* G10a-4: "Play as recorded" (docs/GOALS/G10 section 6.2). The notes PPP heard, at their own times and loudness, through the page's piano; the score highlight follows them (where each linked note sits in the
+     written score, rec/app.js timeMap). It is a second, labelled rendering and never the default Play: the ordinary Play, the metronome and practice still use the written score. The heard notes are the
+     review screen's, or the kept graph's on this device (heardForSong); a song without them says so. Starting it stops the ordinary Play and the other way round. */
+  async toggleAsRecorded() {
+    if (this._ar) return this.stopAsRecorded();
+    const S0 = this.state;
+    if (S0.asRecordedBusy || !S0.score) return;
+    this.wake();
+    this.setState({ asRecordedBusy: true });
+    try {
+      const heard = await this.heardForSong();
+      const ok = await loadRecApp();
+      if (!heard || !ok) { this.say(tx('The heard notes of this song are not kept on this device, so it cannot be played as recorded.')); return; }
+      const S = this.state;
+      const A = window.PPPRecApp;
+      let map = { kind: 'none', us: [], q: [] };
+      try {
+        const r = window.PPPEngrave ? await window.PPPEngrave.app.resolve(S.score, { key: S.songId }) : null;
+        if (r && r.graph && r.via !== 'projected') map = A.timeMap(r.graph, { firstMeasureStartQ: (S.score.measures[0] && S.score.measures[0].startQ) || 0 });
+      } catch (e) { /* no time map: the sound plays, the highlight stays where it is */ }
+      /* the review screen starts at the first bar on show, the practice screen at the start */
+      let from = 0;
+      if (S.screen === 'review') {
+        const m = Score.measure(S.score, S.reviewFrom), bs = (S.importSource && S.importSource.barStarts) || [];
+        if (m && bs[m.index] != null) from = Math.max(0, +bs[m.index]);
+      }
+      const plan = A.playPlan(heard, { from: from });
+      const first = plan.findIndex(n => n.t >= from - 1e-6);
+      if (first < 0) { this.say(tx('The heard notes of this song are not kept on this device, so it cannot be played as recorded.')); return; }
+      if (S.playing) { this.stopTransport(); this.setState({ playing: false }); }
+      this._ar = {
+        plan: plan, idx: first, from: from, map: map, score: S.score, screen: S.screen, born: nowMs(), t0: nowMs() + 150, clock: null, waiting: true,
+        endT: plan.reduce((m, n) => Math.max(m, n.off), 0), iv: setInterval(() => this.tickAsRecorded(), 40)
+      };
+      this.setState({ asRecorded: true });
+    } finally { this.setState({ asRecordedBusy: false }); }
+  }
+  tickAsRecorded() {
+    const ar = this._ar;
+    if (!ar) return;
+    const S = this.state, p = this._piano, now = nowMs();
+    /* the page is gone, another song is open, or a screen that does not show this one: it is over */
+    if (this._dead || S.score !== ar.score || (S.screen !== 'review' && S.screen !== 'player')) return this.stopAsRecorded();
+    /* the first Play of a visit starts the sound, which takes the browser a moment: the first note waits for it, briefly */
+    if (ar.waiting) {
+      if (p && p.running()) { ar.waiting = false; ar.t0 = now + this.leadMs(now); }
+      else if (now - ar.born > 1500) ar.waiting = false;
+      else { this.wake(); ar.t0 = now + 150; return; }
+    }
+    const el = ar.from + (now - ar.t0) / 1000;      /* the heard time that is being heard now, in seconds */
+    if (p && p.running()) {
+      const off = p.clockOffset();
+      if (ar.clock == null || Math.abs(off - ar.clock) > 0.08) ar.clock = off;
+      const A = ms => ar.clock + ms / 1000;
+      const horizon = el + PIANO.lookaheadMs / 1000;
+      while (ar.idx < ar.plan.length && ar.plan[ar.idx].t <= horizon) {
+        const n = ar.plan[ar.idx++];
+        const when = ar.t0 + (n.t - ar.from) * 1000, up = ar.t0 + (n.off - ar.from) * 1000;
+        if (when < now - PIANO.lookaheadMs) continue;     /* due so long ago that playing it now would only bunch it with the next */
+        p.release(p.strike(n.midi, A(when), n.vel), A(up));
+      }
+    }
+    const patch = {};
+    const q = window.PPPRecApp ? window.PPPRecApp.qAtSeconds(ar.map, el) : null;
+    if (q != null && Math.abs(q - (S.beat || 0)) > 1e-6) {
+      patch.beat = q;
+      /* the review screen shows four bars: the page turns with the music */
+      if (S.screen === 'review') {
+        const m = Score.at(S.score, q), last = Score.step(S.score, S.reviewFrom, 3);
+        if (m != null && (m < S.reviewFrom || m > last)) patch.reviewFrom = m;
+      }
+    }
+    if (el > ar.endT + 0.6) { this.stopAsRecorded(true); return; }   /* the last notes ring out */
+    if (patch.beat != null) this.setState(patch);
+  }
+  stopAsRecorded(letRing) {
+    const ar = this._ar;
+    if (!ar) return;
+    clearInterval(ar.iv);
+    this._ar = null;
+    if (this._piano && !letRing) this._piano.silence();
+    if (!this._dead && this.state.asRecorded) this.setState({ asRecorded: false });
   }
   /* G10a-4: does a rewrite of the open transcription from its heard notes (an arrangement, the standard-arrangement fallback) use the staged conversion? Yes when v2 is selected and loaded, v2 wrote
      this transcription, and the metre, the tempo and the first bar line in the rhythm controls are still what v2 wrote (they are v2's own decision, which it does not take from a person). Otherwise the person's
@@ -17825,6 +17917,12 @@ class Component extends DCLogic {
           { m1: S.recNotation.from.measures, r1: S.recNotation.from.rests, b1: S.recNotation.from.brackets, m2: S.recNotation.to.measures, r2: S.recNotation.to.rests, b2: S.recNotation.to.brackets }) : '',
       showLockV2Note: RECORDING_MODE === 'v2',
       lockV2Note: tx('With the new method on, a metre or tempo you set here is written by the classic method. To let the new method decide again, use "Write the notation again".'),
+      showAsRecorded: !!(S.importSource && inferredAudioNotation(S.importSource) && !S.importSource.referenceScore && S.importSource.kind !== 'arrangement' && S.importSource.kind !== 'built-in'),
+      asRecordedLabel: S.asRecorded ? tx('Stop') : tx('Play as recorded'),
+      asRecordedHint: tx('Plays the notes PPP heard, with their own timing and loudness. The ordinary Play plays the written score.'),
+      asRecordedStyle: 'padding:10px 14px;border-radius:11px;border:1px solid ' + (S.asRecorded ? 'var(--accent)' : 'var(--line)') + ';background:' + (S.asRecorded ? 'var(--accent-3)' : 'var(--bg)')
+        + ';color:' + (S.asRecorded ? 'var(--accent)' : 'var(--ink)') + ';font-family:inherit;font-size:13px;font-weight:' + (S.asRecorded ? 600 : 500) + ';cursor:pointer;',
+      toggleAsRecorded: () => this.toggleAsRecorded(),
       showUncertainLegend: !!((S.importReport && S.importReport.uncertainMeasures) || []).length,
       uncertainLegend: tx('Measures where PPP was not sure of the hands or the beat ({{n}})', { n: ((S.importReport && S.importReport.uncertainMeasures) || []).length }),
       applyArrangement: () => this.applyArrangement(),
@@ -17919,10 +18017,10 @@ class Component extends DCLogic {
       reviewPrevPage: () => this.setState(st => ({ reviewPage: Math.max(0, st.reviewPage - 1) })),
       reviewNextPage: () => this.setState(st => ({ reviewPage: Math.min(this.reviewPages().length - 1, st.reviewPage + 1) })),
       reviewRangeLabel: tx(this._recording ? 'Written out · measures {{from}}–{{to}}' : 'Recognised · measures {{from}}–{{to}}', { from: S.reviewFrom, to: Score.step(score, S.reviewFrom, 3) }),
-      reviewStaff: this.sv({
+      reviewStaff: this.sv(Object.assign({
         startM: S.reviewFrom, count: 4, mW: 200, numbers: true, guidance: false,
         grand: score.staves > 1, fluid: true
-      }),
+      }, S.asRecorded ? { beat: S.beat, playX: S.beat } : {})),
       reviewPrev: () => this.setState(st => ({ reviewFrom: Score.step(score, st.reviewFrom, -4) })),
       reviewNext: () => this.setState(st => ({ reviewFrom: Score.step(score, st.reviewFrom, 4) })),
       reviewCells: score.measures.map(mm => {

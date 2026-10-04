@@ -1968,6 +1968,9 @@
     "The heard notes of this song are not kept on this device, so its notation cannot be written again.": "这首曲子听到的音符没有保存在这台设备上，因此无法重新写谱。",
     "The new transcription method could not read this performance, so nothing was changed.": "新的扒谱方式无法读取这段演奏，所以没有做任何改动。",
     "Put back the notation that was there before.": "已恢复之前的乐谱。",
+    "Play as recorded": "按录音原样播放",
+    "Plays the notes PPP heard, with their own timing and loudness. The ordinary Play plays the written score.": "按 PPP 听到时的节奏和力度播放这些音符。普通播放则按乐谱上写的来演奏。",
+    "The heard notes of this song are not kept on this device, so it cannot be played as recorded.": "这首曲子听到的音符没有保存在这台设备上，因此无法按录音原样播放。",
     "Before: {{m1}} measures, {{r1}} rests, {{b1}} tuplet brackets. Now: {{m2}} measures, {{r2}} rests, {{b2}} tuplet brackets.": "之前：{{m1}} 小节、休止符 {{r1}} 个、连音 {{b1}} 组。现在：{{m2}} 小节、休止符 {{r2}} 个、连音 {{b2}} 组。"
   }
 }
