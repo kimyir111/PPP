@@ -1,0 +1,209 @@
+{
+ "align": {
+  "window_s": 0.3
+ },
+ "description": "G10a-2b: is a recording of a piano cover arrangeable without the Song Arranger's hands fallback? rec-arrange-core's references re-voiced as piano covers are (texture octaves, pppbench/texture.py) x cover (beats none) x v2 / v2 with the classic hand split (v2-handslegacy: the fallback, v2's very performances), arranged at the three levels (arr.made: the levels made without a refusal). The truth the melody and harmony are measured against is the reference as written (its octaves are not doubled): read arr.made and arr.hard.violations here (nightly)",
+ "gate": {
+  "case_fail_drop": 10.0,
+  "case_flip_max": 1,
+  "case_warn_drop": 2.0,
+  "metrics": {
+   "arr.check.1": {
+    "dir": "down",
+    "tol": 0.05
+   },
+   "arr.check.2": {
+    "dir": "down",
+    "tol": 0.05
+   },
+   "arr.check.3": {
+    "dir": "down",
+    "tol": 0.05
+   },
+   "arr.check.4": {
+    "dir": "down",
+    "tol": 0.05
+   },
+   "arr.check.5": {
+    "dir": "down",
+    "tol": 0.05
+   },
+   "arr.check.6": {
+    "dir": "down",
+    "tol": 0.05
+   },
+   "arr.check.7": {
+    "dir": "down",
+    "tol": 0.05
+   },
+   "arr.hard.violations": {
+    "dir": "down",
+    "tol": 0.0
+   },
+   "arr.harmony.agreement": {
+    "dir": "up",
+    "tol": -0.005
+   },
+   "arr.level.distance": {
+    "dir": "up",
+    "tol": -0.01
+   },
+   "arr.level.distinct": {
+    "dir": "up",
+    "tol": -0.01
+   },
+   "arr.lh.notes_per_bar": {
+    "dir": "down",
+    "tol": 0.05
+   },
+   "arr.made": {
+    "dir": "up",
+    "tol": -0.002
+   },
+   "arr.melody.cross": {
+    "dir": "down",
+    "tol": 0.002
+   },
+   "arr.melody.gap_rate": {
+    "dir": "down",
+    "tol": 0.002
+   },
+   "arr.melody.kept": {
+    "dir": "up",
+    "tol": -0.002
+   },
+   "arr.melody.lost": {
+    "dir": "down",
+    "tol": 0.002
+   },
+   "arr.rh.above_c6": {
+    "dir": "down",
+    "tol": 0.003
+   }
+  },
+  "subgroups": {
+   "mean_abs": 0.01,
+   "mean_per_case": 0.25,
+   "metrics": {
+    "arr.harmony.agreement": "mean",
+    "arr.level.distance": "mean",
+    "arr.level.distinct": "mean",
+    "arr.made": "mean",
+    "arr.melody.kept": "mean"
+   },
+   "min_cases": 8,
+   "prefixes": [
+    "set:",
+    "profile:"
+   ],
+   "rate_abs": 0.02
+  }
+ },
+ "kind": "synthetic-notation",
+ "matrix": [
+  {
+   "beats": "none",
+   "opt_name": "v2",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2"
+   },
+   "profile": "cover",
+   "seeds": [
+    1
+   ],
+   "texture": "octaves"
+  },
+  {
+   "beats": "none",
+   "opt_name": "v2-handslegacy",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "hands": "legacy",
+    "recording": "v2"
+   },
+   "perform_as": "v2",
+   "profile": "cover",
+   "seeds": [
+    1
+   ],
+   "texture": "octaves"
+  }
+ ],
+ "name": "rec-arrange-play",
+ "rec_arrange": true,
+ "references": [
+  "catalog/fur-elise",
+  "catalog/gymnopedie-1",
+  "catalog/happy-birthday",
+  "hymns/go-to-dark-gethsemane",
+  "hymns/god-will-take-care",
+  "hymns/hark-the-voice",
+  "hymns/holy-holy-holy",
+  "hymns/midnight-clear",
+  "hymns/no-not-one",
+  "hymns/rescue-the-perishing",
+  "hymns/silent-night",
+  "hymns/take-my-life",
+  "hymns/the-churchs-one-foundation",
+  "method/beyer/016",
+  "method/beyer/028",
+  "method/beyer/029",
+  "method/beyer/059",
+  "method/beyer/067",
+  "method/burgmuller25/005",
+  "method/burgmuller25/013",
+  "method/burgmuller25/016",
+  "method/burgmuller25/021",
+  "method/czerny599/023",
+  "method/czerny599/034",
+  "method/czerny599/035",
+  "method/czerny599/036",
+  "method/czerny599/037",
+  "method/czerny849/019",
+  "method/czerny849/020",
+  "method/hanon/001",
+  "method/hanon/002",
+  "method/hanon/004",
+  "method/hanon/005",
+  "method/hanon/007",
+  "method/hanon/008",
+  "method/hanon/009",
+  "method/hanon/020",
+  "method/sonatina/002",
+  "method/sonatina/021",
+  "micro/M01-waltz-3-4",
+  "micro/M02-alberti-4-4",
+  "micro/M03-jig-6-8",
+  "micro/M04-triplets-4-4",
+  "micro/M05-32nds-120",
+  "micro/M06-32nds-176",
+  "micro/M07-pickup-3-4",
+  "micro/M08-pickup-4-4",
+  "micro/M09-syncopation-ties",
+  "micro/M10-dotted",
+  "micro/M11-harmonic-minor",
+  "micro/M12-flats-db",
+  "micro/M13-sharps-chromatic",
+  "micro/M14-melody-in-bass",
+  "micro/M15-wide-chords",
+  "micro/M16-long-notes-rests",
+  "micro/M17-march-2-4",
+  "micro/M18-alla-breve",
+  "micro/M19-fast-3-8",
+  "micro/M20-compound-12-8",
+  "micro/M21-five-four",
+  "micro/M22-tempo-change",
+  "micro/M23-repeated-notes",
+  "micro/M24-block-chords",
+  "samples/prelude-fragment"
+ ],
+ "schema": "ppp.bench-suite/1",
+ "stage": {
+  "name": "notate",
+  "opts": {}
+ },
+ "subsets": {}
+}

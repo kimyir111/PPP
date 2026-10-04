@@ -23,6 +23,15 @@ what the SUT adapter added (``extra``: the notation checker's class counts, the 
   rec.usable                        every applicable G0 critical gate passes, classes 1-7 are 0, false rests per 100
                                     bars <= 5, false triplet beats <= 2 per 100 beats
 
+Only in a suite with ``"hands_play": true`` (G10a-2b, docs/GOALS/G10 section 26; node/rec-hands-play.js on the predicted graph,
+the repository's own playability/ and critics/metrics.js), so no other suite's results change:
+  rec.hands.crossing                share of two-hand moments at which the right hand's lowest sounding note is below the
+                                    left hand's highest (critics/metrics.js handCrossing; the one-note arranger refuses a
+                                    relaxed-plan candidate above 0.01)
+  rec.hands.hard_per_100_bars       G5a hard violations (SPAN, KEYS, VELOCITY; medium hand) of the written hands, per 100 bars
+  rec.hands.line_velocity_per_100_bars   VELOCITY violations of the right hand's top line and the left hand's bottom line (what
+                                    the one-note arranger keeps), per 100 bars
+
 Definitions are fixed here; a change is a new metric version (``REC_VERSION``).
 """
 
@@ -375,7 +384,20 @@ def compute(ctx, extra: Dict[str, Any]) -> Dict[str, Optional[float]]:
     ref_sec = lambda m, q: perf.timemap.sec(m.start_q + q)                       # noqa: E731
     pred_sec = lambda m, q: pt.sec(m.index, q)                                    # noqa: E731
     out["rec.metre.f1"] = metre_f1(ref, pred, ref_sec, pred_sec)
+    if "play" in extra:
+        out.update(hands_play(extra.get("play")))
     return out
+
+
+def hands_play(play: Optional[Dict[str, Any]]) -> Dict[str, Optional[float]]:
+    """The rec.hands.* metrics of one predicted graph (node/rec-hands-play.js), or None each when the tool had no graph."""
+    if not play:
+        return {"rec.hands.crossing": None, "rec.hands.hard_per_100_bars": None, "rec.hands.line_velocity_per_100_bars": None}
+    bars = play.get("bars") or 0
+    hard = sum((play.get("hard") or {}).values())
+    return {"rec.hands.crossing": (play["crossed"] / play["moments"]) if play.get("moments") else 0.0,
+            "rec.hands.hard_per_100_bars": (100.0 * hard / bars) if bars else None,
+            "rec.hands.line_velocity_per_100_bars": (100.0 * (play.get("lines") or 0) / bars) if bars else None}
 
 
 def finish(metrics: Dict[str, Optional[float]]) -> Dict[str, Optional[float]]:

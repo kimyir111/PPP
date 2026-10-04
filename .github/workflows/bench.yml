@@ -194,6 +194,12 @@ jobs:
       - run: python tests/bench/run.py check --suite rec-arrange-core
       - run: python tests/bench/run.py run --suite rec-arrange-full
       - run: python tests/bench/run.py check --suite rec-arrange-full
+      # G10a-2b: S4's playability on the references as piano covers are written (texture octaves): the hands' crossing and G5a hard
+      # violations (rec-hands-play, about 4-8 minutes) and the one-note arranger without the hands fallback (rec-arrange-play, about 2-4)
+      - run: python tests/bench/run.py run --suite rec-hands-play
+      - run: python tests/bench/run.py check --suite rec-hands-play
+      - run: python tests/bench/run.py run --suite rec-arrange-play
+      - run: python tests/bench/run.py check --suite rec-arrange-play
       - if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -201,10 +207,13 @@ jobs:
           path: |
             tests/bench/out/mutation/mutation-report.json
             tests/bench/out/mutation-v2/mutation-report.json
+            tests/bench/out/mutation-play/mutation-report.json
             tests/bench/out/mutation-arrange/mutation-report.json
             tests/bench/out/rec-arrange-core/summary.md
             tests/bench/out/rec-arrange-full/summary.md
             tests/bench/out/rec-arrange-full/run.json
+            tests/bench/out/rec-hands-play/summary.md
+            tests/bench/out/rec-arrange-play/summary.md
 
   nightly-rec-shard:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'

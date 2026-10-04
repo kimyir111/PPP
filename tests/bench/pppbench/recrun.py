@@ -85,6 +85,8 @@ def extras(cases, perfs, rows: Dict[str, Dict[str, Any]], by_entry: Dict[str, An
     for c in cases:
         row = rows[c.id]
         out[c.id] = {"check": row.get("check"), "harmony": row.get("harmony"), "ref_harmony": ref_h.get(c.ref_id), "stability": None}
+        if "play" in row:          # a suite with "hands_play" (G10a-2b): the split's crossing and hard violations
+            out[c.id]["play"] = row.get("play")
         if row.get("ok"):
             runs = [(noisy[f"{c.id}#{s}"].get("xml") if noisy[f"{c.id}#{s}"].get("ok") else None) for s in SEEDS]
             todo.append((c.id, row["xml"], runs))

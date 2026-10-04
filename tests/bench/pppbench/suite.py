@@ -144,6 +144,9 @@ class Case:
     # overlays and noisy beats are seeded by that name, so a row that says perform_as "app" plays exactly the app row's
     # performance with other options (G10a-2's rec-hands). No suite before it sets it: every other case is unchanged.
     perform_as: Optional[str] = None
+    # a matrix row's "texture" (G10a-2b, pppbench/texture.py): the reference re-voiced (octave doubling, hands kept) is the case's
+    # truth and its performance's source; the case id ends in "|tex:<name>". No suite before rec-hands-play sets it.
+    texture: Optional[str] = None
 
     @property
     def key(self) -> str:
@@ -154,8 +157,9 @@ def case_key(case_id: str) -> str:
     return hashlib.sha256(case_id.encode("utf-8")).hexdigest()[:12]
 
 
-def case_id(ref_id: str, profile: str, beats: str, seed: int, opt_name: Optional[str] = None) -> str:
-    return f"{ref_id}|{profile}|{beats}|s{seed}" + (f"|opt:{opt_name}" if opt_name else "")
+def case_id(ref_id: str, profile: str, beats: str, seed: int, opt_name: Optional[str] = None,
+            texture: Optional[str] = None) -> str:
+    return f"{ref_id}|{profile}|{beats}|s{seed}" + (f"|opt:{opt_name}" if opt_name else "") + (f"|tex:{texture}" if texture else "")
 
 
 def list_suites() -> List[str]:
@@ -223,9 +227,9 @@ def expand(suite: Dict[str, Any], refs: List[corpus.RefEntry]) -> List[Case]:
                 continue
             seeds = holdout_seeds if entry.holdout and holdout_seeds else row["seeds"]
             for seed in seeds:
-                cid = case_id(rid, row["profile"], row["beats"], seed, row.get("opt_name"))
+                cid = case_id(rid, row["profile"], row["beats"], seed, row.get("opt_name"), row.get("texture"))
                 cases[cid] = Case(cid, rid, row["profile"], row["beats"], seed, row.get("opt_name"),
-                                  row.get("opts"), entry.holdout, perform_as=row.get("perform_as"))
+                                  row.get("opts"), entry.holdout, perform_as=row.get("perform_as"), texture=row.get("texture"))
     return [cases[k] for k in sorted(cases)]
 
 

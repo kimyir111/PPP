@@ -1,5 +1,5 @@
-/* rec/hands.js, stage S4 (G10a-2, docs/GOALS/G10_AUDIO_TO_SCORE.md section 8): the staff of every heard note, and its
-   wiring into toMusicXml (recording 'v2'; opts.hands). node --test tests/rec */
+/* rec/hands.js, stage S4 (G10a-2, docs/GOALS/G10_AUDIO_TO_SCORE.md section 8; playability G10a-2b, section 26): the staff of
+   every heard note, and its wiring into toMusicXml (recording 'v2'; opts.hands). node --test tests/rec */
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -23,7 +23,15 @@ const staffOf = (notes, r) => notes.map((n, i) => [n.midi, r.staff[i]]);
 test('the model file: its schema, a style per texture, a cost per table cell, within the section 11 budget', () => {
   const m = JSON.parse(fs.readFileSync(MODEL_FILE, 'utf8'));
   assert.equal(m.schema, H.SCHEMA);
+  assert.equal(m.version, 'hands-v1.1');
   assert.deepEqual(m.styles.map(s => s.name), ['piano', 'chorale']);
+  /* G10a-2b: the context of a group in the partition table, G5a's hard violations; the textures are evaluated, not counted */
+  assert.deepEqual(m.params.ctx, { w: 0.5, d: 12 });
+  assert.deepEqual(Object.keys(m.params.play).sort(), ['keys', 'perSemi', 'reach', 'span', 'w']);
+  assert.equal(m.params.play.keys, 5);
+  assert.equal(m.params.play.reach, 12);
+  assert.equal(m.params.play.perSemi, 0.012);
+  assert.deepEqual(m.trained.textures, { evaluated: ['octaves-l', 'octaves-r', 'octaves'], counted: [] });
   const L = H._.layout(m.params);
   m.styles.forEach(s => {
     assert.equal(s.costs.length, L.size);
@@ -46,7 +54,7 @@ test('assign: one staff (1 right / 2 left) and a confidence per note; a note tha
   assert.equal(r.conf[notes.length - 2], 1);
   assert.equal(r.staff[notes.length - 1], 0);
   assert.equal(r.report.notes, notes.length - 2);
-  assert.equal(r.report.model, 'hands-v1');
+  assert.equal(r.report.model, 'hands-v1.1');
   assert.ok(['piano', 'chorale'].includes(r.report.style));
 });
 
@@ -83,7 +91,14 @@ test('a left-hand broken chord in the treble stays in the left hand under a righ
     bar(c, mel).forEach(([t, m]) => groups.push([b * 2 + t, m])));
   const notes = piece(groups);
   const r = H.assign(notes);
-  notes.forEach((n, i) => assert.equal(r.staff[i], n.midi >= 72 ? 1 : 2, 'midi ' + n.midi + ' at tick ' + n.tick));
+  /* every melody note in the right hand; the figure in the left, except (hands-v1.1, G10 section 26) the last F sharp of bar 2,
+     alone after the melody's last note, which S4 now gives the right hand AND flags as unsure (the real Beyer 52 reads 1.000) */
+  let moved = 0;
+  notes.forEach((n, i) => {
+    if (n.midi >= 72) { assert.equal(r.staff[i], 1, 'melody ' + n.midi + ' at tick ' + n.tick); return; }
+    if (r.staff[i] === 1) { moved++; assert.ok(r.conf[i] < 0.75, 'a figure note in the right hand is flagged: ' + n.midi + ' at tick ' + n.tick); }
+  });
+  assert.ok(moved <= 1, moved + ' figure notes in the right hand');
 });
 
 test('a four-part chorale is read as a chorale: soprano and alto in the upper staff, tenor and bass in the lower', () => {
@@ -138,7 +153,7 @@ test('toMusicXml: v2 writes S4\'s hands and reports them; hands \'legacy\' keeps
   }
   const base = { title: 't', closeGaps: true, exactBars: true };
   const v2 = AS.toMusicXml({ notes: notes }, Object.assign({ recording: 'v2' }, base));
-  assert.ok(v2.handsReport && v2.handsReport.model === 'hands-v1', JSON.stringify(v2.handsReport));
+  assert.ok(v2.handsReport && v2.handsReport.model === 'hands-v1.1', JSON.stringify(v2.handsReport));
   assert.equal(v2.stats.lh, notes.filter(n => n.midi < 72).length);
   const v2legacy = AS.toMusicXml({ notes: notes }, Object.assign({ recording: 'v2', hands: 'legacy' }, base));
   assert.equal(v2legacy.handsReport, undefined);
@@ -147,7 +162,7 @@ test('toMusicXml: v2 writes S4\'s hands and reports them; hands \'legacy\' keeps
   assert.equal(AS.toMusicXml({ notes: notes }, base).handsReport, undefined);
   assert.equal(AS.toMusicXml({ notes: notes }, {}).handsReport, undefined);
   /* the app's path with only S4 swapped (the rec-hands measurement suite) */
-  assert.equal(AS.toMusicXml({ notes: notes }, Object.assign({ hands: 'v2' }, base)).handsReport.model, 'hands-v1');
+  assert.equal(AS.toMusicXml({ notes: notes }, Object.assign({ hands: 'v2' }, base)).handsReport.model, 'hands-v1.1');
   /* rec/index.js exposes the stage */
   assert.equal(REC.hands, H);
 });
@@ -165,4 +180,63 @@ test('budget (section 11): S4 on a 1,800-note piece in well under the 300 ms all
   H.assign(notes);
   const ms = Number(process.hrtime.bigint() - t0) / 1e6;
   assert.ok(ms < 250, 'S4 took ' + ms.toFixed(1) + ' ms');
+});
+
+/* ---------------------------------------------------------------- G10a-2b: playability (docs/GOALS/G10 section 26) */
+const X = H._;
+const MODEL = JSON.parse(fs.readFileSync(MODEL_FILE, 'utf8'));
+
+test('a cover\'s octaves (G10 section 26): a melody in octaves over a bass far below is the right hand\'s, both notes; a bass in octaves is the left hand\'s', () => {
+  const mel = [76, 74, 72, 74, 76, 76, 76, 74, 74, 74, 76, 79, 79, 76, 74, 72], bass = [36, 31, 33, 29];
+  const rh = piece(mel.map((m, i) => [i * 0.3, (i % 2 === 0 ? [bass[(i / 2) % 4]] : []).concat([m - 12, m])]));
+  let r = H.assign(rh);
+  rh.forEach((n, i) => assert.equal(r.staff[i], n.midi >= 60 ? 1 : 2, 'melody octaves: midi ' + n.midi + ' at tick ' + n.tick));
+  const lh = piece(mel.map((m, i) => [i * 0.3, i % 2 === 0 ? [bass[(i / 2) % 4], bass[(i / 2) % 4] + 12] : [m]]));
+  r = H.assign(lh);
+  lh.forEach((n, i) => assert.equal(r.staff[i], n.midi >= 60 ? 1 : 2, 'bass octaves: midi ' + n.midi + ' at tick ' + n.tick));
+});
+
+test('the playability term (G5a): an inner note just before a leap goes to the hand that can still make the leap; without the term it does not', () => {
+  /* the teacher's bar 37 in miniature: a left-hand bass, a G3 alone, then E6 0.19 s later (33 semitones: G5a needs 0.25 s) */
+  const notes = piece([[0, [36, 48]], [0.37, [36, 53]], [0.55, [48]], [0.74, [55]], [0.93, [88]], [1.11, [79, 82, 85]], [1.30, [76, 82]],
+    [1.48, [29, 41, 72, 75, 84]], [2.0, [41]]]);
+  const g3 = notes.findIndex(n => n.midi === 55);
+  assert.equal(H.assign(notes).staff[g3], 2, 'G3 in the left hand');
+  const noPlay = Object.assign({}, MODEL, { params: Object.assign({}, MODEL.params, { play: undefined }) });
+  assert.equal(H.assign(notes, { model: noPlay }).staff[g3], 1, 'without the term the right hand takes G3 and then cannot reach E6 in time');
+});
+
+test('hardOf counts what G5a calls hard: a hand wider than the span, more than five keys, a shift too fast for its distance', () => {
+  const Q = MODEL.params.play;
+  const s = { rLo: 64, rHi: 76, lLo: 36, lHi: 48, cR: 70, cL: 42, tR: 0, tL: 0, nR: 2, nL: 2, iR: 0, iL: 0 };
+  const g = (t, p) => ({ t: t, p: p, shape: X.shapeOf(p) });
+  assert.equal(X.hardOf(Q, s, g(1, [40, 72]), 1), 0, 'one note per hand, near where each hand was');
+  assert.equal(X.hardOf(Q, s, g(1, [40, 40 + Q.span + 1]), 0), 1, 'one hand wider than the span');
+  assert.equal(X.hardOf(Q, s, g(1, [40, 40 + Q.span]), 0), 0, 'as wide as the span is allowed');
+  assert.equal(X.hardOf(Q, s, g(1, [60, 62, 64, 65, 67, 69]), 0), 1, 'six keys in the right hand');
+  /* the right hand from E4-E5 (mean 70, top 76) to C8 in 0.1 s: its mean and its top both shift too far (38 and 32 semitones) */
+  assert.equal(X.hardOf(Q, s, g(0.1, [108]), 0), 2);
+  /* the same shift with all the time it needs is no violation: (36 - reach) x perSemi seconds */
+  assert.equal(X.hardOf(Q, s, g((38 - Q.reach) * Q.perSemi + 0.01, [108]), 0), 0);
+  assert.equal(X.hardOf(Q, s, g((38 - Q.reach) * Q.perSemi - 0.01, [108]), 0), 1, 'the mean still too far, the top (32 semitones) not');
+  /* a hand that has not played yet has nowhere to come from */
+  assert.equal(X.hardOf(Q, Object.assign({}, s, { tR: -Infinity }), g(0.1, [108]), 0), 0);
+});
+
+test('contextOf: a note an octave or more below or above within half a second, read from the notes alone; the partition table is counted per class', () => {
+  const P = MODEL.params;
+  const gs = X.contextOf(X.groupsOf(piece([[0, [36]], [0.3, [62, 74]], [1.0, [62, 74]], [1.4, [86]], [3.0, [50, 62]]]), {}), P);
+  assert.deepEqual(gs.map(g => g.ctx), [2, 1, 2, 1, 0]);
+  /* the same group shape in two contexts emits two different partition cells; the other tables are the same */
+  const L = X.layout(P), s0 = X.startOf(gs);
+  const cells = g => { const ix = []; X.step(P, L, s0, g, 0, i => ix.push(i)); return ix; };
+  const a = cells(gs[1]), b = cells(gs[2]);
+  assert.notEqual(a[0], b[0]);
+  assert.equal(a[0] - b[0], (1 - 2) * (X.CAP + 1) * (X.CAP + 1));
+  assert.deepEqual(a.slice(1), b.slice(1));
+  /* a model without params.ctx (hands-v1) has one class: its decoding is the one of G10a-2 */
+  const P1 = { beam: 32, dtEdges: P.dtEdges };
+  assert.equal(X.layout(P1).part, 0);
+  assert.equal(X.layout(P).span, X.SHAPES * X.CONTEXTS * (X.CAP + 1) * (X.CAP + 1));
+  assert.equal(X.layout(P1).span, X.SHAPES * (X.CAP + 1) * (X.CAP + 1));
 });

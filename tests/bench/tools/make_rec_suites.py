@@ -49,6 +49,17 @@ KEYS_AS = {"v2-keylegacy": "v2", "app-keys": "app"}
 PEDAL_OPTS = {"v2-pedallegacy": {"closeGaps": True, "exactBars": True, "recording": "v2", "pedal": "legacy"},
               "app-pedal": {"closeGaps": True, "exactBars": True, "pedal": "v2"}}
 PEDAL_AS = {"v2-pedallegacy": "v2", "app-pedal": "app"}
+# G10a-2b (docs/GOALS/G10 section 26): what the hand split asks of the hands, on the references as written and re-voiced as piano covers
+# are (texture "octaves", pppbench/texture.py: single notes doubled in octaves, hands kept). `v2-handslegacy` is v2 with the classic hand
+# split (opts.hands 'legacy': the Song Arranger's one-time fallback), on v2's very performances (perform_as "v2")
+PLAY_OPTS = {"app": OPTS["app"], "v2": OPTS["v2"], "v2-handslegacy": {"closeGaps": True, "exactBars": True, "recording": "v2", "hands": "legacy"}}
+PLAY_AS = {"v2-handslegacy": "v2"}
+PLAY = [("cover", "none")]
+PLAY_TEXTURES = (None, "octaves")
+# the rec.hands.* metrics (pppbench/metrics/rec.py, only in a suite with "hands_play"): a crossing rate is guarded to a tenth of the
+# arranger's limit, the hard violations to a quarter per 100 bars
+PLAY_GATE = {"rec.hands.crossing": {"dir": "down", "tol": 0.001}, "rec.hands.hard_per_100_bars": {"dir": "down", "tol": 0.25},
+             "rec.hands.line_velocity_per_100_bars": {"dir": "down", "tol": 0.25}}
 
 # (profile, beats): the rows of each tier
 SMOKE = [("cover", "none"), ("cover-pedal", "none"), ("human-real", "none")]
@@ -119,24 +130,35 @@ def gate(base: dict, scale: float = 1.0, holdout: bool = False) -> dict:
     return g
 
 
-def rows(table, seeds, names=None, opts_table=None, perform_as=None):
+def rows(table, seeds, names=None, opts_table=None, perform_as=None, textures=(None,)):
     out = []
     for profile, beats in table:
-        for name, opts in (opts_table or OPTS).items():
-            if names is not None and name not in names:
-                continue
-            row = {"profile": profile, "beats": beats, "seeds": seeds, "opt_name": name, "opts": opts}
-            pa = perform_as.get(name) if isinstance(perform_as, dict) else perform_as
-            if pa:
-                row["perform_as"] = pa              # the very performance of the rows named perform_as (pppbench/suite.py Case)
-            out.append(row)
+        for texture in textures:
+            for name, opts in (opts_table or OPTS).items():
+                if names is not None and name not in names:
+                    continue
+                row = {"profile": profile, "beats": beats, "seeds": seeds, "opt_name": name, "opts": opts}
+                pa = perform_as.get(name) if isinstance(perform_as, dict) else perform_as
+                if pa:
+                    row["perform_as"] = pa              # the very performance of the rows named perform_as (pppbench/suite.py Case)
+                if texture:
+                    row["texture"] = texture            # the reference re-voiced (pppbench/texture.py; G10a-2b)
+                out.append(row)
     return out
+
+
+def play_gate() -> dict:
+    g = gate(suite_mod.GATE_CORE, holdout=True)
+    g["metrics"].update(copy.deepcopy(PLAY_GATE))
+    g["subgroups"]["prefixes"] = list(g["subgroups"]["prefixes"]) + ["texture:"]
+    return g
 
 
 def build() -> dict:
     smoke = suite_mod.load_suite("smoke")
     core = suite_mod.load_suite("core")
     full = suite_mod.load_suite("full")
+    refs_by = corpus.by_id(corpus.load_corpus())
     mutation_refs = sorted(set([r for r in core["references"] if r.startswith("micro/")] + core["subsets"]["amt-subset"]))
     base = {"schema": "ppp.bench-suite/1", "kind": "synthetic-notation", "stage": {"name": "notate", "opts": {}},
             "align": {"window_s": 0.30}, "rec": True, "subsets": {}}
@@ -195,6 +217,20 @@ def build() -> dict:
                                      "and only the key stage of rec/key.js (app-keys, opts.keys 'v2'); the very performances of their v2 / app "
                                      "rows, so the rec-core / rec-robust rows are the other arm",
                          gate=gate(suite_mod.GATE_CORE)),
+        "rec-hands-play": dict(base, name="rec-hands-play", hands_play=True,
+                               references=sorted(set(core["references"]) | {r for r in full["references"] if refs_by[r].holdout}),
+                               holdout_seeds=[11], matrix=rows(PLAY, [1], opts_table=PLAY_OPTS, perform_as=PLAY_AS, textures=PLAY_TEXTURES),
+                               description="G10a-2b: what the hand split asks of the hands (a measurement suite, nightly, not in the CI gate). The core "
+                                           "references and the 52 hold-out references (seed 11) as written and re-voiced as piano covers are (texture "
+                                           "octaves: single notes doubled in octaves, hands kept) x cover (beats none) x the app's options / v2 / v2 with "
+                                           "the classic hand split (v2-handslegacy, v2's very performances); the recording metrics and rec.hands.* (the "
+                                           "written hands' crossing rate and their G5a hard violations, node/rec-hands-play.js)",
+                               gate=play_gate()),
+        "rec-mutation-play": dict(base, name="rec-mutation-play", hands_play=True, references=mutation_refs,
+                                  matrix=rows(PLAY, [1], ("v2",), textures=("octaves",)),
+                                  description="Gate sensitivity of S4's playability (G10a-2b, mutation-check --rec): the rec-mutation references "
+                                              "re-voiced as piano covers are (texture octaves) x cover (beats none), v2 options only",
+                                  gate=play_gate()),
         "rec-full": dict(base, name="rec-full", references=full["references"], holdout_seeds=[11, 12], matrix=rows(FULL, [1, 2]),
                          description="Nightly/manual: every lint-clean reference, hold-out included (seeds 11, 12), x the humanizer's "
                                      "families x legacy / app / v2; the hold-out is reported as an aggregate",
@@ -241,8 +277,17 @@ def arrange_gate(scale: float = 1.0) -> dict:
     }
 
 
-def arrange_rows(table, seeds, names=ARRANGE_ROWS):
-    return [{"profile": profile, "beats": beats, "seeds": seeds, "opt_name": name, "opts": OPTS[name]} for profile, beats in table for name in names]
+def arrange_rows(table, seeds, names=ARRANGE_ROWS, opts_table=None, perform_as=None, texture=None):
+    out = []
+    for profile, beats in table:
+        for name in names:
+            row = {"profile": profile, "beats": beats, "seeds": seeds, "opt_name": name, "opts": (opts_table or OPTS)[name]}
+            if perform_as and perform_as.get(name):
+                row["perform_as"] = perform_as[name]
+            if texture:
+                row["texture"] = texture
+            out.append(row)
+    return out
 
 
 def arrange_core_references(core: dict) -> list:
@@ -294,6 +339,14 @@ def build_arrange() -> dict:
                                      description="Gate sensitivity of the rec-arrange metrics (mutation-check --rec-arrange): the 24 micro pieces and two hanon "
                                                  "exercises x cover, with the app's options",
                                      gate=arrange_gate(1.0)),
+        "rec-arrange-play": dict(base, name="rec-arrange-play", references=core_refs,
+                                 matrix=arrange_rows(ARRANGE_CORE, [1], ("v2", "v2-handslegacy"), PLAY_OPTS, PLAY_AS, "octaves"),
+                                 description="G10a-2b: is a recording of a piano cover arrangeable without the Song Arranger's hands fallback? rec-arrange-core's "
+                                             "references re-voiced as piano covers are (texture octaves, pppbench/texture.py) x cover (beats none) x v2 / v2 with "
+                                             "the classic hand split (v2-handslegacy: the fallback, v2's very performances), arranged at the three levels "
+                                             "(arr.made: the levels made without a refusal). The truth the melody and harmony are measured against is the "
+                                             "reference as written (its octaves are not doubled): read arr.made and arr.hard.violations here (nightly)",
+                                 gate=arrange_gate(1.0)),
         "rec-arrange-full": dict(base, name="rec-arrange-full", references=core["references"], matrix=arrange_rows(ARRANGE_FULL, [1]),
                                  description="Nightly: every core reference x cover with the app's options and v2, arranged and measured (aggregates only)",
                                  gate=arrange_gate(1.0)),

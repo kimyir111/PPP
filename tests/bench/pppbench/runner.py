@@ -77,9 +77,10 @@ def generate(suite: Dict[str, Any], refs: Optional[List[corpus.RefEntry]] = None
         entry = by[c.ref_id]
         if entry.path not in file_sha:
             file_sha[entry.path] = util.content_sha256(entry.abspath)
-        canon = corpus.read_reference(entry)
+        canon = corpus.reference_for(entry, c.texture)
         c.tags = corpus.derived_tags(entry, canon) + [f"profile:{c.profile}", f"beats:{c.beats}", f"seed:{c.seed}"] + \
-            ([f"opts:{c.opt_name}"] if c.opt_name else []) + (["holdout"] if c.holdout else [])
+            ([f"opts:{c.opt_name}"] if c.opt_name else []) + (["holdout"] if c.holdout else []) + \
+            ([f"texture:{c.texture}"] if c.texture else [])
         p = perform.perform(canon, c.ref_id, c.profile, c.beats, c.seed, expect=entry.expect,
                             case_opts=stage_case_opts(stage_opts, c.opts), opt_name=c.perform_as or c.opt_name)
         perfs[c.id] = p
@@ -168,7 +169,7 @@ def run_suite(suite: Dict[str, Any], *, audio_score: Optional[str] = None, out_d
     sut = os.path.abspath(audio_score or stages.default_audio_score())
     jobs = [{"id": c.id, "input": perfs[c.id].input, "opts": perfs[c.id].opts} for c in cases]
     use_rec = bool(suite.get("rec"))        # a suite that asks for the recording metrics (G10a-0, metrics/rec.py)
-    notated = stages.notate_batch(jobs, audio_score=sut, check=use_rec)
+    notated = stages.notate_batch(jobs, audio_score=sut, check=use_rec, play=use_rec and bool(suite.get("hands_play")))
     rec_extra = {}
     if use_rec:
         from . import recrun
@@ -178,7 +179,7 @@ def run_suite(suite: Dict[str, Any], *, audio_score: Optional[str] = None, out_d
     results_cases, per_case_ms, artifacts = [], {}, {}
     for c in cases:
         entry = by[c.ref_id]
-        ref = corpus.read_reference(entry)
+        ref = corpus.reference_for(entry, c.texture)
         p = perfs[c.id]
         row = notated["results"][c.id]
         per_case_ms[c.id] = round(row.get("ms", 0.0), 3)

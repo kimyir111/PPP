@@ -1,20 +1,20 @@
 {
- "model": "hands-v1",
+ "model": "hands-v1.1",
  "weights": {
   "part": 1.5,
-  "span": 2,
+  "span": 3,
   "move": 1.5,
   "reg": 2,
-  "gap": 0.5,
+  "gap": 0.75,
   "rel": 0.75,
   "cnt": 1,
-  "ioi": 0.25
+  "ioi": 0.5
  },
  "tune": "truth",
  "train": {
   "n": 257,
   "legacy": 0.854,
-  "v2": 0.9838,
+  "v2": 0.9856,
   "styles": {
    "piano->piano": 187,
    "chorale->chorale": 68,
@@ -25,35 +25,35 @@
    "beyer": {
     "n": 52,
     "legacy": 0.6938,
-    "v2": 0.9884,
+    "v2": 0.9879,
     "legacyGate": 0.2885,
     "v2Gate": 0.9808
    },
    "burgmuller25": {
     "n": 9,
     "legacy": 0.8729,
-    "v2": 0.9178,
+    "v2": 0.9326,
     "legacyGate": 0.7778,
     "v2Gate": 1
    },
    "catalog": {
     "n": 3,
     "legacy": 0.9015,
-    "v2": 0.8836,
+    "v2": 0.9022,
     "legacyGate": 0.6667,
     "v2Gate": 1
    },
    "czerny599": {
     "n": 43,
     "legacy": 0.9585,
-    "v2": 0.9852,
+    "v2": 0.9874,
     "legacyGate": 0.9535,
     "v2Gate": 1
    },
    "czerny849": {
     "n": 22,
     "legacy": 0.8892,
-    "v2": 0.9827,
+    "v2": 0.9864,
     "legacyGate": 0.8636,
     "v2Gate": 1
    },
@@ -67,37 +67,42 @@
    "hymns": {
     "n": 69,
     "legacy": 0.8515,
-    "v2": 0.9852,
+    "v2": 0.9854,
     "legacyGate": 0.8261,
     "v2Gate": 0.9855
    },
    "micro": {
     "n": 24,
     "legacy": 0.9912,
-    "v2": 1,
+    "v2": 0.999,
     "legacyGate": 1,
     "v2Gate": 1
    },
    "samples": {
     "n": 1,
     "legacy": 1,
-    "v2": 0.9474,
+    "v2": 1,
     "legacyGate": 1,
     "v2Gate": 1
    },
    "sonatina": {
     "n": 18,
     "legacy": 0.9289,
-    "v2": 0.9789,
+    "v2": 0.9838,
     "legacyGate": 1,
     "v2Gate": 1
    }
+  },
+  "hardPer100Groups": {
+   "written": 0.934,
+   "legacy": 0.538,
+   "v2": 1.038
   }
  },
  "holdout": {
   "n": 52,
   "legacy": 0.8437,
-  "v2": 0.9769,
+  "v2": 0.9792,
   "styles": {
    "chorale->chorale": 19,
    "piano->piano": 33
@@ -106,51 +111,256 @@
    "beyer": {
     "n": 11,
     "legacy": 0.7262,
-    "v2": 0.9916,
+    "v2": 0.9891,
     "legacyGate": 0.3636,
     "v2Gate": 1
    },
    "burgmuller25": {
     "n": 1,
     "legacy": 0.986,
-    "v2": 0.9965,
+    "v2": 1,
     "legacyGate": 1,
     "v2Gate": 1
    },
    "czerny599": {
     "n": 9,
     "legacy": 0.9304,
-    "v2": 0.9976,
+    "v2": 0.9985,
     "legacyGate": 0.8889,
     "v2Gate": 1
    },
    "czerny849": {
     "n": 6,
     "legacy": 0.8784,
-    "v2": 0.8805,
+    "v2": 0.8953,
     "legacyGate": 0.8333,
     "v2Gate": 0.6667
    },
    "hanon": {
     "n": 4,
     "legacy": 0.7462,
-    "v2": 0.9936,
+    "v2": 0.9995,
     "legacyGate": 0,
     "v2Gate": 1
    },
    "hymns": {
     "n": 19,
     "legacy": 0.8669,
-    "v2": 0.9874,
+    "v2": 0.9871,
     "legacyGate": 0.8947,
     "v2Gate": 1
    },
    "sonatina": {
     "n": 2,
     "legacy": 0.8988,
-    "v2": 0.9487,
+    "v2": 0.9642,
     "legacyGate": 1,
     "v2Gate": 1
+   }
+  },
+  "hardPer100Groups": {
+   "written": 1.23,
+   "legacy": 0.197,
+   "v2": 0.835
+  }
+ },
+ "textures": {
+  "octaves-l": {
+   "train": {
+    "n": 188,
+    "legacy": 0.9015,
+    "v2": 0.9511,
+    "hardPer100Groups": {
+     "written": 0.193,
+     "legacy": 0.704,
+     "v2": 0.462
+    }
+   },
+   "holdout": {
+    "n": 33,
+    "legacy": 0.8821,
+    "v2": 0.9182,
+    "families": {
+     "beyer": {
+      "n": 11,
+      "legacy": 0.8146,
+      "v2": 0.886,
+      "legacyGate": 0.5455,
+      "v2Gate": 0.7273
+     },
+     "burgmuller25": {
+      "n": 1,
+      "legacy": 0.988,
+      "v2": 0.964,
+      "legacyGate": 1,
+      "v2Gate": 1
+     },
+     "czerny599": {
+      "n": 9,
+      "legacy": 0.9554,
+      "v2": 0.9416,
+      "legacyGate": 0.8889,
+      "v2Gate": 0.8889
+     },
+     "czerny849": {
+      "n": 6,
+      "legacy": 0.9105,
+      "v2": 0.8675,
+      "legacyGate": 0.8333,
+      "v2Gate": 0.6667
+     },
+     "hanon": {
+      "n": 4,
+      "legacy": 0.83,
+      "v2": 1,
+      "legacyGate": 1,
+      "v2Gate": 1
+     },
+     "sonatina": {
+      "n": 2,
+      "legacy": 0.8905,
+      "v2": 0.956,
+      "legacyGate": 1,
+      "v2Gate": 1
+     }
+    },
+    "hardPer100Groups": {
+     "written": 0.636,
+     "legacy": 0.182,
+     "v2": 0.345
+    }
+   }
+  },
+  "octaves-r": {
+   "train": {
+    "n": 188,
+    "legacy": 0.9621,
+    "v2": 0.7716,
+    "hardPer100Groups": {
+     "written": 0.196,
+     "legacy": 1.012,
+     "v2": 6.714
+    }
+   },
+   "holdout": {
+    "n": 33,
+    "legacy": 0.933,
+    "v2": 0.7553,
+    "families": {
+     "beyer": {
+      "n": 11,
+      "legacy": 0.9562,
+      "v2": 0.7388,
+      "legacyGate": 0.8182,
+      "v2Gate": 0.2727
+     },
+     "burgmuller25": {
+      "n": 1,
+      "legacy": 1,
+      "v2": 0.8266,
+      "legacyGate": 1,
+      "v2Gate": 1
+     },
+     "czerny599": {
+      "n": 9,
+      "legacy": 0.9414,
+      "v2": 0.8575,
+      "legacyGate": 0.8889,
+      "v2Gate": 0.6667
+     },
+     "czerny849": {
+      "n": 6,
+      "legacy": 0.9203,
+      "v2": 0.6881,
+      "legacyGate": 1,
+      "v2Gate": 0.1667
+     },
+     "hanon": {
+      "n": 4,
+      "legacy": 0.8425,
+      "v2": 0.6674,
+      "legacyGate": 1,
+      "v2Gate": 0
+     },
+     "sonatina": {
+      "n": 2,
+      "legacy": 0.9534,
+      "v2": 0.7285,
+      "legacyGate": 1,
+      "v2Gate": 0
+     }
+    },
+    "hardPer100Groups": {
+     "written": 0.636,
+     "legacy": 0.636,
+     "v2": 4.233
+    }
+   }
+  },
+  "octaves": {
+   "train": {
+    "n": 188,
+    "legacy": 0.9843,
+    "v2": 0.8696,
+    "hardPer100Groups": {
+     "written": 0.196,
+     "legacy": 2.887,
+     "v2": 6.636
+    }
+   },
+   "holdout": {
+    "n": 33,
+    "legacy": 0.9724,
+    "v2": 0.8406,
+    "families": {
+     "beyer": {
+      "n": 11,
+      "legacy": 0.9817,
+      "v2": 0.8162,
+      "legacyGate": 1,
+      "v2Gate": 0.4545
+     },
+     "burgmuller25": {
+      "n": 1,
+      "legacy": 1,
+      "v2": 0.8157,
+      "legacyGate": 1,
+      "v2Gate": 1
+     },
+     "czerny599": {
+      "n": 9,
+      "legacy": 0.9629,
+      "v2": 0.8594,
+      "legacyGate": 0.8889,
+      "v2Gate": 0.5556
+     },
+     "czerny849": {
+      "n": 6,
+      "legacy": 0.946,
+      "v2": 0.7623,
+      "legacyGate": 1,
+      "v2Gate": 0.5
+     },
+     "hanon": {
+      "n": 4,
+      "legacy": 1,
+      "v2": 1,
+      "legacyGate": 1,
+      "v2Gate": 1
+     },
+     "sonatina": {
+      "n": 2,
+      "legacy": 0.9752,
+      "v2": 0.818,
+      "legacyGate": 1,
+      "v2Gate": 1
+     }
+    },
+    "hardPer100Groups": {
+     "written": 0.636,
+     "legacy": 0.745,
+     "v2": 4.797
+    }
    }
   }
  },
@@ -161,78 +371,107 @@
   ],
   "role": "evaluated, not fitted",
   "pipeline": "audio-score.js toMusicXml, closeGaps + exactBars + recording v2 (S4 input)",
-  "legacy": 0.8658,
-  "v2": 0.9727,
+  "legacy": 0.8634,
+  "v2": 0.978,
   "families": {
    "beyer": {
     "n": 312,
-    "legacy": 0.7295,
+    "legacy": 0.7292,
     "v2": 0.9837,
     "legacyGate": 0.391,
     "v2Gate": 0.9808
    },
    "burgmuller25": {
     "n": 54,
-    "legacy": 0.879,
-    "v2": 0.9018,
+    "legacy": 0.8741,
+    "v2": 0.9143,
     "legacyGate": 0.7778,
-    "v2Gate": 0.9259
+    "v2Gate": 0.9815
    },
    "catalog": {
     "n": 18,
     "legacy": 0.9064,
-    "v2": 0.8865,
+    "v2": 0.8986,
     "legacyGate": 0.6667,
     "v2Gate": 1
    },
    "czerny599": {
     "n": 258,
-    "legacy": 0.9586,
-    "v2": 0.9783,
+    "legacy": 0.9579,
+    "v2": 0.9816,
     "legacyGate": 0.9612,
     "v2Gate": 1
    },
    "czerny849": {
     "n": 132,
-    "legacy": 0.9179,
-    "v2": 0.9324,
+    "legacy": 0.9115,
+    "v2": 0.9646,
     "legacyGate": 0.9015,
     "v2Gate": 1
    },
    "hanon": {
     "n": 96,
-    "legacy": 0.7689,
-    "v2": 0.9742,
-    "legacyGate": 0.1979,
+    "legacy": 0.7407,
+    "v2": 0.9809,
+    "legacyGate": 0.0833,
     "v2Gate": 1
    },
    "hymns": {
     "n": 414,
-    "legacy": 0.8547,
-    "v2": 0.9832,
+    "legacy": 0.8548,
+    "v2": 0.9816,
     "legacyGate": 0.8502,
-    "v2Gate": 0.9855
+    "v2Gate": 0.9831
    },
    "micro": {
     "n": 140,
-    "legacy": 0.9857,
-    "v2": 0.9902,
-    "legacyGate": 0.9857,
-    "v2Gate": 0.9929
+    "legacy": 0.9874,
+    "v2": 0.9954,
+    "legacyGate": 0.9929,
+    "v2Gate": 1
    },
    "samples": {
     "n": 6,
     "legacy": 1,
-    "v2": 0.9518,
+    "v2": 1,
     "legacyGate": 1,
     "v2Gate": 1
    },
    "sonatina": {
     "n": 108,
-    "legacy": 0.9272,
-    "v2": 0.9641,
+    "legacy": 0.927,
+    "v2": 0.9736,
     "legacyGate": 1,
     "v2Gate": 1
+   }
+  }
+ },
+ "perfsTextures": {
+  "octaves-l": {
+   "n": 374,
+   "legacy": 0.9117,
+   "v2": 0.9458,
+   "hardPer100Groups": {
+    "legacy": 1.703,
+    "v2": 2.201
+   }
+  },
+  "octaves-r": {
+   "n": 374,
+   "legacy": 0.9384,
+   "v2": 0.7779,
+   "hardPer100Groups": {
+    "legacy": 2.873,
+    "v2": 8.738
+   }
+  },
+  "octaves": {
+   "n": 374,
+   "legacy": 0.9733,
+   "v2": 0.8716,
+   "hardPer100Groups": {
+    "legacy": 5.489,
+    "v2": 10.027
    }
   }
  }

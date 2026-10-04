@@ -13,6 +13,7 @@ from . import sut as sut_mod, util
 
 NOTATE_JS = os.path.join(util.bench_root(), "node", "notate.js")
 REC_HARMONY_JS = os.path.join(util.bench_root(), "node", "rec-harmony.js")
+REC_HANDS_PLAY_JS = os.path.join(util.bench_root(), "node", "rec-hands-play.js")
 
 
 class StageError(Exception):
@@ -30,7 +31,7 @@ def default_audio_score() -> str:
     return os.path.join(util.repo_root(), "audio-score.js")
 
 
-def _notate_chunk(jobs: List[Dict[str, Any]], sut: str, node: Optional[str], check: bool):
+def _notate_chunk(jobs: List[Dict[str, Any]], sut: str, node: Optional[str], check: bool, play: bool = False):
     with tempfile.TemporaryDirectory(prefix="pppbench-") as tmp:
         jin, jout = os.path.join(tmp, "jobs.jsonl"), os.path.join(tmp, "out.jsonl")
         with open(jin, "w", encoding="utf-8", newline="\n") as handle:
@@ -54,6 +55,16 @@ def _notate_chunk(jobs: List[Dict[str, Any]], sut: str, node: Optional[str], che
                 for line in handle:
                     row = json.loads(line)
                     harmony[row["id"]] = row.get("harmony")
+        hands_play: Dict[str, Any] = {}
+        if check and play:      # G10a-2b: what the hand split asks of the hands (a metric tool outside the SUT, like rec-harmony.js)
+            pout = os.path.join(tmp, "play.jsonl")
+            pp = subprocess.run([node_binary(node), REC_HANDS_PLAY_JS, "--graphs", graphs, "--out", pout], capture_output=True)
+            if pp.returncode != 0:
+                raise StageError("rec-hands-play.js failed: " + pp.stderr.decode("utf-8", "replace")[-2000:])
+            with open(pout, encoding="utf-8") as handle:
+                for line in handle:
+                    row = json.loads(line)
+                    hands_play[row["id"]] = row.get("play")
         results, meta = {}, {}
         with open(jout, encoding="utf-8") as handle:
             for line in handle:
@@ -63,6 +74,8 @@ def _notate_chunk(jobs: List[Dict[str, Any]], sut: str, node: Optional[str], che
                 else:
                     if check:
                         row["harmony"] = harmony.get(row["id"])
+                    if check and play:
+                        row["play"] = hands_play.get(row["id"])
                     results[row["id"]] = row
     return results, meta
 
@@ -71,7 +84,7 @@ PARALLEL_FROM = 300      # recording suites (check=True) run big batches in up t
 
 
 def notate_batch(jobs: List[Dict[str, Any]], *, audio_score: Optional[str] = None,
-                 node: Optional[str] = None, check: bool = False, parallel: bool = False) -> Dict[str, Any]:
+                 node: Optional[str] = None, check: bool = False, parallel: bool = False, play: bool = False) -> Dict[str, Any]:
     """Run toMusicXml over every job in one Node process.
 
     Returns ``{"results": {id: row}, "meta": {...}}``; a row is the adapter's
@@ -81,12 +94,12 @@ def notate_batch(jobs: List[Dict[str, Any]], *, audio_score: Optional[str] = Non
     sut = os.path.abspath(audio_score or default_audio_score())
     workers = min(4, os.cpu_count() or 1) if ((check or parallel) and len(jobs) >= PARALLEL_FROM) else 1
     if workers <= 1:
-        results, meta = _notate_chunk(jobs, sut, node, check)
+        results, meta = _notate_chunk(jobs, sut, node, check, play)
     else:
         from concurrent.futures import ThreadPoolExecutor
         chunks = [jobs[i::workers] for i in range(workers)]
         with ThreadPoolExecutor(max_workers=workers) as pool:
-            parts = list(pool.map(lambda c: _notate_chunk(c, sut, node, check), chunks))
+            parts = list(pool.map(lambda c: _notate_chunk(c, sut, node, check, play), chunks))
         results, meta = {}, dict(parts[0][1])
         for r, _ in parts:
             results.update(r)
