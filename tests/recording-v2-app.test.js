@@ -616,6 +616,8 @@ const NEW_KEYS = [
       const A = window.PPPAudioScore, real = A.toMusicXml;
       window.__calls = []; window.__bad = true;
       window.PPPAudioScore = Object.assign({}, A, { toMusicXml: function (i, o) {
+        /* window.__unreadable: rec/ cannot read the performance (the conversion comes back classic, as it does for notes the skeleton cannot place) */
+        if (window.__unreadable && o && o.recording === 'v2') return real.call(this, i, Object.assign({}, o, { recording: undefined }));
         const r = real.apply(this, arguments);
         window.__calls.push({ recording: o && o.recording || null, v2: !!r.recReport });
         if (window.__bad && o && o.recording === 'v2' && r.recReport) r.stats.tempo = 243;   /* what the review measured on a 17-minute recording: 3/8 at 243 */
@@ -633,7 +635,12 @@ const NEW_KEYS = [
     await sleep(2500);
     const z1 = await stateOf(pz);
     ok('Write again with v2 on, while v2 still gives 243: nothing is changed, and the page says so', z1.hash === z0.hash && z1.pipeline === null && !(await pz.evaluate(() => !!window.PPP.app.state.recNotation)) && await pz.evaluate(() => /could not read this performance, so nothing was changed/.test(document.body.innerText + (window.PPP.app.state.toast || ''))), JSON.stringify({ same: z1.hash === z0.hash }));
-    await pz.evaluate(() => { window.__bad = false; });
+    await pz.evaluate(() => { window.__bad = false; window.__unreadable = true; });
+    await press(pz, '[data-write-again]');
+    await sleep(2500);
+    const z1b = await stateOf(pz);
+    ok('Write again with v2 on, while rec/ cannot read the performance (the conversion comes back classic): nothing is changed, and the page says so', z1b.hash === z0.hash && z1b.pipeline === null && !(await pz.evaluate(() => !!window.PPP.app.state.recNotation)), JSON.stringify({ same: z1b.hash === z0.hash, p: z1b.pipeline }));
+    await pz.evaluate(() => { window.__unreadable = false; });
     await press(pz, '[data-write-again]');
     await pz.waitForFunction(() => !window.PPP.app.state.recWriteBusy && window.PPP.app.state.recNotation, { timeout: 60000 });
     await sleep(600);
