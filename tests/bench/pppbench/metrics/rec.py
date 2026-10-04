@@ -7,7 +7,9 @@ within 300 ms in seconds), the bar offset G0 derives from them, the reference an
 what the SUT adapter added (``extra``: the notation checker's class counts, the bar chords, the stability).
 
   rec.onset_f1                      pitch + written position (same bar, same place in the bar) F1
-  rec.rest.precision / .recall      predicted rest spans against the truth's silences (>= a 16th, per staff-bar)
+  rec.rest.precision / .recall      predicted rest spans against the truth's silences (>= a 16th, per staff-bar); on both
+                                    sides a silence of the staff (rec/2: a rest of a second voice under a note of the first
+                                    is not one)
   rec.rest.false_per_100_bars       predicted rests that are not truth silences (overlap < half), per 100 bars
   rec.tuplet.precision / .recall    beats written as triplet beats against the truth's triplet beats
   rec.tuplet.false_per_100_beats    triplet beats the truth does not have, per 100 beats
@@ -30,7 +32,8 @@ from collections import Counter, defaultdict
 from fractions import Fraction
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-REC_VERSION = "rec/1"
+REC_VERSION = "rec/2"                  # rec/2 (G10a-3): a predicted rest counts where the whole staff is silent (every voice);
+                                       # the same values as rec/1 for every prediction with one voice per staff
 SIXTEENTH = Fraction(1, 4)             # a 16th, in quarter notes
 POS_TOL = Fraction(1, 96)
 METRE_TOL_S = 0.070
@@ -108,8 +111,30 @@ def truth_silences(canon, merged_staves: bool) -> Dict[Tuple[int, int], List[Tup
     return out
 
 
+def _minus(spans, cover):
+    """The parts of the (merged) spans that no span of ``cover`` overlaps."""
+    out = []
+    cover = _merge(cover)
+    for a, b in spans:
+        at = a
+        for c, d in cover:
+            if d <= at or c >= b:
+                continue
+            if c > at:
+                out.append((at, c))
+            at = max(at, d)
+            if at >= b:
+                break
+        if at < b:
+            out.append((at, b))
+    return out
+
+
 def predicted_rests(canon, merged_staves: bool) -> Dict[Tuple[int, int], List[Tuple[Fraction, Fraction]]]:
-    """(bar index, staff) -> the written rest spans. Merged: only stretches rested in every staff count."""
+    """(bar index, staff) -> the written silences of the staff: its rest spans where no note of the staff sounds (rec/2:
+    a rest of one voice under a note of another voice of the staff is not a silence of the staff - the truth side's own
+    definition, truth_silences; for a staff written in one voice this is exactly its rest spans, as rec/1 had it).
+    Merged: only stretches rested in every staff count."""
     by: Dict[Tuple[int, int], List[Tuple[Fraction, Fraction]]] = defaultdict(list)
     for r in canon.rests:
         if r.measure_rest:
@@ -117,6 +142,15 @@ def predicted_rests(canon, merged_staves: bool) -> Dict[Tuple[int, int], List[Tu
             by[(r.measure, r.staff)].append((Fraction(0), length))
         else:
             by[(r.measure, r.staff)].append((r.pos_q, r.pos_q + r.dur_q))
+    sounding: Dict[Tuple[int, int], List[Tuple[Fraction, Fraction]]] = defaultdict(list)
+    voices: Dict[Tuple[int, int], set] = defaultdict(set)
+    for n in canon.notes:
+        voices[(n.measure, n.staff)].add(n.voice)
+        sounding[(n.measure, n.staff)].append((n.pos_q, n.pos_q + n.dur_q))
+    for r in canon.rests:
+        voices[(r.measure, r.staff)].add(r.voice)
+    by = {k: (_minus(_merge(v), sounding.get(k, [])) if len(voices.get(k, ())) > 1 else v) for k, v in by.items()}
+    by = {k: v for k, v in by.items() if v}
     if not merged_staves:
         return {k: _merge(v) for k, v in by.items()}
     staves = sorted({k[1] for k in by} | {s.staff for s in canon.sounding} | set(range(1, max(1, canon.staves) + 1)))

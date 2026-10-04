@@ -139,7 +139,9 @@ class RecMutations(unittest.TestCase):
         writer = {"REC-V2-WRITER-LEGACY", "REC-V2-WRITER-NO-BRACKETS", "REC-V2-CHECK-QUARTER-BEAT"}
         # G10a-3: S6's decisions (the classifier at all, its held-release evidence, its threshold)
         rests = {"REC-V2-RESTS-RULE", "REC-V2-RESTS-NO-HELD-RELEASE", "REC-V2-RESTS-NEVER"}
-        self.assertEqual({m["id"] for m in v2[:-1]}, skeleton | hands | grid | writer | rests)
+        # G10a-3: S5's decisions (two voices at all, the continuity of a part)
+        voices = {"REC-V2-VOICES-ONE", "REC-V2-VOICES-NO-CONTINUITY"}
+        self.assertEqual({m["id"] for m in v2[:-1]}, skeleton | hands | grid | writer | rests | voices)
         self.assertEqual((v2[-1]["id"], v2[-1]["expect"]), ("MUT-NOOP", "PASS"))
         self.assertFalse([m for m in mutation.REC_MUTATIONS if m.get("v2")])
         for m in v2[:-1]:
@@ -152,6 +154,8 @@ class RecMutations(unittest.TestCase):
                 self.assertTrue(any(x.startswith("rec.check.") for x in m["metrics"]), m["id"])
             elif m["id"] in rests:
                 self.assertTrue(any(x.startswith("rec.rest.") for x in m["metrics"]), m["id"])
+            elif m["id"] in voices:
+                self.assertIn("rec.voice.f1", m["metrics"], m["id"])
             else:
                 self.assertTrue(any(x.startswith(("critical.", "struct.", "notes.")) for x in m["metrics"]), m["id"])
 

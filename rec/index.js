@@ -18,6 +18,18 @@
 
    Node: require('./rec/index.js'). Browser: rec/attacks.js, beats.js, model.js, metre.js, hands.js, index.js after scoregraph/,
    and the weights (rec/weights/ai5a-v1.json) as window.PPPRecWeights or opts.weights (hands: window.PPPRecHandsWeights).
+
+   The whole v2 page order (for G10a-4; audio-score.js finds each stage on the page and writes the legacy way, or v2 with a stage's
+   own fallback, when one is missing):
+     1. scoregraph/*.js, gaps.js and rec-tuplet.js among them (PPPScoreGraphModules)
+     2. the weights as globals BEFORE their modules: rec/weights/ai5a-v1.json -> window.PPPRecWeights, hands-v1.json ->
+        window.PPPRecHandsWeights, ai5b-grid-v1.json -> window.PPPRecGridModel, ai5b-rests-v1.json -> window.PPPRecRestsModel
+        (63.5 KB together; section 11 budget 200 KB)
+     3. rec/attacks.js, beats.js, model.js, metre.js, hands.js, index.js (S0-S2, S4: window.PPPRec)
+     4. rec/grid.js (S3: window.PPPRecGrid), rec/voices.js (S5: PPPRecVoices), rec/rests.js (S6: PPPRecRests),
+        rec/writer.js (S7: PPPRecWriter; it reads scoregraph/gaps.js at load, so after 1), rec/key.js (S8: PPPRecKey) and
+        rec/pedal.js (S9: PPPRecPedal) - G10a-3 lane B
+     5. audio-score.js; scoregraph/tools/notation-check.js is a tool, not needed by the page
    ========================================================================== */
 (function (root, factory) {
   'use strict';

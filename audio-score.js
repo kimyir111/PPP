@@ -1370,6 +1370,12 @@
       return typeof module === 'object' && module.exports ? require('./rec/writer.js') : (global && global.PPPRecWriter) || null;
     } catch (e) { return null; }
   }
+  /* S5 (G10a-3): rec/voices.js, the voice of each note in its staff; null when absent (one voice per staff) */
+  function voicesLib() {
+    try {
+      return typeof module === 'object' && module.exports ? require('./rec/voices.js') : (global && global.PPPRecVoices) || null;
+    } catch (e) { return null; }
+  }
   /* S6 (G10a-3, AI-5b): rec/rests.js, whether a silence between two notes of a voice is a rest; null when absent (a page without it: every silence of restMin or more is a rest, as before) */
   function restsLib() {
     try {
@@ -1785,6 +1791,9 @@
     if (v2Writer) {
       /* the run rule of the grid stage (a staff silent before an odd-32nd onset: no 32nd rest is written), now that the hands are known; simple time only (a compound beat's grid has no 32nds) */
       if (notationBeat !== Q * 3 / 2) gridReport = gridV2 ? Object.assign({ v2: gridV2.report }, gridLib().writable(q)) : snapOnsets(q, bars, bar, beats, origin, ticksPerBeat);
+      /* S5 (rec/voices.js): a second voice per staff where S4 read four-part writing (its 'chorale' style); opts.voices 'one' keeps one voice per staff */
+      const VL = opts.voices === 'one' ? null : voicesLib();
+      const voicesReport = VL ? VL.assignQ(q, { style: handsReport && handsReport.style }).report : null;
       /* S6 (rec/rests.js, AI-5b): which silences of restMin or more between two notes of a voice are rests; opts.rests 'rule' keeps the fixed rule (every one is) */
       const RS = opts.rests === 'rule' ? null : restsLib();
       if (opts.rests === 'model' && !RS) { const e = new Error('rec/rests.js (S6) is not loaded'); e.code = 'E-RESTS-NO-LIB'; throw e; }
@@ -1798,6 +1807,7 @@
         restMin: opts.onsetDurations === false ? 0 : Math.round((opts.restMin !== undefined ? +opts.restMin : REST_MIN) * 4 * Q), allowBarTies: allowBarTies,
         decideRests: decideRests });
       if (restsReport) v2w.report.restModel = restsReport;
+      if (voicesReport) v2w.report.voiceModel = voicesReport;
     } else if (opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4 && ticksPerBeat === Q && tupletLib() && tupletLib().addTriplets) {
       /* with rec/grid.js the onsets are already on one grid per beat: snapOnsets' work is done but for its "genuine run" rule (a staff silent before
          an odd-32nd onset cannot be written: no rest shorter than a 16th), applied now that the hands are known */

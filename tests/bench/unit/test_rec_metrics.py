@@ -66,6 +66,26 @@ class RestMetrics(unittest.TestCase):
         got = rec.rest_metrics(ref, pred, 1, Fraction(0))
         self.assertEqual((got["rec.rest.precision"], got["rec.rest.recall"]), (1.0, 1.0))
 
+    def test_a_second_voice_rest_under_the_first_voice_is_no_silence_of_the_staff(self):
+        # rec/2 (G10a-3): the truth's silences are where nothing of the staff sounds; a predicted rest counts there too. The
+        # right hand's voice 1 plays four quarters, its voice 2 a half note and a half rest: the staff never rests
+        ref = score(bar(four("C", "D", "E", "F")))
+        v1 = "".join(note(p, 5, 1, voice=1) for p in "CDEF")
+        v2 = ("<backup><duration>4</duration></backup>" + note("A", 4, 2, voice=2) +
+              "<note><rest/><duration>2</duration><voice>2</voice><staff>1</staff></note>")
+        pred = canon([measure(v1 + v2, note("C", 3, 4, staff=2), number=1, rh_len=4)])
+        got = rec.rest_metrics(ref, pred, 0, Fraction(0))
+        self.assertEqual((got["rec.rest.precision"], got["rec.rest.false_per_100_bars"]), (1.0, 0.0))
+        # where both voices rest, the staff is silent: one rest of the staff
+        v1r = note("C", 5, 1, voice=1) + note("D", 5, 1, voice=1) + "<note><rest/><duration>2</duration><voice>1</voice><staff>1</staff></note>"
+        pred2 = canon([measure(v1r + v2, note("C", 3, 4, staff=2), number=1, rh_len=4)])
+        self.assertEqual(rec.predicted_rests(pred2, False), {(0, 1): [(Fraction(2), Fraction(4))]})
+
+    def test_a_staff_in_one_voice_keeps_its_rest_spans(self):
+        # rec/2 is rec/1 for every staff-bar written in one voice
+        pred = score(bar(note("C", 4, 1) + rest(1) + note("D", 4, 1) + rest(1)))
+        self.assertEqual(rec.predicted_rests(pred, False), {(0, 1): [(Fraction(1), Fraction(2)), (Fraction(3), Fraction(4))]})
+
     def test_a_one_staff_reference_is_judged_on_the_whole_score(self):
         ref = canon([measure(note("C", 4, 1) + rest(1) + note("D", 4, 1) + note("E", 4, 1), number=1)], staves=1)
         # the prediction splits the same notes over two staves and rests in each where the other plays: only the
