@@ -213,9 +213,10 @@ test('the page loads the pass between gaps.js and index.js, and its scripts in a
 
 test('the app asks for it at every recording call site, and the MIDI import does not', () => {
   const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8').replace(/\r\n/g, '\n');
-  const calls = require('../recording-v2-callsites.js').toMusicXmlCalls(html);   /* five since G10a-4 ("Write the notation again"), read with their argument lists */
-  assert.equal(calls.length, 5);
-  calls.forEach(c => assert.match(c, /exactBars: true/, c));
+  const CS = require('../recording-v2-callsites.js');
+  const calls = CS.toMusicXmlCalls(html);   /* six since G10a-4 ("Write the notation again", the hands fallback), read with their argument lists and each branch of their condition */
+  assert.equal(calls.length, 6);
+  calls.forEach(c => { const b = CS.branchOptions(c); assert.equal(b.classic.exactBars, true, 'classic branch: ' + c); assert.equal(b.v2.exactBars, true, 'v2 branch: ' + c); });
   const midi = /PPPAudioScore\.fromMidi\(bytes, (\{[^}]*\})\)/.exec(html);
   assert.ok(midi && !/exactBars/.test(midi[1]));
   void GAPS; void R;

@@ -181,3 +181,61 @@ test('the classic conversion is untouched: toMusicXml without recording gives no
   assert.equal(b.graph.provenance.sources[0].params.recording.pipeline, 'v2');
   assert.equal(a.graph.provenance.sources[0].params.recording, undefined);
 });
+
+test('plausible: the teacher\'s piece, and what v2 really writes, are believable; a tempo outside the rhythm controls\' range, or bars far off the heard length, are not', () => {
+  /* the teacher's piece: 89 bars of 4/4 at 162 for the 131 s the notes span */
+  const heard = { notes: [{ on: 3.1, off: 3.5 }, { on: 100, off: 134.3 }] };
+  const stats = o => ({ stats: Object.assign({ bars: 89, beatsPerBar: 4, beatType: 4, tempo: 162 }, o) });
+  const ok = RA.plausible(stats({}), heard);
+  assert.equal(ok.ok, true);
+  assert.equal(ok.why, null);
+  assert.ok(ok.ratio > 0.9 && ok.ratio < 1.1, 'about as long as the notes: ' + ok.ratio);
+  /* the synthetic over-long case (the review: the teacher's piece repeated past 15 minutes, v2 gave 3/8 at 243 and four times the bars): 2514 bars of 3/8 at 243 for 931 s */
+  const long = RA.plausible(stats({ bars: 2514, beatsPerBar: 3, beatType: 8, tempo: 243 }), { notes: [{ on: 0.4, off: 0.9 }, { on: 930, off: 932 }] });
+  assert.equal(long.ok, false);
+  assert.equal(long.why, 'tempo', '243 is outside 30-240');
+  assert.equal(long.tempo, 243);
+  /* a tempo in range does not save a result whose bars are far off the length of the notes: four times the bars (or a fifth of them) is caught by the length */
+  const lenHigh = RA.plausible(stats({ bars: 4 * 89, tempo: 162 }), heard);
+  assert.equal(lenHigh.ok, false);
+  assert.equal(lenHigh.why, 'length');
+  assert.ok(lenHigh.ratio > 3.5, String(lenHigh.ratio));
+  const lenLow = RA.plausible(stats({ bars: 20 }), heard);
+  assert.equal(lenLow.ok, false);
+  assert.equal(lenLow.why, 'length');
+  /* the edges of the band: 0.6 and 1.6 of the span (131.2 s) are in, with two bars of slack either side */
+  const barSec = 4 * 60 / 162, span = 134.3 - 3.1;
+  assert.equal(RA.plausible(stats({ bars: Math.ceil(0.6 * span / barSec) }), heard).ok, true);
+  assert.equal(RA.plausible(stats({ bars: Math.floor(1.6 * span / barSec) }), heard).ok, true);
+  assert.equal(RA.plausible(stats({ bars: Math.floor((0.6 * span - 2 * barSec) / barSec) - 1 }), heard).ok, false);
+  assert.equal(RA.plausible(stats({ bars: Math.ceil((1.6 * span + 2 * barSec) / barSec) + 1 }), heard).ok, false);
+  /* tempo edges: 30 and 240 are the rhythm controls' own range */
+  assert.equal(RA.plausible(stats({ tempo: 240, bars: 120 }), heard).why, null);
+  assert.equal(RA.plausible(stats({ tempo: 241 }), heard).why, 'tempo');
+  assert.equal(RA.plausible(stats({ tempo: 29.9 }), heard).why, 'tempo');
+  assert.equal(RA.PLAUSIBLE.TEMPO_MIN, 30);
+  assert.equal(RA.PLAUSIBLE.TEMPO_MAX, 240);
+  /* a short piece: one bar of 4/4 at 60 (4 s) for 2 s of notes is a piece, not a fault */
+  assert.equal(RA.plausible(stats({ bars: 1, tempo: 60 }), { notes: [{ on: 1, off: 3 }] }).ok, true);
+  /* not judged (ok): no statistics, no notes, a span of nothing, numbers that are not numbers */
+  [null, undefined, {}, { stats: {} }, { stats: { bars: 0, beatsPerBar: 4, beatType: 4, tempo: 100 } }, { stats: { bars: 10, beatsPerBar: 4, beatType: 4, tempo: NaN } }].forEach(b => assert.equal(RA.plausible(b, heard).ok, true, JSON.stringify(b)));
+  [null, undefined, {}, { notes: [] }, { notes: [{ on: 1, off: 1 }] }, { notes: [{ on: NaN, off: 2 }] }].forEach(h => assert.equal(RA.plausible(stats({ bars: 4000 }), h).ok, true, JSON.stringify(h)));
+});
+
+test('plausible: what the real conversion writes for ordinary performances is believable (v2 and classic alike)', () => {
+  [piece(16, 4), piece(24, 9), piece(12, 2)].forEach((p, i) => {
+    [AS.toMusicXml({ notes: p.notes }, v2), AS.toMusicXml({ notes: p.notes }, app)].forEach((b, k) => {
+      const r = RA.plausible(b, { notes: p.notes });
+      assert.equal(r.ok, true, 'piece ' + i + (k ? ' classic ' : ' v2 ') + JSON.stringify(r));
+      assert.ok(r.ratio > 0.8 && r.ratio < 1.25, 'piece ' + i + ' ratio ' + r.ratio);
+    });
+  });
+});
+
+test('the page keeps a v2 result only when it is believable: finishHeard converts again the classic way, Write again changes nothing', () => {
+  const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8').replace(/\r\n/g, '\n');
+  assert.match(html, /if \(useV2 && writtenByV2\(built\) && !v2Plausible\(built, heard\)\) \{ built = convert\(false\); rejectedV2 = true; \}/);
+  assert.match(html, /Import\.recordingNotes\(report, built, score, heard, rejectedV2 \? 'implausible' : useV2 \? 'unreadable' : 'not-loaded'\)/);
+  assert.match(html, /if \(wantV2 && \(!writtenByV2\(built\) \|\| !v2Plausible\(built, heard\)\)\) return done\(tx\('The new transcription method could not read this performance, so nothing was changed\.'\)\);/);
+  assert.match(html, /function v2Plausible\(built, heard\) \{[\s\S]{0,200}A\.plausible\(built, heard\)\.ok/);
+});

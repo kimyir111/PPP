@@ -33,7 +33,8 @@ const WAV = path.join(os.tmpdir(), 'zz-ppp-fixture-' + process.pid + '.wav');
   fs.writeFileSync(WAV, buf);
 })();
 
-/* o.query: appended to the address; o.locale; o.store {key: value} set before the page's scripts run; o.failWhile {re} and o.blockOn: matching requests fail while rec.failOn is true */
+/* o.query: appended to the address; o.locale; o.store {key: value} set before the page's scripts run; o.failWhile {re}: matching requests fail while rec.failOn is true;
+   o.corrupt {re, body}: matching requests are answered 200 with `body` (a file that is not the file) while rec.failOn is true */
 async function openPage(browser, o) {
   o = o || {};
   /* a browser context of its own: localStorage (the remembered choice) is not shared with another page of this suite */
@@ -52,6 +53,7 @@ async function openPage(browser, o) {
     rec.requests.push(u.replace(/^https?:\/\/[^/]+/, ''));
     if (HELPER.test(u)) return req.abort();
     if (o.failWhile && rec.failOn && o.failWhile.test(u)) { rec.failed.push(u.replace(/^https?:\/\/[^/]+/, '')); return req.abort(); }
+    if (o.corrupt && rec.failOn && o.corrupt.re.test(u)) { rec.failed.push(u.replace(/^https?:\/\/[^/]+/, '')); return req.respond({ status: 200, contentType: 'application/javascript', body: o.corrupt.body, headers: { 'Cache-Control': 'no-store' } }); }
     req.continue();
   });
   page.on('console', m => { if (m.type() === 'error' && !HELPER.test(JSON.stringify(m.location())) && !(o.failWhile && /Failed to load resource/.test(m.text()))) rec.consoleErrors.push(m.text()); });
@@ -76,6 +78,8 @@ async function stubAmt(page, heard) {
     window.__heard = h;
     window.PPP.Import.pianoAmtNotes = async () => ({ notes: h.notes.map(n => Object.assign({}, n)), pedals: (h.pedals || []).map(p => Object.assign({}, p)), duration: h.notes.reduce((m, n) => Math.max(m, n.off), 0) + 1,
       engine: 'onsets-and-frames', qualityTier: 'browser-fallback' });
+    /* the 'Full song' recording type asks the broad model (amtNotes) instead: the same stub */
+    window.PPP.Import.amtNotes = window.PPP.Import.pianoAmtNotes;
   }, heard);
 }
 /* an import through the real screen: the file goes in, the stubbed model hears the notes, and the review screen opens */
