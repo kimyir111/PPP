@@ -2095,7 +2095,8 @@ By book on rec-core: Burgmüller 0.906 -> 0.919, Czerny 849 0.963 -> 0.972, sona
 0.947 -> 1.000; Hanon 0.9828 -> 0.9823, hymns 0.9869 -> 0.9856, catalogue 0.911 -> 0.904 (Gymnopédie loses the hands gate in one
 family). The A/B verdicts are REGRESSION only through the micro guard (no drop allowed on a micro piece: M15 wide chords 1.000 ->
 0.976 in four families, one note; M05/M06 32nd runs, M03, M04, M21, M22 in one family each, the mechanism of 19.6: the grid's
-merged runs), through `critical.note_values` (5 rec-core cases flip, 4 of them cover+of) and small subgroups (rec-arrange-core
+merged runs), through case flips of the gates (rec-core v2, main -> branch with S6 retrained: `critical.note_values` 4 cases
+pass -> fail and 6 fail -> pass, `critical.hands` 1 and 3, `usable` 1 and 4) and small subgroups (rec-arrange-core
 `arr.level.distinct` on hymns and the replay fixtures, -0.011 / -0.013, one case each), while the micro pieces as a set rise
 (0.990 -> 0.993, critical.hands 0.993 -> 1.000); rebaselined with that reason.
 
