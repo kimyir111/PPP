@@ -1972,3 +1972,235 @@ PRs #161, #162, #163 merged as merge commits after the `gate` check was read on 
 Cosmetic or existing, none blocking (roadmap TD23): the Full-song review with the chip on still says "Write the notation again" in a hint; the "Needs a look" tile counts a different list from the amber flags; the one-note arranger gives the same copy at all three levels (also for the classic song).
 
 What this does not show: that v2 reads better to the ear. The next step is G10a-5 (H-10): the teacher compares v1 and v2 blind.
+
+## 26. G10a-2b: S4 playability (2026-10-04/05; implementer on Opus, AI-5b)
+
+Worktree `D:/PPP-g10a2s4`, branch `g10-a2s4` from main `7611c4e` (main `0a19ba4`, docs only, merged in). The question (25.4, 25.8,
+roadmap TD21): S4 made confident mistakes on the teacher's real piece that a teacher can see and that made the one-note
+arranger refuse the v2 graph (`ALL_CANDIDATES_HAVE_HARD_VIOLATIONS` at every level: a right-hand VELOCITY violation in every
+candidate, then the relaxed plan's `HAND_CROSSING_MAX` 0.01), so the Song Arranger re-converts with the classic hands. Frozen,
+not touched: `candidates/`, `arrangement/`, `realize/`, `repair/`, `HAND_CROSSING_MAX`, every selection weight and level offset,
+the app page; `hands: 'legacy'` and the classic path are byte-identical (26.7). Measurement first; every number below is
+reproducible with 26.8.
+
+### 26.1 Baselines reproduced
+
+- `train_hands.js --check` on main: same weights, same evaluation; S4 v1 on the truth groups: training 0.9838, hold-out 0.9769
+  (legacy split 0.854 / 0.844); on S4's real input (1,538 training performances through today's v2 pipeline) 0.9765 (legacy 0.863).
+- `rec-core` v2 rows (846): hand accuracy 0.9730, critical.hands 0.9811; `rec-hands` (S4 alone on the app path, 1,128): 0.9699 /
+  0.9805; hold-out slice (the 52 hold-out references x rec-full's six families x seeds 11, 12, v2: 624 cases, a scratch suite):
+  0.9644 / 0.9455.
+- `rec-arrange-core` / `-full`: the v2 rows refuse only the four `UNREACHABLE` cases the app rows refuse (21.2, 25.4): **no suite
+  saw the failure**.
+- The teacher's piece (private; 1,214 heard notes of the real browser model, and a second run of the model, 1,199 notes): v2
+  refused at beginner, intermediate and advanced on both; v2 with `hands: 'legacy'` arranged 3 of 3 on both (25.8).
+
+### 26.2 Error analysis by cause
+
+On the teacher's piece (S4 v1 against the classic split: `scratchpad` tools, the graph's G5a analysis at the medium hand, the
+arranger's candidates as `candidates/` builds them) and then on the catalogue, where each cause could be made measurable:
+
+1. **A bare octave is split one note per hand.** The catalogue's training references write 4,976 bare-octave onsets; 4,951 of
+   them (99.5 %) one note per hand - the unison exercises of Hanon and Beyer - in every register (the deep bass too: 427 of 434).
+   S4 learned "octave = two hands": on the teacher's piece the cover's right-hand melody in octaves (Eb5|Eb6, D6|D7, Bb5|Bb6 ...)
+   gave its lower note to the left hand (the 21 left-hand notes at or above G5, 43-47 s and 91-107 s, and the left hand's 30
+   VELOCITY violations that killed the arranger's "hymn" candidate), and the left hand's bass octaves (Bb1|Bb2, C2|C3) gave their
+   upper note to the right hand.
+2. **One hand is given what no hand can play.** C#2 D4 F4 (28 semitones) and F1 F2 C5 Eb5 (34) in the left hand: the span table
+   stops at 24 and its sparse cells make an impossible chord "rare", a few nats, not impossible. G5a at the medium hand finds 27
+   SPAN violations in S4's split of the piece (classic split: 1).
+3. **A note is given to a hand that cannot be there in time.** The inner G3 at 54.07 s goes to the right hand, which plays E6
+   0.19 s later (33 semitones; G5a needs 0.25 s): the right-hand VELOCITY violation in every candidate. S4 had no notion of travel
+   time: its motion table is a frequency of how far a hand moves, at most a few nats.
+4. **What is left after 1-3 (26.5): the intro's low line.** G3 G3 F3 Ab3 at 4.8-5.6 s and 52.2-53.0 s, after a bass note, with
+   the right hand idle; S4 reads it as the right hand (in the catalogue a lone third-octave note with a bass an octave below goes
+   26 times to the left hand, 35 to the right), and the one-note arranger then writes its left-hand accompaniment up to C4
+   (`realize/theory.js` LH_CHORD_TOP) above that melody: crossed moments in the arranger's candidates. The classic split cuts
+   the line at its split point (F3 to the left, G3 and Ab3 to the right), and its arrangement crosses at 0.72 %.
+
+The catalogue cannot show 1-3 because it is not written the way covers are. **Texture** (`tests/bench/pppbench/texture.py`):
+`octaves` doubles every single note of a hand an octave below (left) or above (right), hands kept (`octaves-l`, `octaves-r`: one
+hand). On the hold-out references so textured, S4 v1 scores 0.69 (`octaves`, legacy split 0.97) on the truth, 0.73 on S4's real
+input (legacy 0.97); the bench (26.4) shows the hard violations (234 per 100 bars against 18) and 5 more arranger refusals than the
+classic hands.
+
+### 26.3 What was built
+
+- **`rec/hands.js` 1.1.0** (two new parts, each read from the model's params, so a model without them decodes as hands-v1 did;
+  `train_hands.js --check` reproduces hands-v1 with this code):
+  - *context* (`params.ctx {w: 0.5, d: 12}`): for each onset group, hand-free, whether another note lies an octave or more below
+    its lowest note, or above its highest, within half a second; the partition table is counted per context class (four times
+    the cells). A bare octave with nothing around is the unison exercise's two hands, the same octave over a far bass is a
+    cover's right hand, a lone note over a far bass is a melody note.
+  - *playability* (`params.play {w: 50, span: 22, keys: 5, reach: 12, perSemi: 0.012}`): every choice pays w for each hard
+    violation the G5a analyzer would find: a hand wider than the widest hand any training reference writes (22: the hymnal's
+    left hand passes G5a's octave, so G5a's own 12-14 would fight the truth), more than five keys, and a lateral shift too fast
+    for the time since the hand last played (beyond the medium hand's reach of 12 semitones, 0.012 s a semitone:
+    `playability/reach.js requiredSeconds`), measured on the hand's mean (G5a) and on its outer line (the right hand's top, the
+    left hand's bottom: what the one-note arranger keeps). Not learned: G5a's own constants, at a cost no table cell reaches, so a
+    hand never gets an impossible note unless every choice gives one.
+- **`rec/weights/hands-v1.json` = hands-v1.1** (32.6 KB; the four rec/ models 71.7 KB of the 200 KB budget; file name kept: the
+  page loads it by that name). Weights re-tuned by the same coordinate search on the training references' truth.
+- **Data and trainer**: `hands_data.py` writes the three textures of every non-hymn reference (training and hold-out) and their
+  performances (cover, cover+of; seed 201); `train_hands.js` reports accuracy and G5a hard violations per 100 onset groups (the
+  written hands, the legacy split, S4) for the references and for each texture, and S4's real input on the textured performances.
+  The textures are evaluated, not counted (26.6). `--check` in the gate: about 80 s (was about 40).
+- **Bench**: texture rows (`"texture"` in a matrix row; case id `|tex:<name>`; `corpus.reference_for`), the `rec.hands.*` metrics
+  (`node/rec-hands-play.js`, a metric tool outside the SUT, only in a suite with `"hands_play": true`: crossing rate, G5a hard
+  violations, outer-line VELOCITY), suites `rec-hands-play`, `rec-arrange-play`, `rec-mutation-play` (README "S4's playability").
+  The two measurement suites run nightly (`nightly-rec`: about 8 minutes together on a runner, estimated from 4 + 2 minutes here);
+  the gate grows only by the trainer check and 10 unit tests (about 1 minute).
+
+### 26.4 Results (hands-v1.1 against hands-v1; the classic split for reference)
+
+**On the truth groups** (`train_hands.js`; the textures are never counted or tuned on; hold-out references never counted):
+
+| hand accuracy (mean per piece) | legacy split | S4 v1 | S4 v1.1 |
+| --- | --- | --- | --- |
+| 257 training references | 0.854 | 0.9838 | **0.9856** |
+| 52 hold-out references | 0.844 | 0.9769 | **0.9792** |
+| S4's real input, 1,538 training performances | 0.863 | 0.9765 | **0.9780** |
+| hold-out, texture `octaves-l` / `octaves-r` / `octaves` (33 each) | 0.882 / 0.933 / 0.972 | 0.898 / 0.743 / 0.687 | **0.918 / 0.755 / 0.841** |
+| S4's real input, textured training performances (374 each) | 0.912 / 0.938 / 0.973 | 0.937 / 0.753 / 0.732 | **0.946 / 0.778 / 0.872** |
+| G5a hard violations per 100 onset groups, hold-out (written hands 1.23) | 0.20 | 1.15 | **0.84** |
+| the same, hold-out `octaves` (written 0.64) | 0.75 | 51.2 | **4.8** |
+
+Hold-out by family: Beyer 0.9916 -> 0.9891, Burgmüller 0.9965 -> 1.000, Czerny 599 0.9976 -> 0.9985, Czerny 849 0.8805 -> 0.8953,
+Hanon 0.9936 -> 0.9995, hymns 0.9874 -> 0.9871, sonatina 0.9487 -> 0.9642. S4's real input by family: every family within 0.002
+of v1 or above it (Hanon 0.9825 -> 0.9809, hymns 0.9833 -> 0.9816; catalogue 0.887 -> 0.899, Burgmüller 0.907 -> 0.914).
+
+**The suites** (`run.py ab --a git:origin/main --b worktree`; v2 rows; the legacy and app rows of every suite identical case by
+case, 26.7):
+
+| suite (v2 rows) | n | hand accuracy | critical.hands | other |
+| --- | --- | --- | --- | --- |
+| rec-core | 846 | 0.9730 -> **0.9751** | 0.9811 -> **0.9835** | usable 0.416 -> 0.418, rec.usable 0.209 -> 0.207 (2 cases), voice F1 0.896 -> 0.898, rest recall 0.353 -> 0.347 |
+| rec-robust | 282 | 0.9775 -> **0.9786** | 0.9787 -> **0.9858** | usable 0.543 -> 0.546 |
+| rec-smoke | 48 | 0.9888 -> **0.9898** | 1.000 -> 1.000 | |
+| rec-hands (S4 alone, app path) | 1,128 | 0.9699 -> **0.9724** | 0.9805 -> **0.9849** | |
+| hold-out slice (52 hold-out refs, 6 families, seeds 11, 12) | 624 | 0.9644 -> **0.9647** | 0.9455 -> 0.9455 | rec.usable 0.212 -> 0.215 |
+| rec-grid (v2 / v2-s3legacy) | 705 + 705 | 0.9752 -> 0.9772 / 0.9713 -> 0.9734 | 0.9830 -> 0.9830 / 0.9816 -> 0.9830 | |
+| replay-of-v2 (the browser model on rendered audio) | 20 | 0.9656 -> **0.9684** | 0.95 -> **1.00** | |
+| replay-public-v2 | 6 | PASS, 1 case writes different music | | |
+| rec-arrange-core | 84 | arr.made 0.988 -> 0.988 | | melody kept 0.965 -> 0.968, melody in the left hand before arranging 0.0185 -> 0.0142, harmony 0.761 -> 0.761, hard violations 0 |
+| rec-arrange-smoke | 32 | arr.made 0.938 -> 0.938 | | kept 0.951 -> 0.951, harmony 0.780 -> 0.776 |
+| rec-arrange-full (nightly, against its old baseline) | 141 | arr.made 0.979 -> 0.979 | | kept 0.978 -> 0.979, melody in the left hand 0.0145 -> 0.0114, harmony 0.774 -> 0.773, hard violations 0 |
+| rec-full (nightly, 4 shards, against its old baseline) | 11,196 (v2 3,732) | v2 0.9774 -> **0.9787** | v2 0.9896 -> 0.9903 | v2 usable 0.436 -> 0.440; hold-out (every option set) 0.8892 -> 0.8893 |
+
+By book on rec-core: Burgmüller 0.906 -> 0.919, Czerny 849 0.963 -> 0.972, sonatina 0.973 -> 0.976, micro 0.990 -> 0.993, samples
+0.947 -> 1.000; Hanon 0.9828 -> 0.9823, hymns 0.9869 -> 0.9856, catalogue 0.911 -> 0.904 (Gymnopédie loses the hands gate in one
+family). The A/B verdicts are REGRESSION only through the micro guard (no drop allowed on a micro piece: M15 wide chords 1.000 ->
+0.976 in four families, one note; M05/M06 32nd runs, M03, M04, M21, M22 in one family each, the mechanism of 19.6: the grid's
+merged runs), through `critical.note_values` (5 rec-core cases flip, 4 of them cover+of) and small subgroups (rec-arrange-core
+`arr.level.distinct` on hymns and the replay fixtures, -0.011 / -0.013, one case each), while the micro pieces as a set rise
+(0.990 -> 0.993, critical.hands 0.993 -> 1.000); rebaselined with that reason.
+
+**Covers** (`rec-hands-play`: the core references and the 52 hold-out references, as written and textured `octaves`, cover, beats
+none; `rec-arrange-play`: rec-arrange-core's references textured `octaves`):
+
+| | as written: v2 v1 -> v1.1 (classic hands) | `octaves`, core: v2 v1 -> v1.1 (classic) | `octaves`, hold-out: v2 v1 -> v1.1 (classic) |
+| --- | --- | --- | --- |
+| hand accuracy | 0.977 -> **0.980** (0.889) | 0.810 -> **0.916** (0.949) | 0.809 -> **0.897** (0.940) |
+| critical.hands | 0.986 -> 0.986 (0.809) | 0.426 -> **0.809** (0.979) | 0.462 -> **0.750** (0.981) |
+| rec.hands.crossing (share of two-hand moments) | 0.13 % -> **0.09 %** (0.04 %) | 0.65 % -> **0.46 %** (0.19 %) | 0.32 % -> **0.22 %** (0.10 %) |
+| pieces crossing above 1 % | 4.3 % -> 3.5 % (1.4 %) | 17.7 % -> 13.5 % (7.1 %) | 13.5 % -> 9.6 % (5.8 %) |
+| G5a hard violations / 100 bars | 12.0 -> **10.2** (2.1) | 234 -> **51** (18) | 236 -> **40** (7.7) |
+| outer-line VELOCITY / 100 bars | 0.88 -> **0** (0.33) | 53.7 -> **4.7** (8.4) | 40.0 -> **4.8** (5.7) |
+| one-note arranger, levels made (rec-arrange-play) | | 0.906 -> **0.953** (0.969): refused 6 -> 3 pieces (2) | |
+
+The written hands' G5a count includes what the catalogue itself writes (the hymnal's left hand passes G5a's octave: the written
+hands of the hold-out score 1.23 per 100 onset groups), so "hard violations" is a playability measure relative to the truth, not
+zero by right.
+
+### 26.5 The teacher's piece (private; the reviewer's arrangement path: `arrangeSingleNote` through `candidates/`, `app-single-extract.js`)
+
+| arm (two runs of the real browser model) | levels arranged | arrangement crossing | written hands: crossing / G5a SPAN, VELOCITY / outer-line VELOCITY | left-hand notes >= G5 | right-hand notes < G3 |
+| --- | --- | --- | --- | --- | --- |
+| v2, S4 v1 (1,214 / 1,199 notes) | 0 / 3, 0 / 3 (every candidate: 1 right-hand VELOCITY, crossing 1.8-2.4 %) | - | 0.16 % / 27, 30 / 34 (0.33 % / 31, 28 / 31) | 21 | 11 (9) |
+| **v2, S4 v1.1** | **3 / 3, 3 / 3** | **0.82 %, 0.82 %** | 0.16 % / 8, 2 / 2 | 4 | 9 |
+| v2 with the classic hands (the fallback) | 3 / 3, 3 / 3 | 0.72 %, 0.93 % | 0.34 % / 1, 5 / 6 | 0 | 2 |
+
+S4 v1.1 removes what refused the piece: the right-hand VELOCITY (54.26 s) is gone from every candidate, the left hand's 30 VELOCITY
+violations of the "hymn" candidate fall to 1 (92.59 s: G4 then Ab2 0.09 s later in the transcription itself, a leap no hand makes,
+so every split violates there), the 21 left-hand notes at or above G5 to 4, the impossible chords to 8 SPAN at the medium hand.
+**The pass is narrow**: of the five relaxed-plan candidates, one (the small-hand "auto") crosses at 11 of about 1,300 moments where
+13 are allowed; the others cross at 1.7-2.0 % (cause 4 of 26.2: the intro's low line under the arranger's left hand). Near-identical
+models were refused on this piece (the same model with a span limit of 19 instead of 22, its first training; the octave-table
+variants of 26.6), so the hands fallback (25.8) must stay: a recording like this one may still need it.
+
+### 26.6 Tried and lost (measured)
+
+- **A stronger `rel` weight, `rel` + `move`, a hand-swap repair** (25.4): crossing 2.2-4.6 %, one candidate, gate 1 only.
+- **G5a's own span (14, the large hand)** in the hard term: hold-out 0.9733 (hymns 0.987 -> 0.977: the hymnal's left hand). Span =
+  the widest written hand (22).
+- **The context in register bands** (C3, G3, C4, G4): hold-out 0.977 against 0.979 for the plain context; **the context only for
+  chords** (with the textures counted): 0.969.
+- **Context windows 0.3, 0.75, 1.0 s** (measured with the octave-table model below): training 0.982 / 0.984 / 0.984 against 0.984
+  at 0.5; hold-out 0.976 / 0.973 / 0.973 against 0.975; real input no better.
+- **Counting the textures into every table** (one table set): textures 0.98 and above the legacy split, but training 0.983, hold-out
+  0.974-0.975, S4's real input 0.975; **only into the partition, span and count tables**: the bench's covers at 0.994 (crossing 0.23 %)
+  but training 0.983, hold-out 0.974, real input 0.974.
+- **A third style "cover"** counted on the textures, chosen by the cheaper path: the unison exercises take it (22-26 of 187 piano
+  training references; under it Hanon and Beyer's unisons read 0.51-0.69): hold-out 0.939-0.944.
+- **A piece-relative register** (each note against the piece's own split point, the legacy writer's global centre): fitted weight
+  0.25-0.5, no effect; forced to 4 it arranges the teacher's piece (0.55 %) and costs training 0.024, hold-out 0.015, real input 0.020.
+- **A second table set for octave groups, counted on the catalogue and the textures** (the best on covers: bench `octaves` accuracy
+  0.992, crossing 0.07 %, 0.7 % of pieces above 1 %; truth training 0.9836, hold-out 0.9751): on the catalogue's performances the
+  unison exercises flip to one hand under timing noise (S4's real input Hanon 0.983 -> 0.944, catalogue 0.887 -> 0.847); A/B
+  rec-core v2 hand accuracy 0.9730 -> 0.9698, critical.hands 0.9811 -> 0.9681 (11 cases), Hanon -0.050, catalogue -0.045; hold-out
+  slice 0.9644 -> 0.9594 (Hanon -0.045). Variants that did not save Hanon: textured octaves counted only with context (0.953), only
+  contextual octaves in the second set (0.961), weights tuned on the performances too (0.955); a unison switch (a piece with more
+  than 60 % bare-octave onsets keeps the catalogue's tables) saved it (0.986) but lost the catalogue (0.850) and the textures
+  (`octaves` hold-out 0.89, legacy 0.97). Not shipped: the brief's "no regression" holds the catalogue's performances.
+
+### 26.7 Identity, determinism, budget
+
+- **Classic and `hands: 'legacy'` byte-identical**: `ab` against `origin/main`, case by case (status, metrics, prediction): smoke 44,
+  core 553, robust 282, smoke-app 44, core-app 553, robust-app 282, replay-public 6, replay-of 20, replay-of-app 20 all the same
+  (`ab_identical.py`); the legacy and app rows of rec-core (846 + 846), rec-robust (282 + 282), rec-smoke (48 + 48), the app rows of
+  rec-arrange-core (84) and rec-arrange-smoke (32), and the `app` and `v2-handslegacy` rows of rec-hands-play (386 + 386) and
+  rec-arrange-play (64) identical. No module of the arranger, `audio-score.js` or the page changed (the 975 catalogue
+  `arrangeSingleNote` requests load none of the changed files). A model without `params.ctx` / `params.play` decodes as before:
+  `train_hands.js --check` reproduced hands-v1 byte for byte with the new `rec/hands.js`.
+- **Mutation coverage**: `rec-mutation-play` (`mutation-check --rec`): no hard term -> REGRESSION (hard violations 39 -> 283 per
+  100 bars, outer-line VELOCITY 3.9 -> 41.8, hand accuracy 0.928 -> 0.787); no context -> REGRESSION (hard violations 39.2 -> 40.8,
+  micro pieces' hands); the no-op byte-identical. S4's four G10a-2 defects on rec-mutation-v2 still caught (legacy split 0.989 ->
+  0.894, no motion -> 0.985, one style -> 0.937, no partition prior -> 0.967); the partition defect's anchor follows the new line.
+- **Determinism**: `results.json` byte-identical over three runs on Windows (Python 3.13.5, Node 24.17): rec-smoke `f4b676865b6f887c`,
+  replay-of-v2 `625174f5044e9848`, replay-public-v2 `af33554b77fcc005`; rec-hands-play `1360f67538eb81de` (two runs). [[LINUX]]
+- **Budget (section 11)**: S4 on the teacher's piece 27 ms (as v1), on the 1,800-note synthetic piece 29 ms (v1 27); model 32.6 KB.
+
+### 26.8 Verification
+
+- `python tests/bench/tools/hands_data.py && node tests/bench/tools/train_hands.js --check` (gate; the textures are in the cache);
+  `node tests/bench/tools/train_hands.js --eval-only` (the evaluation, with S4's real input when `hands_data.py --perfs` ran).
+- `node --test tests/rec/hands.test.js` (15: the model file, cover octaves, the hard term with and without it, `hardOf`, the
+  context); `npm run test:rec` (118 pass, 1 todo); `python -m unittest discover -s tests/bench/unit -t tests/bench` (425, among them
+  `unit/test_hands_play.py`: the textures, texture cases, `rec.hands.*`, the metric tool);
+  `NODE_PATH=<puppeteer> node tests/recording-v2-app.test.js` (all passed).
+- `python tests/bench/run.py run --suite rec-hands-play` / `rec-arrange-play` (nightly, baselined); `python
+  tests/bench/run.py mutation-check --rec` (the play group); `run.py ab --suite <s> --a git:origin/main --b worktree` and
+  `tests/scoregraph/tools/ab_identical.py --suite <s>` for the identity above.
+- The teacher's piece: the reviewer's `ref1.js` / `ref3.js` path with the heard notes of `ytflow/heard-a.json` and `g10r/heard-base.json`
+  (private, scratchpad; never committed).
+
+### 26.9 Against the brief, and limits
+
+1. *Crossing close to the legacy split, <= 0.5 % on the teacher's piece, the arranger's 1 % gate passing*: the written hands cross
+   at 0.16 % on the piece (classic 0.34 %); the arrangement at 0.82 % (gate passes, narrowly, 26.5). On textured covers the written
+   hands cross at 0.46 % (v1 0.65 %, classic 0.19 %): **closer, not equal**.
+2. *No right-hand VELOCITY of that kind*: none on the piece (the hard term, measured on the outer line the arranger keeps);
+   outer-line VELOCITY on covers 4.7 per 100 bars (v1 53.7, classic 8.4).
+3. *No loss on the S4 metrics*: every suite's v2 hand accuracy rises (rec-core +0.002, rec-hands +0.003, hold-out slice +0.0003,
+   truth hold-out +0.002); per-family losses within 0.002 except the catalogue's Gymnopédie (one case of rec-core) and micro pieces
+   in single families (26.4).
+4. *The teacher's piece arranged without the fallback at three levels*: yes for this model, on both runs of the browser model, by
+   one candidate with two moments to spare; the same architecture trained with a narrower span was refused. **Roadmap stop condition
+   3, partially**: the remaining crossing comes from a passage the catalogue cannot decide (cause 4) and from the arranger's own
+   left-hand register (frozen); making S4 decide it the classic way costs the catalogue 1.5-2.4 points (measured, 26.6). The
+   hands fallback stays (not touched), and the review screen's Apply arrangement still has none (25.5).
+- Covers stay behind the classic split on hand accuracy (0.916 against 0.949 on textured core references) and crossing: the
+  right hand's octave melody (`octaves-r`: 0.755 hold-out) is S4's weakest texture; the model that fixed it (26.6) cost the
+  catalogue's unison exercises. A real cover corpus (licensed, hands known) would let a cover style be learned instead of
+  synthesized; the textures are a crude stand-in (every single note doubled).
+- One real piece, two runs of the model on it. The textures are synthetic; their hands are the references' own.

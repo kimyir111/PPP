@@ -679,12 +679,12 @@ REC_HANDS_PLAY_MUTATIONS: List[Dict[str, Any]] = [
      "file": "rec/hands.js",
      "find": "    if (M.P.play) acc += M.P.play.w * hardOf(M.P.play, s, g, k);",
      "replace": "    /* mutation: no playability term */",
-     "expect": "REGRESSION", "metrics": ["rec.hands.hard_per_100_bars", "rec.hands.line_velocity_per_100_bars"]},
-    {"id": "REC-V2-HANDS-NO-CONTEXT", "v2": True,     # the partition table blind to what lies far below or above a group
-     "file": "rec/hands.js",
-     "find": "    const shape = P.ctx ? g.shape * CONTEXTS + g.ctx : g.shape;",
+     "all": True, "expect": "REGRESSION", "metrics": ["rec.hands.hard_per_100_bars", "rec.hands.line_velocity_per_100_bars", "notation.hand.accuracy"]},
+    {"id": "REC-V2-HANDS-NO-CONTEXT", "v2": True,     # the partition table blind to what lies far below or above a group (on these
+     "file": "rec/hands.js",                          # covers the hard violations and the micro pieces' hands show it; the mean hand
+     "find": "    const shape = P.ctx ? g.shape * CONTEXTS + g.ctx : g.shape;",   # accuracy hardly moves: 0.9279 -> 0.9280)
      "replace": "    const shape = P.ctx ? g.shape * CONTEXTS : g.shape;",
-     "expect": "REGRESSION", "metrics": ["notation.hand.accuracy"]},
+     "expect": "REGRESSION", "metrics": ["rec.hands.hard_per_100_bars", "micro:notation.hand.accuracy"], "all": True},
     {"id": "MUT-NOOP",
      "find": "  const api = {",
      "replace": "  /* noop mutation */\n  const api = {",

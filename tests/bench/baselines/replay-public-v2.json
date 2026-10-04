@@ -91,11 +91,11 @@
     "n": 6
    },
    "notation.hand.accuracy": {
-    "mean": 0.99008,
+    "mean": 0.999089,
     "n": 6
    },
    "notation.hand.accuracy_ref": {
-    "mean": 0.971413,
+    "mean": 0.980185,
     "n": 6
    },
    "notation.ioi.accuracy": {
@@ -211,11 +211,11 @@
     "n": 6
    },
    "nq.range.ledger4_rate": {
-    "mean": 2.777778,
+    "mean": 0.0,
     "n": 6
    },
    "nq.range.ledger4_rate.delta": {
-    "mean": 2.777778,
+    "mean": 0.0,
     "n": 6
    },
    "nq.rest.per_measure_delta": {
@@ -339,27 +339,27 @@
     "n": 6
    },
    "read.ledger_lines.heavy_rate": {
-    "mean": 0.002778,
+    "mean": 0.0,
     "n": 6
    },
    "read.ledger_lines.heavy_rate.delta": {
-    "mean": 0.002778,
+    "mean": 0.0,
     "n": 6
    },
    "read.max_chord_size": {
-    "mean": 2.0,
+    "mean": 1.833333,
     "n": 6
    },
    "read.max_chord_size.delta": {
-    "mean": 0.166667,
+    "mean": 0.0,
     "n": 6
    },
    "read.over_span_rate": {
-    "mean": 0.019194,
+    "mean": 0.013986,
     "n": 6
    },
    "read.over_span_rate.delta": {
-    "mean": 0.010743,
+    "mean": 0.005534,
     "n": 6
    },
    "read.rests_per_measure": {
@@ -395,7 +395,7 @@
     "n": 6
    },
    "sqi": {
-    "mean": 81.704317,
+    "mean": 81.792036,
     "n": 6
    },
    "struct.downbeat.f1": {
@@ -587,11 +587,11 @@
      "n": 6
     },
     "notation.hand.accuracy": {
-     "mean": 0.99008,
+     "mean": 0.999089,
      "n": 6
     },
     "notation.hand.accuracy_ref": {
-     "mean": 0.971413,
+     "mean": 0.980185,
      "n": 6
     },
     "notation.ioi.accuracy": {
@@ -707,11 +707,11 @@
      "n": 6
     },
     "nq.range.ledger4_rate": {
-     "mean": 2.777778,
+     "mean": 0.0,
      "n": 6
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 2.777778,
+     "mean": 0.0,
      "n": 6
     },
     "nq.rest.per_measure_delta": {
@@ -835,27 +835,27 @@
      "n": 6
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.002778,
+     "mean": 0.0,
      "n": 6
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.002778,
+     "mean": 0.0,
      "n": 6
     },
     "read.max_chord_size": {
-     "mean": 2.0,
+     "mean": 1.833333,
      "n": 6
     },
     "read.max_chord_size.delta": {
-     "mean": 0.166667,
+     "mean": 0.0,
      "n": 6
     },
     "read.over_span_rate": {
-     "mean": 0.019194,
+     "mean": 0.013986,
      "n": 6
     },
     "read.over_span_rate.delta": {
-     "mean": 0.010743,
+     "mean": 0.005534,
      "n": 6
     },
     "read.rests_per_measure": {
@@ -891,7 +891,7 @@
      "n": 6
     },
     "sqi": {
-     "mean": 81.704317,
+     "mean": 81.792036,
      "n": 6
     },
     "struct.downbeat.f1": {
@@ -1082,11 +1082,11 @@
      "n": 6
     },
     "notation.hand.accuracy": {
-     "mean": 0.99008,
+     "mean": 0.999089,
      "n": 6
     },
     "notation.hand.accuracy_ref": {
-     "mean": 0.971413,
+     "mean": 0.980185,
      "n": 6
     },
     "notation.ioi.accuracy": {
@@ -1202,11 +1202,11 @@
      "n": 6
     },
     "nq.range.ledger4_rate": {
-     "mean": 2.777778,
+     "mean": 0.0,
      "n": 6
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 2.777778,
+     "mean": 0.0,
      "n": 6
     },
     "nq.rest.per_measure_delta": {
@@ -1330,27 +1330,27 @@
      "n": 6
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.002778,
+     "mean": 0.0,
      "n": 6
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.002778,
+     "mean": 0.0,
      "n": 6
     },
     "read.max_chord_size": {
-     "mean": 2.0,
+     "mean": 1.833333,
      "n": 6
     },
     "read.max_chord_size.delta": {
-     "mean": 0.166667,
+     "mean": 0.0,
      "n": 6
     },
     "read.over_span_rate": {
-     "mean": 0.019194,
+     "mean": 0.013986,
      "n": 6
     },
     "read.over_span_rate.delta": {
-     "mean": 0.010743,
+     "mean": 0.005534,
      "n": 6
     },
     "read.rests_per_measure": {
@@ -1386,7 +1386,7 @@
      "n": 6
     },
     "sqi": {
-     "mean": 81.704317,
+     "mean": 81.792036,
      "n": 6
     },
     "struct.downbeat.f1": {
@@ -2307,8 +2307,8 @@
     "notation.duration.accuracy": 0.756757,
     "notation.duration.accuracy_ref": 0.736842,
     "notation.duration.page_accuracy": 0.756757,
-    "notation.hand.accuracy": 0.945946,
-    "notation.hand.accuracy_ref": 0.921053,
+    "notation.hand.accuracy": 1.0,
+    "notation.hand.accuracy_ref": 0.973684,
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
     "notation.note_shape.mismatches": 0.0,
@@ -2325,8 +2325,8 @@
     "notes.onset.f1_50ms": 0.973684,
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
-    "read.ledger_lines.heavy_rate": 0.016667,
-    "sqi": 62.894737,
+    "read.ledger_lines.heavy_rate": 0.0,
+    "sqi": 63.421053,
     "struct.downbeat.f1": 0.533333,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -2345,8 +2345,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "401bf11bff1bcdbf",
-   "sqi": 62.894737,
+   "semantic": "2f908c2b8f7af569",
+   "sqi": 63.421053,
    "status": "ok"
   }
  },
@@ -2389,6 +2389,14 @@
    "git_sha": "22abff822c80a7c1005b47809ea0de0223990325",
    "reason": "G10a-3 S5 (rec/voices.js, PR 3 of 3, on PR 2): two voices per staff for four-part writing (S4's chorale style), each with its own durations and rests; a part's silence while the other part sounds is legato by rule (S6, not trained on); rec.rest rec/2 counts staff silences (rest spans minus sounding notes of the staff; identical for one-voice staff-bars). Gains: rec.voice.f1, rest precision, rec.usable, usable, pitch integrity, MV2H (G10 section 24.7-24.8). Moved the wrong way, with cause: replay-of-v2 duration accuracy -0.028 and extra ties +2.4/100 (two voices hold a part over an AMT-merged or missed repeat), Burgmueller 023 split where its edition has one voice (book voice F1 -0.01 to -0.03), rec-arrange hymns melody kept -0.02 / harmony -0.025 / level distinct -0.026 and left-hand density +0.11 (the arranger on two parts per staff, G10c), rec-grid v2-s3legacy compound class 5 0.18 -> 0.25 (that arm only; v2 rows 0), small rest-precision drops on set:micro and mode:minor tags, single values on a few micro rows",
    "sqi_all": 81.704317,
+   "usable_all": 0.5
+  },
+  {
+   "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
+   "date": "2026-10-04",
+   "git_sha": "90f769b3b6d3b7e6262ff0a06b30c0c82ac1ebe2",
+   "reason": "G10a-2b: S4 hands-v1.1 (group context + G5a hard term; docs/GOALS/G10 section 26)",
+   "sqi_all": 81.792036,
    "usable_all": 0.5
   }
  ],
@@ -2737,8 +2745,8 @@
  "recorded": {
   "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
   "date": "2026-10-04",
-  "git_dirty": false,
-  "git_sha": "22abff822c80a7c1005b47809ea0de0223990325",
+  "git_dirty": true,
+  "git_sha": "90f769b3b6d3b7e6262ff0a06b30c0c82ac1ebe2",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"
