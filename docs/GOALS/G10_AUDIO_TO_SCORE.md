@@ -1600,14 +1600,17 @@ done (24.10).
   16th or longer (a triplet-16th rest under its bracket). Neither occurs in legacy or app output (no rest there carries a ratio;
   their one-note brackets never span half a beat).
 
-### 24.5 S7 measured (PR 1: rests still by the fixed rule, one voice per staff; v2 rows, main -> PR 1)
+### 24.5 S7 measured (PR 1: rests still by the fixed rule, one voice per staff; v2 rows, main `c5d5ad4` (with lane B's S8/S9) -> PR 1)
 
-| suite, beats | n | classes 3 / 5 / 6 / 7 per 100 bars | accidentals | tuplet P | tuplet R | false tuplet beats /100 | note values | usable |
+| suite, beats | n | classes 3 / 5 / 6 / 7 per 100 bars | tuplet P | tuplet R | false tuplet beats /100 | note values | usable | key |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| rec-core, none | 564 | 1.8 / 4.0 / 0 / 0 -> **0 / 0 / 0 / 0** | 0.991 -> 1.000 | 0.905 -> 0.88 | 0.29 -> **0.42** | 1.8 -> 2.5 | 0.418 -> 0.42 | 0.156 -> 0.15 |
-| rec-core, oracle-noisy | 282 | 1.0 / 3.7 / 0 / 0 -> **0 / 0 / 0 / 0** | 0.989 -> 1.000 | 0.968 -> 0.94 | 0.38 -> **0.48** | 0.9 -> 1.5 | 0.585 -> 0.59 | 0.262 -> 0.262 |
-| rec-robust, none | 141 | 2.8 / 7.3 / 2.5 / 9.8 -> **0 / 0 / 0 / 0** | 0.993 -> 1.000 | 0.920 -> 0.88 | 0.35 -> 0.44 | 2.0 -> 2.8 | 0.255 -> 0.255 | 0.113 -> 0.113 |
-| rec-grid, human-real (oracle) | 141 | 2.1 / 6.1 / 0 / 0 -> **0 / 0 / 0 / 0** | 0.993 -> 1.000 | 0.992 -> 0.98 | 0.21 -> **0.36** | 0.2 -> 0.4 | 0.411 -> 0.41 | 0.291 -> 0.291 |
+| rec-core, none | 564 | 1.8 / 4.0 / 0 / 0 -> **0 / 0 / 0 / 0** | 0.905 -> 0.88 | 0.29 -> **0.42** | 1.8 -> 2.5 | 0.418 -> 0.42 | 0.179 -> 0.179 | 0.945 -> 0.945 |
+| rec-core, oracle-noisy | 282 | 1.0 / 3.7 / 0 / 0 -> **0 / 0 / 0 / 0** | 0.968 -> 0.94 | 0.38 -> **0.48** | 0.9 -> 1.5 | 0.585 -> 0.59 | 0.312 -> 0.312 | 0.950 -> 0.94 |
+| rec-robust, none | 141 | 2.8 / 7.3 / 2.5 / 9.8 -> **0 / 0 / 0 / 0** | 0.920 -> 0.88 | 0.35 -> 0.44 | 2.0 -> 2.8 | 0.255 -> 0.255 | 0.113 -> 0.113 | 0.943 -> 0.943 |
+| rec-grid, human-real (oracle) | 141 | 2.1 / 6.1 / 0 / 0 -> **0 / 0 / 0 / 0** | 0.992 -> 0.98 | 0.21 -> **0.36** | 0.2 -> 0.4 | 0.411 -> 0.41 | 0.312 -> 0.312 | 0.957 -> 0.957 |
+
+(Measured first against `638f56b`, before lane B merged: the same movements, and `critical.accidentals` 0.99 -> 1.00 from the tied-over
+rule, which lane B's S8 also brought.)
 
 rec-arrange (the one-note arranger on recordings, against the true score; nightly core / full): class 3 2.8 -> 0, class 5 9.4 -> 8.3
 / 9.8 -> 8.4 per 100 bars, nothing else moved. The writer alone barely moves usable and note values: the fixed rest rule (S6, 24.6)
@@ -1623,4 +1626,5 @@ near 1.0 on the beats). The `feature:ottava` tag (those Czerny 849 pieces) loses
 the training data is as short as 0.055 s a sixth, so no spacing rule separates them. Single values on compound micro pieces (M03,
 M19, M20) change because a note now lasts to the next onset of its voice (G10-D4) where the old compound writer kept the release.
 Three cases lose `critical.beat_placement` on rec-core (onsets on sixths), one `critical.pitch_integrity` (identity F1 0.952 -> 0.949
-against the 0.95 gate while its onset F1 rose 0.79 -> 0.89).
+against the 0.95 gate while its onset F1 rose 0.79 -> 0.89), one `critical.key` (Czerny 849/013 oracle-noisy: S8 reads the onsets the
+sixths moved).
