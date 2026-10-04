@@ -177,11 +177,14 @@
         (stumps ? !Array.isArray(model.trees) : !(Array.isArray(model.weights) && model.weights.length === NF))) throw new Error('rec/rests: the model does not match the features (' + NF + ')');
     const X = features(cands, ctx);
     const thr = opts.threshold != null ? opts.threshold : (model.threshold != null ? model.threshold : 0.5);
+    /* a silence of one part while the staff's other part is heard sounding (S5's two voices) is no silence of the staff: legato, and
+       not the model's question (such rows are not trained on either: as training rows they moved the model for every piece) */
+    const OV = FEATURES.indexOf('otherVoice');
     /* logistic: sigmoid(w . x); boosted stumps: sigmoid(bias + the leaf of each [feature, threshold, left, right]) */
     const score = stumps
       ? x => { let s = model.bias; const T = model.trees; for (let i = 0; i < T.length; i++) s += x[T[i][0]] <= T[i][1] ? T[i][2] : T[i][3]; return s; }
       : x => { let s = 0; for (let k = 0; k < NF; k++) s += model.weights[k] * x[k]; return s; };
-    const p = X.map(x => 1 / (1 + Math.exp(-score(x))));
+    const p = X.map(x => (x[OV] ? 0 : 1 / (1 + Math.exp(-score(x)))));
     const rest = p.map(v => v >= thr);
     return { rest: rest, p: p, report: { model: (model.name || 'rests') + '@' + model.version, asked: cands.length, rest: rest.filter(Boolean).length, threshold: thr } };
   }
