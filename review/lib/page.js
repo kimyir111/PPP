@@ -528,4 +528,7 @@ function pageHtml(data) {
     '<script id="packet-data" type="application/json">' + scriptJson(payload) + '</script>\n<script>' + JS + '</script>\n</body></html>\n';
 }
 
-module.exports = { pageHtml, ISSUES };
+/* G10a-5: the page's sampled-piano player (the block between the form code and init), for pages that carry the same sound (review/lib/page-h10.js) */
+const SOUND_JS = JS.slice(JS.indexOf('  /* ---- sound:'), JS.indexOf('  function init(){'));
+
+module.exports = { pageHtml, ISSUES, SOUND_JS };

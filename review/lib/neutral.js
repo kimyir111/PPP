@@ -341,5 +341,5 @@ function render(measures, tempo, notes, idPrefix, opts) {
     notes: audioNotes(measures, notes), stats: pre.stats };
 }
 
-module.exports = { neutralNotes, audioNotes, density, svgOf, render, prepare, lowerClefs, measuresWithClefs, splitAcrossBars, restPieces, addRests, LAYOUT,
+module.exports = { neutralNotes, audioNotes, density, svgOf, render, prepare, engraved, lowerClefs, measuresWithClefs, splitAcrossBars, restPieces, addRests, LAYOUT,
   NARROW_VIEWPORT_PX, CLEF_SAVE_SHARE, CLEF_SAVE_MIN, CLEF_MIN_RUN, ledgerLines };

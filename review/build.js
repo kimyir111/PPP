@@ -3,6 +3,8 @@
    G9c - the blind-review packet builder (docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md, section 12 "G9c - blind review tooling").
 
      node review/build.js --mode h8|h9 --out <dir> --key-out <dir> [--seed <secret>] [--items items.json] [--single-note-hands] [--list]
+     node review/build.js --mode h10 --heard <dir> --out <dir> --key-out <dir> [--seed <secret>] [--jobs 3] [--excerpt-bars 12] [--excerpt-seconds N]
+                          [--level intermediate] [--no-titles] [--list]      (G10a-5: the blind review of the recording conversion; review/h10/packet.js)
 
    --seed      optional; a SECRET string of at least 20 characters. Omit it and a random one is made. It decides which arrangement
                is X and which is Y and the order of the items, and it is written only to the key file. (A short seed can be guessed
@@ -15,6 +17,7 @@
    --single-note-hands  the G9 arm only (the legacy arm is unchanged): no two-note chord in either hand at ANY stage (candidates `singleNoteHands`,
                docs/GOALS/G09 section 12 "G9 single-note hands"); recorded in key.json, never in the packet.
    --list      print the chosen items and stop (no packet is written).
+   --heard     (h10) the folder of heard notes + items.json that review/h10/collect.js wrote; --jobs runs that many items at once in their own processes.
 
    Nothing here touches the app or the server; it only reads the repository and writes the two directories above. */
 'use strict';
@@ -32,7 +35,7 @@ const SELECT = require('./lib/select.js');
 const FORMAT = 'ppp-review-packet/1', KEY_FORMAT = 'ppp-review-key/1';
 /* decode.js's strata: G9 counts as fuller/sparser at this note-count ratio, and one arm as missing the level by more at this gap */
 const FULLER_RATIO = 1.1, MISS_GAP = 0.1;
-const REVIEW_NAME = { h8: 'H-8', h9: 'H-9' };
+const REVIEW_NAME = { h8: 'H-8', h9: 'H-9', h10: 'H-10' };
 
 /* The app's sampled piano (audio/piano, Salamander Yamaha C5, CC BY 3.0), read from the repository at build time and embedded ONCE per
    page as base64 (the page decodes it with atob; it fetches nothing, so it works from disk and inside an Artifact page). The order is
@@ -99,12 +102,13 @@ function gitCommit() {
 /* Build a packet. opts: { mode, seed, out, keyOut, items?, cache?, log? } -> { outDir, keyDir, files, packetId, count } */
 async function buildPacket(opts) {
   const mode = opts.mode;
-  if (!REVIEW_NAME[mode]) throw new Error('--mode must be h8 or h9');
+  if (!REVIEW_NAME[mode]) throw new Error('--mode must be h8, h9 or h10');
   if (!opts.out) throw new Error('--out is required');
   /* refuse before doing any work */
   const dirs = planOutputs(opts.out, opts.keyOut);
   const seed = opts.seed == null ? crypto.randomBytes(16).toString('hex') : String(opts.seed); /* random when not given; lives in the key only */
   const log = opts.log || (() => {});
+  if (mode === 'h10') return require('./h10/packet.js').buildH10(Object.assign({}, opts, { seed: seed, log: log }), dirs, { readPianoSamples: readPianoSamples, gitCommit: gitCommit });
   const cache = opts.cache || new Map();
   if (opts.singleNoteHands) cache.arrangeOpts = { singleNoteHands: true }; /* the G9 arm only; recorded in the key, never in the packet */
 
@@ -199,6 +203,24 @@ async function main() {
   if (flag('--help') || !flag('--mode')) { console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(2, 18).join('\n')); return; }
   const mode = opt('--mode');
   const t0 = Date.now();
+  if (mode === 'h10') {
+    if (flag('--list')) {
+      const inp = require('./h10/packet.js').readHeardDir(opt('--heard'));
+      inp.items.forEach(i => console.log(i.id, i.heard.notes.length + ' heard notes', i.url || '', i.title || ''));
+      inp.skipped.forEach(i => console.log('SKIPPED', i.id, i.reason));
+      return;
+    }
+    const num = n => (flag(n) ? Number(opt(n)) : undefined);
+    const r = await buildPacket({ mode: mode, seed: opt('--seed'), out: opt('--out'), keyOut: opt('--key-out'), heard: opt('--heard'), jobs: num('--jobs') || 3,
+      excerptBars: num('--excerpt-bars'), excerptSeconds: num('--excerpt-seconds'), level: opt('--level'), titles: !flag('--no-titles'), log: m => console.log(m) });
+    const size = f => (fs.statSync(f).size / 1048576).toFixed(2) + ' MB';
+    console.log('\npacket: ' + r.files.html + ' (' + size(r.files.html) + '), ' + r.count + ' items, id ' + r.packetId);
+    console.log('        ' + r.files.manifest);
+    console.log('key (NOT for the reviewer): ' + r.files.key);
+    if (r.skipped.length) console.log('SKIPPED ' + r.skipped.length + ': ' + r.skipped.map(s => s.id + ' (' + s.reason.slice(0, 80) + ')').join('; '));
+    console.log('about ' + Math.round(r.count * 5.5) + ' minutes for the reviewer; built in ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s');
+    return;
+  }
   if (flag('--list')) {
     const sel = await SELECT.selectItems(mode, { log: m => console.log(m) });
     sel.items.forEach(r => console.log(r.file, r.item.targetLevel, r.item.handProfile, 'tier', r.tier));
