@@ -1628,3 +1628,67 @@ M19, M20) change because a note now lasts to the next onset of its voice (G10-D4
 Three cases lose `critical.beat_placement` on rec-core (onsets on sixths), one `critical.pitch_integrity` (identity F1 0.952 -> 0.949
 against the 0.95 gate while its onset F1 rose 0.79 -> 0.89), one `critical.key` (Czerny 849/013 oracle-noisy: S8 reads the onsets the
 sixths moved).
+
+### 24.6 S6: is this silence a rest? (`rec/rests.js`, AI-5b; PR 2)
+
+**What it decides.** The writer collects every silence of `restMin` or more (an eighth: U7 - no shorter rest is written while the
+precision is far below 0.95) between the written release of a note and the next onset of its voice and asks S6, in one batch per
+piece, whether it is a rest; `false` lets the note last to that onset. `opts.rests: 'rule'` keeps the fixed rule under v2 (every
+such silence a rest); a page without `rec/rests.js` or its weights writes the rule.
+
+**The model.** Logistic regression over 31 features of `rec/rests.js FEATURES`: the heard silence against the heard inter-onset
+interval (from the chord's lower-median release and from its last release - negative when a note of the chord is held to the next
+onset), the written silence against the written interval, seconds, the damper (known at all, down at the release, share of the
+silence), where the silence starts and ends in the bar (bar line, beat, half beat), the other staff (an onset inside the silence;
+silent where it starts), the staff's other voice sounding, the same place in the other bars of the piece (mean heard gap and the
+share with a large one), the next onset's loudness, chord size, last onset of its voice in the bar, a few thresholds of the heard
+gap. Newton with L2 1e-3 from zero; the threshold maximises the share of right decisions on the training rows (each decision is
+a note value). `rec/weights/ai5b-rests-v1.json`, 1.3 KB; deterministic inference in the page.
+
+**The data** (`tests/bench/tools/rests_data.py`, `tests/bench/tools/train_rests.js`): the 257 non-hold-out references of the lint-clean,
+licence-evidenced catalogue played by the benchmark's humanizer (perform/3: cover, cover-pedal, human-real, cover+of without beats;
+cover and cover-pedal+helper with helper-like beats), seed 301 (no suite, no other model). Each performance runs through
+`toMusicXml` v2 with the app's options; a stand-in for `rec/rests.js` in the trainer process only records the writer's candidates
+and their features. A candidate is a rest when the written staff of its notes has a written silence (a 16th or more where nothing
+of the staff sounds - rec.rest's own truth) between the written onsets of its notes and of the next ones (the heard notes' links
+to the score). The 52 hold-out references, same rows: evaluation only. No external data, no audio, no user material; note-level
+data never leaves the git-ignored cache. `train_rests.js --check` regenerates both and compares byte for byte (in the gate: about
+30 s with 8 worker threads locally, about a minute on a runner; the result does not depend on the worker count).
+
+| candidate decisions | n | rest share | accuracy (rule -> model) | rest precision | rest recall |
+| --- | --- | --- | --- | --- | --- |
+| training rows | 31,950 | 0.207 | 0.207 -> 0.869 | 0.72 | 0.60 |
+| hold-out references | 6,598 | 0.198 | 0.198 -> **0.843** | **0.63** | **0.48** |
+
+**Tried and not shipped.** Boosted stumps (300 depth-1 trees, `train_rests.js --form stumps`): hold-out 0.851 / 0.69 / 0.36, but end
+to end no better (rec-core v2 oracle-noisy note values 0.872 -> 0.86, false rests 11.0 -> 9.9 per 100 bars): the logistic model
+ships, `rec/rests.js` reads either form.
+
+**Measured** (v2 rows, PR 1 -> PR 2; the same performances):
+
+| suite, beats | n | usable | rec.usable | note values | duration acc. | rest P | rest R | false rests /100 bars | stability | MV2H |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| rec-core, none | 564 | 0.179 -> **0.35** | 0.066 -> **0.16** | 0.42 -> **0.77** | 0.72 -> 0.84 | 0.20 -> 0.38 | 0.52 -> 0.34 | 114 -> **20** | 0.267 -> 0.23 | 0.785 -> 0.81 |
+| rec-core, oracle-noisy | 282 | 0.312 -> **0.48** | 0.053 -> 0.19 | 0.59 -> **0.85** | 0.79 -> 0.88 | 0.21 -> 0.45 | 0.62 -> 0.43 | 74 -> 11 | 0.176 -> 0.15 | 0.865 -> 0.88 |
+| rec-robust (cover-alt, never trained), none | 141 | 0.113 -> **0.44** | 0 -> 0.12 | 0.26 -> **0.78** | 0.60 -> 0.83 | 0.12 -> 0.32 | 0.64 -> 0.41 | 188 -> 25 | 0.302 -> 0.24 | 0.769 -> 0.82 |
+| rec-robust, oracle-noisy | 141 | 0.248 -> **0.63** | 0.035 -> 0.15 | 0.33 -> 0.87 | 0.65 -> 0.89 | 0.16 -> 0.36 | 0.83 -> 0.59 | 164 -> 16 | 0.222 -> 0.17 | 0.847 -> 0.90 |
+| rec-smoke | 48 | 0.333 -> 0.66 | 0.167 -> 0.31 | 0.48 -> 0.87 | 0.75 -> 0.88 | 0.27 -> 0.45 | 0.62 -> 0.45 | 94 -> 21 | 0.184 -> 0.15 | 0.858 -> 0.88 |
+| rec-grid, human-real (oracle) | 141 | 0.312 -> 0.63 | 0.085 -> 0.22 | 0.42 -> 0.90 | 0.72 -> 0.90 | 0.20 -> 0.42 | 0.82 -> 0.54 | 123 -> 13 | 0.124 -> 0.08 | 0.864 -> 0.90 |
+
+The real-AMT tier (replay-of-v2: the browser's Onsets & Frames on rendered audio): usable 0.30 and note values 0.95 unchanged,
+duration accuracy 0.905 -> 0.925. The helper tier (replay-public-v2, 6 fixtures): note values 0.50 -> 0.67, usable 0.33 -> 0.50.
+
+**Moved the wrong way, and why** (rebaselined with this reason): **rest recall** falls (rec-core 0.52 -> 0.34 / 0.62 -> 0.43): the
+model is accuracy-optimal per decision and calls a silence legato unless the evidence is clear; it misses most where the heard
+silence is gone - rest-rich etudes under the pedal profiles, whose notes sound to the pedal change (Beyer 054 / 011 on the hold-out;
+on rec-core 6 cases lose `critical.note_values`, mostly Burgmueller, against 200+ that gain it). **Extra ties** on replay-public-v2
+(0 -> 8.8 per 100 notes, two of six fixtures: a note the rule cut short now lasts to the next onset across a bar line the skeleton put
+elsewhere than the truth). **rec-arrange-smoke** `arr.lh.notes_per_bar` 4.51 -> 4.74 (tolerance +0.2; the clean score's own
+arrangement has about 6): fewer false rests leave more held notes to arrange. A few micro rows lose one or two values (M16, M17, M20,
+M22; M10 and M23 in swing rows).
+
+**Against the design.** Section 10's targets for G10a-3 were rest precision >= 0.95 and recall >= 0.70; section 17 withdrew the numeric
+gates. What the numbers allow: on candidate decisions the hold-out reaches precision 0.63 / recall 0.48 at the accuracy optimum (0.95
+precision would need a threshold where recall is near 0.1); on the rec.rest metric, precision 0.38-0.45 overall, where the skeleton
+(wrong metre or bar lines) causes 38 % of the predicted rests that are false (section 24.2) and no rest decision can fix those. The
+16th rests of U7 are therefore not written.
