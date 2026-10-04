@@ -1,0 +1,170 @@
+{
+ "schema": "ppp.rec-rests-evaluation/1",
+ "model": "ai5b-rests@v1",
+ "threshold": 0.45,
+ "train": {
+  "n": 31950,
+  "rests": 6602,
+  "accuracy": 0.869264,
+  "precision": 0.722192,
+  "recall": 0.59694,
+  "rule": {
+   "accuracy": 0.206635,
+   "precision": 0.206635,
+   "recall": 1
+  },
+  "unlabeled": 520
+ },
+ "holdout": {
+  "n": 6598,
+  "rests": 1304,
+  "accuracy": 0.842528,
+  "precision": 0.633434,
+  "recall": 0.482362,
+  "rule": {
+   "accuracy": 0.197636,
+   "precision": 0.197636,
+   "recall": 1
+  },
+  "unlabeled": 99,
+  "references": 52,
+  "performances": 312
+ },
+ "at": [
+  {
+   "threshold": 0.4,
+   "train": {
+    "n": 31950,
+    "rests": 6602,
+    "accuracy": 0.868701,
+    "precision": 0.691793,
+    "recall": 0.657528,
+    "rule": {
+     "accuracy": 0.206635,
+     "precision": 0.206635,
+     "recall": 1
+    }
+   },
+   "holdout": {
+    "n": 6598,
+    "rests": 1304,
+    "accuracy": 0.843589,
+    "precision": 0.618261,
+    "recall": 0.545245,
+    "rule": {
+     "accuracy": 0.197636,
+     "precision": 0.197636,
+     "recall": 1
+    }
+   }
+  },
+  {
+   "threshold": 0.5,
+   "train": {
+    "n": 31950,
+    "rests": 6602,
+    "accuracy": 0.864319,
+    "precision": 0.742149,
+    "recall": 0.526204,
+    "rule": {
+     "accuracy": 0.206635,
+     "precision": 0.206635,
+     "recall": 1
+    }
+   },
+   "holdout": {
+    "n": 6598,
+    "rests": 1304,
+    "accuracy": 0.839194,
+    "precision": 0.642105,
+    "recall": 0.421012,
+    "rule": {
+     "accuracy": 0.197636,
+     "precision": 0.197636,
+     "recall": 1
+    }
+   }
+  },
+  {
+   "threshold": 0.6,
+   "train": {
+    "n": 31950,
+    "rests": 6602,
+    "accuracy": 0.854898,
+    "precision": 0.787932,
+    "recall": 0.407452,
+    "rule": {
+     "accuracy": 0.206635,
+     "precision": 0.206635,
+     "recall": 1
+    }
+   },
+   "holdout": {
+    "n": 6598,
+    "rests": 1304,
+    "accuracy": 0.841012,
+    "precision": 0.710744,
+    "recall": 0.329755,
+    "rule": {
+     "accuracy": 0.197636,
+     "precision": 0.197636,
+     "recall": 1
+    }
+   }
+  },
+  {
+   "threshold": 0.7,
+   "train": {
+    "n": 31950,
+    "rests": 6602,
+    "accuracy": 0.840751,
+    "precision": 0.841298,
+    "recall": 0.282642,
+    "rule": {
+     "accuracy": 0.206635,
+     "precision": 0.206635,
+     "recall": 1
+    }
+   },
+   "holdout": {
+    "n": 6598,
+    "rests": 1304,
+    "accuracy": 0.832222,
+    "precision": 0.753213,
+    "recall": 0.224693,
+    "rule": {
+     "accuracy": 0.197636,
+     "precision": 0.197636,
+     "recall": 1
+    }
+   }
+  },
+  {
+   "threshold": 0.8,
+   "train": {
+    "n": 31950,
+    "rests": 6602,
+    "accuracy": 0.822191,
+    "precision": 0.900087,
+    "recall": 0.156922,
+    "rule": {
+     "accuracy": 0.206635,
+     "precision": 0.206635,
+     "recall": 1
+    }
+   },
+   "holdout": {
+    "n": 6598,
+    "rests": 1304,
+    "accuracy": 0.817066,
+    "precision": 0.777143,
+    "recall": 0.104294,
+    "rule": {
+     "accuracy": 0.197636,
+     "precision": 0.197636,
+     "recall": 1
+    }
+   }
+  }
+ ]
+}

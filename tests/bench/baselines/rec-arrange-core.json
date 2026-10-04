@@ -34,19 +34,19 @@
     "n": 166
    },
    "arr.harmony.agreement": {
-    "mean": 0.662632,
+    "mean": 0.672657,
     "n": 166
    },
    "arr.level.distance": {
-    "mean": 0.156405,
+    "mean": 0.168115,
     "n": 166
    },
    "arr.level.distinct": {
-    "mean": 0.174699,
+    "mean": 0.186747,
     "n": 166
    },
    "arr.lh.notes_per_bar": {
-    "mean": 5.138525,
+    "mean": 5.198157,
     "n": 166
    },
    "arr.made": {
@@ -54,11 +54,11 @@
     "n": 168
    },
    "arr.melody.cross": {
-    "mean": 0.007201,
+    "mean": 0.007323,
     "n": 166
    },
    "arr.melody.gap_rate": {
-    "mean": 0.017608,
+    "mean": 0.016334,
     "n": 166
    },
    "arr.melody.kept": {
@@ -66,11 +66,11 @@
     "n": 166
    },
    "arr.melody.lost": {
-    "mean": 0.033788,
+    "mean": 0.033666,
     "n": 166
    },
    "arr.notes": {
-    "mean": 159.835341,
+    "mean": 160.97992,
     "n": 166
    },
    "arr.rh.above_c6": {
@@ -167,7 +167,7 @@
     "n": 168
    },
    "src.harmony.agreement": {
-    "mean": 0.767101,
+    "mean": 0.78175,
     "n": 168
    },
    "src.melody.heard": {
@@ -214,19 +214,19 @@
      "n": 166
     },
     "arr.harmony.agreement": {
-     "mean": 0.662632,
+     "mean": 0.672657,
      "n": 166
     },
     "arr.level.distance": {
-     "mean": 0.156405,
+     "mean": 0.168115,
      "n": 166
     },
     "arr.level.distinct": {
-     "mean": 0.174699,
+     "mean": 0.186747,
      "n": 166
     },
     "arr.lh.notes_per_bar": {
-     "mean": 5.138525,
+     "mean": 5.198157,
      "n": 166
     },
     "arr.made": {
@@ -234,11 +234,11 @@
      "n": 168
     },
     "arr.melody.cross": {
-     "mean": 0.007201,
+     "mean": 0.007323,
      "n": 166
     },
     "arr.melody.gap_rate": {
-     "mean": 0.017608,
+     "mean": 0.016334,
      "n": 166
     },
     "arr.melody.kept": {
@@ -246,11 +246,11 @@
      "n": 166
     },
     "arr.melody.lost": {
-     "mean": 0.033788,
+     "mean": 0.033666,
      "n": 166
     },
     "arr.notes": {
-     "mean": 159.835341,
+     "mean": 160.97992,
      "n": 166
     },
     "arr.rh.above_c6": {
@@ -347,7 +347,7 @@
      "n": 168
     },
     "src.harmony.agreement": {
-     "mean": 0.767101,
+     "mean": 0.78175,
      "n": 168
     },
     "src.melody.heard": {
@@ -393,19 +393,19 @@
      "n": 24
     },
     "arr.harmony.agreement": {
-     "mean": 0.667946,
+     "mean": 0.674854,
      "n": 24
     },
     "arr.level.distance": {
-     "mean": 0.348035,
+     "mean": 0.380666,
      "n": 24
     },
     "arr.level.distinct": {
-     "mean": 0.375,
+     "mean": 0.416667,
      "n": 24
     },
     "arr.lh.notes_per_bar": {
-     "mean": 4.572824,
+     "mean": 4.743541,
      "n": 24
     },
     "arr.made": {
@@ -417,7 +417,7 @@
      "n": 24
     },
     "arr.melody.gap_rate": {
-     "mean": 0.003191,
+     "mean": 0.0,
      "n": 24
     },
     "arr.melody.kept": {
@@ -429,7 +429,7 @@
      "n": 24
     },
     "arr.notes": {
-     "mean": 121.597222,
+     "mean": 125.458333,
      "n": 24
     },
     "arr.rh.above_c6": {
@@ -526,7 +526,7 @@
      "n": 24
     },
     "src.harmony.agreement": {
-     "mean": 0.730039,
+     "mean": 0.739191,
      "n": 24
     },
     "src.melody.heard": {
@@ -572,19 +572,19 @@
      "n": 8
     },
     "arr.harmony.agreement": {
-     "mean": 0.585149,
+     "mean": 0.599623,
      "n": 8
     },
     "arr.level.distance": {
-     "mean": 0.06253,
+     "mean": 0.115644,
      "n": 8
     },
     "arr.level.distinct": {
-     "mean": 0.0625,
+     "mean": 0.125,
      "n": 8
     },
     "arr.lh.notes_per_bar": {
-     "mean": 4.5459,
+     "mean": 5.05872,
      "n": 8
     },
     "arr.made": {
@@ -596,7 +596,7 @@
      "n": 8
     },
     "arr.melody.gap_rate": {
-     "mean": 0.028369,
+     "mean": 0.018088,
      "n": 8
     },
     "arr.melody.kept": {
@@ -608,7 +608,7 @@
      "n": 8
     },
     "arr.notes": {
-     "mean": 268.875,
+     "mean": 275.541667,
      "n": 8
     },
     "arr.rh.above_c6": {
@@ -705,7 +705,7 @@
      "n": 8
     },
     "src.harmony.agreement": {
-     "mean": 0.706844,
+     "mean": 0.72465,
      "n": 8
     },
     "src.melody.heard": {
@@ -751,7 +751,7 @@
      "n": 10
     },
     "arr.harmony.agreement": {
-     "mean": 0.843229,
+     "mean": 0.846354,
      "n": 10
     },
     "arr.level.distance": {
@@ -884,7 +884,7 @@
      "n": 10
     },
     "src.harmony.agreement": {
-     "mean": 0.876563,
+     "mean": 0.879687,
      "n": 10
     },
     "src.melody.heard": {
@@ -930,7 +930,7 @@
      "n": 4
     },
     "arr.harmony.agreement": {
-     "mean": 0.38373,
+     "mean": 0.385516,
      "n": 4
     },
     "arr.level.distance": {
@@ -1063,7 +1063,7 @@
      "n": 4
     },
     "src.harmony.agreement": {
-     "mean": 0.569345,
+     "mean": 0.572917,
      "n": 4
     },
     "src.melody.heard": {
@@ -1288,7 +1288,7 @@
      "n": 4
     },
     "arr.harmony.agreement": {
-     "mean": 0.450277,
+     "mean": 0.466611,
      "n": 4
     },
     "arr.level.distance": {
@@ -1312,7 +1312,7 @@
      "n": 4
     },
     "arr.melody.gap_rate": {
-     "mean": 0.034057,
+     "mean": 0.024287,
      "n": 4
     },
     "arr.melody.kept": {
@@ -1421,7 +1421,7 @@
      "n": 4
     },
     "src.harmony.agreement": {
-     "mean": 0.52375,
+     "mean": 0.539876,
      "n": 4
     },
     "src.melody.heard": {
@@ -1467,19 +1467,19 @@
      "n": 50
     },
     "arr.harmony.agreement": {
-     "mean": 0.66844,
+     "mean": 0.681574,
      "n": 50
     },
     "arr.level.distance": {
-     "mean": 0.219856,
+     "mean": 0.214824,
      "n": 50
     },
     "arr.level.distinct": {
-     "mean": 0.25,
+     "mean": 0.24,
      "n": 50
     },
     "arr.lh.notes_per_bar": {
-     "mean": 5.294865,
+     "mean": 5.299032,
      "n": 50
     },
     "arr.made": {
@@ -1503,7 +1503,7 @@
      "n": 50
     },
     "arr.notes": {
-     "mean": 141.193333,
+     "mean": 141.26,
      "n": 50
     },
     "arr.rh.above_c6": {
@@ -1600,7 +1600,7 @@
      "n": 50
     },
     "src.harmony.agreement": {
-     "mean": 0.830694,
+     "mean": 0.843225,
      "n": 50
     },
     "src.melody.heard": {
@@ -1646,19 +1646,19 @@
      "n": 14
     },
     "arr.harmony.agreement": {
-     "mean": 0.478314,
+     "mean": 0.477249,
      "n": 14
     },
     "arr.level.distance": {
-     "mean": 0.04431,
+     "mean": 0.069821,
      "n": 14
     },
     "arr.level.distinct": {
-     "mean": 0.071429,
+     "mean": 0.107143,
      "n": 14
     },
     "arr.lh.notes_per_bar": {
-     "mean": 5.151526,
+     "mean": 4.865812,
      "n": 14
     },
     "arr.made": {
@@ -1666,11 +1666,11 @@
      "n": 14
     },
     "arr.melody.cross": {
-     "mean": 0.008985,
+     "mean": 0.010428,
      "n": 14
     },
     "arr.melody.gap_rate": {
-     "mean": 0.014906,
+     "mean": 0.011856,
      "n": 14
     },
     "arr.melody.kept": {
@@ -1678,11 +1678,11 @@
      "n": 14
     },
     "arr.melody.lost": {
-     "mean": 0.149107,
+     "mean": 0.147664,
      "n": 14
     },
     "arr.notes": {
-     "mean": 220.714286,
+     "mean": 220.142857,
      "n": 14
     },
     "arr.rh.above_c6": {
@@ -1779,7 +1779,7 @@
      "n": 14
     },
     "src.harmony.agreement": {
-     "mean": 0.648547,
+     "mean": 0.677241,
      "n": 14
     },
     "src.melody.heard": {
@@ -1825,7 +1825,7 @@
      "n": 6
     },
     "arr.harmony.agreement": {
-     "mean": 0.796088,
+     "mean": 0.765377,
      "n": 6
     },
     "arr.level.distance": {
@@ -1958,7 +1958,7 @@
      "n": 6
     },
     "src.harmony.agreement": {
-     "mean": 0.829074,
+     "mean": 0.798363,
      "n": 6
     },
     "src.melody.heard": {
@@ -2004,7 +2004,7 @@
      "n": 6
     },
     "arr.harmony.agreement": {
-     "mean": 0.473375,
+     "mean": 0.474565,
      "n": 6
     },
     "arr.level.distance": {
@@ -2028,7 +2028,7 @@
      "n": 6
     },
     "arr.melody.gap_rate": {
-     "mean": 0.023894,
+     "mean": 0.022457,
      "n": 6
     },
     "arr.melody.kept": {
@@ -2137,7 +2137,7 @@
      "n": 6
     },
     "src.harmony.agreement": {
-     "mean": 0.604931,
+     "mean": 0.607312,
      "n": 6
     },
     "src.melody.heard": {
@@ -2183,11 +2183,11 @@
      "n": 52
     },
     "arr.harmony.agreement": {
-     "mean": 0.653644,
+     "mean": 0.668144,
      "n": 52
     },
     "arr.level.distance": {
-     "mean": 0.204252,
+     "mean": 0.211303,
      "n": 52
     },
     "arr.level.distinct": {
@@ -2195,7 +2195,7 @@
      "n": 52
     },
     "arr.lh.notes_per_bar": {
-     "mean": 5.029975,
+     "mean": 5.125149,
      "n": 52
     },
     "arr.made": {
@@ -2207,7 +2207,7 @@
      "n": 52
     },
     "arr.melody.gap_rate": {
-     "mean": 0.004949,
+     "mean": 0.003487,
      "n": 52
     },
     "arr.melody.kept": {
@@ -2219,7 +2219,7 @@
      "n": 52
     },
     "arr.notes": {
-     "mean": 134.198718,
+     "mean": 135.083333,
      "n": 52
     },
     "arr.rh.above_c6": {
@@ -2316,7 +2316,7 @@
      "n": 52
     },
     "src.harmony.agreement": {
-     "mean": 0.817288,
+     "mean": 0.830982,
      "n": 52
     },
     "src.melody.heard": {
@@ -2362,7 +2362,7 @@
      "n": 4
     },
     "arr.harmony.agreement": {
-     "mean": 0.591146,
+     "mean": 0.609896,
      "n": 4
     },
     "arr.level.distance": {
@@ -2495,7 +2495,7 @@
      "n": 4
     },
     "src.harmony.agreement": {
-     "mean": 0.635417,
+     "mean": 0.660937,
      "n": 4
     },
     "src.melody.heard": {
@@ -2541,19 +2541,19 @@
      "n": 18
     },
     "arr.harmony.agreement": {
-     "mean": 0.575876,
+     "mean": 0.593462,
      "n": 18
     },
     "arr.level.distance": {
-     "mean": 0.22455,
+     "mean": 0.237154,
      "n": 18
     },
     "arr.level.distinct": {
-     "mean": 0.25,
+     "mean": 0.277778,
      "n": 18
     },
     "arr.lh.notes_per_bar": {
-     "mean": 4.006613,
+     "mean": 4.045965,
      "n": 18
     },
     "arr.made": {
@@ -2565,7 +2565,7 @@
      "n": 18
     },
     "arr.melody.gap_rate": {
-     "mean": 0.015001,
+     "mean": 0.010431,
      "n": 18
     },
     "arr.melody.kept": {
@@ -2577,7 +2577,7 @@
      "n": 18
     },
     "arr.notes": {
-     "mean": 218.462963,
+     "mean": 219.092593,
      "n": 18
     },
     "arr.rh.above_c6": {
@@ -2674,7 +2674,7 @@
      "n": 18
     },
     "src.harmony.agreement": {
-     "mean": 0.663548,
+     "mean": 0.688838,
      "n": 18
     },
     "src.melody.heard": {
@@ -2720,7 +2720,7 @@
      "n": 10
     },
     "arr.harmony.agreement": {
-     "mean": 0.53568,
+     "mean": 0.542522,
      "n": 10
     },
     "arr.level.distance": {
@@ -2744,7 +2744,7 @@
      "n": 10
     },
     "arr.melody.gap_rate": {
-     "mean": 0.019098,
+     "mean": 0.014835,
      "n": 10
     },
     "arr.melody.kept": {
@@ -2853,7 +2853,7 @@
      "n": 10
     },
     "src.harmony.agreement": {
-     "mean": 0.62815,
+     "mean": 0.635622,
      "n": 10
     },
     "src.melody.heard": {
@@ -2899,19 +2899,19 @@
      "n": 16
     },
     "arr.harmony.agreement": {
-     "mean": 0.582325,
+     "mean": 0.585914,
      "n": 16
     },
     "arr.level.distance": {
-     "mean": 0.118173,
+     "mean": 0.14473,
      "n": 16
     },
     "arr.level.distinct": {
-     "mean": 0.125,
+     "mean": 0.15625,
      "n": 16
     },
     "arr.lh.notes_per_bar": {
-     "mean": 3.440997,
+     "mean": 3.697407,
      "n": 16
     },
     "arr.made": {
@@ -2923,7 +2923,7 @@
      "n": 16
     },
     "arr.melody.gap_rate": {
-     "mean": 0.007637,
+     "mean": 0.005511,
      "n": 16
     },
     "arr.melody.kept": {
@@ -2935,7 +2935,7 @@
      "n": 16
     },
     "arr.notes": {
-     "mean": 166.6875,
+     "mean": 170.020833,
      "n": 16
     },
     "arr.rh.above_c6": {
@@ -3032,7 +3032,7 @@
      "n": 16
     },
     "src.harmony.agreement": {
-     "mean": 0.732417,
+     "mean": 0.737759,
      "n": 16
     },
     "src.melody.heard": {
@@ -3078,11 +3078,11 @@
      "n": 14
     },
     "arr.harmony.agreement": {
-     "mean": 0.622041,
+     "mean": 0.642019,
      "n": 14
     },
     "arr.level.distance": {
-     "mean": 0.143004,
+     "mean": 0.147873,
      "n": 14
     },
     "arr.level.distinct": {
@@ -3102,7 +3102,7 @@
      "n": 14
     },
     "arr.melody.gap_rate": {
-     "mean": 0.001936,
+     "mean": 0.001315,
      "n": 14
     },
     "arr.melody.kept": {
@@ -3211,7 +3211,7 @@
      "n": 14
     },
     "src.harmony.agreement": {
-     "mean": 0.727934,
+     "mean": 0.74824,
      "n": 14
     },
     "src.melody.heard": {
@@ -3257,7 +3257,7 @@
      "n": 8
     },
     "arr.harmony.agreement": {
-     "mean": 0.792271,
+     "mean": 0.807896,
      "n": 8
     },
     "arr.level.distance": {
@@ -3390,7 +3390,7 @@
      "n": 8
     },
     "src.harmony.agreement": {
-     "mean": 0.881061,
+     "mean": 0.888874,
      "n": 8
     },
     "src.melody.heard": {
@@ -3425,7 +3425,7 @@
      "n": 2
     },
     "src.harmony.agreement": {
-     "mean": 0.8125,
+     "mean": 0.90625,
      "n": 2
     },
     "src.melody.heard": {
@@ -3471,19 +3471,19 @@
      "n": 84
     },
     "arr.harmony.agreement": {
-     "mean": 0.674009,
+     "mean": 0.680953,
      "n": 84
     },
     "arr.level.distance": {
-     "mean": 0.153841,
+     "mean": 0.167575,
      "n": 84
     },
     "arr.level.distinct": {
-     "mean": 0.166667,
+     "mean": 0.184524,
      "n": 84
     },
     "arr.lh.notes_per_bar": {
-     "mean": 5.926842,
+     "mean": 5.928,
      "n": 84
     },
     "arr.made": {
@@ -3491,11 +3491,11 @@
      "n": 84
     },
     "arr.melody.cross": {
-     "mean": 0.011554,
+     "mean": 0.011795,
      "n": 84
     },
     "arr.melody.gap_rate": {
-     "mean": 0.030744,
+     "mean": 0.028838,
      "n": 84
     },
     "arr.melody.kept": {
@@ -3503,11 +3503,11 @@
      "n": 84
     },
     "arr.melody.lost": {
-     "mean": 0.053157,
+     "mean": 0.052917,
      "n": 84
     },
     "arr.notes": {
-     "mean": 178.480159,
+     "mean": 179.488095,
      "n": 84
     },
     "arr.rh.above_c6": {
@@ -3604,7 +3604,7 @@
      "n": 84
     },
     "src.harmony.agreement": {
-     "mean": 0.739919,
+     "mean": 0.754366,
      "n": 84
     },
     "src.melody.heard": {
@@ -3650,19 +3650,19 @@
      "n": 30
     },
     "arr.harmony.agreement": {
-     "mean": 0.697388,
+     "mean": 0.704918,
      "n": 30
     },
     "arr.level.distance": {
-     "mean": 0.195138,
+     "mean": 0.186243,
      "n": 30
     },
     "arr.level.distinct": {
-     "mean": 0.266667,
+     "mean": 0.25,
      "n": 30
     },
     "arr.lh.notes_per_bar": {
-     "mean": 3.95019,
+     "mean": 3.957134,
      "n": 30
     },
     "arr.made": {
@@ -3674,7 +3674,7 @@
      "n": 30
     },
     "arr.melody.gap_rate": {
-     "mean": 0.006372,
+     "mean": 0.006085,
      "n": 30
     },
     "arr.melody.kept": {
@@ -3686,7 +3686,7 @@
      "n": 30
     },
     "arr.notes": {
-     "mean": 115.0,
+     "mean": 115.111111,
      "n": 30
     },
     "arr.rh.above_c6": {
@@ -3783,7 +3783,7 @@
      "n": 30
     },
     "src.harmony.agreement": {
-     "mean": 0.825119,
+     "mean": 0.833779,
      "n": 30
     },
     "src.melody.heard": {
@@ -3829,19 +3829,19 @@
      "n": 12
     },
     "arr.harmony.agreement": {
-     "mean": 0.580799,
+     "mean": 0.5979,
      "n": 12
     },
     "arr.level.distance": {
-     "mean": 0.274463,
+     "mean": 0.321474,
      "n": 12
     },
     "arr.level.distinct": {
-     "mean": 0.25,
+     "mean": 0.291667,
      "n": 12
     },
     "arr.lh.notes_per_bar": {
-     "mean": 4.990202,
+     "mean": 5.447764,
      "n": 12
     },
     "arr.made": {
@@ -3865,7 +3865,7 @@
      "n": 12
     },
     "arr.notes": {
-     "mean": 121.777778,
+     "mean": 125.833333,
      "n": 12
     },
     "arr.rh.above_c6": {
@@ -3962,7 +3962,7 @@
      "n": 12
     },
     "src.harmony.agreement": {
-     "mean": 0.815766,
+     "mean": 0.836014,
      "n": 12
     },
     "src.melody.heard": {
@@ -4008,7 +4008,7 @@
      "n": 2
     },
     "arr.harmony.agreement": {
-     "mean": 0.5625,
+     "mean": 0.65625,
      "n": 2
     },
     "arr.level.distance": {
@@ -4141,7 +4141,7 @@
      "n": 2
     },
     "src.harmony.agreement": {
-     "mean": 0.796875,
+     "mean": 0.859375,
      "n": 2
     },
     "src.melody.heard": {
@@ -4187,19 +4187,19 @@
      "n": 40
     },
     "arr.harmony.agreement": {
-     "mean": 0.705862,
+     "mean": 0.70545,
      "n": 40
     },
     "arr.level.distance": {
-     "mean": 0.255953,
+     "mean": 0.269963,
      "n": 40
     },
     "arr.level.distinct": {
-     "mean": 0.2875,
+     "mean": 0.3,
      "n": 40
     },
     "arr.lh.notes_per_bar": {
-     "mean": 4.351243,
+     "mean": 4.435965,
      "n": 40
     },
     "arr.made": {
@@ -4211,7 +4211,7 @@
      "n": 40
     },
     "arr.melody.gap_rate": {
-     "mean": 0.007455,
+     "mean": 0.007117,
      "n": 40
     },
     "arr.melody.kept": {
@@ -4223,7 +4223,7 @@
      "n": 40
     },
     "arr.notes": {
-     "mean": 126.233333,
+     "mean": 128.266667,
      "n": 40
     },
     "arr.rh.above_c6": {
@@ -4320,7 +4320,7 @@
      "n": 40
     },
     "src.harmony.agreement": {
-     "mean": 0.82757,
+     "mean": 0.828764,
      "n": 40
     },
     "src.melody.heard": {
@@ -4366,11 +4366,11 @@
      "n": 14
     },
     "arr.harmony.agreement": {
-     "mean": 0.658622,
+     "mean": 0.670224,
      "n": 14
     },
     "arr.level.distance": {
-     "mean": 0.09844,
+     "mean": 0.099245,
      "n": 14
     },
     "arr.level.distinct": {
@@ -4499,7 +4499,7 @@
      "n": 14
     },
     "src.harmony.agreement": {
-     "mean": 0.730608,
+     "mean": 0.747189,
      "n": 14
     },
     "src.melody.heard": {
@@ -4545,7 +4545,7 @@
      "n": 2
     },
     "arr.harmony.agreement": {
-     "mean": 0.84375,
+     "mean": 0.875,
      "n": 2
     },
     "arr.level.distance": {
@@ -4678,7 +4678,7 @@
      "n": 2
     },
     "src.harmony.agreement": {
-     "mean": 0.84375,
+     "mean": 0.875,
      "n": 2
     },
     "src.melody.heard": {
@@ -4724,7 +4724,7 @@
      "n": 10
     },
     "arr.harmony.agreement": {
-     "mean": 0.651851,
+     "mean": 0.665065,
      "n": 10
     },
     "arr.level.distance": {
@@ -4748,7 +4748,7 @@
      "n": 10
     },
     "arr.melody.gap_rate": {
-     "mean": 0.036582,
+     "mean": 0.035174,
      "n": 10
     },
     "arr.melody.kept": {
@@ -4857,7 +4857,7 @@
      "n": 10
     },
     "src.harmony.agreement": {
-     "mean": 0.675749,
+     "mean": 0.689678,
      "n": 10
     },
     "src.melody.heard": {
@@ -4903,7 +4903,7 @@
      "n": 4
     },
     "arr.harmony.agreement": {
-     "mean": 0.758064,
+     "mean": 0.808064,
      "n": 4
     },
     "arr.level.distance": {
@@ -5036,7 +5036,7 @@
      "n": 4
     },
     "src.harmony.agreement": {
-     "mean": 0.84023,
+     "mean": 0.89023,
      "n": 4
     },
     "src.melody.heard": {
@@ -5082,7 +5082,7 @@
      "n": 26
     },
     "arr.harmony.agreement": {
-     "mean": 0.564079,
+     "mean": 0.563879,
      "n": 26
     },
     "arr.level.distance": {
@@ -5106,7 +5106,7 @@
      "n": 26
     },
     "arr.melody.gap_rate": {
-     "mean": 0.073815,
+     "mean": 0.070891,
      "n": 26
     },
     "arr.melody.kept": {
@@ -5215,7 +5215,7 @@
      "n": 26
     },
     "src.harmony.agreement": {
-     "mean": 0.598974,
+     "mean": 0.599575,
      "n": 26
     },
     "src.melody.heard": {
@@ -5261,19 +5261,19 @@
      "n": 78
     },
     "arr.harmony.agreement": {
-     "mean": 0.701772,
+     "mean": 0.711493,
      "n": 78
     },
     "arr.level.distance": {
-     "mean": 0.209109,
+     "mean": 0.224249,
      "n": 78
     },
     "arr.level.distinct": {
-     "mean": 0.230769,
+     "mean": 0.25,
      "n": 78
     },
     "arr.lh.notes_per_bar": {
-     "mean": 5.247931,
+     "mean": 5.266241,
      "n": 78
     },
     "arr.made": {
@@ -5281,11 +5281,11 @@
      "n": 80
     },
     "arr.melody.cross": {
-     "mean": 0.005496,
+     "mean": 0.005755,
      "n": 78
     },
     "arr.melody.gap_rate": {
-     "mean": 0.006615,
+     "mean": 0.005496,
      "n": 78
     },
     "arr.melody.kept": {
@@ -5293,11 +5293,11 @@
      "n": 78
     },
     "arr.melody.lost": {
-     "mean": 0.024468,
+     "mean": 0.024209,
      "n": 78
     },
     "arr.notes": {
-     "mean": 147.217949,
+     "mean": 147.803419,
      "n": 78
     },
     "arr.rh.above_c6": {
@@ -5394,7 +5394,7 @@
      "n": 80
     },
     "src.harmony.agreement": {
-     "mean": 0.820525,
+     "mean": 0.838022,
      "n": 80
     },
     "src.melody.heard": {
@@ -5440,19 +5440,19 @@
      "n": 32
     },
     "arr.harmony.agreement": {
-     "mean": 0.629175,
+     "mean": 0.640239,
      "n": 32
     },
     "arr.level.distance": {
-     "mean": 0.174282,
+     "mean": 0.197777,
      "n": 32
     },
     "arr.level.distinct": {
-     "mean": 0.1875,
+     "mean": 0.203125,
      "n": 32
     },
     "arr.lh.notes_per_bar": {
-     "mean": 3.362258,
+     "mean": 3.626965,
      "n": 32
     },
     "arr.made": {
@@ -5464,7 +5464,7 @@
      "n": 32
     },
     "arr.melody.gap_rate": {
-     "mean": 0.002465,
+     "mean": 0.001402,
      "n": 32
     },
     "arr.melody.kept": {
@@ -5476,7 +5476,7 @@
      "n": 32
     },
     "arr.notes": {
-     "mean": 99.854167,
+     "mean": 104.364583,
      "n": 32
     },
     "arr.rh.above_c6": {
@@ -5573,7 +5573,7 @@
      "n": 32
     },
     "src.harmony.agreement": {
-     "mean": 0.800725,
+     "mean": 0.813591,
      "n": 32
     },
     "src.melody.heard": {
@@ -5619,7 +5619,7 @@
      "n": 2
     },
     "arr.harmony.agreement": {
-     "mean": 0.84375,
+     "mean": 0.875,
      "n": 2
     },
     "arr.level.distance": {
@@ -5752,7 +5752,7 @@
      "n": 2
     },
     "src.harmony.agreement": {
-     "mean": 0.84375,
+     "mean": 0.875,
      "n": 2
     },
     "src.melody.heard": {
@@ -5977,7 +5977,7 @@
      "n": 24
     },
     "arr.harmony.agreement": {
-     "mean": 0.540773,
+     "mean": 0.540556,
      "n": 24
     },
     "arr.level.distance": {
@@ -6001,7 +6001,7 @@
      "n": 24
     },
     "arr.melody.gap_rate": {
-     "mean": 0.079966,
+     "mean": 0.076799,
      "n": 24
     },
     "arr.melody.kept": {
@@ -6110,7 +6110,7 @@
      "n": 24
     },
     "src.harmony.agreement": {
-     "mean": 0.578576,
+     "mean": 0.579227,
      "n": 24
     },
     "src.melody.heard": {
@@ -6156,19 +6156,19 @@
      "n": 32
     },
     "arr.harmony.agreement": {
-     "mean": 0.629175,
+     "mean": 0.640239,
      "n": 32
     },
     "arr.level.distance": {
-     "mean": 0.174282,
+     "mean": 0.197777,
      "n": 32
     },
     "arr.level.distinct": {
-     "mean": 0.1875,
+     "mean": 0.203125,
      "n": 32
     },
     "arr.lh.notes_per_bar": {
-     "mean": 3.362258,
+     "mean": 3.626965,
      "n": 32
     },
     "arr.made": {
@@ -6180,7 +6180,7 @@
      "n": 32
     },
     "arr.melody.gap_rate": {
-     "mean": 0.002465,
+     "mean": 0.001402,
      "n": 32
     },
     "arr.melody.kept": {
@@ -6192,7 +6192,7 @@
      "n": 32
     },
     "arr.notes": {
-     "mean": 99.854167,
+     "mean": 104.364583,
      "n": 32
     },
     "arr.rh.above_c6": {
@@ -6289,7 +6289,7 @@
      "n": 32
     },
     "src.harmony.agreement": {
-     "mean": 0.800725,
+     "mean": 0.813591,
      "n": 32
     },
     "src.melody.heard": {
@@ -6335,7 +6335,7 @@
      "n": 10
     },
     "arr.harmony.agreement": {
-     "mean": 0.651851,
+     "mean": 0.665065,
      "n": 10
     },
     "arr.level.distance": {
@@ -6359,7 +6359,7 @@
      "n": 10
     },
     "arr.melody.gap_rate": {
-     "mean": 0.036582,
+     "mean": 0.035174,
      "n": 10
     },
     "arr.melody.kept": {
@@ -6468,7 +6468,7 @@
      "n": 10
     },
     "src.harmony.agreement": {
-     "mean": 0.675749,
+     "mean": 0.689678,
      "n": 10
     },
     "src.melody.heard": {
@@ -6514,19 +6514,19 @@
      "n": 78
     },
     "arr.harmony.agreement": {
-     "mean": 0.701772,
+     "mean": 0.711493,
      "n": 78
     },
     "arr.level.distance": {
-     "mean": 0.209109,
+     "mean": 0.224249,
      "n": 78
     },
     "arr.level.distinct": {
-     "mean": 0.230769,
+     "mean": 0.25,
      "n": 78
     },
     "arr.lh.notes_per_bar": {
-     "mean": 5.247931,
+     "mean": 5.266241,
      "n": 78
     },
     "arr.made": {
@@ -6534,11 +6534,11 @@
      "n": 80
     },
     "arr.melody.cross": {
-     "mean": 0.005496,
+     "mean": 0.005755,
      "n": 78
     },
     "arr.melody.gap_rate": {
-     "mean": 0.006615,
+     "mean": 0.005496,
      "n": 78
     },
     "arr.melody.kept": {
@@ -6546,11 +6546,11 @@
      "n": 78
     },
     "arr.melody.lost": {
-     "mean": 0.024468,
+     "mean": 0.024209,
      "n": 78
     },
     "arr.notes": {
-     "mean": 147.217949,
+     "mean": 147.803419,
      "n": 78
     },
     "arr.rh.above_c6": {
@@ -6647,7 +6647,7 @@
      "n": 80
     },
     "src.harmony.agreement": {
-     "mean": 0.820525,
+     "mean": 0.838022,
      "n": 80
     },
     "src.melody.heard": {
@@ -6693,7 +6693,7 @@
      "n": 2
     },
     "arr.harmony.agreement": {
-     "mean": 0.766667,
+     "mean": 0.866667,
      "n": 2
     },
     "arr.level.distance": {
@@ -6826,7 +6826,7 @@
      "n": 2
     },
     "src.harmony.agreement": {
-     "mean": 0.766667,
+     "mean": 0.866667,
      "n": 2
     },
     "src.melody.heard": {
@@ -7051,11 +7051,11 @@
      "n": 14
     },
     "arr.harmony.agreement": {
-     "mean": 0.658622,
+     "mean": 0.670224,
      "n": 14
     },
     "arr.level.distance": {
-     "mean": 0.09844,
+     "mean": 0.099245,
      "n": 14
     },
     "arr.level.distinct": {
@@ -7184,7 +7184,7 @@
      "n": 14
     },
     "src.harmony.agreement": {
-     "mean": 0.730608,
+     "mean": 0.747189,
      "n": 14
     },
     "src.melody.heard": {
@@ -7230,19 +7230,19 @@
      "n": 126
     },
     "arr.harmony.agreement": {
-     "mean": 0.697415,
+     "mean": 0.707236,
      "n": 126
     },
     "arr.level.distance": {
-     "mean": 0.192763,
+     "mean": 0.208192,
      "n": 126
     },
     "arr.level.distinct": {
-     "mean": 0.214286,
+     "mean": 0.230159,
      "n": 126
     },
     "arr.lh.notes_per_bar": {
-     "mean": 4.785174,
+     "mean": 4.863736,
      "n": 126
     },
     "arr.made": {
@@ -7250,11 +7250,11 @@
      "n": 128
     },
     "arr.melody.cross": {
-     "mean": 0.002181,
+     "mean": 0.002341,
      "n": 126
     },
     "arr.melody.gap_rate": {
-     "mean": 0.002876,
+     "mean": 0.002161,
      "n": 126
     },
     "arr.melody.kept": {
@@ -7262,11 +7262,11 @@
      "n": 126
     },
     "arr.melody.lost": {
-     "mean": 0.017771,
+     "mean": 0.017611,
      "n": 126
     },
     "arr.notes": {
-     "mean": 117.346561,
+     "mean": 118.854497,
      "n": 126
     },
     "arr.rh.above_c6": {
@@ -7363,7 +7363,7 @@
      "n": 128
     },
     "src.harmony.agreement": {
-     "mean": 0.818105,
+     "mean": 0.833534,
      "n": 128
     },
     "src.melody.heard": {
@@ -7409,7 +7409,7 @@
      "n": 12
     },
     "arr.harmony.agreement": {
-     "mean": 0.74902,
+     "mean": 0.776103,
      "n": 12
     },
     "arr.level.distance": {
@@ -7433,7 +7433,7 @@
      "n": 12
     },
     "arr.melody.gap_rate": {
-     "mean": 0.028502,
+     "mean": 0.027778,
      "n": 12
     },
     "arr.melody.kept": {
@@ -7542,7 +7542,7 @@
      "n": 12
     },
     "src.harmony.agreement": {
-     "mean": 0.792297,
+     "mean": 0.820588,
      "n": 12
     },
     "src.melody.heard": {
@@ -7588,7 +7588,7 @@
      "n": 28
     },
     "arr.harmony.agreement": {
-     "mean": 0.469084,
+     "mean": 0.472713,
      "n": 28
     },
     "arr.level.distance": {
@@ -7612,7 +7612,7 @@
      "n": 28
     },
     "arr.melody.gap_rate": {
-     "mean": 0.079235,
+     "mean": 0.075212,
      "n": 28
     },
     "arr.melody.kept": {
@@ -7721,7 +7721,7 @@
      "n": 28
     },
     "src.harmony.agreement": {
-     "mean": 0.523138,
+     "mean": 0.528379,
      "n": 28
     },
     "src.melody.heard": {
@@ -7946,19 +7946,19 @@
      "n": 83
     },
     "arr.harmony.agreement": {
-     "mean": 0.753823,
+     "mean": 0.773872,
      "n": 83
     },
     "arr.level.distance": {
-     "mean": 0.223729,
+     "mean": 0.247151,
      "n": 83
     },
     "arr.level.distinct": {
-     "mean": 0.240964,
+     "mean": 0.26506,
      "n": 83
     },
     "arr.lh.notes_per_bar": {
-     "mean": 6.326682,
+     "mean": 6.445945,
      "n": 83
     },
     "arr.made": {
@@ -7966,11 +7966,11 @@
      "n": 84
     },
     "arr.melody.cross": {
-     "mean": 0.00948,
+     "mean": 0.009723,
      "n": 83
     },
     "arr.melody.gap_rate": {
-     "mean": 0.008048,
+     "mean": 0.005501,
      "n": 83
     },
     "arr.melody.kept": {
@@ -7978,11 +7978,11 @@
      "n": 83
     },
     "arr.melody.lost": {
-     "mean": 0.014014,
+     "mean": 0.013771,
      "n": 83
     },
     "arr.notes": {
-     "mean": 173.148594,
+     "mean": 175.437751,
      "n": 83
     },
     "arr.rh.above_c6": {
@@ -8079,7 +8079,7 @@
      "n": 84
     },
     "src.harmony.agreement": {
-     "mean": 0.850804,
+     "mean": 0.880102,
      "n": 84
     },
     "src.melody.heard": {
@@ -8125,19 +8125,19 @@
      "n": 126
     },
     "arr.harmony.agreement": {
-     "mean": 0.648908,
+     "mean": 0.662246,
      "n": 126
     },
     "arr.level.distance": {
-     "mean": 0.124802,
+     "mean": 0.135783,
      "n": 126
     },
     "arr.level.distinct": {
-     "mean": 0.138889,
+     "mean": 0.150794,
      "n": 126
     },
     "arr.lh.notes_per_bar": {
-     "mean": 5.388456,
+     "mean": 5.440123,
      "n": 126
     },
     "arr.made": {
@@ -8145,11 +8145,11 @@
      "n": 128
     },
     "arr.melody.cross": {
-     "mean": 0.008057,
+     "mean": 0.008217,
      "n": 126
     },
     "arr.melody.gap_rate": {
-     "mean": 0.020831,
+     "mean": 0.019261,
      "n": 126
     },
     "arr.melody.kept": {
@@ -8157,11 +8157,11 @@
      "n": 126
     },
     "arr.melody.lost": {
-     "mean": 0.041473,
+     "mean": 0.041313,
      "n": 126
     },
     "arr.notes": {
-     "mean": 170.502646,
+     "mean": 171.365079,
      "n": 126
     },
     "arr.rh.above_c6": {
@@ -8258,7 +8258,7 @@
      "n": 128
     },
     "src.harmony.agreement": {
-     "mean": 0.748204,
+     "mean": 0.767058,
      "n": 128
     },
     "src.melody.heard": {
@@ -8304,19 +8304,19 @@
      "n": 40
     },
     "arr.harmony.agreement": {
-     "mean": 0.705862,
+     "mean": 0.70545,
      "n": 40
     },
     "arr.level.distance": {
-     "mean": 0.255953,
+     "mean": 0.269963,
      "n": 40
     },
     "arr.level.distinct": {
-     "mean": 0.2875,
+     "mean": 0.3,
      "n": 40
     },
     "arr.lh.notes_per_bar": {
-     "mean": 4.351243,
+     "mean": 4.435965,
      "n": 40
     },
     "arr.made": {
@@ -8328,7 +8328,7 @@
      "n": 40
     },
     "arr.melody.gap_rate": {
-     "mean": 0.007455,
+     "mean": 0.007117,
      "n": 40
     },
     "arr.melody.kept": {
@@ -8340,7 +8340,7 @@
      "n": 40
     },
     "arr.notes": {
-     "mean": 126.233333,
+     "mean": 128.266667,
      "n": 40
     },
     "arr.rh.above_c6": {
@@ -8437,7 +8437,7 @@
      "n": 40
     },
     "src.harmony.agreement": {
-     "mean": 0.82757,
+     "mean": 0.828764,
      "n": 40
     },
     "src.melody.heard": {
@@ -8483,19 +8483,19 @@
      "n": 126
     },
     "arr.harmony.agreement": {
-     "mean": 0.648908,
+     "mean": 0.662246,
      "n": 126
     },
     "arr.level.distance": {
-     "mean": 0.124802,
+     "mean": 0.135783,
      "n": 126
     },
     "arr.level.distinct": {
-     "mean": 0.138889,
+     "mean": 0.150794,
      "n": 126
     },
     "arr.lh.notes_per_bar": {
-     "mean": 5.388456,
+     "mean": 5.440123,
      "n": 126
     },
     "arr.made": {
@@ -8503,11 +8503,11 @@
      "n": 128
     },
     "arr.melody.cross": {
-     "mean": 0.008057,
+     "mean": 0.008217,
      "n": 126
     },
     "arr.melody.gap_rate": {
-     "mean": 0.020831,
+     "mean": 0.019261,
      "n": 126
     },
     "arr.melody.kept": {
@@ -8515,11 +8515,11 @@
      "n": 126
     },
     "arr.melody.lost": {
-     "mean": 0.041473,
+     "mean": 0.041313,
      "n": 126
     },
     "arr.notes": {
-     "mean": 170.502646,
+     "mean": 171.365079,
      "n": 126
     },
     "arr.rh.above_c6": {
@@ -8616,7 +8616,7 @@
      "n": 128
     },
     "src.harmony.agreement": {
-     "mean": 0.748204,
+     "mean": 0.767058,
      "n": 128
     },
     "src.melody.heard": {
@@ -8662,11 +8662,11 @@
      "n": 8
     },
     "arr.harmony.agreement": {
-     "mean": 0.75844,
+     "mean": 0.746212,
      "n": 8
     },
     "arr.level.distance": {
-     "mean": 0.075431,
+     "mean": 0.078125,
      "n": 8
     },
     "arr.level.distinct": {
@@ -8674,7 +8674,7 @@
      "n": 8
     },
     "arr.lh.notes_per_bar": {
-     "mean": 2.724905,
+     "mean": 2.818655,
      "n": 8
     },
     "arr.made": {
@@ -8698,7 +8698,7 @@
      "n": 8
     },
     "arr.notes": {
-     "mean": 27.625,
+     "mean": 28.375,
      "n": 8
     },
     "arr.rh.above_c6": {
@@ -8795,7 +8795,7 @@
      "n": 8
     },
     "src.harmony.agreement": {
-     "mean": 0.903058,
+     "mean": 0.903284,
      "n": 8
     },
     "src.melody.heard": {
@@ -8841,19 +8841,19 @@
      "n": 44
     },
     "arr.harmony.agreement": {
-     "mean": 0.654823,
+     "mean": 0.669552,
      "n": 44
     },
     "arr.level.distance": {
-     "mean": 0.215872,
+     "mean": 0.211717,
      "n": 44
     },
     "arr.level.distinct": {
-     "mean": 0.25,
+     "mean": 0.238636,
      "n": 44
     },
     "arr.lh.notes_per_bar": {
-     "mean": 5.261921,
+     "mean": 5.266656,
      "n": 44
     },
     "arr.made": {
@@ -8865,7 +8865,7 @@
      "n": 44
     },
     "arr.melody.gap_rate": {
-     "mean": 0.004428,
+     "mean": 0.004121,
      "n": 44
     },
     "arr.melody.kept": {
@@ -8877,7 +8877,7 @@
      "n": 44
     },
     "arr.notes": {
-     "mean": 147.265152,
+     "mean": 147.340909,
      "n": 44
     },
     "arr.rh.above_c6": {
@@ -8974,7 +8974,7 @@
      "n": 44
     },
     "src.harmony.agreement": {
-     "mean": 0.817723,
+     "mean": 0.830661,
      "n": 44
     },
     "src.melody.heard": {
@@ -9020,19 +9020,19 @@
      "n": 66
     },
     "arr.harmony.agreement": {
-     "mean": 0.602762,
+     "mean": 0.6086,
      "n": 66
     },
     "arr.level.distance": {
-     "mean": 0.151691,
+     "mean": 0.169994,
      "n": 66
     },
     "arr.level.distinct": {
-     "mean": 0.166667,
+     "mean": 0.189394,
      "n": 66
     },
     "arr.lh.notes_per_bar": {
-     "mean": 6.1603,
+     "mean": 6.284539,
      "n": 66
     },
     "arr.made": {
@@ -9044,7 +9044,7 @@
      "n": 66
     },
     "arr.melody.gap_rate": {
-     "mean": 0.034907,
+     "mean": 0.031908,
      "n": 66
     },
     "arr.melody.kept": {
@@ -9056,7 +9056,7 @@
      "n": 66
     },
     "arr.notes": {
-     "mean": 249.868687,
+     "mean": 252.080808,
      "n": 66
     },
     "arr.rh.above_c6": {
@@ -9153,7 +9153,7 @@
      "n": 66
     },
     "src.harmony.agreement": {
-     "mean": 0.663785,
+     "mean": 0.670938,
      "n": 66
     },
     "src.melody.heard": {
@@ -9199,19 +9199,19 @@
      "n": 46
     },
     "arr.harmony.agreement": {
-     "mean": 0.739197,
+     "mean": 0.754871,
      "n": 46
     },
     "arr.level.distance": {
-     "mean": 0.119923,
+     "mean": 0.139017,
      "n": 46
     },
     "arr.level.distinct": {
-     "mean": 0.130435,
+     "mean": 0.152174,
      "n": 46
     },
     "arr.lh.notes_per_bar": {
-     "mean": 4.121558,
+     "mean": 4.137661,
      "n": 46
     },
     "arr.made": {
@@ -9219,7 +9219,7 @@
      "n": 48
     },
     "arr.melody.cross": {
-     "mean": 0.000659,
+     "mean": 0.001098,
      "n": 46
     },
     "arr.melody.gap_rate": {
@@ -9231,11 +9231,11 @@
      "n": 46
     },
     "arr.melody.lost": {
-     "mean": 0.033917,
+     "mean": 0.033478,
      "n": 46
     },
     "arr.notes": {
-     "mean": 71.101449,
+     "mean": 71.855072,
      "n": 46
     },
     "arr.rh.above_c6": {
@@ -9332,7 +9332,7 @@
      "n": 48
     },
     "src.harmony.agreement": {
-     "mean": 0.844103,
+     "mean": 0.873405,
      "n": 48
     },
     "src.melody.heard": {
@@ -9378,11 +9378,11 @@
      "n": 2
     },
     "arr.harmony.agreement": {
-     "mean": 0.665898,
+     "mean": 0.669686,
      "n": 2
     },
     "arr.level.distance": {
-     "mean": 0.166667,
+     "mean": 0.176101,
      "n": 2
     },
     "arr.level.distinct": {
@@ -9511,7 +9511,7 @@
      "n": 2
     },
     "src.harmony.agreement": {
-     "mean": 0.670949,
+     "mean": 0.67663,
      "n": 2
     },
     "src.melody.heard": {
@@ -9557,7 +9557,7 @@
      "n": 22
     },
     "arr.harmony.agreement": {
-     "mean": 0.46007,
+     "mean": 0.460579,
      "n": 22
     },
     "arr.level.distance": {
@@ -9581,7 +9581,7 @@
      "n": 22
     },
     "arr.melody.gap_rate": {
-     "mean": 0.088759,
+     "mean": 0.088529,
      "n": 22
     },
     "arr.melody.kept": {
@@ -9690,7 +9690,7 @@
      "n": 22
     },
     "src.harmony.agreement": {
-     "mean": 0.509843,
+     "mean": 0.510678,
      "n": 22
     },
     "src.melody.heard": {
@@ -9736,19 +9736,19 @@
      "n": 84
     },
     "arr.harmony.agreement": {
-     "mean": 0.660497,
+     "mean": 0.673034,
      "n": 84
     },
     "arr.level.distance": {
-     "mean": 0.162766,
+     "mean": 0.171428,
      "n": 84
     },
     "arr.level.distinct": {
-     "mean": 0.184524,
+     "mean": 0.190476,
      "n": 84
     },
     "arr.lh.notes_per_bar": {
-     "mean": 5.460567,
+     "mean": 5.552231,
      "n": 84
     },
     "arr.made": {
@@ -9760,7 +9760,7 @@
      "n": 84
     },
     "arr.melody.gap_rate": {
-     "mean": 0.0065,
+     "mean": 0.004043,
      "n": 84
     },
     "arr.melody.kept": {
@@ -9772,7 +9772,7 @@
      "n": 84
     },
     "arr.notes": {
-     "mean": 163.043651,
+     "mean": 164.686508,
      "n": 84
     },
     "arr.rh.above_c6": {
@@ -9869,7 +9869,7 @@
      "n": 84
     },
     "src.harmony.agreement": {
-     "mean": 0.79303,
+     "mean": 0.805818,
      "n": 84
     },
     "src.melody.heard": {
@@ -9915,19 +9915,19 @@
      "n": 60
     },
     "arr.harmony.agreement": {
-     "mean": 0.739893,
+     "mean": 0.74989,
      "n": 60
     },
     "arr.level.distance": {
-     "mean": 0.194224,
+     "mean": 0.214496,
      "n": 60
     },
     "arr.level.distinct": {
-     "mean": 0.208333,
+     "mean": 0.233333,
      "n": 60
     },
     "arr.lh.notes_per_bar": {
-     "mean": 3.419521,
+     "mean": 3.456173,
      "n": 60
     },
     "arr.made": {
@@ -9935,7 +9935,7 @@
      "n": 62
     },
     "arr.melody.cross": {
-     "mean": 0.006061,
+     "mean": 0.006397,
      "n": 60
     },
     "arr.melody.gap_rate": {
@@ -9947,11 +9947,11 @@
      "n": 60
     },
     "arr.melody.lost": {
-     "mean": 0.025135,
+     "mean": 0.024799,
      "n": 60
     },
     "arr.notes": {
-     "mean": 64.983333,
+     "mean": 65.85,
      "n": 60
     },
     "arr.rh.above_c6": {
@@ -10048,7 +10048,7 @@
      "n": 62
     },
     "src.harmony.agreement": {
-     "mean": 0.823256,
+     "mean": 0.845328,
      "n": 62
     },
     "src.melody.heard": {
@@ -10094,19 +10094,19 @@
      "n": 166
     },
     "arr.harmony.agreement": {
-     "mean": 0.662632,
+     "mean": 0.672657,
      "n": 166
     },
     "arr.level.distance": {
-     "mean": 0.156405,
+     "mean": 0.168115,
      "n": 166
     },
     "arr.level.distinct": {
-     "mean": 0.174699,
+     "mean": 0.186747,
      "n": 166
     },
     "arr.lh.notes_per_bar": {
-     "mean": 5.138525,
+     "mean": 5.198157,
      "n": 166
     },
     "arr.made": {
@@ -10114,11 +10114,11 @@
      "n": 168
     },
     "arr.melody.cross": {
-     "mean": 0.007201,
+     "mean": 0.007323,
      "n": 166
     },
     "arr.melody.gap_rate": {
-     "mean": 0.017608,
+     "mean": 0.016334,
      "n": 166
     },
     "arr.melody.kept": {
@@ -10126,11 +10126,11 @@
      "n": 166
     },
     "arr.melody.lost": {
-     "mean": 0.033788,
+     "mean": 0.033666,
      "n": 166
     },
     "arr.notes": {
-     "mean": 159.835341,
+     "mean": 160.97992,
      "n": 166
     },
     "arr.rh.above_c6": {
@@ -10227,7 +10227,7 @@
      "n": 168
     },
     "src.harmony.agreement": {
-     "mean": 0.767101,
+     "mean": 0.78175,
      "n": 168
     },
     "src.melody.heard": {
@@ -10516,10 +10516,10 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.639493,
-    "arr.level.distance": 0.603448,
+    "arr.harmony.agreement": 0.583333,
+    "arr.level.distance": 0.625,
     "arr.level.distinct": 0.5,
-    "arr.lh.notes_per_bar": 5.25,
+    "arr.lh.notes_per_bar": 6,
     "arr.made": 1,
     "arr.melody.cross": 0,
     "arr.melody.gap_rate": 0,
@@ -10568,7 +10568,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.791667,
+    "arr.harmony.agreement": 0.75,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 1.625,
@@ -10620,7 +10620,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.916667,
+    "arr.harmony.agreement": 0.979167,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 16,
@@ -10672,7 +10672,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.84375,
+    "arr.harmony.agreement": 0.875,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 6,
@@ -10724,10 +10724,10 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.71875,
-    "arr.level.distance": 0.635398,
+    "arr.harmony.agreement": 0.739583,
+    "arr.level.distance": 0.630716,
     "arr.level.distinct": 1,
-    "arr.lh.notes_per_bar": 8,
+    "arr.lh.notes_per_bar": 7.979167,
     "arr.made": 1,
     "arr.melody.cross": 0,
     "arr.melody.gap_rate": 0,
@@ -10776,8 +10776,8 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.588878,
-    "arr.level.distance": 0.541311,
+    "arr.harmony.agreement": 0.688575,
+    "arr.level.distance": 0.536772,
     "arr.level.distinct": 0.5,
     "arr.lh.notes_per_bar": 7.541667,
     "arr.made": 1,
@@ -10828,8 +10828,8 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.301587,
-    "arr.level.distance": 0.55,
+    "arr.harmony.agreement": 0.401515,
+    "arr.level.distance": 0.561259,
     "arr.level.distinct": 0.5,
     "arr.lh.notes_per_bar": 5.290323,
     "arr.made": 1,
@@ -10933,7 +10933,7 @@
     "arr.check.7": 0,
     "arr.hard.violations": 0,
     "arr.harmony.agreement": 0.77305,
-    "arr.level.distance": 0.48948,
+    "arr.level.distance": 0.519231,
     "arr.level.distinct": 0.5,
     "arr.lh.notes_per_bar": 8.833333,
     "arr.made": 1,
@@ -10984,7 +10984,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.625,
+    "arr.harmony.agreement": 0.714286,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 1.826087,
@@ -11036,10 +11036,10 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.538598,
-    "arr.level.distance": 0.598256,
-    "arr.level.distinct": 1,
-    "arr.lh.notes_per_bar": 2.770833,
+    "arr.harmony.agreement": 0.805556,
+    "arr.level.distance": 0.385965,
+    "arr.level.distinct": 0.5,
+    "arr.lh.notes_per_bar": 3,
     "arr.made": 1,
     "arr.melody.cross": 0,
     "arr.melody.gap_rate": 0,
@@ -11088,7 +11088,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.657176,
+    "arr.harmony.agreement": 0.697271,
     "arr.level.distance": 0.53408,
     "arr.level.distinct": 0.5,
     "arr.lh.notes_per_bar": 7.372549,
@@ -11140,7 +11140,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.90625,
+    "arr.harmony.agreement": 0.9375,
     "arr.level.distance": 0.563536,
     "arr.level.distinct": 0.5,
     "arr.lh.notes_per_bar": 7.416667,
@@ -11192,7 +11192,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.864583,
+    "arr.harmony.agreement": 0.90625,
     "arr.level.distance": 0.558405,
     "arr.level.distinct": 0.5,
     "arr.lh.notes_per_bar": 6.916667,
@@ -11244,10 +11244,10 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.8125,
-    "arr.level.distance": 0.592133,
-    "arr.level.distinct": 0.5,
-    "arr.lh.notes_per_bar": 6.583333,
+    "arr.harmony.agreement": 0.859375,
+    "arr.level.distance": 0.812541,
+    "arr.level.distinct": 1,
+    "arr.lh.notes_per_bar": 7.291667,
     "arr.made": 1,
     "arr.melody.cross": 0,
     "arr.melody.gap_rate": 0,
@@ -11302,7 +11302,7 @@
     "arr.lh.notes_per_bar": 5,
     "arr.made": 1,
     "arr.melody.cross": 0.126761,
-    "arr.melody.gap_rate": 0.014085,
+    "arr.melody.gap_rate": 0,
     "arr.melody.kept": 0.873239,
     "arr.melody.lost": 0,
     "arr.rh.above_c6": 0
@@ -11354,7 +11354,7 @@
     "arr.lh.notes_per_bar": 3.588235,
     "arr.made": 1,
     "arr.melody.cross": 0.104167,
-    "arr.melody.gap_rate": 0.0625,
+    "arr.melody.gap_rate": 0,
     "arr.melody.kept": 0.895833,
     "arr.melody.lost": 0,
     "arr.rh.above_c6": 0
@@ -11400,10 +11400,10 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.58,
-    "arr.level.distance": 0,
-    "arr.level.distinct": 0,
-    "arr.lh.notes_per_bar": 3.692308,
+    "arr.harmony.agreement": 0.666667,
+    "arr.level.distance": 0.424908,
+    "arr.level.distinct": 0.5,
+    "arr.lh.notes_per_bar": 7.794872,
     "arr.made": 1,
     "arr.melody.cross": 0,
     "arr.melody.gap_rate": 0,
@@ -11452,13 +11452,13 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.666667,
+    "arr.harmony.agreement": 0.695793,
     "arr.level.distance": 0.500242,
     "arr.level.distinct": 0.5,
     "arr.lh.notes_per_bar": 7.481481,
     "arr.made": 1,
     "arr.melody.cross": 0.047619,
-    "arr.melody.gap_rate": 0.064935,
+    "arr.melody.gap_rate": 0,
     "arr.melody.kept": 0.88961,
     "arr.melody.lost": 0.062771,
     "arr.rh.above_c6": 0
@@ -11510,7 +11510,7 @@
     "arr.lh.notes_per_bar": 3.777778,
     "arr.made": 1,
     "arr.melody.cross": 0.017391,
-    "arr.melody.gap_rate": 0.008696,
+    "arr.melody.gap_rate": 0,
     "arr.melody.kept": 0.982609,
     "arr.melody.lost": 0,
     "arr.rh.above_c6": 0.006849
@@ -11562,7 +11562,7 @@
     "arr.lh.notes_per_bar": 4.30303,
     "arr.made": 1,
     "arr.melody.cross": 0.068966,
-    "arr.melody.gap_rate": 0.038793,
+    "arr.melody.gap_rate": 0.030172,
     "arr.melody.kept": 0.931034,
     "arr.melody.lost": 0,
     "arr.rh.above_c6": 0.061674
@@ -11816,7 +11816,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.84375,
+    "arr.harmony.agreement": 0.875,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 6,
@@ -11868,7 +11868,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.492857,
+    "arr.harmony.agreement": 0.5,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 5.625,
@@ -12388,13 +12388,13 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.220779,
+    "arr.harmony.agreement": 0.282051,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 1.897436,
     "arr.made": 1,
     "arr.melody.cross": 0.047619,
-    "arr.melody.gap_rate": 0.040816,
+    "arr.melody.gap_rate": 0.006803,
     "arr.melody.kept": 0.945578,
     "arr.melody.lost": 0.006803,
     "arr.rh.above_c6": 0
@@ -12440,13 +12440,13 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.853659,
+    "arr.harmony.agreement": 0.857724,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 3.5,
     "arr.made": 1,
     "arr.melody.cross": 0.007595,
-    "arr.melody.gap_rate": 0.005063,
+    "arr.melody.gap_rate": 0,
     "arr.melody.kept": 0.992405,
     "arr.melody.lost": 0,
     "arr.rh.above_c6": 0.101523
@@ -12492,8 +12492,8 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.597222,
-    "arr.level.distance": 0.530466,
+    "arr.harmony.agreement": 0.569444,
+    "arr.level.distance": 0.461738,
     "arr.level.distinct": 0.5,
     "arr.lh.notes_per_bar": 6,
     "arr.made": 1,
@@ -12544,7 +12544,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.9375,
+    "arr.harmony.agreement": 0.979167,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 8,
@@ -12752,15 +12752,15 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.375,
-    "arr.level.distance": 0,
-    "arr.level.distinct": 0,
-    "arr.lh.notes_per_bar": 16,
+    "arr.harmony.agreement": 0.25,
+    "arr.level.distance": 0.37037,
+    "arr.level.distinct": 0.5,
+    "arr.lh.notes_per_bar": 12,
     "arr.made": 1,
-    "arr.melody.cross": 0,
+    "arr.melody.cross": 0.020202,
     "arr.melody.gap_rate": 0.060606,
     "arr.melody.kept": 0.575758,
-    "arr.melody.lost": 0.424242,
+    "arr.melody.lost": 0.40404,
     "arr.rh.above_c6": 0.105263
    },
    "semantic": null,
@@ -12856,10 +12856,10 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.685714,
-    "arr.level.distance": 0,
-    "arr.level.distinct": 0,
-    "arr.lh.notes_per_bar": 1.777778,
+    "arr.harmony.agreement": 0.833333,
+    "arr.level.distance": 0.549451,
+    "arr.level.distinct": 0.5,
+    "arr.lh.notes_per_bar": 6.518519,
     "arr.made": 1,
     "arr.melody.cross": 0,
     "arr.melody.gap_rate": 0,
@@ -12908,7 +12908,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.8125,
+    "arr.harmony.agreement": 0.875,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 2,
@@ -12960,8 +12960,8 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.78125,
-    "arr.level.distance": 0.399202,
+    "arr.harmony.agreement": 0.833333,
+    "arr.level.distance": 0.426357,
     "arr.level.distinct": 0.5,
     "arr.lh.notes_per_bar": 3.333333,
     "arr.made": 1,
@@ -13082,7 +13082,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.6875,
+    "arr.harmony.agreement": 0.875,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 16,
@@ -13134,8 +13134,8 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.71875,
-    "arr.level.distance": 0.604555,
+    "arr.harmony.agreement": 0.8125,
+    "arr.level.distance": 0.617886,
     "arr.level.distinct": 0.5,
     "arr.lh.notes_per_bar": 8,
     "arr.made": 1,
@@ -13238,7 +13238,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.965517,
+    "arr.harmony.agreement": 0.75,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 0.875,
@@ -13394,7 +13394,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.875,
+    "arr.harmony.agreement": 1,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 1,
@@ -13446,7 +13446,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.875,
+    "arr.harmony.agreement": 0.9375,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 1,
@@ -13498,7 +13498,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.766667,
+    "arr.harmony.agreement": 0.966667,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 1.5,
@@ -13550,7 +13550,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.8,
+    "arr.harmony.agreement": 0.875,
     "arr.level.distance": 0,
     "arr.level.distinct": 0,
     "arr.lh.notes_per_bar": 1.6,
@@ -13602,8 +13602,8 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.625,
-    "arr.level.distance": 0.355556,
+    "arr.harmony.agreement": 0.666667,
+    "arr.level.distance": 0.342342,
     "arr.level.distinct": 0.5,
     "arr.lh.notes_per_bar": 11.733333,
     "arr.made": 1,
@@ -13862,13 +13862,13 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.755208,
+    "arr.harmony.agreement": 0.71875,
     "arr.level.distance": 0.513214,
     "arr.level.distinct": 0.5,
     "arr.lh.notes_per_bar": 8.458333,
     "arr.made": 1,
     "arr.melody.cross": 0,
-    "arr.melody.gap_rate": 0.013514,
+    "arr.melody.gap_rate": 0,
     "arr.melody.kept": 0.972973,
     "arr.melody.lost": 0.027027,
     "arr.rh.above_c6": 0
@@ -13966,8 +13966,8 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.723958,
-    "arr.level.distance": 0.531401,
+    "arr.harmony.agreement": 0.697917,
+    "arr.level.distance": 0.52907,
     "arr.level.distinct": 0.5,
     "arr.lh.notes_per_bar": 7.541667,
     "arr.made": 1,
@@ -14538,8 +14538,8 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.895833,
-    "arr.level.distance": 0.810184,
+    "arr.harmony.agreement": 0.973958,
+    "arr.level.distance": 0.805385,
     "arr.level.distinct": 1,
     "arr.lh.notes_per_bar": 7.291667,
     "arr.made": 1,
@@ -14642,7 +14642,7 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.944149,
+    "arr.harmony.agreement": 0.958333,
     "arr.level.distance": 0.446115,
     "arr.level.distinct": 0.5,
     "arr.lh.notes_per_bar": 2.895833,
@@ -14694,10 +14694,10 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 1,
-    "arr.level.distance": 0,
-    "arr.level.distinct": 0,
-    "arr.lh.notes_per_bar": 1.833333,
+    "arr.harmony.agreement": 0.953704,
+    "arr.level.distance": 0.567521,
+    "arr.level.distinct": 0.5,
+    "arr.lh.notes_per_bar": 5.222222,
     "arr.made": 1,
     "arr.melody.cross": 0,
     "arr.melody.gap_rate": 0,
@@ -14746,8 +14746,8 @@
     "arr.check.6": 0,
     "arr.check.7": 0,
     "arr.hard.violations": 0,
-    "arr.harmony.agreement": 0.853535,
-    "arr.level.distance": 0.333333,
+    "arr.harmony.agreement": 0.861111,
+    "arr.level.distance": 0.352201,
     "arr.level.distinct": 0.5,
     "arr.lh.notes_per_bar": 2,
     "arr.made": 1,
@@ -14810,15 +14810,23 @@
    "reason": "G10a-3 S7 (rec/writer.js, PR 1 of 3; lane A), on main c5d5ad4 (lane B's S8/S9 merged): v2 writes compound and x/2 bars exactly and brackets its tuplet beats itself (classes 3/5/6/7 of v2 rows -> 0), a triplet-16th grid kind '6' (rec.tuplet.recall up), notation-check class 3 by the bar's metre (legacy/app MusicXML unchanged; their rec.check.3 moves on 6/8 and 12/8 bars only), classes 2/7 accept triplet-16th brackets, arrangements of v2 recordings re-bracket half beats. Moved the wrong way, with cause (G10 section 24.5): false tuplet beats +0.2-0.3 per 100 beats pooled, tuplet precision -0.006 to -0.008 (the '6' kind on unsure or wrong skeletons), feature:ottava (Czerny 849 008/011/019/020) durations -0.011 to -0.018, micro M05/M06 32nd runs read as sixths, one critical.key flip (Czerny 849/013). rec-full also takes lane B's S8/S9 (its baseline was not re-recorded with them: key +0.013, pedal +0.029, book:burgmuller25 key -0.034)",
    "sqi_all": null,
    "usable_all": null
+  },
+  {
+   "audio_score_sha256": "2762f42893a7b1e866db02b07b929a0ddef2692e9a3f84f2a7ba7104239e292b",
+   "date": "2026-10-04",
+   "git_sha": "84b9921109761a54a9cb3678d3eefdabcb0d301c",
+   "reason": "G10a-3 S6 (rec/rests.js silence classifier, AI-5b; PR 2 of 3, on PR 1): a silence of an eighth or more between two notes of a voice is a rest only when the model says so (v2 only; hold-out decision accuracy 0.198 -> 0.843). v2 rows gain usable, rec.usable, note values, duration accuracy, rest precision, false rests, stability, MV2H (G10 section 24.6). Moved the wrong way, with cause: rec.rest.recall -0.05 to -0.24 (accuracy-optimal decisions call unclear silences legato; rest-rich etudes under the pedal profiles lose them, a few Burgmueller cases lose critical.note_values), replay-public-v2 extra ties 0 -> 8.8 per 100 notes (two fixtures whose bar lines the skeleton misplaces: legato notes tied over them), rec-arrange arr.lh.notes_per_bar +0.06 to +0.23 and hymns' arr.level.distinct -0.011 (fewer false rests leave more held notes to arrange), single values on micro M10/M16/M17/M19/M20/M22/M23 rows",
+   "sqi_all": null,
+   "usable_all": null
   }
  ],
  "known_failures": null,
  "lock_sha256": "d4ba0a7a3858033bae89d35c7d2478c20e874c976e74bb2df6aef87a3a34856b",
  "recorded": {
-  "audio_score_sha256": "1e7f605774af0a061dc1a9424265d38fdffbe403ebc889b561f8b315ac60223f",
+  "audio_score_sha256": "2762f42893a7b1e866db02b07b929a0ddef2692e9a3f84f2a7ba7104239e292b",
   "date": "2026-10-04",
-  "git_dirty": false,
-  "git_sha": "8150caf187781083e4fd9d62ba8a9bf55e5a4de1",
+  "git_dirty": true,
+  "git_sha": "84b9921109761a54a9cb3678d3eefdabcb0d301c",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"
