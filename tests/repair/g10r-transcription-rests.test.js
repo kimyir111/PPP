@@ -182,8 +182,9 @@ test('a 32nd or 64th rest at the end of a measure is not drawn when the hand has
 
 test('the app asks for it at every recording call site (and nowhere for a MIDI file)', () => {
   const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8').replace(/\r\n/g, '\n');
-  const calls = [...html.matchAll(/\.toMusicXml\(\{[\s\S]*?\}, (\{[^}]*\})\);/g)].map(m => m[1]);
-  assert.equal(calls.length, 4, 'the four recording call sites: ' + calls.join(' / '));
+  /* the five recording call sites (G10a-4 added "Write the notation again"; three of the options are an alternative or an Object.assign now): read with their argument lists */
+  const calls = require('../recording-v2-callsites.js').toMusicXmlCalls(html);
+  assert.equal(calls.length, 5, 'the five recording call sites: ' + calls.join(' / '));
   calls.forEach(c => assert.match(c, /closeGaps: true/, c));
   const midi = /PPPAudioScore\.fromMidi\(bytes, (\{[^}]*\})\)/.exec(html);
   assert.ok(midi && !/closeGaps/.test(midi[1]), 'the MIDI import does not ask');
