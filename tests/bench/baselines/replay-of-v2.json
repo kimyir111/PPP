@@ -79,15 +79,15 @@
     "n": 20
    },
    "notation.duration.accuracy": {
-    "mean": 0.925493,
+    "mean": 0.897076,
     "n": 20
    },
    "notation.duration.accuracy_ref": {
-    "mean": 0.858207,
+    "mean": 0.833572,
     "n": 20
    },
    "notation.duration.page_accuracy": {
-    "mean": 0.925493,
+    "mean": 0.897076,
     "n": 20
    },
    "notation.hand.accuracy": {
@@ -147,7 +147,7 @@
     "n": 20
    },
    "notation.ties.extra_per_100": {
-    "mean": 1.145429,
+    "mean": 3.562636,
     "n": 20
    },
    "notation.tuplets.false_per_100": {
@@ -196,14 +196,14 @@
    },
    "nq.beam.coverage": {
     "mean": 0.0,
-    "n": 15
+    "n": 14
    },
    "nq.beam.coverage.delta": {
     "mean": 0.0,
     "n": 11
    },
    "nq.ned": {
-    "mean": 0.464252,
+    "mean": 0.347132,
     "n": 20
    },
    "nq.range.ledger4_rate": {
@@ -215,15 +215,15 @@
     "n": 20
    },
    "nq.rest.per_measure_delta": {
-    "mean": -0.127402,
+    "mean": -0.070221,
     "n": 20
    },
    "nq.rhythm.hidden_beat_rate": {
-    "mean": 0.010389,
+    "mean": 0.01328,
     "n": 20
    },
    "nq.rhythm.hidden_beat_rate.delta": {
-    "mean": 0.00737,
+    "mean": 0.010262,
     "n": 20
    },
    "nq.rhythm.short_rate_delta": {
@@ -292,11 +292,11 @@
    },
    "nq.tie.mergeable_rate": {
     "mean": 0.0,
-    "n": 13
+    "n": 16
    },
    "nq.tie.mergeable_rate.delta": {
     "mean": 0.0,
-    "n": 1
+    "n": 2
    },
    "nq.tuplet.one_note.r17": {
     "mean": 0.0,
@@ -307,15 +307,15 @@
     "n": 20
    },
    "nq.voice.poly_recall": {
-    "mean": 0.0,
+    "mean": 0.852461,
     "n": 12
    },
    "read.accidentals_per_note": {
-    "mean": 0.01354,
+    "mean": 0.013307,
     "n": 20
    },
    "read.accidentals_per_note.delta": {
-    "mean": 0.00271,
+    "mean": 0.002477,
     "n": 20
    },
    "read.bar_completeness": {
@@ -359,11 +359,11 @@
     "n": 20
    },
    "read.rests_per_measure": {
-    "mean": 0.094473,
+    "mean": 0.151654,
     "n": 20
    },
    "read.rests_per_measure.delta": {
-    "mean": -0.127402,
+    "mean": -0.070221,
     "n": 20
    },
    "read.short_notes_rate": {
@@ -375,11 +375,11 @@
     "n": 20
    },
    "read.ties_per_note": {
-    "mean": 0.018274,
+    "mean": 0.04169,
     "n": 20
    },
    "read.ties_per_note.delta": {
-    "mean": 0.007356,
+    "mean": 0.030772,
     "n": 20
    },
    "read.tuplets_per_note": {
@@ -391,7 +391,7 @@
     "n": 20
    },
    "sqi": {
-    "mean": 87.259256,
+    "mean": 87.012905,
     "n": 20
    },
    "struct.downbeat.f1": {
@@ -571,15 +571,15 @@
      "n": 20
     },
     "notation.duration.accuracy": {
-     "mean": 0.925493,
+     "mean": 0.897076,
      "n": 20
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.858207,
+     "mean": 0.833572,
      "n": 20
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.925493,
+     "mean": 0.897076,
      "n": 20
     },
     "notation.hand.accuracy": {
@@ -639,7 +639,7 @@
      "n": 20
     },
     "notation.ties.extra_per_100": {
-     "mean": 1.145429,
+     "mean": 3.562636,
      "n": 20
     },
     "notation.tuplets.false_per_100": {
@@ -688,14 +688,14 @@
     },
     "nq.beam.coverage": {
      "mean": 0.0,
-     "n": 15
+     "n": 14
     },
     "nq.beam.coverage.delta": {
      "mean": 0.0,
      "n": 11
     },
     "nq.ned": {
-     "mean": 0.464252,
+     "mean": 0.347132,
      "n": 20
     },
     "nq.range.ledger4_rate": {
@@ -707,15 +707,15 @@
      "n": 20
     },
     "nq.rest.per_measure_delta": {
-     "mean": -0.127402,
+     "mean": -0.070221,
      "n": 20
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.010389,
+     "mean": 0.01328,
      "n": 20
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.00737,
+     "mean": 0.010262,
      "n": 20
     },
     "nq.rhythm.short_rate_delta": {
@@ -784,11 +784,11 @@
     },
     "nq.tie.mergeable_rate": {
      "mean": 0.0,
-     "n": 13
+     "n": 16
     },
     "nq.tie.mergeable_rate.delta": {
      "mean": 0.0,
-     "n": 1
+     "n": 2
     },
     "nq.tuplet.one_note.r17": {
      "mean": 0.0,
@@ -799,15 +799,15 @@
      "n": 20
     },
     "nq.voice.poly_recall": {
-     "mean": 0.0,
+     "mean": 0.852461,
      "n": 12
     },
     "read.accidentals_per_note": {
-     "mean": 0.01354,
+     "mean": 0.013307,
      "n": 20
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.00271,
+     "mean": 0.002477,
      "n": 20
     },
     "read.bar_completeness": {
@@ -851,11 +851,11 @@
      "n": 20
     },
     "read.rests_per_measure": {
-     "mean": 0.094473,
+     "mean": 0.151654,
      "n": 20
     },
     "read.rests_per_measure.delta": {
-     "mean": -0.127402,
+     "mean": -0.070221,
      "n": 20
     },
     "read.short_notes_rate": {
@@ -867,11 +867,11 @@
      "n": 20
     },
     "read.ties_per_note": {
-     "mean": 0.018274,
+     "mean": 0.04169,
      "n": 20
     },
     "read.ties_per_note.delta": {
-     "mean": 0.007356,
+     "mean": 0.030772,
      "n": 20
     },
     "read.tuplets_per_note": {
@@ -883,7 +883,7 @@
      "n": 20
     },
     "sqi": {
-     "mean": 87.259256,
+     "mean": 87.012905,
      "n": 20
     },
     "struct.downbeat.f1": {
@@ -1062,15 +1062,15 @@
      "n": 20
     },
     "notation.duration.accuracy": {
-     "mean": 0.925493,
+     "mean": 0.897076,
      "n": 20
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.858207,
+     "mean": 0.833572,
      "n": 20
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.925493,
+     "mean": 0.897076,
      "n": 20
     },
     "notation.hand.accuracy": {
@@ -1130,7 +1130,7 @@
      "n": 20
     },
     "notation.ties.extra_per_100": {
-     "mean": 1.145429,
+     "mean": 3.562636,
      "n": 20
     },
     "notation.tuplets.false_per_100": {
@@ -1179,14 +1179,14 @@
     },
     "nq.beam.coverage": {
      "mean": 0.0,
-     "n": 15
+     "n": 14
     },
     "nq.beam.coverage.delta": {
      "mean": 0.0,
      "n": 11
     },
     "nq.ned": {
-     "mean": 0.464252,
+     "mean": 0.347132,
      "n": 20
     },
     "nq.range.ledger4_rate": {
@@ -1198,15 +1198,15 @@
      "n": 20
     },
     "nq.rest.per_measure_delta": {
-     "mean": -0.127402,
+     "mean": -0.070221,
      "n": 20
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.010389,
+     "mean": 0.01328,
      "n": 20
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.00737,
+     "mean": 0.010262,
      "n": 20
     },
     "nq.rhythm.short_rate_delta": {
@@ -1275,11 +1275,11 @@
     },
     "nq.tie.mergeable_rate": {
      "mean": 0.0,
-     "n": 13
+     "n": 16
     },
     "nq.tie.mergeable_rate.delta": {
      "mean": 0.0,
-     "n": 1
+     "n": 2
     },
     "nq.tuplet.one_note.r17": {
      "mean": 0.0,
@@ -1290,15 +1290,15 @@
      "n": 20
     },
     "nq.voice.poly_recall": {
-     "mean": 0.0,
+     "mean": 0.852461,
      "n": 12
     },
     "read.accidentals_per_note": {
-     "mean": 0.01354,
+     "mean": 0.013307,
      "n": 20
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.00271,
+     "mean": 0.002477,
      "n": 20
     },
     "read.bar_completeness": {
@@ -1342,11 +1342,11 @@
      "n": 20
     },
     "read.rests_per_measure": {
-     "mean": 0.094473,
+     "mean": 0.151654,
      "n": 20
     },
     "read.rests_per_measure.delta": {
-     "mean": -0.127402,
+     "mean": -0.070221,
      "n": 20
     },
     "read.short_notes_rate": {
@@ -1358,11 +1358,11 @@
      "n": 20
     },
     "read.ties_per_note": {
-     "mean": 0.018274,
+     "mean": 0.04169,
      "n": 20
     },
     "read.ties_per_note.delta": {
-     "mean": 0.007356,
+     "mean": 0.030772,
      "n": 20
     },
     "read.tuplets_per_note": {
@@ -1374,7 +1374,7 @@
      "n": 20
     },
     "sqi": {
-     "mean": 87.259256,
+     "mean": 87.012905,
      "n": 20
     },
     "struct.downbeat.f1": {
@@ -2052,9 +2052,9 @@
     "critical.structure": 1.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.873494,
-    "notation.duration.accuracy_ref": 0.767196,
-    "notation.duration.page_accuracy": 0.873494,
+    "notation.duration.accuracy": 0.801205,
+    "notation.duration.accuracy_ref": 0.703704,
+    "notation.duration.page_accuracy": 0.801205,
     "notation.hand.accuracy": 0.96988,
     "notation.hand.accuracy_ref": 0.851852,
     "notation.ioi.accuracy": 0.918367,
@@ -2066,7 +2066,7 @@
     "notation.pedal.false_per_min": null,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.878307,
-    "notation.ties.extra_per_100": 2.409639,
+    "notation.ties.extra_per_100": 6.626506,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
     "notes.identity.f1": 0.935211,
@@ -2074,7 +2074,7 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 91.088957,
+    "sqi": 90.454036,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -2093,8 +2093,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "e0762653c9160519",
-   "sqi": 91.088957,
+   "semantic": "d676f579a2c39042",
+   "sqi": 90.454036,
    "status": "ok"
   },
   "replay/hymns/come-thou-fount|salamander-v2|cover-pedal|s1|of": {
@@ -2112,9 +2112,9 @@
     "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.968586,
-    "notation.duration.accuracy_ref": 0.755102,
-    "notation.duration.page_accuracy": 0.968586,
+    "notation.duration.accuracy": 0.910995,
+    "notation.duration.accuracy_ref": 0.710204,
+    "notation.duration.page_accuracy": 0.910995,
     "notation.hand.accuracy": 0.994764,
     "notation.hand.accuracy_ref": 0.77551,
     "notation.ioi.accuracy": 1.0,
@@ -2126,7 +2126,7 @@
     "notation.pedal.false_per_min": null,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.779592,
-    "notation.ties.extra_per_100": 0.0,
+    "notation.ties.extra_per_100": 4.188482,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
     "notes.identity.f1": 0.874142,
@@ -2134,7 +2134,7 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 67.421613,
+    "sqi": 66.972633,
     "struct.downbeat.f1": 0.285714,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -2153,8 +2153,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "1af1f872b31b637e",
-   "sqi": 67.421613,
+   "semantic": "8dbaf6a692578437",
+   "sqi": 66.972633,
    "status": "ok"
   },
   "replay/hymns/come-thou-long|salamander-v2|cover-pedal|s1|of": {
@@ -2232,9 +2232,9 @@
     "critical.structure": 1.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.932432,
-    "notation.duration.accuracy_ref": 0.855372,
-    "notation.duration.page_accuracy": 0.932432,
+    "notation.duration.accuracy": 0.887387,
+    "notation.duration.accuracy_ref": 0.81405,
+    "notation.duration.page_accuracy": 0.887387,
     "notation.hand.accuracy": 0.959459,
     "notation.hand.accuracy_ref": 0.880165,
     "notation.ioi.accuracy": 0.96875,
@@ -2246,7 +2246,7 @@
     "notation.pedal.false_per_min": null,
     "notation.spelling.accuracy": 0.990991,
     "notation.spelling.accuracy_ref": 0.909091,
-    "notation.ties.extra_per_100": 1.801802,
+    "notation.ties.extra_per_100": 3.603604,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
     "notes.identity.f1": 0.950749,
@@ -2254,7 +2254,7 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 94.115712,
+    "sqi": 93.702489,
     "struct.downbeat.f1": 0.967742,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -2273,8 +2273,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "35d555aa78bf4096",
-   "sqi": 94.115712,
+   "semantic": "a684dd0b9d860ea0",
+   "sqi": 93.702489,
    "status": "ok"
   },
   "replay/hymns/holy-holy-holy|salamander-v2|cover-pedal|s1|of": {
@@ -2292,9 +2292,9 @@
     "critical.structure": 1.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.880682,
-    "notation.duration.accuracy_ref": 0.763547,
-    "notation.duration.page_accuracy": 0.880682,
+    "notation.duration.accuracy": 0.846591,
+    "notation.duration.accuracy_ref": 0.73399,
+    "notation.duration.page_accuracy": 0.846591,
     "notation.hand.accuracy": 0.926136,
     "notation.hand.accuracy_ref": 0.802956,
     "notation.ioi.accuracy": 1.0,
@@ -2306,7 +2306,7 @@
     "notation.pedal.false_per_min": null,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.866995,
-    "notation.ties.extra_per_100": 1.136364,
+    "notation.ties.extra_per_100": 3.977273,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
     "notes.identity.f1": 0.926316,
@@ -2314,7 +2314,7 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 91.531242,
+    "sqi": 91.235675,
     "struct.downbeat.f1": 0.967742,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -2333,8 +2333,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "19d65451478ef4c4",
-   "sqi": 91.531242,
+   "semantic": "3f21ccc32a89230d",
+   "sqi": 91.235675,
    "status": "ok"
   },
   "replay/hymns/i-know-whom|salamander-v2|cover-pedal|s1|of": {
@@ -2352,9 +2352,9 @@
     "critical.structure": 0.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.884444,
-    "notation.duration.accuracy_ref": 0.750943,
-    "notation.duration.page_accuracy": 0.884444,
+    "notation.duration.accuracy": 0.813333,
+    "notation.duration.accuracy_ref": 0.690566,
+    "notation.duration.page_accuracy": 0.813333,
     "notation.hand.accuracy": 0.973333,
     "notation.hand.accuracy_ref": 0.826415,
     "notation.ioi.accuracy": 0.914286,
@@ -2366,7 +2366,7 @@
     "notation.pedal.false_per_min": null,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.849057,
-    "notation.ties.extra_per_100": 4.444444,
+    "notation.ties.extra_per_100": 12.444444,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
     "notes.identity.f1": 0.916497,
@@ -2374,7 +2374,7 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 83.831287,
+    "sqi": 83.227513,
     "struct.downbeat.f1": 0.5,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -2393,8 +2393,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "95c8e5f5ba7b2cc3",
-   "sqi": 83.831287,
+   "semantic": "44e91baca6dd6482",
+   "sqi": 83.227513,
    "status": "ok"
   },
   "replay/hymns/jesus-christ-is-risen|salamander-v2|cover-pedal|s1|of": {
@@ -2412,9 +2412,9 @@
     "critical.structure": 1.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.82716,
-    "notation.duration.accuracy_ref": 0.755639,
-    "notation.duration.page_accuracy": 0.82716,
+    "notation.duration.accuracy": 0.81893,
+    "notation.duration.accuracy_ref": 0.74812,
+    "notation.duration.page_accuracy": 0.81893,
     "notation.hand.accuracy": 0.99177,
     "notation.hand.accuracy_ref": 0.906015,
     "notation.ioi.accuracy": 0.952941,
@@ -2426,7 +2426,7 @@
     "notation.pedal.false_per_min": null,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.913534,
-    "notation.ties.extra_per_100": 0.823045,
+    "notation.ties.extra_per_100": 4.938272,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
     "notes.identity.f1": 0.952941,
@@ -2434,7 +2434,7 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 92.911544,
+    "sqi": 92.836356,
     "struct.downbeat.f1": 0.967742,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -2453,8 +2453,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "8a6c923ae781b397",
-   "sqi": 92.911544,
+   "semantic": "8b29a8eb70ca5590",
+   "sqi": 92.836356,
    "status": "ok"
   },
   "replay/hymns/joyful-joyful|salamander-v2|cover-pedal|s1|of": {
@@ -2472,9 +2472,9 @@
     "critical.structure": 1.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.914414,
-    "notation.duration.accuracy_ref": 0.818548,
-    "notation.duration.page_accuracy": 0.914414,
+    "notation.duration.accuracy": 0.855856,
+    "notation.duration.accuracy_ref": 0.766129,
+    "notation.duration.page_accuracy": 0.855856,
     "notation.hand.accuracy": 0.986486,
     "notation.hand.accuracy_ref": 0.883065,
     "notation.ioi.accuracy": 0.9375,
@@ -2486,7 +2486,7 @@
     "notation.pedal.false_per_min": null,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.895161,
-    "notation.ties.extra_per_100": 1.801802,
+    "notation.ties.extra_per_100": 4.504505,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
     "notes.identity.f1": 0.944681,
@@ -2494,7 +2494,7 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 92.764585,
+    "sqi": 92.240391,
     "struct.downbeat.f1": 0.967742,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -2513,8 +2513,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "26f02451f16ca78d",
-   "sqi": 92.764585,
+   "semantic": "f2658e4d36939889",
+   "sqi": 92.240391,
    "status": "ok"
   },
   "replay/hymns/nearer-my-god|salamander-v2|cover-pedal|s1|of": {
@@ -2532,9 +2532,9 @@
     "critical.structure": 1.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.923567,
-    "notation.duration.accuracy_ref": 0.833333,
-    "notation.duration.page_accuracy": 0.923567,
+    "notation.duration.accuracy": 0.88535,
+    "notation.duration.accuracy_ref": 0.798851,
+    "notation.duration.page_accuracy": 0.88535,
     "notation.hand.accuracy": 0.980892,
     "notation.hand.accuracy_ref": 0.885057,
     "notation.ioi.accuracy": 1.0,
@@ -2546,7 +2546,7 @@
     "notation.pedal.false_per_min": null,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.902299,
-    "notation.ties.extra_per_100": 0.0,
+    "notation.ties.extra_per_100": 5.732484,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
     "notes.identity.f1": 0.942943,
@@ -2554,7 +2554,7 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 65.209434,
+    "sqi": 64.864606,
     "struct.downbeat.f1": 0.967742,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -2573,8 +2573,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "72e8f3666d18eb8a",
-   "sqi": 65.209434,
+   "semantic": "3263e1c5a68be1fc",
+   "sqi": 64.864606,
    "status": "ok"
   },
   "replay/hymns/no-not-one|salamander-v2|cover-pedal|s1|of": {
@@ -2592,9 +2592,9 @@
     "critical.structure": 1.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.795652,
-    "notation.duration.accuracy_ref": 0.703846,
-    "notation.duration.page_accuracy": 0.795652,
+    "notation.duration.accuracy": 0.713043,
+    "notation.duration.accuracy_ref": 0.630769,
+    "notation.duration.page_accuracy": 0.713043,
     "notation.hand.accuracy": 0.973913,
     "notation.hand.accuracy_ref": 0.861538,
     "notation.ioi.accuracy": 0.96875,
@@ -2606,7 +2606,7 @@
     "notation.pedal.false_per_min": null,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.884615,
-    "notation.ties.extra_per_100": 2.608696,
+    "notation.ties.extra_per_100": 6.086957,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
     "notes.identity.f1": 0.938776,
@@ -2614,7 +2614,7 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 91.578395,
+    "sqi": 90.847626,
     "struct.downbeat.f1": 0.83871,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -2633,8 +2633,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "6c6cbf2b66f609e7",
-   "sqi": 91.578395,
+   "semantic": "1061e12f97a5c953",
+   "sqi": 90.847626,
    "status": "ok"
   },
   "replay/hymns/take-my-life|salamander-v2|cover-pedal|s1|of": {
@@ -2652,9 +2652,9 @@
     "critical.structure": 1.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.939655,
-    "notation.duration.accuracy_ref": 0.801471,
-    "notation.duration.page_accuracy": 0.939655,
+    "notation.duration.accuracy": 0.87069,
+    "notation.duration.accuracy_ref": 0.742647,
+    "notation.duration.page_accuracy": 0.87069,
     "notation.hand.accuracy": 0.931034,
     "notation.hand.accuracy_ref": 0.794118,
     "notation.ioi.accuracy": 1.0,
@@ -2666,7 +2666,7 @@
     "notation.pedal.false_per_min": null,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.852941,
-    "notation.ties.extra_per_100": 1.724138,
+    "notation.ties.extra_per_100": 9.482759,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
     "notes.identity.f1": 0.920635,
@@ -2674,7 +2674,7 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 91.427404,
+    "sqi": 90.839169,
     "struct.downbeat.f1": 0.967742,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -2693,8 +2693,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "b2ef45fecd0bc83a",
-   "sqi": 91.427404,
+   "semantic": "09cb9efd63b1799d",
+   "sqi": 90.839169,
    "status": "ok"
   },
   "replay/hymns/we-gather-together|salamander-v2|cover-pedal|s1|of": {
@@ -2712,9 +2712,9 @@
     "critical.structure": 1.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.97076,
-    "notation.duration.accuracy_ref": 0.86911,
-    "notation.duration.page_accuracy": 0.97076,
+    "notation.duration.accuracy": 0.923977,
+    "notation.duration.accuracy_ref": 0.827225,
+    "notation.duration.page_accuracy": 0.923977,
     "notation.hand.accuracy": 0.988304,
     "notation.hand.accuracy_ref": 0.884817,
     "notation.ioi.accuracy": 1.0,
@@ -2726,7 +2726,7 @@
     "notation.pedal.false_per_min": null,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.895288,
-    "notation.ties.extra_per_100": 0.0,
+    "notation.ties.extra_per_100": 3.508772,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
     "notes.identity.f1": 0.934426,
@@ -2734,7 +2734,7 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 94.133551,
+    "sqi": 93.714703,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -2753,8 +2753,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 0.0
    },
-   "semantic": "47d65d7f44d5c8f4",
-   "sqi": 94.133551,
+   "semantic": "ec3c5c85b430ef17",
+   "sqi": 93.714703,
    "status": "ok"
   },
   "replay/method/beyer/025|salamander-v2|cover-pedal|s1|of": {
@@ -2952,9 +2952,9 @@
     "critical.structure": 1.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.984848,
-    "notation.duration.accuracy_ref": 0.984848,
-    "notation.duration.page_accuracy": 0.984848,
+    "notation.duration.accuracy": 1.0,
+    "notation.duration.accuracy_ref": 1.0,
+    "notation.duration.page_accuracy": 1.0,
     "notation.hand.accuracy": 1.0,
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
@@ -2974,7 +2974,7 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 99.848485,
+    "sqi": 100.0,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -2993,8 +2993,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "eb12b38941768379",
-   "sqi": 99.848485,
+   "semantic": "dc8c250b0e79e717",
+   "sqi": 100.0,
    "status": "ok"
   },
   "replay/method/beyer/031|salamander-v2|cover-pedal|s1|of": {
@@ -3257,6 +3257,14 @@
    "git_sha": "84b9921109761a54a9cb3678d3eefdabcb0d301c",
    "reason": "G10a-3 S6 (rec/rests.js silence classifier, AI-5b; PR 2 of 3, on PR 1): a silence of an eighth or more between two notes of a voice is a rest only when the model says so (v2 only; hold-out decision accuracy 0.198 -> 0.843). v2 rows gain usable, rec.usable, note values, duration accuracy, rest precision, false rests, stability, MV2H (G10 section 24.6). Moved the wrong way, with cause: rec.rest.recall -0.05 to -0.24 (accuracy-optimal decisions call unclear silences legato; rest-rich etudes under the pedal profiles lose them, a few Burgmueller cases lose critical.note_values), replay-public-v2 extra ties 0 -> 8.8 per 100 notes (two fixtures whose bar lines the skeleton misplaces: legato notes tied over them), rec-arrange arr.lh.notes_per_bar +0.06 to +0.23 and hymns' arr.level.distinct -0.011 (fewer false rests leave more held notes to arrange), single values on micro M10/M16/M17/M19/M20/M22/M23 rows",
    "sqi_all": 87.259256,
+   "usable_all": 0.3
+  },
+  {
+   "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
+   "date": "2026-10-04",
+   "git_sha": "22abff822c80a7c1005b47809ea0de0223990325",
+   "reason": "G10a-3 S5 (rec/voices.js, PR 3 of 3, on PR 2): two voices per staff for four-part writing (S4's chorale style), each with its own durations and rests; a part's silence while the other part sounds is legato by rule (S6, not trained on); rec.rest rec/2 counts staff silences (rest spans minus sounding notes of the staff; identical for one-voice staff-bars). Gains: rec.voice.f1, rest precision, rec.usable, usable, pitch integrity, MV2H (G10 section 24.7-24.8). Moved the wrong way, with cause: replay-of-v2 duration accuracy -0.028 and extra ties +2.4/100 (two voices hold a part over an AMT-merged or missed repeat), Burgmueller 023 split where its edition has one voice (book voice F1 -0.01 to -0.03), rec-arrange hymns melody kept -0.02 / harmony -0.025 / level distinct -0.026 and left-hand density +0.11 (the arranger on two parts per staff, G10c), rec-grid v2-s3legacy compound class 5 0.18 -> 0.25 (that arm only; v2 rows 0), small rest-precision drops on set:micro and mode:minor tags, single values on a few micro rows",
+   "sqi_all": 87.012905,
    "usable_all": 0.3
   }
  ],
@@ -3603,10 +3611,10 @@
  },
  "lock_sha256": "7f0457b78645bacc73e27746f3501ff5d9933d669317389b6c07bf9b9dedab3b",
  "recorded": {
-  "audio_score_sha256": "2762f42893a7b1e866db02b07b929a0ddef2692e9a3f84f2a7ba7104239e292b",
+  "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
   "date": "2026-10-04",
   "git_dirty": false,
-  "git_sha": "84b9921109761a54a9cb3678d3eefdabcb0d301c",
+  "git_sha": "22abff822c80a7c1005b47809ea0de0223990325",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"
