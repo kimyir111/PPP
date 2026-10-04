@@ -1967,6 +1967,9 @@
     "The heard notes of this song are not kept on this device, so its notation cannot be written again.": "この曲の聴き取った音はこの端末に残っていないため、楽譜を書き直せません。",
     "The new transcription method could not read this performance, so nothing was changed.": "新しい採譜方式でこの演奏を読み取れなかったため、何も変更していません。",
     "Put back the notation that was there before.": "以前の楽譜に戻しました。",
+    "Play as recorded": "録音のまま再生",
+    "Plays the notes PPP heard, with their own timing and loudness. The ordinary Play plays the written score.": "PPPが聴いた音を、聴いたままのタイミングと強さで鳴らします。通常の再生は楽譜に書かれたとおりに演奏します。",
+    "The heard notes of this song are not kept on this device, so it cannot be played as recorded.": "この曲の聴き取った音はこの端末に残っていないため、録音のまま再生できません。",
     "Before: {{m1}} measures, {{r1}} rests, {{b1}} tuplet brackets. Now: {{m2}} measures, {{r2}} rests, {{b2}} tuplet brackets.": "以前：{{m1}}小節、休符{{r1}}個、連符{{b1}}個。今：{{m2}}小節、休符{{r2}}個、連符{{b2}}個。"
   }
 }

@@ -16,6 +16,7 @@
        voices 2 and 6, 3:2 brackets of 16ths over half beats, pedal spanners and key changes; the saved song after a reload; the one-note arranger on the v2 graph does not crash
      - "Write the notation again": the same heard notes with the chosen method, Undo, nothing rewritten until it is pressed; also for a song opened from My Songs, whose heard notes are its kept graph's
      - the flags: amber cells and a legend for the bars PPP was not sure about, kept in the saved report
+     - "Play as recorded": the heard notes at their own times and velocities through the piano, the highlight follows, the ordinary Play and it stop each other, a song without heard notes says so
      - the classic path: a fresh page, an import and a rewrite with PPP.recording = 'legacy' have no v2 mark and no v2 request
 
    Runs against its own server on a free port (tests/serve-free.js); PPP_URL=... runs it against another build. node tests/recording-v2-app.test.js

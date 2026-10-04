@@ -1969,6 +1969,9 @@
     "The heard notes of this song are not kept on this device, so its notation cannot be written again.": "이 곡에서 들은 음이 이 기기에 남아 있지 않아서 악보를 다시 쓸 수 없어요.",
     "The new transcription method could not read this performance, so nothing was changed.": "새 받아쓰기 방식으로 이 연주를 읽을 수 없어서 아무것도 바꾸지 않았어요.",
     "Put back the notation that was there before.": "이전 악보로 되돌렸어요.",
+    "Play as recorded": "녹음 그대로 재생",
+    "Plays the notes PPP heard, with their own timing and loudness. The ordinary Play plays the written score.": "PPP가 들은 음을 들은 그대로의 박자와 세기로 들려줘요. 보통 재생은 악보에 적힌 대로 연주해요.",
+    "The heard notes of this song are not kept on this device, so it cannot be played as recorded.": "이 곡에서 들은 음이 이 기기에 남아 있지 않아서 녹음 그대로 재생할 수 없어요.",
     "Before: {{m1}} measures, {{r1}} rests, {{b1}} tuplet brackets. Now: {{m2}} measures, {{r2}} rests, {{b2}} tuplet brackets.": "이전: {{m1}}마디, 쉼표 {{r1}}개, 잇단음표 {{b1}}개. 지금: {{m2}}마디, 쉼표 {{r2}}개, 잇단음표 {{b2}}개."
   }
 }
