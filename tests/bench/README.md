@@ -411,6 +411,29 @@ python tests/bench/run.py check --suite rec-full             # as ever (the hold
   that they agree. The stability pool uses the `spawn` start method on every platform (a forked worker would start as a copy of
   a heap that large).
 
+**The key and spelling of v2 (G10a-3, S8, `rec/key.js`).** Under `recording: 'v2'` the key signature, the tonal regions (modulations),
+the spelling of every note and the printed accidentals come from `rec/key.js` (code, no model: the constants were fitted on the
+non-hold-out catalogue; evidence is onsets, not releases). `opts.keys: 'legacy'` keeps `estimateKey` / `spellingTable` under v2 and
+`opts.keys: 'v2'` swaps only S8 on any path. `python tests/bench/tools/key_data.py` writes the git-ignored truth cache (every trusted
+reference's key signatures and written spellings) and `node rec/tools/key-eval.js [--list|--grid|--write|--check]` measures the stage
+alone on truth notes against the legacy estimator (`rec/tools/key-v1.evaluation.json`, `--check` in the gate). `rec-keys` (a
+measurement suite, not in the gate) is rec-core's and rec-robust's cases with `v2-keylegacy` (v2 without S8, the v2 rows'
+performances) and `app-keys` (the app's options and only S8, the app rows' performances). `rec-mutation-keys` (v2 rows of the
+families where S8's decisions show; `mutation-check --rec`) carries four planted defects (S8 not used, no diatonic fit, the table's flats
+written as sharps, the tied-over accidental state); the regions, the written
+key changes, the cues of the piece's ends and the signature prior are planted through the stage's weights in `tests/rec/key.test.js`.
+Results: docs/GOALS/G10_AUDIO_TO_SCORE.md section 22.
+**The pedal marks of v2 (G10a-3, S9, `rec/pedal.js`).** Under `recording: 'v2'` a heard pedal span is written as a mark only when the heard notes
+agree with it (long enough, holding notes that can tell, their releases at its end; the mark goes where those releases are) and in the skeleton's
+tick unit (a compound skeleton's beat is 36 ticks, not 24); the heard pedal always stays in the performance layer, a MIDI file's controllers are
+never judged, the browser model hears none and none is invented. `opts.pedal: 'legacy'` writes every heard span under v2 and `opts.pedal: 'v2'`
+swaps only S9 on any path. `notation.pedal.f1` and `notation.pedal.false_per_min` (G10 issue 17) are in the gate of the recording suites (rec-full's
+nightly aggregate excepted). `rec-pedal` (a measurement suite, not in the gate) is rec-core's pedal families with `v2-pedallegacy` (v2, every
+span written) and `app-pedal` (the app's options and only S9); `replay-public-v2` (in the gate) is the six rendered fixtures with v2, where the real
+helper's pedal is judged (nothing was played: every mark is false), `replay-public-v2-pedallegacy` its before arm. `mutation-check --rec` has a
+group on `rec-mutation-pedal` with five planted defects (S9 not used, no agreement, no re-strike rule, the mark not moved to the releases, the old
+tick unit). Results: docs/GOALS/G10_AUDIO_TO_SCORE.md section 23.
+
 ## The real-AMT tier (`replay-of`, G10a-0 step 5)
 
 The humanizer's performances rendered to audio and transcribed by the model users get: the browser's Onsets & Frames

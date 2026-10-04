@@ -39,6 +39,7 @@ jobs:
       - run: node rec/tools/train.js --check          # G10a-1 (AI-5a): the committed weights and evaluation are what the training makes (G10 section 18)
       - run: python tests/bench/tools/hands_data.py && node tests/bench/tools/train_hands.js --check   # G10a-2 (AI-5b, S4): the hand model and its evaluation are what the training makes (G10 section 19)
       - run: node tests/bench/tools/train_grid.js --check   # G10a-2 (AI-5b): the grid stage's committed weights are what the training makes (G10 section 20)
+      - run: python tests/bench/tools/key_data.py && node rec/tools/key-eval.js --check   # G10a-3 (S8): the key stage's committed evaluation on the catalogue truth is what the code makes (G10 section 22)
       - run: node tests/bench/tools/train_rests.js --check  # G10a-3 (AI-5b, S6): the silence classifier's weights and evaluation are what the training makes (G10 section 22; ~30-60 s)
       - run: node tests/engrave/tools/make-e-fixtures.js --check   # the E fixtures are the generator's (G04 §22.1)
       - run: node tests/engrave/tools/make-corpus.js --check       # the R corpus manifest is the rule's (G04 §22.2)
@@ -82,6 +83,7 @@ jobs:
       - run: python tests/bench/run.py run --suite replay-of       # G10a-0: the production browser model (Onsets & Frames) on rendered audio, replayed from committed notes
       - run: python tests/bench/run.py run --suite replay-of-app   # the same fixtures with the app's options
       - run: python tests/bench/run.py run --suite replay-of-v2    # G10a-1: and with the recording conversion v2
+      - run: python tests/bench/run.py run --suite replay-public-v2   # G10a-3 (S9): the helper's real pedal on rendered audio (no pedal was played), with the pedal policy
       - run: npm run test:transcription-core && npm run test:arranger
       - if: always()
         uses: actions/upload-artifact@v4

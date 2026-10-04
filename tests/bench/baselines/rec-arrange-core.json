@@ -14802,15 +14802,23 @@
    "reason": "G10a-3 S7 (rec/writer.js, PR 1 of 3): v2 writes compound and x/2 bars exactly and brackets its tuplet beats itself (classes 3/5/6/7 of v2 rows -> 0), a triplet-16th grid kind '6' (rec.tuplet.recall up), the tied-over accidental rule; notation-check class 3 reads the bar's metre (legacy/app MusicXML unchanged, their rec.check.3 moves on 6/8 and 12/8 bars only) and classes 2/7 accept triplet-16th brackets; arrangements of v2 recordings re-bracket half beats (repair/index.js, v2 sources only). Moved the wrong way, with cause (G10 section 22.5): false tuplet beats +0.2-0.3 per 100 beats pooled and tuplet precision -0.006 to -0.008 (the '6' kind on noisy or misread skeletons, Czerny 849/008 and /011, hold-out /009), micro M05/M06 32nd runs heard with merged frames read as sixths, feature:ottava (Czerny 849 008/011/019/020) durations -0.011 to -0.018, single values on compound micro pieces (M03, M19, M20) from the onset-duration rule",
    "sqi_all": null,
    "usable_all": null
+  },
+  {
+   "audio_score_sha256": "1e7f605774af0a061dc1a9424265d38fdffbe403ebc889b561f8b315ac60223f",
+   "date": "2026-10-04",
+   "git_sha": "8150caf187781083e4fd9d62ba8a9bf55e5a4de1",
+   "reason": "G10a-3 S7 (rec/writer.js, PR 1 of 3; lane A), on main c5d5ad4 (lane B's S8/S9 merged): v2 writes compound and x/2 bars exactly and brackets its tuplet beats itself (classes 3/5/6/7 of v2 rows -> 0), a triplet-16th grid kind '6' (rec.tuplet.recall up), notation-check class 3 by the bar's metre (legacy/app MusicXML unchanged; their rec.check.3 moves on 6/8 and 12/8 bars only), classes 2/7 accept triplet-16th brackets, arrangements of v2 recordings re-bracket half beats. Moved the wrong way, with cause (G10 section 24.5): false tuplet beats +0.2-0.3 per 100 beats pooled, tuplet precision -0.006 to -0.008 (the '6' kind on unsure or wrong skeletons), feature:ottava (Czerny 849 008/011/019/020) durations -0.011 to -0.018, micro M05/M06 32nd runs read as sixths, one critical.key flip (Czerny 849/013). rec-full also takes lane B's S8/S9 (its baseline was not re-recorded with them: key +0.013, pedal +0.029, book:burgmuller25 key -0.034)",
+   "sqi_all": null,
+   "usable_all": null
   }
  ],
  "known_failures": null,
  "lock_sha256": "d4ba0a7a3858033bae89d35c7d2478c20e874c976e74bb2df6aef87a3a34856b",
  "recorded": {
-  "audio_score_sha256": "03335699d0efe09aefac88b05dddd50d9b4f3b31bb5e0b58c5b838cbcd104fa6",
-  "date": "2026-10-03",
-  "git_dirty": true,
-  "git_sha": "638f56ba7850cdc1e957d46ec5820e7ede6a5445",
+  "audio_score_sha256": "1e7f605774af0a061dc1a9424265d38fdffbe403ebc889b561f8b315ac60223f",
+  "date": "2026-10-04",
+  "git_dirty": false,
+  "git_sha": "8150caf187781083e4fd9d62ba8a9bf55e5a4de1",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"
