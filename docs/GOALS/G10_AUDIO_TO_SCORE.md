@@ -2167,7 +2167,8 @@ variants of 26.6), so the hands fallback (25.8) must stay: a recording like this
   micro pieces' hands); the no-op byte-identical. S4's four G10a-2 defects on rec-mutation-v2 still caught (legacy split 0.989 ->
   0.894, no motion -> 0.985, one style -> 0.937, no partition prior -> 0.967); the partition defect's anchor follows the new line.
 - **Determinism**: `results.json` byte-identical over three runs on Windows (Python 3.13.5, Node 24.17): rec-smoke `f4b676865b6f887c`,
-  replay-of-v2 `625174f5044e9848`, replay-public-v2 `af33554b77fcc005`; rec-hands-play `1360f67538eb81de` (two runs). [[LINUX]]
+  replay-of-v2 `625174f5044e9848`, replay-public-v2 `af33554b77fcc005`; rec-hands-play `1360f67538eb81de` (two runs). Linux (`node:24-bookworm`, offline, an LF clone of `7ff88b9`, the README's
+  recipe): the same four hashes, every `check` PASS, `train_hands.js --check` "same" for the weights and the evaluation.
 - **Budget (section 11)**: S4 on the teacher's piece 27 ms (as v1), on the 1,800-note synthetic piece 29 ms (v1 27); model 32.6 KB.
 
 ### 26.8 Verification
