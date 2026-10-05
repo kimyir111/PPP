@@ -352,29 +352,32 @@
       spq.push(ibi / rho);
     }
     const qpm = 60 / attacks.median(spq);
-    const cand = [], kern = [];
+    /* attack i's candidates are the consecutive slots lo[i] .. lo[i] + len[i] - 1, their timing terms kern[at[i] ..] */
+    const lo = new Int32Array(n), len = new Int32Array(n), at = new Int32Array(n);
+    let total = 0;
     for (let i = 0; i < n; i++) {
       const r = Math.min(8, Math.max(1, Math.ceil(2.5 * sigma / w[i])));
-      const cs = [], ks = [];
       if (!swing) {
         const c0 = Math.round(g[i]);
-        for (let c = c0 - r; c <= c0 + r; c++) {
-          const d = (g[i] - c) * w[i] / sigma;
-          cs.push(c); ks.push(-0.5 * d * d);
-        }
+        lo[i] = c0 - r; len[i] = 2 * r + 1;
       } else {
         /* a written slot is judged by where the swing puts it; the written grid is up to 1.5 times denser in time there */
         const c0 = Math.round(swingWritten(g[i], swing.s, swing.o)), rs = Math.min(12, Math.ceil(r * 1.5));
-        for (let c = c0 - rs; c <= c0 + rs; c++) {
-          const d = (g[i] - swingHeard(c, swing.s, swing.o)) * w[i] / sigma;
-          cs.push(c); ks.push(-0.5 * d * d);
-        }
+        lo[i] = c0 - rs; len[i] = 2 * rs + 1;
       }
-      cand.push(cs); kern.push(ks);
+      at[i] = total; total += len[i];
     }
-    return { n: n, cand: cand, kern: kern, cls: cls, pcs: att.map(a => a.pcs), att: att, medN: attacks.median(att.map(a => a.n)),
+    const kern = new Float64Array(total);
+    for (let i = 0; i < n; i++) {
+      for (let j = 0, c = lo[i]; j < len[i]; j++, c++) {
+        const d = (g[i] - (swing ? swingHeard(c, swing.s, swing.o) : c)) * w[i] / sigma;
+        kern[at[i] + j] = -0.5 * d * d;
+      }
+    }
+    return { n: n, lo: lo, len: len, at: at, kern: kern, cls: cls, pcs: att.map(a => a.pcs), att: att, medN: attacks.median(att.map(a => a.n)),
       qpm: qpm, rho: rho, track: track, downbeats: downbeats || null, swing: swing || null,
-      buf: { abs: new Int32Array(n), low: new Int32Array(n), nn: new Int32Array(n), pcs: new Int32Array(n), first: new Int32Array(n) } };
+      buf: { abs: new Int32Array(n), low: new Int32Array(n), nn: new Int32Array(n), pcs: new Int32Array(n), first: new Int32Array(n),
+        slots: new Int32Array(n) } };
   }
 
   const scratch = { n: new Float64Array(NLEV), T: new Float64Array(NLEV) };
@@ -395,16 +398,18 @@
     const P = prepared(tables)[mi], m = P.m, f = P.f, S = m.S;
     const off = Math.round(phi * R);
     let fk = 0, fb = 0, fi = 0, fs = 0, coll = 0, ff = 0;
-    const slots = new Int32Array(fr.n);
+    const slots = keepSlots ? new Int32Array(fr.n) : fr.buf.slots;
     let prev = -Infinity;
     const hits = scratch.n; hits.fill(0);
+    const cLo = fr.lo, cLen = fr.len, cAt = fr.at, cKern = fr.kern, snap = P.snap;
     for (let i = 0; i < fr.n; i++) {
-      const cs = fr.cand[i], ks = fr.kern[i];
+      /* the candidates are consecutive slots, so the slot in the bar steps with them */
       let best = -Infinity, bc = 0, bk = 0;
-      for (let j = 0; j < cs.length; j++) {
-        const p = cs[j] - off;
-        const v = ks[j] + P.snap[((p % S) + S) % S];
-        if (v > best) { best = v; bc = p; bk = ks[j]; }
+      let p = cLo[i] - off, q = ((p % S) + S) % S;
+      for (let j = cAt[i], e = cAt[i] + cLen[i]; j < e; j++, p++) {
+        const v = cKern[j] + snap[q];
+        if (v > best) { best = v; bc = p; bk = cKern[j]; }
+        if (++q === S) q = 0;
       }
       const s = ((bc % S) + S) % S, L = m.level[s];
       slots[i] = bc;

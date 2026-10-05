@@ -38,7 +38,7 @@ const MUTATIONS = [
   { id: 'NO-SWUNG-FRAMES', why: 'no swung reading is proposed (a swung piece is read compound at 1.5 times its tempo)', file: 'metre.js',
     find: 'const swings = opts.swing || [];', replace: 'const swings = [];' },
   { id: 'SWING-NOT-HEARD', why: 'a swung frame judges its slots where they would be straight', file: 'model.js',
-    find: 'const d = (g[i] - swingHeard(c, swing.s, swing.o)) * w[i] / sigma;', replace: 'const d = (g[i] - c) * w[i] / sigma;' },
+    find: 'const d = (g[i] - (swing ? swingHeard(c, swing.s, swing.o) : c)) * w[i] / sigma;', replace: 'const d = (g[i] - c) * w[i] / sigma;' },
   { id: 'SWING-PHASE-IGNORED', why: 'a reading whose bar phase is an odd eighth takes the frame whose quarters start on the beat', file: 'metre.js',
     find: 'if (Math.round(phi * model.R) % model.R === o) list.push(', replace: 'if (o === 0) list.push(' }
 ];
