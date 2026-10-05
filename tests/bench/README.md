@@ -358,6 +358,26 @@ hand on the other staff - by register and family, and the melody gap count: righ
 `tools/hands_ab.py --a A.json --b B.json [--a-opt app --b-opt app-hands] [--by family|profile|beats]` (case-by-case A/B of two
 runs' results). Results: docs/GOALS/G10_AUDIO_TO_SCORE.md section 19.
 
+**S4's playability (G10a-2b).** A piano cover doubles its lines in octaves, the catalogue hardly ever does (its bare octaves are
+the unison exercises' one note per hand), so the hand split could not be judged on covers. A matrix row's `"texture"` re-voices a
+reference the way covers are written (`pppbench/texture.py`: `octaves` doubles every single note of a hand an octave below for
+the left hand and above for the right, hands kept; `octaves-l`, `octaves-r` one hand only), and the textured score is the case's
+truth and its performance's source (`corpus.reference_for`; the case id ends in `|tex:<name>`; no suite before G10a-2b has one,
+so no other case moved). A suite with `"hands_play": true` also measures what the written hands ask of the hands
+(`node/rec-hands-play.js` on the predicted graph, the repository's own `playability/` and `critics/metrics.js`: a metric tool,
+not the SUT): `rec.hands.crossing` (the share of two-hand moments at which the right hand's lowest sounding note is below the
+left hand's highest: the measure of the one-note arranger's relaxed-plan limit, `HAND_CROSSING_MAX` 0.01), `rec.hands.hard_per_100_bars`
+(G5a hard violations of the written hands at the medium hand) and `rec.hands.line_velocity_per_100_bars` (the VELOCITY violations
+of the right hand's top line and the left hand's bottom line, what the one-note arranger keeps). Suites (nightly): `rec-hands-play`
+(the core references and the 52 hold-out references at seed 11, as written and textured `octaves`, x cover x `app` / `v2` /
+`v2-handslegacy` = v2 with the classic hand split, the Song Arranger's fallback, on v2's very performances), `rec-arrange-play`
+(rec-arrange-core's references textured `octaves` x cover x `v2` / `v2-handslegacy`, arranged at the three levels: `arr.made` is
+the share made without a refusal; the melody and harmony are measured against the reference as written, so read `arr.made` and
+`arr.hard.violations` there) and `rec-mutation-play` (`mutation-check --rec`: S4's hard term and group context, each a planted
+defect). `tools/hands_data.py` writes the textured references into the hand model's cache (and `--perfs` their performances);
+`tools/train_hands.js` reports accuracy and G5a hard violations per texture (they are evaluated, not counted into the model).
+Results: docs/GOALS/G10_AUDIO_TO_SCORE.md section 26.
+
 **v2's grid stage (G10a-2, S3, `rec/grid.js`).** On v2's skeleton, the grid of each beat (straight 16ths, 32nds, triplet eighths,
 long-short eighths written straight; in compound time the eighths or the 16ths of the dotted quarter) and every onset on it,
 chosen from learned occupancy patterns, a timing-noise density adapted to the piece and a chain over the beats
@@ -485,6 +505,7 @@ arranger cannot move its own measure.
 python tests/bench/run.py run --suite rec-arrange-smoke    # 16 references x cover, cover+of x app, v2: ~1 min; CI
 python tests/bench/run.py run --suite rec-arrange-core     # 64 small and middle-sized core references x cover + the 20 replay-of fixtures x app, v2: ~2-3 min; CI
 python tests/bench/run.py run --suite rec-arrange-full     # every core reference x cover x app, v2 (aggregates only): nightly
+python tests/bench/run.py run --suite rec-arrange-play     # rec-arrange-core's references as piano covers (texture octaves) x v2, v2-handslegacy: nightly (G10a-2b)
 python tests/bench/run.py mutation-check --rec-arrange     # one planted defect per metric in the arranger (rec-arrange-mutation); nightly
 ```
 

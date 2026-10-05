@@ -575,7 +575,7 @@ REC_V2_MUTATIONS: List[Dict[str, Any]] = [
      "expect": "REGRESSION", "metrics": ["notation.hand.accuracy"]},
     {"id": "REC-V2-HANDS-NO-PART-PRIOR", "v2": True,  # S4 ignores how many notes each hand usually takes for a group's shape
      "file": "rec/hands.js",
-     "find": "    emit(L.part + g.shape * (CAP + 1) * (CAP + 1) + Math.min(nL, CAP) * (CAP + 1) + Math.min(nR, CAP));",
+     "find": "    emit(L.part + shape * (CAP + 1) * (CAP + 1) + Math.min(nL, CAP) * (CAP + 1) + Math.min(nR, CAP));",
      "replace": "    /* mutation: no partition prior */",
      "expect": "REGRESSION", "metrics": ["notation.hand.accuracy"]},
     # G10a-3: one planted defect per decision of the writer (S7, rec/writer.js), the triplet-16th grid kind (S3), the silence
@@ -664,6 +664,27 @@ REC_KEY_MUTATIONS: List[Dict[str, Any]] = [
      "find": "        if (tieStop) return false;",
      "replace": "        if (tieStop) { state[step + octave] = alter; return false; }",
      "expect": "REGRESSION", "metrics": ["critical.accidentals", "notation.accidentals.required_recall"]},
+    {"id": "MUT-NOOP",
+     "find": "  const api = {",
+     "replace": "  /* noop mutation */\n  const api = {",
+     "expect": "PASS", "metrics": []},
+]
+
+# G10a-2b: S4's playability (docs/GOALS/G10 section 26), on its own suite (rec-mutation-play: the rec-mutation references re-voiced as
+# piano covers are, texture octaves, v2 rows only, with the rec.hands.* metrics). One planted defect per new decision: the G5a hard
+# term and the context of a group. On the references as written these decisions hardly show (rec-mutation-v2 keeps S4's four G10a-2
+# defects); the textures are where they decide
+REC_HANDS_PLAY_MUTATIONS: List[Dict[str, Any]] = [
+    {"id": "REC-V2-HANDS-NO-PLAY", "v2": True,        # S4 gives a hand notes it cannot play (no G5a hard term)
+     "file": "rec/hands.js",
+     "find": "    if (M.P.play) acc += M.P.play.w * hardOf(M.P.play, s, g, k);",
+     "replace": "    /* mutation: no playability term */",
+     "all": True, "expect": "REGRESSION", "metrics": ["rec.hands.hard_per_100_bars", "rec.hands.line_velocity_per_100_bars", "notation.hand.accuracy"]},
+    {"id": "REC-V2-HANDS-NO-CONTEXT", "v2": True,     # the partition table blind to what lies far below or above a group (on these
+     "file": "rec/hands.js",                          # covers the hard violations and the micro pieces' hands show it; the mean hand
+     "find": "    const shape = P.ctx ? g.shape * CONTEXTS + g.ctx : g.shape;",   # accuracy hardly moves: 0.9279 -> 0.9280)
+     "replace": "    const shape = P.ctx ? g.shape * CONTEXTS : g.shape;",
+     "expect": "REGRESSION", "metrics": ["rec.hands.hard_per_100_bars", "micro:notation.hand.accuracy"], "all": True},
     {"id": "MUT-NOOP",
      "find": "  const api = {",
      "replace": "  /* noop mutation */\n  const api = {",

@@ -86,6 +86,18 @@ def read_reference(entry: RefEntry):
     return _canon_cache[key]
 
 
+def reference_for(entry: RefEntry, texture: Optional[str] = None):
+    """The reference as a case sees it: the score itself, or the score re-voiced by a texture (``pppbench.texture``, G10a-2b:
+    a matrix row's ``texture``). The textured score is the case's truth as well as its performance's source."""
+    if not texture:
+        return read_reference(entry)
+    key = (entry.path, entry.sha256, texture)
+    if key not in _canon_cache:
+        from . import texture as texture_mod
+        _canon_cache[key] = texture_mod.apply(read_reference(entry), texture)
+    return _canon_cache[key]
+
+
 _prov_cache: Dict[str, Dict[str, Any]] = {}
 
 

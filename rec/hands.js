@@ -1,5 +1,6 @@
 /* ============================================================================
-   PPP recording pipeline - stage S4: hands (docs/GOALS/G10_AUDIO_TO_SCORE.md section 8.1, phase G10a-2, AI-5b)
+   PPP recording pipeline - stage S4: hands (docs/GOALS/G10_AUDIO_TO_SCORE.md section 8.1, phase G10a-2, AI-5b;
+   playability G10a-2b, section 26)
 
    Which hand plays each heard note, so which staff it is written on (staff 1 = right hand = upper staff,
    staff 2 = left hand = lower staff, as everywhere in PPP). A pure function: no I/O, no clock, no random,
@@ -19,12 +20,13 @@
 
    The model. Within one onset group the hands do not cross: the lowest k notes are the left hand's, the rest the
    right hand's (k = 0..n; a crossing inside one attack is 71 of 223,823 reference pairs on rec-core). Across
-   groups a beam Viterbi (opts.model.params.beam states) carries each hand's last notes (lowest, highest), when it
-   played, how many notes and its previous inter-onset interval, and scores each choice by learned costs (-log
-   frequencies counted on the licence-clean catalogue's written hands; tests/bench/tools/train_hands.js), each
-   table with a weight chosen by measurement:
+   groups a beam Viterbi (opts.model.params.beam states) carries each hand's last notes (lowest, highest, mean),
+   when it played, how many notes and its previous inter-onset interval, and scores each choice by learned costs
+   (-log frequencies counted on the licence-clean catalogue's written hands; tests/bench/tools/train_hands.js),
+   each table with a weight chosen by measurement:
      part   how many notes each hand takes, given the group's size and shape (a bare octave or a wide pair is
-            often one note per hand: parallel octaves; four-part chords are often two and two)
+            often one note per hand: parallel octaves; four-part chords are often two and two) and, when the model
+            has params.ctx, the group's context (below)
      span   the stretch of a hand's notes, per hand and count
      move   how far a hand's centre moves since it last played, per hand and the time since
      reg    the register of each note, per hand
@@ -36,6 +38,19 @@
    chorale (four parts on two staves, tenor and bass below: the hymnal's convention); a piece is decoded under both
    and the cheaper path's style is the piece's. conf per note: a logistic of the cost margin to the best choice
    that puts that note in the other hand, from the same incoming state (local, an approximation of the posterior).
+
+   Playability (G10a-2b, section 26; each part is the model's, so a model without it decodes as before):
+     context  params.ctx {w, d}: whether some other note lies at least d semitones below the group's lowest note,
+              or above its highest, within w seconds (hand-free: read from the notes); the part table is counted per
+              context class. A bare octave with nothing around it is a unison exercise's two hands; the same octave
+              over a bass far below is a cover's right hand; a lone note over a bass far below is a melody note.
+     play     params.play {w, span, keys, reach, perSemi}: what the G5a analyzer (playability/analyze.js) calls a
+              hard violation costs w for each one a choice makes, so a hand is never given notes it cannot play
+              unless every choice does: a hand wider than `span` semitones or with more than `keys` notes at one
+              onset, and a lateral shift too fast for the time since the hand last played - beyond `reach`
+              semitones it needs perSemi seconds a semitone (playability/reach.js requiredSeconds) - measured on
+              the hand's mean pitch (G5a) and on its outer line (the right hand's top, the left hand's bottom: the
+              notes the one-note arranger keeps).
 
    The weights are data (rec/weights/hands-v1.json, schema ppp.rec-hands-model/1), loaded by Node from rec/weights/,
    or in a page from opts.model / setModel(json) / window.PPPRecHandsWeights. No model, no guess: assign throws
@@ -53,7 +68,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (defaultModel) {
   'use strict';
 
-  const VERSION = '1.0.0';
+  const VERSION = '1.1.0';
   const SCHEMA = 'ppp.rec-hands-model/1';
   const RH = 1, LH = 2;
 
@@ -82,13 +97,15 @@
   const IOI_EDGES = [0.148650889, 0.210224104, 0.297301779, 0.420448208, 0.594603558, 0.840896415,
     1.189207115, 1.681792831, 2.378414230, 3.363585661, 4.756828460, 6.727171322];
   const IOI_N = IOI_EDGES.length + 1;
+  const CONTEXTS = 4;                  /* params.ctx: 0 nothing around, 1 a note far below, 2 far above, 3 both */
 
+  /* Offsets of each table; L.size is the length of a style's cost array. */
   function layout(P) {
     const NB = P.dtEdges.length + 1;
     const L = {};
     let off = 0;
     const put = (name, size) => { L[name] = off; off += size; };
-    put('part', SHAPES * (CAP + 1) * (CAP + 1));
+    put('part', SHAPES * (P.ctx ? CONTEXTS : 1) * (CAP + 1) * (CAP + 1));
     put('span', 2 * (CAP + 1) * (SPAN_MAX + 1));
     put('move', 2 * NB * (2 * MOVE_MAX + 1));
     put('reg', 2 * 128);
@@ -119,11 +136,38 @@
     return b;
   }
 
-  /* A hand's state: lo, hi (the notes it last played), t (when, seconds), n (how many), i (the interval before
-     that, seconds; 0 = not known). The events of one choice, as table indices, go to `emit`; returns the next
-     state. Used by inference (the sum of weighted costs) and by the trainer (counts along the written hands), so
-     the two cannot disagree.
-       part  the group's shape x (left count, right count)       span  per hand and count
+  /* What the notes alone say about each group, for a model with params.ctx: g.ctx, the context class (0 nothing far
+     around, 1 a note at least ctx.d semitones below the group's lowest within ctx.w seconds, 2 one above its highest,
+     3 both). Computed once per list of groups. */
+  function contextOf(groups, P) {
+    if (!P.ctx) return groups;
+    const key = P.ctx.w + '|' + P.ctx.d;
+    if (groups.ctxKey === key) return groups;
+    const W = P.ctx.w, D = P.ctx.d;
+    let a = 0, b = 0;
+    groups.forEach((g, gi) => {
+      while (groups[a].t < g.t - W) a++;
+      if (b < gi) b = gi;
+      while (b + 1 < groups.length && groups[b + 1].t <= g.t + W) b++;
+      const lo = g.p[0], hi = g.p[g.p.length - 1];
+      let below = false, above = false;
+      for (let j = a; j <= b && !(below && above); j++) {
+        if (j === gi) continue;
+        const q = groups[j].p;
+        if (q[0] <= lo - D) below = true;
+        if (q[q.length - 1] >= hi + D) above = true;
+      }
+      g.ctx = (below ? 1 : 0) + (above ? 2 : 0);
+    });
+    groups.ctxKey = key;
+    return groups;
+  }
+
+  /* A hand's state: lo, hi (the notes it last played), c (their mean), t (when, seconds), n (how many), i (the
+     interval before that, seconds; 0 = not known). The events of one choice, as table indices, go to `emit`;
+     returns the next state. Used by inference (the sum of weighted costs) and by the trainer (counts along the
+     written hands), so the two cannot disagree.
+       part  the group's shape (and context) x (left count, right count)   span  per hand and count
        move  per hand and time since: the change of its centre    reg   per hand: each note's pitch
        gap   both hands play: the interval between them           rel   one hand plays: its notes against the
        cnt   per hand: its count after its previous count               other hand's position
@@ -137,24 +181,59 @@
   function step(P, L, s, g, k, emit) {
     const p = g.p, n = p.length;
     const nL = k, nR = n - k;
-    emit(L.part + g.shape * (CAP + 1) * (CAP + 1) + Math.min(nL, CAP) * (CAP + 1) + Math.min(nR, CAP));
-    const x = { rLo: s.rLo, rHi: s.rHi, lLo: s.lLo, lHi: s.lHi, tR: s.tR, tL: s.tL, nR: s.nR, nL: s.nL, iR: s.iR, iL: s.iL };
+    const shape = P.ctx ? g.shape * CONTEXTS + g.ctx : g.shape;
+    emit(L.part + shape * (CAP + 1) * (CAP + 1) + Math.min(nL, CAP) * (CAP + 1) + Math.min(nR, CAP));
+    const x = { rLo: s.rLo, rHi: s.rHi, lLo: s.lLo, lHi: s.lHi, cR: s.cR, cL: s.cL, tR: s.tR, tL: s.tL, nR: s.nR, nL: s.nL, iR: s.iR, iL: s.iL };
     if (nR) {
       const lo = p[k], hi = p[n - 1];
       hand(P, L, 0, lo, hi, nR, s.rLo, s.rHi, s.tR, s.nR, s.iR, g, emit);
       if (!nL) emit(L.rel + 0 * (2 * REL_MAX + 1) + REL_MAX + clampI(lo - s.lHi, -REL_MAX, REL_MAX));
-      for (let i = k; i < n; i++) emit(L.reg + 0 * 128 + p[i]);
-      x.rLo = lo; x.rHi = hi; x.tR = g.t; x.nR = nR; x.iR = isFinite(s.tR) ? g.t - s.tR : 0;
+      let sum = 0;
+      for (let i = k; i < n; i++) { emit(L.reg + 0 * 128 + p[i]); sum += p[i]; }
+      x.rLo = lo; x.rHi = hi; x.cR = sum / nR; x.tR = g.t; x.nR = nR; x.iR = isFinite(s.tR) ? g.t - s.tR : 0;
     }
     if (nL) {
       const lo = p[0], hi = p[k - 1];
       hand(P, L, 1, lo, hi, nL, s.lLo, s.lHi, s.tL, s.nL, s.iL, g, emit);
       if (!nR) emit(L.rel + 1 * (2 * REL_MAX + 1) + REL_MAX + clampI(s.rLo - hi, -REL_MAX, REL_MAX));
-      for (let i = 0; i < k; i++) emit(L.reg + 1 * 128 + p[i]);
-      x.lLo = lo; x.lHi = hi; x.tL = g.t; x.nL = nL; x.iL = isFinite(s.tL) ? g.t - s.tL : 0;
+      let sum = 0;
+      for (let i = 0; i < k; i++) { emit(L.reg + 1 * 128 + p[i]); sum += p[i]; }
+      x.lLo = lo; x.lHi = hi; x.cL = sum / nL; x.tL = g.t; x.nL = nL; x.iL = isFinite(s.tL) ? g.t - s.tL : 0;
     }
     if (nL && nR) emit(L.gap + Math.min(p[k] - p[k - 1], GAP_MAX));
     return x;
+  }
+  /* params.play: the G5a hard violations one choice makes (the hands' state s, group g, the lowest k notes to the left
+     hand). Not a table: a count, so the decoder pays play.w for each (section 26). */
+  function needs(Q, dist) { return dist <= Q.reach ? 0 : (dist - Q.reach) * Q.perSemi; }
+  function hardOf(Q, s, g, k) {
+    const p = g.p, n = p.length;
+    let v = 0;
+    if (n > k) {
+      const lo = p[k], hi = p[n - 1];
+      if (hi - lo > Q.span) v++;
+      if (n - k > Q.keys) v++;
+      if (isFinite(s.tR)) {
+        let sum = 0;
+        for (let i = k; i < n; i++) sum += p[i];
+        const dt = g.t - s.tR + 1e-9;
+        if (dt < needs(Q, Math.abs(sum / (n - k) - s.cR))) v++;
+        if (dt < needs(Q, Math.abs(hi - s.rHi))) v++;
+      }
+    }
+    if (k > 0) {
+      const lo = p[0], hi = p[k - 1];
+      if (hi - lo > Q.span) v++;
+      if (k > Q.keys) v++;
+      if (isFinite(s.tL)) {
+        let sum = 0;
+        for (let i = 0; i < k; i++) sum += p[i];
+        const dt = g.t - s.tL + 1e-9;
+        if (dt < needs(Q, Math.abs(sum / k - s.cL))) v++;
+        if (dt < needs(Q, Math.abs(lo - s.lLo))) v++;
+      }
+    }
+    return v;
   }
   /* Before its first note a hand is where the piece's register puts it: the left hand at the lower quartile of the
      piece's pitches, the right at the upper, long ago (the longest-rest bucket), with no count or rhythm yet. */
@@ -164,7 +243,7 @@
     all.sort((a, b) => a - b);
     const q = f => (all.length ? all[Math.min(all.length - 1, Math.floor(f * all.length))] : 60);
     const l = q(0.25), r = q(0.75);
-    return { rLo: r, rHi: r, lLo: l, lHi: l, tR: -Infinity, tL: -Infinity, nR: 0, nL: 0, iR: 0, iL: 0 };
+    return { rLo: r, rHi: r, lLo: l, lHi: l, cR: r, cL: l, tR: -Infinity, tL: -Infinity, nR: 0, nL: 0, iR: 0, iL: 0 };
   }
 
   /* ------------------------------------------------------------ groups */
@@ -248,13 +327,14 @@
     return defaultModel();
   }
 
-  /* The cost of one choice under one style's tables: the sum of its weighted table costs (one accumulator, no
-     closure per call: the decoder calls this a few hundred thousand times for a long piece). */
+  /* The cost of one choice under one style's tables: the sum of its weighted table costs and of its hard violations
+     (one accumulator, no closure per call: the decoder calls this a few hundred thousand times for a long piece). */
   let accWC = null, acc = 0;
   const addCost = i => { acc += accWC[i]; };
   function costOf(M, WC, s, g, k) {
     accWC = WC; acc = 0;
     const next = step(M.P, M.L, s, g, k, addCost);
+    if (M.P.play) acc += M.P.play.w * hardOf(M.P.play, s, g, k);
     return { c: acc, next: next };
   }
 
@@ -266,6 +346,7 @@
 
   /* Beam Viterbi over the groups under one style's tables (WC): the best k per group. */
   function decode(M, groups, WC) {
+    contextOf(groups, M.P);
     const B = M.P.beam || 32;
     const START = startOf(groups);
     let beam = [{ s: START, c: 0, from: -1, k: -1 }];
@@ -363,6 +444,7 @@
     VERSION: VERSION, SCHEMA: SCHEMA, assign: assign, assignQ: assignQ, setModel: setModel,
     /* for the trainer and the tests (tests/bench/tools/train_hands.js): the same layout and events as inference */
     _: Object.freeze({ layout: layout, step: step, groupsOf: groupsOf, shapeOf: shapeOf, bucketOf: bucketOf,
-      decode: decode, decodeStyles: decodeStyles, prepare: prepare, startOf: startOf, ioiBucket: ioiBucket, IOI_N: IOI_N, tableOf: tableOf, TABLES: TABLES, SHAPES: SHAPES, CAP: CAP })
+      contextOf: contextOf, hardOf: hardOf, decode: decode, decodeStyles: decodeStyles, prepare: prepare, startOf: startOf,
+      ioiBucket: ioiBucket, IOI_N: IOI_N, tableOf: tableOf, TABLES: TABLES, SHAPES: SHAPES, CAP: CAP, CONTEXTS: CONTEXTS })
   });
 });

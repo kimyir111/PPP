@@ -1,32 +1,41 @@
 #!/usr/bin/env node
-/* Train the hand model of rec/hands.js (G10a-2, stage S4; docs/GOALS/G10 section 8.3 AI-5b).
+/* Train the hand model of rec/hands.js (G10a-2, stage S4; docs/GOALS/G10 section 8.3 AI-5b; playability G10a-2b, section 26).
 
-     python tests/bench/tools/hands_data.py                                   # the truth (git-ignored cache)
+     python tests/bench/tools/hands_data.py                                   # the truth (git-ignored cache), textures included
      python tests/bench/tools/hands_data.py --perfs tests/bench/.cache/hands/perfs.jsonl   # humanized performances, seed 201
-     node tests/bench/tools/train_hands.js [--out rec/weights/hands-v1.json] [--eval-only] [--tune truth|perfs|both]
-                                           [--no-perfs] [--recapture]
+     node tests/bench/tools/train_hands.js [--out rec/weights/hands-v1.json] [--eval-out rec/tools/hands-v1.evaluation.json]
+                                           [--eval-only] [--tune truth|perfs|both] [--no-perfs] [--recapture]
      node tests/bench/tools/train_hands.js --check      # CI: the committed weights and evaluation are what training makes
 
    1. Counts: every TRAINING reference (hold-out excluded: fnv1a32(id) % 5 == 0, the benchmark's rule) is walked along
       its written hands with rec/hands.js's own step(), so the counted events are exactly the ones inference scores. Each
       table becomes -log of its smoothed frequencies (add 0.5), in thousandths, rounded: integers, so the JSON is the
       same on every platform. One set of tables per style (piano: every collection but the hymns; chorale: the hymns).
+      G10a-2b (section 26): the partition table is counted per context class of a group (params.ctx: a note far below
+      or above within half a second, hand-free). The references re-voiced as piano covers are (hands_data.py,
+      pppbench/texture.py: single notes doubled in octaves, hands kept) are evaluated, never counted: counted into the
+      tables (all of them, three of them, or a second set for octave groups) they took the unison exercises' octaves into
+      one hand on performances (section 26.5).
    2. The onset groups S4 really receives: each training performance (hands_data.py --perfs: the calibrated humanizer's
       families at seed 201, which no suite uses) goes through audio-score.js toMusicXml with the recording conversion v2
       (the app's options + recording 'v2'); S4's input (the quantized notes) is read where audio-score.js hands it to
       rec/index.js's S4 (a require-cache stand-in for rec/index.js in THIS process only; no production code is
       changed for it) and every heard note is labelled with its written hand (0: a note the AMT or the performer added,
-      not scored). Cached in tests/bench/.cache/hands/pipeline.json (--recapture rebuilds it).
+      not scored). Cached in tests/bench/.cache/hands/pipeline.json (--recapture rebuilds it). The textured performances
+      (cover and cover+of of the three textures) are reported apart.
    3. Weights: one per table, chosen by coordinate search over a fixed grid, in a fixed order, maximising the mean
-      per-reference hand accuracy on the truth groups (--tune perfs|both: on S4's real input, or the mean of the two
-      means; measured and not used, see `tune` below). The benchmark's notation.hand.accuracy is a per-case mean.
-      Deterministic: no random, no clock; ties keep the earlier value; the decoding is spread over worker threads and
-      put back in piece order.
+      per-reference hand accuracy on the truth groups of the training references as written (--tune perfs|both: on S4's
+      real input, or the mean of the two means; measured and not used, see `tune` below). The benchmark's notation.hand.accuracy is a per-case mean. Deterministic: no random, no clock; ties keep
+      the earlier value; the decoding is spread over worker threads and put back in piece order.
+      The hard term (params.play) is not learned: it is the G5a analyzer's own hard violations (playability/reach.js:
+      MAX_KEYS, the medium hand's reach, PER_SEMITONE_S), a hand's span capped at the widest hand any training reference
+      writes, at a cost no table cell reaches.
    4. Evaluation (rec/tools/hands-v1.evaluation.json): training and hold-out accuracy per family, against the legacy
-      split (audio-score.js assignHands, reproduced here) on the same onset groups; the same on S4's real input when the
-      performances are in the cache. --check retrains from the truth (hands_data.py must have run) and requires the
-      weights file and the truth part of the evaluation to be the committed ones, byte for byte (the performance part
-      depends on S2/S3, which other phases change, and is not checked).
+      split (audio-score.js assignHands, reproduced here) on the same onset groups, for the references as written and for
+      each texture; the G5a hard violations per 100 onset groups of the written hands, the legacy split and S4; the same
+      on S4's real input when the performances are in the cache. --check retrains from the truth (hands_data.py must have
+      run) and requires the weights file and the truth part of the evaluation to be the committed ones, byte for byte (the
+      performance part depends on S2/S3, which other phases change, and is not checked).
 
    Only aggregate tables leave this script; the note-level data stays in the cache. */
 'use strict';
@@ -48,10 +57,11 @@ const usePerfs = !checkMode && !process.argv.includes('--no-perfs') && fs.exists
 const tune = arg('--tune', 'truth');
 const outPath = path.resolve(arg('--out', path.join(repo, 'rec', 'weights', 'hands-v1.json')));
 const evalOnly = process.argv.includes('--eval-only');
-const evalPath = path.join(repo, 'rec', 'tools', 'hands-v1.evaluation.json');
+const evalPath = path.resolve(arg('--eval-out', path.join(repo, 'rec', 'tools', 'hands-v1.evaluation.json')));
 
 const H = require(path.join(repo, 'rec', 'hands.js'));
 const X = H._;
+const REACH = require(path.join(repo, 'playability', 'reach.js'));
 
 /* A worker thread decodes its share of the pieces for each set of weights the main thread sends (the pieces and
    the tables are sent once); the main thread puts the accuracies back in piece order, so the result is the same
@@ -73,19 +83,39 @@ if (!isMainThread) {
   return;
 }
 
-const PARAMS = { beam: 32, dtEdges: [0.15, 0.3, 0.6, 1.2, 2.4] };
 const GRID = [0, 0.25, 0.5, 0.75, 1, 1.5, 2, 3];
 const ALPHA = 0.5;
+/* the textures (pppbench/texture.py, written by hands_data.py), reported (G10a-2b, section 26): the left hand's single
+   notes doubled, the right hand's, both */
+const TEXTURES = ['octaves-l', 'octaves-r', 'octaves'];
+/* G5a's hard violations at the medium hand (playability/analyze.js, reach.js): what the evaluation counts */
+const G5A = { span: REACH.MAX_SPAN.medium, keys: REACH.MAX_KEYS, reach: REACH.MAX_SPAN.medium, perSemi: REACH.PER_SEMITONE_S };
 
 /* ---------------------------------------------------------------- data */
 const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 const pieces = data.pieces.map(p => {
   const notes = p.notes.map(r => ({ midi: r[2], tick: Math.round(r[0] * 1e4), on: r[1], gold: r[3] }));
   const groups = X.groupsOf(notes, {});
-  return { id: p.id, set: p.set, book: p.book, holdout: p.holdout, notes: notes, groups: groups,
+  return { id: p.id, set: p.set, book: p.book, holdout: p.holdout, texture: p.texture || null, notes: notes, groups: groups,
     family: p.set === 'method' ? p.book : p.set };
 });
-const train = pieces.filter(p => !p.holdout);
+const plain = pieces.filter(p => !p.texture);
+const train = plain.filter(p => !p.holdout);
+const hold = plain.filter(p => p.holdout);
+const textured = name => pieces.filter(p => p.texture === name);
+
+/* the widest hand any training reference writes: S4 never writes a wider one (the hymnal's left hand passes G5a's medium
+   octave; nothing in the catalogue is wider than this) */
+function widestHand(list) {
+  let w = 0;
+  list.forEach(p => p.groups.forEach(g => [1, 2].forEach(h => {
+    const ms = g.idx.filter(i => p.notes[i].gold === h).map(i => p.notes[i].midi);
+    if (ms.length > 1) w = Math.max(w, Math.max.apply(null, ms) - Math.min.apply(null, ms));
+  })));
+  return w;
+}
+const PARAMS = { beam: 32, dtEdges: [0.15, 0.3, 0.6, 1.2, 2.4], ctx: { w: 0.5, d: 12 },
+  play: { w: 50, span: widestHand(train), keys: G5A.keys, reach: G5A.reach, perSemi: G5A.perSemi } };
 
 /* S4's real input on the training performances (step 2 above) */
 function pipelinePieces() {
@@ -118,16 +148,18 @@ function pipelinePieces() {
       const list = byKey.get(n.midi + '|' + n.on);
       return [n.midi, n.tick, n.attack != null ? n.attack : n.on, list && list.length ? list.shift() : 0];
     });
-    out.push({ id: r.id, ref: r.ref, set: r.set, book: r.book, notes: notes });
+    out.push(Object.assign({ id: r.id, ref: r.ref, set: r.set, book: r.book, notes: notes }, r.texture ? { texture: r.texture } : {}));
   });
   fs.writeFileSync(cachePath, JSON.stringify(out));
   return out;
 }
-const perfPieces = usePerfs ? pipelinePieces().map(p => {
+const perfAll = usePerfs ? pipelinePieces().map(p => {
   const notes = p.notes.map(r => ({ midi: r[0], tick: r[1], attack: r[2], gold: r[3] }));
-  return { id: p.id, set: p.set, book: p.book, holdout: false, notes: notes, groups: X.groupsOf(notes, {}),
+  return { id: p.id, set: p.set, book: p.book, holdout: false, texture: p.texture || null, notes: notes, groups: X.groupsOf(notes, {}),
     family: p.set === 'method' ? p.book : p.set };
 }) : [];
+const perfPieces = perfAll.filter(p => !p.texture);
+const perfTex = perfAll.filter(p => p.texture);
 
 /* ---------------------------------------------------------------- counting */
 function goldK(p, g) {
@@ -143,6 +175,7 @@ const STYLES = [{ name: 'piano', of: p => p.set !== 'hymns' }, { name: 'chorale'
 function count(L, list) {
   const counts = new Float64Array(L.size);
   list.forEach(p => {
+    X.contextOf(p.groups, PARAMS);
     let s = X.startOf(p.groups);
     p.groups.forEach(g => {
       const gk = goldK(p, g);
@@ -160,7 +193,8 @@ function costsOf(L, counts) {
     for (let i = start; i < start + len; i++) tot += counts[i] + ALPHA;
     for (let i = start; i < start + len; i++) costs[i] = Math.round(-1000 * Math.log((counts[i] + ALPHA) / tot));
   };
-  for (let s = 0; s < X.SHAPES; s++) block(L.part + s * C1 * C1, C1 * C1);
+  const shapes = X.SHAPES * (PARAMS.ctx ? X.CONTEXTS : 1);         /* params.ctx: one partition block per shape and context */
+  for (let s = 0; s < shapes; s++) block(L.part + s * C1 * C1, C1 * C1);
   for (let h = 0; h < 2; h++) for (let c = 0; c < C1; c++) block(L.span + (h * C1 + c) * 25, 25);
   for (let h = 0; h < 2; h++) for (let b = 0; b < L.NB; b++) block(L.move + (h * L.NB + b) * 121, 121);
   for (let h = 0; h < 2; h++) block(L.reg + h * 128 + 21, 88);
@@ -179,13 +213,23 @@ function accuracy(p, staffOf) {
   p.notes.forEach((x, i) => { if (x.gold === 1 || x.gold === 2) { n++; if (staffOf[i] === x.gold) ok++; } });
   return n ? ok / n : 0;
 }
-let lastStyles = null;
+/* the G5a hard violations (medium hand) of a split given as k per group, walked with step()'s states */
+function hardCount(p, ks) {
+  const Pq = { beam: 32, dtEdges: PARAMS.dtEdges };
+  const Lq = X.layout(Pq);
+  let s = X.startOf(p.groups), v = 0;
+  p.groups.forEach((g, gi) => { v += X.hardOf(G5A, s, g, ks[gi]); s = X.step(Pq, Lq, s, g, ks[gi], () => {}); });
+  return v;
+}
+let lastStyles = null, lastHard = null;
 function decodeAcc(model, list) {
   const M = X.prepare(model);
   lastStyles = [];
+  lastHard = [];
   return list.map(p => {
     const d = X.decodeStyles(M, p.groups);
     lastStyles.push(M.styles[d.style].name);
+    lastHard.push(hardCount(p, d.ks));
     const staff = new Array(p.notes.length).fill(0);
     p.groups.forEach((g, gi) => g.idx.forEach((ni, pos) => { staff[ni] = pos < d.ks[gi] ? 2 : 1; }));
     return accuracy(p, staff);
@@ -201,8 +245,11 @@ function styleConfusion(list, chosen) {
   return out;
 }
 const mean = xs => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
+const sum = xs => xs.reduce((a, b) => a + b, 0);
 
-/* the legacy split (audio-score.js splitCost / centreSplit / assignHands at 2e09fad), on the same groups */
+/* the legacy split (audio-score.js splitCost / centreSplit / assignHands at 2e09fad), on the same groups: its accuracy,
+   and (lastLegacyHard) its G5a hard violations */
+let lastLegacyHard = 0;
 function legacyAcc(p) {
   const groups = p.groups.map(g => ({ notes: g.idx.map(i => ({ midi: p.notes[i].midi, i: i })) }));
   const splitCost = (g, s) => {
@@ -244,11 +291,14 @@ function legacyAcc(p) {
   let at = 0;
   for (let k = 1; k < NS; k++) if (cost[k] < cost[at]) at = k;
   const staff = new Array(p.notes.length).fill(0);
+  const ks = new Array(groups.length);
   for (let gi = groups.length - 1; gi >= 0; gi--) {
     const s = S0 + at;
-    groups[gi].notes.forEach(n => { staff[n.i] = n.midi >= s ? 1 : 2; });
+    ks[gi] = 0;
+    groups[gi].notes.forEach(n => { staff[n.i] = n.midi >= s ? 1 : 2; if (n.midi < s) ks[gi]++; });
     if (gi > 0) at = prevArg[gi - 1][at];
   }
+  lastLegacyHard = hardCount(p, ks);
   return accuracy(p, staff);
 }
 
@@ -265,6 +315,20 @@ function familyTable(list, accs, legacy) {
     out[k] = { n: f.n, legacy: +(f.legacy / f.n).toFixed(4), v2: +(f.v2 / f.n).toFixed(4),
       legacyGate: +(f.legacyGate / f.n).toFixed(4), v2Gate: +(f.v2gate / f.n).toFixed(4) };
   });
+  return out;
+}
+/* accuracy and G5a hard violations (per 100 onset groups: the written hands, the legacy split, S4) of a list */
+function evaluate(model, list, withFamilies, withStyles) {
+  const acc = decodeAcc(model, list), styles = lastStyles, hard = lastHard;
+  const legacy = [], legacyHard = [];
+  list.forEach(p => { legacy.push(legacyAcc(p)); legacyHard.push(lastLegacyHard); });
+  const groups = sum(list.map(p => p.groups.length));
+  const truthHard = sum(list.map(p => hardCount(p, p.groups.map(g => goldK(p, g).k))));
+  const per100 = v => +(100 * v / Math.max(1, groups)).toFixed(3);
+  const out = { n: list.length, legacy: +mean(legacy).toFixed(4), v2: +mean(acc).toFixed(4) };
+  if (withStyles) out.styles = styleConfusion(list, styles);
+  if (withFamilies) out.families = familyTable(list, acc, legacy);
+  out.hardPer100Groups = { written: per100(truthHard), legacy: per100(sum(legacyHard)), v2: per100(sum(hard)) };
   return out;
 }
 
@@ -297,7 +361,7 @@ if (evalOnly) {
   const styles = STYLES.map(st => ({ name: st.name, references: train.filter(st.of).length, costs: costsOf(L, count(L, train.filter(st.of))) }));
   const weights = {};
   X.TABLES.forEach(t => { weights[t] = 1; });
-  const make = w => ({ schema: H.SCHEMA, version: 'hands-v1', params: PARAMS, weights: Object.assign({}, w), styles: styles });
+  const make = w => ({ schema: H.SCHEMA, version: 'hands-v1.1', params: PARAMS, weights: Object.assign({}, w), styles: styles });
   const pool = makePool(tune === 'truth' ? train : tune === 'perfs' ? perfPieces : train.concat(perfPieces), styles);
   const objective = async m => {
     const acc = await pool.run(m.weights);
@@ -327,9 +391,10 @@ if (evalOnly) {
   pool.close();
   const trained = { data: 'tests/bench/tools/hands_data.py (the lint-clean licence-clean references with two staves; hold-out excluded)',
     references: train.length, notes: train.reduce((s, p) => s + p.notes.length, 0),
+    textures: { evaluated: TEXTURES, counted: [] },
     objective: tune === 'both' ? 'mean of the per-reference (truth) and per-performance (S4 input) mean hand accuracies' : 'mean hand accuracy on ' + tune,
-    grid: GRID, smoothing: ALPHA };
-  model = { schema: H.SCHEMA, version: 'hands-v1', trained: trained, params: PARAMS, weights: weights, styles: styles };
+    grid: GRID, smoothing: ALPHA, play: 'G5a hard violations (playability/reach.js: MAX_KEYS, MAX_SPAN.medium as reach, PER_SEMITONE_S), span = the widest written hand of the training references' };
+  model = { schema: H.SCHEMA, version: 'hands-v1.1', trained: trained, params: PARAMS, weights: weights, styles: styles };
   const text = JSON.stringify(model) + '\n';
   if (checkMode) {
     const same = fs.readFileSync(outPath, 'utf8').replace(/\r\n/g, '\n') === text;
@@ -340,25 +405,41 @@ if (evalOnly) {
     process.stderr.write('wrote ' + path.relative(repo, outPath) + '\n');
   }
 }
-const trainAcc = decodeAcc(model, train), trainStyles = lastStyles, trainLegacy = train.map(legacyAcc);
-const hold = pieces.filter(p => p.holdout);
-const holdAcc = decodeAcc(model, hold), holdStyles = lastStyles, holdLegacy = hold.map(legacyAcc);
-const perfAcc = perfPieces.length ? decodeAcc(model, perfPieces) : [], perfLegacy = perfPieces.map(legacyAcc);
 const report = {
   model: model.version, weights: model.weights, tune: tune,
-  train: { n: train.length, legacy: +mean(trainLegacy).toFixed(4), v2: +mean(trainAcc).toFixed(4), styles: styleConfusion(train, trainStyles),
-    families: familyTable(train, trainAcc, trainLegacy) },
-  holdout: { n: hold.length, legacy: +mean(holdLegacy).toFixed(4), v2: +mean(holdAcc).toFixed(4), styles: styleConfusion(hold, holdStyles),
-    families: familyTable(hold, holdAcc, holdLegacy) }
+  train: evaluate(model, train, true, true),
+  holdout: evaluate(model, hold, true, true),
+  textures: {}
 };
+TEXTURES.forEach(name => {
+  const list = textured(name);
+  report.textures[name] = { train: evaluate(model, list.filter(p => !p.holdout), false, false),
+    holdout: evaluate(model, list.filter(p => p.holdout), true, false) };
+});
 const truthText = JSON.stringify(report, null, 1);
-if (perfPieces.length) report.perfs = { n: perfPieces.length, seeds: [201], role: tune === 'truth' ? 'evaluated, not fitted' : 'fitted',
-  pipeline: 'audio-score.js toMusicXml, closeGaps + exactBars + recording v2 (S4 input)', legacy: +mean(perfLegacy).toFixed(4),
-  v2: +mean(perfAcc).toFixed(4), families: familyTable(perfPieces, perfAcc, perfLegacy) };
+if (perfPieces.length) {
+  const acc = decodeAcc(model, perfPieces), legacy = perfPieces.map(legacyAcc);
+  report.perfs = { n: perfPieces.length, seeds: [201], role: tune === 'truth' ? 'evaluated, not fitted' : 'fitted',
+    pipeline: 'audio-score.js toMusicXml, closeGaps + exactBars + recording v2 (S4 input)', legacy: +mean(legacy).toFixed(4),
+    v2: +mean(acc).toFixed(4), families: familyTable(perfPieces, acc, legacy) };
+}
+if (perfTex.length) {
+  report.perfsTextures = {};
+  TEXTURES.forEach(name => {
+    const list = perfTex.filter(p => p.texture === name);
+    if (!list.length) return;
+    const acc = decodeAcc(model, list), hard = lastHard, legacy = [], legacyHard = [];
+    list.forEach(p => { legacy.push(legacyAcc(p)); legacyHard.push(lastLegacyHard); });
+    const groups = sum(list.map(p => p.groups.length));
+    report.perfsTextures[name] = { n: list.length, legacy: +mean(legacy).toFixed(4), v2: +mean(acc).toFixed(4),
+      hardPer100Groups: { legacy: +(100 * sum(legacyHard) / groups).toFixed(3), v2: +(100 * sum(hard) / groups).toFixed(3) } };
+  });
+}
 console.log(JSON.stringify(report, null, 1));
 if (checkMode) {
   const have = JSON.parse(fs.readFileSync(evalPath, 'utf8'));
   delete have.perfs;
+  delete have.perfsTextures;
   const same = JSON.stringify(have, null, 1) === truthText;
   process.stderr.write((same ? 'same ' : 'DIFFERS ') + path.relative(repo, evalPath) + ' (truth part)\n');
   if (!same) process.exitCode = 1;

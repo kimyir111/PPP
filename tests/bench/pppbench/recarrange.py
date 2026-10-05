@@ -75,7 +75,7 @@ def generate(suite: Dict[str, Any], refs, filter_: Optional[str]):
     tags: Dict[str, List[str]] = {}
     for c in cases:
         p = perfs[c.id]
-        canon = corpus.read_reference(by[c.ref_id])
+        canon = corpus.reference_for(by[c.ref_id], c.texture)      # a textured case (G10a-2b): the bars are the reference's
         tm = p.timemap
         bar_sec = [tm.sec(m.start_q) for m in canon.measures] + [tm.sec(canon.end_q)]
         jobs.append({"id": c.id, "ref": c.ref_id, "input": p.input, "opts": p.opts, "bar_sec": bar_sec})

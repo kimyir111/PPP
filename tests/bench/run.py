@@ -162,7 +162,8 @@ def cmd_mutation(args) -> int:
         b = mutation.run_mutation_check(mutation.REC_V2_MUTATIONS, "rec-mutation-v2", out_name="mutation-v2")   # G10a-1
         c = mutation.run_mutation_check(mutation.REC_KEY_MUTATIONS, "rec-mutation-keys", out_name="mutation-keys")   # G10a-3 (S8)
         d = mutation.run_mutation_check(mutation.REC_PEDAL_MUTATIONS, "rec-mutation-pedal", out_name="mutation-pedal")   # G10a-3 (S9)
-        return max(a, b, c, d)
+        e = mutation.run_mutation_check(mutation.REC_HANDS_PLAY_MUTATIONS, "rec-mutation-play", out_name="mutation-play")   # G10a-2b (S4 playability)
+        return max(a, b, c, d, e)
     if getattr(args, "rec_arrange", False):  # G10c-0: the rec-arrange metrics' planted defects, on the rec-arrange-mutation suite
         return mutation.run_mutation_check(mutation.REC_ARRANGE_MUTATIONS, "rec-arrange-mutation", out_name="mutation-arrange")
     return mutation.run_mutation_check()

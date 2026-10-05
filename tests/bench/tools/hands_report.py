@@ -98,7 +98,7 @@ def main() -> int:
         base = os.path.join(out_dir, "cases", c.key)
         if not os.path.exists(base + ".musicxml"):
             continue
-        ref = corpus.read_reference(by[c.ref_id])
+        ref = corpus.reference_for(by[c.ref_id], c.texture)
         if ref.staves < 2 or "notation.hand.accuracy" in (by[c.ref_id].expect.get("skip_metrics") or ()):
             continue
         with open(base + ".musicxml", encoding="utf-8") as h:
