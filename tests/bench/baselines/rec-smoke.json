@@ -7,7 +7,7 @@
     "n": 144
    },
    "critical.beat_placement": {
-    "mean": 0.298611,
+    "mean": 0.3125,
     "n": 144
    },
    "critical.hands": {
@@ -19,7 +19,7 @@
     "n": 144
    },
    "critical.meter": {
-    "mean": 0.5625,
+    "mean": 0.576389,
     "n": 144
    },
    "critical.note_values": {
@@ -39,7 +39,7 @@
     "n": 144
    },
    "critical.structure": {
-    "mean": 0.493056,
+    "mean": 0.506944,
     "n": 144
    },
    "errors": {
@@ -71,15 +71,15 @@
     "n": 144
    },
    "notation.duration.accuracy": {
-    "mean": 0.651562,
+    "mean": 0.651645,
     "n": 144
    },
    "notation.duration.accuracy_ref": {
-    "mean": 0.649355,
+    "mean": 0.649438,
     "n": 144
    },
    "notation.duration.page_accuracy": {
-    "mean": 0.652644,
+    "mean": 0.652728,
     "n": 144
    },
    "notation.hand.accuracy": {
@@ -119,11 +119,11 @@
     "n": 144
    },
    "notation.onset_pos.accuracy": {
-    "mean": 0.423879,
+    "mean": 0.43696,
     "n": 144
    },
    "notation.onset_pos.accuracy_ref": {
-    "mean": 0.423047,
+    "mean": 0.436128,
     "n": 144
    },
    "notation.pedal.f1": {
@@ -155,7 +155,7 @@
     "n": 144
    },
    "notation.ties.extra_per_100": {
-    "mean": 7.572093,
+    "mean": 7.566709,
     "n": 144
    },
    "notation.tuplets.f1": {
@@ -215,7 +215,7 @@
     "n": 89
    },
    "nq.ned": {
-    "mean": 0.794851,
+    "mean": 0.787806,
     "n": 144
    },
    "nq.range.ledger4_rate": {
@@ -227,15 +227,15 @@
     "n": 144
    },
    "nq.rest.per_measure_delta": {
-    "mean": 1.792038,
+    "mean": 1.790977,
     "n": 144
    },
    "nq.rhythm.hidden_beat_rate": {
-    "mean": 0.059577,
+    "mean": 0.05963,
     "n": 144
    },
    "nq.rhythm.hidden_beat_rate.delta": {
-    "mean": 0.051339,
+    "mean": 0.051392,
     "n": 144
    },
    "nq.rhythm.short_rate_delta": {
@@ -387,11 +387,11 @@
     "n": 144
    },
    "read.rests_per_measure": {
-    "mean": 1.896914,
+    "mean": 1.895853,
     "n": 144
    },
    "read.rests_per_measure.delta": {
-    "mean": 1.792038,
+    "mean": 1.790977,
     "n": 144
    },
    "read.short_notes_rate": {
@@ -403,11 +403,11 @@
     "n": 144
    },
    "read.ties_per_note": {
-    "mean": 0.060835,
+    "mean": 0.060783,
     "n": 144
    },
    "read.ties_per_note.delta": {
-    "mean": 0.054715,
+    "mean": 0.054663,
     "n": 144
    },
    "read.tuplets_per_note": {
@@ -455,31 +455,31 @@
     "n": 144
    },
    "rec.check.9": {
-    "mean": 29.093308,
+    "mean": 29.054727,
     "n": 144
    },
    "rec.harmony.agreement": {
-    "mean": 0.628067,
+    "mean": 0.637228,
     "n": 144
    },
    "rec.metre.f1": {
-    "mean": 0.733337,
+    "mean": 0.73488,
     "n": 144
    },
    "rec.mv2h": {
-    "mean": 0.75602,
+    "mean": 0.758178,
     "n": 144
    },
    "rec.onset_f1": {
-    "mean": 0.423456,
+    "mean": 0.436538,
     "n": 144
    },
    "rec.rest.false_per_100_bars": {
-    "mean": 143.786322,
+    "mean": 143.728451,
     "n": 144
    },
    "rec.rest.precision": {
-    "mean": 0.20471,
+    "mean": 0.211685,
     "n": 144
    },
    "rec.rest.recall": {
@@ -487,7 +487,7 @@
     "n": 63
    },
    "rec.stability": {
-    "mean": 0.5137,
+    "mean": 0.510485,
     "n": 144
    },
    "rec.tuplet.false_per_100_beats": {
@@ -503,7 +503,7 @@
     "n": 9
    },
    "rec.usable": {
-    "mean": 0.097222,
+    "mean": 0.104167,
     "n": 144
    },
    "rec.voice.f1": {
@@ -511,11 +511,11 @@
     "n": 144
    },
    "sqi": {
-    "mean": 77.825512,
+    "mean": 78.092009,
     "n": 144
    },
    "struct.downbeat.f1": {
-    "mean": 0.599337,
+    "mean": 0.603967,
     "n": 144
    },
    "struct.form.order_exact": {
@@ -547,11 +547,11 @@
     "n": 144
    },
    "struct.measures.count_exact": {
-    "mean": 0.493056,
+    "mean": 0.506944,
     "n": 144
    },
    "struct.measures.count_ratio": {
-    "mean": 1.108513,
+    "mean": 1.094624,
     "n": 144
    },
    "struct.measures.extra_empty_edge": {
@@ -595,19 +595,19 @@
     "n": 144
    },
    "struct.time_sig.exact": {
-    "mean": 0.5625,
+    "mean": 0.576389,
     "n": 144
    },
    "struct.time_sig.score": {
-    "mean": 0.618056,
+    "mean": 0.625,
     "n": 144
    },
    "struct.time_sig.timeline_accuracy": {
-    "mean": 0.5625,
+    "mean": 0.576389,
     "n": 144
    },
    "usable": {
-    "mean": 0.236111,
+    "mean": 0.25,
     "n": 144
    }
   },
@@ -619,7 +619,7 @@
      "n": 144
     },
     "critical.beat_placement": {
-     "mean": 0.298611,
+     "mean": 0.3125,
      "n": 144
     },
     "critical.hands": {
@@ -631,7 +631,7 @@
      "n": 144
     },
     "critical.meter": {
-     "mean": 0.5625,
+     "mean": 0.576389,
      "n": 144
     },
     "critical.note_values": {
@@ -651,7 +651,7 @@
      "n": 144
     },
     "critical.structure": {
-     "mean": 0.493056,
+     "mean": 0.506944,
      "n": 144
     },
     "errors": {
@@ -683,15 +683,15 @@
      "n": 144
     },
     "notation.duration.accuracy": {
-     "mean": 0.651562,
+     "mean": 0.651645,
      "n": 144
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.649355,
+     "mean": 0.649438,
      "n": 144
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.652644,
+     "mean": 0.652728,
      "n": 144
     },
     "notation.hand.accuracy": {
@@ -731,11 +731,11 @@
      "n": 144
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.423879,
+     "mean": 0.43696,
      "n": 144
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.423047,
+     "mean": 0.436128,
      "n": 144
     },
     "notation.pedal.f1": {
@@ -767,7 +767,7 @@
      "n": 144
     },
     "notation.ties.extra_per_100": {
-     "mean": 7.572093,
+     "mean": 7.566709,
      "n": 144
     },
     "notation.tuplets.f1": {
@@ -827,7 +827,7 @@
      "n": 89
     },
     "nq.ned": {
-     "mean": 0.794851,
+     "mean": 0.787806,
      "n": 144
     },
     "nq.range.ledger4_rate": {
@@ -839,15 +839,15 @@
      "n": 144
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.792038,
+     "mean": 1.790977,
      "n": 144
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.059577,
+     "mean": 0.05963,
      "n": 144
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.051339,
+     "mean": 0.051392,
      "n": 144
     },
     "nq.rhythm.short_rate_delta": {
@@ -999,11 +999,11 @@
      "n": 144
     },
     "read.rests_per_measure": {
-     "mean": 1.896914,
+     "mean": 1.895853,
      "n": 144
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.792038,
+     "mean": 1.790977,
      "n": 144
     },
     "read.short_notes_rate": {
@@ -1015,11 +1015,11 @@
      "n": 144
     },
     "read.ties_per_note": {
-     "mean": 0.060835,
+     "mean": 0.060783,
      "n": 144
     },
     "read.ties_per_note.delta": {
-     "mean": 0.054715,
+     "mean": 0.054663,
      "n": 144
     },
     "read.tuplets_per_note": {
@@ -1067,31 +1067,31 @@
      "n": 144
     },
     "rec.check.9": {
-     "mean": 29.093308,
+     "mean": 29.054727,
      "n": 144
     },
     "rec.harmony.agreement": {
-     "mean": 0.628067,
+     "mean": 0.637228,
      "n": 144
     },
     "rec.metre.f1": {
-     "mean": 0.733337,
+     "mean": 0.73488,
      "n": 144
     },
     "rec.mv2h": {
-     "mean": 0.75602,
+     "mean": 0.758178,
      "n": 144
     },
     "rec.onset_f1": {
-     "mean": 0.423456,
+     "mean": 0.436538,
      "n": 144
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 143.786322,
+     "mean": 143.728451,
      "n": 144
     },
     "rec.rest.precision": {
-     "mean": 0.20471,
+     "mean": 0.211685,
      "n": 144
     },
     "rec.rest.recall": {
@@ -1099,7 +1099,7 @@
      "n": 63
     },
     "rec.stability": {
-     "mean": 0.5137,
+     "mean": 0.510485,
      "n": 144
     },
     "rec.tuplet.false_per_100_beats": {
@@ -1115,7 +1115,7 @@
      "n": 9
     },
     "rec.usable": {
-     "mean": 0.097222,
+     "mean": 0.104167,
      "n": 144
     },
     "rec.voice.f1": {
@@ -1123,11 +1123,11 @@
      "n": 144
     },
     "sqi": {
-     "mean": 77.825512,
+     "mean": 78.092009,
      "n": 144
     },
     "struct.downbeat.f1": {
-     "mean": 0.599337,
+     "mean": 0.603967,
      "n": 144
     },
     "struct.form.order_exact": {
@@ -1159,11 +1159,11 @@
      "n": 144
     },
     "struct.measures.count_exact": {
-     "mean": 0.493056,
+     "mean": 0.506944,
      "n": 144
     },
     "struct.measures.count_ratio": {
-     "mean": 1.108513,
+     "mean": 1.094624,
      "n": 144
     },
     "struct.measures.extra_empty_edge": {
@@ -1207,19 +1207,19 @@
      "n": 144
     },
     "struct.time_sig.exact": {
-     "mean": 0.5625,
+     "mean": 0.576389,
      "n": 144
     },
     "struct.time_sig.score": {
-     "mean": 0.618056,
+     "mean": 0.625,
      "n": 144
     },
     "struct.time_sig.timeline_accuracy": {
-     "mean": 0.5625,
+     "mean": 0.576389,
      "n": 144
     },
     "usable": {
-     "mean": 0.236111,
+     "mean": 0.25,
      "n": 144
     }
    },
@@ -1877,15 +1877,15 @@
      "n": 9
     },
     "notation.duration.accuracy": {
-     "mean": 0.625906,
+     "mean": 0.625514,
      "n": 9
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.625906,
+     "mean": 0.625514,
      "n": 9
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.626102,
+     "mean": 0.62571,
      "n": 9
     },
     "notation.hand.accuracy": {
@@ -2017,7 +2017,7 @@
      "n": 9
     },
     "nq.ned": {
-     "mean": 1.338545,
+     "mean": 1.3378,
      "n": 9
     },
     "nq.range.ledger4_rate": {
@@ -2029,7 +2029,7 @@
      "n": 9
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.985448,
+     "mean": 1.973103,
      "n": 9
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -2177,11 +2177,11 @@
      "n": 9
     },
     "read.rests_per_measure": {
-     "mean": 2.80235,
+     "mean": 2.790004,
      "n": 9
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.985448,
+     "mean": 1.973103,
      "n": 9
     },
     "read.short_notes_rate": {
@@ -2245,11 +2245,11 @@
      "n": 9
     },
     "rec.check.9": {
-     "mean": 56.259781,
+     "mean": 55.642497,
      "n": 9
     },
     "rec.harmony.agreement": {
-     "mean": 0.179969,
+     "mean": 0.178404,
      "n": 9
     },
     "rec.metre.f1": {
@@ -2257,7 +2257,7 @@
      "n": 9
     },
     "rec.mv2h": {
-     "mean": 0.646045,
+     "mean": 0.645654,
      "n": 9
     },
     "rec.onset_f1": {
@@ -2265,11 +2265,11 @@
      "n": 9
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 182.929056,
+     "mean": 182.00313,
      "n": 9
     },
     "rec.rest.precision": {
-     "mean": 0.116331,
+     "mean": 0.116825,
      "n": 9
     },
     "rec.rest.recall": {
@@ -2277,7 +2277,7 @@
      "n": 9
     },
     "rec.stability": {
-     "mean": 0.676223,
+     "mean": 0.680338,
      "n": 9
     },
     "rec.tuplet.false_per_100_beats": {
@@ -2297,7 +2297,7 @@
      "n": 9
     },
     "sqi": {
-     "mean": 68.10526,
+     "mean": 68.101341,
      "n": 9
     },
     "struct.downbeat.f1": {
@@ -4229,15 +4229,15 @@
      "n": 18
     },
     "notation.duration.accuracy": {
-     "mean": 0.687953,
+     "mean": 0.687757,
      "n": 18
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.687953,
+     "mean": 0.687757,
      "n": 18
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.688051,
+     "mean": 0.687855,
      "n": 18
     },
     "notation.hand.accuracy": {
@@ -4369,7 +4369,7 @@
      "n": 9
     },
     "nq.ned": {
-     "mean": 1.017487,
+     "mean": 1.017114,
      "n": 18
     },
     "nq.range.ledger4_rate": {
@@ -4381,7 +4381,7 @@
      "n": 18
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.834545,
+     "mean": 1.828372,
      "n": 18
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -4529,11 +4529,11 @@
      "n": 18
     },
     "read.rests_per_measure": {
-     "mean": 2.242996,
+     "mean": 2.236823,
      "n": 18
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.834545,
+     "mean": 1.828372,
      "n": 18
     },
     "read.short_notes_rate": {
@@ -4597,11 +4597,11 @@
      "n": 18
     },
     "rec.check.9": {
-     "mean": 32.335137,
+     "mean": 32.026495,
      "n": 18
     },
     "rec.harmony.agreement": {
-     "mean": 0.45804,
+     "mean": 0.457257,
      "n": 18
     },
     "rec.metre.f1": {
@@ -4609,7 +4609,7 @@
      "n": 18
     },
     "rec.mv2h": {
-     "mean": 0.740621,
+     "mean": 0.740425,
      "n": 18
     },
     "rec.onset_f1": {
@@ -4617,11 +4617,11 @@
      "n": 18
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 146.325639,
+     "mean": 145.862676,
      "n": 18
     },
     "rec.rest.precision": {
-     "mean": 0.203297,
+     "mean": 0.203544,
      "n": 18
     },
     "rec.rest.recall": {
@@ -4629,7 +4629,7 @@
      "n": 18
     },
     "rec.stability": {
-     "mean": 0.584896,
+     "mean": 0.586954,
      "n": 18
     },
     "rec.tuplet.false_per_100_beats": {
@@ -4649,7 +4649,7 @@
      "n": 18
     },
     "sqi": {
-     "mean": 74.300934,
+     "mean": 74.298975,
      "n": 18
     },
     "struct.downbeat.f1": {
@@ -5419,15 +5419,15 @@
      "n": 27
     },
     "notation.duration.accuracy": {
-     "mean": 0.686996,
+     "mean": 0.686865,
      "n": 27
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.686996,
+     "mean": 0.686865,
      "n": 27
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.688102,
+     "mean": 0.687971,
      "n": 27
     },
     "notation.hand.accuracy": {
@@ -5559,7 +5559,7 @@
      "n": 18
     },
     "nq.ned": {
-     "mean": 1.119814,
+     "mean": 1.119566,
      "n": 27
     },
     "nq.range.ledger4_rate": {
@@ -5571,7 +5571,7 @@
      "n": 27
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.877832,
+     "mean": 1.873717,
      "n": 27
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -5719,11 +5719,11 @@
      "n": 27
     },
     "read.rests_per_measure": {
-     "mean": 2.18717,
+     "mean": 2.183054,
      "n": 27
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.877832,
+     "mean": 1.873717,
      "n": 27
     },
     "read.short_notes_rate": {
@@ -5787,11 +5787,11 @@
      "n": 27
     },
     "rec.check.9": {
-     "mean": 53.529595,
+     "mean": 53.323834,
      "n": 27
     },
     "rec.harmony.agreement": {
-     "mean": 0.271667,
+     "mean": 0.271145,
      "n": 27
     },
     "rec.metre.f1": {
@@ -5799,7 +5799,7 @@
      "n": 27
     },
     "rec.mv2h": {
-     "mean": 0.689914,
+     "mean": 0.689784,
      "n": 27
     },
     "rec.onset_f1": {
@@ -5807,11 +5807,11 @@
      "n": 27
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 167.03629,
+     "mean": 166.727648,
      "n": 27
     },
     "rec.rest.precision": {
-     "mean": 0.038777,
+     "mean": 0.038942,
      "n": 27
     },
     "rec.rest.recall": {
@@ -5819,7 +5819,7 @@
      "n": 18
     },
     "rec.stability": {
-     "mean": 0.544084,
+     "mean": 0.545456,
      "n": 27
     },
     "rec.tuplet.false_per_100_beats": {
@@ -5839,7 +5839,7 @@
      "n": 27
     },
     "sqi": {
-     "mean": 69.078615,
+     "mean": 69.077309,
      "n": 27
     },
     "struct.downbeat.f1": {
@@ -7108,7 +7108,7 @@
      "n": 54
     },
     "critical.beat_placement": {
-     "mean": 0.351852,
+     "mean": 0.388889,
      "n": 54
     },
     "critical.hands": {
@@ -7120,7 +7120,7 @@
      "n": 54
     },
     "critical.meter": {
-     "mean": 0.814815,
+     "mean": 0.851852,
      "n": 54
     },
     "critical.note_values": {
@@ -7140,7 +7140,7 @@
      "n": 54
     },
     "critical.structure": {
-     "mean": 0.62963,
+     "mean": 0.666667,
      "n": 54
     },
     "errors": {
@@ -7172,15 +7172,15 @@
      "n": 54
     },
     "notation.duration.accuracy": {
-     "mean": 0.635169,
+     "mean": 0.635456,
      "n": 54
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.634903,
+     "mean": 0.63519,
      "n": 54
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.635169,
+     "mean": 0.635456,
      "n": 54
     },
     "notation.hand.accuracy": {
@@ -7220,11 +7220,11 @@
      "n": 54
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.571479,
+     "mean": 0.606362,
      "n": 54
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.571479,
+     "mean": 0.606362,
      "n": 54
     },
     "notation.pedal.f1": {
@@ -7256,7 +7256,7 @@
      "n": 54
     },
     "notation.ties.extra_per_100": {
-     "mean": 1.898272,
+     "mean": 1.883916,
      "n": 54
     },
     "notation.tuplets.f1": {
@@ -7316,7 +7316,7 @@
      "n": 36
     },
     "nq.ned": {
-     "mean": 0.674385,
+     "mean": 0.655723,
      "n": 54
     },
     "nq.range.ledger4_rate": {
@@ -7328,15 +7328,15 @@
      "n": 54
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.805453,
+     "mean": 1.804681,
      "n": 54
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.061624,
+     "mean": 0.061767,
      "n": 54
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.04972,
+     "mean": 0.049862,
      "n": 54
     },
     "nq.rhythm.short_rate_delta": {
@@ -7484,11 +7484,11 @@
      "n": 54
     },
     "read.rests_per_measure": {
-     "mean": 1.805453,
+     "mean": 1.804681,
      "n": 54
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.805453,
+     "mean": 1.804681,
      "n": 54
     },
     "read.short_notes_rate": {
@@ -7500,11 +7500,11 @@
      "n": 54
     },
     "read.ties_per_note": {
-     "mean": 0.020953,
+     "mean": 0.020815,
      "n": 54
     },
     "read.ties_per_note.delta": {
-     "mean": 0.005802,
+     "mean": 0.005663,
      "n": 54
     },
     "read.tuplets_per_note": {
@@ -7556,19 +7556,19 @@
      "n": 54
     },
     "rec.harmony.agreement": {
-     "mean": 0.782407,
+     "mean": 0.807099,
      "n": 54
     },
     "rec.metre.f1": {
-     "mean": 0.812611,
+     "mean": 0.816726,
      "n": 54
     },
     "rec.mv2h": {
-     "mean": 0.806868,
+     "mean": 0.812687,
      "n": 54
     },
     "rec.onset_f1": {
-     "mean": 0.571479,
+     "mean": 0.606362,
      "n": 54
     },
     "rec.rest.false_per_100_bars": {
@@ -7576,7 +7576,7 @@
      "n": 54
     },
     "rec.rest.precision": {
-     "mean": 0.233562,
+     "mean": 0.252081,
      "n": 54
     },
     "rec.rest.recall": {
@@ -7584,7 +7584,7 @@
      "n": 9
     },
     "rec.stability": {
-     "mean": 0.563839,
+     "mean": 0.554579,
      "n": 54
     },
     "rec.tuplet.false_per_100_beats": {
@@ -7600,7 +7600,7 @@
      "n": 9
     },
     "rec.usable": {
-     "mean": 0.148148,
+     "mean": 0.166667,
      "n": 54
     },
     "rec.voice.f1": {
@@ -7608,11 +7608,11 @@
      "n": 54
     },
     "sqi": {
-     "mean": 83.406393,
+     "mean": 84.117705,
      "n": 54
     },
     "struct.downbeat.f1": {
-     "mean": 0.721388,
+     "mean": 0.733734,
      "n": 54
     },
     "struct.form.order_exact": {
@@ -7644,11 +7644,11 @@
      "n": 54
     },
     "struct.measures.count_exact": {
-     "mean": 0.62963,
+     "mean": 0.666667,
      "n": 54
     },
     "struct.measures.count_ratio": {
-     "mean": 1.180556,
+     "mean": 1.143519,
      "n": 54
     },
     "struct.measures.extra_empty_edge": {
@@ -7692,19 +7692,19 @@
      "n": 54
     },
     "struct.time_sig.exact": {
-     "mean": 0.814815,
+     "mean": 0.851852,
      "n": 54
     },
     "struct.time_sig.score": {
-     "mean": 0.833333,
+     "mean": 0.851852,
      "n": 54
     },
     "struct.time_sig.timeline_accuracy": {
-     "mean": 0.814815,
+     "mean": 0.851852,
      "n": 54
     },
     "usable": {
-     "mean": 0.240741,
+     "mean": 0.277778,
      "n": 54
     }
    },
@@ -9544,15 +9544,15 @@
      "n": 18
     },
     "notation.duration.accuracy": {
-     "mean": 0.69716,
+     "mean": 0.696964,
      "n": 18
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.69716,
+     "mean": 0.696964,
      "n": 18
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.698819,
+     "mean": 0.698623,
      "n": 18
     },
     "notation.hand.accuracy": {
@@ -9684,7 +9684,7 @@
      "n": 18
     },
     "nq.ned": {
-     "mean": 1.203178,
+     "mean": 1.202805,
      "n": 18
     },
     "nq.range.ledger4_rate": {
@@ -9696,7 +9696,7 @@
      "n": 18
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.776184,
+     "mean": 1.770011,
      "n": 18
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -9844,11 +9844,11 @@
      "n": 18
     },
     "read.rests_per_measure": {
-     "mean": 2.184634,
+     "mean": 2.178462,
      "n": 18
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.776184,
+     "mean": 1.770011,
      "n": 18
     },
     "read.short_notes_rate": {
@@ -9912,11 +9912,11 @@
      "n": 18
     },
     "rec.check.9": {
-     "mean": 71.564234,
+     "mean": 71.255592,
      "n": 18
     },
     "rec.harmony.agreement": {
-     "mean": 0.197623,
+     "mean": 0.196841,
      "n": 18
     },
     "rec.metre.f1": {
@@ -9924,7 +9924,7 @@
      "n": 18
     },
     "rec.mv2h": {
-     "mean": 0.677284,
+     "mean": 0.677088,
      "n": 18
     },
     "rec.onset_f1": {
@@ -9932,11 +9932,11 @@
      "n": 18
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 161.224629,
+     "mean": 160.761666,
      "n": 18
     },
     "rec.rest.precision": {
-     "mean": 0.058165,
+     "mean": 0.058413,
      "n": 18
     },
     "rec.rest.recall": {
@@ -9944,7 +9944,7 @@
      "n": 9
     },
     "rec.stability": {
-     "mean": 0.623886,
+     "mean": 0.625944,
      "n": 18
     },
     "rec.tuplet.false_per_100_beats": {
@@ -9964,7 +9964,7 @@
      "n": 18
     },
     "sqi": {
-     "mean": 65.691997,
+     "mean": 65.690037,
      "n": 18
     },
     "struct.downbeat.f1": {
@@ -10071,7 +10071,7 @@
      "n": 63
     },
     "critical.beat_placement": {
-     "mean": 0.349206,
+     "mean": 0.380952,
      "n": 63
     },
     "critical.hands": {
@@ -10083,7 +10083,7 @@
      "n": 63
     },
     "critical.meter": {
-     "mean": 0.888889,
+     "mean": 0.920635,
      "n": 63
     },
     "critical.note_values": {
@@ -10103,7 +10103,7 @@
      "n": 63
     },
     "critical.structure": {
-     "mean": 0.603175,
+     "mean": 0.634921,
      "n": 63
     },
     "errors": {
@@ -10135,15 +10135,15 @@
      "n": 63
     },
     "notation.duration.accuracy": {
-     "mean": 0.641005,
+     "mean": 0.641251,
      "n": 63
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.639297,
+     "mean": 0.639543,
      "n": 63
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.641005,
+     "mean": 0.641251,
      "n": 63
     },
     "notation.hand.accuracy": {
@@ -10183,11 +10183,11 @@
      "n": 63
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.542363,
+     "mean": 0.572263,
      "n": 63
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.540588,
+     "mean": 0.570488,
      "n": 63
     },
     "notation.pedal.f1": {
@@ -10219,7 +10219,7 @@
      "n": 63
     },
     "notation.ties.extra_per_100": {
-     "mean": 3.380792,
+     "mean": 3.368487,
      "n": 63
     },
     "notation.tuplets.f1": {
@@ -10279,7 +10279,7 @@
      "n": 45
     },
     "nq.ned": {
-     "mean": 0.651527,
+     "mean": 0.635531,
      "n": 63
     },
     "nq.range.ledger4_rate": {
@@ -10291,15 +10291,15 @@
      "n": 63
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.805775,
+     "mean": 1.805114,
      "n": 63
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.058551,
+     "mean": 0.058673,
      "n": 63
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.039721,
+     "mean": 0.039843,
      "n": 63
     },
     "nq.rhythm.short_rate_delta": {
@@ -10451,11 +10451,11 @@
      "n": 63
     },
     "read.rests_per_measure": {
-     "mean": 1.805775,
+     "mean": 1.805114,
      "n": 63
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.805775,
+     "mean": 1.805114,
      "n": 63
     },
     "read.short_notes_rate": {
@@ -10467,11 +10467,11 @@
      "n": 63
     },
     "read.ties_per_note": {
-     "mean": 0.031491,
+     "mean": 0.031373,
      "n": 63
     },
     "read.ties_per_note.delta": {
-     "mean": 0.018504,
+     "mean": 0.018386,
      "n": 63
     },
     "read.tuplets_per_note": {
@@ -10523,19 +10523,19 @@
      "n": 63
     },
     "rec.harmony.agreement": {
-     "mean": 0.78233,
+     "mean": 0.803494,
      "n": 63
     },
     "rec.metre.f1": {
-     "mean": 0.802929,
+     "mean": 0.806456,
      "n": 63
     },
     "rec.mv2h": {
-     "mean": 0.802206,
+     "mean": 0.807193,
      "n": 63
     },
     "rec.onset_f1": {
-     "mean": 0.541462,
+     "mean": 0.571362,
      "n": 63
     },
     "rec.rest.false_per_100_bars": {
@@ -10543,7 +10543,7 @@
      "n": 63
     },
     "rec.rest.precision": {
-     "mean": 0.211422,
+     "mean": 0.227295,
      "n": 63
     },
     "rec.rest.recall": {
@@ -10551,7 +10551,7 @@
      "n": 18
     },
     "rec.stability": {
-     "mean": 0.544441,
+     "mean": 0.536504,
      "n": 63
     },
     "rec.tuplet.false_per_100_beats": {
@@ -10567,7 +10567,7 @@
      "n": 9
     },
     "rec.usable": {
-     "mean": 0.095238,
+     "mean": 0.111111,
      "n": 63
     },
     "rec.voice.f1": {
@@ -10575,11 +10575,11 @@
      "n": 63
     },
     "sqi": {
-     "mean": 83.458265,
+     "mean": 84.067961,
      "n": 63
     },
     "struct.downbeat.f1": {
-     "mean": 0.689817,
+     "mean": 0.700399,
      "n": 63
     },
     "struct.form.order_exact": {
@@ -10611,11 +10611,11 @@
      "n": 63
     },
     "struct.measures.count_exact": {
-     "mean": 0.603175,
+     "mean": 0.634921,
      "n": 63
     },
     "struct.measures.count_ratio": {
-     "mean": 1.218487,
+     "mean": 1.186741,
      "n": 63
     },
     "struct.measures.extra_empty_edge": {
@@ -10659,19 +10659,19 @@
      "n": 63
     },
     "struct.time_sig.exact": {
-     "mean": 0.888889,
+     "mean": 0.920635,
      "n": 63
     },
     "struct.time_sig.score": {
-     "mean": 0.904762,
+     "mean": 0.920635,
      "n": 63
     },
     "struct.time_sig.timeline_accuracy": {
-     "mean": 0.888889,
+     "mean": 0.920635,
      "n": 63
     },
     "usable": {
-     "mean": 0.206349,
+     "mean": 0.238095,
      "n": 63
     }
    },
@@ -11337,15 +11337,15 @@
      "n": 18
     },
     "notation.duration.accuracy": {
-     "mean": 0.69716,
+     "mean": 0.696964,
      "n": 18
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.69716,
+     "mean": 0.696964,
      "n": 18
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.698819,
+     "mean": 0.698623,
      "n": 18
     },
     "notation.hand.accuracy": {
@@ -11477,7 +11477,7 @@
      "n": 18
     },
     "nq.ned": {
-     "mean": 1.203178,
+     "mean": 1.202805,
      "n": 18
     },
     "nq.range.ledger4_rate": {
@@ -11489,7 +11489,7 @@
      "n": 18
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.776184,
+     "mean": 1.770011,
      "n": 18
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -11637,11 +11637,11 @@
      "n": 18
     },
     "read.rests_per_measure": {
-     "mean": 2.184634,
+     "mean": 2.178462,
      "n": 18
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.776184,
+     "mean": 1.770011,
      "n": 18
     },
     "read.short_notes_rate": {
@@ -11705,11 +11705,11 @@
      "n": 18
     },
     "rec.check.9": {
-     "mean": 71.564234,
+     "mean": 71.255592,
      "n": 18
     },
     "rec.harmony.agreement": {
-     "mean": 0.197623,
+     "mean": 0.196841,
      "n": 18
     },
     "rec.metre.f1": {
@@ -11717,7 +11717,7 @@
      "n": 18
     },
     "rec.mv2h": {
-     "mean": 0.677284,
+     "mean": 0.677088,
      "n": 18
     },
     "rec.onset_f1": {
@@ -11725,11 +11725,11 @@
      "n": 18
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 161.224629,
+     "mean": 160.761666,
      "n": 18
     },
     "rec.rest.precision": {
-     "mean": 0.058165,
+     "mean": 0.058413,
      "n": 18
     },
     "rec.rest.recall": {
@@ -11737,7 +11737,7 @@
      "n": 9
     },
     "rec.stability": {
-     "mean": 0.623886,
+     "mean": 0.625944,
      "n": 18
     },
     "rec.tuplet.false_per_100_beats": {
@@ -11757,7 +11757,7 @@
      "n": 18
     },
     "sqi": {
-     "mean": 65.691997,
+     "mean": 65.690037,
      "n": 18
     },
     "struct.downbeat.f1": {
@@ -12455,7 +12455,7 @@
      "n": 63
     },
     "critical.beat_placement": {
-     "mean": 0.349206,
+     "mean": 0.380952,
      "n": 63
     },
     "critical.hands": {
@@ -12467,7 +12467,7 @@
      "n": 63
     },
     "critical.meter": {
-     "mean": 0.888889,
+     "mean": 0.920635,
      "n": 63
     },
     "critical.note_values": {
@@ -12487,7 +12487,7 @@
      "n": 63
     },
     "critical.structure": {
-     "mean": 0.603175,
+     "mean": 0.634921,
      "n": 63
     },
     "errors": {
@@ -12519,15 +12519,15 @@
      "n": 63
     },
     "notation.duration.accuracy": {
-     "mean": 0.641005,
+     "mean": 0.641251,
      "n": 63
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.639297,
+     "mean": 0.639543,
      "n": 63
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.641005,
+     "mean": 0.641251,
      "n": 63
     },
     "notation.hand.accuracy": {
@@ -12567,11 +12567,11 @@
      "n": 63
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.542363,
+     "mean": 0.572263,
      "n": 63
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.540588,
+     "mean": 0.570488,
      "n": 63
     },
     "notation.pedal.f1": {
@@ -12603,7 +12603,7 @@
      "n": 63
     },
     "notation.ties.extra_per_100": {
-     "mean": 3.380792,
+     "mean": 3.368487,
      "n": 63
     },
     "notation.tuplets.f1": {
@@ -12663,7 +12663,7 @@
      "n": 45
     },
     "nq.ned": {
-     "mean": 0.651527,
+     "mean": 0.635531,
      "n": 63
     },
     "nq.range.ledger4_rate": {
@@ -12675,15 +12675,15 @@
      "n": 63
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.805775,
+     "mean": 1.805114,
      "n": 63
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.058551,
+     "mean": 0.058673,
      "n": 63
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.039721,
+     "mean": 0.039843,
      "n": 63
     },
     "nq.rhythm.short_rate_delta": {
@@ -12835,11 +12835,11 @@
      "n": 63
     },
     "read.rests_per_measure": {
-     "mean": 1.805775,
+     "mean": 1.805114,
      "n": 63
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.805775,
+     "mean": 1.805114,
      "n": 63
     },
     "read.short_notes_rate": {
@@ -12851,11 +12851,11 @@
      "n": 63
     },
     "read.ties_per_note": {
-     "mean": 0.031491,
+     "mean": 0.031373,
      "n": 63
     },
     "read.ties_per_note.delta": {
-     "mean": 0.018504,
+     "mean": 0.018386,
      "n": 63
     },
     "read.tuplets_per_note": {
@@ -12907,19 +12907,19 @@
      "n": 63
     },
     "rec.harmony.agreement": {
-     "mean": 0.78233,
+     "mean": 0.803494,
      "n": 63
     },
     "rec.metre.f1": {
-     "mean": 0.802929,
+     "mean": 0.806456,
      "n": 63
     },
     "rec.mv2h": {
-     "mean": 0.802206,
+     "mean": 0.807193,
      "n": 63
     },
     "rec.onset_f1": {
-     "mean": 0.541462,
+     "mean": 0.571362,
      "n": 63
     },
     "rec.rest.false_per_100_bars": {
@@ -12927,7 +12927,7 @@
      "n": 63
     },
     "rec.rest.precision": {
-     "mean": 0.211422,
+     "mean": 0.227295,
      "n": 63
     },
     "rec.rest.recall": {
@@ -12935,7 +12935,7 @@
      "n": 18
     },
     "rec.stability": {
-     "mean": 0.544441,
+     "mean": 0.536504,
      "n": 63
     },
     "rec.tuplet.false_per_100_beats": {
@@ -12951,7 +12951,7 @@
      "n": 9
     },
     "rec.usable": {
-     "mean": 0.095238,
+     "mean": 0.111111,
      "n": 63
     },
     "rec.voice.f1": {
@@ -12959,11 +12959,11 @@
      "n": 63
     },
     "sqi": {
-     "mean": 83.458265,
+     "mean": 84.067961,
      "n": 63
     },
     "struct.downbeat.f1": {
-     "mean": 0.689817,
+     "mean": 0.700399,
      "n": 63
     },
     "struct.form.order_exact": {
@@ -12995,11 +12995,11 @@
      "n": 63
     },
     "struct.measures.count_exact": {
-     "mean": 0.603175,
+     "mean": 0.634921,
      "n": 63
     },
     "struct.measures.count_ratio": {
-     "mean": 1.218487,
+     "mean": 1.186741,
      "n": 63
     },
     "struct.measures.extra_empty_edge": {
@@ -13043,19 +13043,19 @@
      "n": 63
     },
     "struct.time_sig.exact": {
-     "mean": 0.888889,
+     "mean": 0.920635,
      "n": 63
     },
     "struct.time_sig.score": {
-     "mean": 0.904762,
+     "mean": 0.920635,
      "n": 63
     },
     "struct.time_sig.timeline_accuracy": {
-     "mean": 0.888889,
+     "mean": 0.920635,
      "n": 63
     },
     "usable": {
-     "mean": 0.206349,
+     "mean": 0.238095,
      "n": 63
     }
    },
@@ -13649,7 +13649,7 @@
      "n": 126
     },
     "critical.beat_placement": {
-     "mean": 0.301587,
+     "mean": 0.31746,
      "n": 126
     },
     "critical.hands": {
@@ -13661,7 +13661,7 @@
      "n": 126
     },
     "critical.meter": {
-     "mean": 0.603175,
+     "mean": 0.619048,
      "n": 126
     },
     "critical.note_values": {
@@ -13681,7 +13681,7 @@
      "n": 126
     },
     "critical.structure": {
-     "mean": 0.507937,
+     "mean": 0.52381,
      "n": 126
     },
     "errors": {
@@ -13713,15 +13713,15 @@
      "n": 126
     },
     "notation.duration.accuracy": {
-     "mean": 0.644908,
+     "mean": 0.645031,
      "n": 126
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.642386,
+     "mean": 0.642509,
      "n": 126
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.646131,
+     "mean": 0.646254,
      "n": 126
     },
     "notation.hand.accuracy": {
@@ -13761,11 +13761,11 @@
      "n": 126
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.43851,
+     "mean": 0.453461,
      "n": 126
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.43756,
+     "mean": 0.45251,
      "n": 126
     },
     "notation.pedal.f1": {
@@ -13797,7 +13797,7 @@
      "n": 126
     },
     "notation.ties.extra_per_100": {
-     "mean": 8.06852,
+     "mean": 8.062368,
      "n": 126
     },
     "notation.tuplets.f1": {
@@ -13857,7 +13857,7 @@
      "n": 80
     },
     "nq.ned": {
-     "mean": 0.770403,
+     "mean": 0.762404,
      "n": 126
     },
     "nq.range.ledger4_rate": {
@@ -13869,15 +13869,15 @@
      "n": 126
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.777258,
+     "mean": 1.776927,
      "n": 126
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.059304,
+     "mean": 0.059365,
      "n": 126
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.049889,
+     "mean": 0.04995,
      "n": 126
     },
     "nq.rhythm.short_rate_delta": {
@@ -14029,11 +14029,11 @@
      "n": 126
     },
     "read.rests_per_measure": {
-     "mean": 1.838766,
+     "mean": 1.838435,
      "n": 126
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.777258,
+     "mean": 1.776927,
      "n": 126
     },
     "read.short_notes_rate": {
@@ -14045,11 +14045,11 @@
      "n": 126
     },
     "read.ties_per_note": {
-     "mean": 0.064224,
+     "mean": 0.064165,
      "n": 126
     },
     "read.ties_per_note.delta": {
-     "mean": 0.05773,
+     "mean": 0.057671,
      "n": 126
     },
     "read.tuplets_per_note": {
@@ -14101,19 +14101,19 @@
      "n": 126
     },
     "rec.harmony.agreement": {
-     "mean": 0.658309,
+     "mean": 0.668891,
      "n": 126
     },
     "rec.metre.f1": {
-     "mean": 0.739098,
+     "mean": 0.740861,
      "n": 126
     },
     "rec.mv2h": {
-     "mean": 0.760414,
+     "mean": 0.762908,
      "n": 126
     },
     "rec.onset_f1": {
-     "mean": 0.438028,
+     "mean": 0.452978,
      "n": 126
     },
     "rec.rest.false_per_100_bars": {
@@ -14121,7 +14121,7 @@
      "n": 126
     },
     "rec.rest.precision": {
-     "mean": 0.201835,
+     "mean": 0.209772,
      "n": 126
     },
     "rec.rest.recall": {
@@ -14129,7 +14129,7 @@
      "n": 54
     },
     "rec.stability": {
-     "mean": 0.507416,
+     "mean": 0.503447,
      "n": 126
     },
     "rec.tuplet.false_per_100_beats": {
@@ -14145,7 +14145,7 @@
      "n": 9
     },
     "rec.usable": {
-     "mean": 0.087302,
+     "mean": 0.095238,
      "n": 126
     },
     "rec.voice.f1": {
@@ -14153,11 +14153,11 @@
      "n": 126
     },
     "sqi": {
-     "mean": 77.911539,
+     "mean": 78.216387,
      "n": 126
     },
     "struct.downbeat.f1": {
-     "mean": 0.606556,
+     "mean": 0.611847,
      "n": 126
     },
     "struct.form.order_exact": {
@@ -14189,11 +14189,11 @@
      "n": 126
     },
     "struct.measures.count_exact": {
-     "mean": 0.507937,
+     "mean": 0.52381,
      "n": 126
     },
     "struct.measures.count_ratio": {
-     "mean": 1.152687,
+     "mean": 1.136814,
      "n": 126
     },
     "struct.measures.extra_empty_edge": {
@@ -14237,19 +14237,19 @@
      "n": 126
     },
     "struct.time_sig.exact": {
-     "mean": 0.603175,
+     "mean": 0.619048,
      "n": 126
     },
     "struct.time_sig.score": {
-     "mean": 0.638889,
+     "mean": 0.646825,
      "n": 126
     },
     "struct.time_sig.timeline_accuracy": {
-     "mean": 0.603175,
+     "mean": 0.619048,
      "n": 126
     },
     "usable": {
-     "mean": 0.230159,
+     "mean": 0.246032,
      "n": 126
     }
    },
@@ -14895,15 +14895,15 @@
      "n": 9
     },
     "notation.duration.accuracy": {
-     "mean": 0.625906,
+     "mean": 0.625514,
      "n": 9
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.625906,
+     "mean": 0.625514,
      "n": 9
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.626102,
+     "mean": 0.62571,
      "n": 9
     },
     "notation.hand.accuracy": {
@@ -15035,7 +15035,7 @@
      "n": 9
     },
     "nq.ned": {
-     "mean": 1.338545,
+     "mean": 1.3378,
      "n": 9
     },
     "nq.range.ledger4_rate": {
@@ -15047,7 +15047,7 @@
      "n": 9
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.985448,
+     "mean": 1.973103,
      "n": 9
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -15195,11 +15195,11 @@
      "n": 9
     },
     "read.rests_per_measure": {
-     "mean": 2.80235,
+     "mean": 2.790004,
      "n": 9
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.985448,
+     "mean": 1.973103,
      "n": 9
     },
     "read.short_notes_rate": {
@@ -15263,11 +15263,11 @@
      "n": 9
     },
     "rec.check.9": {
-     "mean": 56.259781,
+     "mean": 55.642497,
      "n": 9
     },
     "rec.harmony.agreement": {
-     "mean": 0.179969,
+     "mean": 0.178404,
      "n": 9
     },
     "rec.metre.f1": {
@@ -15275,7 +15275,7 @@
      "n": 9
     },
     "rec.mv2h": {
-     "mean": 0.646045,
+     "mean": 0.645654,
      "n": 9
     },
     "rec.onset_f1": {
@@ -15283,11 +15283,11 @@
      "n": 9
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 182.929056,
+     "mean": 182.00313,
      "n": 9
     },
     "rec.rest.precision": {
-     "mean": 0.116331,
+     "mean": 0.116825,
      "n": 9
     },
     "rec.rest.recall": {
@@ -15295,7 +15295,7 @@
      "n": 9
     },
     "rec.stability": {
-     "mean": 0.676223,
+     "mean": 0.680338,
      "n": 9
     },
     "rec.tuplet.false_per_100_beats": {
@@ -15315,7 +15315,7 @@
      "n": 9
     },
     "sqi": {
-     "mean": 68.10526,
+     "mean": 68.101341,
      "n": 9
     },
     "struct.downbeat.f1": {
@@ -16640,7 +16640,7 @@
      "n": 48
     },
     "critical.beat_placement": {
-     "mean": 0.645833,
+     "mean": 0.6875,
      "n": 48
     },
     "critical.hands": {
@@ -16652,7 +16652,7 @@
      "n": 48
     },
     "critical.meter": {
-     "mean": 0.6875,
+     "mean": 0.729167,
      "n": 48
     },
     "critical.note_values": {
@@ -16672,7 +16672,7 @@
      "n": 48
     },
     "critical.structure": {
-     "mean": 0.6875,
+     "mean": 0.729167,
      "n": 48
     },
     "errors": {
@@ -16704,15 +16704,15 @@
      "n": 48
     },
     "notation.duration.accuracy": {
-     "mean": 0.912598,
+     "mean": 0.912848,
      "n": 48
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.912598,
+     "mean": 0.912848,
      "n": 48
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.912598,
+     "mean": 0.912848,
      "n": 48
     },
     "notation.hand.accuracy": {
@@ -16752,11 +16752,11 @@
      "n": 48
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.701297,
+     "mean": 0.740541,
      "n": 48
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.701297,
+     "mean": 0.740541,
      "n": 48
     },
     "notation.pedal.f1": {
@@ -16788,7 +16788,7 @@
      "n": 48
     },
     "notation.ties.extra_per_100": {
-     "mean": 0.729578,
+     "mean": 0.713428,
      "n": 48
     },
     "notation.tuplets.f1": {
@@ -16848,7 +16848,7 @@
      "n": 30
     },
     "nq.ned": {
-     "mean": 0.354208,
+     "mean": 0.333073,
      "n": 48
     },
     "nq.range.ledger4_rate": {
@@ -16860,15 +16860,15 @@
      "n": 48
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.270608,
+     "mean": 0.267425,
      "n": 48
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.014267,
+     "mean": 0.014428,
      "n": 48
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.00603,
+     "mean": 0.00619,
      "n": 48
     },
     "nq.rhythm.short_rate_delta": {
@@ -17020,11 +17020,11 @@
      "n": 48
     },
     "read.rests_per_measure": {
-     "mean": 0.375484,
+     "mean": 0.372301,
      "n": 48
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.270608,
+     "mean": 0.267425,
      "n": 48
     },
     "read.short_notes_rate": {
@@ -17036,11 +17036,11 @@
      "n": 48
     },
     "read.ties_per_note": {
-     "mean": 0.009812,
+     "mean": 0.009657,
      "n": 48
     },
     "read.ties_per_note.delta": {
-     "mean": 0.003693,
+     "mean": 0.003537,
      "n": 48
     },
     "read.tuplets_per_note": {
@@ -17088,31 +17088,31 @@
      "n": 48
     },
     "rec.check.9": {
-     "mean": 0.347222,
+     "mean": 0.231481,
      "n": 48
     },
     "rec.harmony.agreement": {
-     "mean": 0.781733,
+     "mean": 0.809217,
      "n": 48
     },
     "rec.metre.f1": {
-     "mean": 0.906037,
+     "mean": 0.910667,
      "n": 48
     },
     "rec.mv2h": {
-     "mean": 0.902593,
+     "mean": 0.909065,
      "n": 48
     },
     "rec.onset_f1": {
-     "mean": 0.701297,
+     "mean": 0.740541,
      "n": 48
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 21.793309,
+     "mean": 21.619698,
      "n": 48
     },
     "rec.rest.precision": {
-     "mean": 0.443,
+     "mean": 0.463926,
      "n": 48
     },
     "rec.rest.recall": {
@@ -17120,7 +17120,7 @@
      "n": 21
     },
     "rec.stability": {
-     "mean": 0.148458,
+     "mean": 0.138813,
      "n": 48
     },
     "rec.tuplet.false_per_100_beats": {
@@ -17136,7 +17136,7 @@
      "n": 3
     },
     "rec.usable": {
-     "mean": 0.270833,
+     "mean": 0.291667,
      "n": 48
     },
     "rec.voice.f1": {
@@ -17144,11 +17144,11 @@
      "n": 48
     },
     "sqi": {
-     "mean": 90.872411,
+     "mean": 91.671902,
      "n": 48
     },
     "struct.downbeat.f1": {
-     "mean": 0.857223,
+     "mean": 0.871112,
      "n": 48
     },
     "struct.form.order_exact": {
@@ -17180,11 +17180,11 @@
      "n": 48
     },
     "struct.measures.count_exact": {
-     "mean": 0.6875,
+     "mean": 0.729167,
      "n": 48
     },
     "struct.measures.count_ratio": {
-     "mean": 1.025614,
+     "mean": 0.983947,
      "n": 48
     },
     "struct.measures.extra_empty_edge": {
@@ -17228,19 +17228,19 @@
      "n": 48
     },
     "struct.time_sig.exact": {
-     "mean": 0.6875,
+     "mean": 0.729167,
      "n": 48
     },
     "struct.time_sig.score": {
-     "mean": 0.760417,
+     "mean": 0.78125,
      "n": 48
     },
     "struct.time_sig.timeline_accuracy": {
-     "mean": 0.6875,
+     "mean": 0.729167,
      "n": 48
     },
     "usable": {
-     "mean": 0.625,
+     "mean": 0.666667,
      "n": 48
     }
    },
@@ -17251,7 +17251,7 @@
      "n": 48
     },
     "critical.beat_placement": {
-     "mean": 0.25,
+     "mean": 0.270833,
      "n": 48
     },
     "critical.hands": {
@@ -17263,7 +17263,7 @@
      "n": 48
     },
     "critical.meter": {
-     "mean": 0.5,
+     "mean": 0.520833,
      "n": 48
     },
     "critical.note_values": {
@@ -17279,7 +17279,7 @@
      "n": 48
     },
     "critical.structure": {
-     "mean": 0.416667,
+     "mean": 0.4375,
      "n": 48
     },
     "errors": {
@@ -17311,15 +17311,15 @@
      "n": 48
     },
     "notation.duration.accuracy": {
-     "mean": 0.58354,
+     "mean": 0.583827,
      "n": 48
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.581381,
+     "mean": 0.581667,
      "n": 48
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.583657,
+     "mean": 0.583944,
      "n": 48
     },
     "notation.hand.accuracy": {
@@ -17359,11 +17359,11 @@
      "n": 48
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.39581,
+     "mean": 0.415189,
      "n": 48
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.394454,
+     "mean": 0.413834,
      "n": 48
     },
     "notation.pedal.false_per_min": {
@@ -17383,7 +17383,7 @@
      "n": 48
     },
     "notation.ties.extra_per_100": {
-     "mean": 5.219521,
+     "mean": 5.203371,
      "n": 48
     },
     "notation.tuplets.f1": {
@@ -17443,7 +17443,7 @@
      "n": 29
     },
     "nq.ned": {
-     "mean": 0.878195,
+     "mean": 0.867593,
      "n": 48
     },
     "nq.range.ledger4_rate": {
@@ -17455,15 +17455,15 @@
      "n": 48
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.275394,
+     "mean": 2.270186,
      "n": 48
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.064622,
+     "mean": 0.064783,
      "n": 48
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.056384,
+     "mean": 0.056545,
      "n": 48
     },
     "nq.rhythm.short_rate_delta": {
@@ -17615,11 +17615,11 @@
      "n": 48
     },
     "read.rests_per_measure": {
-     "mean": 2.38027,
+     "mean": 2.375062,
      "n": 48
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.275394,
+     "mean": 2.270186,
      "n": 48
     },
     "read.short_notes_rate": {
@@ -17631,11 +17631,11 @@
      "n": 48
     },
     "read.ties_per_note": {
-     "mean": 0.04671,
+     "mean": 0.046555,
      "n": 48
     },
     "read.ties_per_note.delta": {
-     "mean": 0.04059,
+     "mean": 0.040435,
      "n": 48
     },
     "read.tuplets_per_note": {
@@ -17683,31 +17683,31 @@
      "n": 48
     },
     "rec.check.9": {
-     "mean": 39.766206,
+     "mean": 39.708336,
      "n": 48
     },
     "rec.harmony.agreement": {
-     "mean": 0.570102,
+     "mean": 0.585433,
      "n": 48
     },
     "rec.metre.f1": {
-     "mean": 0.732022,
+     "mean": 0.734337,
      "n": 48
     },
     "rec.mv2h": {
-     "mean": 0.720818,
+     "mean": 0.724405,
      "n": 48
     },
     "rec.onset_f1": {
-     "mean": 0.395121,
+     "mean": 0.414501,
      "n": 48
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 171.556817,
+     "mean": 171.267465,
      "n": 48
     },
     "rec.rest.precision": {
-     "mean": 0.135169,
+     "mean": 0.156061,
      "n": 48
     },
     "rec.rest.recall": {
@@ -17715,7 +17715,7 @@
      "n": 21
     },
     "rec.stability": {
-     "mean": 0.596581,
+     "mean": 0.591372,
      "n": 48
     },
     "rec.tuplet.false_per_100_beats": {
@@ -17731,7 +17731,7 @@
      "n": 3
     },
     "rec.usable": {
-     "mean": 0.041667,
+     "mean": 0.0625,
      "n": 48
     },
     "rec.voice.f1": {
@@ -17739,11 +17739,11 @@
      "n": 48
     },
     "sqi": {
-     "mean": 75.47907,
+     "mean": 75.876797,
      "n": 48
     },
     "struct.downbeat.f1": {
-     "mean": 0.607082,
+     "mean": 0.614027,
      "n": 48
     },
     "struct.form.order_exact": {
@@ -17775,11 +17775,11 @@
      "n": 48
     },
     "struct.measures.count_exact": {
-     "mean": 0.416667,
+     "mean": 0.4375,
      "n": 48
     },
     "struct.measures.count_ratio": {
-     "mean": 1.110479,
+     "mean": 1.089646,
      "n": 48
     },
     "struct.measures.extra_empty_edge": {
@@ -17823,19 +17823,19 @@
      "n": 48
     },
     "struct.time_sig.exact": {
-     "mean": 0.5,
+     "mean": 0.520833,
      "n": 48
     },
     "struct.time_sig.score": {
-     "mean": 0.572917,
+     "mean": 0.583333,
      "n": 48
     },
     "struct.time_sig.timeline_accuracy": {
-     "mean": 0.5,
+     "mean": 0.520833,
      "n": 48
     },
     "usable": {
-     "mean": 0.1875,
+     "mean": 0.208333,
      "n": 48
     }
    },
@@ -18326,7 +18326,7 @@
      "n": 21
     },
     "rec.stability": {
-     "mean": 0.480893,
+     "mean": 0.476263,
      "n": 48
     },
     "rec.tuplet.false_per_100_beats": {
@@ -18457,7 +18457,7 @@
      "n": 48
     },
     "critical.beat_placement": {
-     "mean": 0.270833,
+     "mean": 0.291667,
      "n": 48
     },
     "critical.hands": {
@@ -18469,7 +18469,7 @@
      "n": 48
     },
     "critical.meter": {
-     "mean": 0.541667,
+     "mean": 0.5625,
      "n": 48
     },
     "critical.note_values": {
@@ -18485,7 +18485,7 @@
      "n": 48
     },
     "critical.structure": {
-     "mean": 0.416667,
+     "mean": 0.4375,
      "n": 48
     },
     "errors": {
@@ -18517,15 +18517,15 @@
      "n": 48
     },
     "notation.duration.accuracy": {
-     "mean": 0.630536,
+     "mean": 0.630499,
      "n": 48
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.628373,
+     "mean": 0.628336,
      "n": 48
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.631069,
+     "mean": 0.631032,
      "n": 48
     },
     "notation.hand.accuracy": {
@@ -18565,11 +18565,11 @@
      "n": 48
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.37212,
+     "mean": 0.391984,
      "n": 48
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.370979,
+     "mean": 0.390844,
      "n": 48
     },
     "notation.pedal.false_per_min": {
@@ -18649,7 +18649,7 @@
      "n": 30
     },
     "nq.ned": {
-     "mean": 0.898219,
+     "mean": 0.887686,
      "n": 48
     },
     "nq.range.ledger4_rate": {
@@ -18661,7 +18661,7 @@
      "n": 48
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.195912,
+     "mean": 2.197937,
      "n": 48
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -18821,11 +18821,11 @@
      "n": 48
     },
     "read.rests_per_measure": {
-     "mean": 2.300788,
+     "mean": 2.302813,
      "n": 48
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.195912,
+     "mean": 2.197937,
      "n": 48
     },
     "read.short_notes_rate": {
@@ -18889,31 +18889,31 @@
      "n": 48
     },
     "rec.check.9": {
-     "mean": 37.25699,
+     "mean": 37.19912,
      "n": 48
     },
     "rec.harmony.agreement": {
-     "mean": 0.593517,
+     "mean": 0.605669,
      "n": 48
     },
     "rec.metre.f1": {
-     "mean": 0.70879,
+     "mean": 0.711104,
      "n": 48
     },
     "rec.mv2h": {
-     "mean": 0.748713,
+     "mean": 0.7516,
      "n": 48
     },
     "rec.onset_f1": {
-     "mean": 0.371541,
+     "mean": 0.391405,
      "n": 48
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 182.490031,
+     "mean": 182.605772,
      "n": 48
     },
     "rec.rest.precision": {
-     "mean": 0.151203,
+     "mean": 0.151238,
      "n": 48
     },
     "rec.rest.recall": {
@@ -18921,7 +18921,7 @@
      "n": 21
     },
     "rec.stability": {
-     "mean": 0.463626,
+     "mean": 0.463818,
      "n": 48
     },
     "rec.tuplet.false_per_100_beats": {
@@ -18945,11 +18945,11 @@
      "n": 48
     },
     "sqi": {
-     "mean": 77.178323,
+     "mean": 77.580088,
      "n": 48
     },
     "struct.downbeat.f1": {
-     "mean": 0.536202,
+     "mean": 0.543146,
      "n": 48
     },
     "struct.form.order_exact": {
@@ -18981,11 +18981,11 @@
      "n": 48
     },
     "struct.measures.count_exact": {
-     "mean": 0.416667,
+     "mean": 0.4375,
      "n": 48
     },
     "struct.measures.count_ratio": {
-     "mean": 1.124032,
+     "mean": 1.103198,
      "n": 48
     },
     "struct.measures.extra_empty_edge": {
@@ -19029,19 +19029,19 @@
      "n": 48
     },
     "struct.time_sig.exact": {
-     "mean": 0.541667,
+     "mean": 0.5625,
      "n": 48
     },
     "struct.time_sig.score": {
-     "mean": 0.583333,
+     "mean": 0.59375,
      "n": 48
     },
     "struct.time_sig.timeline_accuracy": {
-     "mean": 0.541667,
+     "mean": 0.5625,
      "n": 48
     },
     "usable": {
-     "mean": 0.1875,
+     "mean": 0.208333,
      "n": 48
     }
    },
@@ -19052,7 +19052,7 @@
      "n": 144
     },
     "critical.beat_placement": {
-     "mean": 0.298611,
+     "mean": 0.3125,
      "n": 144
     },
     "critical.hands": {
@@ -19064,7 +19064,7 @@
      "n": 144
     },
     "critical.meter": {
-     "mean": 0.5625,
+     "mean": 0.576389,
      "n": 144
     },
     "critical.note_values": {
@@ -19084,7 +19084,7 @@
      "n": 144
     },
     "critical.structure": {
-     "mean": 0.493056,
+     "mean": 0.506944,
      "n": 144
     },
     "errors": {
@@ -19116,15 +19116,15 @@
      "n": 144
     },
     "notation.duration.accuracy": {
-     "mean": 0.651562,
+     "mean": 0.651645,
      "n": 144
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.649355,
+     "mean": 0.649438,
      "n": 144
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.652644,
+     "mean": 0.652728,
      "n": 144
     },
     "notation.hand.accuracy": {
@@ -19164,11 +19164,11 @@
      "n": 144
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.423879,
+     "mean": 0.43696,
      "n": 144
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.423047,
+     "mean": 0.436128,
      "n": 144
     },
     "notation.pedal.f1": {
@@ -19200,7 +19200,7 @@
      "n": 144
     },
     "notation.ties.extra_per_100": {
-     "mean": 7.572093,
+     "mean": 7.566709,
      "n": 144
     },
     "notation.tuplets.f1": {
@@ -19260,7 +19260,7 @@
      "n": 89
     },
     "nq.ned": {
-     "mean": 0.794851,
+     "mean": 0.787806,
      "n": 144
     },
     "nq.range.ledger4_rate": {
@@ -19272,15 +19272,15 @@
      "n": 144
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.792038,
+     "mean": 1.790977,
      "n": 144
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.059577,
+     "mean": 0.05963,
      "n": 144
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.051339,
+     "mean": 0.051392,
      "n": 144
     },
     "nq.rhythm.short_rate_delta": {
@@ -19432,11 +19432,11 @@
      "n": 144
     },
     "read.rests_per_measure": {
-     "mean": 1.896914,
+     "mean": 1.895853,
      "n": 144
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.792038,
+     "mean": 1.790977,
      "n": 144
     },
     "read.short_notes_rate": {
@@ -19448,11 +19448,11 @@
      "n": 144
     },
     "read.ties_per_note": {
-     "mean": 0.060835,
+     "mean": 0.060783,
      "n": 144
     },
     "read.ties_per_note.delta": {
-     "mean": 0.054715,
+     "mean": 0.054663,
      "n": 144
     },
     "read.tuplets_per_note": {
@@ -19500,31 +19500,31 @@
      "n": 144
     },
     "rec.check.9": {
-     "mean": 29.093308,
+     "mean": 29.054727,
      "n": 144
     },
     "rec.harmony.agreement": {
-     "mean": 0.628067,
+     "mean": 0.637228,
      "n": 144
     },
     "rec.metre.f1": {
-     "mean": 0.733337,
+     "mean": 0.73488,
      "n": 144
     },
     "rec.mv2h": {
-     "mean": 0.75602,
+     "mean": 0.758178,
      "n": 144
     },
     "rec.onset_f1": {
-     "mean": 0.423456,
+     "mean": 0.436538,
      "n": 144
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 143.786322,
+     "mean": 143.728451,
      "n": 144
     },
     "rec.rest.precision": {
-     "mean": 0.20471,
+     "mean": 0.211685,
      "n": 144
     },
     "rec.rest.recall": {
@@ -19532,7 +19532,7 @@
      "n": 63
     },
     "rec.stability": {
-     "mean": 0.5137,
+     "mean": 0.510485,
      "n": 144
     },
     "rec.tuplet.false_per_100_beats": {
@@ -19548,7 +19548,7 @@
      "n": 9
     },
     "rec.usable": {
-     "mean": 0.097222,
+     "mean": 0.104167,
      "n": 144
     },
     "rec.voice.f1": {
@@ -19556,11 +19556,11 @@
      "n": 144
     },
     "sqi": {
-     "mean": 77.825512,
+     "mean": 78.092009,
      "n": 144
     },
     "struct.downbeat.f1": {
-     "mean": 0.599337,
+     "mean": 0.603967,
      "n": 144
     },
     "struct.form.order_exact": {
@@ -19592,11 +19592,11 @@
      "n": 144
     },
     "struct.measures.count_exact": {
-     "mean": 0.493056,
+     "mean": 0.506944,
      "n": 144
     },
     "struct.measures.count_ratio": {
-     "mean": 1.108513,
+     "mean": 1.094624,
      "n": 144
     },
     "struct.measures.extra_empty_edge": {
@@ -19640,19 +19640,19 @@
      "n": 144
     },
     "struct.time_sig.exact": {
-     "mean": 0.5625,
+     "mean": 0.576389,
      "n": 144
     },
     "struct.time_sig.score": {
-     "mean": 0.618056,
+     "mean": 0.625,
      "n": 144
     },
     "struct.time_sig.timeline_accuracy": {
-     "mean": 0.5625,
+     "mean": 0.576389,
      "n": 144
     },
     "usable": {
-     "mean": 0.236111,
+     "mean": 0.25,
      "n": 144
     }
    },
@@ -20897,15 +20897,15 @@
      "n": 18
     },
     "notation.duration.accuracy": {
-     "mean": 0.69716,
+     "mean": 0.696964,
      "n": 18
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.69716,
+     "mean": 0.696964,
      "n": 18
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.698819,
+     "mean": 0.698623,
      "n": 18
     },
     "notation.hand.accuracy": {
@@ -21037,7 +21037,7 @@
      "n": 18
     },
     "nq.ned": {
-     "mean": 1.203178,
+     "mean": 1.202805,
      "n": 18
     },
     "nq.range.ledger4_rate": {
@@ -21049,7 +21049,7 @@
      "n": 18
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.776184,
+     "mean": 1.770011,
      "n": 18
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -21197,11 +21197,11 @@
      "n": 18
     },
     "read.rests_per_measure": {
-     "mean": 2.184634,
+     "mean": 2.178462,
      "n": 18
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.776184,
+     "mean": 1.770011,
      "n": 18
     },
     "read.short_notes_rate": {
@@ -21265,11 +21265,11 @@
      "n": 18
     },
     "rec.check.9": {
-     "mean": 71.564234,
+     "mean": 71.255592,
      "n": 18
     },
     "rec.harmony.agreement": {
-     "mean": 0.197623,
+     "mean": 0.196841,
      "n": 18
     },
     "rec.metre.f1": {
@@ -21277,7 +21277,7 @@
      "n": 18
     },
     "rec.mv2h": {
-     "mean": 0.677284,
+     "mean": 0.677088,
      "n": 18
     },
     "rec.onset_f1": {
@@ -21285,11 +21285,11 @@
      "n": 18
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 161.224629,
+     "mean": 160.761666,
      "n": 18
     },
     "rec.rest.precision": {
-     "mean": 0.058165,
+     "mean": 0.058413,
      "n": 18
     },
     "rec.rest.recall": {
@@ -21297,7 +21297,7 @@
      "n": 9
     },
     "rec.stability": {
-     "mean": 0.623886,
+     "mean": 0.625944,
      "n": 18
     },
     "rec.tuplet.false_per_100_beats": {
@@ -21317,7 +21317,7 @@
      "n": 18
     },
     "sqi": {
-     "mean": 65.691997,
+     "mean": 65.690037,
      "n": 18
     },
     "struct.downbeat.f1": {
@@ -21424,7 +21424,7 @@
      "n": 90
     },
     "critical.beat_placement": {
-     "mean": 0.288889,
+     "mean": 0.311111,
      "n": 90
     },
     "critical.hands": {
@@ -21436,7 +21436,7 @@
      "n": 90
     },
     "critical.meter": {
-     "mean": 0.655556,
+     "mean": 0.677778,
      "n": 90
     },
     "critical.note_values": {
@@ -21456,7 +21456,7 @@
      "n": 90
     },
     "critical.structure": {
-     "mean": 0.5,
+     "mean": 0.522222,
      "n": 90
     },
     "errors": {
@@ -21488,15 +21488,15 @@
      "n": 90
     },
     "notation.duration.accuracy": {
-     "mean": 0.649816,
+     "mean": 0.649989,
      "n": 90
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.649657,
+     "mean": 0.649829,
      "n": 90
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.649816,
+     "mean": 0.649989,
      "n": 90
     },
     "notation.hand.accuracy": {
@@ -21536,11 +21536,11 @@
      "n": 90
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.456672,
+     "mean": 0.477602,
      "n": 90
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.456672,
+     "mean": 0.477602,
      "n": 90
     },
     "notation.pedal.f1": {
@@ -21572,7 +21572,7 @@
      "n": 90
     },
     "notation.ties.extra_per_100": {
-     "mean": 4.244287,
+     "mean": 4.235674,
      "n": 90
     },
     "notation.tuplets.f1": {
@@ -21632,7 +21632,7 @@
      "n": 45
     },
     "nq.ned": {
-     "mean": 0.720542,
+     "mean": 0.709344,
      "n": 90
     },
     "nq.range.ledger4_rate": {
@@ -21644,15 +21644,15 @@
      "n": 90
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.795951,
+     "mean": 1.795488,
      "n": 90
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.063867,
+     "mean": 0.063953,
      "n": 90
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.056724,
+     "mean": 0.05681,
      "n": 90
     },
     "nq.rhythm.short_rate_delta": {
@@ -21804,11 +21804,11 @@
      "n": 90
     },
     "read.rests_per_measure": {
-     "mean": 1.807063,
+     "mean": 1.8066,
      "n": 90
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.795951,
+     "mean": 1.795488,
      "n": 90
     },
     "read.short_notes_rate": {
@@ -21820,11 +21820,11 @@
      "n": 90
     },
     "read.ties_per_note": {
-     "mean": 0.038936,
+     "mean": 0.038853,
      "n": 90
     },
     "read.ties_per_note.delta": {
-     "mean": 0.029845,
+     "mean": 0.029762,
      "n": 90
     },
     "read.tuplets_per_note": {
@@ -21876,19 +21876,19 @@
      "n": 90
     },
     "rec.harmony.agreement": {
-     "mean": 0.688503,
+     "mean": 0.703318,
      "n": 90
     },
     "rec.metre.f1": {
-     "mean": 0.758404,
+     "mean": 0.760873,
      "n": 90
     },
     "rec.mv2h": {
-     "mean": 0.778336,
+     "mean": 0.781828,
      "n": 90
     },
     "rec.onset_f1": {
-     "mean": 0.456672,
+     "mean": 0.477602,
      "n": 90
     },
     "rec.rest.false_per_100_bars": {
@@ -21896,7 +21896,7 @@
      "n": 90
     },
     "rec.rest.precision": {
-     "mean": 0.217915,
+     "mean": 0.229026,
      "n": 90
     },
     "rec.rest.recall": {
@@ -21904,7 +21904,7 @@
      "n": 18
     },
     "rec.stability": {
-     "mean": 0.543516,
+     "mean": 0.537961,
      "n": 90
     },
     "rec.tuplet.false_per_100_beats": {
@@ -21920,7 +21920,7 @@
      "n": 9
     },
     "rec.usable": {
-     "mean": 0.144444,
+     "mean": 0.155556,
      "n": 90
     },
     "rec.voice.f1": {
@@ -21928,11 +21928,11 @@
      "n": 90
     },
     "sqi": {
-     "mean": 80.277181,
+     "mean": 80.703968,
      "n": 90
     },
     "struct.downbeat.f1": {
-     "mean": 0.617538,
+     "mean": 0.624945,
      "n": 90
     },
     "struct.form.order_exact": {
@@ -21964,11 +21964,11 @@
      "n": 90
     },
     "struct.measures.count_exact": {
-     "mean": 0.5,
+     "mean": 0.522222,
      "n": 90
     },
     "struct.measures.count_ratio": {
-     "mean": 1.188272,
+     "mean": 1.166049,
      "n": 90
     },
     "struct.measures.extra_empty_edge": {
@@ -22012,19 +22012,19 @@
      "n": 90
     },
     "struct.time_sig.exact": {
-     "mean": 0.655556,
+     "mean": 0.677778,
      "n": 90
     },
     "struct.time_sig.score": {
-     "mean": 0.683333,
+     "mean": 0.694444,
      "n": 90
     },
     "struct.time_sig.timeline_accuracy": {
-     "mean": 0.655556,
+     "mean": 0.677778,
      "n": 90
     },
     "usable": {
-     "mean": 0.222222,
+     "mean": 0.244444,
      "n": 90
     }
    },
@@ -22099,15 +22099,15 @@
      "n": 9
     },
     "notation.duration.accuracy": {
-     "mean": 0.625906,
+     "mean": 0.625514,
      "n": 9
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.625906,
+     "mean": 0.625514,
      "n": 9
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.626102,
+     "mean": 0.62571,
      "n": 9
     },
     "notation.hand.accuracy": {
@@ -22239,7 +22239,7 @@
      "n": 9
     },
     "nq.ned": {
-     "mean": 1.338545,
+     "mean": 1.3378,
      "n": 9
     },
     "nq.range.ledger4_rate": {
@@ -22251,7 +22251,7 @@
      "n": 9
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.985448,
+     "mean": 1.973103,
      "n": 9
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -22399,11 +22399,11 @@
      "n": 9
     },
     "read.rests_per_measure": {
-     "mean": 2.80235,
+     "mean": 2.790004,
      "n": 9
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.985448,
+     "mean": 1.973103,
      "n": 9
     },
     "read.short_notes_rate": {
@@ -22467,11 +22467,11 @@
      "n": 9
     },
     "rec.check.9": {
-     "mean": 56.259781,
+     "mean": 55.642497,
      "n": 9
     },
     "rec.harmony.agreement": {
-     "mean": 0.179969,
+     "mean": 0.178404,
      "n": 9
     },
     "rec.metre.f1": {
@@ -22479,7 +22479,7 @@
      "n": 9
     },
     "rec.mv2h": {
-     "mean": 0.646045,
+     "mean": 0.645654,
      "n": 9
     },
     "rec.onset_f1": {
@@ -22487,11 +22487,11 @@
      "n": 9
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 182.929056,
+     "mean": 182.00313,
      "n": 9
     },
     "rec.rest.precision": {
-     "mean": 0.116331,
+     "mean": 0.116825,
      "n": 9
     },
     "rec.rest.recall": {
@@ -22499,7 +22499,7 @@
      "n": 9
     },
     "rec.stability": {
-     "mean": 0.676223,
+     "mean": 0.680338,
      "n": 9
     },
     "rec.tuplet.false_per_100_beats": {
@@ -22519,7 +22519,7 @@
      "n": 9
     },
     "sqi": {
-     "mean": 68.10526,
+     "mean": 68.101341,
      "n": 9
     },
     "struct.downbeat.f1": {
@@ -22622,7 +22622,7 @@
      "n": 45
     },
     "critical.beat_placement": {
-     "mean": 0.311111,
+     "mean": 0.355556,
      "n": 45
     },
     "critical.hands": {
@@ -22634,7 +22634,7 @@
      "n": 45
     },
     "critical.meter": {
-     "mean": 0.488889,
+     "mean": 0.533333,
      "n": 45
     },
     "critical.note_values": {
@@ -22654,7 +22654,7 @@
      "n": 45
     },
     "critical.structure": {
-     "mean": 0.444444,
+     "mean": 0.488889,
      "n": 45
     },
     "errors": {
@@ -22686,15 +22686,15 @@
      "n": 45
     },
     "notation.duration.accuracy": {
-     "mean": 0.680824,
+     "mean": 0.681169,
      "n": 45
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.676438,
+     "mean": 0.676782,
      "n": 45
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.682663,
+     "mean": 0.683007,
      "n": 45
     },
     "notation.hand.accuracy": {
@@ -22734,11 +22734,11 @@
      "n": 45
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.422489,
+     "mean": 0.46435,
      "n": 45
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.419923,
+     "mean": 0.461783,
      "n": 45
     },
     "notation.pedal.f1": {
@@ -22770,7 +22770,7 @@
      "n": 45
     },
     "notation.ties.extra_per_100": {
-     "mean": 9.333578,
+     "mean": 9.316351,
      "n": 45
     },
     "notation.tuplets.false_per_100": {
@@ -22826,7 +22826,7 @@
      "n": 36
     },
     "nq.ned": {
-     "mean": 0.741857,
+     "mean": 0.719463,
      "n": 45
     },
     "nq.range.ledger4_rate": {
@@ -22838,15 +22838,15 @@
      "n": 45
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.928677,
+     "mean": 1.927751,
      "n": 45
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.051609,
+     "mean": 0.05178,
      "n": 45
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.039533,
+     "mean": 0.039704,
      "n": 45
     },
     "nq.rhythm.short_rate_delta": {
@@ -22986,11 +22986,11 @@
      "n": 45
     },
     "read.rests_per_measure": {
-     "mean": 1.928677,
+     "mean": 1.927751,
      "n": 45
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.928677,
+     "mean": 1.927751,
      "n": 45
     },
     "read.short_notes_rate": {
@@ -23002,11 +23002,11 @@
      "n": 45
     },
     "read.ties_per_note": {
-     "mean": 0.072339,
+     "mean": 0.072173,
      "n": 45
     },
     "read.ties_per_note.delta": {
-     "mean": 0.072339,
+     "mean": 0.072173,
      "n": 45
     },
     "read.tuplets_per_note": {
@@ -23058,19 +23058,19 @@
      "n": 45
     },
     "rec.harmony.agreement": {
-     "mean": 0.567647,
+     "mean": 0.597277,
      "n": 45
     },
     "rec.metre.f1": {
-     "mean": 0.735215,
+     "mean": 0.740154,
      "n": 45
     },
     "rec.mv2h": {
-     "mean": 0.738942,
+     "mean": 0.745924,
      "n": 45
     },
     "rec.onset_f1": {
-     "mean": 0.421186,
+     "mean": 0.463047,
      "n": 45
     },
     "rec.rest.false_per_100_bars": {
@@ -23078,7 +23078,7 @@
      "n": 45
     },
     "rec.rest.precision": {
-     "mean": 0.144871,
+     "mean": 0.167093,
      "n": 45
     },
     "rec.rest.recall": {
@@ -23086,7 +23086,7 @@
      "n": 18
     },
     "rec.stability": {
-     "mean": 0.536417,
+     "mean": 0.525306,
      "n": 45
     },
     "rec.tuplet.false_per_100_beats": {
@@ -23098,7 +23098,7 @@
      "n": 45
     },
     "rec.usable": {
-     "mean": 0.066667,
+     "mean": 0.088889,
      "n": 45
     },
     "rec.voice.f1": {
@@ -23106,11 +23106,11 @@
      "n": 45
     },
     "sqi": {
-     "mean": 76.313129,
+     "mean": 77.166704,
      "n": 45
     },
     "struct.downbeat.f1": {
-     "mean": 0.624427,
+     "mean": 0.639242,
      "n": 45
     },
     "struct.form.order_exact": {
@@ -23142,11 +23142,11 @@
      "n": 45
     },
     "struct.measures.count_exact": {
-     "mean": 0.444444,
+     "mean": 0.488889,
      "n": 45
     },
     "struct.measures.count_ratio": {
-     "mean": 1.089869,
+     "mean": 1.045425,
      "n": 45
     },
     "struct.measures.extra_empty_edge": {
@@ -23190,19 +23190,19 @@
      "n": 45
     },
     "struct.time_sig.exact": {
-     "mean": 0.488889,
-     "n": 45
-    },
-    "struct.time_sig.score": {
      "mean": 0.533333,
      "n": 45
     },
+    "struct.time_sig.score": {
+     "mean": 0.555556,
+     "n": 45
+    },
     "struct.time_sig.timeline_accuracy": {
-     "mean": 0.488889,
+     "mean": 0.533333,
      "n": 45
     },
     "usable": {
-     "mean": 0.222222,
+     "mean": 0.266667,
      "n": 45
     }
    },
@@ -23820,7 +23820,7 @@
      "n": 144
     },
     "critical.beat_placement": {
-     "mean": 0.298611,
+     "mean": 0.3125,
      "n": 144
     },
     "critical.hands": {
@@ -23832,7 +23832,7 @@
      "n": 144
     },
     "critical.meter": {
-     "mean": 0.5625,
+     "mean": 0.576389,
      "n": 144
     },
     "critical.note_values": {
@@ -23852,7 +23852,7 @@
      "n": 144
     },
     "critical.structure": {
-     "mean": 0.493056,
+     "mean": 0.506944,
      "n": 144
     },
     "errors": {
@@ -23884,15 +23884,15 @@
      "n": 144
     },
     "notation.duration.accuracy": {
-     "mean": 0.651562,
+     "mean": 0.651645,
      "n": 144
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.649355,
+     "mean": 0.649438,
      "n": 144
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.652644,
+     "mean": 0.652728,
      "n": 144
     },
     "notation.hand.accuracy": {
@@ -23932,11 +23932,11 @@
      "n": 144
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.423879,
+     "mean": 0.43696,
      "n": 144
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.423047,
+     "mean": 0.436128,
      "n": 144
     },
     "notation.pedal.f1": {
@@ -23968,7 +23968,7 @@
      "n": 144
     },
     "notation.ties.extra_per_100": {
-     "mean": 7.572093,
+     "mean": 7.566709,
      "n": 144
     },
     "notation.tuplets.f1": {
@@ -24028,7 +24028,7 @@
      "n": 89
     },
     "nq.ned": {
-     "mean": 0.794851,
+     "mean": 0.787806,
      "n": 144
     },
     "nq.range.ledger4_rate": {
@@ -24040,15 +24040,15 @@
      "n": 144
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.792038,
+     "mean": 1.790977,
      "n": 144
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.059577,
+     "mean": 0.05963,
      "n": 144
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.051339,
+     "mean": 0.051392,
      "n": 144
     },
     "nq.rhythm.short_rate_delta": {
@@ -24200,11 +24200,11 @@
      "n": 144
     },
     "read.rests_per_measure": {
-     "mean": 1.896914,
+     "mean": 1.895853,
      "n": 144
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.792038,
+     "mean": 1.790977,
      "n": 144
     },
     "read.short_notes_rate": {
@@ -24216,11 +24216,11 @@
      "n": 144
     },
     "read.ties_per_note": {
-     "mean": 0.060835,
+     "mean": 0.060783,
      "n": 144
     },
     "read.ties_per_note.delta": {
-     "mean": 0.054715,
+     "mean": 0.054663,
      "n": 144
     },
     "read.tuplets_per_note": {
@@ -24268,31 +24268,31 @@
      "n": 144
     },
     "rec.check.9": {
-     "mean": 29.093308,
+     "mean": 29.054727,
      "n": 144
     },
     "rec.harmony.agreement": {
-     "mean": 0.628067,
+     "mean": 0.637228,
      "n": 144
     },
     "rec.metre.f1": {
-     "mean": 0.733337,
+     "mean": 0.73488,
      "n": 144
     },
     "rec.mv2h": {
-     "mean": 0.75602,
+     "mean": 0.758178,
      "n": 144
     },
     "rec.onset_f1": {
-     "mean": 0.423456,
+     "mean": 0.436538,
      "n": 144
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 143.786322,
+     "mean": 143.728451,
      "n": 144
     },
     "rec.rest.precision": {
-     "mean": 0.20471,
+     "mean": 0.211685,
      "n": 144
     },
     "rec.rest.recall": {
@@ -24300,7 +24300,7 @@
      "n": 63
     },
     "rec.stability": {
-     "mean": 0.5137,
+     "mean": 0.510485,
      "n": 144
     },
     "rec.tuplet.false_per_100_beats": {
@@ -24316,7 +24316,7 @@
      "n": 9
     },
     "rec.usable": {
-     "mean": 0.097222,
+     "mean": 0.104167,
      "n": 144
     },
     "rec.voice.f1": {
@@ -24324,11 +24324,11 @@
      "n": 144
     },
     "sqi": {
-     "mean": 77.825512,
+     "mean": 78.092009,
      "n": 144
     },
     "struct.downbeat.f1": {
-     "mean": 0.599337,
+     "mean": 0.603967,
      "n": 144
     },
     "struct.form.order_exact": {
@@ -24360,11 +24360,11 @@
      "n": 144
     },
     "struct.measures.count_exact": {
-     "mean": 0.493056,
+     "mean": 0.506944,
      "n": 144
     },
     "struct.measures.count_ratio": {
-     "mean": 1.108513,
+     "mean": 1.094624,
      "n": 144
     },
     "struct.measures.extra_empty_edge": {
@@ -24408,19 +24408,19 @@
      "n": 144
     },
     "struct.time_sig.exact": {
-     "mean": 0.5625,
+     "mean": 0.576389,
      "n": 144
     },
     "struct.time_sig.score": {
-     "mean": 0.618056,
+     "mean": 0.625,
      "n": 144
     },
     "struct.time_sig.timeline_accuracy": {
-     "mean": 0.5625,
+     "mean": 0.576389,
      "n": 144
     },
     "usable": {
-     "mean": 0.236111,
+     "mean": 0.25,
      "n": 144
     }
    }
@@ -28807,9 +28807,9 @@
     "critical.playback_tempo": 1.0,
     "critical.structure": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.885362,
-    "notation.duration.accuracy_ref": 0.885362,
-    "notation.duration.page_accuracy": 0.885362,
+    "notation.duration.accuracy": 0.883598,
+    "notation.duration.accuracy_ref": 0.883598,
+    "notation.duration.page_accuracy": 0.883598,
     "notation.hand.accuracy": 0.987654,
     "notation.hand.accuracy_ref": 0.987654,
     "notation.ioi.accuracy": 0.985437,
@@ -28835,20 +28835,20 @@
     "rec.check.5": 0.0,
     "rec.check.6": 0.0,
     "rec.check.7": 0.0,
-    "rec.harmony.agreement": 0.070423,
+    "rec.harmony.agreement": 0.056338,
     "rec.metre.f1": 0.886304,
-    "rec.mv2h": 0.756222,
+    "rec.mv2h": 0.753052,
     "rec.onset_f1": 0.024691,
-    "rec.rest.false_per_100_bars": 102.777778,
-    "rec.rest.precision": 0.051282,
+    "rec.rest.false_per_100_bars": 97.222222,
+    "rec.rest.precision": 0.054054,
     "rec.rest.recall": 0.0,
-    "rec.stability": 0.166667,
+    "rec.stability": 0.194444,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.969005,
-    "sqi": 78.94608,
+    "sqi": 78.928443,
     "struct.downbeat.f1": 0.672897,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -28864,8 +28864,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "e1efd6e4b0a09962",
-   "sqi": 78.94608,
+   "semantic": "a5ac30e9c8949614",
+   "sqi": 78.928443,
    "status": "ok"
   },
   "method/sonatina/027|human-real|none|s1|opt:app": {
@@ -29032,9 +29032,9 @@
     "critical.playback_tempo": 1.0,
     "critical.structure": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.885362,
-    "notation.duration.accuracy_ref": 0.885362,
-    "notation.duration.page_accuracy": 0.885362,
+    "notation.duration.accuracy": 0.883598,
+    "notation.duration.accuracy_ref": 0.883598,
+    "notation.duration.page_accuracy": 0.883598,
     "notation.hand.accuracy": 0.989418,
     "notation.hand.accuracy_ref": 0.989418,
     "notation.ioi.accuracy": 0.980583,
@@ -29062,18 +29062,18 @@
     "rec.check.7": 0.0,
     "rec.harmony.agreement": 0.056338,
     "rec.metre.f1": 0.807769,
-    "rec.mv2h": 0.737459,
+    "rec.mv2h": 0.737106,
     "rec.onset_f1": 0.024691,
-    "rec.rest.false_per_100_bars": 91.666667,
-    "rec.rest.precision": 0.057143,
+    "rec.rest.false_per_100_bars": 88.888889,
+    "rec.rest.precision": 0.058824,
     "rec.rest.recall": 0.0,
-    "rec.stability": 0.138889,
+    "rec.stability": 0.148148,
     "rec.tuplet.false_per_100_beats": 0.694444,
     "rec.tuplet.precision": 0.0,
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.971335,
-    "sqi": 78.915173,
+    "sqi": 78.897536,
     "struct.downbeat.f1": 0.598131,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -29089,8 +29089,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "d6c5ab24d338824c",
-   "sqi": 78.915173,
+   "semantic": "c0e4991711e4f93d",
+   "sqi": 78.897536,
    "status": "ok"
   },
   "micro/M01-waltz-3-4|cover-pedal|none|s1|opt:app": {
@@ -29967,7 +29967,7 @@
     "rec.rest.false_per_100_bars": 0.0,
     "rec.rest.precision": 1.0,
     "rec.rest.recall": null,
-    "rec.stability": 0.472222,
+    "rec.stability": 0.25,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
@@ -30147,31 +30147,31 @@
    "error_code": null,
    "metrics": {
     "critical.accidentals": 1.0,
-    "critical.beat_placement": 0.0,
+    "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
     "critical.key": 1.0,
-    "critical.meter": 0.0,
+    "critical.meter": 1.0,
     "critical.note_values": 1.0,
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 0.0,
+    "critical.structure": 1.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.922481,
-    "notation.duration.accuracy_ref": 0.922481,
-    "notation.duration.page_accuracy": 0.922481,
+    "notation.duration.accuracy": 0.937984,
+    "notation.duration.accuracy_ref": 0.937984,
+    "notation.duration.page_accuracy": 0.937984,
     "notation.hand.accuracy": 1.0,
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 0.936842,
     "notation.note_shape.consistency": 1.0,
     "notation.note_shape.mismatches": 0.0,
-    "notation.onset_pos.accuracy": 0.03876,
-    "notation.onset_pos.accuracy_ref": 0.03876,
+    "notation.onset_pos.accuracy": 0.968992,
+    "notation.onset_pos.accuracy_ref": 0.968992,
     "notation.pedal.f1": null,
     "notation.pedal.false_per_min": 0.0,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
-    "notation.ties.extra_per_100": 2.325581,
+    "notation.ties.extra_per_100": 1.550388,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
     "notes.identity.f1": 1.0,
@@ -30185,37 +30185,37 @@
     "rec.check.5": 0.0,
     "rec.check.6": 0.0,
     "rec.check.7": 0.0,
-    "rec.harmony.agreement": 0.25,
-    "rec.metre.f1": 0.888889,
-    "rec.mv2h": 0.806072,
-    "rec.onset_f1": 0.03876,
-    "rec.rest.false_per_100_bars": 8.333333,
-    "rec.rest.precision": 0.0,
+    "rec.harmony.agreement": 1.0,
+    "rec.metre.f1": 1.0,
+    "rec.mv2h": 0.981395,
+    "rec.onset_f1": 0.968992,
+    "rec.rest.false_per_100_bars": 0.0,
+    "rec.rest.precision": 1.0,
     "rec.rest.recall": null,
-    "rec.stability": 0.416667,
+    "rec.stability": 0.138889,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
-    "rec.usable": 0.0,
+    "rec.usable": 1.0,
     "rec.voice.f1": 1.0,
-    "sqi": 79.174623,
-    "struct.downbeat.f1": 0.666667,
+    "sqi": 98.28315,
+    "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
-    "struct.measures.count_exact": 0.0,
+    "struct.measures.count_exact": 1.0,
     "struct.stats_consistent": 1.0,
     "struct.tempo.ok_effective": 1.0,
     "struct.tempo.timeline_accuracy": 1.0,
-    "struct.time_sig.exact": 0.0,
-    "struct.time_sig.score": 0.5,
-    "struct.time_sig.timeline_accuracy": 0.0,
-    "usable": 0.0
+    "struct.time_sig.exact": 1.0,
+    "struct.time_sig.score": 1.0,
+    "struct.time_sig.timeline_accuracy": 1.0,
+    "usable": 1.0
    },
-   "semantic": "079ec845fff3ac2e",
-   "sqi": 79.174623,
+   "semantic": "e83bf07e95c769cf",
+   "sqi": 98.28315,
    "status": "ok"
   },
   "micro/M02-alberti-4-4|human-real|none|s1|opt:app": {
@@ -30372,15 +30372,15 @@
    "error_code": null,
    "metrics": {
     "critical.accidentals": 1.0,
-    "critical.beat_placement": 0.0,
+    "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
     "critical.key": 1.0,
-    "critical.meter": 0.0,
+    "critical.meter": 1.0,
     "critical.note_values": 1.0,
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 0.0,
+    "critical.structure": 1.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.984496,
     "notation.duration.accuracy_ref": 0.984496,
@@ -30390,8 +30390,8 @@
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
     "notation.note_shape.mismatches": 0.0,
-    "notation.onset_pos.accuracy": 0.046512,
-    "notation.onset_pos.accuracy_ref": 0.046512,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
     "notation.pedal.false_per_min": 0.0,
     "notation.spelling.accuracy": 1.0,
@@ -30410,11 +30410,11 @@
     "rec.check.5": 0.0,
     "rec.check.6": 0.0,
     "rec.check.7": 0.0,
-    "rec.harmony.agreement": 0.416667,
-    "rec.metre.f1": 0.888889,
-    "rec.mv2h": 0.85801,
-    "rec.onset_f1": 0.046512,
-    "rec.rest.false_per_100_bars": 8.333333,
+    "rec.harmony.agreement": 1.0,
+    "rec.metre.f1": 1.0,
+    "rec.mv2h": 0.996899,
+    "rec.onset_f1": 1.0,
+    "rec.rest.false_per_100_bars": 16.666667,
     "rec.rest.precision": 0.0,
     "rec.rest.recall": null,
     "rec.stability": 0.0,
@@ -30423,24 +30423,24 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 1.0,
-    "sqi": 80.542636,
-    "struct.downbeat.f1": 0.666667,
+    "sqi": 99.844961,
+    "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
-    "struct.measures.count_exact": 0.0,
+    "struct.measures.count_exact": 1.0,
     "struct.stats_consistent": 1.0,
     "struct.tempo.ok_effective": 1.0,
     "struct.tempo.timeline_accuracy": 1.0,
-    "struct.time_sig.exact": 0.0,
-    "struct.time_sig.score": 0.5,
-    "struct.time_sig.timeline_accuracy": 0.0,
-    "usable": 0.0
+    "struct.time_sig.exact": 1.0,
+    "struct.time_sig.score": 1.0,
+    "struct.time_sig.timeline_accuracy": 1.0,
+    "usable": 1.0
    },
-   "semantic": "6ba64ae044045e2c",
-   "sqi": 80.542636,
+   "semantic": "922157e65d4efb56",
+   "sqi": 99.844961,
    "status": "ok"
   },
   "micro/M03-jig-6-8|cover-pedal|none|s1|opt:app": {
@@ -35972,6 +35972,14 @@
    "reason": "G10a-1b: the time skeleton on real covers (ai5a v1.1: a beat cap of 100 on the accent evidence, swung frames of the simple metres, the swing family in the training data; S6 refitted on the new skeleton). Mixed on the catalogue suites, see docs/GOALS/G10_AUDIO_TO_SCORE.md section 28",
    "sqi_all": 77.825512,
    "usable_all": 0.236111
+  },
+  {
+   "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
+   "date": "2026-10-05",
+   "git_sha": "2cd4f0e09807458b49e30bef45b0175271ae0693",
+   "reason": "G10a-1b: the time skeleton on real covers (ai5a v1.1: a beat cap of 100 on the accent evidence, swung frames of the simple metres, the swing family in the training data, after the review a 0.75-nat preference for 4/4 over 2/4 when no downbeats are heard; S6 refitted on the new skeleton with its threshold held at main's training precision). Mixed on the catalogue suites, see docs/GOALS/G10_AUDIO_TO_SCORE.md section 28",
+   "sqi_all": 78.092009,
+   "usable_all": 0.25
   }
  ],
  "known_failures": {
@@ -36320,7 +36328,7 @@
   "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
   "date": "2026-10-05",
   "git_dirty": true,
-  "git_sha": "0b5944bf2994ae0a844cc3ea4fc8902dbcff9ba6",
+  "git_sha": "2cd4f0e09807458b49e30bef45b0175271ae0693",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"
