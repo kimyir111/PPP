@@ -178,20 +178,18 @@ jobs:
   nightly-rec:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    # Was 90, which one slow runner from red. Measured step times (a runner: the 2026-10-03 and 2026-10-04 nightlies; local: this
-    # job's steps in order on a 16-thread machine under other load, 2026-10-05, all green; a runner takes 2.2-2.6 times the local time
-    # on the steps both measured):
-    #   mutation-check --rec          runner 2570 s on 2026-10-04 (it was 1301 s on 2026-10-03, before the S8 key and S9 pedal groups
-    #                                 and the later rows), local 1492 s with the G10a-2b rec-mutation-play group that the runner had
-    #                                 not run yet (+ about 5 minutes on a runner): about 2900 s, 48 minutes
-    #   mutation-check --rec-arrange  runner 586 s (2026-10-03), local 266 s
-    #   rec-arrange-core              runner 330 s, local 129 s
-    #   rec-arrange-full              runner 846 s, local 354 s
-    #   rec-hands-play                local 174 s, so about 420 s on a runner
-    #   rec-arrange-play              local 105 s, so about 250 s on a runner
-    # That is about 5300 s, 89 minutes, for the whole job against 90: the 2026-10-04 nightly-rec went red at the first step (a stale
-    # mutation row), skipped everything after it, and so never showed this. 120 leaves a third of headroom; a failing step still
-    # ends the job at once, so a red run is not slower for it.
+    # Was 90, which one slow runner from red. Measured on a runner, by workflow_dispatch of this job at 1b30342 (2026-10-05, all
+    # green, 5092 s = 84.9 minutes in all):
+    #   mutation-check --rec          2719 s (2570 s on 2026-10-04 before the G10a-2b rec-mutation-play group; 1301 s on 2026-10-03,
+    #                                 before the S8 key and S9 pedal groups and the later rows)
+    #   mutation-check --rec-arrange   588 s
+    #   rec-arrange-core               318 s
+    #   rec-arrange-full               830 s
+    #   rec-hands-play                 346 s
+    #   rec-arrange-play               279 s       (the checks take under a second each)
+    # The 2026-10-04 nightly-rec went red at its first step (a stale mutation row) and skipped everything after it, so it never
+    # showed that the whole job is this long. 85 of 90 minutes is one slow runner from red; 120 leaves 35 minutes. A failing step
+    # still ends the job at once, so a red run is not slower for it.
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
