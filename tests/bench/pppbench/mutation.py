@@ -549,7 +549,11 @@ REC_V2_MUTATIONS: List[Dict[str, Any]] = [
      "file": "rec/grid.js",
      "find": "  const MAX_GROUP = 8;",
      "replace": "  const MAX_GROUP = 1;",
-     "expect": "REGRESSION", "metrics": ["rec.tuplet.precision", "critical.hands", "rec.rest.false_per_100_bars"]},
+     # What it moves (rec-mutation-v2, 2026-10-05): the beats that hold a tuplet are found less often (rec.tuplet.recall 0.2238 ->
+     # 0.1964, gate tol 0.01; notation.tuplets.f1 0.2649 -> 0.2337, tol 0.01). The first version of this row named
+     # rec.tuplet.precision (0.9583 -> 0.9519, tol 0.01), critical.hands and rec.rest.false_per_100_bars: none of them moves
+     # (the hands are not touched, the rest rate improves by 0.07), so the nightly's `mutation-check --rec` failed on it
+     "expect": "REGRESSION", "metrics": ["rec.tuplet.recall", "notation.tuplets.f1"]},
     {"id": "REC-V2-GRID-NO-CHAIN", "v2": True,        # no smoothing across beats: every beat decided alone
      "file": "rec/grid.js",
      "find": "      const st = Math.pow(model.stay[a] !== undefined ? model.stay[a] : 0.9, Math.max(1, gap));",
