@@ -8,6 +8,7 @@
                       as it is (development only: --check always regenerates)
      --python PATH    the Python that runs tests/bench/tools/rests_data.py (default: python3, python)
      --workers N      worker threads for the notation runs (default: the CPUs, at most 8; the result does not depend on it)
+     --curve          print the training and hold-out precision, recall and accuracy at every threshold of the search, write nothing
 
    THE DATA (tests/bench/tools/rests_data.py; licence-clean only, no external data, no recording, no user material):
      train    every non-hold-out reference of the benchmark's lint-clean, licence-evidenced catalogue played by the benchmark's
@@ -26,7 +27,10 @@
 
    THE FIT: logistic regression over rec/rests.js FEATURES, L2 1e-3 (not on the bias), Newton's method with a backtracking line
    search from zero, to a gradient below 1e-9. The threshold is the one that maximises the share of right decisions on the
-   training rows (each decision is a note value), searched on a 0.01 grid from 0.30 to 0.90. Deterministic: no random numbers,
+   training rows (each decision is a note value), searched on a 0.01 grid from 0.30 to 0.90, among the thresholds whose training
+   precision is at least CONFIG.minPrecision (G10a-1b, G10 section 28: the training precision of the operating point main
+   shipped, ai5b-rests-v1 at 0.45 at 0b5944b; a refit for accuracy alone moved it to 0.42 and wrote more false rests, the
+   teacher's longest-running complaint). Deterministic: no random numbers,
    fixed order (the rows are put back in performance order whatever the workers), Math.exp/log only, every number written
    rounded to 6 decimals.
    ========================================================================== */
@@ -44,7 +48,7 @@ const NAME = 'ai5b-rests', VERSION = 'v1';
 const WEIGHTS = path.join(REPO, 'rec', 'weights', NAME + '-' + VERSION + '.json');
 const EVALUATION = path.join(REPO, 'rec', 'tools', NAME + '-' + VERSION + '.evaluation.json');
 const DATASET = path.join(REPO, 'tests', 'bench', 'tools', 'rests_data.py');
-const CONFIG = Object.freeze({ seeds: '301', l2: 1e-3, opts: { closeGaps: true, exactBars: true, recording: 'v2' }, thrLo: 0.30, thrHi: 0.90,
+const CONFIG = Object.freeze({ seeds: '301', l2: 1e-3, opts: { closeGaps: true, exactBars: true, recording: 'v2' }, thrLo: 0.30, thrHi: 0.90, minPrecision: 0.718677,
   form: 'logistic', stumps: { rounds: 300, rate: 0.1, lambda: 1, minH: 5, cuts: 32 } });
 const round6 = x => Math.round(x * 1e6) / 1e6;
 
@@ -285,11 +289,16 @@ function scores(rows, p, thr) {
       w = fit(tr.rows, nf, CONFIG.l2).map(round6);
       pTr = probs(tr.rows, w); pHo = probs(ho.rows, w);
     }
-    let thr = 0.5, best = -1;
+    /* the most accurate threshold whose training precision holds CONFIG.minPrecision (none: the highest of the search) */
+    let thr = CONFIG.thrHi, best = -1;
     for (let k = Math.round(CONFIG.thrLo * 100); k <= Math.round(CONFIG.thrHi * 100); k++) {
-      const s = scores(tr.rows, pTr, k / 100).accuracy;
-      if (s > best + 1e-12) { best = s; thr = k / 100; }
+      const sc = scores(tr.rows, pTr, k / 100);
+      if (flag('--curve')) console.log('thr ' + (k / 100).toFixed(2) + ' train ' + JSON.stringify({ p: sc.precision, r: sc.recall, a: sc.accuracy }) +
+        ' holdout ' + JSON.stringify((h => ({ p: h.precision, r: h.recall, a: h.accuracy }))(scores(ho.rows, pHo, k / 100))));
+      if (sc.precision < CONFIG.minPrecision) continue;
+      if (sc.accuracy > best + 1e-12) { best = sc.accuracy; thr = k / 100; }
     }
+    if (flag('--curve')) { console.log('chosen ' + thr); return; }
     const weights = { schema: REAL.SCHEMA, name: NAME, version: VERSION, form: form, features: REAL.FEATURES.slice() };
     if (st) { weights.bias = st.bias; weights.trees = st.trees; } else weights.weights = w;
     weights.threshold = thr;

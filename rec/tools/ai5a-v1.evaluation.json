@@ -1,12 +1,12 @@
 {
  "schema": "ppp.rec-time-skeleton-evaluation/1",
- "weights_sha256": "2f3d72c6162966fdfc0e167ed4afe8ff6df88ecabc0ef755e44d776f57b4faa1",
+ "weights_sha256": "25b41bfbb7bddb17bdbadbec60564cab58bd3237668e2873936fbb21e94a7c3f",
  "note": "skeleton right = metre, quarter tempo within 4 % and >= 90 % of the bar lines; reachable = some reading of the pulse tracks is right",
  "train": {
   "n": 3084,
-  "right": 0.655318,
-  "metre": 0.705901,
-  "tempo": 0.871271,
+  "right": 0.660182,
+  "metre": 0.709144,
+  "tempo": 0.872892,
   "reachable": 0.900778,
   "byMetre": {
    "12/8": {
@@ -25,9 +25,9 @@
    },
    "2/4": {
     "n": 480,
-    "right": 0.18125,
-    "metre": 0.214583,
-    "tempo": 0.733333,
+    "right": 0.160417,
+    "metre": 0.1625,
+    "tempo": 0.7375,
     "reachable": 0.695833
    },
    "3/2": {
@@ -53,9 +53,9 @@
    },
    "4/4": {
     "n": 1608,
-    "right": 0.8551,
-    "metre": 0.925995,
-    "tempo": 0.944652,
+    "right": 0.870647,
+    "metre": 0.947761,
+    "tempo": 0.945896,
     "reachable": 0.96704
    },
    "5/4": {
@@ -69,7 +69,7 @@
     "n": 60,
     "right": 0,
     "metre": 0,
-    "tempo": 0.283333,
+    "tempo": 0.3,
     "reachable": 0
    },
    "6/8": {
@@ -90,15 +90,15 @@
  },
  "holdout": {
   "n": 312,
-  "right": 0.653846,
-  "metre": 0.685897,
+  "right": 0.650641,
+  "metre": 0.682692,
   "tempo": 0.865385,
   "reachable": 0.884615,
   "byMetre": {
    "2/4": {
     "n": 60,
-    "right": 0.183333,
-    "metre": 0.183333,
+    "right": 0.166667,
+    "metre": 0.166667,
     "tempo": 0.633333,
     "reachable": 0.783333
    },
@@ -150,9 +150,9 @@
   "folds": 5,
   "by": "reference (fnv1a32(id) % 5)",
   "n": 3084,
-  "right": 0.602789,
-  "metre": 0.663424,
-  "tempo": 0.860246,
+  "right": 0.609922,
+  "metre": 0.668936,
+  "tempo": 0.857977,
   "reachable": 0.900778,
   "byMetre": {
    "12/8": {
@@ -171,9 +171,9 @@
    },
    "2/4": {
     "n": 480,
-    "right": 0.175,
-    "metre": 0.204166,
-    "tempo": 0.739583,
+    "right": 0.164583,
+    "metre": 0.16875,
+    "tempo": 0.735417,
     "reachable": 0.695834
    },
    "3/2": {
@@ -185,8 +185,8 @@
    },
    "3/4": {
     "n": 504,
-    "right": 0.630952,
-    "metre": 0.678571,
+    "right": 0.636905,
+    "metre": 0.684524,
     "tempo": 0.906746,
     "reachable": 0.998016
    },
@@ -199,9 +199,9 @@
    },
    "4/4": {
     "n": 1608,
-    "right": 0.821518,
-    "metre": 0.907338,
-    "tempo": 0.932214,
+    "right": 0.836443,
+    "metre": 0.926617,
+    "tempo": 0.929104,
     "reachable": 0.96704
    },
    "5/4": {
@@ -238,9 +238,9 @@
     "folds": 5,
     "by": "reference (fnv1a32(id) % 5)",
     "n": 2056,
-    "right": 0.562743,
-    "metre": 0.628405,
-    "tempo": 0.85895,
+    "right": 0.571985,
+    "metre": 0.637159,
+    "tempo": 0.856031,
     "reachable": 0.888132,
     "byMetre": {
      "12/8": {
@@ -259,9 +259,9 @@
      },
      "2/4": {
       "n": 320,
-      "right": 0.046875,
-      "metre": 0.071875,
-      "tempo": 0.746875,
+      "right": 0.0375,
+      "metre": 0.040625,
+      "tempo": 0.74375,
       "reachable": 0.628125
      },
      "3/2": {
@@ -273,8 +273,8 @@
      },
      "3/4": {
       "n": 336,
-      "right": 0.577381,
-      "metre": 0.630952,
+      "right": 0.583333,
+      "metre": 0.636905,
       "tempo": 0.89881,
       "reachable": 0.997024
      },
@@ -287,9 +287,9 @@
      },
      "4/4": {
       "n": 1072,
-      "right": 0.805038,
-      "metre": 0.899254,
-      "tempo": 0.928172,
+      "right": 0.823694,
+      "metre": 0.923507,
+      "tempo": 0.923507,
       "reachable": 0.964552
      },
      "5/4": {
@@ -414,9 +414,9 @@
     "folds": 5,
     "by": "reference (fnv1a32(id) % 5)",
     "n": 514,
-    "right": 0.558366,
-    "metre": 0.651751,
-    "tempo": 0.826848,
+    "right": 0.564202,
+    "metre": 0.649805,
+    "tempo": 0.824903,
     "reachable": 0.883268,
     "byMetre": {
      "12/8": {
@@ -435,9 +435,9 @@
      },
      "2/4": {
       "n": 80,
-      "right": 0.05,
-      "metre": 0.125,
-      "tempo": 0.6375,
+      "right": 0.025,
+      "metre": 0.0375,
+      "tempo": 0.625,
       "reachable": 0.6625
      },
      "3/2": {
@@ -449,8 +449,8 @@
      },
      "3/4": {
       "n": 84,
-      "right": 0.595238,
-      "metre": 0.654762,
+      "right": 0.607143,
+      "metre": 0.666667,
       "tempo": 0.904762,
       "reachable": 1
      },
@@ -463,8 +463,8 @@
      },
      "4/4": {
       "n": 268,
-      "right": 0.791045,
-      "metre": 0.91791,
+      "right": 0.80597,
+      "metre": 0.936567,
       "tempo": 0.906716,
       "reachable": 0.951492
      },
@@ -503,9 +503,9 @@
    "folds": 5,
    "by": "reference (fnv1a32(id) % 5)",
    "n": 2056,
-   "right": 0.541342,
-   "metre": 0.621595,
-   "tempo": 0.838521,
+   "right": 0.55107,
+   "metre": 0.622568,
+   "tempo": 0.831712,
    "reachable": 0.888618,
    "byMetre": {
     "12/8": {
@@ -524,9 +524,9 @@
     },
     "2/4": {
      "n": 320,
-     "right": 0.0375,
-     "metre": 0.11875,
-     "tempo": 0.715625,
+     "right": 0.015625,
+     "metre": 0.034375,
+     "tempo": 0.703125,
      "reachable": 0.609375
     },
     "3/2": {
@@ -538,8 +538,8 @@
     },
     "3/4": {
      "n": 336,
-     "right": 0.52381,
-     "metre": 0.583333,
+     "right": 0.541667,
+     "metre": 0.601191,
      "tempo": 0.866071,
      "reachable": 1
     },
@@ -552,9 +552,9 @@
     },
     "4/4": {
      "n": 1072,
-     "right": 0.777052,
-     "metre": 0.880597,
-     "tempo": 0.907649,
+     "right": 0.796642,
+     "metre": 0.902052,
+     "tempo": 0.898321,
      "reachable": 0.968283
     },
     "5/4": {
@@ -591,30 +591,30 @@
    "folds": 5,
    "by": "reference (fnv1a32(id) % 5)",
    "n": 1776,
-   "right": 0.609797,
-   "metre": 0.69482,
-   "tempo": 0.850225,
+   "right": 0.618243,
+   "metre": 0.699324,
+   "tempo": 0.841779,
    "reachable": 0.911036,
    "byMetre": {
     "2/4": {
      "n": 320,
-     "right": 0.08125,
-     "metre": 0.1375,
-     "tempo": 0.584375,
+     "right": 0.03125,
+     "metre": 0.04375,
+     "tempo": 0.575,
      "reachable": 0.75625
     },
     "3/4": {
      "n": 336,
-     "right": 0.627976,
-     "metre": 0.702381,
+     "right": 0.639881,
+     "metre": 0.714286,
      "tempo": 0.898809,
      "reachable": 0.994048
     },
     "4/4": {
      "n": 1072,
-     "right": 0.789179,
-     "metre": 0.889925,
-     "tempo": 0.931903,
+     "right": 0.814366,
+     "metre": 0.921642,
+     "tempo": 0.920709,
      "reachable": 0.972015
     },
     "5/4": {
@@ -632,21 +632,96 @@
      "reachable": 0
     }
    }
+  },
+  "conventionSweep": {
+   "performances": 2571,
+   "at": [
+    {
+     "d": 0,
+     "right": 0.561649,
+     "metre": 0.632828,
+     "4/4": 0.902985,
+     "2/4": 0.0825
+    },
+    {
+     "d": 0.1,
+     "right": 0.563983,
+     "metre": 0.634383,
+     "4/4": 0.907463,
+     "2/4": 0.075
+    },
+    {
+     "d": 0.2,
+     "right": 0.56515,
+     "metre": 0.634383,
+     "4/4": 0.909701,
+     "2/4": 0.065
+    },
+    {
+     "d": 0.3,
+     "right": 0.565539,
+     "metre": 0.633995,
+     "4/4": 0.910448,
+     "2/4": 0.0575
+    },
+    {
+     "d": 0.4,
+     "right": 0.56515,
+     "metre": 0.633606,
+     "4/4": 0.910448,
+     "2/4": 0.055
+    },
+    {
+     "d": 0.5,
+     "right": 0.566317,
+     "metre": 0.634772,
+     "4/4": 0.914926,
+     "2/4": 0.0475
+    },
+    {
+     "d": 0.75,
+     "right": 0.570206,
+     "metre": 0.63944,
+     "4/4": 0.926119,
+     "2/4": 0.04
+    },
+    {
+     "d": 1,
+     "right": 0.56865,
+     "metre": 0.639829,
+     "4/4": 0.934328,
+     "2/4": 0.015
+    },
+    {
+     "d": 1.5,
+     "right": 0.566705,
+     "metre": 0.637495,
+     "4/4": 0.934328,
+     "2/4": 0
+    },
+    {
+     "d": 2,
+     "right": 0.566705,
+     "metre": 0.637495,
+     "4/4": 0.934328,
+     "2/4": 0
+    }
+   ]
   }
  },
  "families": {
   "note": "hold-out references only (never counted, never fitted): long-x3 / long-x6 = the hold-out performances without beats played 3 / 6 times in a row; swing / swing-x6 = the humanizer's swing family (half of the four-bar blocks swung, swing and swing+of, seed 11), once / six times in a row; pop / pop-x4 = the hold-out performances without beats of the x/4 references swung all through, once / four times in a row",
   "long-x3": {
    "n": 208,
-   "right": 0.572115,
-   "metre": 0.629808,
+   "right": 0.567308,
+   "metre": 0.615385,
    "tempo": 0.855769,
    "reachable": 0.846154,
    "byMetre": {
     "2/4": {
      "n": 40,
-     "right": 0.1,
-     "metre": 0.15,
+     "right": 0,
+     "metre": 0,
      "tempo": 0.7,
      "reachable": 0.675
     },
@@ -673,8 +748,8 @@
     },
     "4/4": {
      "n": 100,
-     "right": 0.77,
-     "metre": 0.87,
+     "right": 0.8,
+     "metre": 0.9,
      "tempo": 0.95,
      "reachable": 0.89
     },
@@ -696,15 +771,15 @@
   },
   "long-x6": {
    "n": 208,
-   "right": 0.557692,
-   "metre": 0.610577,
+   "right": 0.567308,
+   "metre": 0.615385,
    "tempo": 0.831731,
    "reachable": 0.846154,
    "byMetre": {
     "2/4": {
      "n": 40,
-     "right": 0.1,
-     "metre": 0.125,
+     "right": 0.075,
+     "metre": 0.075,
      "tempo": 0.7,
      "reachable": 0.675
     },
@@ -731,8 +806,8 @@
     },
     "4/4": {
      "n": 100,
-     "right": 0.76,
-     "metre": 0.86,
+     "right": 0.79,
+     "metre": 0.89,
      "tempo": 0.94,
      "reachable": 0.89
     },
@@ -819,8 +894,8 @@
    "byMetre": {
     "2/4": {
      "n": 20,
-     "right": 0.05,
-     "metre": 0.05,
+     "right": 0,
+     "metre": 0,
      "tempo": 0.6,
      "reachable": 0.8
     },
@@ -847,8 +922,8 @@
     },
     "4/4": {
      "n": 50,
-     "right": 0.8,
-     "metre": 0.88,
+     "right": 0.82,
+     "metre": 0.9,
      "tempo": 0.96,
      "reachable": 0.9
     },
@@ -870,15 +945,15 @@
   },
   "pop": {
    "n": 188,
-   "right": 0.62234,
-   "metre": 0.680851,
-   "tempo": 0.861702,
+   "right": 0.601064,
+   "metre": 0.659574,
+   "tempo": 0.856383,
    "reachable": 0.898936,
    "byMetre": {
     "2/4": {
      "n": 40,
-     "right": 0.175,
-     "metre": 0.175,
+     "right": 0.075,
+     "metre": 0.075,
      "tempo": 0.575,
      "reachable": 0.85
     },
@@ -893,7 +968,7 @@
      "n": 100,
      "right": 0.81,
      "metre": 0.91,
-     "tempo": 0.95,
+     "tempo": 0.94,
      "reachable": 0.91
     },
     "6/4": {
@@ -908,14 +983,14 @@
   "pop-x4": {
    "n": 188,
    "right": 0.632979,
-   "metre": 0.691489,
+   "metre": 0.68617,
    "tempo": 0.840426,
    "reachable": 0.888298,
    "byMetre": {
     "2/4": {
      "n": 40,
-     "right": 0.2,
-     "metre": 0.25,
+     "right": 0.15,
+     "metre": 0.15,
      "tempo": 0.525,
      "reachable": 0.8
     },
@@ -928,8 +1003,8 @@
     },
     "4/4": {
      "n": 100,
-     "right": 0.8,
-     "metre": 0.89,
+     "right": 0.82,
+     "metre": 0.92,
      "tempo": 0.95,
      "reachable": 0.91
     },
@@ -946,9 +1021,9 @@
  "trainByRow": [
   {
    "n": 2056,
-   "right": 0.616732,
-   "metre": 0.674611,
-   "tempo": 0.866245,
+   "right": 0.623054,
+   "metre": 0.678988,
+   "tempo": 0.868191,
    "reachable": 0.888132,
    "byMetre": {
     "12/8": {
@@ -967,9 +1042,9 @@
     },
     "2/4": {
      "n": 320,
-     "right": 0.05,
-     "metre": 0.090625,
-     "tempo": 0.728125,
+     "right": 0.025,
+     "metre": 0.028125,
+     "tempo": 0.73125,
      "reachable": 0.628125
     },
     "3/2": {
@@ -995,9 +1070,9 @@
     },
     "4/4": {
      "n": 1072,
-     "right": 0.838619,
-     "metre": 0.919776,
-     "tempo": 0.939366,
+     "right": 0.858209,
+     "metre": 0.946828,
+     "tempo": 0.941231,
      "reachable": 0.964552
     },
     "5/4": {
@@ -1011,7 +1086,7 @@
      "n": 40,
      "right": 0,
      "metre": 0,
-     "tempo": 0.275,
+     "tempo": 0.3,
      "reachable": 0
     },
     "6/8": {
@@ -1118,9 +1193,9 @@
   },
   {
    "n": 514,
-   "right": 0.614786,
-   "metre": 0.680934,
-   "tempo": 0.85214,
+   "right": 0.618677,
+   "metre": 0.682879,
+   "tempo": 0.854086,
    "reachable": 0.883268,
    "byMetre": {
     "12/8": {
@@ -1139,9 +1214,9 @@
     },
     "2/4": {
      "n": 80,
-     "right": 0.0375,
-     "metre": 0.075,
-     "tempo": 0.6375,
+     "right": 0.0125,
+     "metre": 0.0125,
+     "tempo": 0.65,
      "reachable": 0.6625
     },
     "3/2": {
@@ -1167,8 +1242,8 @@
     },
     "4/4": {
      "n": 268,
-     "right": 0.835821,
-     "metre": 0.929104,
+     "right": 0.850746,
+     "metre": 0.951493,
      "tempo": 0.936567,
      "reachable": 0.951493
     },

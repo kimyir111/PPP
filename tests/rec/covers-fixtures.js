@@ -75,4 +75,40 @@ function phaseCheck(REC) {
   return { name: 'swung readings on their frames\' quarter phases', ok: sw.length > 0 && bad === 0 && odd > 0, got: sw.length + ' swung, ' + bad + ' off phase, ' + odd + ' on odd eighths', want: 'none off phase, some on odd eighths' };
 }
 
-module.exports = { REPO, pop, popBar, swung, withPickup, cases, knownLimits, check, phaseCheck, near, skeletonInput, path };
+/* the convention preference of a rec/index.js's metre stage: with a model whose conventionPrior lowers 2/4 by 0.75 nats, the
+   posterior odds of 2/4 against 4/4 fall by exactly that when no downbeats are heard and do not move when they are (a pop piece
+   whose 2/4 and 4/4 readings both hold a fifth of the posterior or more) */
+function priorCheck(REC) {
+  const W = REC.loadWeights();
+  const att = REC.attacks.attacksOf(skeletonInput(pop(8, 120, { jitter: 0.02, seed: 4 }).notes)), cls = REC.attacks.classes(att);
+  const tracks = REC.beats.tracks(att, { tight: W.tight, maxTracks: W.maxTracks });
+  const odds = (prior, down) => {
+    const ch = REC.metre.choose(att, cls, tracks, Object.assign({}, W, { conventionPrior: prior }), { downbeats: down });
+    return Math.log(ch.metrePosterior['2/4'] / ch.metrePosterior['4/4']);
+  };
+  const none = odds({ '2/4': -0.75 }, null) - odds(null, null), down = odds({ '2/4': -0.75 }, [1, 3, 5]) - odds(null, [1, 3, 5]);
+  return { name: 'the convention preference moves the 2/4 : 4/4 odds without downbeats only', ok: Math.abs(none + 0.75) < 0.01 && Math.abs(down) < 0.01,
+    got: 'shift ' + none.toFixed(3) + ' without downbeats, ' + down.toFixed(3) + ' with', want: '-0.750 without, 0.000 with' };
+}
+/* a rec/index.js's committed model is the trainer's configuration (rec/tools/train.js CONFIG of this repository): the cap, the swing
+   points and the convention preference that G10 section 28 chose */
+function configCheck(REC) {
+  const C = require(path.join(REPO, 'rec', 'tools', 'train.js')).CONFIG, W = REC.loadWeights();
+  const same = (a, b) => JSON.stringify(a === undefined ? null : a) === JSON.stringify(b === undefined ? null : b);
+  const ok = same(W.beatCap, C.beatCap) && same(W.swing, C.swing) && same(W.conventionPrior, C.conventionPrior);
+  return { name: 'the committed model carries the trainer\'s cap, swing points and convention preference', ok: ok,
+    got: JSON.stringify({ beatCap: W.beatCap, swing: W.swing, conventionPrior: W.conventionPrior }), want: JSON.stringify({ beatCap: C.beatCap, swing: C.swing, conventionPrior: C.conventionPrior }) };
+}
+/* a swung frame of a rec/index.js's model looks for each attack's written slot 1.5 times as far as the straight frame (at most 12
+   slots): the written grid is up to 1.5 times denser in time where the swing compresses it */
+function windowCheck(REC) {
+  const W = REC.loadWeights();
+  const att = REC.attacks.attacksOf(skeletonInput(swung(pop(4, 120, { jitter: 0.02, seed: 4 }), 120, 0.65, 1).notes));
+  const tr = REC.beats.tracks(att, { tight: W.tight, maxTracks: W.maxTracks })[0];
+  const a = REC.model.frame(att, REC.attacks.classes(att), tr, 1, W.sigma, null), b = REC.model.frame(att, REC.attacks.classes(att), tr, 1, W.sigma, null, { s: 0.64, o: 0 });
+  let bad = 0;
+  for (let i = 0; i < att.length; i++) { const r = (a.len[i] - 1) / 2; if (b.len[i] !== 2 * Math.min(12, Math.ceil(r * 1.5)) + 1) bad++; }
+  return { name: 'a swung frame\'s candidate window is 1.5 times the straight one', ok: att.length > 0 && bad === 0, got: bad + ' of ' + att.length + ' attacks off', want: 'none off' };
+}
+
+module.exports = { REPO, pop, popBar, swung, withPickup, cases, knownLimits, check, phaseCheck, priorCheck, configCheck, windowCheck, near, skeletonInput, path };

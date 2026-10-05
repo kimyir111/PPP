@@ -72,6 +72,9 @@ const BASE_CONFIG = {
   beatCap: 100,                /* G10a-1b: a reading's per-beat evidence grows with its beats only up to this many (0: no cap); chosen by
                                   the out-of-fold accuracy on the training references played four times in a row (G10 section 28.4) */
   swing: [0.64],               /* G10a-1b: the long-short points of the swung frames of the simple metres ([]: none) */
+  conventionPrior: { '2/4': -0.75 },   /* G10a-1b: nats added to every reading of a metre when no downbeats are heard, after the fit
+                                  (2/4 and 4/4 at the same pulse differ only in the written bar length, which a performance
+                                  without downbeats cannot decide); the out-of-fold best of --cv's conventionSweep, G10 section 28 */
   l2: 1e-4,
   folds: 5,
   train: [{ profiles: 'cover,cover-pedal,human-real,cover+of', seeds: '101,102', beats: 'none' },
@@ -186,8 +189,9 @@ function extract(row, tables) {
   const audio = row.input.beats ? BEATS.audioTrack(row.input.beats, att) : null;
   if (audio) tracks.unshift(audio);
   if (!tracks.length) return base;
+  const down = audio && row.input.downbeats && row.input.downbeats.length ? 1 : 0;   /* the readings hear downbeats (no convention preference) */
   const H = METRE.hypotheses(att, cls, tracks, tables, { sigma: CONFIG.sigma, swing: CONFIG.swing,
-    downbeats: audio && row.input.downbeats && row.input.downbeats.length ? row.input.downbeats : null });
+    downbeats: down ? row.input.downbeats : null });
   const n = H.list.length;
   const X = new Float32Array(n * F), lab = new Uint8Array(n), mi = new Uint8Array(n), qpm = new Float32Array(n);
   const sv = new Float64Array(F);
@@ -198,7 +202,7 @@ function extract(row, tables) {
     lab[i] = rightReading(H.list[i], tracks, row.truth); any += lab[i];
     mi[i] = H.list[i].mi; qpm[i] = H.list[i].qpm;
   }
-  return Object.assign(base, { n: n, X: X, lab: lab, mi: mi, qpm: qpm, any: any, truthQpm: row.truth.qpm });
+  return Object.assign(base, { n: n, X: X, lab: lab, mi: mi, qpm: qpm, any: any, truthQpm: row.truth.qpm, down: down });
 }
 
 /* every row's extract(), spread over worker threads (--workers N, default the CPUs up to 8) and put back in row order: the
@@ -295,14 +299,23 @@ function fit(cases, log) {
 }
 
 /* ------------------------------------------------------------------ evaluation */
-function evaluate(cases, w) {
+/* the convention preference (CONFIG.conventionPrior, or the one given) per metre index; rec/metre.js choose() adds it to a reading's
+   score when the performance has no downbeats */
+function priorVector(prior) { return MODEL.METRES.map(m => (prior && prior[m.key]) || 0); }
+function evaluate(cases, w, prior) {
+  const pv = priorVector(prior === undefined ? CONFIG.conventionPrior : prior);
   const by = {}, all = { n: 0, right: 0, metre: 0, tempo: 0, reachable: 0 };
   cases.forEach(c => {
     if (!c) return;
     const r = { n: 1, right: 0, metre: 0, tempo: 0, reachable: c.any ? 1 : 0 };
     if (c.n) {
       let bi = 0, bs = -Infinity;
-      for (let i = 0; i < c.n; i++) { let s = 0; for (let k = 0; k < F; k++) s += c.X[i * F + k] * w[k]; if (s > bs) { bs = s; bi = i; } }
+      for (let i = 0; i < c.n; i++) {
+        let s = 0;
+        for (let k = 0; k < F; k++) s += c.X[i * F + k] * w[k];
+        if (!c.down) s += pv[c.mi[i]];
+        if (s > bs) { bs = s; bi = i; }
+      }
       r.right = c.lab[bi];
       r.metre = MODEL.METRES[c.mi[bi]].key === c.metre ? 1 : 0;
       r.tempo = Math.abs(Math.log(c.qpm[bi] / c.truthQpm)) <= Math.log(1.04) ? 1 : 0;
@@ -358,7 +371,8 @@ async function main() {
     const f = fit(train, log);
     const body = Object.assign({ schema: MODEL.SCHEMA, name: NAME, version: MODEL_VERSION, features: MODEL.FEATURES, weights: f.weights,
       alpha: CONFIG.alpha, sigma: CONFIG.sigma, tight: CONFIG.tight, maxTracks: CONFIG.maxTracks },
-      CONFIG.beatCap ? { beatCap: CONFIG.beatCap } : {}, CONFIG.swing && CONFIG.swing.length ? { swing: CONFIG.swing } : {}, { tables: tables });
+      CONFIG.beatCap ? { beatCap: CONFIG.beatCap } : {}, CONFIG.swing && CONFIG.swing.length ? { swing: CONFIG.swing } : {},
+      CONFIG.conventionPrior && Object.keys(CONFIG.conventionPrior).length ? { conventionPrior: CONFIG.conventionPrior } : {}, { tables: tables });
     const W = Object.assign({ sha256: sha256(JSON.stringify(body)) }, body, {
       training: { references: truth.length, holdout: 'excluded (fnv1a32(id) % 5 == 0)', performances: trainRows.length,
         sets: CONFIG.train, l2: CONFIG.l2, loss: f.loss, fitted: f.cases, data_sha256: dataSha,
@@ -396,6 +410,18 @@ async function main() {
       };
       evaluation.cv = Object.assign(pooled(oof), { byRow: CONFIG.train.length > 1 ? CONFIG.train.map((t, i) => pooled(oof.filter(c => c.trainRow === i))) : null,
         'long-x4': pooled(oofLong), 'pop-x4': pooled(oofPop) });
+      /* the rule that chose conventionPrior: out-of-fold right and metre with 2/4 lowered by d nats when no downbeats are heard (the
+         performances without downbeats, where it acts; those with downbeats are not touched) */
+      const pooledAt = (list, d) => {
+        const byW = new Map();
+        list.forEach(c => { const key = c.w.join(','); if (!byW.has(key)) byW.set(key, []); byW.get(key).push(c); });
+        return mergeEval(Array.from(byW.values()).map(cs => evaluate(cs, cs[0].w, { '2/4': -d })), K);
+      };
+      const noDown = oof.filter(c => !c.down);
+      evaluation.cv.conventionSweep = { performances: noDown.length, at: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.75, 1, 1.5, 2].map(d => {
+        const e = pooledAt(noDown, d);
+        return { d: d, right: e.right, metre: e.metre, '4/4': e.byMetre['4/4'] ? e.byMetre['4/4'].metre : null, '2/4': e.byMetre['2/4'] ? e.byMetre['2/4'].metre : null };
+      }) };
     }
     if (families) {
       evaluation.families = await familyEval(readJsonl(files.holdout0), readJsonl(ds.fam.swingHold), tables, f.weights);

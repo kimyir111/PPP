@@ -347,14 +347,17 @@ with the legacy quantiser and writer. The SUT snapshot includes `rec/` and its w
 mutation sees the model like its code. Design and results: docs/GOALS/G10_AUDIO_TO_SCORE.md section 18;
 `tools/rec_skeleton_report.py` prints a run's time-skeleton error analysis.
 
-**The skeleton on real covers (G10a-1b).** Two terms read from the weights (a model without them reads as ai5a-v1 did): a
+**The skeleton on real covers (G10a-1b).** Three terms read from the weights (a model without them reads as ai5a-v1 did): a
 reading's accent evidence grows with its beats only up to `beatCap` beats (the catalogue's performances are short, a cover is three to
 five minutes and repeats itself: without the cap a long piece drifted to 3/8 or 6/8), and every simple metre is
 also read swung at the weights' `swing` points (a swung or triplet-feel 4/4 was read as 3/8 or 6/8 at one and a half times its
-tempo); the humanizer's `swing` family is in the training data. No suite here plays a piece longer than the catalogue or swung all
+tempo); the humanizer's `swing` family is in the training data; and when no downbeats are heard, `conventionPrior` lowers every 2/4
+reading by 0.75 nats (2/4 and 4/4 at the same pulse differ only in where every other bar line is written; `--cv` writes the
+out-of-fold sweep that chose it). S6's threshold is the most accurate one that holds main's training precision (`train_rests.js`
+`minPrecision`). No suite here plays a piece longer than the catalogue or swung all
 through, so the held-out checks are the trainer's: `node rec/tools/train.js --families` (hold-out performances played three and six
 times in a row, the swing family, and the hold-out x/4 references swung all through, once and four times in a row; `--check
---families` reproduces them) and `tests/rec/skeleton-covers*.test.js` (cover-shaped synthetic pieces and four planted defects).
+--families` reproduces them) and `tests/rec/skeleton-covers*.test.js` (cover-shaped synthetic pieces, structural checks and nine planted defects).
 Real covers stay private (G10-D15): `node rec/tools/real-covers.js --heard DIR --truth FILE` reads heard notes and a person's
 statement of the metre from a folder outside the repository and converts them as the page does. Results: G10 section 28.
 

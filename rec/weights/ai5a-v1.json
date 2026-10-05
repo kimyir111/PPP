@@ -1,5 +1,5 @@
 {
- "sha256": "2f3d72c6162966fdfc0e167ed4afe8ff6df88ecabc0ef755e44d776f57b4faa1",
+ "sha256": "25b41bfbb7bddb17bdbadbec60564cab58bd3237668e2873936fbb21e94a7c3f",
  "schema": "ppp.rec-time-skeleton/1",
  "name": "ai5a",
  "version": "v1.1",
@@ -70,6 +70,9 @@
  "swing": [
   0.64
  ],
+ "conventionPrior": {
+  "2/4": -0.75
+ },
  "tables": {
   "families": {
    "simple": {

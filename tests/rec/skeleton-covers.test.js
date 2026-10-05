@@ -15,8 +15,8 @@ const REC = require(path.join(REPO, 'rec', 'index.js'));
 const FX = require('./covers-fixtures.js');
 const { pop, swung } = FX;
 const W = REC.loadWeights();
-/* the same weights without the two G10a-1b terms read at inference (no cap, no swung frames) */
-const WITHOUT = Object.assign({}, W, { beatCap: 0, swing: null });
+/* the same weights without the G10a-1b terms read at inference (no cap, no swung frames, no convention preference) */
+const WITHOUT = Object.assign({}, W, { beatCap: 0, swing: null, conventionPrior: null });
 const read = (p, w) => REC.skeleton(skeletonInput(p.notes), { weights: w || W });
 
 test('the committed model carries both terms: a beat cap within the training lengths and swung frames', () => {
@@ -24,6 +24,22 @@ test('the committed model carries both terms: a beat cap within the training len
   assert.ok(Array.isArray(W.swing) && W.swing.length >= 1 && W.swing.every(s => s > 0.5 && s < 0.75), 'swing ' + JSON.stringify(W.swing));
   assert.equal(W.weights.length, MODEL.FEATURES.length);
   assert.equal(MODEL.FEATURES[MODEL.FEATURES.length - 1], 'swing');
+  assert.ok(W.conventionPrior && W.conventionPrior['2/4'] < 0 && Object.keys(W.conventionPrior).length === 1, 'conventionPrior ' + JSON.stringify(W.conventionPrior));
+});
+
+test('the committed model is the trainer\'s configuration: the cap, the swing points, the convention preference (rec/tools/train.js CONFIG)', () => {
+  const x = FX.configCheck(REC);
+  assert.ok(x.ok, x.got + ' (want ' + x.want + ')');
+});
+
+test('a swung frame looks for each attack\'s written slot 1.5 times as far as the straight frame', () => {
+  const x = FX.windowCheck(REC);
+  assert.ok(x.ok, x.got);
+});
+
+test('the convention preference: 2/4 against 4/4 moves by the prior when no downbeats are heard, not when they are', () => {
+  const x = FX.priorCheck(REC);
+  assert.ok(x.ok, x.got + ' (want ' + x.want + ')');
 });
 
 test('scaled(): the per-beat evidence grows with the beats up to the cap, then stays; the other features do not move', () => {
