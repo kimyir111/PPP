@@ -178,7 +178,7 @@ jobs:
   nightly-rec:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 90                  # mutation-check --rec alone took 22 minutes on a runner (2026-10-03), the rec-arrange steps come on top
+    timeout-minutes: 90                  # mutation-check --rec alone took 22 minutes on a runner (2026-10-03), the rec-arrange steps come on top; the G10a-2b rec-hands-play / rec-arrange-play / rec-mutation-play steps add about 7-15 minutes (last green nightly-rec: 51 of 90 minutes, expected 62-66)
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }

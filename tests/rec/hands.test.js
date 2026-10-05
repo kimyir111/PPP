@@ -91,14 +91,7 @@ test('a left-hand broken chord in the treble stays in the left hand under a righ
     bar(c, mel).forEach(([t, m]) => groups.push([b * 2 + t, m])));
   const notes = piece(groups);
   const r = H.assign(notes);
-  /* every melody note in the right hand; the figure in the left, except (hands-v1.1, G10 section 26) the last F sharp of bar 2,
-     alone after the melody's last note, which S4 now gives the right hand AND flags as unsure (the real Beyer 52 reads 1.000) */
-  let moved = 0;
-  notes.forEach((n, i) => {
-    if (n.midi >= 72) { assert.equal(r.staff[i], 1, 'melody ' + n.midi + ' at tick ' + n.tick); return; }
-    if (r.staff[i] === 1) { moved++; assert.ok(r.conf[i] < 0.75, 'a figure note in the right hand is flagged: ' + n.midi + ' at tick ' + n.tick); }
-  });
-  assert.ok(moved <= 1, moved + ' figure notes in the right hand');
+  notes.forEach((n, i) => assert.equal(r.staff[i], n.midi >= 72 ? 1 : 2, 'midi ' + n.midi + ' at tick ' + n.tick));
 });
 
 test('a four-part chorale is read as a chorale: soprano and alto in the upper staff, tenor and bass in the lower', () => {
@@ -239,4 +232,35 @@ test('contextOf: a note an octave or more below or above within half a second, r
   assert.equal(X.layout(P1).part, 0);
   assert.equal(X.layout(P).span, X.SHAPES * X.CONTEXTS * (X.CAP + 1) * (X.CAP + 1));
   assert.equal(X.layout(P1).span, X.SHAPES * (X.CAP + 1) * (X.CAP + 1));
+});
+
+test('a price, not a wall (G10 section 26.3): one group no hand can play does not change the hands of the ordinary notes after it', () => {
+  /* eight bars of a left-hand bass note and a right-hand dyad on every half second, twelve notes struck at once (36 to 73: every
+     split gives one hand more than five keys), the same eight bars again. If a hard violation were an infinite price, every choice
+     for that group would cost the same, and the choices of the groups after it would be decided by nothing but the order the
+     search saw them in: a third of the later notes land in the wrong hand (measured: 32 of 96). Each violation costs w instead. */
+  const notes = [], gold = [];
+  let t = 0;
+  const bars = () => {
+    for (let b = 0; b < 8; b++) {
+      for (let i = 0; i < 4; i++, t += 0.5) {
+        [[40 + (i % 2) * 7, 2], [67 + (i % 3), 1], [72 + (i % 2), 1]].forEach(([m, h]) => { notes.push({ midi: m, on: t, attack: t }); gold.push(h); });
+      }
+    }
+  };
+  bars();
+  const clusterFrom = notes.length, cluster = [36, 38, 41, 45, 48, 52, 55, 59, 62, 66, 69, 73];
+  cluster.forEach(m => { notes.push({ midi: m, on: t, attack: t }); gold.push(0); });
+  t += 0.5;
+  bars();
+  /* the fixture is what it says: whichever notes of the group go to the left hand (the lowest k), some hand is over the line */
+  const Q = MODEL.params.play;
+  const s = { rLo: 64, rHi: 76, lLo: 36, lHi: 48, cR: 70, cL: 42, tR: 0, tL: 0, nR: 2, nL: 2, iR: 0, iL: 0 };
+  const g = { t: t - 0.5, p: cluster, shape: X.shapeOf(cluster) };
+  for (let k = 0; k <= cluster.length; k++) assert.ok(X.hardOf(Q, s, g, k) >= 1, 'a split with ' + k + ' notes in the left hand is playable');
+  const r = H.assign(notes);
+  const right = (from, to) => { let ok = 0, n = 0; for (let i = from; i < to; i++) if (gold[i]) { n++; if (r.staff[i] === gold[i]) ok++; } return [ok, n]; };
+  assert.deepEqual(right(0, clusterFrom), [96, 96], 'before the group');
+  assert.deepEqual(right(clusterFrom + cluster.length, notes.length), [96, 96], 'after the group');
+  cluster.forEach((m, i) => assert.ok(r.staff[clusterFrom + i] === 1 || r.staff[clusterFrom + i] === 2, 'the group itself still gets hands'));
 });
