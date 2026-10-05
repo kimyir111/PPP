@@ -347,6 +347,17 @@ with the legacy quantiser and writer. The SUT snapshot includes `rec/` and its w
 mutation sees the model like its code. Design and results: docs/GOALS/G10_AUDIO_TO_SCORE.md section 18;
 `tools/rec_skeleton_report.py` prints a run's time-skeleton error analysis.
 
+**The skeleton on real covers (G10a-1b).** Two terms read from the weights (a model without them reads as ai5a-v1 did): a
+reading's accent evidence grows with its beats only up to `beatCap` beats (the catalogue's performances are short, a cover is three to
+five minutes and repeats itself: without the cap a long piece drifted to 3/8 or 6/8), and every simple metre is
+also read swung at the weights' `swing` points (a swung or triplet-feel 4/4 was read as 3/8 or 6/8 at one and a half times its
+tempo); the humanizer's `swing` family is in the training data. No suite here plays a piece longer than the catalogue or swung all
+through, so the held-out checks are the trainer's: `node rec/tools/train.js --families` (hold-out performances played three and six
+times in a row, the swing family, and the hold-out x/4 references swung all through, once and four times in a row; `--check
+--families` reproduces them) and `tests/rec/skeleton-covers*.test.js` (cover-shaped synthetic pieces and four planted defects).
+Real covers stay private (G10-D15): `node rec/tools/real-covers.js --heard DIR --truth FILE` reads heard notes and a person's
+statement of the metre from a folder outside the repository and converts them as the page does. Results: G10 section 28.
+
 **The hands of v2 (G10a-2, stage S4, `rec/hands.js`).** Under `recording: 'v2'` the staff of every note comes from `rec/hands.js`
 (a beam Viterbi over the onset groups with costs counted on the catalogue's written hands, hold-out excluded:
 `rec/weights/hands-v1.json`; `node tests/bench/tools/train_hands.js` after `python tests/bench/tools/hands_data.py`, `--check`

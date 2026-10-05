@@ -11,6 +11,8 @@
    a Bayesian choice of metre x phase x tactus whose likelihoods and weights were learned from the catalogue. The
    posterior of the winner (a softmax over every reading) and the share of the posterior on readings that put the bar
    lines in the same places are its confidence. Readings whose quarter tempo falls outside 36-260 are not considered.
+   G10a-1b (G10 section 28): a model with `swing` also reads every simple metre swung (its eighths long-short), and a model
+   with `beatCap` lets the accent evidence of a reading grow with its beats only up to that many.
 
    Node and browser (window.PPPRecModules.metre).
    ========================================================================== */
@@ -25,9 +27,13 @@
   const QPM_LO = 36, QPM_HI = 260;
   const F = model.FEATURES.length;
 
+  /* opts.swing (G10a-1b, the weights' `swing`): the long-short points s of the swung frames; each (track, rho) of a simple metre
+     is then also read swung at each s, its quarters starting on the frame's beat or half a beat later (a reading's bar phase
+     says which). Compound metres are never swung (their eighths are the beat's thirds already). */
   function hypotheses(att, cls, tracks, tables, opts) {
     opts = opts || {};
     const sigma = opts.sigma || 0.03;
+    const swings = opts.swing || [];
     const list = [];
     const frames = [];
     tracks.forEach((tr, ti) => {
@@ -35,10 +41,21 @@
         const fr = model.frame(att, cls, tr, rho, sigma, opts.downbeats);
         if (!(fr.qpm >= QPM_LO && fr.qpm <= QPM_HI)) return;
         frames.push(fr);
+        const f0 = frames.length - 1;
         model.METRES.forEach((m, mi) => {
           if (opts.metres && opts.metres.indexOf(m.key) < 0) return;
-          for (let phi = 0; phi < m.barQ - 1e-9; phi += model.PHASE_STEP_Q) list.push({ track: ti, rho: rho, mi: mi, phi: phi, qpm: fr.qpm, fr: frames.length - 1 });
+          for (let phi = 0; phi < m.barQ - 1e-9; phi += model.PHASE_STEP_Q) list.push({ track: ti, rho: rho, mi: mi, phi: phi, qpm: fr.qpm, fr: f0 });
         });
+        swings.forEach(s => [0, model.R / 2].forEach(o => {
+          const fs = model.frame(att, cls, tr, rho, sigma, opts.downbeats, { s: s, o: o });
+          frames.push(fs);
+          const fi = frames.length - 1;
+          model.METRES.forEach((m, mi) => {
+            if (m.compound || (opts.metres && opts.metres.indexOf(m.key) < 0)) return;
+            for (let phi = 0; phi < m.barQ - 1e-9; phi += model.PHASE_STEP_Q)
+              if (Math.round(phi * model.R) % model.R === o) list.push({ track: ti, rho: rho, mi: mi, phi: phi, qpm: fr.qpm, fr: fi, swing: s });
+          });
+        }));
       });
     });
     const X = new Float64Array(list.length * F);
@@ -52,9 +69,9 @@
     return { list: list, X: X, nBeats: nBeats, frames: frames, n: att.length };
   }
 
-  function scaledRow(H, i, alpha, out) {
+  function scaledRow(H, i, alpha, out, cap) {
     const fv = H.X.subarray(i * F, i * F + F);
-    return model.scaled(fv, H.n, alpha, out, H.nBeats[i]);
+    return model.scaled(fv, H.n, alpha, out, H.nBeats[i], cap);
   }
 
   function softmax(scores) {
@@ -67,15 +84,17 @@
     return p;
   }
 
-  /* weights: { tables, weights: [F numbers], alpha, sigma } (rec/weights/*.json) */
+  /* weights: { tables, weights: [F numbers], alpha, sigma, beatCap?, swing? } (rec/weights/*.json; a model without beatCap or
+     swing - ai5a-v1 - reads as it was trained: no cap, no swung frames) */
   function choose(att, cls, tracks, W, opts) {
-    opts = Object.assign({ sigma: W.sigma }, opts || {});
+    opts = Object.assign({ sigma: W.sigma, swing: W.swing || null }, opts || {});
     const H = hypotheses(att, cls, tracks, W.tables, opts);
     if (!H.list.length) return null;
     const sc = new Float64Array(H.list.length), row = new Float64Array(F);
+    const cap = W.beatCap || 0;
     let bi = 0;
     for (let i = 0; i < H.list.length; i++) {
-      scaledRow(H, i, W.alpha, row);
+      scaledRow(H, i, W.alpha, row, cap);
       sc[i] = model.score(row, W.weights);
       if (sc[i] > sc[bi]) bi = i;
     }
@@ -93,7 +112,7 @@
       if (sameBars(h, best, tracks, att)) agree += p[i];
     });
     for (const k in metrePost) metrePost[k] = Math.round(metrePost[k] * 1e4) / 1e4;
-    return { best: Object.assign({}, best, { features: Array.from(scaledRow(H, bi, W.alpha, row)), score: sc[bi] }), posterior: p[bi],
+    return { best: Object.assign({}, best, { features: Array.from(scaledRow(H, bi, W.alpha, row, cap)), score: sc[bi] }), posterior: p[bi],
       confidence: agree, metrePosterior: metrePost, slots: slots, count: H.list.length };
   }
 

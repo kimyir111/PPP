@@ -80,7 +80,8 @@
       metrePosterior: ch.metrePosterior,
       model: { name: W.name, version: W.version, sha256: W.sha256 || null },
       report: { tracks: tracks.map(t => Math.round(t.period * 1e4) / 1e4), readings: ch.count,
-        chosen: { track: ch.best.track, audio: !!tracks[ch.best.track].audio, rho: ch.best.rho, phi: ch.best.phi, metre: m.key } }
+        chosen: Object.assign({ track: ch.best.track, audio: !!tracks[ch.best.track].audio, rho: ch.best.rho, phi: ch.best.phi, metre: m.key },
+          ch.best.swing ? { swing: ch.best.swing } : {}) }
     };
   }
 
