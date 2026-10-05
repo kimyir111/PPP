@@ -2357,3 +2357,362 @@ One excerpt per piece, so a piece's weak bars elsewhere are not seen; the excerp
 ### 27.6 Verification
 
 `npm run test:review` (137 tests, 48 of them new: `tests/review/h10-excerpt.test.js` 7, `h10-pack.test.js` 7, `h10-packet.test.js` 20, `h10-page.test.js` 12 and `h10-collect.test.js` 2; the browser tests skip with a reason if puppeteer is missing). The leak scan has a mutation test (a word in the introduction, a class and an id that name an arm, a drawing attribute, a title suffix, a build stamp, the seed in a comment and a script comment are each caught); the page's own options have four planted defects in a copy of the page (a classic branch that loses `exactBars` or `closeGaps` or asks for v2, v2 never asked for), each caught. The `gate` job does not run `test:review` (it needs puppeteer); the Lead reads the PR's `gate` check for everything else.
+
+## 28. G10a-1b: the skeleton on real covers (2026-10-05; implementer on Opus, AI-5a)
+
+Worktree `D:/PPP-g10a1b`, branch `g10-a1b` from main `0b5944b`. **The finding** (the Lead, 2026-10-05): six real YouTube piano
+covers (p1-p6; p1 is the teacher's piece of 25.3), collected with the app's own in-browser transcription (`review/h10/collect.js`);
+the user, a piano teacher, confirmed that p2, p4, p5 and p6 are in 4/4 (p1 and p3 unconfirmed). v2 read p2 as 3/8 at quarter 180
+(304 bars) and p4 as 3/8 at quarter 129 (343 bars); the classic conversion wrote p5 and p6 in 6/8 bars of three quarters. The
+benchmark had not seen it. This phase finds the cause by measurement, fixes it in S1-S2 with two terms whose form follows from the
+cause (the weights carry them; a model without them reads as ai5a-v1 did), and leaves S3-S9 as they were (S6's weights refitted on
+the new skeleton's output, no code change: 28.3). **The six pieces are an external, private check** (G10-D15: their heard notes,
+titles and links stay outside the repository, this record names them p1-p6): nothing was fitted on them and no value was chosen on
+them; 28.4 says where they were looked at while choosing.
+
+### 28.1 Baselines reproduced
+
+At `0b5944b`, unchanged: `node rec/tools/train.js --check` "same" (115 s). The six pieces through the page's own conversion
+(`rec/tools/real-covers.js`, 28.3) give the Lead's table: v2 p1 4/4 at 162 (89 bars), **p2 3/8 at 180 (304)**, p3 4/4 at 97 (122),
+**p4 3/8 at 129 (343)**, p5 4/4 at 132 (136), p6 4/4 at 140 (77); classic p1 4/4 at 162, p2 4/4 at 121, p3 4/4 at 193, p4 4/4 at 172,
+**p5 and p6 6/8 at 89 and 93** (bars of three quarters, 1.35-1.45 s; the Lead's table read them as 3/4 from the bar length, the
+MusicXML says 6/8). Against the user's statement v2 is right on 2 of 4, the classic conversion on 2 of 4 (not the same two).
+
+### 28.2 Error analysis by cause
+
+Scratch tools (the score of every reading and each feature's share of it, the skeleton on windows of each piece, where the attacks
+fall inside the beat; the notes stay private), then the same causes made measurable on the catalogue.
+
+**The decision tables** (ai5a-v1; contributions are weight x scaled feature, in nats; nb = the beats the reading's accent evidence
+counts; coll and repPc, under 0.2, left out):
+
+p2 (163 s, 653 attacks; the user: 4/4):
+
+| reading | score | nb | kern | fill | bass+ioi+size | accents (bdur, bbass, bharm, bsize, bjoint) | first+last | tempo | rep | metre bias |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **3/8, quarter 180 (chosen)** | **3.52** | 910 | -0.18 | -3.79 | 3.03 | 1.21, -0.53, 1.69, -1.34, 8.16 = **9.19** | -0.68 | -2.54 | 2.21 | -3.50 |
+| 6/8, quarter 180 | 3.46 | 304 | -0.18 | -3.78 | 2.16 | -0.55, 0.07, 3.52, -0.02, 3.54 = 6.56 | -0.73 | -2.17 | 2.29 | -0.56 |
+| 4/4, quarter 120 | 0.08 | 304 | -1.51 | -4.64 | 1.18 | 0.38, -0.07, 2.59, 0.40, 0.37 = 3.67 | -1.60 | 1.16 | 1.98 | 0 |
+
+p4 (245 s, 622 attacks; the user: 4/4):
+
+| reading | score | nb | kern | fill | bass+ioi+size | accents | first+last | tempo | rep | metre bias |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **3/8, quarter 129 (chosen)** | **-1.18** | 1,027 | -1.08 | -6.95 | -0.28 | -2.16, 1.43, 2.53, -1.23, 8.45 = **9.02** | -0.68 | 0.57 | 1.86 | -3.50 |
+| 4/4, quarter 86 | -4.04 | 343 | -0.40 | -6.89 | 0.29 | -1.03, 0.16, 0.49, -0.07, 1.63 = 1.18 | -0.82 | 0.71 | 1.97 | 0 |
+| 4/4, quarter 171 (the classic's octave) | -4.05 | 685 | -0.31 | -7.22 | 2.87 | -11.29, 0.67, 0.66, -1.37, 12.34 = 1.01 | -0.60 | -1.53 | 1.81 | 0 |
+
+p5 and p6 are not v2 failures: v2 reads them 4/4 at 132 and 140 (metre posterior 0.55 and 0.60; the next readings 2/4 at 130, -1.0
+nats, and 6/8 at 140, -1.1 nats). The classic conversion hears the same quarter (133-140) and groups it by three (`compoundVsThree`,
+18.2): its own long-standing error, which this phase does not touch (the classic path stays byte-identical, 28.7).
+
+**The pulse is not what is wrong.** In p2 and p4 the wrong reading and the right one share their beat: p2's 3/8 bar and 6/8 dotted
+quarter (0.50 s) are the 4/4 quarter at 120; p4's 3/8 bar (0.70 s) is the 4/4 quarter at 86. What differs is how that beat is divided
+(three against two) and grouped (one, two or four to the bar). A tempo or tactus prior gives both readings the same value, and the
+per-metre tempo prior already charges 3/8 and 6/8 at quarter 180 2.2-2.5 nats more than 4/4 at 120, the metre bias 3.5 more for 3/8.
+The winners take it back in the beat accents: 9.2 nats on p2, 9.0 on p4, against 3.7 and 1.2 for 4/4.
+
+**Cause 1: the evidence of a long piece outgrows every prior, and 3/8 counts three times the beats.** A reading's accent evidence is
+its mean per-beat log ratio times the square root of the beats it counts (alpha 0.5, chosen by cross-validation, 18.4); its tempo,
+metre and first-onset terms are one number a piece. The catalogue's performances are short: the right readings of the 2,570 training
+performances count 31 / 61 / 123 / 334 beats (10th percentile, median, 90th, max; 34 s median, 56 s at the 90th percentile); the covers
+300-550 (4/4) and 900-1,030 (3/8). A 3/8 reading counts every eighth as a beat (2/4, 3/4, 4/4 and 2/2 count quarters, 6/8, 9/8 and 12/8
+dotted quarters), so on the same music it holds three times the beats of a 4/4 reading and its sum grows the fastest; its learned bias
+balanced that on the catalogue's lengths, not on a cover's. And what its tables reward, an onset with a long note on "beat 1" and
+little on "beats 2-3", is what any music shows between its beat and that beat's subdivisions.
+- On the pieces: p4 read in windows is 4/4 at 86 in 4 of 4 windows of 60 s and 6 of 8 of 20 s; in windows of 120 s and whole, 3/8 at
+  129. The six pieces each played three times in a row (8-15 minutes): p1 4/4 -> 2/2, p3 4/4 -> 2/4; six times: p5 -> 2/2, p6 -> 3/8 at
+  210.
+- On the catalogue (the hold-out performances without beats, never trained on, played k times in a row: `train.js repeated()`): metre
+  0.620 (x1) -> 0.577 (x3) -> 0.514 (x6), 4/4 0.91 -> 0.73 -> 0.63, **4/4 -> 3/8 in 0 -> 10 -> 23 of 100 performances**.
+- Synthetic (`tests/rec/covers-fixtures.js`): a march, a jig and a straight pop bar played 96 bars are read 6/8 at 75, 3/8 at 134 and
+  3/8 at 180; at 8 and 32 bars each is right.
+
+**Cause 2: a swung or triplet-feel 4/4 has no simple reading that fits it.** p2's attacks on its 0.50-s beat: 43 % on the beat, 31 % at
+two thirds of it, 13 % at one third, **none at one half** (the other five pieces: 13-40 % at one half, 1-7 % at two thirds). A simple
+reading puts the off-beat eighths on triplet slots, which the catalogue almost never fills (their snap and fill priors are the lowest of
+the simple family), and pays in timing and fill (-1.33 and -0.86 nats against 6/8 on p2); a compound reading puts them on its eighths.
+So p2 is 6/8 at 180 in every window from 20 to 120 s (3/8 whole: cause 1 on top). On the catalogue: the humanizer's swing family (half
+of the four-bar blocks swung) reads 4/4 at 0.86 against 0.91 straight on the hold-out; the hold-out x/4 references swung all through
+(`train.js swungAll()`, the "pop" family) 0.596 overall, 0.473 played four times in a row (4/4 0.87 -> 0.63). A pop bar swung at 0.65 is
+3/8 at 180 at 8, 32 and 96 bars.
+
+**A metre prior for user recordings would not fix this honestly.** Lowering the compound metres' biases until p2 and p4 read 4/4
+(3.5 nats on ai5a-v1) costs the compound metres what they have: training 6/8 0.59 -> 0.20, 3/8 0.49 -> 0.10; hold-out 6/8 1.00 -> 0.50,
+3/8 0.58 -> 0.42. The covers fail for the two causes above, not because 4/4 is rarer in the catalogue.
+
+### 28.3 What was built
+
+| Piece | File | What it is |
+| --- | --- | --- |
+| the beat cap | `rec/model.js` `scaled()` | A reading's accent evidence (the five per-beat features: its mean per beat times the square root of the beats it counts) grows with its beats only up to the weights' `beatCap` (100); past it, the mean times the square root of 100. Every reading of a long piece then weighs its accents as a typical training piece does, whatever its beat unit (a 3/8 reading's threefold count included), and the per-piece priors keep their trained weight. A reading of at most 100 beats is scaled as before. |
+| swung frames | `rec/model.js` `frame()`, `swingHeard()` / `swingWritten()`; `rec/metre.js` `hypotheses()` | Every (track, rho) of a simple metre is also read swung at each of the weights' `swing` points: the second eighth of every written quarter heard at s of the quarter, everything inside the quarter moved with it (the humanizer's own swing map), each written slot's timing term measured where the swing puts it. A swung frame's quarters start on the frame's beat or half a beat later; a reading takes the one its bar phase says. Compound metres are never swung. A new feature `swing` (1 on a swung reading) is the fitted price of claiming swing. How each beat is written stays S3's (`rec/grid.js`: swing8 written straight, or triplets); `report.chosen.swing` says the skeleton read the piece swung. |
+| the training | `rec/tools/train.js` CONFIG | `beatCap` 100, `swing` [0.64], and a third training row: the humanizer's `swing` and `swing+of` families on the training references (half of the four-bar blocks swung 1.6-2:1, the truth written straight), seed 105 (no suite and no other model uses it). Labels unchanged: a swung reading is right when its metre, tempo and bar lines are. The readings are extracted on worker threads (`--workers N`; the same bytes for any N, checked with 1, 3, 5 and 8). `--cv` now also scores the out-of-fold training references played four times in a row (`long-x4`) and swung all through and played four times (`pop-x4`): the rule that chose the cap (28.4) is in the evaluation file. `trainByRow` and `cv.byRow` give the first two rows alone, which is what ai5a-v1's numbers compare with. `--out DIR` (development) writes an experiment's files elsewhere. |
+| the model | `rec/weights/ai5a-v1.json` | version `v1.1` (the file keeps its name: the page loads it by name), 26 weights, `beatCap`, `swing`; the tables are the same counts (the catalogue did not change). 31 KB. A model without `beatCap` and `swing` reads as ai5a-v1 did: with ai5a-v1's own weights this branch's rec/ gives main's skeleton on 688 of 688 performances (the hold-out, a seventh of the training performances, the six pieces). |
+| held-out families | `rec/tools/train.js --families` | Evaluated only, never fitted: the hold-out performances without beats played 3 and 6 times in a row (`repeated()`: each copy a whole number of bars later), the humanizer's swing family on the hold-out references (once, six times), and the "pop cover" family (the hold-out x/4 references swung all through, `swungAll()`, s from 0.60 to 0.667 by id, once and four times in a row). In `rec/tools/ai5a-v1.evaluation.json`; `--check --families` reproduces them. |
+| the private tier | `rec/tools/real-covers.js` | `--heard DIR --truth FILE [--repeat K] [--json OUT]`: every heard-notes file of a folder outside the repository through the page's own conversion (classic and v2: `review/lib/appcode.js convertHeard`, Import.finishHeard's options read out of the page, the plausibility step) against a person's statement of the metre (`{"format": "ppp-real-truth/1", "items": {"p2": {"metre": "4/4", "source": ...}}}`); refuses any path inside the repository, prints ids only, exit 1 when a confirmed piece is misread. |
+| tests | `tests/rec/skeleton-covers.test.js`, `covers-fixtures.js`, `skeleton-covers-mutation.test.js`, `real-covers.test.js` | The cap's arithmetic (a piece k times as long weighs the same past the cap, as does a reading with three times the beats), the swing map and its inverse, the swung readings' phases, the readings of a model without the terms, the trainer's family transforms, and cover-shaped synthetic pieces (a march, a waltz and a jig played 96 bars, a pop bar straight at 32 bars and swung at 8, 32 and 96; the pop bar straight at 96 bars is a `todo`, 28.8). **Mutation check:** four planted defects in a copy of rec/ (no cap, no swung frames, the swing not heard, the quarter phase ignored), each caught by the cover-shaped cases or a check of the swung readings' phases; the copy without a defect passes them all. `tests/rec/real-covers.test.js`: the private runner refuses the repository, prints ids, judges by the truth file. The bench's rec-mutation-v2 cannot see these terms (its performances are short and straight), so they are guarded here. |
+| S6 | `rec/weights/ai5b-rests-v1.json`, `rec/tools/ai5b-rests-v1.evaluation.json` | Refitted by `train_rests.js` with no change of code or form: its rows are the v2 conversion's candidate silences, which follow the skeleton, and `--check` in the gate requires the refit (the G10a-2b precedent). |
+
+### 28.4 Choosing the cap (on the training references), and the one choice the six pieces made
+
+The cross-validation of 18 cannot choose a cap: its performances are as short as the training ones, and on them every cap changes
+little (the first column below). So `train.js --cv` now also scores, out of fold, the first training row's performances played four
+times in a row (`long-x4`, 2,056 performances) and its x/4 references swung all through and played four times (`pop-x4`, 1,776):
+references the fold's tables and weights never saw, at a cover's length. **Rule: the cap with the best out-of-fold `long-x4` metre
+accuracy, among the caps whose as-written cross-validation stays within one standard error (0.009) of the uncapped model's.** Two forms
+of the cap were measured, each refitted with the swung frames and the swing family (everything else as shipped):
+
+| cap | CV right (as written) | out-of-fold long-x4 metre | out-of-fold pop-x4 metre | hold-out metre | family long-x6 | family pop-x4 | p1 / p3 / p4 | fixtures failing |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| none (swung frames only) | 0.610 | 0.534 | 0.580 | 0.689 | 0.519 | 0.585 | 4/4 162 / 4/4 97 / **3/8 129** | march, jig, pop (96 bars) |
+| **100 beats (shipped)** | 0.603 | **0.622** | 0.695 | 0.686 | 0.611 | 0.691 | 4/4 162 / 2/4 97 / 4/4 86 | pop straight, 96 bars |
+| 150 beats | 0.601 | 0.613 | 0.680 | 0.686 | 0.625 | 0.681 | 4/4 162 / 2/4 97 / 4/4 86 | march, pop straight |
+| 200 beats | 0.601 | 0.601 | 0.666 | 0.689 | 0.620 | 0.670 | 4/4 162 / 2/4 97 / 4/4 86 | march, pop straight |
+| 30 seconds | 0.602 | **0.628** | 0.697 | 0.702 | 0.639 | 0.691 | **3/4 81** / 4/4 97 / 4/4 86 | none |
+| 45 seconds | 0.601 | 0.622 | 0.699 | 0.689 | 0.630 | 0.702 | **3/4 81** / 2/4 97 / 4/4 86 | none |
+| 60 seconds | 0.604 | 0.619 | 0.690 | 0.686 | 0.611 | 0.686 | **3/4 81** / 2/4 97 / 4/4 86 | none |
+| 90 seconds | 0.606 | 0.597 | 0.650 | 0.683 | 0.630 | 0.676 | 4/4 162 / 2/4 97 / **3/8 129** | pop straight |
+| 120 seconds | 0.608 | 0.573 | 0.627 | 0.686 | 0.577 | 0.633 | 4/4 162 / 2/4 97 / **3/8 129** | jig, pop straight |
+
+(A cap in seconds weighs a longer performance's accents as if it lasted that long: every reading's beats counted times
+cap / duration, so 3/8 keeps its threefold count at any length. A cap in beats stops every reading at the same count.)
+
+**The choice.** Within each form the rule picks the smallest cap tried (30 s; 100 beats: the grid of beats started at 100, about the
+85th percentile of the training readings' beats, so that the cap leaves most catalogue performances as they were trained). Between the
+two forms the rule does not decide: 0.628 against 0.622 on 2,056 performances is half a standard error (0.011). Every duration cap that
+reads p4 right (30-60 s) reads **p1, the teacher's own piece, 3/4 at 81** (a 0.08-nat tie with 4/4 at 162 that the per-piece priors
+win once the accents are capped: the 4/4 reading puts the first onset off its bar line, a first-onset term of -2.05 nats against -0.12); the beat cap keeps p1 at 4/4 at 162. **The beat
+cap at 100 is shipped, and that choice between two forms the catalogue cannot tell apart was made with the six pieces in view.** The
+beat form also removes the second half of cause 1 (3/8's threefold count), which the duration form keeps. Its cost: a straight pop bar
+played 96 bars is read 6/8 at quarter 60 (28.8).
+
+### 28.5 Results
+
+**The skeleton alone** (`rec/tools/ai5a-v1.evaluation.json`; ai5a-v1 -> v1.1; a row's metre per class is the share read in the right
+metre; "right" = metre, quarter tempo within 4 % and 90 % of the bar lines). The training set and the cross-validation now hold the
+swing row too; the "rows 1-2" lines are the first two training rows alone, what ai5a-v1's numbers compare with:
+
+| set | n | skeleton right | metre | tempo | 4/4 | 3/4 | 2/4 | 6/8 | 3/8 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| training, rows 1-2 (in sample) | 2,570 | 0.668 -> 0.663 | 0.716 -> 0.711 | - | - | - | - | - | - |
+| cross-validation, rows 1-2 (out of fold) | 2,570 | 0.613 -> 0.612 | 0.668 -> 0.666 | - | 0.906 -> 0.905 | 0.688 -> 0.683 | 0.212 -> **0.220** | 0.550 -> 0.500 | 0.344 -> **0.367** |
+| cross-validation, the swing row | 514 | - -> 0.558 | - -> 0.652 | | | | | | |
+| hold-out | 312 | 0.644 -> **0.654** | 0.683 -> **0.686** | 0.869 -> 0.865 | 0.927 | 0.697 | 0.183 | 1.000 | 0.611 -> **0.667** |
+| out-of-fold training references played 4x (long-x4) | 2,056 | 0.430 -> **0.541** | 0.515 -> **0.622** | | | | | | |
+| out-of-fold, swung all through, played 4x (pop-x4) | 1,776 | 0.398 -> **0.610** | 0.486 -> **0.695** | | | | | | |
+| family long-x3 (hold-out played 3x) | 208 | 0.510 -> **0.572** | 0.577 -> **0.630** | 0.813 -> **0.856** | 0.730 -> **0.870** | 0.591 -> **0.614** | 0.225 -> 0.150 | 1.000 | 0.667 -> 0.583 |
+| family long-x6 | 208 | 0.442 -> **0.558** | 0.514 -> **0.611** | 0.697 -> **0.832** | 0.630 -> **0.860** | 0.545 -> **0.568** | 0.225 -> 0.125 | 0.750 -> **1.000** | 0.667 -> 0.583 |
+| family swing (hold-out) | 104 | 0.577 -> **0.587** | 0.625 -> **0.635** | 0.837 -> **0.856** | 0.860 -> **0.900** | 0.727 -> 0.682 | 0.000 | 1.000 | 0.667 |
+| family swing-x6 | 104 | 0.413 -> **0.596** | 0.471 -> **0.635** | 0.635 -> **0.856** | 0.600 -> **0.880** | 0.545 -> **0.727** | 0.050 | 1.000 | 0.667 -> 0.500 |
+| family pop (hold-out x/4, swung all through) | 188 | 0.521 -> **0.622** | 0.596 -> **0.681** | 0.777 -> **0.862** | 0.870 -> **0.910** | 0.523 -> **0.682** | 0.050 -> **0.175** | - | - |
+| family pop-x4 | 188 | 0.394 -> **0.633** | 0.473 -> **0.691** | 0.574 -> **0.840** | 0.630 -> **0.890** | 0.500 -> **0.705** | 0.100 -> **0.250** | - | - |
+
+(The out-of-fold long and pop rows of ai5a-v1 are the same rule run with ai5a-v1's configuration and no swing frames: scratch
+`cvlong.js`, the cap-0 column.) What lost: 6/8 in the cross-validation (0.550 -> 0.500, 9 of 180 performances; the hold-out's six 6/8
+performances do not lose, rec-core's 6/8 rows gain), 2/4 and 3/8 on the long families (a long 2/4 etude now reads 4/4 more often: the cap
+gives the per-piece priors their trained weight back, and the 2/4 bias is one of them), 3/4 on the swing family (-1 of 22).
+
+**The six pieces** (private, the page's own conversion, `rec/tools/real-covers.js`):
+
+| piece | the user | classic | v2 before | **v2 now** | v2 now, the piece played 3x in a row |
+| --- | --- | --- | --- | --- | --- |
+| p1 (the teacher's piece) | - | 4/4 at 162, 90 bars | 4/4 at 162, 89 | **4/4 at 162, 89** (posterior 0.48) | 4/4 at 162 |
+| p2 | 4/4 | 4/4 at 121, 76 | 3/8 at 180, 304 | **4/4 at 120, 76, swung** (0.73) | 4/4 at 120, swung |
+| p3 | - | 4/4 at 193, 241 | 4/4 at 97, 122 | **2/4 at 97, 242** (0.26) | 4/4 at 97 |
+| p4 | 4/4 | 4/4 at 172, 174 | 3/8 at 129, 343 | **4/4 at 86, 86** (0.80) | 4/4 at 171 |
+| p5 | 4/4 | 6/8 at 89, 177 | 4/4 at 132, 136 | **4/4 at 132, 136** (0.53) | 4/4 at 129 |
+| p6 | 4/4 | 6/8 at 93, 103 | 4/4 at 140, 77 | **4/4 at 140, 77** (0.50) | 4/4 at 140 |
+
+The four confirmed pieces are 4/4 (v2 4 of 4, classic 2 of 4), and stay 4/4 when played three times in a row (before: p1 2/2, p3 2/4, p5
+2/2, p6 3/8 at six times). **p3 is not as it was:** 2/4 at 97, twice the bars at the same tempo (the same music with a bar line every
+two beats instead of four), 0.06 nats ahead of 4/4 at 97, with 4/4 still the larger metre posterior (0.51 against 0.31); unconfirmed by
+the user, and played three times it reads 4/4 again. It is the 2/4-against-4/4 convention of 18.2 on a tie; the training draw alone
+moves it (in a development run with the swing family drawn at seed 104 and a cap of 200 beats it read 4/4). **Tempo octaves:** p1 162 and
+p2 120 agree with the classic; p4 at 86 is half the classic's 172 (both v2 and the user's 4/4 are consistent with either; played three
+times v2 says 171); p3 at 97 is half the classic's 193. The user cannot confirm tempo.
+
+**The cover-shaped fixtures** (`tests/rec/covers-fixtures.js`): ai5a-v1 misreads the march, the jig and the straight pop bar at 96 bars
+and the swung pop bar at 8, 32 and 96 bars; v1.1 reads all of them right except the straight pop bar at 96 bars (6/8 at quarter 60:
+28.8).
+
+**The benchmark** (v2 rows only; the legacy and app rows are identical, 28.7; old -> new, bold where better; n = cases). Columns: usable,
+rec.usable, metre, playback tempo, beat placement, structure, note values, downbeat F1.
+
+| suite | beats | metre class | n | usable | rec.usable | metre | tempo | beat pl. | structure | values | downbeat F1 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| rec-smoke | none | all | 48 | 0.667 -> 0.625 | 0.312 -> 0.271 | 0.708 -> 0.688 | 0.917 -> **0.938** | 0.688 -> 0.646 | 0.708 -> 0.688 | 0.875 -> **0.917** | 0.864 -> 0.857 |
+| rec-smoke | none | 4/4 | 21 | 0.714 -> 0.619 | 0.333 -> 0.286 | 0.810 -> 0.762 | 0.810 -> **0.857** | 0.762 -> 0.667 | 0.810 -> 0.762 | 0.762 -> **0.810** | 0.965 -> 0.933 |
+| rec-smoke | none | 3/4 | 18 | 0.778 -> **0.833** | 0.278 | 0.778 -> **0.833** | 1.000 | 0.778 -> **0.833** | 0.778 -> **0.833** | 0.944 -> **1.000** | 0.830 -> **0.867** |
+| rec-smoke | none | 2/4 | 6 | 0.000 | 0.000 | 0.000 | 1.000 | 0.000 | 0.000 | 1.000 | 0.546 |
+| rec-smoke | none | 6/8 | 3 | 1.000 -> 0.667 | 1.000 -> 0.667 | 1.000 -> 0.667 | 1.000 | 1.000 -> 0.667 | 1.000 -> 0.667 | 1.000 | 1.000 -> 0.889 |
+| rec-core | none | all | 564 | 0.371 -> **0.374** | 0.204 -> 0.193 | 0.585 -> **0.590** | 0.849 -> 0.848 | 0.537 -> **0.544** | 0.606 -> **0.622** | 0.789 -> 0.787 | 0.761 -> **0.766** |
+| rec-core | none | 4/4 | 220 | 0.582 -> 0.564 | 0.295 -> 0.282 | 0.932 -> 0.905 | 0.891 -> **0.900** | 0.745 -> 0.723 | 0.836 -> 0.814 | 0.741 -> **0.755** | 0.869 -> 0.852 |
+| rec-core | none | 3/4 | 108 | 0.398 -> **0.444** | 0.194 | 0.676 -> **0.713** | 0.907 | 0.667 -> **0.722** | 0.694 -> **0.778** | 0.917 -> 0.898 | 0.786 -> **0.839** |
+| rec-core | none | 2/4 | 96 | 0.000 | 0.000 | 0.031 | 0.823 -> 0.792 | 0.021 | 0.073 -> **0.104** | 0.708 -> 0.698 | 0.497 -> **0.506** |
+| rec-core | none | 6/8 | 64 | 0.406 | 0.312 -> 0.297 | 0.547 -> **0.562** | 0.750 -> 0.719 | 0.688 -> 0.672 | 0.719 -> 0.688 | 0.828 | 0.859 -> 0.852 |
+| rec-core | none | 3/8 | 36 | 0.333 -> **0.361** | 0.250 -> 0.194 | 0.389 -> **0.500** | 0.722 -> **0.778** | 0.361 -> **0.472** | 0.444 -> **0.528** | 0.750 -> 0.722 | 0.752 -> **0.766** |
+| rec-core | oracle-noisy | all | 282 | 0.518 -> **0.521** | 0.230 -> 0.213 | 0.780 -> **0.791** | 0.865 -> **0.872** | 0.791 | 0.894 -> 0.887 | 0.869 -> **0.872** | 0.956 -> 0.954 |
+| rec-core | oracle-noisy | 4/4 | 110 | 0.564 -> **0.573** | 0.209 -> 0.182 | 0.891 -> **0.909** | 0.918 -> **0.945** | 0.845 | 0.927 -> 0.909 | 0.864 -> **0.873** | 0.965 -> 0.957 |
+| rec-core | oracle-noisy | 3/4 | 54 | 0.593 -> 0.574 | 0.167 -> 0.148 | 0.926 -> 0.907 | 0.926 -> 0.907 | 0.926 -> 0.907 | 0.926 | 0.944 | 0.964 -> 0.963 |
+| rec-core | oracle-noisy | 2/4 | 48 | 0.688 | 0.479 | 0.833 | 0.833 | 0.833 | 0.958 | 0.812 | 0.995 |
+| rec-core | oracle-noisy | 6/8 | 32 | 0.344 -> **0.375** | 0.219 | 0.531 -> **0.594** | 0.812 | 0.656 -> **0.688** | 0.812 | 0.812 | 0.945 |
+| rec-core | oracle-noisy | 3/8 | 18 | 0.444 | 0.167 -> 0.111 | 0.833 | 0.833 | 0.722 | 0.889 | 0.889 | 1.000 |
+| rec-robust | none | all | 141 | 0.440 -> 0.433 | 0.142 | 0.596 -> **0.610** | 0.823 -> **0.858** | 0.539 | 0.624 | 0.787 -> **0.801** | 0.777 -> 0.771 |
+| rec-robust | none | 4/4 | 55 | 0.673 -> 0.618 | 0.145 -> 0.127 | 0.909 -> **0.945** | 0.855 -> **0.945** | 0.745 -> 0.709 | 0.855 -> 0.818 | 0.709 -> **0.764** | 0.886 -> 0.860 |
+| rec-robust | none | 3/4 | 27 | 0.519 -> **0.556** | 0.222 | 0.741 | 0.926 | 0.741 -> **0.778** | 0.741 -> **0.815** | 0.963 -> 0.926 | 0.832 -> **0.868** |
+| rec-robust | none | 2/4 | 24 | 0.000 | 0.000 | 0.042 | 0.750 | 0.042 | 0.083 | 0.708 | 0.513 -> 0.504 |
+| rec-robust | none | 6/8 | 16 | 0.438 -> **0.500** | 0.250 -> **0.312** | 0.438 -> **0.500** | 0.688 | 0.562 | 0.625 | 0.812 | 0.801 -> **0.814** |
+| rec-robust | none | 3/8 | 9 | 0.444 | 0.222 | 0.556 | 0.778 | 0.444 | 0.667 | 0.889 -> 0.778 | 0.836 -> 0.799 |
+| rec-robust | oracle-noisy | all | 141 | 0.652 -> 0.645 | 0.227 -> 0.213 | 0.801 -> 0.794 | 0.879 -> **0.887** | 0.809 | 0.887 | 0.872 -> 0.858 | 0.954 -> **0.956** |
+| rec-robust | oracle-noisy | 4/4 | 55 | 0.745 | 0.218 | 0.891 | 0.927 -> **0.964** | 0.836 | 0.909 -> 0.891 | 0.855 | 0.959 -> 0.955 |
+| rec-robust | oracle-noisy | 3/4 | 27 | 0.667 | 0.148 -> 0.111 | 0.926 -> 0.889 | 0.926 | 0.926 | 0.926 -> **0.963** | 0.926 -> 0.889 | 0.965 -> **0.970** |
+| rec-robust | oracle-noisy | 2/4 | 24 | 0.792 -> 0.750 | 0.375 -> 0.333 | 0.917 -> 0.875 | 0.917 -> 0.875 | 0.917 -> 0.875 | 0.958 | 0.875 -> 0.833 | 0.998 |
+| rec-robust | oracle-noisy | 6/8 | 16 | 0.500 | 0.250 -> 0.188 | 0.625 -> **0.688** | 0.812 | 0.688 -> **0.750** | 0.812 | 0.812 | 0.935 -> **0.956** |
+| rec-robust | oracle-noisy | 3/8 | 9 | 0.556 -> **0.667** | 0.333 -> **0.444** | 0.667 -> **0.778** | 0.667 -> **0.778** | 0.667 -> **0.778** | 0.889 | 0.889 | 1.000 |
+| rec-grid | none | all | 141 | 0.433 -> 0.418 | 0.191 -> 0.149 | 0.589 -> 0.574 | 0.837 | 0.518 -> 0.504 | 0.603 -> 0.582 | 0.801 -> 0.794 | 0.758 -> 0.748 |
+| rec-grid | none | 4/4 | 55 | 0.673 -> 0.618 | 0.291 -> 0.218 | 0.927 -> 0.891 | 0.873 | 0.709 -> 0.655 | 0.836 -> 0.764 | 0.745 -> **0.764** | 0.862 -> 0.822 |
+| rec-grid | none | 3/4 | 27 | 0.444 -> **0.519** | 0.148 | 0.667 -> **0.704** | 0.926 | 0.630 -> **0.704** | 0.667 -> **0.778** | 0.926 -> 0.889 | 0.769 -> **0.830** |
+| rec-grid | none | 2/4 | 24 | 0.000 | 0.000 | 0.042 | 0.792 | 0.000 | 0.042 | 0.708 | 0.514 -> 0.505 |
+| rec-grid | none | 6/8 | 16 | 0.500 -> 0.438 | 0.312 -> 0.250 | 0.562 -> 0.500 | 0.750 | 0.688 -> 0.625 | 0.750 -> 0.688 | 0.812 | 0.852 -> 0.831 |
+| rec-grid | none | 3/8 | 9 | 0.444 | 0.222 -> 0.111 | 0.444 | 0.667 | 0.444 | 0.556 -> 0.444 | 0.889 -> 0.778 | 0.798 -> 0.759 |
+| rec-grid | oracle | all | 564 | 0.544 -> **0.560** | 0.218 -> 0.204 | 0.770 -> **0.787** | 0.849 -> **0.879** | 0.777 -> **0.803** | 0.883 | 0.844 -> **0.856** | 0.954 -> **0.956** |
+| rec-grid | oracle | 4/4 | 220 | 0.645 -> **0.655** | 0.186 -> 0.168 | 0.891 -> **0.895** | 0.923 -> **0.945** | 0.845 -> **0.850** | 0.914 -> 0.905 | 0.836 -> **0.850** | 0.961 -> 0.959 |
+| rec-grid | oracle | 3/4 | 108 | 0.620 | 0.231 -> 0.213 | 0.926 -> 0.898 | 0.917 -> **0.954** | 0.907 -> **0.944** | 0.917 -> **0.944** | 0.944 -> **0.954** | 0.962 -> **0.971** |
+| rec-grid | oracle | 2/4 | 96 | 0.552 -> **0.594** | 0.312 | 0.781 -> **0.823** | 0.781 -> **0.823** | 0.781 -> **0.823** | 0.938 -> **0.948** | 0.750 -> **0.792** | 0.991 -> **0.994** |
+| rec-grid | oracle | 6/8 | 64 | 0.422 -> **0.438** | 0.281 -> 0.250 | 0.531 -> **0.625** | 0.797 -> **0.812** | 0.672 -> **0.734** | 0.812 | 0.859 | 0.941 -> **0.956** |
+| rec-grid | oracle | 3/8 | 36 | 0.444 -> **0.500** | 0.250 | 0.722 -> **0.778** | 0.722 -> **0.778** | 0.667 -> **0.750** | 0.889 | 0.833 | 1.000 |
+| replay-of-v2 | cover-pedal | all | 20 | 0.300 | - | 0.750 -> 0.700 | 0.900 -> 0.850 | 0.700 -> 0.650 | 0.750 -> 0.700 | 0.950 | 0.829 -> 0.815 |
+| hold-out-slice | none | all | 520 | 0.421 -> **0.429** | 0.215 -> 0.210 | 0.644 -> **0.648** | 0.852 -> **0.858** | 0.550 -> **0.556** | 0.606 -> **0.627** | 0.779 -> 0.777 | 0.745 -> **0.762** |
+| hold-out-slice | none | 4/4 | 250 | 0.560 -> **0.568** | 0.232 -> 0.216 | 0.924 -> **0.932** | 0.944 -> **0.952** | 0.748 -> **0.760** | 0.820 | 0.760 -> **0.768** | 0.838 -> **0.839** |
+| hold-out-slice | none | 3/4 | 110 | 0.482 | 0.264 -> **0.273** | 0.673 -> 0.636 | 0.873 -> 0.864 | 0.627 -> 0.609 | 0.536 -> **0.600** | 0.864 -> 0.809 | 0.736 -> **0.774** |
+| hold-out-slice | none | 2/4 | 100 | 0.010 -> **0.030** | 0.000 -> **0.010** | 0.010 -> **0.050** | 0.610 -> **0.660** | 0.010 -> **0.030** | 0.220 -> **0.260** | 0.640 -> **0.670** | 0.520 -> **0.547** |
+| hold-out-slice | none | 6/8 | 10 | 0.900 | 0.900 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 0.995 |
+| hold-out-slice | none | 3/8 | 30 | 0.533 | 0.533 -> 0.500 | 0.633 | 1.000 -> 0.900 | 0.633 | 0.633 | 0.900 -> 0.867 | 0.878 |
+| hold-out-slice | oracle-noisy | all | 104 | 0.327 | 0.221 -> 0.212 | 0.808 -> 0.788 | 0.856 | 0.798 -> 0.779 | 0.856 -> 0.846 | 0.788 -> **0.798** | 0.958 -> **0.959** |
+| hold-out-slice | oracle-noisy | 4/4 | 50 | 0.220 -> 0.200 | 0.140 -> 0.120 | 0.940 -> 0.900 | 0.980 | 0.920 -> 0.880 | 0.880 -> 0.840 | 0.840 | 0.973 -> 0.958 |
+| hold-out-slice | oracle-noisy | 3/4 | 22 | 0.500 -> **0.545** | 0.227 | 0.864 -> **0.909** | 0.864 -> **0.909** | 0.864 -> **0.909** | 0.773 -> **0.818** | 0.864 -> **0.909** | 0.910 -> **0.947** |
+| hold-out-slice | oracle-noisy | 2/4 | 20 | 0.400 | 0.350 | 0.600 -> 0.550 | 0.600 -> 0.550 | 0.600 -> 0.550 | 0.950 | 0.550 | 0.998 |
+| hold-out-slice | oracle-noisy | 6/8 | 2 | 0.500 | 0.500 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
+| hold-out-slice | oracle-noisy | 3/8 | 6 | 0.500 | 0.500 | 0.667 | 0.833 | 0.667 | 0.833 | 0.667 | 0.947 |
+
+Nightly suites (against their baselines at `0b5944b`; v2 rows unless said):
+- **rec-full** (3,108 v2 cases, aggregates): usable 0.440 -> 0.437, rec.usable 0.189 -> 0.185, metre 0.695 -> **0.697**, playback tempo
+  0.860 -> **0.870**, beat placement 0.637 -> **0.639**, structure 0.716 -> **0.718**, note values 0.818 -> **0.824**, downbeat F1 0.809 ->
+  0.808; the swing family (all option sets) metre 0.547 -> **0.553**; **pieces with a tempo change** (72 cases, every option set) metre
+  0.389 -> 0.278 (8 cases, all v2 rows; the micro piece M22 among them); the app rows identical (the hold-out guard passes).
+- **rec-arrange-core / -full / -play** (the one-note arranger on v2 graphs): levels made 0.984 / 0.979 unchanged, **0.953 -> 0.969** on the
+  octave-textured covers (one more piece arranged); melody kept 0.977 = 0.977 / 0.979 -> 0.980 / 0.262 -> 0.258; harmony agreement 0.754 ->
+  0.748 / 0.774 -> 0.770 / 0.714 -> 0.708; hard violations 0; the three levels a little less distinct (0.206 -> 0.183 on rec-arrange-core
+  without beats).
+- **rec-hands-play** (as written and textured, 386 v2 cases): hand accuracy 0.944 = 0.944, crossing 0.003 = 0.003, G5a hard violations
+  28.8 -> 28.2 per 100 bars; metre 0.604 -> 0.591 (5 cases), usable 0.389 -> 0.376.
+
+**What lost on the benchmark, and why** (read case by case, `scratchpad` `micro.js`):
+- rec-core, 4/4, beats none: metre 0.932 -> 0.905 (6 of 220). Of the 15 4/4 performances that lost their metre on rec-core (both beat
+  conditions; 11 won), 11 are three micro pieces: M02 (an Alberti bass) and M15 (wide chords) now read 2/4 (the 2/4-against-4/4
+  convention; M02 already with the swung frames and the swing family alone, M15 with the cap), M22 (a tempo change) 3/4 or 6/8 in more of
+  its families. The other four are Czerny 599/027 (2/4), Czerny 849/001 (3/4), Beyer 028 (3/8, two families).
+- rec-core 3/4 oracle (-1 of 54), hold-out slice 3/4 none (-4 of 110: 0.673 -> 0.636; rec-core 3/4 none +4 of 108), rec-grid none 6/8
+  (-1 of 16) and 4/4 (-2 of 55), rec-smoke 6/8 (M03, a jig, 3/8 in one family).
+- rec.usable falls in most suites (rec-core none 0.204 -> 0.193, rec-grid none 0.191 -> 0.149): it needs every gate and the notation
+  checks at once, and a changed bar line moves the rests and tuplets of every later bar.
+- replay-of-v2 (the browser model on rendered audio): one fixture of 20 lost (a 3/4 hymn, Take my life, now 6/8; it is also the hymn
+  rec-core's oracle row loses).
+- S6, refitted on the new skeleton's candidates: hold-out accuracy 0.752 -> 0.752, precision 0.634 -> 0.618, recall 0.493 -> 0.529
+  (threshold 0.45 -> 0.42).
+
+So the measured result is: **the long and swung material the covers are made of reads much better** (the families, the out-of-fold
+long rows, the six pieces), and **on the catalogue as it is played (short, straight) the change is a wash with swaps between metre
+classes**: aggregate metre and beat placement up on rec-core, rec-robust (none), rec-grid (oracle) and the hold-out slice (none), down on
+rec-smoke, rec-grid (none) and the hold-out slice (oracle) by one or two cases; the 4/4 class on rec-core (none) is the largest single
+loss (2.7 points, about 1.6 standard errors).
+
+### 28.6 Tried and lost (measured)
+
+- **A metre prior for user recordings** (28.2): the compound biases 3.5 nats lower read p2 and p4 as 4/4 and cost 6/8 0.59 -> 0.20 and
+  3/8 0.49 -> 0.10 on the training performances, 6/8 1.00 -> 0.50 and 3/8 0.58 -> 0.42 on the hold-out.
+- **A tempo or tactus prior** (a log-normal on the beat period): not built; on p2 and p4 the right and the wrong readings have the same
+  beat (28.2), so it cannot separate them.
+- **A cap in seconds** (28.4): ties with the beat cap on the training-side rule, reads p1 3/4 at 81 at every value that reads p4 right.
+- **A common count** (every reading of a performance scaled by the square root of its attacks: 3/8's threefold count gone, the growth
+  with length kept): hold-out metre 0.615 -> 0.601, the hold-out played six times 0.611 -> 0.495 (6/8 1.00 -> 0.00); with a cap of 300
+  attacks 0.606 and 0.548; p4 still 3/8 at 129 uncapped (scratch `dev.js`, the swing family at seed 104, against the beat cap of 200).
+- **The cap alone** (no swung frames): p4 4/4 at 86, p2 6/8 at 180 (cause 2 untouched).
+- **Swung frames without the swing family in the training data**: the swing weight comes out negative (-0.21 to -0.25: on straight
+  performances a swung reading is only ever a near miss) and p2 stays 6/8 at 180; the cross-validation gains (0.613 -> 0.619, the swung
+  frames also absorb timing noise).
+- **Two swing points** ([0.6, 2/3] instead of [0.64]): the same six readings and family numbers within a case or two, at 1.6-1.7 times
+  the time of one point (S0-S2 on p3, 305 s, with other jobs running: 216 ms none, 419 ms one point, 577 ms two).
+- **Deciding by mass instead of by the best reading**: (a) the reading whose class (metre, tempo within 4 %, bar lines) holds the most
+  posterior: neutral on the hold-out (metre 0.620 -> 0.620, 0.817 -> 0.817) and p1 stays 3/4 at the 60-s cap; (b) the metre with the most
+  posterior first (swung copies counted once), then its best reading: all six pieces as the user said, but on the training performances
+  3/4 0.75 -> 0.70 and 0.84 -> 0.74, 6/8 0.64 -> 0.55 (a metre with more phase readings, 4/4 above all, collects more mass whatever the
+  music). Not shipped.
+
+### 28.7 Identity, determinism, budget
+
+- **The classic path is byte-identical.** `run.py ab --a git:0b5944b --b worktree` + `ab_identical.py` on smoke 44, core 553, robust 282,
+  smoke-app 44, core-app 553, robust-app 282, replay-public 6, replay-of 20, replay-of-app 20: every case the same (status, metrics,
+  semantic projection). The legacy and app rows of rec-smoke (48 + 48), rec-core (846 + 846), rec-robust (282 + 282), the app rows of rec-arrange-smoke (32),
+  rec-arrange-core (84) and rec-hands-play (386) equal their baselines case by case, rec-full's app aggregate too. The 975 `arrangeSingleNote` requests of the app's one-note glue (325
+  catalogue pieces x 3 levels, `scratchpad/single975.js`) on this branch and on a `git archive` of `0b5944b`: byte-identical (933
+  arranged, 42 refused). `audio-score.js`, `scoregraph/`, the app page, `candidates/`, `arrangement/`, `realize/`, `repair/` and the code
+  of S3-S9 are untouched; S6's weights are refitted (28.3).
+- **ai5a-v1 inside the new code**: with ai5a-v1's weights (no `beatCap`, no `swing`) this branch's rec/ returns main's skeleton, JSON for
+  JSON, on 688 of 688 performances (the 312 hold-out performances, every seventh training performance, the six pieces); the trainer with
+  ai5a-v1's configuration reproduces ai5a-v1's weights and tables byte for byte (a 26th weight, swing, at 0) and its evaluation (training
+  0.668, hold-out 0.644, cross-validation 0.613).
+- **Determinism.** `node rec/tools/train.js --check` gives the same bytes with 1, 3, 5 and 8 worker threads on Windows (Python 3.13.5, Node 24.17) and in `node:24-bookworm` offline (Python 3.11.2, Node 24.21; an LF clone of `c0c315f`, the README's recipe); `train_rests.js --check` "same" on both. The `results.json` of rec-smoke (`3cddeffab617a136`), replay-of-v2 (`b31ad96322fe0389`) and replay-public-v2 (`0582a0b0966fc62f`) are byte-identical over three runs on Windows and the same on Linux; every `check` PASS against the new baselines.
+- **Mutation coverage** (`mutation-check --rec`, nightly-rec): rec-mutation (11), rec-mutation-keys (5), rec-mutation-pedal (6) and
+  rec-mutation-play (3) PASS; rec-mutation-v2: all 24 planted defects are a REGRESSION and the no-op is byte-identical, but the group
+  FAILs on one row exactly as main does: REC-V2-GRID-NO-CHORDS (S3, `MAX_GROUP` 1) is caught on notation.ioi.accuracy, notation.tuplets.f1
+  and rec.tuplet.recall, not on its three named metrics (rec.tuplet.precision 0.958 -> 0.952, the same numbers as the nightly-rec of
+  2026-10-04 at `0a19ba4`, which failed on this row). Not this phase's (S3 and its mutation are untouched); left to the Lead. The
+  skeleton's own four defects (V2-NO-ACCENTS, BAR-LINE-LATE, HALF-TEMPO, NO-AUDIO-BEATS) are caught as before.
+- **Budget (section 11).** S0-S2 on the real pieces, main against this branch on the same machine under the same load (other benchmark jobs running): p1 (139 s, 1,214 notes) 227 -> 310 ms, p3 (305 s, 2,589) 381 -> 572 ms, p5 (257 s, 2,273) 369 -> 638 ms: 1.4-1.7 times (the swung frames double the simple metres' readings). The whole conversion the page runs (its plausibility step included) 601 -> 769, 1,113 -> 1,330 and 1,066 -> 1,368 ms (+17-28 %). Unloaded, ai5a-v1's S0-S2 on p1 took 100-112 ms (18.3), so about 140-190 ms now: section 11's 300 ms for a 3-minute piece in Node holds; the page's whole conversion was 301 ms on p1 (25.1) and grows by the same share, well inside its 1 s. Weights 31.2 KB (31.0 before; the four rec/ models about 72 KB of the 200 KB budget). **Gate time**: about +1 minute (`train.js --check` 2 min 13 s locally with eight workers under load, against 1 min 55 s single-threaded before; the runner's four workers absorb the larger set of readings; the new unit tests about 30 s); the held-out families and the long cross-validation (8 minutes) are not in the gate.
+
+### 28.8 Limits, and what the numbers do not show
+
+1. **The catalogue result is mixed** (28.5): the change is for long and swung material, and the short, straight catalogue gains in some
+   metre classes and loses in others; the largest loss is 4/4 on rec-core without beats (-6 of 220), mostly micro pieces read 2/4.
+2. **p3 changed** (28.5): 2/4 at 97 against 4/4 at 97 before, on a 0.06-nat tie; unconfirmed; a different draw of the training data
+   reads it 4/4. The brief asked for p1 and p3 to stay as they were: p1 does, p3 does not.
+3. **The six pieces chose between two cap forms the catalogue cannot tell apart** (28.4): stated, not hidden. Nothing was fitted on them.
+4. **A straight pop bar played 96 bars reads 6/8 at quarter 60** (the fixtures' known limit, a `todo` test): past the cap the means
+   decide, and a coarse reading with few, clean beats can win by a tenth of a nat. The cap in seconds does not have this failure and has
+   the p1 one.
+5. **The swing weight is positive** (+0.97): a simple reading is read swung whenever swing costs it nothing, so a piece without off-beat
+   eighths (a march in quarters) reports `swing` in `report.chosen`. The notation does not follow it (S3 decides each beat), but the
+   report's swing flag means "read swung", not "is swung".
+6. **The humanizer swings half of the four-bar blocks at 1.6-2:1**; real swing is often lighter, heavier, or changes inside a piece; one
+   swing point (0.64) is read. Triplet-eighth textures with all three notes (12/8 feel in 4/4: 13 % of p2's attacks) are not in the
+   training data: tolerated, not modelled.
+7. **The six pieces are one teacher's choices and one transcription model** (the browser's Onsets & Frames); no real 6/8, 12/8 or 3/4
+   cover was among them, and that is where the swung frames could pull a compound or triple piece to 4/4 (on the catalogue's swing family
+   3/4 loses 1 of 22).
+8. **The benchmark still has no suite of long or swung performances**: the held-out families live in the trainer's evaluation and the
+   unit tests. A `repeat` texture and a fully swung profile in the bench would let the gate see this class of failure; recommended, not
+   done here (a bench change with its own relocks).
+
+### 28.9 Verification (commands)
+
+- `node rec/tools/train.js --check` (gate: the weights and the evaluation are what the training makes; `--workers N` gives the same
+  bytes for N = 1, 3, 5, 8) and `node rec/tools/train.js --check --cv --families` (the cross-validation with its long and pop rows and the
+  held-out families; not in the gate, about 8 minutes). `node tests/bench/tools/train_rests.js --check` (gate).
+- `npm run test:rec`: `tests/rec/skeleton-covers.test.js` (9 tests, one `todo`), `skeleton-covers-mutation.test.js` (5: the clean copy
+  and four planted defects), `real-covers.test.js` (3).
+- `python tests/bench/run.py mutation-check --rec` (nightly; 28.7).
+- `python tests/bench/run.py run --suite S` and `check --suite S` for rec-smoke, rec-core, rec-robust, rec-grid, rec-arrange-smoke,
+  replay-of-v2, replay-public-v2 (gate) and rec-full (`--shard K/4`, `merge-shards`), rec-arrange-core, rec-arrange-full, rec-hands-play,
+  rec-arrange-play (nightly): every one rebaselined with the reason "G10a-1b: the time skeleton on real covers".
+- The classic path: `python tests/bench/run.py ab --suite S --a git:0b5944b --b worktree` and
+  `python tests/scoregraph/tools/ab_identical.py --suite S`; `node scratchpad/single975.js <tree> <out>` on both trees.
+- The six pieces (private, outside the repository): `node rec/tools/real-covers.js --heard <dir> --truth <private truth.json>
+  [--repeat 3]`; the truth file holds the user's four statements of 4/4.
+
+**Roadmap line.** G10a-1b (AI-5a, Opus): the v2 skeleton on real covers. Two causes measured (the accents of a 3-5-minute piece outgrow
+every prior, 3/8 counting three beats per 4/4 beat; a swung 4/4 has no simple reading); fixed by a beat cap of 100 on the accent
+evidence and swung frames of the simple metres trained on the humanizer's swing family. The four confirmed covers 4/4 (v2 4 of 4, was 2;
+classic 2 of 4); long and swung held-out families +0.05 to +0.22 metre; the catalogue suites mixed (4/4 on rec-core -6 of 220, 3/4, 6/8,
+3/8 mostly up; rec.usable -0.01 to -0.04); p3 (unconfirmed) 4/4 -> 2/4 on a tie. Gate about +1 min.
