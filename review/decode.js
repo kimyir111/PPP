@@ -3,6 +3,7 @@
    G9c - decode a reviewer's ratings with the key.
 
      node review/decode.js --key <key.json> --ratings <ratings.json> [--out summary.json]
+     node review/decode.js --mode h10 --key <key.json> --ratings <ratings.json>     (G10a-5: the blind review of the recording conversion, review/h10/decode-h10.js)
 
    Joins the ratings file the reviewer's page exported (X / Y labels) with the key the builder wrote elsewhere (which of X and Y
    was G9 and which was the legacy engine, per item), and reports per arm. It refuses to join a key and a ratings file that
@@ -44,6 +45,7 @@ const mean = xs => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
 const r3 = v => v == null ? null : Math.round(v * 1000) / 1000;
 
 function decode(key, ratings) {
+  if (key && key.mode === 'h10') return require('./h10/decode-h10.js').decodeH10(key, ratings); /* G10a-5: the blind review of the recording conversion */
   if (!key || key.format !== 'ppp-review-key/1') throw new Error('not a review key file');
   if (!ratings || ratings.format !== 'ppp-review-ratings/1') throw new Error('not a ratings file exported by the review page');
   if (key.packetId !== ratings.packetId) throw new Error('the key is for packet ' + key.packetId + ' but the ratings are for packet ' + ratings.packetId);
@@ -140,6 +142,7 @@ function decode(key, ratings) {
 }
 
 function report(o) {
+  if (o.mode === 'h10') return require('./h10/decode-h10.js').reportH10(o);
   const L = [];
   const pc = v => v == null ? 'n/a' : (100 * v).toFixed(0) + '%';
   const ci = w => w ? '[' + pc(w[0]) + ', ' + pc(w[1]) + ']' : 'n/a';
@@ -172,11 +175,15 @@ function report(o) {
 function main() {
   const args = process.argv.slice(2);
   const opt = n => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : null; };
-  if (!opt('--key') || !opt('--ratings')) { console.log('usage: node review/decode.js --key <key.json> --ratings <ratings.json> [--out summary.json]'); process.exit(2); }
-  const o = decode(JSON.parse(fs.readFileSync(opt('--key'), 'utf8')), JSON.parse(fs.readFileSync(opt('--ratings'), 'utf8')));
+  if (!opt('--key') || !(opt('--ratings') || opt('--db'))) { console.log('usage: node review/decode.js [--mode h8|h9|h10] --key <key.json> --ratings <ratings.json> [--out summary.json]\n       node review/decode.js --mode h10 --key <key.json> --db <rows read from the artifact database> [--out summary.json]'); process.exit(2); }
+  const key = JSON.parse(fs.readFileSync(opt('--key'), 'utf8'));
+  if (opt('--mode') && opt('--mode') !== key.mode) throw new Error('--mode ' + opt('--mode') + ' but the key is for mode ' + key.mode);
+  /* H-10 answers kept by the page in the artifact database (review/h10/db-to-ratings.js) read like the exported file */
+  const ratings = opt('--db') ? require('./h10/db-to-ratings.js').dbToRatings(JSON.parse(fs.readFileSync(opt('--db'), 'utf8')), key.packetId) : JSON.parse(fs.readFileSync(opt('--ratings'), 'utf8'));
+  const o = decode(key, ratings);
   console.log(report(o));
   if (opt('--out')) fs.writeFileSync(opt('--out'), JSON.stringify(o, null, 1) + '\n');
 }
 
+module.exports = { decode, report, wilson, signTestP }; /* before main(): review/h10/decode-h10.js reads wilson and signTestP from here */
 if (require.main === module) { try { main(); } catch (e) { console.error(e.message || e); process.exit(1); } }
-module.exports = { decode, report, wilson, signTestP };

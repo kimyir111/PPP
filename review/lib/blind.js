@@ -40,4 +40,21 @@ function assign(items, seed) {
 }
 function cmp(a, b) { return a < b ? -1 : a > b ? 1 : 0; }
 
-module.exports = { assign, itemKey, hmac, sha256, MIN_SEED_LENGTH };
+/* G10a-5 (H-10): the same rule for two other arms. `items` carry a unique `id` (the collector's); the sides are given by the item's id, so the
+   assignment does not depend on the order the items were listed in. Items are ranked by HMAC(seed, 'xy|' + id); those at even ranks show
+   `first` as X, the others `second` (an even split: n even gives exactly half), and are shown in the order of HMAC(seed, 'order|' + id).
+   -> [{ id: 'i01', key, item, x: <arm>, y: <the other arm> }] in the order the reviewer sees them. */
+function assignArms(items, seed, first, second) {
+  if (seed == null || String(seed).length < MIN_SEED_LENGTH) throw new Error('the seed must be at least ' + MIN_SEED_LENGTH + ' characters (a short seed can be guessed from the manifest item order); omit --seed to get a random one');
+  const keyed = items.map(it => ({ item: it, key: String(it.id) }));
+  if (new Set(keyed.map(k => k.key)).size !== keyed.length) throw new Error('two items with the same id');
+  const byXy = keyed.slice().sort((a, b) => cmp(hmac(seed, 'xy|' + a.key), hmac(seed, 'xy|' + b.key)) || cmp(a.key, b.key));
+  const rank = new Map(byXy.map((k, i) => [k.key, i]));
+  const shown = keyed.slice().sort((a, b) => cmp(hmac(seed, 'order|' + a.key), hmac(seed, 'order|' + b.key)) || cmp(a.key, b.key));
+  return shown.map((k, i) => {
+    const x = rank.get(k.key) % 2 === 0 ? first : second;
+    return { id: 'i' + String(i + 1).padStart(2, '0'), key: k.key, item: k.item, x: x, y: x === first ? second : first };
+  });
+}
+
+module.exports = { assign, assignArms, itemKey, hmac, sha256, MIN_SEED_LENGTH };
