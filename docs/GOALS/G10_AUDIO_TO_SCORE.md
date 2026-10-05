@@ -2844,3 +2844,77 @@ precision. **The user's six covers, all 4/4: v2 6 of 6 (main 4 of 6; classic 4 o
 review's independent cover-shaped family +0.05 to +0.22 metre; the catalogue suites mixed (rec-core metre 0.585 -> 0.598, the hold-out
 slice 0.644 -> 0.640; rec-robust +1.0 false rests per 100 bars); p1 and p6 less decisive. Gate time about main's (+1.2 min) after a
 byte-identical speedup of the reading features.
+
+## 30. G10b-0: engine comparison packet (2026-10-06; implementer on Sonnet)
+
+Worktree `D:/PPP-g10b0`, branch `g10b-0-engine-packet` from `main` `da6c059`. **Tooling only**: nothing in `Piano Coach App.dc.html`, `server.js`, `rec/`, `audio-score.js`, `candidates/`,
+`arrangement/`, `realize/`, `repair/` or the weights changed (the builder works with whichever `rec/` is checked out and copies none of it); nothing is deployed; no real packet was built for the
+teacher (the Lead builds it, after the automatic 8va display of G10a-6 merges); nothing generated is committed. The H-10 packet of the classic-against-v2 comparison is **byte-identical** to
+`main`'s for the same notes and seed (checked on two fixture pieces: page, manifest and key).
+
+### 30.1 The question, and what was built
+
+The teacher's H-10 verdict (2026-10-05): v2 is at least as good as the classic conversion everywhere, but **both fail mostly on missing, extra and off-beat notes** - the ceiling of the
+in-browser model - and on the missing 8va display (G10a-6). The analyst's measurement (the U3 evidence): the helper ensemble (TransKun + Kong) hears about **1.6 times as many notes**; the browser
+lacks 30% of the notes two helper models agree on (6% to 49% by piece), and the helper's possible extras are single-model notes (15.8%). The question for the teacher's eyes: **are the scores
+written from the helper's notes better (the extra notes are real) or worse (extra clutter)?** H-10b answers it blind, on the same page.
+
+| Piece | File | What it is |
+| --- | --- | --- |
+| converter | `review/h10/helper-heard.js` | the helper's `notes-cuda.json` -> the heard-notes format of the collector: the accepted notes as `{ on, off, midi, vel }`, `duration`, `engine`; **no pedal, no beats** (the helper's own beats made v2 write bars 2-4 times too short as wired); the single-model `uncertainNotes` only counted; a missing or unusable file is reported |
+| item | `review/lib/h10-item.js` `buildEngineItem` | both note sets through the page's own v2 conversion (`APP.convertHeard(..., true)`, plausibility check included); one window of seconds chosen from the **browser** notes; part T for both, part A only when the arranger accepts **both**; the whole-piece facts and the **agreement** of the two readings (tempo, metre, bar length, where the bars begin, for the piece and for the excerpt) in the key |
+| excerpt | `review/lib/h10-excerpt.js` `pickExcerpt({ lengthArms })` | the H-10 rule on the browser's notes (the helper's density would pick another stretch); the default length is twelve of the browser's bars; each reading shows the bars that cover those seconds |
+| packet | `review/h10/packet.js`, `review/build.js --mode h10 --compare engine --heard-b` | the second folder is read per piece (a piece with no helper notes, a bad file, notes of other audio - the durations differ by more than 2 s - or a stray id is skipped **with its reason**); X or Y by `HMAC(seed, id)` (an even split); key with `compare: 'engine'`, both arms' facts, `agreement` flags, `DISAGREE` on the console |
+| page | `review/lib/page-h10.js` (`compare: 'engine'`) | the H-10 page; only the introduction differs ("two readings of the same recording", they may differ in notes, rests and bars; mark notes that are missing or not in the original), the title is "H-10b", and it says "this device", not "browser" |
+| vocabulary | `review/lib/h10-leak.js` | the word lists and the scan moved out of the test helper; the engine list (browser, helper, engine, TransKun, Kong, ensemble, onsets, cuda, gpu, `local` and `model` as words, the Korean words for browser, helper, engine, ensemble and local, ...); **the builder refuses to write a packet that carries one**, and warns about a title that does |
+| decode | `review/decode.js --mode h10 --compare engine`, `review/h10/decode-engine.js` | wins, losses and ties per source, pass rates, tags per source, per piece (what each reading wrote, what the excerpt drew, the arranger's outcome, the agreement flags), the visible differences (note heads, rests and tuplet brackets per excerpt), the counts split by agreeing and disagreeing pieces, the disclaimers; refuses a key that is not an engine key |
+
+### 30.2 How to run
+
+```
+node review/h10/helper-heard.js --from <root of pN/notes-cuda.json> --heard <browser heard dir> --out <helper heard dir>
+node review/build.js --mode h10 --compare engine --heard <browser heard dir> --heard-b <helper heard dir> --out <packet dir> --key-out <key dir> --jobs 3
+node review/decode.js --mode h10 --compare engine --key <key dir>/key.json --ratings ratings-h10-<id>.json     # or --db rows.json
+```
+
+`review/README.md`, "H-10b", has the options. Publish as H-10 was (`capabilities: { db: {}, downloads: true }`); the packet id differs from every H-10 packet, so the two reviews cannot mix in the database.
+
+### 30.3 Self-check on the six real pieces (p1-p6; browser notes from the collector, helper notes from the analyst's `work/pN/notes-cuda.json`, converted)
+
+Built to a scratch folder (never committed): 6 pieces, **2.71 MB** (limit 8 MB), **165 s** with 3 processes on a busy machine (139 s on another run; the slowest piece is the arranger's refusal
+retry on p5's helper notes, 156 s), packet `2711df3715a6`. Opened in headless Chrome at **390 px and 1100 px** (screenshots in the scratchpad, not committed): no sideways scroll, no network
+request, no console error; the DOM draws exactly what each reading's Score holds for **all 16 drawings in both layouts** (note heads and rests); both readings cover the browser-chosen window
+and the same seconds to within a bar for every piece; the answers survive a reload and reach the artifact database through the page's adapter (the page test); a fake answer set decodes to the
+per-source counts that an independent tally of the key gives (preference, pass, tags).
+
+| Piece | heard notes (browser / helper) | bars | tempo | metre | rests | tuplet brackets | excerpt (s; bars shown) | arranger (browser / helper) | agreement |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| p1 | 1,214 / 2,374 | 89 / 89 | 162 / 162 | 4/4 / 4/4 | 45 / 105 | 10 / 22 | 57.5-75.2 (17.8; 13 / 13) | ok / ok: **part A** | aligned (0.91 of the bar starts) |
+| p2 | 1,393 / 1,477 | 76 / 76 | 120 / 120 | 4/4 / 4/4 | 3 / 32 | 380 / 416 | 70.1-94.1 (24.0; 13 / 13) | ok / ok: **part A** | aligned (1.0) |
+| p3 | 2,589 / 3,244 | 122 / 121 | 97 / 97 | 4/4 / 4/4 | 19 / 47 | 62 / 85 | 137.6-167.5 (29.9; 13 / 14) | refused (UNREACHABLE) / refused: T only | **bar phase**: 0 of the excerpt aligned, the helper's barlines about 1.7-2.0 beats away |
+| p4 | 1,514 / 1,815 | 86 / **172** | 86 / **171** | 4/4 / 4/4 | 64 / 328 | 118 / 102 | 106.7-140.1 (33.5; 13 / **25**) | refused / refused: T only | **tempo octave**: the same downbeats, written twice as fast by the helper's notes |
+| p5 | 2,273 / 4,284 | 136 / 134 | 132 / 132 | 4/4 / 4/4 | 83 / 126 | 112 / 227 | 119.0-140.7 (21.7; 13 / 13) | ok / refused (hard violations): T only | **bar phase**: 0 of the excerpt aligned, about 2.1 beats away |
+| p6 | 1,302 / 2,930 | 77 / 77 | 140 / 140 | 4/4 / 4/4 | 12 / 54 | 21 / 26 | 58.2-78.9 (20.6; 14 / 14) | refused (hard violations) / ok: T only | aligned (0.987) |
+
+Both arms were written by v2 for all six pieces (no result thrown away by the plausibility check; no hands fallback was needed). **Part A exists for two pieces of six** (p1, p2): where one reading is
+arranged and the other refused (p5: only the browser's; p6: only the helper's) the packet shows T only, as H-10 does; that difference is in the key (`arranged`). v2 reads the **same metre (4/4) and the
+same tempo from both note sets in five of six pieces**; p3 and p5 read the same tempo and metre but put the barlines on other beats (the helper's bars begin about two beats away from the browser's, in
+the excerpt too), and p4's helper reading is a tempo octave (171 against 86 beats a minute: the same downbeats, so the barlines agree, but each bar holds half the time and the helper's excerpt is 25
+short bars against 13). **These three are flagged in the key and on the console (`DISAGREE`) and kept in the packet**: a verdict on them may be about the barlines and not the notes (`decode.js`
+splits the counts by agreeing and disagreeing pieces). The Lead decides whether to keep them for the teacher's eyes (drop them from the heard folder's `items.json`).
+
+### 30.4 Limits
+
+One excerpt per piece, one reviewer, six or so pieces: the intervals are wide. **The blinding is partial by nature**: the helper's score holds visibly more notes (1.06 to 2.25 times the browser's,
+mean 1.6) and more rests, so a preference can follow density without the reviewer knowing which is which; `decode.js` prints the heads, rests and tuplet brackets per excerpt and the heard counts. Both
+readings are **notes alone through v2**: no pedal and no beats for either, so the result says nothing about the helper path as it would ship with its beats and pedal (which, wired as it is, made v2 write
+bars two to four times too short). "Missing or extra notes" is one tag for both directions: her notes say which. The synthetic helper fixtures of the tests are derived from the repository's replay
+fixtures (a third above every fourth note, every ninth note kept apart as uncertain); no note of the teacher's pieces is in the repository.
+
+### 30.5 Verification
+
+`npm run test:review`: `tests/review/h10-engine.test.js` (22 tests, Node only: the converter, the bar agreement, the window from the browser's notes, whole packets built from the fixtures, determinism and
+order independence, the blind assignment, the key, what is drawn against the Score, part A only when both arrangers accept, the vocabulary scan **and its mutation test** (a word of the sources planted in
+the introduction, a class, an id, a drawing attribute, a script comment, the manifest, a Korean word, `local` as a word: each caught by both the test scan and the builder's own), the builder
+refusing a leaking link and warning about a leaking title, skipped pieces reported, identical readings, a reading the page threw away, decode of fake answers against the key, swapped sides, the command lines) and
+`h10-engine-page.test.js` (3 tests in headless Chrome, skipped with a reason if puppeteer is missing). All 162 review tests pass (the 137 existing ones unchanged). The `gate` job does not run `test:review`.
