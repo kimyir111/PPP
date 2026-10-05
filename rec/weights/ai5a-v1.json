@@ -1,8 +1,8 @@
 {
- "sha256": "eada10d5f62a8a89b6f5e6f60e81607b5110b1c0b0fdbf36113f0592caa26b76",
+ "sha256": "25b41bfbb7bddb17bdbadbec60564cab58bd3237668e2873936fbb21e94a7c3f",
  "schema": "ppp.rec-time-skeleton/1",
  "name": "ai5a",
- "version": "v1",
+ "version": "v1.1",
  "features": [
   "kern",
   "fill",
@@ -28,34 +28,36 @@
   "is9/8",
   "is12/8",
   "down",
-  "audio"
+  "audio",
+  "swing"
  ],
  "weights": [
-  2.905035,
-  4.741122,
-  7.661336,
-  5.3276,
-  5.396847,
-  4.789773,
-  -1.589673,
-  0.829747,
-  1.285386,
-  -0.532273,
-  1.368962,
-  0.741055,
-  0.588684,
-  1.11126,
-  2.648549,
-  -1.278227,
-  -1.734685,
-  -0.804546,
-  -3.727752,
-  -3.496429,
-  -0.556192,
-  -3.152667,
-  -2.42265,
-  9.538207,
-  4.319358
+  3.003218,
+  5.830768,
+  7.783225,
+  5.173998,
+  5.475406,
+  2.853897,
+  -1.773596,
+  1.285696,
+  1.201409,
+  -0.490372,
+  1.48894,
+  0.722618,
+  0.542752,
+  1.081486,
+  4.550158,
+  -1.190864,
+  -1.609158,
+  -0.684669,
+  -3.662297,
+  -2.432842,
+  0.044945,
+  -2.450376,
+  -2.062474,
+  8.887038,
+  3.919759,
+  0.968671
  ],
  "alpha": [
   0,
@@ -64,6 +66,13 @@
  "sigma": 0.03,
  "tight": 100,
  "maxTracks": 6,
+ "beatCap": 100,
+ "swing": [
+  0.64
+ ],
+ "conventionPrior": {
+  "2/4": -0.75
+ },
  "tables": {
   "families": {
    "simple": {
@@ -2071,7 +2080,7 @@
  "training": {
   "references": 259,
   "holdout": "excluded (fnv1a32(id) % 5 == 0)",
-  "performances": 2590,
+  "performances": 3108,
   "sets": [
    {
     "profiles": "cover,cover-pedal,human-real,cover+of",
@@ -2082,12 +2091,17 @@
     "profiles": "cover,cover-pedal+helper",
     "seeds": "103",
     "beats": "oracle-noisy"
+   },
+   {
+    "profiles": "swing,swing+of",
+    "seeds": "105",
+    "beats": "none"
    }
   ],
   "l2": 0.0001,
-  "loss": 1.118074,
-  "fitted": 2324,
-  "data_sha256": "5cb0150d31c714cfde36542f50cd8aca818e4edc4330c66bc2f888e84787ee1f",
+  "loss": 1.101242,
+  "fitted": 2778,
+  "data_sha256": "7d3687349ac1fe09f67fd35207be37a4fdceec896db6dd06c735ca6edf9628c4",
   "tool": "rec/tools/train.js",
   "data": "tests/bench/tools/rec_dataset.py (licence-clean catalogue, humanizer perform/3)"
  }

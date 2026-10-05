@@ -1,104 +1,104 @@
 {
  "schema": "ppp.rec-time-skeleton-evaluation/1",
- "weights_sha256": "eada10d5f62a8a89b6f5e6f60e81607b5110b1c0b0fdbf36113f0592caa26b76",
+ "weights_sha256": "25b41bfbb7bddb17bdbadbec60564cab58bd3237668e2873936fbb21e94a7c3f",
  "note": "skeleton right = metre, quarter tempo within 4 % and >= 90 % of the bar lines; reachable = some reading of the pulse tracks is right",
  "train": {
-  "n": 2570,
-  "right": 0.668093,
-  "metre": 0.715953,
-  "tempo": 0.868872,
-  "reachable": 0.90428,
+  "n": 3084,
+  "right": 0.660182,
+  "metre": 0.709144,
+  "tempo": 0.872892,
+  "reachable": 0.900778,
   "byMetre": {
    "12/8": {
-    "n": 10,
+    "n": 12,
     "right": 0,
     "metre": 0,
-    "tempo": 0.9,
+    "tempo": 0.916667,
     "reachable": 1
    },
    "2/2": {
-    "n": 50,
+    "n": 60,
     "right": 0,
     "metre": 0,
-    "tempo": 0.6,
+    "tempo": 0.583333,
     "reachable": 1
    },
    "2/4": {
-    "n": 400,
-    "right": 0.1925,
-    "metre": 0.21,
-    "tempo": 0.72,
-    "reachable": 0.7025
+    "n": 480,
+    "right": 0.160417,
+    "metre": 0.1625,
+    "tempo": 0.7375,
+    "reachable": 0.695833
    },
    "3/2": {
-    "n": 10,
+    "n": 12,
     "right": 0,
     "metre": 0,
-    "tempo": 1,
+    "tempo": 0.916667,
     "reachable": 0
    },
    "3/4": {
-    "n": 420,
-    "right": 0.742857,
-    "metre": 0.788095,
-    "tempo": 0.933333,
-    "reachable": 0.997619
+    "n": 504,
+    "right": 0.744048,
+    "metre": 0.769841,
+    "tempo": 0.93254,
+    "reachable": 0.998016
    },
    "3/8": {
-    "n": 90,
-    "right": 0.533333,
-    "metre": 0.544444,
-    "tempo": 0.766667,
-    "reachable": 0.933333
+    "n": 108,
+    "right": 0.546296,
+    "metre": 0.564815,
+    "tempo": 0.768519,
+    "reachable": 0.925926
    },
    "4/4": {
-    "n": 1340,
-    "right": 0.876866,
-    "metre": 0.94403,
-    "tempo": 0.942537,
-    "reachable": 0.970149
+    "n": 1608,
+    "right": 0.870647,
+    "metre": 0.947761,
+    "tempo": 0.945896,
+    "reachable": 0.96704
    },
    "5/4": {
-    "n": 10,
+    "n": 12,
     "right": 0,
     "metre": 0,
-    "tempo": 0.8,
+    "tempo": 0.916667,
     "reachable": 0
    },
    "6/4": {
-    "n": 50,
+    "n": 60,
     "right": 0,
     "metre": 0,
-    "tempo": 0.28,
+    "tempo": 0.3,
     "reachable": 0
    },
    "6/8": {
-    "n": 180,
-    "right": 0.572222,
-    "metre": 0.605556,
-    "tempo": 0.777778,
-    "reachable": 0.944444
+    "n": 216,
+    "right": 0.574074,
+    "metre": 0.625,
+    "tempo": 0.773148,
+    "reachable": 0.935185
    },
    "9/8": {
-    "n": 10,
-    "right": 0.2,
-    "metre": 0.2,
-    "tempo": 1,
+    "n": 12,
+    "right": 0.083333,
+    "metre": 0.083333,
+    "tempo": 0.916667,
     "reachable": 1
    }
   }
  },
  "holdout": {
   "n": 312,
-  "right": 0.644231,
+  "right": 0.650641,
   "metre": 0.682692,
-  "tempo": 0.86859,
+  "tempo": 0.865385,
   "reachable": 0.884615,
   "byMetre": {
    "2/4": {
     "n": 60,
-    "right": 0.183333,
-    "metre": 0.183333,
+    "right": 0.166667,
+    "metre": 0.166667,
     "tempo": 0.633333,
     "reachable": 0.783333
    },
@@ -111,23 +111,23 @@
    },
    "3/4": {
     "n": 66,
-    "right": 0.681818,
+    "right": 0.69697,
     "metre": 0.69697,
     "tempo": 0.878788,
     "reachable": 1
    },
    "3/8": {
     "n": 18,
-    "right": 0.611111,
-    "metre": 0.611111,
-    "tempo": 1,
+    "right": 0.666667,
+    "metre": 0.666667,
+    "tempo": 0.888889,
     "reachable": 1
    },
    "4/4": {
     "n": 150,
-    "right": 0.853333,
+    "right": 0.86,
     "metre": 0.926667,
-    "tempo": 0.966667,
+    "tempo": 0.973333,
     "reachable": 0.926667
    },
    "6/4": {
@@ -149,89 +149,1133 @@
  "cv": {
   "folds": 5,
   "by": "reference (fnv1a32(id) % 5)",
-  "n": 2570,
-  "right": 0.61284,
-  "metre": 0.668482,
-  "tempo": 0.857198,
-  "reachable": 0.90428,
+  "n": 3084,
+  "right": 0.609922,
+  "metre": 0.668936,
+  "tempo": 0.857977,
+  "reachable": 0.900778,
   "byMetre": {
    "12/8": {
-    "n": 10,
+    "n": 12,
     "right": 0,
     "metre": 0,
-    "tempo": 0.9,
+    "tempo": 0.916667,
     "reachable": 1
    },
    "2/2": {
-    "n": 50,
+    "n": 60,
     "right": 0,
     "metre": 0,
-    "tempo": 0.6,
+    "tempo": 0.583333,
     "reachable": 1
    },
    "2/4": {
-    "n": 400,
-    "right": 0.195,
-    "metre": 0.2125,
-    "tempo": 0.745,
-    "reachable": 0.7025
+    "n": 480,
+    "right": 0.164583,
+    "metre": 0.16875,
+    "tempo": 0.735417,
+    "reachable": 0.695834
    },
    "3/2": {
-    "n": 10,
+    "n": 12,
     "right": 0,
     "metre": 0,
     "tempo": 1,
     "reachable": 0
    },
    "3/4": {
-    "n": 420,
-    "right": 0.635714,
-    "metre": 0.688095,
-    "tempo": 0.919048,
-    "reachable": 0.997619
+    "n": 504,
+    "right": 0.636905,
+    "metre": 0.684524,
+    "tempo": 0.906746,
+    "reachable": 0.998016
    },
    "3/8": {
-    "n": 90,
-    "right": 0.322222,
-    "metre": 0.344445,
-    "tempo": 0.722222,
-    "reachable": 0.933333
+    "n": 108,
+    "right": 0.314815,
+    "metre": 0.333333,
+    "tempo": 0.712963,
+    "reachable": 0.925926
    },
    "4/4": {
-    "n": 1340,
-    "right": 0.827612,
-    "metre": 0.90597,
-    "tempo": 0.921642,
-    "reachable": 0.970149
+    "n": 1608,
+    "right": 0.836443,
+    "metre": 0.926617,
+    "tempo": 0.929104,
+    "reachable": 0.96704
    },
    "5/4": {
-    "n": 10,
+    "n": 12,
     "right": 0,
     "metre": 0,
-    "tempo": 0.9,
+    "tempo": 0.916667,
     "reachable": 0
    },
    "6/4": {
-    "n": 50,
+    "n": 60,
     "right": 0,
     "metre": 0,
-    "tempo": 0.24,
+    "tempo": 0.233334,
     "reachable": 0
    },
    "6/8": {
-    "n": 180,
-    "right": 0.511111,
-    "metre": 0.55,
-    "tempo": 0.772222,
-    "reachable": 0.944445
+    "n": 216,
+    "right": 0.472222,
+    "metre": 0.513889,
+    "tempo": 0.787037,
+    "reachable": 0.935185
    },
    "9/8": {
-    "n": 10,
+    "n": 12,
     "right": 0,
     "metre": 0,
     "tempo": 1,
     "reachable": 1
    }
+  },
+  "byRow": [
+   {
+    "folds": 5,
+    "by": "reference (fnv1a32(id) % 5)",
+    "n": 2056,
+    "right": 0.571985,
+    "metre": 0.637159,
+    "tempo": 0.856031,
+    "reachable": 0.888132,
+    "byMetre": {
+     "12/8": {
+      "n": 8,
+      "right": 0,
+      "metre": 0,
+      "tempo": 0.875,
+      "reachable": 1
+     },
+     "2/2": {
+      "n": 40,
+      "right": 0,
+      "metre": 0,
+      "tempo": 0.575,
+      "reachable": 1
+     },
+     "2/4": {
+      "n": 320,
+      "right": 0.0375,
+      "metre": 0.040625,
+      "tempo": 0.74375,
+      "reachable": 0.628125
+     },
+     "3/2": {
+      "n": 8,
+      "right": 0,
+      "metre": 0,
+      "tempo": 1,
+      "reachable": 0
+     },
+     "3/4": {
+      "n": 336,
+      "right": 0.583333,
+      "metre": 0.636905,
+      "tempo": 0.89881,
+      "reachable": 0.997024
+     },
+     "3/8": {
+      "n": 72,
+      "right": 0.291667,
+      "metre": 0.319444,
+      "tempo": 0.736111,
+      "reachable": 0.916667
+     },
+     "4/4": {
+      "n": 1072,
+      "right": 0.823694,
+      "metre": 0.923507,
+      "tempo": 0.923507,
+      "reachable": 0.964552
+     },
+     "5/4": {
+      "n": 8,
+      "right": 0,
+      "metre": 0,
+      "tempo": 1,
+      "reachable": 0
+     },
+     "6/4": {
+      "n": 40,
+      "right": 0,
+      "metre": 0,
+      "tempo": 0.25,
+      "reachable": 0
+     },
+     "6/8": {
+      "n": 144,
+      "right": 0.444444,
+      "metre": 0.486111,
+      "tempo": 0.784722,
+      "reachable": 0.930555
+     },
+     "9/8": {
+      "n": 8,
+      "right": 0,
+      "metre": 0,
+      "tempo": 1,
+      "reachable": 1
+     }
+    }
+   },
+   {
+    "folds": 5,
+    "by": "reference (fnv1a32(id) % 5)",
+    "n": 514,
+    "right": 0.807393,
+    "metre": 0.815175,
+    "tempo": 0.898833,
+    "reachable": 0.968872,
+    "byMetre": {
+     "12/8": {
+      "n": 2,
+      "right": 0,
+      "metre": 0,
+      "tempo": 1,
+      "reachable": 1
+     },
+     "2/2": {
+      "n": 10,
+      "right": 0,
+      "metre": 0,
+      "tempo": 0.6,
+      "reachable": 1
+     },
+     "2/4": {
+      "n": 80,
+      "right": 0.8125,
+      "metre": 0.8125,
+      "tempo": 0.8125,
+      "reachable": 1
+     },
+     "3/2": {
+      "n": 2,
+      "right": 0,
+      "metre": 0,
+      "tempo": 1,
+      "reachable": 0
+     },
+     "3/4": {
+      "n": 84,
+      "right": 0.880952,
+      "metre": 0.892857,
+      "tempo": 0.940476,
+      "reachable": 1
+     },
+     "3/8": {
+      "n": 18,
+      "right": 0.555555,
+      "metre": 0.555555,
+      "tempo": 0.666667,
+      "reachable": 1
+     },
+     "4/4": {
+      "n": 268,
+      "right": 0.91791,
+      "metre": 0.929104,
+      "tempo": 0.97388,
+      "reachable": 0.992537
+     },
+     "5/4": {
+      "n": 2,
+      "right": 0,
+      "metre": 0,
+      "tempo": 0.5,
+      "reachable": 0
+     },
+     "6/4": {
+      "n": 10,
+      "right": 0,
+      "metre": 0,
+      "tempo": 0.2,
+      "reachable": 0
+     },
+     "6/8": {
+      "n": 36,
+      "right": 0.555556,
+      "metre": 0.555556,
+      "tempo": 0.833333,
+      "reachable": 1
+     },
+     "9/8": {
+      "n": 2,
+      "right": 0,
+      "metre": 0,
+      "tempo": 1,
+      "reachable": 1
+     }
+    }
+   },
+   {
+    "folds": 5,
+    "by": "reference (fnv1a32(id) % 5)",
+    "n": 514,
+    "right": 0.564202,
+    "metre": 0.649805,
+    "tempo": 0.824903,
+    "reachable": 0.883268,
+    "byMetre": {
+     "12/8": {
+      "n": 2,
+      "right": 0,
+      "metre": 0,
+      "tempo": 1,
+      "reachable": 1
+     },
+     "2/2": {
+      "n": 10,
+      "right": 0,
+      "metre": 0,
+      "tempo": 0.6,
+      "reachable": 1
+     },
+     "2/4": {
+      "n": 80,
+      "right": 0.025,
+      "metre": 0.0375,
+      "tempo": 0.625,
+      "reachable": 0.6625
+     },
+     "3/2": {
+      "n": 2,
+      "right": 0,
+      "metre": 0,
+      "tempo": 1,
+      "reachable": 0
+     },
+     "3/4": {
+      "n": 84,
+      "right": 0.607143,
+      "metre": 0.666667,
+      "tempo": 0.904762,
+      "reachable": 1
+     },
+     "3/8": {
+      "n": 18,
+      "right": 0.166667,
+      "metre": 0.166667,
+      "tempo": 0.666667,
+      "reachable": 0.888889
+     },
+     "4/4": {
+      "n": 268,
+      "right": 0.80597,
+      "metre": 0.936567,
+      "tempo": 0.906716,
+      "reachable": 0.951492
+     },
+     "5/4": {
+      "n": 2,
+      "right": 0,
+      "metre": 0,
+      "tempo": 1,
+      "reachable": 0
+     },
+     "6/4": {
+      "n": 10,
+      "right": 0,
+      "metre": 0,
+      "tempo": 0.2,
+      "reachable": 0
+     },
+     "6/8": {
+      "n": 36,
+      "right": 0.5,
+      "metre": 0.583333,
+      "tempo": 0.75,
+      "reachable": 0.888889
+     },
+     "9/8": {
+      "n": 2,
+      "right": 0,
+      "metre": 0,
+      "tempo": 1,
+      "reachable": 1
+     }
+    }
+   }
+  ],
+  "long-x4": {
+   "folds": 5,
+   "by": "reference (fnv1a32(id) % 5)",
+   "n": 2056,
+   "right": 0.55107,
+   "metre": 0.622568,
+   "tempo": 0.831712,
+   "reachable": 0.888618,
+   "byMetre": {
+    "12/8": {
+     "n": 8,
+     "right": 0,
+     "metre": 0,
+     "tempo": 1,
+     "reachable": 1
+    },
+    "2/2": {
+     "n": 40,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.6,
+     "reachable": 1
+    },
+    "2/4": {
+     "n": 320,
+     "right": 0.015625,
+     "metre": 0.034375,
+     "tempo": 0.703125,
+     "reachable": 0.609375
+    },
+    "3/2": {
+     "n": 8,
+     "right": 0,
+     "metre": 0,
+     "tempo": 1,
+     "reachable": 0
+    },
+    "3/4": {
+     "n": 336,
+     "right": 0.541667,
+     "metre": 0.601191,
+     "tempo": 0.866071,
+     "reachable": 1
+    },
+    "3/8": {
+     "n": 72,
+     "right": 0.25,
+     "metre": 0.277778,
+     "tempo": 0.736111,
+     "reachable": 0.902778
+    },
+    "4/4": {
+     "n": 1072,
+     "right": 0.796642,
+     "metre": 0.902052,
+     "tempo": 0.898321,
+     "reachable": 0.968283
+    },
+    "5/4": {
+     "n": 8,
+     "right": 0,
+     "metre": 0,
+     "tempo": 1,
+     "reachable": 0
+    },
+    "6/4": {
+     "n": 40,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.275,
+     "reachable": 0
+    },
+    "6/8": {
+     "n": 144,
+     "right": 0.513889,
+     "metre": 0.555556,
+     "tempo": 0.770833,
+     "reachable": 0.951389
+    },
+    "9/8": {
+     "n": 8,
+     "right": 0,
+     "metre": 0,
+     "tempo": 1,
+     "reachable": 1
+    }
+   }
+  },
+  "pop-x4": {
+   "folds": 5,
+   "by": "reference (fnv1a32(id) % 5)",
+   "n": 1776,
+   "right": 0.618243,
+   "metre": 0.699324,
+   "tempo": 0.841779,
+   "reachable": 0.911036,
+   "byMetre": {
+    "2/4": {
+     "n": 320,
+     "right": 0.03125,
+     "metre": 0.04375,
+     "tempo": 0.575,
+     "reachable": 0.75625
+    },
+    "3/4": {
+     "n": 336,
+     "right": 0.639881,
+     "metre": 0.714286,
+     "tempo": 0.898809,
+     "reachable": 0.994048
+    },
+    "4/4": {
+     "n": 1072,
+     "right": 0.814366,
+     "metre": 0.921642,
+     "tempo": 0.920709,
+     "reachable": 0.972015
+    },
+    "5/4": {
+     "n": 8,
+     "right": 0,
+     "metre": 0,
+     "tempo": 1,
+     "reachable": 0
+    },
+    "6/4": {
+     "n": 40,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.35,
+     "reachable": 0
+    }
+   }
+  },
+  "conventionSweep": {
+   "performances": 2571,
+   "at": [
+    {
+     "d": 0,
+     "right": 0.561649,
+     "metre": 0.632828,
+     "4/4": 0.902985,
+     "2/4": 0.0825
+    },
+    {
+     "d": 0.1,
+     "right": 0.563983,
+     "metre": 0.634383,
+     "4/4": 0.907463,
+     "2/4": 0.075
+    },
+    {
+     "d": 0.2,
+     "right": 0.56515,
+     "metre": 0.634383,
+     "4/4": 0.909701,
+     "2/4": 0.065
+    },
+    {
+     "d": 0.3,
+     "right": 0.565539,
+     "metre": 0.633995,
+     "4/4": 0.910448,
+     "2/4": 0.0575
+    },
+    {
+     "d": 0.4,
+     "right": 0.56515,
+     "metre": 0.633606,
+     "4/4": 0.910448,
+     "2/4": 0.055
+    },
+    {
+     "d": 0.5,
+     "right": 0.566317,
+     "metre": 0.634772,
+     "4/4": 0.914926,
+     "2/4": 0.0475
+    },
+    {
+     "d": 0.75,
+     "right": 0.570206,
+     "metre": 0.63944,
+     "4/4": 0.926119,
+     "2/4": 0.04
+    },
+    {
+     "d": 1,
+     "right": 0.56865,
+     "metre": 0.639829,
+     "4/4": 0.934328,
+     "2/4": 0.015
+    },
+    {
+     "d": 1.5,
+     "right": 0.566705,
+     "metre": 0.637495,
+     "4/4": 0.934328,
+     "2/4": 0
+    },
+    {
+     "d": 2,
+     "right": 0.566705,
+     "metre": 0.637495,
+     "4/4": 0.934328,
+     "2/4": 0
+    }
+   ]
   }
- }
+ },
+ "families": {
+  "note": "hold-out references only (never counted, never fitted): long-x3 / long-x6 = the hold-out performances without beats played 3 / 6 times in a row; swing / swing-x6 = the humanizer's swing family (half of the four-bar blocks swung, swing and swing+of, seed 11), once / six times in a row; pop / pop-x4 = the hold-out performances without beats of the x/4 references swung all through, once / four times in a row",
+  "long-x3": {
+   "n": 208,
+   "right": 0.567308,
+   "metre": 0.615385,
+   "tempo": 0.855769,
+   "reachable": 0.846154,
+   "byMetre": {
+    "2/4": {
+     "n": 40,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.7,
+     "reachable": 0.675
+    },
+    "3/2": {
+     "n": 4,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0,
+     "reachable": 0
+    },
+    "3/4": {
+     "n": 44,
+     "right": 0.613636,
+     "metre": 0.613636,
+     "tempo": 0.818182,
+     "reachable": 1
+    },
+    "3/8": {
+     "n": 12,
+     "right": 0.583333,
+     "metre": 0.583333,
+     "tempo": 1,
+     "reachable": 1
+    },
+    "4/4": {
+     "n": 100,
+     "right": 0.8,
+     "metre": 0.9,
+     "tempo": 0.95,
+     "reachable": 0.89
+    },
+    "6/4": {
+     "n": 4,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.75,
+     "reachable": 0
+    },
+    "6/8": {
+     "n": 4,
+     "right": 1,
+     "metre": 1,
+     "tempo": 1,
+     "reachable": 1
+    }
+   }
+  },
+  "long-x6": {
+   "n": 208,
+   "right": 0.567308,
+   "metre": 0.615385,
+   "tempo": 0.831731,
+   "reachable": 0.846154,
+   "byMetre": {
+    "2/4": {
+     "n": 40,
+     "right": 0.075,
+     "metre": 0.075,
+     "tempo": 0.7,
+     "reachable": 0.675
+    },
+    "3/2": {
+     "n": 4,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0,
+     "reachable": 0
+    },
+    "3/4": {
+     "n": 44,
+     "right": 0.568182,
+     "metre": 0.568182,
+     "tempo": 0.818182,
+     "reachable": 1
+    },
+    "3/8": {
+     "n": 12,
+     "right": 0.583333,
+     "metre": 0.583333,
+     "tempo": 0.666667,
+     "reachable": 1
+    },
+    "4/4": {
+     "n": 100,
+     "right": 0.79,
+     "metre": 0.89,
+     "tempo": 0.94,
+     "reachable": 0.89
+    },
+    "6/4": {
+     "n": 4,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.75,
+     "reachable": 0
+    },
+    "6/8": {
+     "n": 4,
+     "right": 1,
+     "metre": 1,
+     "tempo": 1,
+     "reachable": 1
+    }
+   }
+  },
+  "swing": {
+   "n": 104,
+   "right": 0.586538,
+   "metre": 0.634615,
+   "tempo": 0.855769,
+   "reachable": 0.855769,
+   "byMetre": {
+    "2/4": {
+     "n": 20,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.6,
+     "reachable": 0.75
+    },
+    "3/2": {
+     "n": 2,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0,
+     "reachable": 0
+    },
+    "3/4": {
+     "n": 22,
+     "right": 0.681818,
+     "metre": 0.681818,
+     "tempo": 0.909091,
+     "reachable": 1
+    },
+    "3/8": {
+     "n": 6,
+     "right": 0.666667,
+     "metre": 0.666667,
+     "tempo": 0.833333,
+     "reachable": 1
+    },
+    "4/4": {
+     "n": 50,
+     "right": 0.8,
+     "metre": 0.9,
+     "tempo": 0.96,
+     "reachable": 0.88
+    },
+    "6/4": {
+     "n": 2,
+     "right": 0,
+     "metre": 0,
+     "tempo": 1,
+     "reachable": 0
+    },
+    "6/8": {
+     "n": 2,
+     "right": 1,
+     "metre": 1,
+     "tempo": 1,
+     "reachable": 1
+    }
+   }
+  },
+  "swing-x6": {
+   "n": 104,
+   "right": 0.596154,
+   "metre": 0.634615,
+   "tempo": 0.855769,
+   "reachable": 0.875,
+   "byMetre": {
+    "2/4": {
+     "n": 20,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.6,
+     "reachable": 0.8
+    },
+    "3/2": {
+     "n": 2,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0,
+     "reachable": 0
+    },
+    "3/4": {
+     "n": 22,
+     "right": 0.727273,
+     "metre": 0.727273,
+     "tempo": 0.909091,
+     "reachable": 1
+    },
+    "3/8": {
+     "n": 6,
+     "right": 0.5,
+     "metre": 0.5,
+     "tempo": 0.833333,
+     "reachable": 1
+    },
+    "4/4": {
+     "n": 50,
+     "right": 0.82,
+     "metre": 0.9,
+     "tempo": 0.96,
+     "reachable": 0.9
+    },
+    "6/4": {
+     "n": 2,
+     "right": 0,
+     "metre": 0,
+     "tempo": 1,
+     "reachable": 0
+    },
+    "6/8": {
+     "n": 2,
+     "right": 1,
+     "metre": 1,
+     "tempo": 1,
+     "reachable": 1
+    }
+   }
+  },
+  "pop": {
+   "n": 188,
+   "right": 0.601064,
+   "metre": 0.659574,
+   "tempo": 0.856383,
+   "reachable": 0.898936,
+   "byMetre": {
+    "2/4": {
+     "n": 40,
+     "right": 0.075,
+     "metre": 0.075,
+     "tempo": 0.575,
+     "reachable": 0.85
+    },
+    "3/4": {
+     "n": 44,
+     "right": 0.659091,
+     "metre": 0.681818,
+     "tempo": 0.909091,
+     "reachable": 1
+    },
+    "4/4": {
+     "n": 100,
+     "right": 0.81,
+     "metre": 0.91,
+     "tempo": 0.94,
+     "reachable": 0.91
+    },
+    "6/4": {
+     "n": 4,
+     "right": 0,
+     "metre": 0,
+     "tempo": 1,
+     "reachable": 0
+    }
+   }
+  },
+  "pop-x4": {
+   "n": 188,
+   "right": 0.632979,
+   "metre": 0.68617,
+   "tempo": 0.840426,
+   "reachable": 0.888298,
+   "byMetre": {
+    "2/4": {
+     "n": 40,
+     "right": 0.15,
+     "metre": 0.15,
+     "tempo": 0.525,
+     "reachable": 0.8
+    },
+    "3/4": {
+     "n": 44,
+     "right": 0.704545,
+     "metre": 0.704545,
+     "tempo": 0.886364,
+     "reachable": 1
+    },
+    "4/4": {
+     "n": 100,
+     "right": 0.82,
+     "metre": 0.92,
+     "tempo": 0.95,
+     "reachable": 0.91
+    },
+    "6/4": {
+     "n": 4,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.75,
+     "reachable": 0
+    }
+   }
+  }
+ },
+ "trainByRow": [
+  {
+   "n": 2056,
+   "right": 0.623054,
+   "metre": 0.678988,
+   "tempo": 0.868191,
+   "reachable": 0.888132,
+   "byMetre": {
+    "12/8": {
+     "n": 8,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.875,
+     "reachable": 1
+    },
+    "2/2": {
+     "n": 40,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.575,
+     "reachable": 1
+    },
+    "2/4": {
+     "n": 320,
+     "right": 0.025,
+     "metre": 0.028125,
+     "tempo": 0.73125,
+     "reachable": 0.628125
+    },
+    "3/2": {
+     "n": 8,
+     "right": 0,
+     "metre": 0,
+     "tempo": 1,
+     "reachable": 0
+    },
+    "3/4": {
+     "n": 336,
+     "right": 0.702381,
+     "metre": 0.735119,
+     "tempo": 0.925595,
+     "reachable": 0.997024
+    },
+    "3/8": {
+     "n": 72,
+     "right": 0.513889,
+     "metre": 0.527778,
+     "tempo": 0.777778,
+     "reachable": 0.916667
+    },
+    "4/4": {
+     "n": 1072,
+     "right": 0.858209,
+     "metre": 0.946828,
+     "tempo": 0.941231,
+     "reachable": 0.964552
+    },
+    "5/4": {
+     "n": 8,
+     "right": 0,
+     "metre": 0,
+     "tempo": 1,
+     "reachable": 0
+    },
+    "6/4": {
+     "n": 40,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.3,
+     "reachable": 0
+    },
+    "6/8": {
+     "n": 144,
+     "right": 0.555556,
+     "metre": 0.604167,
+     "tempo": 0.756944,
+     "reachable": 0.930556
+    },
+    "9/8": {
+     "n": 8,
+     "right": 0,
+     "metre": 0,
+     "tempo": 1,
+     "reachable": 1
+    }
+   }
+  },
+  {
+   "n": 514,
+   "right": 0.850195,
+   "metre": 0.856031,
+   "tempo": 0.910506,
+   "reachable": 0.968872,
+   "byMetre": {
+    "12/8": {
+     "n": 2,
+     "right": 0,
+     "metre": 0,
+     "tempo": 1,
+     "reachable": 1
+    },
+    "2/2": {
+     "n": 10,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.6,
+     "reachable": 1
+    },
+    "2/4": {
+     "n": 80,
+     "right": 0.85,
+     "metre": 0.85,
+     "tempo": 0.85,
+     "reachable": 1
+    },
+    "3/2": {
+     "n": 2,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.5,
+     "reachable": 0
+    },
+    "3/4": {
+     "n": 84,
+     "right": 0.916667,
+     "metre": 0.928571,
+     "tempo": 0.952381,
+     "reachable": 1
+    },
+    "3/8": {
+     "n": 18,
+     "right": 0.833333,
+     "metre": 0.833333,
+     "tempo": 0.833333,
+     "reachable": 1
+    },
+    "4/4": {
+     "n": 268,
+     "right": 0.940299,
+     "metre": 0.947761,
+     "tempo": 0.973881,
+     "reachable": 0.992537
+    },
+    "5/4": {
+     "n": 2,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.5,
+     "reachable": 0
+    },
+    "6/4": {
+     "n": 10,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.3,
+     "reachable": 0
+    },
+    "6/8": {
+     "n": 36,
+     "right": 0.666667,
+     "metre": 0.666667,
+     "tempo": 0.833333,
+     "reachable": 1
+    },
+    "9/8": {
+     "n": 2,
+     "right": 0.5,
+     "metre": 0.5,
+     "tempo": 0.5,
+     "reachable": 1
+    }
+   }
+  },
+  {
+   "n": 514,
+   "right": 0.618677,
+   "metre": 0.682879,
+   "tempo": 0.854086,
+   "reachable": 0.883268,
+   "byMetre": {
+    "12/8": {
+     "n": 2,
+     "right": 0,
+     "metre": 0,
+     "tempo": 1,
+     "reachable": 1
+    },
+    "2/2": {
+     "n": 10,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.6,
+     "reachable": 1
+    },
+    "2/4": {
+     "n": 80,
+     "right": 0.0125,
+     "metre": 0.0125,
+     "tempo": 0.65,
+     "reachable": 0.6625
+    },
+    "3/2": {
+     "n": 2,
+     "right": 0,
+     "metre": 0,
+     "tempo": 1,
+     "reachable": 0
+    },
+    "3/4": {
+     "n": 84,
+     "right": 0.738095,
+     "metre": 0.75,
+     "tempo": 0.940476,
+     "reachable": 1
+    },
+    "3/8": {
+     "n": 18,
+     "right": 0.388889,
+     "metre": 0.444444,
+     "tempo": 0.666667,
+     "reachable": 0.888889
+    },
+    "4/4": {
+     "n": 268,
+     "right": 0.850746,
+     "metre": 0.951493,
+     "tempo": 0.936567,
+     "reachable": 0.951493
+    },
+    "5/4": {
+     "n": 2,
+     "right": 0,
+     "metre": 0,
+     "tempo": 1,
+     "reachable": 0
+    },
+    "6/4": {
+     "n": 10,
+     "right": 0,
+     "metre": 0,
+     "tempo": 0.3,
+     "reachable": 0
+    },
+    "6/8": {
+     "n": 36,
+     "right": 0.555556,
+     "metre": 0.666667,
+     "tempo": 0.777778,
+     "reachable": 0.888889
+    },
+    "9/8": {
+     "n": 2,
+     "right": 0,
+     "metre": 0,
+     "tempo": 1,
+     "reachable": 1
+    }
+   }
+  }
+ ]
 }

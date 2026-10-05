@@ -33,8 +33,10 @@
    that fall on the slot of the one before), the beat accents (bdur, bbass, bharm, bsize, bjoint; one beat's ratio clipped
    to +-0.7), first, last, tempo, rep and repPc (does the bar's rhythm, and its pitch classes, come back a bar later), one
    bias per metre against 4/4, and, when the caller has the helper's audio beats, down (the share of its downbeats on the
-   reading's bar lines) and audio (the reading stands on the helper's beat track). The per-attack features are means, the
-   per-beat ones a mean times the square root of the beats (scaled(); the weights' alpha). THE WEIGHTS that add them up
+   reading's bar lines) and audio (the reading stands on the helper's beat track); since G10a-1b, swing (the reading is a
+   swung frame of a simple metre: its eighths played long-short, see SWING below). The per-attack features are means, the
+   per-beat ones a mean times the square root of the beats, at most the weights' beatCap beats (scaled(); the weights' alpha
+   and beatCap: G10 section 28). THE WEIGHTS that add them up
    are learned too (the multinomial logistic likelihood of the right reading among all readings of the training
    performances). The model only proposes; rec/metre.js turns the winner into beat times, bar lines and a tempo with plain
    arithmetic.
@@ -92,7 +94,7 @@
   const PHASE_STEP_Q = 0.5;
   /* the first PER_ATTACK features grow with the piece (scaled by n^alpha / n, see scaled()); the rest are one number a piece */
   const FEATURES = ['kern', 'fill', 'bass', 'ioi', 'size', 'coll', 'bdur', 'bbass', 'bharm', 'bsize', 'bjoint', 'first', 'last', 'tempo', 'rep', 'repPc',
-    'is2/4', 'is3/4', 'is2/2', 'is3/8', 'is6/8', 'is9/8', 'is12/8', 'down', 'audio'];
+    'is2/4', 'is3/4', 'is2/2', 'is3/8', 'is6/8', 'is9/8', 'is12/8', 'down', 'audio', 'swing'];
   const PER_ATTACK = 6, PER_BEAT = 11;
   const KERN_FLOOR = -8;                /* one attack's timing term is never below this (a ghost note, a tracking slip) */
 
@@ -322,8 +324,22 @@
   }
 
   /* ------------------------------------------------------------------ readings */
-  /* the per-attack candidate slots of one (track, rho): independent of the metre and of phi */
-  function frame(att, cls, track, rho, sigma, downbeats) {
+  /* SWING (G10a-1b): a simple metre's eighths played long-short. In a swung frame the second eighth of every written quarter
+     is heard at `s` of the quarter (0.5 straight, 2/3 a triplet swing) and everything inside the quarter moves with it
+     (piecewise linear: [0, 1/2) of the written quarter -> [0, s) of the heard one, [1/2, 1) -> [s, 1)): what the humanizer's
+     swing family plays (pppbench/humanize.py _swing_map) and what S3 writes straight (rec/grid.js swing8). The quarters of a
+     frame start at slot `o` (0 or 12: a reading whose bar phase is an odd eighth has its quarters half a quarter later). */
+  function swingHeard(c, s, o) {
+    const base = Math.floor((c - o) / R) * R + o, u = (c - base) / R;
+    return base + (u < 0.5 ? u * 2 * s : s + (u - 0.5) * 2 * (1 - s)) * R;
+  }
+  function swingWritten(g, s, o) {
+    const base = Math.floor((g - o) / R) * R + o, v = (g - base) / R;
+    return base + (v < s ? v * 0.5 / s : 0.5 + (v - s) * 0.5 / (1 - s)) * R;
+  }
+
+  /* the per-attack candidate slots of one (track, rho), straight or swung (swing = { s, o }): independent of the metre and of phi */
+  function frame(att, cls, track, rho, sigma, downbeats, swing) {
     const n = att.length;
     const g = new Float64Array(n), w = new Float64Array(n);
     const spq = [];
@@ -336,20 +352,32 @@
       spq.push(ibi / rho);
     }
     const qpm = 60 / attacks.median(spq);
-    const cand = [], kern = [];
+    /* attack i's candidates are the consecutive slots lo[i] .. lo[i] + len[i] - 1, their timing terms kern[at[i] ..] */
+    const lo = new Int32Array(n), len = new Int32Array(n), at = new Int32Array(n);
+    let total = 0;
     for (let i = 0; i < n; i++) {
       const r = Math.min(8, Math.max(1, Math.ceil(2.5 * sigma / w[i])));
-      const c0 = Math.round(g[i]);
-      const cs = [], ks = [];
-      for (let c = c0 - r; c <= c0 + r; c++) {
-        const d = (g[i] - c) * w[i] / sigma;
-        cs.push(c); ks.push(-0.5 * d * d);
+      if (!swing) {
+        const c0 = Math.round(g[i]);
+        lo[i] = c0 - r; len[i] = 2 * r + 1;
+      } else {
+        /* a written slot is judged by where the swing puts it; the written grid is up to 1.5 times denser in time there */
+        const c0 = Math.round(swingWritten(g[i], swing.s, swing.o)), rs = Math.min(12, Math.ceil(r * 1.5));
+        lo[i] = c0 - rs; len[i] = 2 * rs + 1;
       }
-      cand.push(cs); kern.push(ks);
+      at[i] = total; total += len[i];
     }
-    return { n: n, cand: cand, kern: kern, cls: cls, pcs: att.map(a => a.pcs), att: att, medN: attacks.median(att.map(a => a.n)),
-      qpm: qpm, rho: rho, track: track, downbeats: downbeats || null,
-      buf: { abs: new Int32Array(n), low: new Int32Array(n), nn: new Int32Array(n), pcs: new Int32Array(n), first: new Int32Array(n) } };
+    const kern = new Float64Array(total);
+    for (let i = 0; i < n; i++) {
+      for (let j = 0, c = lo[i]; j < len[i]; j++, c++) {
+        const d = (g[i] - (swing ? swingHeard(c, swing.s, swing.o) : c)) * w[i] / sigma;
+        kern[at[i] + j] = -0.5 * d * d;
+      }
+    }
+    return { n: n, lo: lo, len: len, at: at, kern: kern, cls: cls, pcs: att.map(a => a.pcs), att: att, medN: attacks.median(att.map(a => a.n)),
+      qpm: qpm, rho: rho, track: track, downbeats: downbeats || null, swing: swing || null,
+      buf: { abs: new Int32Array(n), low: new Int32Array(n), nn: new Int32Array(n), pcs: new Int32Array(n), first: new Int32Array(n),
+        slots: new Int32Array(n) } };
   }
 
   const scratch = { n: new Float64Array(NLEV), T: new Float64Array(NLEV) };
@@ -370,16 +398,18 @@
     const P = prepared(tables)[mi], m = P.m, f = P.f, S = m.S;
     const off = Math.round(phi * R);
     let fk = 0, fb = 0, fi = 0, fs = 0, coll = 0, ff = 0;
-    const slots = new Int32Array(fr.n);
+    const slots = keepSlots ? new Int32Array(fr.n) : fr.buf.slots;
     let prev = -Infinity;
     const hits = scratch.n; hits.fill(0);
+    const cLo = fr.lo, cLen = fr.len, cAt = fr.at, cKern = fr.kern, snap = P.snap;
     for (let i = 0; i < fr.n; i++) {
-      const cs = fr.cand[i], ks = fr.kern[i];
+      /* the candidates are consecutive slots, so the slot in the bar steps with them */
       let best = -Infinity, bc = 0, bk = 0;
-      for (let j = 0; j < cs.length; j++) {
-        const p = cs[j] - off;
-        const v = ks[j] + P.snap[((p % S) + S) % S];
-        if (v > best) { best = v; bc = p; bk = ks[j]; }
+      let p = cLo[i] - off, q = ((p % S) + S) % S;
+      for (let j = cAt[i], e = cAt[i] + cLen[i]; j < e; j++, p++) {
+        const v = cKern[j] + snap[q];
+        if (v > best) { best = v; bc = p; bk = cKern[j]; }
+        if (++q === S) q = 0;
       }
       const s = ((bc % S) + S) % S, L = m.level[s];
       slots[i] = bc;
@@ -450,25 +480,39 @@
     }
     out[23] = down;
     out[24] = fr.track.audio ? 1 : 0;
+    out[25] = fr.swing ? 1 : 0;
     return keepSlots ? slots : null;
   }
 
   /* the per-attack features scaled to n^alpha (alpha 1: the plain log-likelihood; 0: the mean per attack): how fast the
-     evidence of the attacks grows with the length of the piece, against the per-piece priors (learned) */
-  function scaled(fv, n, alpha, out, nBeats) {
+     evidence of the attacks grows with the length of the piece, against the per-piece priors (learned).
+     beatCap (G10a-1b): a reading's per-beat evidence grows with its beats only up to beatCap beats; past it, the mean per beat
+     times the square root of beatCap. The growth law was fitted on the catalogue, whose performances are short (the right
+     readings of the training performances count 31 / 61 / 123 / 334 beats: 10th percentile, median, 90th, max); a cover lasts
+     three to five minutes (300-1,000 beats) and repeats its sections, which is not new evidence. Without the cap the accents of
+     a long piece outgrow every per-piece prior (tempo, metre, first onset), and the more so the more beats a reading counts: a
+     3/8 reading counts an eighth as a beat, three times the beats of a 4/4 reading of the same music (a hold-out piece played
+     six times in a row: 4/4 -> 3/8 in 23 of 100 cases). The cap stops both. A cap in seconds (every reading counted as if the
+     performance lasted that long, which keeps 3/8's threefold count) tied with it on the training references and read the
+     teacher's piece 3/4 at half its tempo (G10 section 28).
+   */
+  function scaled(fv, n, alpha, out, nBeats, cap) {
     const aA = Array.isArray(alpha) ? alpha[0] : alpha, aB = Array.isArray(alpha) ? alpha[1] : alpha;
     const k = Math.pow(Math.max(1, n), aA) / Math.max(1, n);
-    const nb = Math.max(1, nBeats || 1), kb = Math.pow(nb, aB) / nb;
+    const nb = Math.max(1, nBeats || 1), kb = Math.pow(cap > 0 && nb > cap ? cap : nb, aB) / nb;
     for (let i = 0; i < FEATURES.length; i++) out[i] = i < PER_ATTACK ? fv[i] * k : i < PER_BEAT ? fv[i] * kb : fv[i];
     return out;
   }
 
+  /* a model with fewer weights than FEATURES (one written before a feature existed) gives the features it has no weight for
+     no say */
   function score(fv, weights) {
     let s = 0;
-    for (let i = 0; i < FEATURES.length; i++) s += fv[i] * weights[i];
+    const m = Math.min(FEATURES.length, weights.length);
+    for (let i = 0; i < m; i++) s += fv[i] * weights[i];
     return s;
   }
 
   return Object.freeze({ R, SCHEMA, METRES, BY_KEY, FAMILIES, FEATURES, PER_ATTACK, PER_BEAT, NLEV, PHASE_STEP_Q, buildTables, prepared,
-    frame, features, scaled, score, log2, lgamma, logBB, countSlots, fillCounts, beatEvidence, beatScan });
+    frame, features, scaled, score, log2, lgamma, logBB, countSlots, fillCounts, beatEvidence, beatScan, swingHeard, swingWritten });
 });
