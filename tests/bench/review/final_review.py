@@ -52,6 +52,18 @@ TARGET = {
     "FINAL-PEDAL-HELD-TO-BARLINE": "notation.pedal.f1",
     "FINAL-TOP-REGISTER-OCTAVE-DOWN": "notes.identity.f1",
 }
+# The spelling line (M.SG_SPELL) is in audio-score.js twice since G10a-3 S7 (9302bed): in buildGraph's heads loop of the
+# transcription writer (12 spaces; the one every non-recording benchmark case runs, and the one this mutant means) and in
+# writeV2 (14 spaces, so a substring match finds it too; recording v2 only, where the head ends `!x.p.tieIn`). The anchor is
+# the transcription writer's whole spelling-to-accidental stretch, ending at `!tieStop`, which only that writer has.
+SPELL_ANCHOR = "\n".join([
+    M.SG_SPELL,
+    "            const current = k in accState ? accState[k] : state[sp.step];",
+    "            const head = { pitch: sp.alter ? { step: sp.step, alter: sp.alter, oct: sp.octave } : { step: sp.step, oct: sp.octave } };",
+    M.SG_ACCIDENTAL,
+])
+SPELL_OCTAVE_DOWN = M.SG_SPELL.replace("spell(n.midi, table)", "spell(n.midi >= 93 ? n.midi - 12 : n.midi, table)")
+
 MUTATIONS = {
     "FINAL-DOTS-DROPPED": (
         "rhythm / notation",
@@ -94,7 +106,7 @@ MUTATIONS = {
     "FINAL-TOP-REGISTER-OCTAVE-DOWN": (
         "pitch / subgroup-only",
         "notes from A6 (MIDI 93) up are written an octave low (a range clamp); only high-register pieces change",
-        [(M.SG_SPELL, "            const sp = spell(n.midi >= 93 ? n.midi - 12 : n.midi, table), k = sp.step + sp.octave;")]),
+        [(SPELL_ANCHOR, SPELL_ANCHOR.replace(M.SG_SPELL, SPELL_OCTAVE_DOWN, 1))]),
 }
 
 
