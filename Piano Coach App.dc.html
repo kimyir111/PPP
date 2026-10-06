@@ -14219,7 +14219,7 @@ class Component extends DCLogic {
       .then(async r => {
         const body = await r.json().catch(() => null);
         if (r.ok && body) return body;
-        throw Object.assign(new Error(tx((body && body.error) || 'Could not reach the server.')), { status: r.status, code: body && body.code });
+        throw Object.assign(new Error(tx((body && body.error) || 'Could not reach the server.')), { status: r.status, code: body && body.code, off: !!(body && body.disabled) });
       });
   }
   /* How long to wait before looking again at jobs that are waiting or being converted, given how long this watch has been going (a watch starts when the
@@ -14259,10 +14259,10 @@ class Component extends DCLogic {
       });
       this._homeSeen = {};
       r.jobs.forEach(j => { this._homeSeen[j.id] = j.status; });
-      this.setState({ homeWorker: r.worker, homeJobs: r.jobs });
+      this.setState({ homeWorker: r.worker, homeJobs: r.jobs, homeOff: false });
     } catch (e) {
-      /* a server without the queue (404), or no longer signed in (401): the feature is simply not there */
-      if (e.status === 404 || e.status === 401) this.setState({ homeWorker: null, homeJobs: [] });
+      /* a server without the queue (404), or no longer signed in (401), or one that switched its queue off at the start (503 with disabled): the feature is simply not there */
+      if (e.status === 404 || e.status === 401 || e.off) this.setState({ homeWorker: null, homeJobs: [], homeOff: !!e.off });
     }
     if (withTokens) {
       try { const t = await this.homeApi('/api/worker/tokens'); if (!this._dead) this.setState({ homeTokens: t.tokens, homeWorker: t.worker }); } catch (e) { /* the card shows none */ }
@@ -14314,7 +14314,8 @@ class Component extends DCLogic {
   }
   /* a finished conversion (ready, failed, cancelled, expired) is removed from the list and from the site: its notes stop taking room in this account's share */
   async removeHomeJob(id) {
-    try { await this.homeApi('/api/jobs/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (e) { this.setState({ ytError: e.message }); }
+    /* 404: it is gone already (cleared to make room, or removed elsewhere) - which is what was asked for; the list below says so */
+    try { await this.homeApi('/api/jobs/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (e) { if (e.status !== 404) this.setState({ ytError: e.message }); }
     this.homeRefresh();
   }
   async cancelHomeJob(id) {
@@ -14370,7 +14371,7 @@ class Component extends DCLogic {
         open: () => this.openHomeJob(j.id), cancel: () => this.cancelHomeJob(j.id),
         openLabel: S.homeOpening === j.id ? tx('Opening…') : tx('Open'), cancelLabel: tx('Cancel'), btnStyle: btn
       })),
-      showHomeSettings: !!S.user,
+      showHomeSettings: !!(S.user && !S.homeOff),
       homeSettingsTitle: tx('Connect my PC'),
       homeSettingsSub: tx('Convert YouTube links with the strong piano models on your own PC, for free. It needs a PC with a GPU that you switch on.'),
       homeStatusLine: !W ? '' : W.alive ? tx('Your PC is connected.') : W.everSeen ? tx('Your PC has not checked in lately.') : W.hasToken ? tx('Waiting for your PC to connect for the first time.') : '',

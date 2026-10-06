@@ -2011,6 +2011,8 @@
     "That conversion is not there.": "その変換は見つかりません。",
     "That request did not come from this site.": "このサイトからのリクエストではありません。",
     "That conversion has already finished.": "その変換はすでに完了しています。",
+    "Cancel that conversion first, then remove it.": "先にその変換をキャンセルしてから、削除してください。",
+    "This conversion is larger than one account may keep.": "この変換は、1つのアカウントが保存できるサイズを超えています。",
     "You have 5 PC tokens already. Remove one first.": "PCトークンがすでに5個あります。先に1個削除してください。",
     "Too many tokens were made just now. Try again later.": "たった今トークンを作りすぎました。後でもう一度お試しください。",
     "That token is not there.": "そのトークンは見つかりません。",

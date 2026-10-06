@@ -24,25 +24,43 @@ if (!/@(127\.0\.0\.1|localhost)[:/]/.test(URL_)) { console.error('Refusing: this
 const { Pool } = require('pg');
 const Store = L.mod('home-jobs-store.js');
 
+/* the server under test: the repository's server.js, or - for the mutation runner (HOME_MODULES_DIR) - the copy with one rule broken. Its log is kept. */
 async function startServer(env) {
   const port = await freePort();
-  const child = spawn(process.execPath, ['server.js'], {
-    cwd: L.REPO, stdio: 'ignore',
+  const child = spawn(process.execPath, [path.join(L.MODS, 'server.js')], {
+    cwd: L.REPO, stdio: ['ignore', 'pipe', 'pipe'],
     env: Object.assign({}, process.env, { NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(port), DATABASE_URL: URL_, SESSION_SECRET: 'home-worker-pg-secret' }, env || {})
   });
   let exited = false;
+  const logs = [];
+  child.stdout.on('data', d => logs.push(String(d)));
+  child.stderr.on('data', d => logs.push(String(d)));
   child.on('exit', () => { exited = true; });
   const t0 = Date.now();
   for (;;) {
-    if (exited) throw new Error('server.js exited early');
+    if (exited) throw new Error('server.js exited early: ' + logs.join('').slice(-300));
     try { if ((await req(port, 'GET', '/health')).status === 200) break; } catch (e) { /* not up */ }
     if (Date.now() - t0 > 40000) { child.kill(); throw new Error('server.js did not come up'); }
     await sleep(150);
   }
   await sleep(1200); /* migration and seeds */
-  return { port: port, close: () => new Promise(res => { if (exited) return res(); child.on('exit', () => res()); child.kill(); }) };
+  return { port: port, log: () => logs.join(''), close: () => new Promise(res => { if (exited) return res(); child.on('exit', () => res()); child.kill(); }) };
 }
+/* what a migrate that came back means: the queue's tables were made ('ok'), or it was switched off ('queue off ...'), or it threw */
+const migrated = r => (r && r.queue === true ? 'ok' : 'queue off: ' + String(r && r.error && r.error.message).slice(0, 70));
+const failure = e => (e.code || '') + ' ' + String(e.message).slice(0, 70);
 const cookieOf = r => { const c = [].concat(r.headers['set-cookie'] || [])[0] || ''; return c.split(';')[0]; };
+
+/* the production database as it is today: users, progress and shares (with the foreign key an earlier version made on owner_id, and no genre / expires_at / bytes); none of this feature's tables */
+const PRODUCTION_SQL = `
+      CREATE TABLE ppp_users (id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+      CREATE TABLE ppp_progress (user_id TEXT PRIMARY KEY REFERENCES ppp_users(id) ON DELETE CASCADE, payload JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+      CREATE TABLE ppp_shares (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES ppp_users(id) ON DELETE CASCADE, owner_name TEXT NOT NULL, song_key TEXT NOT NULL,
+        title TEXT NOT NULL, composer TEXT NOT NULL DEFAULT '', kind TEXT NOT NULL DEFAULT '', measures INTEGER NOT NULL DEFAULT 0, listed BOOLEAN NOT NULL DEFAULT false,
+        preview JSONB, score JSONB NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+      INSERT INTO ppp_users (id, email, display_name, password_hash) VALUES ('old-user', 'old@example.com', 'Old', 'x');
+      INSERT INTO ppp_progress (user_id, payload) VALUES ('old-user', '{"a":1}');
+      INSERT INTO ppp_shares (id, owner_id, owner_name, song_key, title, score) VALUES ('oldshare01', 'old-user', 'Old', 'k', 'Old song', '{"measures":[{}],"notes":[]}');`;
 
 (async () => {
   const pool = new Pool({ connectionString: URL_, max: 4 });
@@ -52,17 +70,14 @@ const cookieOf = r => { const c = [].concat(r.headers['set-cookie'] || [])[0] ||
   const one = async (sql, params) => (await q(sql, params)).rows;
   let srv = null;
   try {
+    /* a view that an earlier, failed run of the last section left in the way of ppp_worker_tokens would make the DROP below fail (it is not a table) */
+    const dropSquat = () => q(`DO $$ BEGIN
+      IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'ppp_worker_tokens' AND relkind = 'v') THEN DROP VIEW ppp_worker_tokens; END IF;
+    END $$`);
+    await dropSquat();
     /* production today: users, progress and shares (with their old foreign key); none of this feature's tables */
     await q('DROP TABLE IF EXISTS ppp_worker_tokens, ppp_transcribe_jobs, ppp_shares, ppp_progress, ppp_users CASCADE');
-    await q(`
-      CREATE TABLE ppp_users (id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
-      CREATE TABLE ppp_progress (user_id TEXT PRIMARY KEY REFERENCES ppp_users(id) ON DELETE CASCADE, payload JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
-      CREATE TABLE ppp_shares (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL REFERENCES ppp_users(id) ON DELETE CASCADE, owner_name TEXT NOT NULL, song_key TEXT NOT NULL,
-        title TEXT NOT NULL, composer TEXT NOT NULL DEFAULT '', kind TEXT NOT NULL DEFAULT '', measures INTEGER NOT NULL DEFAULT 0, listed BOOLEAN NOT NULL DEFAULT false,
-        preview JSONB, score JSONB NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
-      INSERT INTO ppp_users (id, email, display_name, password_hash) VALUES ('old-user', 'old@example.com', 'Old', 'x');
-      INSERT INTO ppp_progress (user_id, payload) VALUES ('old-user', '{"a":1}');
-      INSERT INTO ppp_shares (id, owner_id, owner_name, song_key, title, score) VALUES ('oldshare01', 'old-user', 'Old', 'k', 'Old song', '{"measures":[{}],"notes":[]}');`);
+    await q(PRODUCTION_SQL);
     const counts = async () => (await one(`SELECT (SELECT count(*) FROM ppp_users)::int u, (SELECT count(*) FROM ppp_progress)::int p, (SELECT count(*) FROM ppp_shares)::int s`))[0];
     const before = await counts();
 
@@ -73,8 +88,8 @@ const cookieOf = r => { const c = [].concat(r.headers['set-cookie'] || [])[0] ||
     await q('DROP TABLE IF EXISTS ppp_worker_tokens, ppp_transcribe_jobs');
     const pool12 = new Pool({ connectionString: URL_, max: 12 });
     pool12.on('error', () => { /* a reset idle connection */ });
-    const raced = await Promise.all(Array.from({ length: 12 }, () => Store.migrate(pool12).then(() => 'ok', e => (e.code || '') + ' ' + String(e.message).slice(0, 70))));
-    const raced2 = await Promise.all(Array.from({ length: 12 }, () => Store.migrate(pool12).then(() => 'ok', e => (e.code || '') + ' ' + String(e.message).slice(0, 70))));
+    const raced = await Promise.all(Array.from({ length: 12 }, () => Store.migrate(pool12).then(migrated, failure)));
+    const raced2 = await Promise.all(Array.from({ length: 12 }, () => Store.migrate(pool12).then(migrated, failure)));
     await pool12.end();
     ok('twelve instances migrating at the same moment, twice over (a deploy overlap) take turns under an advisory lock: all succeed, the tables are there once', raced.concat(raced2).every(x => x === 'ok')
       && (await one(`SELECT count(*)::int n FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('ppp_transcribe_jobs', 'ppp_worker_tokens')`))[0].n === 2, raced.concat(raced2).filter(x => x !== 'ok').slice(0, 2).join(' | '));
@@ -132,7 +147,17 @@ const cookieOf = r => { const c = [].concat(r.headers['set-cookie'] || [])[0] ||
     await st.insertJob(mk('job-eeee0001', 'u-a')); await st.finishJob('job-eeee0001', 'u-a', 'done', t0 - 2 * day, { result: res, bytes: 1 });
     const n = await st.purge(t0 - 3 * day, t0 - 1 * day);
     ok('purge: a failed job a day and a half old goes, a done one that is two days old stays', n >= 1 && (await one(`SELECT count(*)::int n FROM ppp_transcribe_jobs WHERE id = 'job-dddd0001'`))[0].n === 0 && (await one(`SELECT count(*)::int n FROM ppp_transcribe_jobs WHERE id = 'job-eeee0001'`))[0].n === 1, n + '');
-    ok('deleteJobs removes the ids named and nothing else', (await st.deleteJobs(['job-eeee0001', 'nope'])) === 1 && (await st.deleteJobs([])) === 0);
+    ok('deleteJobs removes the ids named (of the account named) and nothing else', (await st.deleteJobs(['job-eeee0001', 'nope'], 'u-a')) === 1 && (await st.deleteJobs([], 'u-a')) === 0);
+    /* the owner and "finished" are in the WHERE of the DELETE, like in every other change of the store: a list that holds somebody else's id, or the id of a job that is still waiting or being converted, removes neither */
+    await st.insertJob(mk('job-delq0001', 'u-a')); await st.insertJob(mk('job-delc0001', 'u-a')); await st.insertJob(mk('job-delf0001', 'u-a')); await st.insertJob(mk('job-delf0002', 'u-b'));
+    await st.claimJob('job-delc0001', 'u-a', 'w', t0); await st.finishJob('job-delf0001', 'u-a', 'failed', t0, { error: 'e' }); await st.finishJob('job-delf0002', 'u-b', 'failed', t0, { error: 'e' });
+    const delAll = ['job-delq0001', 'job-delc0001', 'job-delf0001', 'job-delf0002'];
+    const delLeft = async () => (await one(`SELECT id FROM ppp_transcribe_jobs WHERE id LIKE 'job-del%' ORDER BY id`)).map(r => r.id).join();
+    ok('every id of two accounts in the list, one account named: only the finished row of that account is deleted (1)', (await st.deleteJobs(delAll, 'u-a')) === 1 && (await delLeft()) === 'job-delc0001,job-delf0002,job-delq0001', await delLeft());
+    ok('a queued or claimed row is not deleted even when it is named, in its owner call too; a finished row of somebody else neither; no owner at all removes nothing', (await st.deleteJobs(['job-delq0001', 'job-delc0001'], 'u-a')) === 0
+      && (await st.deleteJobs(['job-delf0002'], 'u-a')) === 0 && (await st.deleteJobs(['job-delf0002'])) === 0 && (await st.deleteJobs(['job-delf0002'], null)) === 0 && (await delLeft()) === 'job-delc0001,job-delf0002,job-delq0001');
+    ok('and the call of its owner removes it', (await st.deleteJobs(['job-delf0002'], 'u-b')) === 1);
+    await q(`DELETE FROM ppp_transcribe_jobs WHERE id LIKE 'job-del%'`);
     await st.insertToken({ id: 'tok-a00001', ownerId: 'u-a', hash: 'ab'.repeat(32), label: 'PC', createdAt: t0 });
     ok('a token is stored as its hash', (await one(`SELECT token_hash, last_seen_at FROM ppp_worker_tokens WHERE id = 'tok-a00001'`))[0].token_hash === 'ab'.repeat(32));
     await st.touchSeen('tok-a00001', 'u-b', t0 + 5000, 20); await st.touchSeen('tok-a00001', 'u-a', t0 + 6000, 1200);
@@ -216,7 +241,7 @@ const cookieOf = r => { const c = [].concat(r.headers['set-cookie'] || [])[0] ||
     await q('DROP TABLE IF EXISTS ppp_worker_tokens, ppp_transcribe_jobs, ppp_shares, ppp_progress, ppp_users CASCADE');
     const poolN = new Pool({ connectionString: URL_, max: 12 });
     poolN.on('error', () => { /* a reset idle connection */ });
-    const racedInit = await Promise.all(Array.from({ length: 12 }, () => Store.migrate(poolN, initSql).then(() => 'ok', e => (e.code || '') + ' ' + String(e.message).slice(0, 70))));
+    const racedInit = await Promise.all(Array.from({ length: 12 }, () => Store.migrate(poolN, initSql).then(migrated, failure)));
     await poolN.end();
     const have = (await one(`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('ppp_users', 'ppp_progress', 'ppp_shares', 'ppp_transcribe_jobs', 'ppp_worker_tokens') ORDER BY 1`)).map(r => r.table_name).join();
     ok('twelve instances running the WHOLE boot migration (the old tables and the queue\'s) on an empty database at the same moment: all succeed, five tables, the old foreign key on ppp_shares.owner_id dropped once', racedInit.every(x => x === 'ok') && have === 'ppp_progress,ppp_shares,ppp_transcribe_jobs,ppp_users,ppp_worker_tokens'
@@ -227,8 +252,81 @@ const cookieOf = r => { const c = [].concat(r.headers['set-cookie'] || [])[0] ||
     const okBoots = boots.filter(b => !b.error).length;
     ok('twelve real server.js processes booting together on an empty database (migration and seed library at once): all twelve come up and answer /health', okBoots === 12 && (await one("SELECT count(*)::int n FROM information_schema.tables WHERE table_schema = 'public' AND table_name LIKE 'ppp\\_%'"))[0].n === 5, okBoots + ' up; ' + boots.filter(b => b.error).map(b => b.error).slice(0, 2).join(' | '));
     await Promise.all(boots.filter(b => !b.error).map(b => b.close()));
+
+    heading('the queue is optional at the boot: a failure making its tables does not take the site down');
+    /* a VIEW in the place of ppp_worker_tokens: CREATE TABLE IF NOT EXISTS skips it, and the index the queue makes on it is an error (42809) - the queue's part of the migration fails, the rest of it must not */
+    const resetToProduction = async () => { await dropSquat(); await q('DROP TABLE IF EXISTS ppp_worker_tokens, ppp_transcribe_jobs, ppp_shares, ppp_progress, ppp_users CASCADE'); await q(PRODUCTION_SQL); };
+    const kindOf = async n => (await one(`SELECT relkind FROM pg_class WHERE relname = $1 AND relnamespace = 'public'::regnamespace`, [n])).map(r => r.relkind).join();
+    const sharesCols = async () => (await one(`SELECT column_name FROM information_schema.columns WHERE table_name = 'ppp_shares' ORDER BY ordinal_position`)).map(r => r.column_name).join();
+    const sharesFks = async () => (await one(`SELECT count(*)::int n FROM pg_constraint WHERE conrelid = 'ppp_shares'::regclass AND contype = 'f'`))[0].n;
+    {
+      const initSql2 = (() => { const a = srvSrc.indexOf(head); const b = srvSrc.indexOf('`);', a); return srvSrc.slice(a + head.length, b); })();
+      await resetToProduction();
+      await q(`CREATE VIEW ppp_worker_tokens AS SELECT 1 AS id`);
+      const oldCols = await sharesCols();
+      const beforeCounts = await counts();
+      const m1 = await Store.migrate(pool, initSql2);
+      ok('migrate with something else in the place of ppp_worker_tokens does not throw: it says the queue is off, with the error', m1 && m1.queue === false && !!m1.error && m1.error.code === '42809', JSON.stringify(m1 && m1.error && m1.error.code));
+      ok('the rest of the boot is committed exactly as it always was: ppp_shares has genre, expires_at and bytes, its old foreign key on owner_id is gone, the rows are untouched', oldCols.indexOf('bytes') < 0 && (await sharesCols()).indexOf('genre') >= 0 && (await sharesCols()).indexOf('expires_at') >= 0
+        && (await sharesCols()).split(',').indexOf('bytes') >= 0 && (await sharesFks()) === 0 && JSON.stringify(await counts()) === JSON.stringify(beforeCounts), await sharesCols());
+      ok('the queue\'s part is undone as a whole (the savepoint): no ppp_transcribe_jobs either, and the thing in the way is left as it was (still a view)', (await kindOf('ppp_transcribe_jobs')) === '' && (await kindOf('ppp_worker_tokens')) === 'v');
+      /* a failure in the part that was always there is still fatal, and still undoes everything of that boot */
+      const m2 = await Store.migrate(pool, `CREATE TABLE ppp_probe_fatal (id INT); SELECT no_such_function_xyz();`).then(() => 'resolved', e => e.code);
+      ok('a failure in the boot SQL itself is fatal as before (it throws), and nothing of that boot is kept - not its tables, not the queue\'s', m2 === '42883' && (await kindOf('ppp_probe_fatal')) === '' && (await kindOf('ppp_transcribe_jobs')) === '');
+      /* twelve at once with the queue's part failing in every one of them: all twelve come back with "off", none throws, none waits for ever */
+      const poolOff = new Pool({ connectionString: URL_, max: 12 });
+      poolOff.on('error', () => { /* a reset idle connection */ });
+      const offs = await Promise.all(Array.from({ length: 12 }, () => Store.migrate(poolOff, initSql2).then(r => (r && r.queue === false ? 'off' : 'on'), failure)));
+      await poolOff.end();
+      ok('twelve instances migrating at once while the queue\'s part fails in each: all twelve resolve "off" - no error, no deadlock - and the old tables are as above', offs.every(x => x === 'off') && (await sharesFks()) === 0, offs.filter(x => x !== 'off').slice(0, 2).join(' | '));
+      await dropSquat();
+      const m3 = await Store.migrate(pool, initSql2);
+      ok('with the thing out of the way the next migrate makes the queue\'s tables and says so (a restart tries again)', m3 && m3.queue === true && (await kindOf('ppp_transcribe_jobs')) === 'r' && (await kindOf('ppp_worker_tokens')) === 'r');
+    }
+    {
+      /* the real server.js, with the view in the way */
+      await resetToProduction();
+      await q(`CREATE VIEW ppp_worker_tokens AS SELECT 1 AS id`);
+      const before = await counts();
+      const boot = await startServer();
+      try {
+        ok('the server STARTS: /health answers (the queue is optional; the site is not)', (await req(boot.port, 'GET', '/health')).status === 200);
+        const out = boot.log();
+        const offLines = out.split('\n').filter(l => /Home-PC worker queue: OFF/.test(l));
+        ok('it says once, in one clear line, that the queue is off and why (the database error code), and where it stands', offLines.length === 1 && /42809/.test(offLines[0]) && /everything else is running/i.test(offLines[0]), offLines.join(' | ').slice(0, 200));
+        ok('the line shows no secret: no connection string, no password, no environment', !/postgres(ql)?:\/\//i.test(out) && out.indexOf(URL_) < 0 && !/DATABASE_URL|SESSION_SECRET|home-worker-pg-secret/.test(out) && out.indexOf(':pw@') < 0);
+        ok('and the ordinary "an idle worker is told to wait" line is not printed for a queue that is off', !/an idle worker is told to wait/.test(out), /an idle worker is told to wait/.test(out) ? out.slice(-300) : '');
+        const su = await req(boot.port, 'POST', '/api/auth/signup', { body: { email: 'optional-queue@example.com', password: 'longenough1', displayName: 'Optional' } });
+        const ck = cookieOf(su);
+        ok('the rest of the site works: sign-up (a ppp_users row), who am I, the shared scores list, saving progress', su.status === 201 && (await req(boot.port, 'GET', '/api/auth/me', { cookie: ck })).body.email === 'optional-queue@example.com'
+          && (await req(boot.port, 'GET', '/api/shares')).status === 200 && (await req(boot.port, 'PUT', '/api/progress', { cookie: ck, body: { payload: { a: 2 } } })).status === 200 && (await req(boot.port, 'GET', '/api/progress', { cookie: ck })).status === 200);
+        const token = 'ppw_' + 'A'.repeat(12) + '_' + 'b'.repeat(43);
+        const asks = [
+          ['GET /api/jobs', await req(boot.port, 'GET', '/api/jobs', { cookie: ck })], ['POST /api/jobs', await req(boot.port, 'POST', '/api/jobs', { cookie: ck, body: { url: 'https://www.youtube.com/watch?v=vgnliVjJUOo' } })],
+          ['GET /api/worker/status', await req(boot.port, 'GET', '/api/worker/status', { cookie: ck })], ['GET /api/worker/tokens', await req(boot.port, 'GET', '/api/worker/tokens', { cookie: ck })], ['POST /api/worker/tokens', await req(boot.port, 'POST', '/api/worker/tokens', { cookie: ck, body: {} })],
+          ['GET /api/worker/ping', await req(boot.port, 'GET', '/api/worker/ping', { token: token })], ['POST /api/worker/claim', await req(boot.port, 'POST', '/api/worker/claim', { token: token, body: {} })]
+        ];
+        ok('the new routes answer 503 "store", marked disabled, with the usual sentence - for the browser routes and for the worker\'s', asks.every(([, r]) => r.status === 503 && r.body && r.body.code === 'store' && r.body.disabled === true && /not available right now/.test(r.body.error)), asks.map(([n, r]) => n + ' ' + r.status).join(' | '));
+        ok('a worker with a wrong or any token gets the same 503 (not a 401: it is not told its token is bad)', asks.slice(-2).every(([, r]) => r.status === 503));
+        const after = await counts();
+        ok('the old tables came out of the boot as on main: only the seed library added; shares have genre, expires_at and bytes; the old foreign key on ppp_shares.owner_id dropped', after.u === before.u + 2 && (await sharesCols()).split(',').indexOf('bytes') >= 0 && (await sharesFks()) === 0, JSON.stringify([before, after]));
+        ok('no queue table was left half made', (await kindOf('ppp_transcribe_jobs')) === '' && (await kindOf('ppp_worker_tokens')) === 'v');
+      } finally { await boot.close(); }
+      await dropSquat();
+      /* the next boot, with nothing in the way: the queue is on, the account and its data are still there */
+      const boot2 = await startServer();
+      try {
+        const si = await req(boot2.port, 'POST', '/api/auth/login', { body: { email: 'optional-queue@example.com', password: 'longenough1' } });
+        const ck2 = cookieOf(si);
+        ok('the next boot (nothing in the way) makes the tables and does not print the "off" line; the account made while it was off signs in', (await kindOf('ppp_transcribe_jobs')) === 'r' && (await kindOf('ppp_worker_tokens')) === 'r' && !/queue: OFF/.test(boot2.log()) && /an idle worker is told to wait/.test(boot2.log()) && si.status === 200, si.status === 200 ? '' : si.status + ' ' + boot2.log().slice(-200));
+        const tk2 = await req(boot2.port, 'POST', '/api/worker/tokens', { cookie: ck2, body: {} });
+        const q2 = await req(boot2.port, 'POST', '/api/jobs', { cookie: ck2, body: { url: 'https://www.youtube.com/watch?v=vgnliVjJUOo' } });
+        ok('and the queue works again: a token, a job', tk2.status === 201 && q2.status === 201 && q2.body.worker && !q2.body.disabled, tk2.status + ' ' + q2.status);
+      } finally { await boot2.close(); }
+    }
   } finally {
     if (srv) await srv.close();
+    try { await q(`DROP VIEW IF EXISTS ppp_worker_tokens`); } catch (e) { /* it is a table, or the database is gone */ }
     await pool.end();
   }
 })().then(() => L.finish('the home-PC queue on Postgres'), e => { console.error(e); process.exit(1); });

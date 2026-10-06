@@ -145,6 +145,8 @@ function create(deps) {
   const lastFinished = new Map();  /* ownerId -> ms of the last done/failed */
   const userCache = new Map();     /* uid -> { user, until } */
   let loaded = false, loading = null, lastSweep = 0, lastPurge = 0;
+  /* null, or why the queue is off: the server could not make its tables at the boot (home-jobs-store.js migrate). The site goes on without it. */
+  let disabledWhy = null;
   const stats = { loads: 0 };
   C.warnings.forEach(w => { if (deps.warn) deps.warn(w); });
 
@@ -246,9 +248,11 @@ function create(deps) {
   const storedBytes = ownerId => { let n = 0; jobs.forEach(j => { if (j.status === 'done' && (ownerId == null || j.ownerId === ownerId)) n += j.bytes || 0; }); return n; };
   /* Room for one account's new row and notes among ITS OWN finished rows: the oldest go first (failed, cancelled and expired ones before done ones),
      until the notes kept plus needBytes fit the account's share and the rows plus needRows fit its row cap. The account's share is never a reason to
-     refuse a person's work or to lock them out until the keeping time is over; nobody else's rows are touched. Returns the rows removed. */
-  async function evict(ownerId, needBytes, needRows) {
-    const mine = ownJobs(ownerId);
+     refuse a person's work or to lock them out until the keeping time is over; nobody else's rows are touched, and a waiting or converting one never goes
+     (only finished rows are candidates). `except` is the job that is asking (already in the queue as a reserved slot: it is the row that needRows stands for).
+     Returns the rows removed. */
+  async function evict(ownerId, needBytes, needRows, except) {
+    const mine = ownJobs(ownerId).filter(j => j !== except);
     const byAge = (a, b) => (a.finishedAt || a.createdAt) - (b.finishedAt || b.createdAt);
     const old = mine.filter(j => !pending(j) && !j.writing);
     let stored = storedBytes(ownerId), rows = mine.length;
@@ -263,7 +267,7 @@ function create(deps) {
       if (!needRows || rows + needRows <= L.ROWS_PER_USER) return;
       gone.push(j); if (j.status === 'done') stored -= j.bytes || 0; rows--;
     });
-    if (gone.length) { await store.deleteJobs(gone.map(j => j.id)); gone.forEach(j => jobs.delete(j.id)); }
+    if (gone.length) { await store.deleteJobs(gone.map(j => j.id), ownerId); gone.forEach(j => jobs.delete(j.id)); }
     return gone;
   }
   const ownJobs = ownerId => { const out = []; jobs.forEach(j => { if (j.ownerId === ownerId) out.push(j); }); return out; };
@@ -389,24 +393,35 @@ function create(deps) {
     const t = now();
     await sweep(t);
     await purgeIfDue(t);
+    /* From here to jobs.set below nothing is awaited: the checks and the taking of the slot are one turn of the event loop, so two requests at once cannot
+       both pass the cap of waiting jobs or both add the same link, whatever the store is doing meanwhile (clearing room is a database call). */
     const mine = ownJobs(user.id);
     const dup = mine.find(j => pending(j) && j.url === parsed.url);
-    if (dup) { release(); return reply(res, 200, { job: publicJob(dup), existing: true, worker: workerSummary(user.id, t) }); }
+    if (dup) {
+      /* the same link asked at the same moment: it is the one job the first request is writing - say so once that is durable, or fail as the first one does */
+      if (dup.writing && dup.settled && !(await dup.settled)) { release(); throw httpError(503, 'The queue is not available right now. Try again in a minute.', 'store'); }
+      release();
+      return reply(res, 200, { job: publicJob(dup), existing: true, worker: workerSummary(user.id, t) });
+    }
     if (mine.filter(pending).length >= L.PENDING_PER_USER) {
       release();
       throw httpError(429, 'You already have ' + L.PENDING_PER_USER + ' conversions waiting. Wait for one to finish, or cancel one.', 'queue-full');
     }
     if (storedBytes() >= C.totalResultBytes) { release(); throw httpError(503, 'The queue is full right now. Try again later.', 'busy'); }
     if (jobs.size >= L.MAX_ROWS) { release(); throw httpError(503, 'The queue is full right now. Try again later.', 'busy'); }
-    /* room for it among the person's own rows and notes: the oldest finished conversions are cleared first, and room is kept for its result */
-    try { await evict(user.id, C.resultReserveBytes, 1); } catch (e) { release(); throw e; }
     const job = { id: crypto.randomBytes(12).toString('base64url'), ownerId: user.id, kind: 'youtube', url: parsed.url,
       title: R.cleanText(body.title, 120), status: 'queued', attempts: 0, workerId: null, createdAt: t, claimedAt: 0, finishedAt: 0, error: '', bytes: 0, beatAt: 0, progress: null };
-    /* the slot is taken now, before the write is awaited (two requests at once cannot both pass the cap); nothing claims it until it is durable */
+    /* the slot is taken now, before anything is awaited: it counts as waiting (the cap, the duplicate check) and as a row, and nothing claims, cancels or clears it
+       until it is durable. A failure gives it back. */
     job.writing = true;
+    job.settled = new Promise(resolve => { job.settle = resolve; });
     jobs.set(job.id, job);
-    try { await store.insertJob(job); } catch (e) { jobs.delete(job.id); release(); throw e; }
+    const giveUp = e => { jobs.delete(job.id); job.settle(false); release(); throw e; };
+    /* room for it among the person's own rows and notes: the oldest finished conversions are cleared first, and room is kept for its result */
+    try { await evict(user.id, C.resultReserveBytes, 1, job); } catch (e) { giveUp(e); }
+    try { await store.insertJob(job); } catch (e) { giveUp(e); }
     job.writing = false;
+    job.settle(true);
     wake(user.id);
     reply(res, 201, { job: publicJob(job), worker: workerSummary(user.id, t) });
   }
@@ -436,9 +451,9 @@ function create(deps) {
      or converting one is cancelled first. */
   async function deleteJob(req, res, id) {
     requireSameSite(req);
-    const { job } = await ownJob(req, id);
+    const { user, job } = await ownJob(req, id);
     if (pending(job) || job.writing) throw httpError(409, 'Cancel that conversion first, then remove it.', 'pending');
-    await store.deleteJobs([job.id]);
+    await store.deleteJobs([job.id], user.id);
     jobs.delete(job.id);
     reply(res, 200, { ok: true });
   }
@@ -717,6 +732,9 @@ function create(deps) {
 
   /* resolves when the request has been answered; never rejects */
   async function handle(req, res, url) {
+    /* a queue that is off answers every one of its routes like a store that cannot be reached - and says that it is not a passing failure, so the page can
+       leave the button and the settings card out (nothing is read or written: there may be no tables) */
+    if (disabledWhy) return deps.send(res, 503, { error: 'The queue is not available right now. Try again in a minute.', code: 'store', disabled: true }, { 'Cache-Control': 'no-store' });
     try {
       await route(req, res, url);
     } catch (e) {
@@ -736,6 +754,9 @@ function create(deps) {
 
   return {
     owns: owns, handle: handle, config: C,
+    /* switch the whole queue off for this run (every route answers 503 "store"), with the reason for the log; there is no switching back on: a restart tries again */
+    disable: why => { disabledWhy = String(why || 'disabled'); },
+    isDisabled: () => !!disabledWhy,
     /* for tests */
     _state: { jobs: jobs, tokens: tokens, limiters: limiters, stats: stats, config: C, isLoaded: () => loaded, forgetAll: () => { loaded = false; userCache.clear(); }, purge: t => purgeIfDue(t, true), sweep: t => { lastSweep = 0; return sweep(t); } }
   };

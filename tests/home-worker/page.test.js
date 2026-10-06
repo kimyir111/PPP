@@ -54,6 +54,11 @@ async function openPage(browser, base, o) {
     rec.requests.push(r.method() + ' ' + p);
     if (r.method() !== 'GET' && /\/api\/(jobs|worker)/.test(p)) rec.posts.push({ method: r.method(), path: p, body: r.postData() });
     if (/:8788\/|\/helper(\/|$|\?)/.test(u)) return r.abort();
+    /* a server whose queue is off (o.queue503 'off': 503 "store" marked disabled, as server.js answers it) or that fails for a moment (o.queue503 'blip': the same, not marked) */
+    if (o.queue503 && r.method() === 'GET' && /^\/api\/(jobs|worker)(\/|\?|$)/.test(p)) return r.respond({ status: 503, contentType: 'application/json', headers: { 'Cache-Control': 'no-store' },
+      body: JSON.stringify(Object.assign({ error: 'The queue is not available right now. Try again in a minute.', code: 'store' }, o.queue503 === 'off' ? { disabled: true } : {})) });
+    /* a DELETE of a conversion that the test makes fail: rec.failDelete = a status */
+    if (rec.failDelete && r.method() === 'DELETE' && /^\/api\/jobs\//.test(p)) return r.respond({ status: rec.failDelete, contentType: 'application/json', body: JSON.stringify({ error: 'The queue is not available right now. Try again in a minute.', code: 'store' }) });
     if (/\/api\/youtube-audio/.test(p)) { rec.audio++; return r.respond({ status: 200, contentType: 'audio/wav', body: WAV, headers: { 'Cache-Control': 'no-store' } }); }
     if (/\/api\/youtube-title/.test(p)) return r.respond({ status: 200, contentType: 'application/json', body: JSON.stringify({ title: 'Teacher Piece' }) });
     if (/youtube\.com\/oembed/.test(u)) return r.respond({ status: 200, contentType: 'application/json', body: JSON.stringify({ title: 'Teacher Piece' }) });
@@ -304,6 +309,24 @@ const refresh = async (page, withTokens) => { await page.evaluate(w => window.PP
     await pg.evaluate(id => document.querySelector('[data-home-remove="' + id + '"]').click(), j4.id);
     await sleep(900);
     ok('and on a cancelled one', !(await has(pg, '[data-home-job="' + j4.id + '"]')));
+    heading('Remove on a conversion that is gone already (cleared to make room, or removed in another tab)');
+    const failedJob = async (id, title) => { const j = (await req(port, 'POST', '/api/jobs', { cookie: await cookieOf(pg), body: { url: 'https://www.youtube.com/watch?v=' + id, title: title } })).body.job; await worker.claim({}); await worker.fail(j.id, 'The audio could not be downloaded'); return j; };
+    const j5 = await failedJob('xxxxxxxxxxx', 'Gone already'), j6 = await failedJob('wwwwwwwwwww', 'Stays');
+    await goAdd(pg); await refresh(pg);
+    ok('two failed conversions are listed, each with Remove', (await has(pg, '[data-home-remove="' + j5.id + '"]')) && (await has(pg, '[data-home-remove="' + j6.id + '"]')));
+    ok('meanwhile the site removes one (another tab): 200', (await req(port, 'DELETE', '/api/jobs/' + j5.id, { cookie: await cookieOf(pg) })).status === 200);
+    await pg.evaluate(id => document.querySelector('[data-home-remove="' + id + '"]').click(), j5.id);
+    await sleep(900);
+    ok('Remove on it (the site says 404: it is gone) is a success: the row leaves the list, and no error line is shown', !(await has(pg, '[data-home-job="' + j5.id + '"]')) && !(await pg.evaluate(() => window.PPP.app.state.ytError)) && !/not there/.test(await text(pg, '[data-youtube]')), String(await pg.evaluate(() => window.PPP.app.state.ytError)));
+    pg.__rec.failDelete = 503;
+    await pg.evaluate(id => document.querySelector('[data-home-remove="' + id + '"]').click(), j6.id);
+    await sleep(900);
+    ok('any other failure of Remove is still shown (a 503): the error line says so and the row stays', /not available right now/.test(await text(pg, '[data-youtube]')) && (await has(pg, '[data-home-job="' + j6.id + '"]')), String(await text(pg, '[data-youtube]')).slice(0, 120));
+    pg.__rec.failDelete = 0;
+    await pg.evaluate(() => window.PPP.app.setState({ ytError: null }));
+    await pg.evaluate(id => document.querySelector('[data-home-remove="' + id + '"]').click(), j6.id);
+    await sleep(900);
+    ok('and once the site is back, Remove works', !(await has(pg, '[data-home-job="' + j6.id + '"]')));
     ok('the page\'s own link check takes exactly 11 characters of video id, like the server', await pg.evaluate(() => { const f = u => window.PPP.Import.youtubeId(u); return f('https://www.youtube.com/watch?v=abcdefghijk') === 'abcdefghijk' && f('https://youtu.be/ab-_Efgh1jK') === 'ab-_Efgh1jK' && f('https://www.youtube.com/shorts/abcdefghijk') === 'abcdefghijk'
       && f('https://www.youtube.com/watch?v=abcdef') === null && f('https://www.youtube.com/watch?v=abcdefghij') === null && f('https://www.youtube.com/watch?v=abcdefghijkl') === null && f('https://youtu.be/abcdef') === null && f('https://youtu.be/abcdefghijkl') === null && f('https://www.youtube.com/shorts/abcdefghijkl') === null && f('https://www.youtube.com/embed/abcdefghijk/x') === 'abcdefghijk'; }));
     const pg2 = await openPage(browser, base);
@@ -322,6 +345,25 @@ const refresh = async (page, withTokens) => { await page.evaluate(w => window.PP
     ok('and with no token the button is gone (the finished conversions stay listed)', !(await has(pg, '[data-home-pc]')) && (await has(pg, '[data-home-jobs]')));
     ok('no page or console error', clean(pg), errs(pg));
     await pg.close();
+
+    heading('a server whose queue is switched off: no button, no list, no Settings card; a passing failure hides nothing');
+    {
+      const off = await openPage(browser, base, { queue503: 'off' });
+      await signUp(off, 'home-off@example.com');
+      await goAdd(off); await sleep(700);
+      ok('the queue answers 503 "store" marked disabled: no button, no note, no list on Add sheet music', !(await has(off, '[data-home-pc]')) && !(await has(off, '[data-home-note]')) && !(await has(off, '[data-home-jobs]')));
+      await goSettings(off);
+      ok('and no "Connect my PC" card on Settings (there would be nothing to connect to)', !(await has(off, '[data-home-settings]')) && await off.evaluate(() => window.PPP.app.state.homeOff === true));
+      ok('the page asked the server, and sets no timer to ask again', off.__rec.requests.some(r => r === 'GET /api/jobs') && !(await off.evaluate(() => !!window.PPP.app._homeTimer)));
+      ok('the Add sheet music card is otherwise as ever: "Make sheet music" is there', await off.evaluate(() => { window.PPP.app.go('upload')(); return new Promise(r => setTimeout(() => r([...document.querySelectorAll('[data-youtube] button')].some(b => /Make sheet music/.test(b.innerText))), 700)); }));
+      ok('no page or console error', clean(off), errs(off));
+      await off.close();
+      const blip = await openPage(browser, base, { queue503: 'blip' });
+      await signUp(blip, 'home-blip@example.com');
+      await goSettings(blip);
+      ok('a 503 that is not marked disabled (a passing failure of the store) leaves the Settings card where it is', await has(blip, '[data-home-settings]') && !(await blip.evaluate(() => window.PPP.app.state.homeOff)));
+      await blip.close();
+    }
 
     heading('Korean, Japanese, Chinese');
     for (const [loc, want] of [['ko-KR', { btn: '고품질 변환 (내 PC)', st: 'PC를 기다리는 중', note: '약 한 시간에 한 번', card: '내 PC 연결' }], ['ja-JP', { btn: '高品質変換（自分のPC）', st: 'PCを待っています', note: '約1時間に1回', card: '自分のPCを接続' }], ['zh-CN', { btn: '高质量转换（我的电脑）', st: '等待你的电脑', note: '大约每小时', card: '连接我的电脑' }]]) {

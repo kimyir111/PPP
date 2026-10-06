@@ -12,7 +12,8 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const REPO = path.resolve(__dirname, '..', '..');
-const FILES = ['home-jobs.js', 'home-result.js', 'home-jobs-store.js', 'server.js', 'share-guest.js', 'tools/home-worker/worker.js', 'review/h10/helper-heard.js'];
+/* (catalog/shared-seeds.json: the server.js copy is run for real by the Postgres test, and its seed library is read from beside it) */
+const FILES = ['home-jobs.js', 'home-result.js', 'home-jobs-store.js', 'server.js', 'share-guest.js', 'tools/home-worker/worker.js', 'review/h10/helper-heard.js', 'catalog/shared-seeds.json'];
 const JOBS = 'jobs.test.js', WORKER = 'worker.test.js', PG = 'jobs-pg.test.js';
 
 /* id, file, what the mutant breaks, [from, to] (strings, replaced once), the test that must fail */
@@ -71,11 +72,11 @@ const M = [
   ['N7', 'home-jobs.js', 'a refused body keeps its slot of the hourly enqueue budget', ['} catch (e) { release(); throw e; }\n    const t = now();\n    await sweep(t);', '} catch (e) { throw e; }\n    const t = now();\n    await sweep(t);'], JOBS],
   ['N8', 'home-jobs.js', 'the hourly enqueue limit is not per address', ['if (!limiters.enqueueIp.take(ip)) {', 'if (false) {'], JOBS],
   ['N9', 'home-jobs.js', 'a result that would pass the account\'s share is not given room (the oldest finished conversion is not cleared)', ['await evict(rec.ownerId, v.bytes, 0);', ''], JOBS],
-  ['N10', 'home-jobs.js', 'a new job does not ask for room among the account\'s own rows and notes (no eviction at enqueue)', ['try { await evict(user.id, C.resultReserveBytes, 1); } catch (e) { release(); throw e; }', ''], JOBS],
+  ['N10', 'home-jobs.js', 'a new job does not ask for room among the account\'s own rows and notes (no eviction at enqueue)', ['try { await evict(user.id, C.resultReserveBytes, 1, job); } catch (e) { giveUp(e); }', ''], JOBS],
   ['N11', 'tools/home-worker/worker.js', 'old scratch folders are never swept', ['if (st.isDirectory() && Date.now() - st.mtimeMs > (maxAgeMs == null ? 2 * 3600 * 1000 : maxAgeMs)) {', 'if (false) {'], WORKER],
   ['N12', 'tools/home-worker/worker.js', 'a video id may be 6 characters or more (in the worker)', ['[A-Za-z0-9_-]{11}$/;', '[A-Za-z0-9_-]{6,}$/;'], WORKER],
   ['N13', 'tools/home-worker/worker.js', 'ffmpeg may open any protocol (no -protocol_whitelist)', [["'-y', '-protocol_whitelist', 'file,pipe', '-i', input,", "'-y', '-i', input,"], ["'-y', '-protocol_whitelist', 'file,pipe', '-i', master,", "'-y', '-i', master,"]], WORKER],
-  ['N14', 'tools/home-worker/worker.js', 'escape sequences and bidi characters reach the log', ["const log = m => out('[' + clock() + '] ' + redact(clean(m)));", "const log = m => out('[' + clock() + '] ' + redact(m));"], WORKER],
+  ['N14', 'tools/home-worker/worker.js', 'escape sequences and bidi characters reach the log', ['return hidden !== f ? hidden : redact(clean(raw));', 'return hidden !== f ? hidden : redact(raw);'], WORKER],
   ['N15', 'home-jobs-store.js', 'Postgres: the migration takes no advisory lock (two instances can race)', ["await c.query('SELECT pg_advisory_xact_lock($1)', [MIGRATE_LOCK_KEY]);", ''], PG],
   ['R7', 'home-result.js', 'a result\'s notes are stored in the order they arrive', ['notes.sort((a, b) => a.on - b.on || a.midi - b.midi || a.off - b.off);', ''], JOBS],
   ['R11', 'home-jobs.js', 'the account is read from the database on every browser request', ['until: t + L.USER_CACHE_MS', 'until: t'], JOBS],
@@ -96,13 +97,33 @@ const M = [
   ['N23', 'tools/home-worker/worker.js', 'failureWait trusts its count (NaN, 2000)', ['count = Number.isFinite(count) && count >= 1 ? Math.floor(count) : 1;', 'count = count;'], WORKER],
   ['N24', 'tools/home-worker/worker.js', 'an answer of the site is read to the end whatever its size', ['if (n > 8 * 1024 * 1024) {', 'if (false) {'], WORKER],
   ['N25', 'tools/home-worker/worker.js', 'a refused audio answer is only resumed (an endless body is read for ever), not dropped', ["const drop = () => { res.on('error', () => {}); req.destroy(); };", 'const drop = () => { res.resume(); };'], WORKER],
-  ['N26', 'tools/home-worker/worker.js', 'the log hides the token BEFORE it strips escape sequences (a split token is not joined first)', ["const log = m => out('[' + clock() + '] ' + redact(clean(m)));", "const log = m => out('[' + clock() + '] ' + clean(redact(m)));"], WORKER],
+  ['N26', 'tools/home-worker/worker.js', 'the log hides the token BEFORE it strips escape sequences (a split token is not joined first)', ['return hidden !== f ? hidden : redact(clean(raw));', 'return hidden !== f ? hidden : clean(redact(raw));'], WORKER],
   ['N27', 'tools/home-worker/worker.js', 'the same origin is compared as text (startsWith), not as parsed', ['if (u.origin !== origin0) return fail(', 'if (!u.href.startsWith(origin0)) return fail('], WORKER],
   ['N28', 'home-jobs.js', 'a refused request gives its hourly slots back TWICE', ['const release = () => { limiters.enqueue.release(user.id); limiters.enqueueIp.release(ip); };', 'const release = () => { limiters.enqueue.release(user.id); limiters.enqueueIp.release(ip); limiters.enqueue.release(user.id); limiters.enqueueIp.release(ip); };'], JOBS],
   ['N29', 'home-jobs.js', 'making tokens is not limited per address', ['if (!limiters.tokensIp.take(ip)) {', 'if (false) {'], JOBS],
-  ['N30', 'home-jobs.js', 'a job that could not be written keeps its slots', ['try { await store.insertJob(job); } catch (e) { jobs.delete(job.id); release(); throw e; }', 'try { await store.insertJob(job); } catch (e) { jobs.delete(job.id); throw e; }'], JOBS],
+  ['N30', 'home-jobs.js', 'a job that could not be written keeps its hourly slots', ['const giveUp = e => { jobs.delete(job.id); job.settle(false); release(); throw e; };', 'const giveUp = e => { jobs.delete(job.id); job.settle(false); throw e; };'], JOBS],
   ['N31', 'server.js', 'the boot SQL runs through a plain query, not the locked migration', ['await homeJobsStore.migrate(getPool(), `', 'await q(`'], JOBS],
-  ['N32', 'home-jobs-store.js', 'Postgres: the boot SQL is left out of the locked migration', ['if (preSql) await c.query(preSql);', ''], PG]
+  ['N32', 'home-jobs-store.js', 'Postgres: the boot SQL is left out of the locked migration', ['if (preSql) await c.query(preSql);', ''], PG],
+  /* the follow-up of PR 178 (the third review's minors: the queue is optional at the boot, the caps are atomic, the test gaps) */
+  ['N33', 'home-jobs.js', 'eviction may take a queued or claimed job (the review\'s MB)', ['const old = mine.filter(j => !pending(j) && !j.writing);', 'const old = mine.filter(j => !j.writing);'], JOBS],
+  ['N34', 'tools/home-worker/worker.js', 'the 8 MB cut also applies to the audio download (the review\'s MD)', ['const maxBytes = (o.maxMB || 120) * 1024 * 1024;', 'const maxBytes = Math.min((o.maxMB || 120) * 1024 * 1024, 8 * 1024 * 1024);'], WORKER],
+  ['N35', 'tools/home-worker/worker.js', 'the log looks at the token only in the text cleaned of whole escape sequences (an ESC that swallows a letter of the token hides nothing)', ['return hidden !== f ? hidden : redact(clean(raw));', 'return redact(clean(raw));'], WORKER],
+  ['N36', 'tools/home-worker/worker.js', 'the zero-width space, non-joiner and joiner are kept in a log line', ['\\u180e\\u200b-\\u200f\\u2028', '\\u180e\\u200e\\u200f\\u2028'], WORKER],
+  ['N37', 'tools/home-worker/worker.js', 'the word joiner and the byte order mark are kept in a log line', ['\\u2060-\\u2064\\u2066-\\u2069\\ufeff]', '\\u2064\\u2066-\\u2069]'], WORKER],
+  ['N38', 'home-jobs.js', 'the slot of a new job is taken only after room has been cleared (the old order: two requests pass the same caps while the database is awaited)', [
+    ['    jobs.set(job.id, job);\n    const giveUp = e =>', '    const giveUp = e =>'],
+    ['try { await evict(user.id, C.resultReserveBytes, 1, job); } catch (e) { giveUp(e); }\n', 'try { await evict(user.id, C.resultReserveBytes, 1, job); } catch (e) { giveUp(e); }\n    jobs.set(job.id, job);\n']], JOBS],
+  ['N39', 'home-jobs.js', 'the same link asked at the same moment is told "it exists" without waiting for the first request\'s write (a job that may never be kept)', ['if (dup.writing && dup.settled && !(await dup.settled))', 'if (false)'], JOBS],
+  ['N40', 'home-jobs.js', 'a job that could not be written leaves its reserved slot in the queue', ['const giveUp = e => { jobs.delete(job.id); job.settle(false);', 'const giveUp = e => { job.settle(false);'], JOBS],
+  ['N41', 'home-jobs-store.js', 'file store: deleteJobs ignores the owner', ['ids.indexOf(j.id) >= 0 && j.ownerId === ownerId && j.status', 'ids.indexOf(j.id) >= 0 && j.status'], JOBS],
+  ['N42', 'home-jobs-store.js', 'file store: deleteJobs removes a queued or claimed row', ["j.ownerId === ownerId && j.status !== 'queued' && j.status !== 'claimed'", 'j.ownerId === ownerId'], JOBS],
+  ['N43', 'home-jobs-store.js', 'Postgres: deleteJobs ignores the owner', ["AND owner_id = $2 AND status NOT IN ('queued', 'claimed')\", [ids, ownerId]", "AND $2::text IS NOT NULL AND status NOT IN ('queued', 'claimed')\", [ids, ownerId]"], PG],
+  ['N44', 'home-jobs-store.js', 'Postgres: deleteJobs removes a queued or claimed row', ["AND owner_id = $2 AND status NOT IN ('queued', 'claimed')\", [ids, ownerId]", 'AND owner_id = $2", [ids, ownerId]'], PG],
+  ['N45', 'home-jobs.js', 'a queue that is switched off still answers (disable() does nothing)', ['if (disabledWhy) return deps.send(', 'if (false) return deps.send('], JOBS],
+  ['N46', 'home-jobs-store.js', 'Postgres: a failure making the queue\'s tables is fatal again (the migration throws it)', ['queue = { queue: false, error: queueError };', 'throw queueError;'], PG],
+  ['N47', 'home-jobs-store.js', 'Postgres: the queue\'s tables are made outside a savepoint', ["await c.query('SAVEPOINT home_queue_tables');", ''], PG],
+  ['N48', 'server.js', 'the server does not switch the queue off when its tables could not be made', ['jobsService.disable(why);', ''], PG],
+  ['N49', 'home-jobs.js', 'a job asking for room is counted among the rows it clears room for (one row too many cleared)', ['const mine = ownJobs(ownerId).filter(j => j !== except);', 'const mine = ownJobs(ownerId);'], JOBS]
 ];
 
 const only = process.argv.slice(2);
