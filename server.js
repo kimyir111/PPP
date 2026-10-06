@@ -505,6 +505,14 @@ function readSession(token) {
   return data;
 }
 
+/* the account id a request's session cookie names, or null: no database (the home-PC queue looks the account up itself, and remembers it) */
+function sessionUid(req) {
+  try {
+    const sess = readSession(parseCookies(req)[COOKIE]);
+    return sess && sess.uid ? String(sess.uid) : null;
+  } catch (e) { return null; }
+}
+
 function normalizeEmail(value) {
   const email = String(value || '').trim().toLowerCase();
   const at = email.indexOf('@');
@@ -534,6 +542,9 @@ const SHARES_PER_USER = 200;
 const SHARE_LIST_LIMIT = 250;
 /* Guest link sharing (share-guest.js): the limits that keep a public write endpoint small. */
 const guestShare = require('./share-guest');
+/* G10b-1: the home-PC transcription queue (home-jobs.js; docs/GOALS/G10B_HOME_WORKER.md) and where it is kept */
+const homeJobs = require('./home-jobs');
+const homeJobsStore = require('./home-jobs-store');
 const GUEST = guestShare.GUEST;
 const guestLimits = {
   /* creates per address; creates for the whole server; requests that failed validation, per address */
@@ -615,6 +626,7 @@ function fileStore() {
     fs.writeFileSync(file, JSON.stringify(db, null, 2));
   }
   return {
+    jobStore: homeJobsStore.fileJobStore(DATA_DIR),
     async ready() { return true; },
     async findByEmail(email) {
       return load().users.find(u => u.email === email) || null;
@@ -734,6 +746,7 @@ function postgresStore(url) {
     row.measures, row.listed, row.preview == null ? null : JSON.stringify(row.preview), JSON.stringify(row.score),
     row.createdAt, row.updatedAt, row.expiresAt || null, row.bytes || 0];
   return {
+    jobStore: homeJobsStore.pgJobStore(q),
     async ready() {
       await q(`
         CREATE TABLE IF NOT EXISTS ppp_users (
@@ -780,6 +793,8 @@ function postgresStore(url) {
           END LOOP;
         END $$;
       `);
+      /* G10b-1: two new tables, additive (CREATE ... IF NOT EXISTS only); dropping them is the whole rollback */
+      await q(homeJobsStore.SCHEMA_SQL);
     },
     async findByEmail(email) {
       const r = await q('SELECT id, email, display_name AS "displayName", password_hash AS "passwordHash" FROM ppp_users WHERE email = $1', [email]);
@@ -886,6 +901,12 @@ const SHARE_COLS = 'id, owner_id AS "ownerId", owner_name AS "ownerName", song_k
   + 'measures, listed, preview, created_at AS "createdAt", updated_at AS "updatedAt", expires_at AS "expiresAt", bytes';
 
 const store = process.env.DATABASE_URL ? postgresStore(process.env.DATABASE_URL) : fileStore();
+
+/* G10b-1: ONE instance holds the queue in memory (home-jobs.js says why); the database is only its durable copy */
+const jobsService = homeJobs.create({
+  store: store.jobStore, send: send, jsonError: jsonError, readBody: readBody, parseYoutube: parseYoutubeWatch,
+  clientIp: guestShare.clientIp, sessionUid: sessionUid, findUser: id => store.findById(id), logError: logStoreError
+});
 
 /* ---- the seed library ----
    One score per genre, so Shared Scores is never an empty shelf and every
@@ -1139,6 +1160,9 @@ async function handleApi(req, res, url) {
   if (p === '/api/shares' || p.indexOf('/api/shares/') === 0) {
     return handleShares(req, res, url);
   }
+
+  /* G10b-1: /api/jobs..., and /api/worker/... for the worker script on the person's own PC */
+  if (jobsService.owns(p)) return jobsService.handle(req, res, url);
 
   jsonError(res, 404, 'Not found');
 }

@@ -1,6 +1,13 @@
 node_modules/
 tests/.shots/
-tools/
+# the vendored helpers (audiveris, the transcription venv, yt-dlp, ffmpeg) live in tools/ and are not source; the home-PC worker (G10b-1) is
+/tools/*
+!/tools/home-worker/
+# ... but its settings hold the person's token
+/tools/home-worker/worker.config.json
+/tools/home-worker/*.local.json
+# a tools/ folder deeper down (tests/*/tools, ...) is ignored as before; the ones below that are source say so
+*/**/tools/
 data/*.json
 .DS_Store
 

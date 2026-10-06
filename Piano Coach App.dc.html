@@ -985,11 +985,36 @@
               <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
                 <input type="url" data-youtube-url placeholder="https://www.youtube.com/watch?v=…" value="{{ ytUrl }}" onChange="{{ setYtUrl }}" onKeyDown="{{ ytKey }}" style="flex: 1; min-width: 0; flex-basis: 220px; padding: 10px 13px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px; outline: none;" />
                 <button onClick="{{ addYoutube }}" style="padding: 10px 16px; border-radius: 10px; border: 0; background: var(--ink); color: var(--surface); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;" style-hover="filter: brightness(1.3);">Make sheet music</button>
+                <sc-if value="{{ showHomePc }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ addYoutubeHome }}" data-home-pc style="padding: 10px 16px; border-radius: 10px; border: 1px solid var(--accent-2); background: var(--accent-3); color: var(--accent); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;" style-hover="filter: brightness(0.95);">{{ homePcLabel }}</button>
+                </sc-if>
               </div>
               <sc-if value="{{ hasYtError }}" hint-placeholder-val="{{ false }}">
                 <div style="font-size: 12.5px; color: var(--bad); margin-top: 8px;">{{ ytError }}</div>
               </sc-if>
               <div style="font-size: 11.5px; color: var(--ink3); margin-top: 8px;">{{ helperNote }}</div>
+              <sc-if value="{{ showHomePc }}" hint-placeholder-val="{{ false }}">
+                <div data-home-note style="font-size: 11.5px; line-height: 1.5; color: var(--ink3); margin-top: 6px;">{{ homePcNote }}</div>
+              </sc-if>
+              <sc-if value="{{ hasHomeJobs }}" hint-placeholder-val="{{ false }}">
+                <div data-home-jobs style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px;">
+                  <div style="font-size: 12px; font-weight: 600; color: var(--ink2);">{{ homeJobsTitle }}</div>
+                  <sc-for list="{{ homeJobs }}" as="j" hint-placeholder-count="2">
+                    <div data-home-job="{{ j.id }}" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                      <div style="min-width: 0; flex: 1; flex-basis: 200px;">
+                        <div data-no-i18n="1" style="font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ j.title }}</div>
+                        <div data-home-status data-no-i18n="1" style="{{ j.statusStyle }}">{{ j.status }}</div>
+                      </div>
+                      <sc-if value="{{ j.canOpen }}" hint-placeholder-val="{{ false }}">
+                        <button onClick="{{ j.open }}" data-home-open="{{ j.id }}" style="{{ j.btnStyle }}">{{ j.openLabel }}</button>
+                      </sc-if>
+                      <sc-if value="{{ j.canCancel }}" hint-placeholder-val="{{ false }}">
+                        <button onClick="{{ j.cancel }}" data-home-cancel="{{ j.id }}" style="{{ j.btnStyle }}">{{ j.cancelLabel }}</button>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
             </div>
 
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--ink2);">
@@ -2229,6 +2254,44 @@
             </div>
             <button onClick="{{ resetProgress }}" style="margin-left: auto; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--bad); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--bad);">Reset</button>
           </div>
+          <sc-if value="{{ showHomeSettings }}" hint-placeholder-val="{{ false }}">
+            <div data-home-settings style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px 22px; display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                <div style="min-width: 0; flex: 1; flex-basis: 260px;">
+                  <div style="font-size: 13.5px; font-weight: 500;">{{ homeSettingsTitle }}</div>
+                  <div style="font-size: 12px; color: var(--ink3); margin-top: 2px;">{{ homeSettingsSub }}</div>
+                  <sc-if value="{{ hasHomeStatus }}" hint-placeholder-val="{{ false }}">
+                    <div data-home-status-line style="font-size: 12px; color: var(--ink2); margin-top: 4px;">{{ homeStatusLine }}</div>
+                  </sc-if>
+                </div>
+                <button onClick="{{ makeHomeToken }}" data-home-token-make style="margin-left: auto; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--accent);">{{ homeTokenButton }}</button>
+              </div>
+              <sc-if value="{{ hasHomeError }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: 12.5px; color: var(--bad);">{{ homeError }}</div>
+              </sc-if>
+              <sc-if value="{{ hasHomeNewToken }}" hint-placeholder-val="{{ false }}">
+                <div data-home-token-new style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--accent-2); background: var(--accent-3);">
+                  <div style="font-size: 12.5px; font-weight: 600;">{{ homeNewTokenNote }}</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <input readonly value="{{ homeNewToken }}" data-home-token-value style="flex: 1; min-width: 0; flex-basis: 220px; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 11.5px;" />
+                    <button onClick="{{ copyHomeToken }}" data-home-token-copy style="padding: 9px 14px; border-radius: 9px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ homeCopyLabel }}</button>
+                  </div>
+                  <div style="font-size: 12px; line-height: 1.5; color: var(--ink2);">{{ homeSteps }}</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ hasHomeTokens }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line);">
+                  <sc-for list="{{ homeTokens }}" as="k" hint-placeholder-count="1">
+                    <div data-home-token="{{ k.id }}" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                      <span data-no-i18n="1" style="font-size: 12.5px; font-weight: 500;">{{ k.label }}</span>
+                      <span data-no-i18n="1" style="font-size: 12px; color: var(--ink3);">{{ k.seen }}</span>
+                      <button onClick="{{ k.remove }}" data-home-token-remove="{{ k.id }}" style="{{ k.btnStyle }} margin-left: auto;">{{ k.removeLabel }}</button>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
           <div style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px 22px; display: flex; flex-direction: column; gap: 14px;">
             <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
               <div style="min-width: 0;">
@@ -7826,6 +7889,7 @@ const Import = {
     const report = Import.validateTranscription(score, built.stats, heard);
     if (wantV2) Import.recordingNotes(report, built, score, heard, rejectedV2 ? 'implausible' : useV2 ? 'unreadable' : 'not-loaded');
     const engineLabel = what.mode === 'arrange' ? 'Broad audio model + playable piano reduction'
+      : heard.homePc ? 'Piano ensemble on your PC'
       : heard.engine === 'ensemble' ? 'Piano ensemble (' + (((heard.ensemble || {}).models || []).join(' + ') || 'multiple models') + ')'
       : heard.engine === 'transkun' ? 'Transkun'
       : heard.engine === 'onsets-and-frames' ? 'Piano Onsets & Frames'
@@ -7985,6 +8049,23 @@ const Import = {
       return { score: score, source: source, report: report, musicxml: xml, recording: null };
     }
 
+    /* G10b-1: notes the person's own PC already heard (the home worker, with TransKun + Kong): no model runs here; they go the same way the browser model's go.
+       The recording itself is asked for as the browser path asks (best effort, 45 s): without it the review is by eye and says so. */
+    if (what.heard) {
+      stage('download', { pct: 0 });
+      let audioUrl = null;
+      try {
+        const ac = typeof AbortController === 'function' ? new AbortController() : null;
+        const cut = setTimeout(() => { if (ac) ac.abort(); }, 45000);
+        const r = await fetch('/api/youtube-audio?url=' + encodeURIComponent(what.url), ac ? { signal: ac.signal } : undefined);
+        if (r.ok) audioUrl = URL.createObjectURL(await r.blob());
+        clearTimeout(cut);
+      } catch (e) { audioUrl = null; }
+      if (ctl && ctl.cancelled) { if (audioUrl) { try { URL.revokeObjectURL(audioUrl); } catch (e) {} } throw importError('cancelled', tx('Cancelled.')); }
+      await Import.readyRecording(what);
+      return Import.finishHeard({ heard: what.heard, title: what.heardTitle || query, audioUrl: audioUrl }, what, onStage);
+    }
+
     /* The installed helper is the quality path: piano-specific Kong/Transkun,
        pedal events, and optional audio beat/PM2S data. Browser Basic Pitch is
        the portability fallback for hosted pages and tablets. Trying it first
@@ -8123,11 +8204,12 @@ const Import = {
     };
   },
 
-  loadYoutube(url, onStage, ctl, mode) {
+  loadYoutube(url, onStage, ctl, mode, pre) {
     if (onStage) onStage('validate', { name: url });
     if (!Import.youtubeId(url))
       return Promise.reject(importError('bad-url', tx('That is not a link to a YouTube video.'), Import.transcribeHints('bad-url')));
-    return Import.fromRecording({ url: url, mode: mode || 'auto' }, onStage, ctl);
+    /* pre: G10b-1, the notes the person's own PC already heard ({ heard, title }); without it this is what it always was */
+    return Import.fromRecording({ url: url, mode: mode || 'auto', heard: pre ? pre.heard : undefined, heardTitle: pre ? pre.title : undefined }, onStage, ctl);
   },
 
   /* ---- the one entry point ---- */
@@ -12073,11 +12155,13 @@ class Component extends DCLogic {
       if (this.state.screen === 'shared') this.loadShared(!!this.state.sharedList);
       if (this.state.screen === 'review') this.warmSingleModules();
       if (this.state.screen === 'upload' || this.state.screen === 'review') this.warmRecordingModules();
+      if (this.state.screen === 'upload' || this.state.screen === 'settings') this.homeRefresh(this.state.screen === 'settings');   /* G10b-1 */
     }
     /* signing in or out changes which shared scores are yours */
     const uid = this.state.user ? this.state.user.id : null;
     if (this._shareUid !== undefined && uid !== this._shareUid && this.state.screen === 'shared') this.loadShared(true);
     this._shareUid = uid;
+    if (uid !== this._homeUid) { this._homeUid = uid; this.homeRefresh(this.state.screen === 'settings'); }   /* G10b-1: signing in or out */
   }
   componentWillUnmount() {
     this._dead = true;
@@ -12085,6 +12169,8 @@ class Component extends DCLogic {
     if (this._i18nRaf) cancelAnimationFrame(this._i18nRaf);
     clearTimeout(this._an); clearTimeout(this._toast); clearTimeout(this._quiz); clearTimeout(this._save);
     clearTimeout(this._staffRetry);
+    clearTimeout(this._homeTimer);
+    if (this._homeVis) document.removeEventListener('visibilitychange', this._homeVis);
     clearTimeout(this._focusFollow);
     clearTimeout(this._miss);
     clearInterval(this._lxIv); clearTimeout(this._lxFlash); clearTimeout(this._lxNext);
@@ -14108,6 +14194,168 @@ class Component extends DCLogic {
     this.startImport({ url: url, name: url, meta: 'YouTube', kind: 'youtube',
       mode: this.state.transcriptionMode || 'auto' });
   }
+  /* ============================ G10b-1: high-quality conversion on my own PC ============================
+     The strong piano models (TransKun + Kong) cannot run on the free server, but they can run on the person's own PC. The page asks the site to
+     queue the link (POST /api/jobs); a worker script on that PC (tools/home-worker/) checks the site, converts the link on the PC's GPU and posts
+     the notes back; "Open" below then writes the score FROM THOSE NOTES, in the browser, the way it writes one from the browser model's notes
+     (Import.fromRecording with what.heard: v2 or the classic conversion, the flags, Write again, Undo and saving all work as they do there).
+     The server is the source of truth for the list, so it survives a reload. Nothing here runs for a guest, or for an account whose PC has never
+     connected: the button, the list and the Settings card are hidden, and the browser and local-helper paths are not touched. */
+  homeApi(path, opts) {
+    const o = { credentials: 'include', cache: 'no-store', method: (opts && opts.method) || 'GET' };
+    if (opts && opts.body !== undefined) { o.headers = { 'Content-Type': 'application/json' }; o.body = JSON.stringify(opts.body); }
+    return fetch(path, o)
+      .catch(() => { throw Object.assign(new Error(tx('Could not reach the server.')), { status: 0 }); })
+      .then(async r => {
+        const body = await r.json().catch(() => null);
+        if (r.ok && body) return body;
+        throw Object.assign(new Error(tx((body && body.error) || 'Could not reach the server.')), { status: r.status, code: body && body.code });
+      });
+  }
+  /* what the server holds for this account: the list, and whether a PC is connected. Asked when the Add or Settings screen opens, when the
+     account changes, and every 20 s (a job being converted) or 90 s (one waiting) while the page is in view; never when nothing is pending. */
+  async homeRefresh(withTokens) {
+    clearTimeout(this._homeTimer); this._homeTimer = 0;
+    if (this._dead) return;
+    if (!this.state.user) {
+      if (this.state.homeWorker || (this.state.homeJobs || []).length || (this.state.homeTokens || []).length) this.setState({ homeWorker: null, homeJobs: [], homeTokens: [] });
+      return;
+    }
+    if (!this._homeVis && typeof document !== 'undefined') {
+      this._homeVis = () => { if (document.visibilityState === 'visible' && this.state.user && (this.state.homeJobs || []).some(j => j.status === 'queued' || j.status === 'claimed')) this.homeRefresh(); };
+      document.addEventListener('visibilitychange', this._homeVis);
+    }
+    try {
+      const r = await this.homeApi('/api/jobs');
+      if (this._dead || !this.state.user) return;
+      /* say so when a conversion finishes while the person is elsewhere in the app */
+      const before = this._homeSeen || {};
+      r.jobs.forEach(j => {
+        const was = before[j.id];
+        if (was !== 'queued' && was !== 'claimed') return;
+        if (j.status === 'done') this.say(tx('Your high-quality conversion of {{title}} is ready. Open it from Add Sheet Music.', { title: j.title || tx('your recording') }));
+        else if (j.status === 'failed') this.say(tx('The high-quality conversion of {{title}} failed.', { title: j.title || tx('your recording') }));
+      });
+      this._homeSeen = {};
+      r.jobs.forEach(j => { this._homeSeen[j.id] = j.status; });
+      this.setState({ homeWorker: r.worker, homeJobs: r.jobs });
+    } catch (e) {
+      /* a server without the queue (404), or no longer signed in (401): the feature is simply not there */
+      if (e.status === 404 || e.status === 401) this.setState({ homeWorker: null, homeJobs: [] });
+    }
+    if (withTokens) {
+      try { const t = await this.homeApi('/api/worker/tokens'); if (!this._dead) this.setState({ homeTokens: t.tokens, homeWorker: t.worker }); } catch (e) { /* the card shows none */ }
+    }
+    if (this._dead || !this.state.user || (typeof document !== 'undefined' && document.visibilityState === 'hidden')) return;
+    const jobs = this.state.homeJobs || [];
+    if (jobs.some(j => j.status === 'claimed')) this._homeTimer = setTimeout(() => this.homeRefresh(), 20000);
+    else if (jobs.some(j => j.status === 'queued')) this._homeTimer = setTimeout(() => this.homeRefresh(), 90000);
+  }
+  async addYoutubeHome() {
+    const S = this.state;
+    const url = String(S.ytUrl || '').trim();
+    if (!url) return this.setState({ ytError: tx('Paste a YouTube link first.') });
+    if (!Import.youtubeId(url)) return this.setState({ ytError: tx('That is not a link to a YouTube video.') });
+    if (S.homeBusy) return;
+    this.setState({ homeBusy: true, ytError: null });
+    try {
+      const title = (await Import.youtubeTitle(url).catch(() => null)) || '';
+      const r = await this.homeApi('/api/jobs', { method: 'POST', body: { url: url, title: title } });
+      this.say(r.existing ? tx('That link is already waiting for your PC.') : tx('Sent to your PC. It will be converted when your PC checks in.'));
+      this.setState({ homeBusy: false });
+      await this.homeRefresh();
+    } catch (e) { this.setState({ homeBusy: false, ytError: e.message }); }
+  }
+  /* the notes the PC heard, as the page's heard-notes object: the accepted notes only (no pedal, no beats: the helper's own beats made v2 write bars
+     two to four times too short), and the ensemble's summary, which the review screen reads for its model-agreement figure */
+  homeHeard(res) {
+    const e = res.ensemble || {};
+    return {
+      notes: res.notes, duration: res.duration, engine: res.engine || 'ensemble', qualityTier: 'local-piano-ensemble', homePc: true,
+      truncated: res.duration >= IMPORT_LIMITS.maxAudioMinutes * 60 - 1, device: res.device || null, model: res.model || null,
+      ensemble: { models: e.models || [], primary: e.primary || null, agreement: e.agreement, accepted: e.accepted, uncertain: e.uncertain || 0 }
+    };
+  }
+  async openHomeJob(id) {
+    if (this.state.homeOpening) return;
+    this.setState({ homeOpening: id, ytError: null });
+    try {
+      const r = await this.homeApi('/api/jobs/' + encodeURIComponent(id));
+      if (!r.result || !r.result.notes || !r.result.notes.length) throw new Error(tx('The notes of that conversion are no longer kept.'));
+      this._homePre = { heard: this.homeHeard(r.result), title: r.job.title || '' };
+      this.setState({ homeOpening: null });
+      this.startImport({ url: r.job.url, name: r.job.title || r.job.url, meta: 'YouTube · ' + tx('my PC'), kind: 'youtube', mode: 'auto' });
+    } catch (e) { this._homePre = null; this.setState({ homeOpening: null, ytError: e.message }); }
+  }
+  async cancelHomeJob(id) {
+    try { await this.homeApi('/api/jobs/' + encodeURIComponent(id) + '/cancel', { method: 'POST', body: {} }); } catch (e) { this.setState({ ytError: e.message }); }
+    this.homeRefresh();
+  }
+  async makeHomeToken() {
+    if (this.state.homeBusy) return;
+    this.setState({ homeBusy: true, homeError: '' });
+    try {
+      const r = await this.homeApi('/api/worker/tokens', { method: 'POST', body: { label: 'My PC' } });
+      this.setState({ homeBusy: false, homeNewToken: r.token, homeCopied: false });
+      this.homeRefresh(true);
+    } catch (e) { this.setState({ homeBusy: false, homeError: e.message }); }
+  }
+  async revokeHomeToken(id) {
+    try { await this.homeApi('/api/worker/tokens/' + encodeURIComponent(id), { method: 'DELETE' }); this.say(tx('Token removed. That PC can no longer fetch conversions.')); } catch (e) { this.setState({ homeError: e.message }); }
+    this.setState({ homeNewToken: '' });
+    this.homeRefresh(true);
+  }
+  copyHomeToken() {
+    const t = this.state.homeNewToken;
+    const done = () => { this.setState({ homeCopied: true }); setTimeout(() => this.setState({ homeCopied: false }), 2500); };
+    try { navigator.clipboard.writeText(t).then(done, () => {}); }
+    catch (e) { const el = document.querySelector('[data-home-token-value]'); if (el) { el.select(); try { document.execCommand('copy'); done(); } catch (e2) { /* the person copies it by hand */ } } }
+  }
+  /* what the Add screen and the Settings card show */
+  homeView(S) {
+    const W = S.homeWorker, jobs = S.homeJobs || [];
+    const min = Math.max(1, Math.round(((W && W.idlePollSeconds) || 1200) / 60));
+    const pendingJob = j => j.status === 'queued' || j.status === 'claimed';
+    const statusOf = j => j.status === 'queued' ? tx('Waiting for your PC') + (j.error ? ' · ' + j.error : '')
+      : j.status === 'claimed' ? tx('Converting on your PC') + (j.progress && j.progress.stage === 'transcribe' && j.progress.pct > 0 ? ' — ' + R0(j.progress.pct * 100) + '%' : '')
+        : j.status === 'done' ? tx('Ready to open')
+          : j.status === 'failed' ? tx('Failed') + (j.error ? ' · ' + j.error : '')
+            : j.status === 'cancelled' ? tx('Cancelled') : tx('No PC picked this up in time');
+    const btn = 'padding:7px 12px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;';
+    return {
+      showHomePc: !!(S.user && W && W.everSeen && S.transcriptionMode !== 'arrange'),
+      homePcLabel: S.homeBusy ? tx('Sending…') : tx('High-quality (my PC)'),
+      addYoutubeHome: () => this.addYoutubeHome(),
+      homePcNote: tx('High-quality conversion runs on your own PC. It checks for new links about every {{min}} minutes and must be switched on; once it starts, a song takes a few minutes. To start now, open the PC shortcut.', { min: min })
+        + (W && !W.alive ? ' ' + tx('Your PC has not checked in lately, so the conversion will wait until it does.') : ''),
+      hasHomeJobs: !!(S.user && jobs.length),
+      homeJobsTitle: tx('My conversions (on my PC)'),
+      homeJobs: jobs.slice(0, 8).map(j => ({
+        id: j.id, title: j.title || j.url, status: statusOf(j), canOpen: j.status === 'done', canCancel: pendingJob(j),
+        statusStyle: 'font-size:12px;color:' + (j.status === 'done' ? 'var(--good)' : j.status === 'failed' ? 'var(--bad)' : 'var(--ink3)') + ';',
+        open: () => this.openHomeJob(j.id), cancel: () => this.cancelHomeJob(j.id),
+        openLabel: S.homeOpening === j.id ? tx('Opening…') : tx('Open'), cancelLabel: tx('Cancel'), btnStyle: btn
+      })),
+      showHomeSettings: !!S.user,
+      homeSettingsTitle: tx('Connect my PC'),
+      homeSettingsSub: tx('Convert YouTube links with the strong piano models on your own PC, for free. It needs a PC with a GPU that you switch on.'),
+      homeStatusLine: !W ? '' : W.alive ? tx('Your PC is connected.') : W.everSeen ? tx('Your PC has not checked in lately.') : W.hasToken ? tx('Waiting for your PC to connect for the first time.') : '',
+      hasHomeStatus: !!(W && (W.alive || W.everSeen || W.hasToken)),
+      makeHomeToken: () => this.makeHomeToken(),
+      homeTokenButton: S.homeBusy ? tx('Sending…') : (S.homeTokens || []).length ? tx('Make another token') : tx('Make a token'),
+      hasHomeNewToken: !!S.homeNewToken, homeNewToken: S.homeNewToken || '',
+      homeNewTokenNote: tx('Copy this token now. It is shown only once.'),
+      copyHomeToken: () => this.copyHomeToken(), homeCopyLabel: S.homeCopied ? tx('Copied') : tx('Copy'),
+      homeSteps: tx('On the PC: copy worker.config.example.json to worker.config.json (in the tools/home-worker folder), put this token and this site\u2019s address in it, then run: node tools/home-worker/worker.js --once. The README in that folder has the details.'),
+      hasHomeError: !!S.homeError, homeError: S.homeError || '',
+      hasHomeTokens: (S.homeTokens || []).length > 0,
+      homeTokens: (S.homeTokens || []).map(k => ({
+        id: k.id, label: k.label,
+        seen: k.lastSeenAt ? tx('Last seen {{when}}', { when: new Date(k.lastSeenAt).toLocaleString(S.locale) }) : tx('Not seen yet'),
+        remove: () => this.revokeHomeToken(k.id), removeLabel: tx('Remove'), btnStyle: btn
+      }))
+    };
+  }
   startImport(src) {
     this.cancelImport(true);
     this._file = src.file || null;
@@ -14271,7 +14519,8 @@ class Component extends DCLogic {
       });
     };
 
-    const work = yt ? Import.loadYoutube(yt, onStage, ctl, mode)
+    const homePre = this._homePre; this._homePre = null;   /* G10b-1: set by openHomeJob for this one import */
+    const work = yt ? Import.loadYoutube(yt, onStage, ctl, mode, homePre)
       : file ? Import.load(file, onStage, ctl, mode)
         : Promise.resolve({
           score: buildDemoScore(),
@@ -17752,6 +18001,7 @@ class Component extends DCLogic {
       ytKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.addYoutube(); } },
       addYoutube: () => this.addYoutube(),
       hasYtError: !!S.ytError, ytError: S.ytError || '',
+      ...this.homeView(S),   /* G10b-1 */
       helperNote: (() => {
         const hp = S.helper;
         const hosted = typeof location !== 'undefined' && !/^(localhost|127\.0\.0\.1)$/i.test(location.hostname || '');
