@@ -2019,7 +2019,6 @@
     "about every {{n}} minutes": "約{{n}}分ごとに",
     "about every {{n}} hours": "約{{n}}時間ごとに",
     "Check again": "再確認",
-    "Not checking any more, to spare the server. Press Check again.": "サーバーを節約するため、確認を止めました。「再確認」を押してください。",
-    "Your finished conversions take up too much room on the site. Open them first; they are cleared after 3 days.": "完了した変換がサイトの容量を使いすぎています。先に開いてください。3日後に消えます。"
+    "Not checking any more, to spare the server. Press Check again.": "サーバーを節約するため、確認を止めました。「再確認」を押してください。"
   }
 }

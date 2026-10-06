@@ -206,6 +206,27 @@ const cookieOf = r => { const c = [].concat(r.headers['set-cookie'] || [])[0] ||
       ok('(the log is on: it shows the statements the test itself ran meanwhile)', /statement:|execute/.test(text) || (await one('SELECT 1')).length === 1);
     } else console.log('  - PPP_TEST_PG_CONTAINER is not set: the database-log count of the server\'s statements is skipped (the in-process count above ran).');
     await srv.close(); srv = null;
+
+    console.log('\n\u2500\u2500 the whole boot, twelve at once \u2500\u2500');
+    /* the boot's whole schema work goes through the lock: the SQL server.js ran before the queue existed (users, progress, shares, the foreign-key DO block) is the first part of the same transaction */
+    const srvSrc = L.fs.readFileSync(path.join(L.MODS, 'server.js'), 'utf8');
+    const head = 'homeJobsStore.migrate(getPool(), `';
+    const initSql = (() => { const a = srvSrc.indexOf(head); const b = srvSrc.indexOf('`);', a); return a < 0 || b < 0 ? '' : srvSrc.slice(a + head.length, b); })();
+    ok('the boot SQL is found in server.js (users, progress, shares and the foreign-key DO block)', /CREATE TABLE IF NOT EXISTS ppp_users/.test(initSql) && /CREATE TABLE IF NOT EXISTS ppp_shares/.test(initSql) && /DO \$\$/.test(initSql), initSql.length + ' characters');
+    await q('DROP TABLE IF EXISTS ppp_worker_tokens, ppp_transcribe_jobs, ppp_shares, ppp_progress, ppp_users CASCADE');
+    const poolN = new Pool({ connectionString: URL_, max: 12 });
+    poolN.on('error', () => { /* a reset idle connection */ });
+    const racedInit = await Promise.all(Array.from({ length: 12 }, () => Store.migrate(poolN, initSql).then(() => 'ok', e => (e.code || '') + ' ' + String(e.message).slice(0, 70))));
+    await poolN.end();
+    const have = (await one(`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('ppp_users', 'ppp_progress', 'ppp_shares', 'ppp_transcribe_jobs', 'ppp_worker_tokens') ORDER BY 1`)).map(r => r.table_name).join();
+    ok('twelve instances running the WHOLE boot migration (the old tables and the queue\'s) on an empty database at the same moment: all succeed, five tables, the old foreign key on ppp_shares.owner_id dropped once', racedInit.every(x => x === 'ok') && have === 'ppp_progress,ppp_shares,ppp_transcribe_jobs,ppp_users,ppp_worker_tokens'
+      && (await one("SELECT count(*)::int n FROM pg_constraint WHERE conrelid = 'ppp_shares'::regclass AND contype = 'f'"))[0].n === 0, racedInit.filter(x => x !== 'ok').slice(0, 2).join(' | ') + ' ' + have);
+    /* and the real thing: twelve servers booting together on an empty database */
+    await q('DROP TABLE IF EXISTS ppp_worker_tokens, ppp_transcribe_jobs, ppp_shares, ppp_progress, ppp_users CASCADE');
+    const boots = await Promise.all(Array.from({ length: 12 }, () => startServer().then(s => s, err => ({ error: String(err && err.message) }))));
+    const okBoots = boots.filter(b => !b.error).length;
+    ok('twelve real server.js processes booting together on an empty database (migration and seed library at once): all twelve come up and answer /health', okBoots === 12 && (await one("SELECT count(*)::int n FROM information_schema.tables WHERE table_schema = 'public' AND table_name LIKE 'ppp\\_%'"))[0].n === 5, okBoots + ' up; ' + boots.filter(b => b.error).map(b => b.error).slice(0, 2).join(' | '));
+    await Promise.all(boots.filter(b => !b.error).map(b => b.close()));
   } finally {
     if (srv) await srv.close();
     await pool.end();

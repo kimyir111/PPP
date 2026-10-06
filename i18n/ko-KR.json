@@ -2021,7 +2021,6 @@
     "about every {{n}} minutes": "약 {{n}}분마다",
     "about every {{n}} hours": "약 {{n}}시간마다",
     "Check again": "다시 확인",
-    "Not checking any more, to spare the server. Press Check again.": "서버를 아끼려고 더는 확인하지 않아요. \"다시 확인\"을 누르세요.",
-    "Your finished conversions take up too much room on the site. Open them first; they are cleared after 3 days.": "완료된 변환이 사이트에서 너무 많은 공간을 차지해요. 먼저 열어 보세요. 3일 뒤에 지워져요."
+    "Not checking any more, to spare the server. Press Check again.": "서버를 아끼려고 더는 확인하지 않아요. \"다시 확인\"을 누르세요."
   }
 }

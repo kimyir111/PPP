@@ -49,10 +49,12 @@ const SCHEMA_SQL = `
   CREATE INDEX IF NOT EXISTS ppp_worker_tokens_owner ON ppp_worker_tokens (owner_id);
 `;
 
-/* Two instances booting together (a deploy overlap) would race on CREATE TABLE IF NOT EXISTS (a unique violation in pg_type): the migration runs in
-   one transaction under an advisory lock, so they take turns. `pool` is a pg Pool. */
+/* Two instances booting together (a deploy overlap) would race on CREATE TABLE IF NOT EXISTS (a unique violation in pg_type) or deadlock on the
+   ALTERs of the older tables: the whole of the boot's schema work runs in ONE transaction under an advisory lock, so they take turns. `pool` is a
+   pg Pool; `preSql` (optional) is the SQL the server ran before this feature existed (server.js: users, progress, shares and their ALTERs), run
+   first in the same transaction - a multi-statement query was already one implicit transaction, so for a single boot nothing differs. */
 const MIGRATE_LOCK_KEY = 727002;
-async function migrate(pool) {
+async function migrate(pool, preSql) {
   const c = await pool.connect();
   let broken = false;
   const onError = () => { broken = true; };
@@ -60,6 +62,7 @@ async function migrate(pool) {
   try {
     await c.query('BEGIN');
     await c.query('SELECT pg_advisory_xact_lock($1)', [MIGRATE_LOCK_KEY]);
+    if (preSql) await c.query(preSql);
     await c.query(SCHEMA_SQL);
     await c.query('COMMIT');
   } catch (err) {

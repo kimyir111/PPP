@@ -265,14 +265,128 @@ async function queue(S, user, id) { return (await S.as(user).post('/api/jobs', {
     heading('what the log may show: no escape sequences, no bidi tricks');
     {
       const lg = W.makeLog({ token: token }, () => {}, () => {});
-      ok('colour and cursor sequences (CSI), operating-system commands (OSC) and the other control characters are removed; a newline and a tab stay', lg.clean('a\u001b[31mRED\u001b[0m b\u001b]0;pwned\u0007c \u001b[2J\u001b[Hd\u0000e\u0008f\tg\nh') === 'aRED bc d e f\tg\nh', JSON.stringify(lg.clean('a\u001b[31mRED\u001b[0m b\u001b]0;pwned\u0007c \u001b[2J\u001b[Hd\u0000e\u0008f\tg\nh')));
-      ok('bidi overrides and isolates, directional marks and line separators become a space (a file name that reads as photo.jpg and is photo.exe cannot be written)', lg.clean('x\u202etxt.exe\u2066y\u2069z\u2028w\u200fv') === 'x txt.exe y z w v', JSON.stringify(lg.clean('x\u202etxt.exe\u2066y\u2069z\u2028w\u200fv')));
+      ok('colour and cursor sequences (CSI), operating-system commands (OSC) and the other control characters are removed (not replaced); a newline and a tab stay', lg.clean('a\u001b[31mRED\u001b[0m b\u001b]0;pwned\u0007c \u001b[2J\u001b[Hd\u0000e\u0008f\tg\nh') === 'aRED bc def\tg\nh', JSON.stringify(lg.clean('a\u001b[31mRED\u001b[0m b\u001b]0;pwned\u0007c \u001b[2J\u001b[Hd\u0000e\u0008f\tg\nh')));
+      ok('bidi overrides and isolates, directional marks and line separators are removed (a file name that reads as photo.jpg and is photo.exe cannot be written)', lg.clean('x\u202etxt.exe\u2066y\u2069z\u2028w\u200fv') === 'xtxt.exeyzwv', JSON.stringify(lg.clean('x\u202etxt.exe\u2066y\u2069z\u2028w\u200fv')));
       const hostile = (cfg, m, p, o) => /claim$/.test(p) ? Promise.resolve({ status: 200, body: n0++ === 0 ? { job: { id: 'abcdefgh1234', url: WATCH('abcdefghijk'), title: 'Song\u001b[31m RED \u001b]0;pwned\u0007\u202etxt.exe', attempt: 1 }, nextPollSeconds: 15 } : { job: null, nextPollSeconds: 15 }, text: '', headers: {} }) : Promise.resolve({ status: 200, body: { ok: true }, text: '', headers: {} });
       let n0 = 0;
       const xh = newWorker(S, token, st, {}, { request: hostile, download: () => Promise.reject(Object.assign(new Error('no audio here'), { retry: false })) });
       await xh.w.runOnce();
       const all = xh.cap.lines().join('\n');
       ok('a title that carries escape sequences and a bidi override reaches the log without them', /Song/.test(all) && !/[\u001b\u202e\u0007]/.test(all), JSON.stringify(all.slice(0, 200)));
+    }
+
+    heading('the log hides the token even when something is put in the middle of it');
+    {
+      const out = [], err = [];
+      const lg = W.makeLog({ token: token }, s => out.push(s), s => err.push(s));
+      const cut = 20;
+      const splits = ['\u001b[31m', '\u001b]0;pwned\u0007', '\u001b[2J\u001b[H', '\u0000', '\u0008', '\u202e', '\u2066', '\u200f', '\u2028', '\u001b[1;31m\u001b[0m'];
+      splits.forEach(sp => { lg('x ' + token.slice(0, cut) + sp + token.slice(cut) + ' y'); lg.warn('x ' + token.slice(0, cut) + sp + token.slice(cut) + ' y'); });
+      const all = out.concat(err);
+      ok(splits.length * 2 + ' lines with the token split by an escape sequence, a control character, a bidi mark or a line separator: every one shows only ppw_***, no piece of the secret', all.length === splits.length * 2 && all.every(l => /^\[\d\d:\d\d:\d\d\] x ppw_\*\*\* y$/.test(l)) && all.every(l => l.indexOf(token.slice(cut)) < 0 && l.indexOf(token.slice(4, 14)) < 0), JSON.stringify(all.slice(0, 2)));
+      ok('the same through log.warn and through a token the log was not told about (the shape alone)', (() => { const o2 = [], lg2 = W.makeLog({}, s => o2.push(s), () => {}); lg2('t ' + token.slice(0, 30) + '\u001b[0m' + token.slice(30)); return /ppw_\*\*\*$/.test(o2[0]) && o2[0].indexOf(token.slice(30)) < 0; })());
+    }
+
+    heading('a wait is never longer than a day, and never NaN');
+    {
+      const waitsFor2 = async (script, over, nWaits) => {
+        let i = 0;
+        const request = () => { const a2 = script[Math.min(i++, script.length - 1)]; return Promise.resolve(Object.assign({ text: '', headers: {} }, a2)); };
+        const x = newWorker(S, token, st, over || {}, { request: request, jitter: () => 0 });
+        const waits = [];
+        const orig = x.w.ctl.sleep;
+        x.w.ctl.sleep = ms => { waits.push(ms / 1000); if (waits.length >= nWaits) x.w.ctl.stop = true; return orig(0); };
+        const polls0 = Date.now();
+        await x.w.runForever();
+        return { waits: waits, ms: Date.now() - polls0, polls: i };
+      };
+      const ra = async v => waitsFor2(Array(6).fill({ status: 429, body: { error: 'x' }, headers: { 'retry-after': v } }), {}, 4);
+      for (const v of ['99999999', '1e999', 'Infinity', '86400', '999999999999999999999']) {
+        const r = await ra(v);
+        ok('429 with Retry-After ' + v + ': no wait over a day, and the loop is NOT firing again at once (' + r.polls + ' polls for 4 waits)', r.waits.every(x => x >= 60 && x <= 86400) && r.polls <= 6, r.waits.join());
+      }
+      const rb = await ra('Wed, 21 Oct 2026 07:28:00 GMT'), rc = await ra('-5'), rd = await ra('');
+      ok('a Retry-After that is a date, negative or empty is ignored (the ordinary backoff: 60, 120, ...)', [rb, rc, rd].every(r => r.waits.join() === '60,120,240,480'), [rb, rc, rd].map(r => r.waits.join()).join(' | '));
+      for (const v of [1e10, 1e300, Infinity, -Infinity, NaN, 'abc', -1, 0, null, undefined, '3600', 86401, 7200]) {
+        const r = await waitsFor2(Array(6).fill({ status: 200, body: { job: null, nextPollSeconds: v } }), {}, 3);
+        const want = typeof v === 'number' && Number.isFinite(v) && v >= 5 ? Math.min(v, 86400) : v === '3600' ? 3600 : 3600;
+        ok('nextPollSeconds ' + String(v) + ': every wait is ' + want + ' (a day at most; a number that is not one, or none, is the hour)', r.waits.every(x => x === want) && r.polls <= 4, r.waits.join());
+      }
+      const { createWorker } = W;
+      const ww = newWorker(S, token, st).w;
+      ok('failureWait is safe with anything: no NaN, nothing over a day, a count of 2000 does not overflow', [[NaN, NaN], [undefined, undefined], [0, 0], [-3, -1], [2000, 3600], [5, 1e12], [Infinity, Infinity]].every(([count, idle]) => { const x = ww.failureWait('http', 502, 0, count, idle), y = ww.failureWait('net', 429, 1e12, count, idle); return Number.isFinite(x) && x >= 30 && x <= 86400 && Number.isFinite(y) && y <= 86400; }));
+      const seen = [];
+      const realSet = global.setTimeout;
+      global.setTimeout = (f, ms, ...r) => { seen.push(ms); return realSet(f, 0, ...r); };
+      try { for (const v of [1e12, Infinity, NaN, -5, 0, 5000]) await ww.ctl.sleep(v); } finally { global.setTimeout = realSet; }
+      ok('and the sleep itself is the last line of defence: 1e12, Infinity, NaN and -5 ms are a day, an hour, an hour and an hour (scaled 1/1000 here), never NaN or Infinity', seen.length === 6 && seen.every(x => Number.isFinite(x)) && seen[0] === 86400 && seen[1] === 3600 && seen[2] === 3600 && seen[3] === 3600 && seen[4] === 0 && seen[5] === 5, JSON.stringify(seen));
+    }
+
+    heading('an answer that never ends is cut, not read');
+    {
+      /* a server that answers and then never stops sending: the worker reads what it needs (a few KB, or 8 MB at the most) and drops the connection */
+      const make = (status, type, headers) => {
+        const st2 = { sent: 0, closed: false, hits: 0 };
+        const srv = L.http.createServer((q, r) => {
+          st2.hits++;
+          r.on('close', () => { st2.closed = true; });
+          r.writeHead(status, Object.assign({ 'Content-Type': type }, headers || {}));
+          const chunk = Buffer.alloc(64 * 1024, 'x');
+          const pump = () => { if (r.destroyed || r.writableEnded) return; st2.sent += chunk.length; r.write(chunk, () => setImmediate(pump)); };
+          pump();
+        });
+        return new Promise(res => srv.listen(0, '127.0.0.1', () => res({ srv: srv, port: srv.address().port, st: st2, close: () => new Promise(r2 => { srv.closeAllConnections && srv.closeAllConnections(); srv.close(r2); }) })));
+      };
+      const dl = async (status, type, headers, over) => {
+        const m = await make(status, type, headers);
+        const t0 = Date.now();
+        let err = null;
+        try { await W.downloadTo('http://127.0.0.1:' + m.port + '/a', path.join(S.dir, 'dl.bin'), Object.assign({ maxMB: 1 }, over)); } catch (x) { err = x; }
+        await sleep(200);
+        const r = { err: err, ms: Date.now() - t0, sent: m.st.sent, closed: m.st.closed };
+        await m.close();
+        return r;
+      };
+      const html = await dl(200, 'text/html', {}), json = await dl(200, 'application/json', {}), s503 = await dl(503, 'text/plain', {}), s404 = await dl(404, 'audio/wav', {}), red = await dl(302, 'text/plain', { Location: '/elsewhere' });
+      ok('a page instead of audio (200 text/html), a JSON answer, a 503 and a 404, all with an endless body: each fails at once with a sentence, the connection is DROPPED (closed on the server), and well under 4 MB was sent', [html, json, s503, s404].every(r => r.err && r.closed && r.sent < 4 * 1048576 && r.ms < 4000) && /page, not audio/.test(html.err.message) && /HTTP 503/.test(s503.err.message), JSON.stringify([html, json, s503, s404].map(r => [r.err && r.err.message.slice(0, 30), r.closed, r.sent])));
+      const big = await dl(200, 'audio/wav', { 'Content-Length': String(3 * 1048576 * 1024) });
+      const chunked = await dl(200, 'audio/wav', {});
+      ok('audio announced as 3 GB is refused before it is read; audio with no length that goes on past the cap is cut at the cap (1 MB here): "larger than 1 MB", closed, nothing more than a few MB sent', [big, chunked].every(r => r.err && /larger than 1 MB/.test(r.err.message) && r.closed && r.sent < 8 * 1048576), JSON.stringify([big, chunked].map(r => [r.err && r.err.message.slice(0, 40), r.closed, r.sent])));
+      /* the site's own answers: the claim, the heartbeat... are cut at 8 MB */
+      const m = await make(200, 'application/json');
+      const cfgE = { siteUrl: 'http://127.0.0.1:' + m.port, token: token };
+      const t1 = Date.now();
+      let errE = null; try { await W.request(cfgE, 'POST', '/api/worker/claim', { json: {}, timeoutMs: 30000 }); } catch (x) { errE = x; }
+      await sleep(200);
+      ok('an answer of the site that never ends is cut at 8 MB (not read for 60 s): a NetError "larger than 8 MB", the connection dropped', errE && /larger than 8 MB/.test(errE.message) && m.st.closed && m.st.sent < 64 * 1048576 && Date.now() - t1 < 20000, errE && errE.message + ' sent ' + m.st.sent + ' ms ' + (Date.now() - t1));
+      await m.close();
+    }
+
+    heading('a redirect is followed only to the same origin - compared as parsed, not as text');
+    {
+      const hits = { a: [], b: [] };
+      const B = L.http.createServer((q, r) => { hits.b.push(q.url); r.writeHead(200, { 'Content-Type': 'audio/wav' }); r.end('RIFFxxxxWAVE'); });
+      await new Promise(r => B.listen(0, '127.0.0.1', r));
+      const bp = B.address().port;
+      let loc = null;
+      const A = L.http.createServer((q, r) => { hits.a.push(q.url); if (q.url === '/start') { r.writeHead(302, { Location: loc }); r.end(); } else { r.writeHead(200, { 'Content-Type': 'audio/wav' }); r.end('RIFFxxxxWAVE'); } });
+      await new Promise(r => A.listen(0, '127.0.0.1', r));
+      const ap = A.address().port;
+      const tryTo = async location => { loc = location; hits.a.length = 0; hits.b.length = 0; try { await W.downloadTo('http://127.0.0.1:' + ap + '/start', path.join(S.dir, 'rd.bin'), {}); return null; } catch (x) { return x; } };
+      const cases = [
+        ['userinfo that looks like the site, then another host and port', 'http://127.0.0.1:' + ap + '@127.0.0.1:' + bp + '/steal'],
+        ['the site\'s name as the start of another host (a port followed by more)', 'http://127.0.0.1:' + ap + '.evil.example/x'],
+        ['the same address by another name (localhost)', 'http://localhost:' + ap + '/x'],
+        ['the same host, another port', 'http://127.0.0.1:' + bp + '/steal'],
+        ['the same host and port with userinfo of someone else', 'http://user:pw@127.0.0.1:' + bp + '/steal']
+      ];
+      for (const [name, location] of cases) {
+        const err = await tryTo(location);
+        ok('redirect to ' + name + ': refused, and neither the other server nor a second request to the site was made', !!err && /another address|cannot be used/.test(err.message) && hits.b.length === 0 && hits.a.length === 1, (err && err.message) + ' a=' + hits.a.join() + ' b=' + hits.b.join());
+      }
+      const okErr = await tryTo('http://127.0.0.1:' + ap + '/fine');
+      ok('and the same origin spelled out in full is followed', okErr === null && hits.a.join() === '/start,/fine', (okErr && okErr.message) + ' ' + hits.a.join());
+      await new Promise(r => A.close(r)); await new Promise(r => B.close(r));
     }
 
     heading('the network and the token');
@@ -293,6 +407,15 @@ async function queue(S, user, id) { return (await S.as(user).post('/api/jobs', {
     const dead = L.http.createServer(() => {}); await new Promise(r => dead.listen(0, '127.0.0.1', r)); const deadPort = dead.address().port; await new Promise(r => dead.close(r));
     const down = newWorker(S, token, st, { siteUrl: 'http://127.0.0.1:' + deadPort, audioBase: 'http://127.0.0.1:' + deadPort });
     ok('--once with the site unreachable: tries 3 times, says so, exits 1 (not 0, not a crash)', (await down.w.runOnce()) === 1 && /Could not reach the site/.test(down.cap.out.join('\n')) && (down.cap.out.join('\n').match(/Trying again/g) || []).length === 2, down.cap.out.join('\n').slice(0, 400));
+    {
+      /* --once and a site that asks for a wait of 99999999 seconds: what the person reads (and what the timer gets) is a day at most, not 27777 hours */
+      const slept = [];
+      const hostileWait = newWorker(S, token, st, {}, { request: () => Promise.resolve({ status: 503, body: { error: 'busy' }, text: '', headers: { 'retry-after': '99999999' } }) });
+      hostileWait.w.ctl.sleep = ms => { slept.push(ms / 1000); return Promise.resolve(); };
+      const code = await hostileWait.w.runOnce();
+      const said = hostileWait.cap.out.join('\n');
+      ok('--once, the site answers 503 with Retry-After 99999999: it tries twice more, waits a day at most and SAYS a day at most (24 h), exit 1', code === 1 && slept.length === 2 && slept.every(x => x === 86400) && /Trying again in 24 h\./.test(said) && !/\d{3,} h/.test(said), slept.join() + ' | ' + said.slice(0, 300));
+    }
 
     heading('the site is trusted with the queue, not with what this PC runs');
     {

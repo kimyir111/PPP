@@ -2019,7 +2019,6 @@
     "about every {{n}} minutes": "大约每 {{n}} 分钟",
     "about every {{n}} hours": "大约每 {{n}} 小时",
     "Check again": "再次检查",
-    "Not checking any more, to spare the server. Press Check again.": "为节省服务器资源，已停止自动检查。请点“再次检查”。",
-    "Your finished conversions take up too much room on the site. Open them first; they are cleared after 3 days.": "已完成的转换占用了太多站点空间。请先打开它们；3 天后会被清除。"
+    "Not checking any more, to spare the server. Press Check again.": "为节省服务器资源，已停止自动检查。请点“再次检查”。"
   }
 }

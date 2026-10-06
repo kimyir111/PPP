@@ -31,6 +31,25 @@ async function enqueue(S, user, id, extra) {
   return S.as(user).post('/api/jobs', Object.assign({ url: WATCH(id || 'aaaaaaaaaaa'), title: 'A piece' }, extra));
 }
 
+/* one conversion, as the page and the PC do it: asked for, claimed, finished */
+async function convert(S, user, token, id, result) {
+  const q = await enqueue(S, user, id);
+  if (q.status !== 201) return { q: q, g: null, r: null };
+  const g = (await S.worker(token).post('/api/worker/claim', { once: true })).body.job;
+  const r = await S.worker(token).post('/api/worker/jobs/' + g.id + '/result', result || goodResult(40));
+  return { q: q, g: g, r: r };
+}
+async function failed(S, user, token, id) {
+  const q = await enqueue(S, user, id);
+  const g = (await S.worker(token).post('/api/worker/claim', { once: true })).body.job;
+  await S.worker(token).post('/api/worker/jobs/' + g.id + '/fail', { error: 'no' });
+  return { q: q, g: g };
+}
+const storedOf = (S, owner) => Array.from(S.svc._state.jobs.values()).filter(j => j.ownerId === owner && j.status === 'done').reduce((n, j) => n + j.bytes, 0);
+const idsOf = async (S, user) => (await S.as(user).get('/api/jobs')).body.jobs.map(j => j.id);
+/* a result of 20,000 notes: about 0.9 MB, the biggest a long, dense piece makes */
+const bigResult = () => ({ notes: Array.from({ length: 20000 }, (_, i) => ({ on: Math.round(i * 40) / 1000, off: Math.round(i * 40 + 30) / 1000, midi: 60 + (i % 12), vel: 64 })), duration: 800, engine: 'ensemble', device: 'cuda' });
+
 async function resultRules() {
   heading('the result a worker may post (home-result.js)');
   const good = goodResult(40);
@@ -433,33 +452,170 @@ async function main() {
       } finally { await SC.close(); }
     }
 
-    heading('one account cannot use up the room: a share of the stored notes for each');
+    heading('one account cannot use up the room - and is never locked out of it: the oldest finished conversions are cleared to make room');
     {
-      /* (a) the share is reached exactly: the next JOB is refused; (b) the share would be passed by a result: the RESULT is refused */
-      for (const [cap, where] of [[3712, 'enqueue'], [3000, 'result']]) {
-        const SU = await L.startService({ users: ['hog', 'teacher'], config: { perUserResultBytes: cap, totalResultBytes: 1e9 } });
+      const small = { perUserResultBytes: 5000, resultReserveBytes: 1000, totalResultBytes: 1e9 };
+      /* (a) the share would be passed by a result: the PC's work is NOT lost, the oldest finished conversion of the account is cleared */
+      const SA = await L.startService({ users: ['hog', 'teacher'], config: small });
+      try {
+        const th = await mkToken(SA, 'hog'), tt = await mkToken(SA, 'teacher');
+        const c1 = await convert(SA, 'hog', th, 'hoghoghog01'); SA.advance(1000);
+        const c2 = await convert(SA, 'hog', th, 'hoghoghog02'); SA.advance(1000);
+        ok('two results of 1856 bytes are kept (3712 of the 5000)', c1.r.status === 200 && c2.r.status === 200 && storedOf(SA, 'hog') === 3712);
+        const c3 = await convert(SA, 'hog', th, 'hoghoghog03');
+        const ids = await idsOf(SA, 'hog');
+        ok('a third: asked for (room is made only if the share would not leave 1000 bytes for it: 3712 + 1000 fits), and its result, which would pass the share (5568), is TAKEN - the oldest finished conversion is cleared for it, the PC\'s work is not refused', c3.q.status === 201 && c3.r.status === 200 && ids.indexOf(c1.q.body.job.id) < 0 && ids.indexOf(c2.q.body.job.id) >= 0 && ids.indexOf(c3.q.body.job.id) >= 0, JSON.stringify([c3.q.status, c3.r.status, c3.r.text.slice(0, 80)]));
+        ok('and the share holds: 3712 bytes kept, the cleared one is gone from the database too', storedOf(SA, 'hog') === 3712 && (await SA.inner.getResult(c1.q.body.job.id, 'hog')) === null && (await SA.inner.getResult(c3.q.body.job.id, 'hog')) !== null);
+        const c4 = await convert(SA, 'teacher', tt, 'teacherteac');
+        ok('another account is not touched by any of it', c4.q.status === 201 && c4.r.status === 200 && (await idsOf(SA, 'teacher')).length === 1);
+      } finally { await SA.close(); }
+      /* (b) a new job asks for room too (its result is on its way): the oldest finished conversion goes then, not at the result */
+      const SB = await L.startService({ users: ['hog'], config: { perUserResultBytes: 4000, resultReserveBytes: 1000, totalResultBytes: 1e9 } });
+      try {
+        const th = await mkToken(SB, 'hog');
+        const c1 = await convert(SB, 'hog', th, 'hoghoghog01'); SB.advance(1000);
+        const c2 = await convert(SB, 'hog', th, 'hoghoghog02'); SB.advance(1000);
+        const q3 = await enqueue(SB, 'hog', 'hoghoghog03');
+        const ids = await idsOf(SB, 'hog');
+        ok('3712 kept + 1000 for the new job would pass the share of 4000: asking for the job clears the oldest finished conversion (not an error)', q3.status === 201 && ids.indexOf(c1.q.body.job.id) < 0 && ids.indexOf(c2.q.body.job.id) >= 0 && storedOf(SB, 'hog') === 1856, JSON.stringify([q3.status, ids.length, storedOf(SB, 'hog')]));
+        const g3 = (await SB.worker(th).post('/api/worker/claim', { once: true })).body.job;
+        ok('and its result is taken without clearing anything more', (await SB.worker(th).post('/api/worker/jobs/' + g3.id + '/result', goodResult(40))).status === 200 && storedOf(SB, 'hog') === 3712 && (await idsOf(SB, 'hog')).length === 2);
+      } finally { await SB.close(); }
+      /* (b2) the edges of the share, to the byte: results of 1856 bytes, a share of exactly two of them (3712), then one byte less */
+      for (const edge of [{ cap: 3712, name: 'a share of exactly two results (3712)' }, { cap: 3711, name: 'a share one byte under two results (3711)' }]) {
+        const SG = await L.startService({ users: ['edge'], config: { perUserResultBytes: edge.cap, resultReserveBytes: 0, totalResultBytes: 1e9 } });
         try {
-          const th = await mkToken(SU, 'hog'), tt = await mkToken(SU, 'teacher');
-          let hogDone = 0, refused = null;
-          for (let i = 0; i < 5 && !refused; i++) {
-            const q = await enqueue(SU, 'hog', 'hoghoghog0' + i);
-            if (q.status !== 201) { refused = { at: 'enqueue', status: q.status, code: q.body.code }; break; }
-            const g = (await SU.worker(th).post('/api/worker/claim', { once: true })).body.job;
-            const r = await SU.worker(th).post('/api/worker/jobs/' + g.id + '/result', goodResult(40));
-            if (r.status === 200) hogDone++; else refused = { at: 'result', status: r.status, code: r.body.code };
-          }
-          ok('cap ' + cap + ': an account that holds its share is refused with "quota" - at ' + where + ' (not "busy": the site as a whole is not full)', refused && refused.at === where && refused.code === 'quota' && hogDone === (where === 'enqueue' ? 2 : 1), JSON.stringify([hogDone, refused]));
-          const q2 = await enqueue(SU, 'teacher', 'teacherteac');
-          const g2 = (await SU.worker(tt).post('/api/worker/claim', { once: true })).body.job;
-          const r2 = await SU.worker(tt).post('/api/worker/jobs/' + g2.id + '/result', goodResult(40));
-          ok('cap ' + cap + ': another account (the teacher) is not affected at all: it queues and stores as usual', q2.status === 201 && r2.status === 200);
-          await SU.advance(4 * 86400000); await SU.svc._state.purge(SU.clock.t);
-          ok('cap ' + cap + ': and the hog has room again when its old results are cleared (3 days)', (await enqueue(SU, 'hog', 'hoghoghog9x')).status === 201);
-        } finally { await SU.close(); }
+          const th = await mkToken(SG, 'edge');
+          const steps = [];
+          for (let i = 0; i < 5; i++) { steps.push(await convert(SG, 'edge', th, 'edgeedge' + String(i).padStart(3, '0'))); SG.advance(1000); }
+          const ids = await idsOf(SG, 'edge');
+          const kept = edge.cap === 3712 ? 2 : 1;
+          ok(edge.name + ': five conversions in a row, every one asked for (201) and its result TAKEN (200) - the PC\'s work is never refused for the account\'s own share', steps.every(s => s.q.status === 201 && s.r.status === 200), steps.map(s => s.q.status + '/' + (s.r && s.r.status)).join(' '));
+          ok(edge.name + ': the newest ' + kept + ' are kept, the older ones are gone, the share holds', ids.length === kept && ids.indexOf(steps[4].q.body.job.id) >= 0 && storedOf(SG, 'edge') === 1856 * kept && storedOf(SG, 'edge') <= edge.cap, JSON.stringify([ids.length, storedOf(SG, 'edge')]));
+        } finally { await SG.close(); }
       }
+      /* (c) failed conversions hold no notes: they are not cleared to make room for notes */
+      const SC = await L.startService({ users: ['hog'], config: { perUserResultBytes: 2500, resultReserveBytes: 1000, totalResultBytes: 1e9 } });
+      try {
+        const th = await mkToken(SC, 'hog');
+        const c1 = await convert(SC, 'hog', th, 'hoghoghog01'), f2 = await failed(SC, 'hog', th, 'hoghoghog02');
+        const q3 = await enqueue(SC, 'hog', 'hoghoghog03');
+        const ids = await idsOf(SC, 'hog');
+        ok('for room for notes only a conversion that holds notes goes: the done one, not the failed one', q3.status === 201 && ids.indexOf(c1.q.body.job.id) < 0 && ids.indexOf(f2.g.id) >= 0, JSON.stringify(ids.length));
+      } finally { await SC.close(); }
+      /* (d) for room among the rows, failed, cancelled and expired ones go before done ones, the oldest first */
+      const was = J.LIMITS.ROWS_PER_USER;
+      J.LIMITS.ROWS_PER_USER = 4;
+      const SD = await L.startService({ users: ['rows'] });
+      try {
+        const th = await mkToken(SD, 'rows');
+        const A = await convert(SD, 'rows', th, 'rowsrowsr01'); SD.advance(1000);
+        const B = await failed(SD, 'rows', th, 'rowsrowsr02'); SD.advance(1000);
+        const C = await convert(SD, 'rows', th, 'rowsrowsr03'); SD.advance(1000);
+        const D = await failed(SD, 'rows', th, 'rowsrowsr04'); SD.advance(1000);
+        const q5 = await enqueue(SD, 'rows', 'rowsrowsr05');
+        const ids = await idsOf(SD, 'rows');
+        ok('4 rows (done, failed, done, failed), a fifth job: the oldest FAILED one goes (not the older done one)', q5.status === 201 && ids.length === 4 && ids.indexOf(B.g.id) < 0 && ids.indexOf(A.q.body.job.id) >= 0 && ids.indexOf(C.q.body.job.id) >= 0 && ids.indexOf(D.g.id) >= 0, JSON.stringify([q5.status, ids.length]));
+        await SD.as('rows').post('/api/jobs/' + q5.body.job.id + '/cancel');
+        const q6 = await enqueue(SD, 'rows', 'rowsrowsr06');
+        const ids2 = await idsOf(SD, 'rows');
+        ok('and the next one clears the next failed or cancelled row, the done ones last', q6.status === 201 && ids2.length === 4 && ids2.indexOf(A.q.body.job.id) >= 0 && ids2.indexOf(C.q.body.job.id) >= 0 && ids2.indexOf(D.g.id) < 0, JSON.stringify([q6.status, ids2.length]));
+      } finally { J.LIMITS.ROWS_PER_USER = was; await SD.close(); }
+      /* (e) the story of the review: conversions of the biggest size, one after the other, none refused, none lost */
+      const SE = await L.startService({ users: ['big'] });
+      try {
+        const th = await mkToken(SE, 'big');
+        const outs = [];
+        for (let i = 0; i < 11; i++) outs.push(await convert(SE, 'big', th, 'bigbigbig' + String(i).padStart(2, '0'), bigResult()));
+        const cap = J.LIMITS.PER_USER_RESULT_BYTES;
+        const doneRows = (await SE.as('big').get('/api/jobs')).body.jobs.filter(j => j.status === 'done').length;
+        ok('11 conversions of 20,000 notes (about 0.9 MB each; the share is 8 MiB): every one asked for (201) and its result taken (200) - none refused, none lost', outs.every(o => o.q.status === 201 && o.r.status === 200), outs.map(o => o.q.status + '/' + (o.r && o.r.status)).join(' '));
+        ok('the account holds at most its share (' + (storedOf(SE, 'big') / 1048576).toFixed(2) + ' of 8 MiB), the newest conversions are the ones kept (' + doneRows + ' of 11)', storedOf(SE, 'big') <= cap && doneRows >= 8 && doneRows <= 9 && (await idsOf(SE, 'big')).indexOf(outs[10].q.body.job.id) >= 0 && (await idsOf(SE, 'big')).indexOf(outs[0].q.body.job.id) < 0, doneRows + ' ' + storedOf(SE, 'big'));
+      } finally { await SE.close(); }
+      /* (f) a conversion that is finished can be removed by its owner (which also frees its notes); a waiting or converting one has to be cancelled first */
+      const SF = await L.startService({ users: ['own', 'other'] });
+      try {
+        const th = await mkToken(SF, 'own');
+        const done = await convert(SF, 'own', th, 'removeme001'), fl = await failed(SF, 'own', th, 'removeme002');
+        const waiting = (await enqueue(SF, 'own', 'removeme003')).body.job;
+        const before = storedOf(SF, 'own');
+        ok('another account cannot remove it (404); nobody without a session can (401); a request from another site is refused (403)', (await SF.as('other').del('/api/jobs/' + done.q.body.job.id)).status === 404 && (await req(SF.port, 'DELETE', '/api/jobs/' + done.q.body.job.id)).status === 401
+          && (await req(SF.port, 'DELETE', '/api/jobs/' + done.q.body.job.id, { user: 'own', headers: { Origin: 'https://evil.example' } })).status === 403 && (await idsOf(SF, 'own')).indexOf(done.q.body.job.id) >= 0);
+        ok('a waiting conversion cannot be removed (409, "cancel it first"), a converting one neither', (await SF.as('own').del('/api/jobs/' + waiting.id)).status === 409 && (await SF.as('own').del('/api/jobs/' + waiting.id)).body.code === 'pending'
+          && await (async () => { const g = (await SF.worker(th).post('/api/worker/claim', { once: true })).body.job; return g.id === waiting.id && (await SF.as('own').del('/api/jobs/' + waiting.id)).status === 409; })());
+        const rd = await SF.as('own').del('/api/jobs/' + done.q.body.job.id);
+        ok('a done conversion is removed (200): gone from the list, from the database, its notes out of the account\'s share; opening it is 404', rd.status === 200 && (await idsOf(SF, 'own')).indexOf(done.q.body.job.id) < 0 && (await SF.as('own').get('/api/jobs/' + done.q.body.job.id)).status === 404
+          && (await SF.inner.getResult(done.q.body.job.id, 'own')) === null && storedOf(SF, 'own') === before - 1856 && !(await SF.inner.loadAll()).jobs.some(j => j.id === done.q.body.job.id));
+        ok('a failed one too; a second removal is 404', (await SF.as('own').del('/api/jobs/' + fl.g.id)).status === 200 && (await SF.as('own').del('/api/jobs/' + fl.g.id)).status === 404);
+        await SF.as('own').post('/api/jobs/' + waiting.id + '/cancel');
+        ok('a cancelled one can be removed', (await SF.as('own').del('/api/jobs/' + waiting.id)).status === 200 && (await idsOf(SF, 'own')).length === 0);
+      } finally { await SF.close(); }
     }
 
-    heading('the account is looked up once, then remembered (the page polls often)');
+    heading('a check is not a heartbeat (worker.js --check asks /api/worker/ping)');
+    {
+      const SP = await L.startService({ users: ['ck'] });
+      try {
+        const tk = await mkToken(SP, 'ck');
+        const w0 = (await SP.as('ck').get('/api/worker/status')).body.worker;
+        await SP.worker(tk).get('/api/worker/ping');
+        const w1 = (await SP.as('ck').get('/api/worker/status')).body.worker;
+        ok('the first check marks the PC as connected (so the page offers the button) and alive for a couple of minutes', !w0.everSeen && w1.everSeen && w1.alive);
+        SP.advance(3 * 60 * 1000);
+        ok('three minutes later it is not alive any more (a check announces no wait)', (await SP.as('ck').get('/api/worker/status')).body.worker.alive === false);
+        await SP.worker(tk).get('/api/worker/ping');
+        const w2 = (await SP.as('ck').get('/api/worker/status')).body.worker;
+        ok('a second check changes nothing: the PC is not alive again, the last-seen time is the first one\'s', w2.alive === false && w2.lastSeenAt === w1.lastSeenAt, JSON.stringify(w2));
+        await SP.worker(tk).post('/api/worker/claim', { waitSeconds: 3600 });
+        const w3 = (await SP.as('ck').get('/api/worker/status')).body.worker;
+        SP.advance(30 * 60 * 1000);
+        await SP.worker(tk).get('/api/worker/ping');
+        const w4 = (await SP.as('ck').get('/api/worker/status')).body.worker;
+        ok('and a check never shortens or extends what a running worker announced (alive for two waits from its own poll, not from the check)', w3.alive && w4.lastSeenAt === w3.lastSeenAt && w4.alive, JSON.stringify([w3.lastSeenAt, w4.lastSeenAt]));
+        SP.advance(2 * 3600 * 1000);
+        await SP.worker(tk).get('/api/worker/ping');
+        ok('two hours and a half after the worker\'s last poll it is not alive, however many checks were made since', (await SP.as('ck').get('/api/worker/status')).body.worker.alive === false);
+      } finally { await SP.close(); }
+    }
+
+    heading('the hourly budgets: given back once, per address, and not lost to a store that fails');
+    {
+      const SH = await L.startService({ users: ['h6', 'h7'] });
+      try {
+        let made = 0;
+        for (let i = 0; i < 25; i++) { const r = await SH.as('h6').post('/api/jobs', { url: WATCH('budgetbud' + String(i).padStart(2, '0')) }); if (r.status === 201) { made++; await SH.as('h6').post('/api/jobs/' + r.body.job.id + '/cancel'); } }
+        const refused = [];
+        for (let i = 0; i < 10; i++) refused.push((await SH.as('h6').post('/api/jobs', { url: 'https://example.com/' + i })).status);
+        let more = 0, last = null;
+        for (let i = 0; i < 12; i++) { const r = await SH.as('h6').post('/api/jobs', { url: WATCH('budgetbux' + String(i).padStart(2, '0')) }); if (r.status === 201) { more++; await SH.as('h6').post('/api/jobs/' + r.body.job.id + '/cancel'); } else { last = r; break; } }
+        ok('25 enqueues, 10 refused requests (each takes a slot and gives back exactly ONE), then exactly 5 more enqueues: the 31st is 429 - a refusal never frees a slot it did not take', made === 25 && refused.every(s => s === 422) && more === 5 && last && last.status === 429 && last.body.code === 'too-many', made + ' ' + more + ' ' + (last && last.status));
+        /* a store that fails to write the job gives the slot back */
+        SH.store.fail.on = true; SH.store.fail.only = 'insertJob';
+        const down = [];
+        for (let i = 0; i < 35; i++) down.push((await SH.as('h7').post('/api/jobs', { url: WATCH('downdown' + String(i).padStart(3, '0')) })).status);
+        SH.store.fail.on = false;
+        let again = 0;
+        for (let i = 0; i < 30; i++) { const r = await SH.as('h7').post('/api/jobs', { url: WATCH('upupupup' + String(i).padStart(3, '0')) }); if (r.status === 201) { again++; await SH.as('h7').post('/api/jobs/' + r.body.job.id + '/cancel'); } }
+        ok('35 enqueues while the store cannot write (503 each) cost nothing: all 30 hourly enqueues are still there afterwards', down.every(s => s === 503) && again === 30, down.slice(0, 3).join() + ' ' + again);
+      } finally { await SH.close(); }
+      /* tokens: 20 an hour per address, whoever the accounts are */
+      const ST = await L.startService({ users: ['t1', 't2', 't3', 't4', 't5'] });
+      try {
+        const out = [];
+        for (const u of ['t1', 't2', 't3', 't4', 't5']) for (let i = 0; i < 4; i++) out.push((await req(ST.port, 'POST', '/api/worker/tokens', { user: u, ip: '11.0.0.1', body: {} })).status);
+        const over = await req(ST.port, 'POST', '/api/worker/tokens', { user: 't1', ip: '11.0.0.1', body: {} });
+        const elsewhere = await req(ST.port, 'POST', '/api/worker/tokens', { user: 't1', ip: '11.0.0.2', body: {} });
+        ok('five accounts at one address: 20 tokens an hour, the 21st is 429 (too-many) whoever asks; from another address the same account can (its own cap is 5)', out.every(s => s === 201) && over.status === 429 && over.body.code === 'too-many' && elsewhere.status === 201, out.filter(s => s !== 201).length + ' ' + over.status + ' ' + elsewhere.status);
+      } finally { await ST.close(); }
+    }
+
+    heading('the schema work of a boot goes through the lock (server.js)');
+    {
+      const srv = L.fs.readFileSync(L.path.join(L.MODS, 'server.js'), 'utf8');
+      ok('server.js runs the boot SQL and the queue\'s tables through homeJobsStore.migrate (one transaction under the advisory lock), not through a plain query', /homeJobsStore\.migrate\(getPool\(\), \`/.test(srv) && !/q\(homeJobsStore\.SCHEMA_SQL\)/.test(srv) && !/await q\(\`\s*CREATE TABLE IF NOT EXISTS ppp_users/.test(srv));
+    }
+
+    heading('the account is looked up once, then remembered (the page polls often)');    heading('the account is looked up once, then remembered (the page polls often)');
     {
       const SL = await L.startService({ users: ['m1'] });
       try {

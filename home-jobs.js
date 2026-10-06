@@ -15,7 +15,7 @@
        "is the PC alive" would not. Render's free plan runs one instance; scaling out means moving the queue into the database.
 
    The server tells the worker how long to wait (nextPollSeconds in every worker answer): 15 s while the person has a job
-   queued or claimed or one finished in the last 5 minutes, otherwise 20 minutes (PPP_WORKER_IDLE_POLL_S). Every request wakes
+   queued or claimed or one finished in the last 5 minutes, otherwise an hour (PPP_WORKER_IDLE_POLL_S, never under 15 minutes). Every request wakes
    the free instance for 15 minutes, so a worker that polled every minute would keep it awake all month.
 
    Authentication: the browser routes use the account's session cookie (signed in only: a guest key is not an account), the
@@ -52,6 +52,9 @@ const LIMITS = {
   /* ... and what one account may hold of it, so one person (or a few) cannot use it all up: 8 MB is about 70 typical conversions, and
      the 30 rows an account may keep are 3-4 MB when typical */
   PER_USER_RESULT_BYTES: 8 * 1024 * 1024,
+  /* a new job asks for this much room among its account's share (the oldest finished conversions are cleared to make it), so that the result
+     the PC posts later is not refused: a typical result is 100-400 KB, the biggest the schema allows is 2 MB, a 20,000-note one 0.9 MB */
+  RESULT_RESERVE_BYTES: 1024 * 1024,
   /* how long an idle worker is told to wait (nextPollSeconds). Every request wakes the free web service for 15 minutes, so an idle wait
      under about 15 minutes keeps it awake all month; the default is an hour, and nothing under 15 minutes is accepted */
   IDLE_POLL_DEFAULT_S: 3600,
@@ -98,6 +101,7 @@ function configFrom(env, over) {
     longPollMs: 25 * 1000,
     totalResultBytes: mb * 1048576,
     perUserResultBytes: LIMITS.PER_USER_RESULT_BYTES,
+    resultReserveBytes: LIMITS.RESULT_RESERVE_BYTES,
     warnings: warnings
   }, over || {});
 }
@@ -240,6 +244,28 @@ function create(deps) {
     return o;
   }
   const storedBytes = ownerId => { let n = 0; jobs.forEach(j => { if (j.status === 'done' && (ownerId == null || j.ownerId === ownerId)) n += j.bytes || 0; }); return n; };
+  /* Room for one account's new row and notes among ITS OWN finished rows: the oldest go first (failed, cancelled and expired ones before done ones),
+     until the notes kept plus needBytes fit the account's share and the rows plus needRows fit its row cap. The account's share is never a reason to
+     refuse a person's work or to lock them out until the keeping time is over; nobody else's rows are touched. Returns the rows removed. */
+  async function evict(ownerId, needBytes, needRows) {
+    const mine = ownJobs(ownerId);
+    const byAge = (a, b) => (a.finishedAt || a.createdAt) - (b.finishedAt || b.createdAt);
+    const old = mine.filter(j => !pending(j) && !j.writing);
+    let stored = storedBytes(ownerId), rows = mine.length;
+    const gone = [];
+    /* the notes: only a finished conversion that holds some can free any, the oldest first */
+    old.filter(j => j.status === 'done').sort(byAge).forEach(j => {
+      if (stored + needBytes <= C.perUserResultBytes) return;
+      gone.push(j); stored -= j.bytes || 0; rows--;
+    });
+    /* the rows: failed, cancelled and expired ones before done ones, the oldest first */
+    old.filter(j => gone.indexOf(j) < 0).sort((a, b) => ((a.status === 'done') - (b.status === 'done')) || byAge(a, b)).forEach(j => {
+      if (!needRows || rows + needRows <= L.ROWS_PER_USER) return;
+      gone.push(j); if (j.status === 'done') stored -= j.bytes || 0; rows--;
+    });
+    if (gone.length) { await store.deleteJobs(gone.map(j => j.id)); gone.forEach(j => jobs.delete(j.id)); }
+    return gone;
+  }
   const ownJobs = ownerId => { const out = []; jobs.forEach(j => { if (j.ownerId === ownerId) out.push(j); }); return out; };
   const pending = j => j.status === 'queued' || j.status === 'claimed';
 
@@ -370,17 +396,10 @@ function create(deps) {
       release();
       throw httpError(429, 'You already have ' + L.PENDING_PER_USER + ' conversions waiting. Wait for one to finish, or cancel one.', 'queue-full');
     }
-    if (storedBytes(user.id) >= C.perUserResultBytes) {
-      release();
-      throw httpError(429, 'Your finished conversions take up too much room on the site. Open them first; they are cleared after 3 days.', 'quota');
-    }
     if (storedBytes() >= C.totalResultBytes) { release(); throw httpError(503, 'The queue is full right now. Try again later.', 'busy'); }
     if (jobs.size >= L.MAX_ROWS) { release(); throw httpError(503, 'The queue is full right now. Try again later.', 'busy'); }
-    /* room for it among the person's rows: the oldest finished ones go first */
-    if (mine.length >= L.ROWS_PER_USER) {
-      const old = mine.filter(j => !pending(j)).sort((a, b) => (a.finishedAt || a.createdAt) - (b.finishedAt || b.createdAt)).slice(0, mine.length - L.ROWS_PER_USER + 1);
-      if (old.length) { try { await store.deleteJobs(old.map(j => j.id)); } catch (e) { release(); throw e; } old.forEach(j => jobs.delete(j.id)); }
-    }
+    /* room for it among the person's own rows and notes: the oldest finished conversions are cleared first, and room is kept for its result */
+    try { await evict(user.id, C.resultReserveBytes, 1); } catch (e) { release(); throw e; }
     const job = { id: crypto.randomBytes(12).toString('base64url'), ownerId: user.id, kind: 'youtube', url: parsed.url,
       title: R.cleanText(body.title, 120), status: 'queued', attempts: 0, workerId: null, createdAt: t, claimedAt: 0, finishedAt: 0, error: '', bytes: 0, beatAt: 0, progress: null };
     /* the slot is taken now, before the write is awaited (two requests at once cannot both pass the cap); nothing claims it until it is durable */
@@ -411,6 +430,17 @@ function create(deps) {
       out.result = result;
     }
     reply(res, 200, out);
+  }
+
+  /* A finished conversion (done, failed, cancelled, expired) can be removed by its owner: its notes go from the database and from the account's share. A waiting
+     or converting one is cancelled first. */
+  async function deleteJob(req, res, id) {
+    requireSameSite(req);
+    const { job } = await ownJob(req, id);
+    if (pending(job) || job.writing) throw httpError(409, 'Cancel that conversion first, then remove it.', 'pending');
+    await store.deleteJobs([job.id]);
+    jobs.delete(job.id);
+    reply(res, 200, { ok: true });
   }
 
   async function cancelJob(req, res, id) {
@@ -494,10 +524,12 @@ function create(deps) {
   }
 
   async function ping(req, res) {
-    const { rec, cold } = await workerOf(req);
+    const { rec } = await workerOf(req);
     const t = now();
-    touch(rec, t, C.idlePollS);
-    if (cold) await persistSeen(rec);
+    /* a check (worker.js --check) is not a heartbeat: the first one only marks the PC as having connected (so the page can offer the button), and
+       counts as "alive" for a couple of minutes (it announces no wait); after that it changes nothing, so a check can never make a PC that is
+       off look connected for hours, nor shorten what a running worker announced */
+    if (rec.lastSeenAt === 0) { touch(rec, t, 0); await persistSeen(rec); }
     reply(res, 200, { ok: true, nextPollSeconds: nextPollS(rec.ownerId, t) });
   }
 
@@ -601,9 +633,12 @@ function create(deps) {
     const body = await readJson(req, L.RESULT_BODY, L.RESULT_DRAIN);
     const v = R.validateResult(body);
     if (!v.ok) throw httpError(422, v.error, v.code || 'bad-result');
-    if (storedBytes(rec.ownerId) + v.bytes > C.perUserResultBytes) throw httpError(503, 'This account has too many finished conversions on the site. Open them first; they are cleared after 3 days.', 'quota');
+    /* the PC's work is never refused for the account's own share: the oldest finished conversions of this account are cleared to make room for it
+       (a result is at most 2 MB and the share is 8 MB, so there is always room that way); only the site's total can say no */
+    if (v.bytes > C.perUserResultBytes) throw httpError(503, 'This conversion is larger than one account may keep.', 'quota');
+    await evict(rec.ownerId, v.bytes, 0);
     if (storedBytes() + v.bytes > C.totalResultBytes) throw httpError(503, 'The site cannot keep more notes right now.', 'busy');
-    /* the body took a while to arrive: the job may have been cancelled meanwhile */
+    /* the body took a while to arrive, and so may the eviction: the job may have been cancelled meanwhile */
     if (job.status !== 'claimed' && job.status !== 'queued') throw httpError(409, job.status === 'cancelled' ? 'That job was cancelled.' : 'That job is not waiting for this any more.', job.status === 'cancelled' ? 'cancelled' : 'not-open', { status: job.status });
     const t = now();
     const was = { status: job.status, finishedAt: job.finishedAt, error: job.error, bytes: job.bytes, progress: job.progress };
@@ -658,6 +693,7 @@ function create(deps) {
       if (m === 'POST') return enqueue(req, res);
     } else if ((g = /^\/api\/jobs\/([A-Za-z0-9_-]{8,40})$/.exec(p))) {
       if (m === 'GET') return getJob(req, res, g[1]);
+      if (m === 'DELETE') return deleteJob(req, res, g[1]);
     } else if ((g = /^\/api\/jobs\/([A-Za-z0-9_-]{8,40})\/cancel$/.exec(p))) {
       if (m === 'POST') return cancelJob(req, res, g[1]);
     } else if (p === '/api/worker/status') {

@@ -12,7 +12,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const REPO = path.resolve(__dirname, '..', '..');
-const FILES = ['home-jobs.js', 'home-result.js', 'home-jobs-store.js', 'share-guest.js', 'tools/home-worker/worker.js', 'review/h10/helper-heard.js'];
+const FILES = ['home-jobs.js', 'home-result.js', 'home-jobs-store.js', 'server.js', 'share-guest.js', 'tools/home-worker/worker.js', 'review/h10/helper-heard.js'];
 const JOBS = 'jobs.test.js', WORKER = 'worker.test.js', PG = 'jobs-pg.test.js';
 
 /* id, file, what the mutant breaks, [from, to] (strings, replaced once), the test that must fail */
@@ -62,20 +62,20 @@ const M = [
   ['W7', 'tools/home-worker/worker.js', 'a setting can shorten the site\'s idle wait', ['if (cfg.idlePollSeconds > w) w = cfg.idlePollSeconds;', 'w = cfg.idlePollSeconds || w;'], WORKER],
   ['W8', 'tools/home-worker/worker.js', 'the worker runs whatever link the site sends (not only a YouTube video)', ["if (!job || typeof job.id !== 'string' || !YT_RE.test(String(job.url || ''))) {", "if (!job || typeof job.id !== 'string') {"], WORKER],
   /* the review of PR 178 (G10b-1 review fixes) */
-  ['N1', 'tools/home-worker/worker.js', 'the loop waits a fixed time after an answer that is not a 200 (no growth)', ['const w = Math.min(base * Math.pow(2, Math.max(0, count - 1)), cap);', 'const w = base;'], WORKER],
-  ['N2', 'tools/home-worker/worker.js', 'a site that answers 404/405/410 (the queue is gone) is asked as often as any failure', ['if (status === 404 || status === 405 || status === 410 || status === 501) return Math.max(3600, idleKnown);', 'if (false) return 0;'], WORKER],
+  ['N1', 'tools/home-worker/worker.js', 'the loop waits a fixed time after an answer that is not a 200 (no growth)', ['const w = Math.min(base * Math.pow(2, Math.min(count - 1, 30)), cap);', 'const w = base;'], WORKER],
+  ['N2', 'tools/home-worker/worker.js', 'a site that answers 404/405/410 (the queue is gone) is asked as often as any failure', ['if (status === 404 || status === 405 || status === 410 || status === 501) return Math.min(DAY_S, Math.max(3600, idleKnown));', 'if (false) return 0;'], WORKER],
   ['N3', 'home-jobs.js', 'the idle wait may be set below 900 s', ['else if (n < LIMITS.IDLE_POLL_FLOOR_S) {', 'else if (false) {'], JOBS],
   ['N4', 'home-jobs.js', 'the default idle wait is 20 minutes again', ['IDLE_POLL_DEFAULT_S: 3600,', 'IDLE_POLL_DEFAULT_S: 1200,'], JOBS],
   ['N5', 'tools/home-worker/worker.js', 'a redirect to another origin is followed', ['if (u.origin !== origin0) return fail(', 'if (false) return fail('], WORKER],
   ['N6', 'home-jobs.js', 'a valid token is refused while wrong tokens from its address are being counted', ['if (!t) throw badToken(req);', "if (!t || !limiters.badTokens.peek(deps.clientIp(req) || 'unknown')) throw badToken(req);"], JOBS],
   ['N7', 'home-jobs.js', 'a refused body keeps its slot of the hourly enqueue budget', ['} catch (e) { release(); throw e; }\n    const t = now();\n    await sweep(t);', '} catch (e) { throw e; }\n    const t = now();\n    await sweep(t);'], JOBS],
   ['N8', 'home-jobs.js', 'the hourly enqueue limit is not per address', ['if (!limiters.enqueueIp.take(ip)) {', 'if (false) {'], JOBS],
-  ['N9', 'home-jobs.js', 'one account may use up the stored notes: no per-account cap at result time', ['if (storedBytes(rec.ownerId) + v.bytes > C.perUserResultBytes) throw', 'if (false) throw'], JOBS],
-  ['N10', 'home-jobs.js', 'one account may use up the stored notes: no per-account cap at enqueue time', ['if (storedBytes(user.id) >= C.perUserResultBytes) {', 'if (false) {'], JOBS],
+  ['N9', 'home-jobs.js', 'a result that would pass the account\'s share is not given room (the oldest finished conversion is not cleared)', ['await evict(rec.ownerId, v.bytes, 0);', ''], JOBS],
+  ['N10', 'home-jobs.js', 'a new job does not ask for room among the account\'s own rows and notes (no eviction at enqueue)', ['try { await evict(user.id, C.resultReserveBytes, 1); } catch (e) { release(); throw e; }', ''], JOBS],
   ['N11', 'tools/home-worker/worker.js', 'old scratch folders are never swept', ['if (st.isDirectory() && Date.now() - st.mtimeMs > (maxAgeMs == null ? 2 * 3600 * 1000 : maxAgeMs)) {', 'if (false) {'], WORKER],
   ['N12', 'tools/home-worker/worker.js', 'a video id may be 6 characters or more (in the worker)', ['[A-Za-z0-9_-]{11}$/;', '[A-Za-z0-9_-]{6,}$/;'], WORKER],
   ['N13', 'tools/home-worker/worker.js', 'ffmpeg may open any protocol (no -protocol_whitelist)', [["'-y', '-protocol_whitelist', 'file,pipe', '-i', input,", "'-y', '-i', input,"], ["'-y', '-protocol_whitelist', 'file,pipe', '-i', master,", "'-y', '-i', master,"]], WORKER],
-  ['N14', 'tools/home-worker/worker.js', 'escape sequences and bidi characters reach the log', ["const log = m => out('[' + clock() + '] ' + clean(redact(m)));", "const log = m => out('[' + clock() + '] ' + redact(m));"], WORKER],
+  ['N14', 'tools/home-worker/worker.js', 'escape sequences and bidi characters reach the log', ["const log = m => out('[' + clock() + '] ' + redact(clean(m)));", "const log = m => out('[' + clock() + '] ' + redact(m));"], WORKER],
   ['N15', 'home-jobs-store.js', 'Postgres: the migration takes no advisory lock (two instances can race)', ["await c.query('SELECT pg_advisory_xact_lock($1)', [MIGRATE_LOCK_KEY]);", ''], PG],
   ['R7', 'home-result.js', 'a result\'s notes are stored in the order they arrive', ['notes.sort((a, b) => a.on - b.on || a.midi - b.midi || a.off - b.off);', ''], JOBS],
   ['R11', 'home-jobs.js', 'the account is read from the database on every browser request', ['until: t + L.USER_CACHE_MS', 'until: t'], JOBS],
@@ -84,7 +84,25 @@ const M = [
   ['R17', 'tools/home-worker/worker.js', 'the worker runs any https link the site sends', ['const YT_RE = /^https:\\/\\/www\\.youtube\\.com\\/watch\\?v=[A-Za-z0-9_-]{11}$/;', 'const YT_RE = /^https:\\/\\/.*$/;'], WORKER],
   ['R18', 'tools/home-worker/worker.js', 'the downloaded audio is not size capped (neither by its announced length nor while it streams)', [["if (n > maxBytes && !over) {", "if (false) {"], ["if (+res.headers['content-length'] > maxBytes) {", "if (false) {"]], WORKER],
   ['R19', 'tools/home-worker/worker.js', 'a bearer header goes to the audio endpoint', ["'Accept': 'audio/*,*/*' } }, res => {", "'Accept': 'audio/*,*/*', 'Authorization': 'Bearer leak' } }, res => {"], WORKER],
-  ['R20', 'tools/home-worker/worker.js', 'the link is handed to yt-dlp without -- before it', ["'-o', path.join(dir, 'source.%(ext)s'), '--', job.url]", "'-o', path.join(dir, 'source.%(ext)s'), job.url]"], WORKER]
+  ['R20', 'tools/home-worker/worker.js', 'the link is handed to yt-dlp without -- before it', ["'-o', path.join(dir, 'source.%(ext)s'), '--', job.url]", "'-o', path.join(dir, 'source.%(ext)s'), job.url]"], WORKER],
+  /* the delta review of d1f83a8 (G10b-1 final round) */
+  ['N16', 'home-jobs.js', 'a check (/api/worker/ping) makes the PC look alive for hours', ['if (rec.lastSeenAt === 0) { touch(rec, t, 0); await persistSeen(rec); }', 'touch(rec, t, C.idlePollS);'], JOBS],
+  ['N17', 'home-jobs.js', 'a waiting or converting conversion can be removed (no cancel first)', ['if (pending(job) || job.writing) throw httpError(409,', 'if (false) throw httpError(409,'], JOBS],
+  ['N18', 'home-jobs.js', 'for room among the rows a done conversion goes before a failed one', ['.sort((a, b) => ((a.status === \'done\') - (b.status === \'done\')) || byAge(a, b))', '.sort(byAge)'], JOBS],
+  ['N19', 'home-jobs.js', 'for room among the notes the NEWEST finished conversion goes first', ["old.filter(j => j.status === 'done').sort(byAge).forEach(j => {", "old.filter(j => j.status === 'done').sort((a, b) => byAge(b, a)).forEach(j => {"], JOBS],
+  ['N20', 'home-jobs.js', 'DELETE /api/jobs/:id does not exist', ["if (m === 'DELETE') return deleteJob(req, res, g[1]);", ''], JOBS],
+  ['N21', 'tools/home-worker/worker.js', 'a Retry-After or nextPollSeconds of 99999999 or 1e10 is not cut to a day (the timer fires at once)', ['return Number.isFinite(n) && n >= 0 ? Math.min(n, DAY_S) : dflt;', 'return Number.isFinite(n) && n >= 0 ? n : dflt;'], WORKER],
+  ['N22', 'tools/home-worker/worker.js', 'the sleep itself accepts any number (a day at most, an hour for NaN)', ['ms = Number.isFinite(ms) && ms >= 0 ? Math.min(ms, DAY_S * 1000) : 3600 * 1000;', 'ms = ms;'], WORKER],
+  ['N23', 'tools/home-worker/worker.js', 'failureWait trusts its count (NaN, 2000)', ['count = Number.isFinite(count) && count >= 1 ? Math.floor(count) : 1;', 'count = count;'], WORKER],
+  ['N24', 'tools/home-worker/worker.js', 'an answer of the site is read to the end whatever its size', ['if (n > 8 * 1024 * 1024) {', 'if (false) {'], WORKER],
+  ['N25', 'tools/home-worker/worker.js', 'a refused audio answer is only resumed (an endless body is read for ever), not dropped', ["const drop = () => { res.on('error', () => {}); req.destroy(); };", 'const drop = () => { res.resume(); };'], WORKER],
+  ['N26', 'tools/home-worker/worker.js', 'the log hides the token BEFORE it strips escape sequences (a split token is not joined first)', ["const log = m => out('[' + clock() + '] ' + redact(clean(m)));", "const log = m => out('[' + clock() + '] ' + clean(redact(m)));"], WORKER],
+  ['N27', 'tools/home-worker/worker.js', 'the same origin is compared as text (startsWith), not as parsed', ['if (u.origin !== origin0) return fail(', 'if (!u.href.startsWith(origin0)) return fail('], WORKER],
+  ['N28', 'home-jobs.js', 'a refused request gives its hourly slots back TWICE', ['const release = () => { limiters.enqueue.release(user.id); limiters.enqueueIp.release(ip); };', 'const release = () => { limiters.enqueue.release(user.id); limiters.enqueueIp.release(ip); limiters.enqueue.release(user.id); limiters.enqueueIp.release(ip); };'], JOBS],
+  ['N29', 'home-jobs.js', 'making tokens is not limited per address', ['if (!limiters.tokensIp.take(ip)) {', 'if (false) {'], JOBS],
+  ['N30', 'home-jobs.js', 'a job that could not be written keeps its slots', ['try { await store.insertJob(job); } catch (e) { jobs.delete(job.id); release(); throw e; }', 'try { await store.insertJob(job); } catch (e) { jobs.delete(job.id); throw e; }'], JOBS],
+  ['N31', 'server.js', 'the boot SQL runs through a plain query, not the locked migration', ['await homeJobsStore.migrate(getPool(), `', 'await q(`'], JOBS],
+  ['N32', 'home-jobs-store.js', 'Postgres: the boot SQL is left out of the locked migration', ['if (preSql) await c.query(preSql);', ''], PG]
 ];
 
 const only = process.argv.slice(2);

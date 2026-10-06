@@ -749,7 +749,9 @@ function postgresStore(url) {
   return {
     jobStore: homeJobsStore.pgJobStore(q),
     async ready() {
-      await q(`
+      /* the whole schema work of a boot - this SQL, then the home-PC queue's two tables - runs in one transaction under an advisory lock (home-jobs-store.js): two
+         instances booting together take turns instead of racing or deadlocking */
+      await homeJobsStore.migrate(getPool(), `
         CREATE TABLE IF NOT EXISTS ppp_users (
           id TEXT PRIMARY KEY,
           email TEXT UNIQUE NOT NULL,
@@ -794,8 +796,7 @@ function postgresStore(url) {
           END LOOP;
         END $$;
       `);
-      /* G10b-1: two new tables, additive (CREATE ... IF NOT EXISTS only); dropping them is the whole rollback */
-      await homeJobsStore.migrate(getPool());
+      /* (G10b-1: the two new tables are the last part of that same migration: additive, CREATE ... IF NOT EXISTS only; dropping them is the whole rollback) */
     },
     async findByEmail(email) {
       const r = await q('SELECT id, email, display_name AS "displayName", password_hash AS "passwordHash" FROM ppp_users WHERE email = $1', [email]);

@@ -1017,6 +1017,9 @@
                       <sc-if value="{{ j.canCancel }}" hint-placeholder-val="{{ false }}">
                         <button onClick="{{ j.cancel }}" data-home-cancel="{{ j.id }}" style="{{ j.btnStyle }}">{{ j.cancelLabel }}</button>
                       </sc-if>
+                      <sc-if value="{{ j.canRemove }}" hint-placeholder-val="{{ false }}">
+                        <button onClick="{{ j.remove }}" data-home-remove="{{ j.id }}" style="{{ j.btnStyle }}">{{ j.removeLabel }}</button>
+                      </sc-if>
                     </div>
                   </sc-for>
                 </div>
@@ -6876,10 +6879,11 @@ const Import = {
     try { u = new URL(String(text || '').trim()); } catch (e) { return null; }
     if (!/^https?:$/.test(u.protocol)) return null;
     const host = u.hostname.toLowerCase().replace(/^(www|m|music)\./, '');
-    if (host === 'youtu.be') { const m = /^\/([\w-]{6,})$/.exec(u.pathname); return m ? m[1] : null; }
+    /* a video id is exactly 11 characters (the server's rule, G10b-1) */
+    if (host === 'youtu.be') { const m = /^\/([\w-]{11})$/.exec(u.pathname); return m ? m[1] : null; }
     if (host !== 'youtube.com') return null;
-    if (u.pathname === '/watch') { const v = u.searchParams.get('v') || ''; return /^[\w-]{6,}$/.test(v) ? v : null; }
-    const m = /^\/(shorts|live|embed)\/([\w-]{6,})/.exec(u.pathname);
+    if (u.pathname === '/watch') { const v = u.searchParams.get('v') || ''; return /^[\w-]{11}$/.test(v) ? v : null; }
+    const m = /^\/(shorts|live|embed)\/([\w-]{11})(?:\/|$)/.exec(u.pathname);
     return m ? m[2] : null;
   },
   /* A pasted link, or a stored id, as one watch URL. Saved on the score so
@@ -14308,6 +14312,11 @@ class Component extends DCLogic {
       this.startImport({ url: r.job.url, name: r.job.title || r.job.url, meta: 'YouTube · ' + tx('my PC'), kind: 'youtube', mode: 'auto' });
     } catch (e) { this._homePre = null; this.setState({ homeOpening: null, ytError: e.message }); }
   }
+  /* a finished conversion (ready, failed, cancelled, expired) is removed from the list and from the site: its notes stop taking room in this account's share */
+  async removeHomeJob(id) {
+    try { await this.homeApi('/api/jobs/' + encodeURIComponent(id), { method: 'DELETE' }); } catch (e) { this.setState({ ytError: e.message }); }
+    this.homeRefresh();
+  }
   async cancelHomeJob(id) {
     try { await this.homeApi('/api/jobs/' + encodeURIComponent(id) + '/cancel', { method: 'POST', body: {} }); } catch (e) { this.setState({ ytError: e.message }); }
     this.homeRefresh();
@@ -14355,7 +14364,8 @@ class Component extends DCLogic {
       checkHomeAgain: () => this.homeRefresh(),
       homeJobsTitle: tx('My conversions (on my PC)'),
       homeJobs: jobs.slice(0, 8).map(j => ({
-        id: j.id, title: j.title || j.url, status: statusOf(j), canOpen: j.status === 'done', canCancel: pendingJob(j),
+        id: j.id, title: j.title || j.url, status: statusOf(j), canOpen: j.status === 'done', canCancel: pendingJob(j), canRemove: !pendingJob(j),
+        remove: () => this.removeHomeJob(j.id), removeLabel: tx('Remove'),
         statusStyle: 'font-size:12px;color:' + (j.status === 'done' ? 'var(--good)' : j.status === 'failed' ? 'var(--bad)' : 'var(--ink3)') + ';',
         open: () => this.openHomeJob(j.id), cancel: () => this.cancelHomeJob(j.id),
         openLabel: S.homeOpening === j.id ? tx('Opening…') : tx('Open'), cancelLabel: tx('Cancel'), btnStyle: btn

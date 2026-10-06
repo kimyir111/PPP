@@ -293,10 +293,19 @@ const refresh = async (page, withTokens) => { await page.evaluate(w => window.PP
     const rows = await pg.evaluate(() => [...document.querySelectorAll('[data-home-job]')].map(r => ({ id: r.getAttribute('data-home-job'), status: r.querySelector('[data-home-status]').innerText, open: !!r.querySelector('[data-home-open]'), cancel: !!r.querySelector('[data-home-cancel]') })));
     const r3 = rows.find(r => r.id === j3.id), r4 = rows.find(r => r.id === j4.id);
     ok('a failed job says Failed with the PC\'s reason, no Open, no Cancel', r3 && /Failed · The audio could not be downloaded/.test(r3.status) && !r3.open && !r3.cancel, JSON.stringify(r3));
-    ok('a waiting one has Cancel', r4 && r4.cancel && !r4.open);
+    ok('a waiting one has Cancel and no Remove (it is cancelled first)', r4 && r4.cancel && !r4.open && !(await has(pg, '[data-home-remove="' + j4.id + '"]')));
+    ok('a failed one has Remove; a ready one has Open and Remove', (await has(pg, '[data-home-remove="' + j3.id + '"]')) && (await has(pg, '[data-home-open="' + jobId + '"]')) && (await has(pg, '[data-home-remove="' + jobId + '"]')));
     await pg.evaluate(id => document.querySelector('[data-home-cancel="' + id + '"]').click(), j4.id);
     await sleep(900);
     ok('Cancel cancels it on the server and the list says Cancelled', /Cancelled/.test(await pg.evaluate(id => document.querySelector('[data-home-job="' + id + '"] [data-home-status]').innerText, j4.id)) && (await req(port, 'GET', '/api/jobs/' + j4.id, { cookie: await cookieOf(pg) })).body.job.status === 'cancelled');
+    await pg.evaluate(id => document.querySelector('[data-home-remove="' + id + '"]').click(), j3.id);
+    await sleep(900);
+    ok('Remove on a failed conversion: the row goes, and so does the conversion on the server (404)', !(await has(pg, '[data-home-job="' + j3.id + '"]')) && (await req(port, 'GET', '/api/jobs/' + j3.id, { cookie: await cookieOf(pg) })).status === 404);
+    await pg.evaluate(id => document.querySelector('[data-home-remove="' + id + '"]').click(), j4.id);
+    await sleep(900);
+    ok('and on a cancelled one', !(await has(pg, '[data-home-job="' + j4.id + '"]')));
+    ok('the page\'s own link check takes exactly 11 characters of video id, like the server', await pg.evaluate(() => { const f = u => window.PPP.Import.youtubeId(u); return f('https://www.youtube.com/watch?v=abcdefghijk') === 'abcdefghijk' && f('https://youtu.be/ab-_Efgh1jK') === 'ab-_Efgh1jK' && f('https://www.youtube.com/shorts/abcdefghijk') === 'abcdefghijk'
+      && f('https://www.youtube.com/watch?v=abcdef') === null && f('https://www.youtube.com/watch?v=abcdefghij') === null && f('https://www.youtube.com/watch?v=abcdefghijkl') === null && f('https://youtu.be/abcdef') === null && f('https://youtu.be/abcdefghijkl') === null && f('https://www.youtube.com/shorts/abcdefghijkl') === null && f('https://www.youtube.com/embed/abcdefghijk/x') === 'abcdefghijk'; }));
     const pg2 = await openPage(browser, base);
     await signUp(pg2, 'home2@example.com');
     await goAdd(pg2);

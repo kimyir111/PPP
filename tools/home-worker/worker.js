@@ -5,7 +5,7 @@
    this script asks the site for work, does it here, and sends the notes back. The site never connects to this PC: this script
    only makes ordinary HTTPS requests OUT, with a token you made on the site (Settings > Connect my PC).
 
-     node tools/home-worker/worker.js              keep checking (every ~20 minutes when idle, every ~15 s while something is going on)
+     node tools/home-worker/worker.js              keep checking (about once an hour when idle, every ~15 s while something is going on)
      node tools/home-worker/worker.js --once       check once, do everything that is waiting, exit (the desktop-shortcut mode)
      node tools/home-worker/worker.js --check      test the settings and the token, change nothing
      node tools/home-worker/worker.js --config <file>
@@ -35,6 +35,10 @@ const Result = require(path.join(REPO, 'home-result.js'));
 const { convertHelperNotes } = require(path.join(REPO, 'review', 'h10', 'helper-heard.js'));
 
 const sleepPlain = ms => new Promise(r => setTimeout(r, ms));
+/* A wait is at most a day: setTimeout fires AT ONCE for anything over about 24.8 days (and for Infinity), so a Retry-After of 99999999 or a nextPollSeconds of 1e10
+   would have made the loop poll as fast as it could. A value that is not a number, is negative or is missing is the default. */
+const DAY_S = 86400;
+const secs = (v, dflt) => { const n = typeof v === 'number' ? v : parseFloat(v); return Number.isFinite(n) && n >= 0 ? Math.min(n, DAY_S) : dflt; };
 const pad = n => String(n).padStart(2, '0');
 const clock = d => { d = d || new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); };
 const humanWait = s => (s >= 3600 ? Math.round(s / 360) / 10 + ' h' : s >= 90 ? Math.round(s / 60) + ' min' : s + ' s');
@@ -126,12 +130,13 @@ function makeLog(cfg, out, err) {
     return t.replace(/ppw_[A-Za-z0-9_-]{12}_[A-Za-z0-9_-]{43}/g, 'ppw_***').replace(/Bearer\s+[^\s]+/gi, 'Bearer ***');
   };
   /* text that came from the site or from a video's title must not move the cursor, recolour or reorder the person's terminal: no ESC sequences, no other
-     control characters (a newline and a tab stay), no bidi marks or overrides, no line or paragraph separators */
+     control characters (a newline and a tab stay), no bidi marks or overrides, no line or paragraph separators. They are REMOVED, not replaced, and this runs
+     before the token is hidden: a token split by any of them is joined again, and then hidden. */
   const clean = s => String(s)
     .replace(/\u001b(?:\[[0-?]*[ -\/]*[@-~]|\][^\u0007\u001b]*(?:\u0007|\u001b\\)?|[@-Z\\-_])/g, '')
-    .replace(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u061c\u200e\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g, ' ');
-  const log = m => out('[' + clock() + '] ' + clean(redact(m)));
-  log.warn = m => err('[' + clock() + '] ' + clean(redact(m)));
+    .replace(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u061c\u200e\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g, '');
+  const log = m => out('[' + clock() + '] ' + redact(clean(m)));
+  log.warn = m => err('[' + clock() + '] ' + redact(clean(m)));
   log.redact = redact;
   log.clean = clean;
   return log;
@@ -152,7 +157,8 @@ function request(cfg, method, p, o) {
     const req = lib.request({ protocol: u.protocol, hostname: u.hostname, port: u.port || undefined, path: u.pathname + u.search, method: method, headers: headers, agent: false }, res => {
       const chunks = [];
       let n = 0;
-      res.on('data', c => { n += c.length; if (n < 8 * 1024 * 1024) chunks.push(c); });
+      /* the answer of the site is a few KB; an endless one (a broken proxy, a hostile page) is cut at 8 MB and the connection dropped, not read for ever */
+      res.on('data', c => { n += c.length; if (n > 8 * 1024 * 1024) { req.destroy(new NetError('the answer was larger than 8 MB')); return; } chunks.push(c); });
       res.on('end', () => {
         clearTimeout(timer);
         const text = Buffer.concat(chunks).toString('utf8');
@@ -180,8 +186,8 @@ async function withRetry(label, tries, fn, ctl, log) {
       throw err;
     }
     const why = r ? 'the site answered ' + r.status : (err && err.message) || 'no connection';
-    const retryAfter = r && r.headers && +r.headers['retry-after'];
-    const w = Math.max(wait, retryAfter || 0);
+    const retryAfter = r && r.headers ? secs(r.headers['retry-after'], 0) : 0;
+    const w = Math.max(wait, retryAfter);
     log(label + ': ' + why + '. Trying again in ' + humanWait(w) + '.');
     await ctl.sleep(w * 1000);
     wait = Math.min(wait * 3, 300);
@@ -260,26 +266,28 @@ function downloadTo(url, dest, o) {
         const lib = u.protocol === 'http:' ? http : https;
         const req = lib.get({ protocol: u.protocol, hostname: u.hostname, port: u.port || undefined, path: u.pathname + u.search, agent: false,
           headers: { 'User-Agent': 'ppp-home-worker/' + VERSION, 'Accept': 'audio/*,*/*' } }, res => {
+          /* an answer that is not the audio is not read: the connection is dropped (an endless body would otherwise be pulled in for as long as the site sends it) */
+          const drop = () => { res.on('error', () => {}); req.destroy(); };
           try {
             if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-              res.resume();
+              drop();
               if (hops >= 4) return fail('Too many redirects fetching the audio.', true);
               let next;
               try { next = new URL(res.headers.location, target); } catch (e) { return fail('The site sent a redirect to an address that cannot be used.', false); }
               return hop(next.href, hops + 1);
             }
             if (res.statusCode !== 200) {
-              res.resume();
+              drop();
               const bad422 = res.statusCode === 422;
               return fail(bad422 ? 'The site says that is not a YouTube video.' : 'The site could not get the audio (HTTP ' + res.statusCode + ').', !bad422);
             }
             const type = String(res.headers['content-type'] || '').toLowerCase();
             if (type.indexOf('text/html') >= 0 || type.indexOf('application/json') >= 0) {
-              res.resume();
+              drop();
               return fail('The site answered with a page, not audio.', true);
             }
             const tooBig = () => fail('The audio is larger than ' + (o.maxMB || 120) + ' MB.', false);
-            if (+res.headers['content-length'] > maxBytes) { res.resume(); req.destroy(); return tooBig(); }
+            if (+res.headers['content-length'] > maxBytes) { drop(); return tooBig(); }
             const file = fs.createWriteStream(dest);
             let n = 0, over = false;
             res.on('data', c => { n += c.length; if (n > maxBytes && !over) { over = true; req.destroy(); file.destroy(); tooBig(); } });
@@ -318,6 +326,7 @@ function createWorker(cfg, deps) {
     stop: false, stopNow: false, cancelled: false, child: null, wake: null,
     sleep(ms) {
       return new Promise(resolve => {
+        ms = Number.isFinite(ms) && ms >= 0 ? Math.min(ms, DAY_S * 1000) : 3600 * 1000;   /* the last line of defence: never longer than a day, never NaN */
         const t = setTimeout(done, ms * (deps.waitScale == null ? 1 : deps.waitScale));   /* waitScale: tests only */
         function done() { clearTimeout(t); ctl.wake = null; resolve(); }
         ctl.wake = done;
@@ -522,8 +531,8 @@ function createWorker(cfg, deps) {
     const r = await callSite(cfg, 'POST', '/api/worker/claim', { json: { once: !!once, waitSeconds: cfg.idlePollSeconds || 0 }, timeoutMs: 60000 });
     stats.checks++;
     if (r.status === 401) throw Object.assign(new Error('token'), { fatalToken: true });
-    if (r.status === 200 && r.body) return { job: r.body.job || null, next: +r.body.nextPollSeconds || 0 };
-    return { failed: true, status: r.status, retryAfter: +(r.headers && r.headers['retry-after']) || 0, message: r.body && r.body.error };
+    if (r.status === 200 && r.body) return { job: r.body.job || null, next: secs(r.body.nextPollSeconds, 0) };
+    return { failed: true, status: r.status, retryAfter: secs(r.headers && r.headers['retry-after'], 0), message: r.body && r.body.error };
   }
   /* --once: a poll that is tried again (3 times, growing waits) when the network or the site is down */
   async function pollRetry(once) {
@@ -545,10 +554,11 @@ function createWorker(cfg, deps) {
   }
   /* how long to wait: the site's word, lengthened (never shortened) by the settings */
   function waitFor(next) {
+    next = secs(next, 0);
     let w = next > 0 ? next : (cfg.idlePollSeconds || 3600);
     if (w >= 300) { if (cfg.idlePollSeconds > w) w = cfg.idlePollSeconds; }
     else if (cfg.activePollSeconds) w = Math.max(cfg.activePollSeconds, 5);
-    return Math.max(5, w);
+    return Math.min(DAY_S, Math.max(5, w));
   }
 
   const tokenRejected = () => log('The site does not accept this token (it was removed on the site, or is mistyped). Stopping. Make a new one: Settings > Connect my PC.');
@@ -580,11 +590,14 @@ function createWorker(cfg, deps) {
      not a 200): it doubles from 30 s (60 s for an answer from the site) and stops growing at the idle wait (at least 15 minutes), and a 200 resets it.
      A site that answers 404, 405 or 410 no longer has this feature (a revert): the worker waits as long as an idle wait, never less than an hour. */
   function failureWait(kind, status, retryAfter, count, idleKnown) {
+    count = Number.isFinite(count) && count >= 1 ? Math.floor(count) : 1;
+    idleKnown = Number.isFinite(idleKnown) && idleKnown > 0 ? Math.min(idleKnown, DAY_S) : 3600;
+    retryAfter = secs(retryAfter, 0);
     const cap = Math.max(900, idleKnown);
-    if (status === 404 || status === 405 || status === 410 || status === 501) return Math.max(3600, idleKnown);
+    if (status === 404 || status === 405 || status === 410 || status === 501) return Math.min(DAY_S, Math.max(3600, idleKnown));
     const base = kind === 'net' ? 30 : 60;
-    const w = Math.min(base * Math.pow(2, Math.max(0, count - 1)), cap);
-    return status === 429 ? Math.max(retryAfter || 0, Math.min(w, cap)) : w;
+    const w = Math.min(base * Math.pow(2, Math.min(count - 1, 30)), cap);
+    return Math.min(DAY_S, status === 429 ? Math.max(retryAfter, Math.min(w, cap)) : w);
   }
   const jitter = deps.jitter || (() => Math.floor(Math.random() * 10));
 
