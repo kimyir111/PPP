@@ -23,8 +23,8 @@ concurrency:
 
 jobs:
   # THE GATE, SHARDED (TD22). The 59 steps that used to be one job of 26-50 minutes run as five jobs at once (hosted runners are free
-  # for a public repository). The wall-clock is the longest shard: about 6 minutes on a fast runner, about 10 on a slow one (the
-  # same code ran 26-50 minutes as one job). Rules for keeping it right:
+  # for a public repository). The wall-clock is the slowest of the five: about 11 minutes (4 runs on 2026-10-06: 10.6-11.1), and
+  # 6-7 when every shard lands on a fast runner; the same code took 26-50 minutes as one job. Rules for keeping it right:
   #  - every step of the old job is in exactly one shard, in its old relative order, with its command unchanged;
   #  - steps that depend on each other stay together: `run --suite X` then `check --suite X` (check reads what run wrote under
   #    tests/bench/out/X), `hands_data.py && train_hands.js --check` and `key_data.py && key-eval.js --check` (the data goes
