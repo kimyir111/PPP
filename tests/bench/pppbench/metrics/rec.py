@@ -17,6 +17,11 @@ what the SUT adapter added (``extra``: the notation checker's class counts, the 
   rec.check.<class>                 notation-check.js class counts per 100 bars of the predicted graph (classes 1-10)
   rec.harmony.agreement             share of truth bars whose chord (G7a root + quality) the prediction has too
   rec.stability                     share of bars whose notation changes when the onsets move by +-10 ms (3 seeds)
+  rec.ledger.ge3_per_100_heads      note heads drawn on 3 or more ledger lines per 100 heads, the 8va/8vb lines applied (G10a-6: what the
+                                    reader of the score sees; scoregraph/tools/ledger-stats.js on the predicted graph, run by
+                                    node/rec-harmony.js). A display metric: no pitch, onset or value metric reads it
+  rec.ledger.plain_ge3_per_100_heads  the same with every octave line ignored (where the notes sound): the readability the score would
+                                    have without the lines, so a conversion that writes none has both equal
   rec.mv2h                          MV2H-like composite (McLeod and Steedman 2018): mean of the multi-pitch onset F1
                                     (notes.onset.f1_50ms), voice F1, metre F1 (bar, beat and sub-beat boundaries
                                     within 70 ms), value accuracy (notation.duration.accuracy_ref) and harmony agreement
@@ -381,12 +386,22 @@ def compute(ctx, extra: Dict[str, Any]) -> Dict[str, Optional[float]]:
         out[f"rec.check.{c}"] = (100.0 * check["counts"].get(str(c), 0) / bars) if (check and bars) else None
     out["rec.harmony.agreement"] = harmony_agreement(extra.get("ref_harmony"), extra.get("harmony"), offset)
     out["rec.stability"] = extra.get("stability")
+    out.update(ledger_metrics(extra.get("ledger")))
     ref_sec = lambda m, q: perf.timemap.sec(m.start_q + q)                       # noqa: E731
     pred_sec = lambda m, q: pt.sec(m.index, q)                                    # noqa: E731
     out["rec.metre.f1"] = metre_f1(ref, pred, ref_sec, pred_sec)
     if "play" in extra:
         out.update(hands_play(extra.get("play")))
     return out
+
+
+def ledger_metrics(ledger: Optional[Dict[str, Any]]) -> Dict[str, Optional[float]]:
+    """The rec.ledger.* metrics of one predicted graph (node/rec-harmony.js ledger rows; None each when the tool had no graph or the graph no heads)."""
+    if not ledger or not ledger.get("heads"):
+        return {"rec.ledger.ge3_per_100_heads": None, "rec.ledger.plain_ge3_per_100_heads": None}
+    heads = ledger["heads"]
+    return {"rec.ledger.ge3_per_100_heads": 100.0 * ledger["ge3"] / heads,
+            "rec.ledger.plain_ge3_per_100_heads": 100.0 * (ledger.get("plain") or {}).get("ge3", ledger["ge3"]) / heads}
 
 
 def hands_play(play: Optional[Dict[str, Any]]) -> Dict[str, Optional[float]]:

@@ -1,7 +1,7 @@
 /* ============================================================================
    TD16: automatic 8va / 8vb (15ma / 15mb) for ARRANGED output (docs/GOALS/G09_CANDIDATES_CRITICS_REPAIR.md section 12, "TD16").
 
-   addOttava(graph, opts?) -> { graph, changed, fallback, spans, report }
+   addOttava(graph, opts?) -> { graph, changed, fallback, spans, report, issues }
 
    An arranged graph (the G9 realizer's output, or the legacy engine's projected notes) has notes far above or below the staff
    that print on many ledger lines. This puts an ottava spanner over them. The graph keeps the SOUNDING pitch; the spanner
@@ -243,14 +243,14 @@ function makePass(rule, sink) {
   });
 }
 
-/* graph -> { graph, changed, fallback, spans, report }. `opts.rule` overrides any of OTTAVA_RULE's constants. */
+/* graph -> { graph, changed, fallback, spans, report, issues }. `issues` is the validator's issues of the result graph (null when the result is the input graph). `opts.rule` overrides any of OTTAVA_RULE's constants. */
 function addOttava(g, opts) {
   opts = opts || {};
   const rule = Object.assign({}, OTTAVA_RULE, opts.rule || {});
   const spans = [];
   const r = PRO.professionalize(g, { mode: 'rewrite', passList: [makePass(rule, spans)] });
   const changed = r.graph !== g;
-  return { graph: r.graph, changed: changed, fallback: !!r.report.fallback, spans: changed ? spans : [], report: r.report };
+  return { graph: r.graph, changed: changed, fallback: !!r.report.fallback, spans: changed ? spans : [], report: r.report, issues: r.issues || null };
 }
 
 return { addOttava, OTTAVA_RULE, CLEF_LINES };

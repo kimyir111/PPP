@@ -46,6 +46,7 @@ def _notate_chunk(jobs: List[Dict[str, Any]], sut: str, node: Optional[str], che
         if proc.returncode != 0:
             raise StageError("notate.js failed: " + proc.stderr.decode("utf-8", "replace")[-2000:])
         harmony: Dict[str, Any] = {}
+        ledger: Dict[str, Any] = {}
         if check:
             hout = os.path.join(tmp, "harmony.jsonl")
             hp = subprocess.run([node_binary(node), REC_HARMONY_JS, "--graphs", graphs, "--out", hout], capture_output=True)
@@ -55,6 +56,7 @@ def _notate_chunk(jobs: List[Dict[str, Any]], sut: str, node: Optional[str], che
                 for line in handle:
                     row = json.loads(line)
                     harmony[row["id"]] = row.get("harmony")
+                    ledger[row["id"]] = row.get("ledger")
         hands_play: Dict[str, Any] = {}
         if check and play:      # G10a-2b: what the hand split asks of the hands (a metric tool outside the SUT, like rec-harmony.js)
             pout = os.path.join(tmp, "play.jsonl")
@@ -74,6 +76,7 @@ def _notate_chunk(jobs: List[Dict[str, Any]], sut: str, node: Optional[str], che
                 else:
                     if check:
                         row["harmony"] = harmony.get(row["id"])
+                        row["ledger"] = ledger.get(row["id"])
                     if check and play:
                         row["play"] = hands_play.get(row["id"])
                     results[row["id"]] = row

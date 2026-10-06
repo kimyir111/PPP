@@ -547,8 +547,17 @@
          these numbers out for the same reason (G01 §16.2). */
       const drop = k === 'ottavas' ? x => Object.assign({}, x, { number: null }) : x => x;
       /* The player sorts the dynamics by position before it reads them (App 2708), so where two of them
-         sit in the array says nothing - except when they share a position, which the sort below keeps. */
-      const order = k === 'dynamics' ? l => l.slice().sort((x, y) => x.m - y.m || x.b - y.b) : l => l;
+         sit in the array says nothing - except when they share a position, which the sort below keeps.
+         The octave lines are the same: the reader (parseMusicXML) lists them as the MusicXML says them, one staff's
+         stream after the other within a bar, and the graph lists them by position, so a recording whose treble and
+         bass staves both have a line in one bar is the same music in two orders (G10a-6). Score.finalize reads each
+         note against the lines of ITS staff and takes the latest start, so their order in the array is not music;
+         what is: the staff, both ends and the shift. */
+      /* the positions are summed beat by beat in the reader (3.2500000000000004 where the graph has 3.25), so the sort reads them to the millionth of a quarter, as cmpJson does when it compares them:
+         on the raw numbers two lines that start together on two staves sorted one way on the Score and the other on the graph (the third of the six covers, G10a-6 review) */
+      const q6 = v => Math.round((+v || 0) * 1e6);
+      const ottOrder = (x, y) => ((x.m || 0) - (y.m || 0)) || (q6(x.b) - q6(y.b)) || ((x.staff || 0) - (y.staff || 0)) || ((x.endM || 0) - (y.endM || 0)) || (q6(x.endB) - q6(y.endB)) || ((x.semitones || 0) - (y.semitones || 0));
+      const order = k === 'dynamics' ? l => l.slice().sort((x, y) => x.m - y.m || x.b - y.b) : k === 'ottavas' ? l => l.slice().sort(ottOrder) : l => l;
       cmpJson(say, k, order((a[k] || []).map(drop)), order((b[k] || []).map(drop)));
     });
     return out;
