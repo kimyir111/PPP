@@ -453,26 +453,33 @@ const NEW_KEYS = [
     await sleep(2500);
     const keep = await seed.evaluate(() => { const o = {}; Object.keys(localStorage).forEach(k => { o[k] = localStorage.getItem(k); }); return o; });
     await seed.close();
-    for (const mode of ['default', 'legacy']) {
+    /* each review screen on a page of its own (one asking for the files must not make the other look as if it did) */
+    const openSaved = async (mode, id) => {
       const pw = await openPage(browser, { store: Object.assign({}, keep, mode === 'legacy' ? L.CLASSIC : {}) });
       await sleep(1500);
       await pw.evaluate(() => window.__pppTest.nav('My Songs')); await sleep(600);
-      await pw.evaluate(i => { const b = document.querySelector('[data-open-song="' + i + '"]'); if (b) b.click(); }, idM); await sleep(2500);
-      await pw.evaluate(() => window.PPP.app.setState({ screen: 'review' })); await sleep(2500);
-      ok(mode + ': the review screen of the saved MusicXML song (Add never opened) asks for none of v2\'s files', recReqs(pw).length === 0 && (await pw.evaluate(() => window.PPP.recordingModulesReady())) === false, recReqs(pw).join(' '));
-      await pw.evaluate(() => window.__pppTest.nav('My Songs')); await sleep(500);
-      await pw.evaluate(i => { const b = document.querySelector('[data-open-song="' + i + '"]'); if (b) b.click(); }, idR); await sleep(2500);
+      await pw.evaluate(i => { const b = document.querySelector('[data-open-song="' + i + '"]'); if (b) b.click(); }, id); await sleep(2500);
       await pw.evaluate(() => window.PPP.app.setState({ screen: 'review' }));
+      return pw;
+    };
+    for (const mode of ['default', 'legacy']) {
+      const pm = await openSaved(mode, idM);
+      await sleep(2500);
+      ok(mode + ': the review screen of the saved MusicXML song (Add never opened) asks for none of the new method\'s files', recReqs(pm).length === 0 && (await pm.evaluate(() => window.PPP.recordingModulesReady())) === false, recReqs(pm).join(' '));
+      ok(mode + ': ... and shows no chip (it is not a recording)', await pm.evaluate(() => !document.querySelector('[data-recording-v2-option]')));
+      ok('no page or console error', clean(pm), errs(pm));
+      await pm.close();
+      const pr = await openSaved(mode, idR);
       if (mode === 'default') {
-        const got = await pw.waitForFunction(() => window.PPP.recordingModulesReady(), { timeout: 30000 }).then(() => true).catch(() => false);
+        const got = await pr.waitForFunction(() => window.PPP.recordingModulesReady(), { timeout: 30000 }).then(() => true).catch(() => false);
         await sleep(400);
-        ok('default: the review screen of the saved recording (Add never opened) asks for them, once each (17)', got && recReqs(pw).length === 17, String(recReqs(pw).length));
+        ok('default: the review screen of the saved recording (Add never opened) asks for them, once each (17)', got && recReqs(pr).length === 17, String(recReqs(pr).length));
       } else {
         await sleep(2500);
-        ok('legacy remembered: the review screen of the saved recording asks for none', recReqs(pw).length === 0, recReqs(pw).join(' '));
+        ok('legacy remembered: the review screen of the saved recording asks for none', recReqs(pr).length === 0, recReqs(pr).join(' '));
       }
-      ok('no page or console error', clean(pw), errs(pw));
-      await pw.close();
+      ok('no page or console error', clean(pr), errs(pr));
+      await pr.close();
     }
 
         }
