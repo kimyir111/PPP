@@ -58,6 +58,13 @@ python tests/bench/review/final_oracle.py             # correct outputs engraved
 
 Every command prints UTF-8 even on a cp949 console, with no `PYTHONIOENCODING` needed.
 
+In CI (`.github/workflows/bench.yml`) the gate's steps run as five parallel jobs, `shard-a` to `shard-e`, and the job named
+`gate` is green only when every shard is: that is the check to read (it appears in the list only once the shards have finished,
+so until then it is absent, not green). Each step is in exactly one shard; a `run --suite X` and
+its `check --suite X` (or a `*_data.py` and its trainer's `--check`) stay in the same shard, because the second reads what the
+first wrote; a step you add goes in the shard with time to spare (the workflow's comments list the times). The nightly jobs are
+separate and unchanged.
+
 ## What a result says
 
 Three layers, in this order of importance:
