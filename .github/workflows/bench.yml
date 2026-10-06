@@ -102,7 +102,7 @@ jobs:
   shard-c:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 1            # TD22 negative test: a shard killed by its timeout must turn gate red
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit
