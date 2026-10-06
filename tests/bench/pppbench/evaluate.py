@@ -78,7 +78,7 @@ def evaluate_timed(ref, perf, row: Dict[str, Any], *, window_s: float = 0.30,
     if not row.get("ok"):
         raise CaseError("NOTATE_" + str(row.get("code") or "exception").upper().replace("-", "_"), row.get("error") or "")
     try:
-        pred = musicxml.read_score(row["xml"])
+        pred = musicxml.read_score(row["xml"], ottava=musicxml.PREDICTION_OTTAVA)
     except musicxml.ReaderError as exc:
         raise CaseError("PRED_READER", str(exc)) from exc
     stats = row.get("stats") or {}

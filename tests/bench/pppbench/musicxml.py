@@ -29,6 +29,12 @@ from .util import normalise_eol, sha256_bytes
 #               down from the pitch data"). Used for reference scores: their truth is the music, not
 #               the app's reading of it (G00 §17 M9). The difference is tracked as a known failure.
 OTTAVA_MODES = ("app", "standard")
+# How a PREDICTION's octave lines are read (G10a-6, docs/GOALS/G10 section 29): "standard". Since MX-1 the app reads <pitch> as the pitch that
+# sounds and an octave line only moves what is printed, and a v2 recording's score has lines (audio-score.js, opts.ottava), so reading them the
+# pre-MX-1 way would put every note under one an octave off and move pitch, onset and value metrics for a change that moves none. No prediction
+# before G10a-6 had a line (the library and the classic conversion write none), so no earlier result moves. read_score's own default stays "app":
+# the references, the known-defects audit and the parser-parity tests keep modelling the pre-MX-1 app (MX1-D7).
+PREDICTION_OTTAVA = "standard"
 
 
 def pedal_sound_value(raw: Optional[str]) -> Optional[int]:

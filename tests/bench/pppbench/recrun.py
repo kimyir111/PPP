@@ -40,14 +40,14 @@ def perturb(inp: Dict[str, Any], case_id: str, seed: int, noise: float = NOISE_S
 
 def stability_of(base_xml: str, runs: List[Optional[str]]) -> float:
     """Mean over the perturbed runs of the share of bars that differ from ``base_xml``'s (a failed run: 1.0)."""
-    base = rec_mod.bar_digests(musicxml.read_score(base_xml))
+    base = rec_mod.bar_digests(musicxml.read_score(base_xml, ottava=musicxml.PREDICTION_OTTAVA))
     shares = []
     for xml in runs:
         if xml is None:
             shares.append(1.0)
             continue
         try:
-            shares.append(rec_mod.changed_bar_share(base, rec_mod.bar_digests(musicxml.read_score(xml))))
+            shares.append(rec_mod.changed_bar_share(base, rec_mod.bar_digests(musicxml.read_score(xml, ottava=musicxml.PREDICTION_OTTAVA))))
         except musicxml.ReaderError:
             shares.append(1.0)
     return sum(shares) / len(shares)
@@ -84,7 +84,8 @@ def extras(cases, perfs, rows: Dict[str, Dict[str, Any]], by_entry: Dict[str, An
     todo = []
     for c in cases:
         row = rows[c.id]
-        out[c.id] = {"check": row.get("check"), "harmony": row.get("harmony"), "ref_harmony": ref_h.get(c.ref_id), "stability": None}
+        out[c.id] = {"check": row.get("check"), "harmony": row.get("harmony"), "ref_harmony": ref_h.get(c.ref_id), "stability": None,
+                     "ledger": row.get("ledger")}
         if "play" in row:          # a suite with "hands_play" (G10a-2b): the split's crossing and hard violations
             out[c.id]["play"] = row.get("play")
         if row.get("ok"):

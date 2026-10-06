@@ -1443,6 +1443,18 @@
     }
     return lib.analyse(heard, extra.heard || [], {});
   }
+  /* G10a-6 (docs/GOALS/G10_AUDIO_TO_SCORE.md section 29): the automatic 8va / 8vb (15ma / 15mb) of realize/ottava.js (TD16), on the graph a v2 RECORDING became. A real recording has notes that
+     sound far above or below the staff (the teacher's six covers: 7-15% of the heard notes at or above E6, 4-14% at or below E2) and the score printed them on a stack of ledger lines. The graph keeps
+     the SOUNDING pitch and only gains an `ottava` spanner (the engraver prints the displaced octave, the MusicXML keeps <pitch> as it sounds and writes <octave-shift>, the app's Score plays the
+     sounding pitch: MX-1); the pass runs through scoregraph/pro.js professionalize, whose critic gives the INPUT graph back unless nothing but the octave lines changed. Only under v2 (opts.recording
+     'v2'): the classic conversion writes what it always wrote. opts.ottava false or 'off' keeps the graph without the lines (a comparison arm, a rollback). A page that has not loaded
+     realize/ottava.js writes the score without them: this never throws. */
+  function ottavaLib() {
+    try {
+      return typeof module === 'object' && module.exports ? require('./realize/ottava.js') : (global && global.PPPRealizeModules && global.PPPRealizeModules.ottava) || null;
+    } catch (e) { return null; }
+  }
+  const ottavaWanted = (opts, extra) => extra.recording === 'v2' && opts.ottava !== false && opts.ottava !== 'off' && (opts.sourceKind || 'audio-score') === 'audio-score';
   const ACCIDENTAL_NAME = { '-2': 'flat-flat', '-1': 'flat', '0': 'natural', '1': 'sharp', '2': 'double-sharp' };
 
   /* heard: {notes: [{on, off, midi, vel, staff, tick}] (every note after clean; staff and tick once placed),
@@ -1949,6 +1961,17 @@
       const pro = scoreGraph().professionalize(graph, opts.professionalOptions || {});
       result.proReport = pro.report;
       if (professional === 'on' && pro.graph !== graph) { graph = pro.graph; graphIssues = pro.issues; }
+    }
+    /* G10a-6: the octave lines of a v2 recording, last: every position above is final, and the critic of professionalize compares the graph with the one it is handed (see ottavaLib) */
+    if (ottavaWanted(opts, extra)) {
+      const OT = ottavaLib();
+      if (OT) {
+        try {
+          const o = OT.addOttava(graph);
+          result.ottavaReport = { changed: !!o.changed, fallback: !!o.fallback, spans: o.spans };   /* beside the graph, not in stats */
+          if (o.changed && !o.fallback) { graph = o.graph; graphIssues = o.issues || graphIssues; }
+        } catch (e) { result.ottavaReport = { changed: false, fallback: true, error: String(e && e.message || e) }; }
+      } else result.ottavaReport = { changed: false, fallback: false, missing: true };
     }
     if (gridReport) result.gridReport = gridReport;            /* beside the graph, not in stats (the benchmark snapshots stats) */
     if (extra.recReport) result.recReport = extra.recReport;   /* v2's time skeleton report (G10a-1), beside the graph too */

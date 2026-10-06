@@ -64,4 +64,36 @@ function performanceOf(list, qpm, seed, hold) {
   }));
 }
 
-module.exports = { lcg, sextuplets, keyChange, pedalPiece, performanceOf };
+/* 4/4 at 100 quarters a minute, `bars` bars of two registers that real covers have (G10a-6): the right hand in eighths far above the staff (E6 to C7, 3 to 6 ledger lines) with a quarter bass in the
+   middle for the first half, then a right hand in the middle (E5 to G5) over a left hand far below it (E1 to B1) for the second half. The sounding pitches are what the 8va/8vb lines of v2 are checked against. */
+function highLow(bars, seed) {
+  const rnd = lcg(seed || 5), spq = 60 / 100, notes = [];
+  const HIGH = [88, 91, 93, 96, 95, 93, 91, 88], MID = [76, 79, 77, 74, 76, 72, 74, 71], BASS_MID = [48, 55, 52, 55], BASS_LOW = [28, 35, 33, 31];
+  const half = Math.floor(bars / 2);
+  for (let b = 0; b < bars; b++) {
+    const t0 = 1 + b * 4 * spq, j = () => (rnd() * 2 - 1) * 0.008, hi = b < half;
+    for (let k = 0; k < 8; k++) notes.push({ on: r3(t0 + k * spq / 2 + j()), off: r3(t0 + (k + 0.85) * spq / 2), midi: (hi ? HIGH : MID)[k], vel: k === 0 ? 92 : k % 2 ? 58 : 70 });
+    for (let k = 0; k < 4; k++) notes.push({ on: r3(t0 + k * spq + j()), off: r3(t0 + (k + 0.9) * spq), midi: (hi ? BASS_MID : BASS_LOW)[k], vel: k === 0 ? 96 : k === 2 ? 80 : 62 });
+  }
+  return { notes: sorted(notes) };
+}
+
+/* Six stretches of 4 bars (4/4 at 100) in which the left hand drops far below the staff on the first beat of a bar and the right hand climbs far above it a little later, the gap between the two
+   different in every stretch: the 8va line of the treble staff starts AFTER the 8vb line of the bass staff in the same bar, which the MusicXML lists the other way round (one staff's stream, then the
+   other's). A bar of both hands in the middle opens each stretch, so no line runs from one to the next. */
+function crossLines(seed) {
+  const rnd = lcg(seed || 9), spq = 60 / 100, notes = [];
+  const HIGH = [88, 91, 93, 96, 95, 93, 91, 88], MID = [76, 79, 77, 74, 76, 72, 74, 71], BASS_MID = [48, 55, 52, 55], BASS_LOW = [28, 35, 33, 31];
+  const GAPS = [1, 2, 3, 4, 5, 6];   /* eighths between the left hand's drop and the right hand's climb */
+  for (let st = 0; st < 6; st++) {
+    for (let b = 0; b < 4; b++) {
+      const bar = st * 4 + b, t0 = 1 + bar * 4 * spq, j = () => (rnd() * 2 - 1) * 0.008;
+      const lowFrom = b >= 1, highFrom = b === 1 ? GAPS[st] : b > 1 ? 0 : 99;
+      for (let k = 0; k < 8; k++) notes.push({ on: r3(t0 + k * spq / 2 + j()), off: r3(t0 + (k + 0.85) * spq / 2), midi: (k >= highFrom && b >= 1 ? HIGH : MID)[k], vel: k === 0 ? 92 : k % 2 ? 58 : 70 });
+      for (let k = 0; k < 4; k++) notes.push({ on: r3(t0 + k * spq + j()), off: r3(t0 + (k + 0.9) * spq), midi: (lowFrom ? BASS_LOW : BASS_MID)[k], vel: k === 0 ? 96 : k === 2 ? 80 : 62 });
+    }
+  }
+  return { notes: sorted(notes) };
+}
+
+module.exports = { lcg, sextuplets, keyChange, pedalPiece, performanceOf, highLow, crossLines };

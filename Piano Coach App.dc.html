@@ -66,7 +66,7 @@
 <script src="./realize/patterns.js?v=1"></script>
 <script src="./realize/notation.js?v=1"></script>
 <script src="./realize/index.js?v=1"></script>
-<script src="./audio-score.js?v=13"></script>
+<script src="./audio-score.js?v=14"></script>
 <!-- G4a (docs/GOALS/G04 §8.5): where the renderer's ScoreGraph comes from, and what it must draw. Draws nothing yet. -->
 <script src="./engrave/ledger.js?v=3"></script>
 <script src="./engrave/glyphs.js?v=3"></script>
@@ -4849,6 +4849,10 @@ const RECORDING_SCRIPTS = [
   'rec/grid.js', 'rec/voices.js', 'rec/rests.js', 'rec/writer.js', 'rec/key.js', 'rec/pedal.js', 'rec/app.js'
 ];
 const REC_APP_SCRIPT = 'rec/app.js';
+/* G10a-6 (docs/GOALS/G10 section 29): what the conversion can do without. realize/ottava.js writes the 8va/8vb lines of a v2 score (audio-score.js ottavaLib); a page that does not have it writes the
+   same score with every note on its ledger lines, so it is asked for in the same batch as the stages and a failure is not an error (it is not part of recordingModulesReady). [path, ?v=]: the arranger's
+   loader (SINGLE_SCRIPTS) asks for the same file with the same ?v=, so the browser's cache serves the second asker, and a page that has it already does not ask. */
+const RECORDING_OPTIONAL_SCRIPTS = [['realize/ottava.js', 3]];
 const REC_FILE_V = 1; /* the ?v= of every rec/ file: bump it when one changes */
 function coerceRecordingMode(v) { return v === 'v2' ? 'v2' : 'legacy'; }
 let RECORDING_MODE = (() => {
@@ -4876,7 +4880,8 @@ function recordingModulesReady() {
 const RECORDING_SCRIPT_GLOBALS = {
   'rec/attacks.js': ['PPPRecModules', 'attacks'], 'rec/beats.js': ['PPPRecModules', 'beats'], 'rec/model.js': ['PPPRecModules', 'model'], 'rec/metre.js': ['PPPRecModules', 'metre'],
   'rec/hands.js': ['PPPRecModules', 'hands'], 'rec/index.js': ['PPPRec'], 'rec/grid.js': ['PPPRecGrid'], 'rec/voices.js': ['PPPRecVoices'], 'rec/rests.js': ['PPPRecRests'],
-  'rec/writer.js': ['PPPRecWriter'], 'rec/key.js': ['PPPRecKey'], 'rec/pedal.js': ['PPPRecPedal'], 'rec/app.js': ['PPPRecApp']
+  'rec/writer.js': ['PPPRecWriter'], 'rec/key.js': ['PPPRecKey'], 'rec/pedal.js': ['PPPRecPedal'], 'rec/app.js': ['PPPRecApp'],
+  'realize/ottava.js': ['PPPRealizeModules', 'ottava']
 };
 /* the scripts whose factory takes another script's export when it loads (rec/index.js's header: the stages' own order). One of those files asked for again brings these with it: they
    hold what was missing (nothing) when they ran. The others read nothing at load and are alone. */
@@ -4896,10 +4901,10 @@ function forgetRecScript(src) {
   const g = RECORDING_SCRIPT_GLOBALS[src];
   if (g && typeof window !== 'undefined') { try { if (g.length === 2) { if (window[g[0]]) delete window[g[0]][g[1]]; } else delete window[g[0]]; } catch (e) { /* the global stays */ } }
 }
-function recScriptTag(src) {
+function recScriptTag(src, v) {
   return new Promise(resolve => {
     const el = document.createElement('script');
-    el.src = './' + src + '?v=' + REC_FILE_V;
+    el.src = './' + src + '?v=' + (v || REC_FILE_V);
     el.async = false;
     el.onload = () => { const ok = recScriptGlobalPresent(src); if (ok) _recLoaded.add(src); else _recLoaded.delete(src); resolve(ok); };
     el.onerror = () => { _recLoaded.delete(src); resolve(false); };
@@ -4934,7 +4939,8 @@ function loadRecordingModules() {
       /* requested at once, executed in list order (async = false) */
       const todo = recordingScriptsToLoad();
       todo.forEach(forgetRecScript);
-      const results = await Promise.all(todo.map(recScriptTag));
+      const optional = RECORDING_OPTIONAL_SCRIPTS.filter(o => !_recLoaded.has(o[0]) && !recScriptGlobalPresent(o[0]));
+      const results = await Promise.all(todo.map(s => recScriptTag(s)).concat(optional.map(o => recScriptTag(o[0], o[1]))));
       const badS = todo.find((s, i) => !results[i]);
       if (badS) { RECORDING_LOAD_ERROR = badS; return false; }
       return recordingModulesReady();
