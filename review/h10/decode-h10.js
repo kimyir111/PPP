@@ -24,6 +24,7 @@ const r3 = v => v == null ? null : Math.round(v * 1000) / 1000;
 function stats() { return require('../decode.js'); }
 
 function decodeH10(key, ratings) {
+  if (key && key.compare === 'engine') return require('./decode-engine.js').decodeEngine(key, ratings); /* G10b-0: the same pieces from two note sources */
   const { wilson, signTestP } = stats();
   if (!key || key.format !== 'ppp-review-key/1' || key.mode !== 'h10') throw new Error('not an H-10 review key file');
   if (!ratings || ratings.format !== 'ppp-review-ratings/2' || ratings.mode !== 'h10') throw new Error('not an H-10 ratings file exported by the review page (format ppp-review-ratings/2)');
@@ -134,6 +135,7 @@ function decodeH10(key, ratings) {
 }
 
 function reportH10(o) {
+  if (o.compare === 'engine') return require('./decode-engine.js').reportEngine(o);
   const L = [];
   const pc = v => v == null ? 'n/a' : (100 * v).toFixed(0) + '%';
   const ci = w => w ? '[' + pc(w[0]) + ', ' + pc(w[1]) + ']' : 'n/a';

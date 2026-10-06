@@ -5,6 +5,8 @@
      node review/build.js --mode h8|h9 --out <dir> --key-out <dir> [--seed <secret>] [--items items.json] [--single-note-hands] [--list]
      node review/build.js --mode h10 --heard <dir> --out <dir> --key-out <dir> [--seed <secret>] [--jobs 3] [--excerpt-bars 12] [--excerpt-seconds N]
                           [--level intermediate] [--no-titles] [--list]      (G10a-5: the blind review of the recording conversion; review/h10/packet.js)
+     node review/build.js --mode h10 --compare engine --heard <dir> --heard-b <dir> --out <dir> --key-out <dir> [--seed <secret>] [--jobs 3] [--excerpt-bars 12] [--excerpt-seconds N]
+                          [--level intermediate] [--no-titles] [--list]      (G10b-0: the same pieces from the in-browser model's notes and the helper's notes, both through v2)
 
    --seed      optional; a SECRET string of at least 20 characters. Omit it and a random one is made. It decides which arrangement
                is X and which is Y and the order of the items, and it is written only to the key file. (A short seed can be guessed
@@ -18,6 +20,8 @@
                docs/GOALS/G09 section 12 "G9 single-note hands"); recorded in key.json, never in the packet.
    --list      print the chosen items and stop (no packet is written).
    --heard     (h10) the folder of heard notes + items.json that review/h10/collect.js wrote; --jobs runs that many items at once in their own processes.
+   --compare engine   (h10, G10b-0) compare two NOTE SOURCES for the same pieces instead of classic against v2: --heard is the in-browser model's notes, --heard-b the helper's
+               (the same file format: review/h10/helper-heard.js makes it from the helper's own files); both are written by the page's v2 conversion.
 
    Nothing here touches the app or the server; it only reads the repository and writes the two directories above. */
 'use strict';
@@ -103,6 +107,7 @@ function gitCommit() {
 async function buildPacket(opts) {
   const mode = opts.mode;
   if (!REVIEW_NAME[mode]) throw new Error('--mode must be h8, h9 or h10');
+  if ((opts.compare || opts.heardB) && mode !== 'h10') throw new Error('--compare and --heard-b are for --mode h10');
   if (!opts.out) throw new Error('--out is required');
   /* refuse before doing any work */
   const dirs = planOutputs(opts.out, opts.keyOut);
@@ -200,24 +205,33 @@ async function main() {
   const args = process.argv.slice(2);
   const opt = (n, d) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : d; };
   const flag = n => args.indexOf(n) >= 0;
-  if (flag('--help') || !flag('--mode')) { console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(2, 18).join('\n')); return; }
+  if (flag('--help') || !flag('--mode')) { console.log(fs.readFileSync(__filename, 'utf8').split('*/')[0].split('\n').slice(2).join('\n')); return; }
   const mode = opt('--mode');
+  if ((flag('--compare') || flag('--heard-b')) && mode !== 'h10') throw new Error('--compare and --heard-b are for --mode h10');
   const t0 = Date.now();
   if (mode === 'h10') {
     if (flag('--list')) {
-      const inp = require('./h10/packet.js').readHeardDir(opt('--heard'));
-      inp.items.forEach(i => console.log(i.id, i.heard.notes.length + ' heard notes', i.url || '', i.title || ''));
+      const P = require('./h10/packet.js');
+      const inp = P.readHeardDir(opt('--heard'));
+      const hb = opt('--compare') === 'engine' && opt('--heard-b') ? P.readHelperDir(opt('--heard-b'), inp.items) : null;
+      inp.items.forEach(i => console.log(i.id, i.heard.notes.length + ' heard notes' + (hb ? (hb.notes[i.id] ? ', ' + hb.notes[i.id].notes.length + ' helper notes' : ', NO usable helper notes') : ''), i.url || '', i.title || ''));
       inp.skipped.forEach(i => console.log('SKIPPED', i.id, i.reason));
+      if (hb) hb.skipped.forEach(i => console.log('SKIPPED', i.id, i.reason));
       return;
     }
     const num = n => (flag(n) ? Number(opt(n)) : undefined);
-    const r = await buildPacket({ mode: mode, seed: opt('--seed'), out: opt('--out'), keyOut: opt('--key-out'), heard: opt('--heard'), jobs: num('--jobs') || 3,
+    if (flag('--compare') && opt('--compare') !== 'engine') throw new Error("--compare must be 'engine' (omit it for the classic-against-v2 comparison)");
+    const r = await buildPacket({ mode: mode, compare: opt('--compare'), heardB: opt('--heard-b'), seed: opt('--seed'), out: opt('--out'), keyOut: opt('--key-out'), heard: opt('--heard'), jobs: num('--jobs') || 3,
       excerptBars: num('--excerpt-bars'), excerptSeconds: num('--excerpt-seconds'), level: opt('--level'), titles: !flag('--no-titles'), log: m => console.log(m) });
     const size = f => (fs.statSync(f).size / 1048576).toFixed(2) + ' MB';
     console.log('\npacket: ' + r.files.html + ' (' + size(r.files.html) + '), ' + r.count + ' items, id ' + r.packetId);
     console.log('        ' + r.files.manifest);
     console.log('key (NOT for the reviewer): ' + r.files.key);
     if (r.skipped.length) console.log('SKIPPED ' + r.skipped.length + ': ' + r.skipped.map(s => s.id + ' (' + s.reason.slice(0, 80) + ')').join('; '));
+    if (r.key.compare === 'engine') {
+      const flagged = Object.keys(r.key.items).filter(id => r.key.items[id].agreement.flags.length);
+      console.log('engine comparison: the two readings disagree on bars, tempo or metre in ' + flagged.length + ' of ' + r.count + ' pieces' + (flagged.length ? ': ' + flagged.map(id => r.key.items[id].source.id + ' (' + r.key.items[id].agreement.flags.join(', ') + ')').join('; ') : '') + ' (the key has the numbers)');
+    }
     console.log('about ' + Math.round(r.count * 5.5) + ' minutes for the reviewer; built in ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s');
     return;
   }
