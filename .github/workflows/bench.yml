@@ -1,6 +1,7 @@
 # G0 score-quality benchmark (tests/bench/README.md).
-# The gate job is the regression gate on every push/PR; the nightly job (full suite, gate
-# sensitivity, the independent review's adversarial checks) runs on a schedule or by hand.
+# The gate is the regression gate on every push/PR. Its steps run as five parallel shard jobs (shard-a .. shard-e), and the job named
+# `gate` passes only when every shard passed (TD22). The nightly jobs (full suite, gate sensitivity, the independent review's
+# adversarial checks) run on a schedule or by hand.
 # No npm install: the benchmark needs only Node, the Python standard library and git. The two checks
 # that drive the real page - tests/scoregraph/tools/shadow-legacy.js --check and app-import-check.js
 # (G02 §14) - need puppeteer and `npm start`, so they run locally, like T1-C conformance.
@@ -13,12 +14,34 @@ on:
     - cron: '17 18 * * *'
   workflow_dispatch:
 
+# A new push to a pull request cancels that PR's older run (its result is for a commit nobody will merge). A push to main, the
+# schedule and a manual dispatch each get a group of their own (the run id), so none of them is ever cancelled, or replaced by a
+# newer pending run of the same group.
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('{0}-pr-{1}', github.workflow, github.event.pull_request.number) || format('{0}-{1}-{2}', github.workflow, github.event_name, github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  gate:
+  # THE GATE, SHARDED (TD22). The 59 steps that used to be one job of 26-50 minutes run as five jobs at once (hosted runners are free
+  # for a public repository). The wall-clock is the slowest of the five: about 11 minutes (4 runs on 2026-10-06: 10.6-11.1), and
+  # 6-7 when every shard lands on a fast runner; the same code took 26-50 minutes as one job. Rules for keeping it right:
+  #  - every step of the old job is in exactly one shard, in its old relative order, with its command unchanged;
+  #  - steps that depend on each other stay together: `run --suite X` then `check --suite X` (check reads what run wrote under
+  #    tests/bench/out/X), `hands_data.py && train_hands.js --check` and `key_data.py && key-eval.js --check` (the data goes
+  #    to tests/bench/.cache). Every other step reads committed files and writes only under a path of its own or a temp dir;
+  #  - the verdict is the job named exactly `gate`, the last of these jobs: green only if every shard is green. The shards are
+  #    deliberately not named gate-*, so nothing that looks for "gate" can take one of them for the verdict;
+  #  - a new step goes in the shard with the most slack. Step seconds per shard, mean of the fast and of the slow runs of
+  #    2026-10-05/06 (a job adds about 15 s of checkout and setup): a 336/592, b 340/587, c 334/575, d 333/585, e 323/548;
+  #    rec-core alone is 336/592, so no split can beat that unless that suite is sharded;
+  #  - every job that runs the ScoreGraph tests (and layout-hashes.js) needs the whole history: fetch-depth 0.
+
+  # shard-a: rec-core
+  #   (steps ~336 s on a fast runner, ~592 s on a slow one)
+  shard-a:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
-    timeout-minutes: 80                  # was 50, was 20: the gate grew (G10a-0 rec suites, the humanizer's unit tests, rec-grid); it took
-                                         # 25-44 minutes on the last runs of main (44.1 on 2026-10-03), so 50 was one slow runner from red
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit
@@ -26,21 +49,30 @@ jobs:
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5
         with: { python-version: '3.13' }
-      - run: python -m unittest discover -s tests/bench/unit -t tests/bench
-      - run: npm run test:scoregraph                 # the ScoreGraph library and the graphs toMusicXml writes from (G01)
-      - run: npm run test:engrave                    # G4a-G4d-1a: render source, NotationPlan and ledger, layout, notation, SVG, curves and marks (G04)
-      - run: npm run test:playability                # G5a: the playability analyzer, its mutation suite, R-corpus false positives, the legacy-arranger baseline (G05)
-      - run: npm run test:difficulty                 # G6a: difficulty features, the ranker, metamorphic tests, the dataset/weights reproduce (G06)
-      - run: node difficulty/tools/train.js --check  # G6a: the committed leave-one-book-out and hold-out evaluation reproduces (G06 §11)
-      - run: npm run test:songgraph                  # G7a: key regions, harmony, melody/bass, sections/phrases, voice roles, energy, span round trips, mutation suite (G07)
-      - run: npm run test:arrangement-planner         # G7b: texture ladder, deterministic search, real-corpus coverage, mutation suite (G07B)
-      - run: npm run test:realize                     # G8a: the deterministic realizer, golden determinism, mutation suite (G08)
+      - run: python tests/bench/run.py run --suite rec-core
+      - run: python tests/bench/run.py check --suite rec-core
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-shard-a
+          path: |
+            tests/bench/out/rec-core/summary.md
+
+  # shard-b: rec-grid, rec-arrange-smoke, robust, the engrave generator checks, test:rec, the key check
+  #   (steps ~340 s on a fast runner, ~587 s on a slow one)
+  shard-b:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
       - run: npm run test:rec                         # G10a-1: rec/ S0-S2 (attacks, pulse tracks, the metre model) and toMusicXml recording 'v2'
-      - run: node rec/tools/train.js --check          # G10a-1 (AI-5a): the committed weights and evaluation are what the training makes (G10 section 18)
-      - run: python tests/bench/tools/hands_data.py && node tests/bench/tools/train_hands.js --check   # G10a-2 (AI-5b, S4): the hand model and its evaluation are what the training makes (G10 section 19)
-      - run: node tests/bench/tools/train_grid.js --check   # G10a-2 (AI-5b): the grid stage's committed weights are what the training makes (G10 section 20)
       - run: python tests/bench/tools/key_data.py && node rec/tools/key-eval.js --check   # G10a-3 (S8): the key stage's committed evaluation on the catalogue truth is what the code makes (G10 section 22)
-      - run: node tests/bench/tools/train_rests.js --check  # G10a-3 (AI-5b, S6): the silence classifier's weights and evaluation are what the training makes (G10 section 22; ~30-60 s)
       - run: node tests/engrave/tools/make-e-fixtures.js --check   # the E fixtures are the generator's (G04 §22.1)
       - run: node tests/engrave/tools/make-corpus.js --check       # the R corpus manifest is the rule's (G04 §22.2)
       - run: node tests/engrave/tools/make-metrics.js --check      # G4b: the layout's glyph metrics are the pinned font's (G04 §18.2)
@@ -50,7 +82,75 @@ jobs:
       - run: node tests/engrave/tools/bench.js check --suite r     # L1 on the reference corpus against its baseline (G04 §21.5)
       - run: node tests/engrave/tools/bench.js check --suite e
       - run: node tests/engrave/tools/bench.js check --suite x
-      - run: python tests/bench/run.py sg-roundtrip  # every committed MusicXML through ScoreGraph and back (G01)
+      - run: python tests/bench/run.py run --suite robust
+      - run: python tests/bench/run.py check --suite robust
+      - run: python tests/bench/run.py run --suite rec-arrange-smoke   # G10c-0: what the one-note arranger does to recordings, against the true score
+      - run: python tests/bench/run.py check --suite rec-arrange-smoke
+      - run: python tests/bench/run.py run --suite rec-grid        # G10a-2: v2 with and without its grid stage (rec/grid.js), oracle beats and swing included
+      - run: python tests/bench/run.py check --suite rec-grid
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-shard-b
+          path: |
+            tests/bench/out/robust/summary.md
+            tests/bench/out/rec-arrange-smoke/summary.md
+            tests/bench/out/rec-grid/summary.md
+
+  # shard-c: test:scoregraph, test:difficulty, the rec trainer check, core, core-app, smoke-app, rec-smoke
+  #   (steps ~334 s on a fast runner, ~575 s on a slow one)
+  shard-c:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: npm run test:scoregraph                 # the ScoreGraph library and the graphs toMusicXml writes from (G01)
+      - run: npm run test:difficulty                 # G6a: difficulty features, the ranker, metamorphic tests, the dataset/weights reproduce (G06)
+      - run: node difficulty/tools/train.js --check  # G6a: the committed leave-one-book-out and hold-out evaluation reproduces (G06 §11)
+      - run: node rec/tools/train.js --check          # G10a-1 (AI-5a): the committed weights and evaluation are what the training makes (G10 section 18)
+      - run: python tests/bench/run.py run --suite core
+      - run: python tests/bench/run.py check --suite core
+      - run: python tests/bench/run.py run --suite smoke-app      # the app's options (closeGaps, exactBars): what users get (G10a-0)
+      - run: python tests/bench/run.py check --suite smoke-app
+      - run: python tests/bench/run.py run --suite core-app
+      - run: python tests/bench/run.py check --suite core-app
+      - run: python tests/bench/run.py run --suite rec-smoke       # G10a-0: the recording metrics on the calibrated humanizer
+      - run: python tests/bench/run.py check --suite rec-smoke
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-shard-c
+          path: |
+            tests/bench/out/core/summary.md
+            tests/bench/out/core/results.json
+            tests/bench/out/core/run.json
+            tests/bench/out/core-app/summary.md
+
+  # shard-d: the unit tests, realize, songgraph, playability, the hands and rests checks, golden/lint/correctness, smoke, the replays, transcription-core
+  #   (steps ~333 s on a fast runner, ~585 s on a slow one)
+  shard-d:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python -m unittest discover -s tests/bench/unit -t tests/bench
+      - run: npm run test:playability                # G5a: the playability analyzer, its mutation suite, R-corpus false positives, the legacy-arranger baseline (G05)
+      - run: npm run test:songgraph                  # G7a: key regions, harmony, melody/bass, sections/phrases, voice roles, energy, span round trips, mutation suite (G07)
+      - run: npm run test:realize                     # G8a: the deterministic realizer, golden determinism, mutation suite (G08)
+      - run: python tests/bench/tools/hands_data.py && node tests/bench/tools/train_hands.js --check   # G10a-2 (AI-5b, S4): the hand model and its evaluation are what the training makes (G10 section 19)
+      - run: node tests/bench/tools/train_rests.js --check  # G10a-3 (AI-5b, S6): the silence classifier's weights and evaluation are what the training makes (G10 section 22; ~30-60 s)
       - run: node tests/scoregraph/tools/make-midi-fixtures.js --check   # the committed MIDI bytes are the generator's (G02)
       - run: python tests/bench/run.py golden
       - run: python tests/bench/run.py lint-corpus
@@ -58,27 +158,6 @@ jobs:
       - run: python tests/bench/run.py correctness
       - run: python tests/bench/run.py run --suite smoke
       - run: python tests/bench/run.py check --suite smoke
-      - run: python tests/bench/run.py run --suite core
-      - run: python tests/bench/run.py check --suite core
-      - run: python tests/bench/run.py run --suite robust
-      - run: python tests/bench/run.py check --suite robust
-      - run: python tests/bench/run.py run --suite smoke-app      # the app's options (closeGaps, exactBars): what users get (G10a-0)
-      - run: python tests/bench/run.py check --suite smoke-app
-      - run: python tests/bench/run.py run --suite core-app
-      - run: python tests/bench/run.py check --suite core-app
-      - run: python tests/bench/run.py run --suite robust-app
-      - run: python tests/bench/run.py check --suite robust-app
-      - run: python tests/bench/tools/make_rec_suites.py --check   # the committed rec-* suites are the generator's (G10a-0)
-      - run: python tests/bench/run.py run --suite rec-smoke       # G10a-0: the recording metrics on the calibrated humanizer
-      - run: python tests/bench/run.py check --suite rec-smoke
-      - run: python tests/bench/run.py run --suite rec-core
-      - run: python tests/bench/run.py check --suite rec-core
-      - run: python tests/bench/run.py run --suite rec-robust
-      - run: python tests/bench/run.py check --suite rec-robust
-      - run: python tests/bench/run.py run --suite rec-arrange-smoke   # G10c-0: what the one-note arranger does to recordings, against the true score
-      - run: python tests/bench/run.py check --suite rec-arrange-smoke
-      - run: python tests/bench/run.py run --suite rec-grid        # G10a-2: v2 with and without its grid stage (rec/grid.js), oracle beats and swing included
-      - run: python tests/bench/run.py check --suite rec-grid
       - run: python tests/bench/run.py run --suite replay-public   # exits with the replay verdict
       - run: python tests/bench/run.py run --suite replay-of       # G10a-0: the production browser model (Onsets & Frames) on rendered audio, replayed from committed notes
       - run: python tests/bench/run.py run --suite replay-of-app   # the same fixtures with the app's options
@@ -88,20 +167,64 @@ jobs:
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bench-core
+          name: bench-shard-d
           path: |
-            tests/bench/out/core/summary.md
-            tests/bench/out/core/results.json
-            tests/bench/out/core/run.json
-            tests/bench/out/robust/summary.md
-            tests/bench/out/core-app/summary.md
-            tests/bench/out/robust-app/summary.md
-            tests/bench/out/rec-core/summary.md
-            tests/bench/out/rec-robust/summary.md
-            tests/bench/out/rec-arrange-smoke/summary.md
-            tests/bench/out/rec-grid/summary.md
             tests/bench/out/replay-public/summary.md
             tests/bench/out/correctness/report.json
+
+  # shard-e: test:engrave, the planner, the grid check, sg-roundtrip, robust-app, rec-robust
+  #   (steps ~323 s on a fast runner, ~548 s on a slow one)
+  shard-e:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: npm run test:engrave                    # G4a-G4d-1a: render source, NotationPlan and ledger, layout, notation, SVG, curves and marks (G04)
+      - run: npm run test:arrangement-planner         # G7b: texture ladder, deterministic search, real-corpus coverage, mutation suite (G07B)
+      - run: node tests/bench/tools/train_grid.js --check   # G10a-2 (AI-5b): the grid stage's committed weights are what the training makes (G10 section 20)
+      - run: python tests/bench/run.py sg-roundtrip  # every committed MusicXML through ScoreGraph and back (G01)
+      - run: python tests/bench/run.py run --suite robust-app
+      - run: python tests/bench/run.py check --suite robust-app
+      - run: python tests/bench/tools/make_rec_suites.py --check   # the committed rec-* suites are the generator's (G10a-0)
+      - run: python tests/bench/run.py run --suite rec-robust
+      - run: python tests/bench/run.py check --suite rec-robust
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-shard-e
+          path: |
+            tests/bench/out/robust-app/summary.md
+            tests/bench/out/rec-robust/summary.md
+
+  # The verdict. The merge rule is "read the result of the check named gate": this is that check. It runs after every shard (also
+  # when one failed or was cancelled, hence always()) and is green only when every shard's result is success - a failed, cancelled
+  # or skipped shard turns it red. It also counts the shard jobs in this file against the ones it waited for, so a shard added
+  # without a place in `needs` is red, not silently ignored. No schedule run: the shards are skipped there, the nightly jobs run.
+  gate:
+    if: ${{ always() && github.event_name != 'schedule' }}
+    needs: [shard-a, shard-b, shard-c, shard-d, shard-e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4                     # only to read this file's list of shards
+      - name: every shard passed
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          waited=$(echo "$NEEDS" | jq 'length')
+          not_success=$(echo "$NEEDS" | jq '[to_entries[] | select(.value.result != "success")] | length')
+          in_file=$(grep -cE '^  shard-[a-z]+:[[:space:]]*$' .github/workflows/bench.yml)
+          echo "shards waited for: $waited, shard jobs in the workflow: $in_file, not successful: $not_success"
+          if [ "$waited" != "$in_file" ]; then echo "gate FAILED: a shard job is not in needs (or the reverse)"; exit 1; fi
+          if [ "$not_success" != "0" ]; then echo "gate FAILED: a shard did not succeed"; exit 1; fi
+          echo "gate passed: all $waited shards succeeded"
 
   nightly:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
