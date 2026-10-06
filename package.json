@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "serve": "node server.js",
-    "test": "node tests/import.test.js && node tests/memory.test.js && node tests/learning.test.js && node tests/midi.test.js && node tests/playback-scheduler.test.js && node tests/musicxml.test.js && node tests/falling-notes.test.js && node tests/interactions.test.js && node tests/import-and-persistence.test.js && node tests/coach.test.js && node tests/i18n-and-auth.test.js && node tests/follow.test.js && node tests/layout.test.js && node tests/alignment.test.js && node tests/engraving.test.js && node tests/pdf-layer.test.js && node tests/library.test.js && node tests/transcription.test.js && node tests/score-search.test.js && node tests/fingering.test.js && node tests/video.test.js && node tests/auth-ui.test.js && node tests/share.test.js && node tests/guest-share.test.js && node tests/guest-share-pg.test.js && node tests/lessons.test.js && node tests/hymns-share.test.js && node tests/course.test.js",
+    "test": "node tests/import.test.js && node tests/memory.test.js && node tests/learning.test.js && node tests/midi.test.js && node tests/playback-scheduler.test.js && node tests/musicxml.test.js && node tests/falling-notes.test.js && node tests/interactions.test.js && node tests/import-and-persistence.test.js && node tests/coach.test.js && node tests/i18n-and-auth.test.js && node tests/follow.test.js && node tests/layout.test.js && node tests/alignment.test.js && node tests/engraving.test.js && node tests/pdf-layer.test.js && node tests/library.test.js && node tests/transcription.test.js && node tests/score-search.test.js && node tests/fingering.test.js && node tests/video.test.js && node tests/auth-ui.test.js && node tests/share.test.js && node tests/guest-share.test.js && node tests/guest-share-pg.test.js && node tests/lessons.test.js && node tests/hymns-share.test.js && node tests/course.test.js && npm run test:home-worker && npm run test:home-worker-page",
     "test:transcription-core": "python tests/transcription_ensemble_test.py && python tests/evaluation_test.py",
     "bench": "python tests/bench/run.py run --suite core && python tests/bench/run.py check --suite core",
     "bench:smoke": "python tests/bench/run.py run --suite smoke && python tests/bench/run.py check --suite smoke",
@@ -23,6 +23,9 @@
     "test:repair": "node --test \"tests/repair/**/*.test.js\"",
     "test:review": "node --test \"tests/review/**/*.test.js\"",
     "test:rec": "node --test \"tests/rec/**/*.test.js\"",
+    "test:home-worker": "node tests/home-worker/jobs.test.js && node tests/home-worker/server.test.js && node tests/home-worker/worker.test.js && node tests/home-worker/jobs-pg.test.js && node tests/home-worker/worker-real.test.js",
+    "test:home-worker-page": "node tests/home-worker/page.test.js",
+    "test:home-worker-mutants": "node tests/home-worker/mutants.js",
     "test:single-note-app": "node tests/single-note-app.test.js",
     "test:recording-v2-app": "node tests/recording-v2-app.test.js && node tests/recording-v2-play.test.js && node tests/recording-v2-ottava.test.js",
     "test:scoregraph:perf": "node -e \"process.env.PPP_PERF='1'; require('child_process').execFileSync(process.execPath, ['--test', 'tests/scoregraph/g3-perf.test.js'], { stdio: 'inherit', env: process.env })\"",

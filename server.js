@@ -98,14 +98,15 @@ function parseYoutubeWatch(raw) {
   try {
     const u = new URL(String(raw || '').trim());
     const host = u.hostname.toLowerCase().replace(/^(www|m|music)\./, '');
+    /* a video id is exactly 11 characters of [A-Za-z0-9_-] (G10b-1: it used to be "6 or more", and the id is handed to yt-dlp and to a worker) */
     if (host === 'youtu.be') {
-      const m = /^\/([\w-]{6,})$/.exec(u.pathname);
+      const m = /^\/([A-Za-z0-9_-]{11})$/.exec(u.pathname);
       if (m) return { id: m[1], url: 'https://www.youtube.com/watch?v=' + m[1] };
     } else if (host === 'youtube.com' && u.pathname === '/watch') {
       const v = u.searchParams.get('v') || '';
-      if (/^[\w-]{6,}$/.test(v)) return { id: v, url: 'https://www.youtube.com/watch?v=' + v };
+      if (/^[A-Za-z0-9_-]{11}$/.test(v)) return { id: v, url: 'https://www.youtube.com/watch?v=' + v };
     } else if (host === 'youtube.com') {
-      const m = /^\/(shorts|live|embed)\/([\w-]{6,})/.exec(u.pathname);
+      const m = /^\/(shorts|live|embed)\/([A-Za-z0-9_-]{11})(?:\/|$)/.exec(u.pathname);
       if (m) return { id: m[2], url: 'https://www.youtube.com/watch?v=' + m[2] };
     }
   } catch (e) {}
@@ -505,6 +506,14 @@ function readSession(token) {
   return data;
 }
 
+/* the account id a request's session cookie names, or null: no database (the home-PC queue looks the account up itself, and remembers it) */
+function sessionUid(req) {
+  try {
+    const sess = readSession(parseCookies(req)[COOKIE]);
+    return sess && sess.uid ? String(sess.uid) : null;
+  } catch (e) { return null; }
+}
+
 function normalizeEmail(value) {
   const email = String(value || '').trim().toLowerCase();
   const at = email.indexOf('@');
@@ -534,6 +543,9 @@ const SHARES_PER_USER = 200;
 const SHARE_LIST_LIMIT = 250;
 /* Guest link sharing (share-guest.js): the limits that keep a public write endpoint small. */
 const guestShare = require('./share-guest');
+/* G10b-1: the home-PC transcription queue (home-jobs.js; docs/GOALS/G10B_HOME_WORKER.md) and where it is kept */
+const homeJobs = require('./home-jobs');
+const homeJobsStore = require('./home-jobs-store');
 const GUEST = guestShare.GUEST;
 const guestLimits = {
   /* creates per address; creates for the whole server; requests that failed validation, per address */
@@ -615,6 +627,7 @@ function fileStore() {
     fs.writeFileSync(file, JSON.stringify(db, null, 2));
   }
   return {
+    jobStore: homeJobsStore.fileJobStore(DATA_DIR),
     async ready() { return true; },
     async findByEmail(email) {
       return load().users.find(u => u.email === email) || null;
@@ -734,8 +747,11 @@ function postgresStore(url) {
     row.measures, row.listed, row.preview == null ? null : JSON.stringify(row.preview), JSON.stringify(row.score),
     row.createdAt, row.updatedAt, row.expiresAt || null, row.bytes || 0];
   return {
+    jobStore: homeJobsStore.pgJobStore(q),
     async ready() {
-      await q(`
+      /* the whole schema work of a boot - this SQL, then the home-PC queue's two tables - runs in one transaction under an advisory lock (home-jobs-store.js): two
+         instances booting together take turns instead of racing or deadlocking */
+      await homeJobsStore.migrate(getPool(), `
         CREATE TABLE IF NOT EXISTS ppp_users (
           id TEXT PRIMARY KEY,
           email TEXT UNIQUE NOT NULL,
@@ -780,6 +796,7 @@ function postgresStore(url) {
           END LOOP;
         END $$;
       `);
+      /* (G10b-1: the two new tables are the last part of that same migration: additive, CREATE ... IF NOT EXISTS only; dropping them is the whole rollback) */
     },
     async findByEmail(email) {
       const r = await q('SELECT id, email, display_name AS "displayName", password_hash AS "passwordHash" FROM ppp_users WHERE email = $1', [email]);
@@ -886,6 +903,13 @@ const SHARE_COLS = 'id, owner_id AS "ownerId", owner_name AS "ownerName", song_k
   + 'measures, listed, preview, created_at AS "createdAt", updated_at AS "updatedAt", expires_at AS "expiresAt", bytes';
 
 const store = process.env.DATABASE_URL ? postgresStore(process.env.DATABASE_URL) : fileStore();
+
+/* G10b-1: ONE instance holds the queue in memory (home-jobs.js says why); the database is only its durable copy */
+const jobsService = homeJobs.create({
+  store: store.jobStore, send: send, jsonError: jsonError, readBody: readBody, parseYoutube: parseYoutubeWatch,
+  clientIp: guestShare.clientIp, sessionUid: sessionUid, findUser: id => store.findById(id), logError: logStoreError,
+  warn: w => console.warn('Home-PC worker queue: ' + w)
+});
 
 /* ---- the seed library ----
    One score per genre, so Shared Scores is never an empty shelf and every
@@ -1139,6 +1163,9 @@ async function handleApi(req, res, url) {
   if (p === '/api/shares' || p.indexOf('/api/shares/') === 0) {
     return handleShares(req, res, url);
   }
+
+  /* G10b-1: /api/jobs..., and /api/worker/... for the worker script on the person's own PC */
+  if (jobsService.owns(p)) return jobsService.handle(req, res, url);
 
   jsonError(res, 404, 'Not found');
 }
@@ -1474,6 +1501,7 @@ store.ready().then(() => {
   setInterval(sweepGuestShares, GUEST.SWEEP_MS).unref();
   server.listen(PORT, HOST, () => {
     console.log('PPP listening on http://' + HOST + ':' + PORT);
+    console.log('Home-PC worker queue: an idle worker is told to wait ' + jobsService.config.idlePollS + ' s, a busy one ' + jobsService.config.activePollS + ' s (PPP_WORKER_IDLE_POLL_S, PPP_WORKER_ACTIVE_POLL_S)');
     console.log('Guest links: the client address is read from ' + (process.env.RENDER ? 'CF-Connecting-IP, then True-Client-IP, then ' : '')
       + 'X-Forwarded-For (' + (Math.max(1, parseInt(process.env.PPP_PROXY_HOPS, 10) || 1)) + ' from the right), then the socket');
     if (HOST === '127.0.0.1' || HOST === 'localhost') startHelperIfMissing();
