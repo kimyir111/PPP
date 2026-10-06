@@ -390,7 +390,7 @@ const PRODUCTION_SQL = `
     else {
       const OldStore = require(path.join(oldDir, 'home-jobs-store.js'));
       const dbs = [];
-      const mkDb = async name => { await q('DROP DATABASE IF EXISTS ' + name + ' WITH (FORCE)'); await q('CREATE DATABASE ' + name); dbs.push(name); const url = URL_.replace(/\/ppp(\?|$)/, '/' + name + '$1'); const pl = new Pool({ connectionString: url, max: 4 }); pl.on('error', () => {}); return { name: name, url: url, pool: pl, q: (sql, params) => pl.query(sql, params), one: async (sql, params) => (await pl.query(sql, params)).rows }; };
+      const mkDb = async name => { await q('DROP DATABASE IF EXISTS ' + name + ' WITH (FORCE)'); await q('CREATE DATABASE ' + name); dbs.push(name); const url = URL_.replace(/\/[^/?]*(\?|$)/, '/' + name + '$1'); const pl = new Pool({ connectionString: url, max: 4 }); pl.on('error', () => {}); return { name: name, url: url, pool: pl, q: (sql, params) => pl.query(sql, params), one: async (sql, params) => (await pl.query(sql, params)).rows }; };
       const snapshot = async db => {
         const cols = (await db.one(`SELECT table_name || '.' || column_name || ' ' || data_type || ' ' || is_nullable || ' ' || coalesce(column_default, '') AS v FROM information_schema.columns WHERE table_schema = 'public' ORDER BY table_name, ordinal_position`)).map(r => r.v);
         const cons = (await db.one(`SELECT conrelid::regclass::text || ' ' || conname || ' ' || pg_get_constraintdef(oid) AS v FROM pg_constraint WHERE connamespace = 'public'::regnamespace ORDER BY 1`)).map(r => r.v);

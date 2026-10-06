@@ -203,6 +203,10 @@ async function main() {
       ok('revoking twice is 401 (it is not there any more)', (await S.as('R').del('/api/pc-links/me')).status === 401);
       const row = (await S.inner.loadAll()).links.find(l => l.id === S.linkId('R'));
       ok('the row is kept, marked revoked, for two days (so making and removing links is not a way round the per-address limits)', !!row && row.revokedAt > 0);
+      S.advance(DAY);
+      await S.svc._state.purge(S.clock.t);
+      ok('a day later a purge still keeps it', S.svc._state.links.has(S.linkId('R')) && (await S.inner.loadAll()).links.some(l => l.id === S.linkId('R')));
+      S.advance(-DAY);
       let hits = 0;
       const addr = '50.0.0.1';
       const T = await L.startService({ users: [] });
@@ -274,11 +278,30 @@ async function main() {
     const file = L.path.join(dir, 'jobs.json');
     const d = JSON.parse(L.fs.readFileSync(file, 'utf8'));
     const nt = J.newToken();
-    d.tokens.push({ id: nt.id, ownerId: d.links[0].id, hash: nt.hash, label: 'x', createdAt: d.tokens[0].createdAt + 5000, lastSeenAt: 0, pollS: 0, revokedAt: 0 });
+    d.tokens.unshift({ id: nt.id, ownerId: d.links[0].id, hash: nt.hash, label: 'x', createdAt: d.tokens[0].createdAt + 5000, lastSeenAt: 0, pollS: 0, revokedAt: 0 });   /* the newer one FIRST in the file: it is the date that decides, not the order */
     L.fs.writeFileSync(file, JSON.stringify(d));
     const B = await L.startService({ resume: creds, store: fileJobStore(dir) });
     try {
       ok('a boot that finds two live tokens for one link keeps only the newest', (await B.worker(creds.tokens.D).get('/api/worker/ping')).status === 401 && (await B.worker(nt.token).get('/api/worker/ping')).status === 200);
+    } finally { await B.close(); L.rmDir(dir); }
+  }
+
+  heading('a record found by the id alone is not enough: the whole hash of the code is compared');
+  {
+    /* the id of a link is the first 22 hex of the hash of its code; if a row had that id and ANOTHER hash (a collision of the 88 bits, or a row that was edited), the code must be refused */
+    const dir = L.tmpDir();
+    const { fileJobStore } = L.mod('home-jobs-store.js');
+    const A = await L.startService({ users: ['c1'], store: fileJobStore(dir) });
+    let creds;
+    try { creds = A.creds(); } finally { await A.close(); }
+    const file = L.path.join(dir, 'jobs.json');
+    const d = JSON.parse(L.fs.readFileSync(file, 'utf8'));
+    d.links[0].hash = J.codeHash('another code').toString('hex');
+    L.fs.writeFileSync(file, JSON.stringify(d));
+    const B = await L.startService({ resume: creds, store: fileJobStore(dir) });
+    try {
+      const r = await req(B.port, 'GET', '/api/jobs', { code: creds.codes.c1 });
+      ok('a row with the right id and the hash of another code does not open for the code that names it (401)', r.status === 401 && r.body.code === 'bad-code', r.status + ' ' + r.text);
     } finally { await B.close(); L.rmDir(dir); }
   }
 

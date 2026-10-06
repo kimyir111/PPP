@@ -4,22 +4,23 @@
 
 ## 이게 뭔가요
 
-PPP 사이트(무료 서버)는 강력한 피아노 모델(TransKun + Kong)을 직접 돌릴 수 없어요. 대신 **내 PC가 대신 돌립니다.**
+PPP 사이트(무료 서버)는 강력한 피아노 모델(TransKun + Kong)을 직접 돌릴 수 없어요. 대신 **내 PC가 대신 돌립니다.** 계정도 로그인도 필요 없어요.
 
-1. PPP의 "악보 추가" 화면에서 유튜브 링크를 넣고 **고품질 변환 (내 PC)** 을 누르면, 사이트가 "이 링크를 변환해 줘"라는 요청을 대기열에 적어 둡니다.
-2. 내 PC에서 이 워커(`worker.js`)가 사이트에 "할 일 있나요?" 하고 **먼저 물어봅니다**(내 PC로 들어오는 연결은 없어요).
-3. 할 일이 있으면 오디오를 받아 PC의 GPU로 변환하고, 들은 음표만 사이트에 돌려줍니다.
-4. PPP 화면에서 **열기**를 누르면, 브라우저가 그 음표로 악보를 만들어 보여 줍니다(브라우저 모델의 음표로 만들 때와 같은 방식).
+1. PPP의 "설정 → 내 PC 연결"에서 **내 PC 링크 만들기**를 누르면 비밀 값 두 개가 한 번만 나와요. **PC 토큰**(`ppw_…`, 내 PC가 쓰는 열쇠)과 **PC 코드**(이 브라우저가 보관하는 열쇠. 다른 기기에서도 쓰려면 입력).
+2. "악보 추가" 화면에서 유튜브 링크를 넣고 **고품질 변환 (내 PC)** 을 누르면, 사이트가 "이 링크를 변환해 줘"라는 요청을 대기열에 적어 둡니다.
+3. 내 PC에서 이 워커(`worker.js`)가 사이트에 "할 일 있나요?" 하고 **먼저 물어봅니다**(내 PC로 들어오는 연결은 없어요).
+4. 할 일이 있으면 오디오를 받아 PC의 GPU로 변환하고, 들은 음표만 사이트에 돌려줍니다. PPP 화면에서 **열기**를 누르면, 브라우저가 그 음표로 악보를 만들어 보여 줍니다(브라우저 모델의 음표로 만들 때와 같은 방식).
 
 > 한계: PC가 켜져 있고 워커가 돌고 있어야 합니다. 요청한 뒤 PC가 확인하러 올 때까지(기본 약 한 시간) 기다릴 수 있어요. 바로 시작하려면 아래 바로가기(`run-once.cmd`)를 여세요. 유튜브 링크만 됩니다(파일 업로드는 아직 아님). 도우미의 박자/페달 정보는 쓰지 않아요.
 
-## 5단계 설정
+## 4단계 설정 (로그인 필요 없음)
 
 1. **변환 환경 준비** (한 번만). 저장소 루트 `README.md`의 "Making a score from a recording" > Setup을 따라 `tools/transcribe-venv`, Kong 체크포인트(`tools/piano-transcription/*.pth`), `pip install transkun`, ffmpeg를 준비하세요. NVIDIA GPU용 PyTorch(CUDA)가 있으면 훨씬 빨라요(곡 1분에 약 10초). 이 PC에서 이미 `npm run omr`로 변환이 되면 준비 끝입니다.
-2. **토큰 만들기.** PPP에 로그인 → **설정 → 내 PC 연결 → 토큰 만들기**. 토큰(`ppw_…`)은 **한 번만** 보여 줍니다. 복사하세요. 잃어버리면 지우고 새로 만드세요.
-3. **설정 파일.** `tools/home-worker/worker.config.example.json`을 같은 폴더의 `worker.config.json`으로 복사하고 `siteUrl`(사이트 주소)과 `token`을 채우세요. 파일 경로가 다르면 `pythonPath`, `transcribePy`, `kongCheckpoint`도 고치세요. (`worker.config.json`은 git에 올라가지 않아요.)
-4. **점검.** `node tools/home-worker/worker.js --check` — 사이트, 토큰, ffmpeg, Python(torch/transkun), 체크포인트를 확인하고 고칠 것을 알려 줘요. 이 점검이 끝나면 PPP의 악보 추가 화면에 **고품질 변환 (내 PC)** 버튼이 나타나요(워커가 한 번이라도 사이트에 접속한 뒤).
-5. **실행.** 아래 둘 중 하나.
+2. **PC 링크 만들기.** PPP → **설정 → 내 PC 연결 → 내 PC 링크 만들기**. (로그인하지 않아도 돼요.) 화면에 **PC 토큰**과 **PC 코드**가 **한 번만** 나옵니다. 둘 다 복사해 두세요. 화면에는 PC에 넣을 줄(`"siteUrl"`, `"token"`)과 명령도 그대로 나와요. 토큰을 잃어버렸다면 **새 PC 토큰**을 만드세요(이전 토큰은 바로 멈춥니다).
+3. **설정 파일.** `tools/home-worker/worker.config.example.json`을 같은 폴더의 `worker.config.json`으로 복사하고 `siteUrl`(사이트 주소)과 `token`(PC 토큰)을 채우세요. 파일 경로가 다르면 `pythonPath`, `transcribePy`, `kongCheckpoint`도 고치세요. (`worker.config.json`은 git에 올라가지 않아요.)
+4. **점검, 그리고 실행.** `node tools/home-worker/worker.js --check` — 사이트, 토큰, ffmpeg, Python(torch/transkun), 체크포인트를 확인하고 고칠 것을 알려 줘요. 문제가 없으면 `node tools/home-worker/worker.js --once`(아래 표). 워커가 한 번이라도 사이트에 접속하면 PPP의 악보 추가 화면에 **고품질 변환 (내 PC)** 버튼이 나타나요.
+
+**다른 기기에서도 쓰려면:** 링크를 만든 기기에서 설정 → 내 PC 연결 → **내 PC 코드 보기**로 코드를 보고, 다른 기기의 설정 → 내 PC 연결 → **다른 기기의 PC 링크 쓰기**에 붙여 넣으세요. 두 기기가 같은 변환 목록을 봅니다. 코드를 가진 사람은 누구나 내 PC로 변환을 요청하고 그 결과를 볼 수 있으니 **비밀로 간직하세요.** 새어 나갔다면 **링크 지우기**로 지우고 새로 만드세요.
 
 ## 실행하는 방법
 
@@ -43,24 +44,27 @@ PPP 사이트(무료 서버)는 강력한 피아노 모델(TransKun + Kong)을 �
 
 | 증상 | 원인/해결 |
 | --- | --- |
-| 버튼이 안 보여요 | 워커가 아직 한 번도 접속하지 않았어요. `--once`를 한 번 실행하세요. |
-| `The site does not accept this token` | 토큰을 지웠거나 잘못 붙여넣었어요. 설정에서 새로 만드세요. (워커는 멈춥니다.) |
+| 버튼이 안 보여요 | 워커가 아직 한 번도 접속하지 않았어요. `--once`를 한 번 실행하세요. 또 이 기기에 PC 링크가 없으면(설정에서 만들거나 코드를 입력) 버튼이 없어요. |
+| `The site does not accept this token` | PC 링크를 지웠거나(14일 동안 PC가 한 번도 접속하지 않았거나 60일 동안 안 쓰면 사이트가 지워요), 새 PC 토큰이 이 토큰을 대신했거나, 잘못 붙여넣었어요. 설정에서 새 PC 토큰(또는 새 링크)을 만드세요. (워커는 멈춥니다.) |
+| 설정 화면이 "PC 링크가 더 이상 유효하지 않아요"라고 해요 | 다른 기기에서 지웠거나 오래 안 써서 사이트가 지웠어요. 새로 만드세요. |
+| 설정에 "내 PC 연결"이 안 보여요 | 브라우저가 저장 공간을 막고 있어요(시크릿/비공개 창). 일반 창에서 여세요. |
 | `ffmpeg does not run` | ffmpeg를 설치하거나 `ffmpegPath`에 전체 경로를 쓰세요. |
 | `Python cannot import torch...` | `pythonPath`가 변환용 venv의 python인지 확인하세요. |
 | `The audio could not be downloaded` | 사이트가 유튜브 오디오를 받지 못했어요(차단/일시 오류). 사이트가 몇 분 뒤 최대 3번 다시 시도합니다. 설정에 `ytdlpPath`(yt-dlp.exe)를 쓰면 이 PC에서 직접 받아요. |
 | 변환은 됐는데 열기가 안 돼요 | 결과는 3일 뒤 지워집니다. 다시 요청하세요. |
 
-보안: 토큰은 이 PC의 파일(`worker.config.json`) 또는 환경변수 `PPP_WORKER_TOKEN`에만 있고(**설정 파일은 프로젝트 폴더가 아니라 내 사용자 폴더 안, 예: `%USERPROFILE%\.ppp-home-worker\worker.config.json` 에 두세요** — 프로젝트 폴더가 클라우드 동기화·공유 폴더·백업에 들어 있으면 토큰이 함께 퍼져요. 워커는 `worker.js` 옆의 파일이 없으면 그 폴더의 파일을 찾아요. 토큰만 환경변수 `PPP_WORKER_TOKEN`으로 주고 파일에는 쓰지 않아도 돼요), 로그에는 나오지 않아요. 사이트에는 토큰의 해시만 저장돼요. 이 토큰으로는 **내 계정의 변환 작업만** 가져오고 결과를 올릴 수 있어요. 설정 화면에서 언제든 지울 수 있어요.
+보안: 토큰은 이 PC의 파일(`worker.config.json`) 또는 환경변수 `PPP_WORKER_TOKEN`에만 있고(**설정 파일은 프로젝트 폴더가 아니라 내 사용자 폴더 안, 예: `%USERPROFILE%\.ppp-home-worker\worker.config.json` 에 두세요** — 프로젝트 폴더가 클라우드 동기화·공유 폴더·백업에 들어 있으면 토큰이 함께 퍼져요. 워커는 `worker.js` 옆의 파일이 없으면 그 폴더의 파일을 찾아요. 토큰만 환경변수 `PPP_WORKER_TOKEN`으로 주고 파일에는 쓰지 않아도 돼요), 로그에는 나오지 않아요. 사이트에는 토큰과 코드의 해시만 저장돼요(사이트가 털려도 두 값은 나오지 않아요). 이 토큰으로는 **내 링크의 변환 작업만** 가져오고 결과를 올릴 수 있어요. 설정 화면에서 언제든 **새 PC 토큰**(이전 토큰이 바로 멈춰요)이나 **링크 지우기**(링크와 변환 결과가 모두 지워져요)를 할 수 있어요. 이전 버전(계정이 필요했던 때)의 토큰은 더 이상 쓸 수 없어요 — 새 링크를 만드세요.
 
 ---
 
 ## English summary
 
-The free PPP server cannot run the strong piano models (TransKun + Kong). This worker runs them **on your own PC** (GPU): the page queues a YouTube link (**High-quality (my PC)** on the Add screen), this script polls the site with a token you made in **Settings > Connect my PC**, downloads the audio from the site's `/api/youtube-audio`, runs `transcribe.py` (the same call as `omr-service.js`), and posts the accepted notes back (no pedal, no beats). The page writes the score from those notes in the browser; **Open** appears in "My conversions".
+The free PPP server cannot run the strong piano models (TransKun + Kong). This worker runs them **on your own PC** (GPU). **No account and no sign-in are needed**: in **Settings > Connect my PC** the page makes a *PC link* for anybody - a **PC token** (`ppw_...`, for the PC) and a **PC code** (kept by the browser, typed on another device to share the same list). Both are shown once when the link is made; the site keeps only their hashes. The page queues a YouTube link (**High-quality (my PC)** on the Add screen), this script polls the site with the token, downloads the audio from the site's `/api/youtube-audio`, runs `transcribe.py` (the same call as `omr-service.js`), and posts the accepted notes back (no pedal, no beats). The page writes the score from those notes in the browser; **Open** appears in "My conversions".
 
-Setup in 5 steps: (1) the transcription environment from the root README (`tools/transcribe-venv`, Kong checkpoint, `transkun`, ffmpeg); (2) make a token in Settings (shown once; keep the settings file in your own user folder, e.g. `%USERPROFILE%\.ppp-home-worker\worker.config.json`, not in a synced or shared project folder - or give the token only through the `PPP_WORKER_TOKEN` environment variable); (3) copy `worker.config.example.json` to `worker.config.json` and fill in `siteUrl` and `token`; (4) `node tools/home-worker/worker.js --check`; (5) `node tools/home-worker/worker.js --once` (or leave `node tools/home-worker/worker.js` running).
+Setup in 4 steps: (1) the transcription environment from the root README (`tools/transcribe-venv`, Kong checkpoint, `transkun`, ffmpeg); (2) Settings > Connect my PC > **Create my PC link**, copy the PC token (the page shows the exact lines to put on the PC; keep the settings file in your own user folder, e.g. `%USERPROFILE%\.ppp-home-worker\worker.config.json`, not in a synced or shared project folder - or give the token only through the `PPP_WORKER_TOKEN` environment variable); (3) copy `worker.config.example.json` to `worker.config.json` and fill in `siteUrl` and `token`; (4) `node tools/home-worker/worker.js --check`, then `node tools/home-worker/worker.js --once` (or leave `node tools/home-worker/worker.js` running).
 
+- **Keep the code and the token secret.** Anyone with the PC code can queue conversions for your PC and read the results; anyone with the token can take your PC's work. If either leaks: **New PC token** (the old one stops at once) or **Remove link** (the link and its conversions are deleted), then make a new link. A link nobody uses for 60 days, or whose PC never connects in 14 days, is purged by the site. Tokens from the earlier version of this feature (which needed an account) no longer work: make a new link.
 - `--once`: one check, process everything waiting, exit (exit codes: 0 ok, 1 a failure or the site unreachable, 2 token rejected). Use `run-once.cmd` or the desktop shortcut made by `create-desktop-shortcut.ps1` (run it yourself; nothing is installed for you).
 - Waiting is the **site's** call (`nextPollSeconds`: 15 s while something is queued, claimed or just finished, otherwise **an hour** by default, and the site will not go below 15 minutes); `idlePollSeconds` in the settings can only lengthen it. The shorter the idle interval, the longer the free server stays awake (15 minutes or less: all month; 20 minutes: about 77%; an hour: about 26%). Free-tier arithmetic: `docs/GOALS/G10B_HOME_WORKER.md`.
-- Limits: the PC must be on with the worker running; latency up to the check interval; only your own PC and your own jobs; YouTube links only; the helper's beats and pedal are not used; at most 15 minutes of audio; results are kept 3 days.
+- Limits: the PC must be on with the worker running; latency up to the check interval; only your own link's jobs; YouTube links only; the helper's beats and pedal are not used; at most 15 minutes of audio; results are kept 3 days.
 - Optional `ytdlpPath` downloads the audio with yt-dlp on this PC (the site is the fallback); `audioBase` names another place for `/api/youtube-audio`.

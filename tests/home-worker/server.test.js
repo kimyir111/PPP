@@ -121,11 +121,15 @@ const nextIp = () => '10.200.' + (addr >> 8) + '.' + (addr++ & 255);
     const pi = await req(srv.port, 'POST', '/api/worker/claim', { token: rot.body.workerToken, body: {} });
     ok('PPP_WORKER_IDLE_POLL_S / PPP_WORKER_ACTIVE_POLL_S are read (the finish was a few seconds ago: active 20)', pi.body.nextPollSeconds === 20, pi.text);
     ok('and the page is told the idle wait', (await get(code1, '/api/worker/status')).body.worker.idlePollSeconds === 7200);
-    heading('the per-address limit on making links, over the real server (the address is the one the proxy names)');
+    heading('the per-address limit on making links, over the real server (the address is the one the proxy names), and across a restart');
     {
       const out = [];
       for (let i = 0; i < 7; i++) out.push((await req(srv.port, 'POST', '/api/pc-links', { ip: '203.0.113.9', body: {} })).status);
       ok('five an hour from one address, then 429; another address is fine', out.join() === '201,201,201,201,201,429,429' && (await req(srv.port, 'POST', '/api/pc-links', { ip: '203.0.113.10', body: {} })).status === 201, out.join());
+      await srv.close();
+      srv = await start(dir, { PPP_WORKER_IDLE_POLL_S: '7200', PPP_WORKER_ACTIVE_POLL_S: '20' });
+      ok('after a restart (Render wakes the site from its sleep: the server\'s memory is new) the same address is STILL at five an hour: the counts are in the links, and the tag of the address is keyed by the same secret', (await req(srv.port, 'POST', '/api/pc-links', { ip: '203.0.113.9', body: {} })).status === 429
+        && (await req(srv.port, 'POST', '/api/pc-links', { ip: '203.0.113.11', body: {} })).status === 201);
     }
   } finally { await srv.close(); L.rmDir(dir); }
 })().then(() => L.finish('server.js with the home-PC queue'), e => { console.error(e); process.exit(1); });
