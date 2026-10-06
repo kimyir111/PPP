@@ -195,10 +195,12 @@ test('the refusal stands when the retry cannot be made: no heard notes kept, v2 
   }
 });
 
-test('the page uses it where the Song Arranger arranges, marks the copy, and nowhere else (the review screen keeps its refusal notice)', () => {
+test('the page uses it where it arranges one note per hand, from a graph the page converted itself: the Song Arranger AND (G10a-5b) the review screen\'s Apply arrangement; the copies are marked', () => {
   const uses = html.match(/arrangeSingleNoteWithHandsFallback\(/g) || [];
-  assert.equal(uses.length, 2, 'its definition and the Song Arranger');
-  assert.match(html, /sn = await arrangeSingleNoteWithHandsFallback\(src\.graph, plan, sourceScore\.title\)/);
-  assert.match(html, /sn\.handsFallback \? \{ handsFallback: sn\.handsFallback \} : \{\}, sn\.classicFallback \? \{ classicFallback: true \} : \{\}/, 'the copy\'s source.arrangement names the fallback');
-  assert.equal((html.match(/await arrangeSingleNote\(/g) || []).length, 3, 'arrangeSingleNote: the fallback twice, the review screen once');
+  assert.equal(uses.length, 3, 'its definition, the Song Arranger and the review screen');
+  assert.match(html, /sn = await arrangeSingleNoteWithHandsFallback\(src\.graph, plan, sourceScore\.title\)/, 'the Song Arranger');
+  assert.match(html, /const sn = await arrangeSingleNoteWithHandsFallback\(built\.graph, plan, S\.score\.title\)/, 'the review screen: it was one arrangeSingleNote run, and p6 was refused there');
+  assert.match(html, /sn\.handsFallback \? \{ handsFallback: sn\.handsFallback \} : \{\}, sn\.classicFallback \? \{ classicFallback: true \} : \{\}/, 'the Song Arranger copy\'s source.arrangement names the fallback');
+  assert.match(html, /Object\.assign\(\{ engine: 'ppp\.g9-single' \}, sn\.handsFallback \? \{ handsFallback: sn\.handsFallback \} : \{\}, sn\.classicFallback \? \{ classicFallback: true \} : \{\}\)/, 'and so does the review screen\'s');
+  assert.equal((html.match(/await arrangeSingleNote\(/g) || []).length, 2, 'arrangeSingleNote: the fallback\'s first run and its retry loop; nowhere else');
 });

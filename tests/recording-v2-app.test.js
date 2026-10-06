@@ -44,7 +44,9 @@ const IDENTITY = JSON.parse(fs.readFileSync(path.join(REPO, 'tests', 'fixtures',
 const CHIP_LABEL = 'New transcription method';
 const CHIP_ON = 'On (the default): a newer way of reading the beat, the hands and the rests. Turn it off to use the classic method.';
 const CHIP_OFF = 'Off: the classic method writes the notation. Turn it on to use the newer way of reading the beat, the hands and the rests.';
+const CHIP_FULL = 'Does not apply to a Full song: its arrangement is always written by the classic method.';
 const NEW_KEYS = [
+  CHIP_FULL, 'The files that play a recording as it was heard could not be loaded yet (the connection may be slow). Try again in a moment.', 'PPP one-note-per-hand arrangement (classic reading)',
   CHIP_LABEL, CHIP_ON, CHIP_OFF,
   'This notation was written with the new method.', 'This notation was written with the classic method.', 'Write the notation again', 'Writing…',
   'Writes the notation of this song again from the notes PPP heard, with the method chosen above. The bars may change, so practice history for this song starts over.',
@@ -52,7 +54,7 @@ const NEW_KEYS = [
   'Before: {{m1}} measures, {{r1}} rests, {{b1}} tuplet brackets. Now: {{m2}} measures, {{r2}} rests, {{b2}} tuplet brackets.',
   'With the new method on, a metre or tempo you set here is written by the classic method. To let the new method decide again, use "Write the notation again".',
   'Measures where PPP was not sure of the hands or the beat ({{n}})', 'PPP was not sure of the beat', 'PPP was not sure which hand plays some notes',
-  'The new transcription method could not be loaded, so the classic method wrote this score.', 'The new transcription method could not be used for this recording, so the classic method wrote this score.',
+  'The new transcription method could not be loaded, so the classic method wrote this score. It may just be slow: "Write the notation again" tries the new method again.', 'The new transcription method could not be used for this recording, so the classic method wrote this score.',
   'The new transcription method gave an unlikely tempo or length for this recording, so the classic method wrote this score.',
   'PPP read this piece as {{metre}} but was not sure of it ({{pct}}%); the bar lines may be in the wrong place.', 'The new transcription method could not be loaded, so nothing was changed.',
   'The heard notes of this song are not kept on this device, so its notation cannot be written again.', 'The new transcription method could not read this performance, so nothing was changed.',
@@ -197,7 +199,14 @@ const NEW_KEYS = [
     const s1 = await stateOf(pf);
     ok('an import made meanwhile is written the classic way, marked so, and the review screen says it (an issue line)', imp1.screen === 'review' && s1.pipeline === null && s1.version === 7 && s1.issues.indexOf('recording-v2') > -1, JSON.stringify({ imp1: imp1, p: s1.pipeline, v: s1.version, i: s1.issues }));
     ok('and the review screen shows that line, in English', await pf.evaluate(() => /could not be loaded, so the classic method wrote this score/.test(document.body.innerText)));
+    ok('the line says it may just be slow and that "Write the notation again" tries the new method again', await pf.evaluate(() => /It may just be slow: "Write the notation again" tries the new method again\./.test(document.body.innerText)));
     pf.__rec.failOn = false;
+    /* the retry the line promises: with the file back, "Write the notation again" writes this very song with the new method */
+    await press(pf, '[data-write-again]');
+    await pf.waitForFunction(() => !window.PPP.app.state.recWriteBusy && window.PPP.app.state.recNotation, { timeout: 60000 });
+    await sleep(600);
+    const sw1 = await stateOf(pf);
+    ok('and it does: the same song, now written by v2', sw1.pipeline === 'v2' && sw1.version === 8 && sw1.songId === s1.songId, JSON.stringify({ p: sw1.pipeline, v: sw1.version }));
     const okAgain = await pf.evaluate(() => window.PPP.loadRecordingModules());
     const after = recReqs(pf);
     const once = n => after.filter(u => u === '/rec/' + n + '.js').length;
@@ -257,7 +266,7 @@ const NEW_KEYS = [
         const b = document.querySelector('[data-recording-choice="upload"] [data-recording-v2-option]'); if (!b) return null;
         const r = b.getBoundingClientRect(), hint = b.parentElement.querySelector('p');
         return { text: b.innerText.trim(), pressed: b.getAttribute('aria-pressed'), inView: r.left >= 0 && r.right <= window.innerWidth + 1, noSideScroll: document.documentElement.scrollWidth <= window.innerWidth + 1, hint: hint && hint.innerText.trim(),
-          stored: localStorage.getItem('ppp.recording.v1'), mode: window.PPP.recording };
+          stored: localStorage.getItem('ppp.recording.v1'), mode: window.PPP.recording, opacity: +getComputedStyle(b).opacity };
       });
       const c = await read();
       ok(loc + ': the chip is on the Add-sheet-music screen, ON by default, labelled "' + tr(CHIP_LABEL) + '", with the line that says it is the default and how to go back, inside a 400 px viewport with no sideways scroll',
@@ -269,6 +278,13 @@ const NEW_KEYS = [
       await press(cp, '[data-recording-choice="upload"] [data-recording-v2-option]'); await sleep(400);
       const on = await read();
       ok(loc + ': pressed again it is ON: v2, remembered as v2, the line is the first one again', !!on && on.pressed === 'true' && on.mode === 'v2' && on.stored === 'v2' && on.hint === tr(CHIP_ON), JSON.stringify(on));
+      /* G10a-5b: while the 'Full song' type is chosen the method does not apply to what is about to be added: the chip is dimmed, still the device's choice, and its line says so */
+      await cp.evaluate(() => window.PPP.app.setState({ transcriptionMode: 'arrange' })); await sleep(400);
+      const fsel = await read();
+      ok(loc + ': with "Full song" chosen the chip is dimmed (opacity ' + (fsel && fsel.opacity) + '), still pressed, and its line says it does not apply to a Full song', !!fsel && fsel.opacity < 1 && fsel.pressed === 'true' && fsel.hint === tr(CHIP_FULL) && fsel.inView && fsel.noSideScroll, JSON.stringify(fsel));
+      await cp.evaluate(() => window.PPP.app.setState({ transcriptionMode: 'auto' })); await sleep(400);
+      const back = await read();
+      ok(loc + ': and with another type chosen again it is as before (full strength, the ON line)', !!back && back.opacity === 1 && back.hint === tr(CHIP_ON), JSON.stringify(back));
       await cp.close();
     }
     NEW_KEYS.forEach(k => ['ko-KR', 'ja-JP', 'zh-CN'].forEach(l => { if (!(CATALOG[l][k] && CATALOG[l][k] !== k)) ok(l + ' has the string "' + k.slice(0, 50) + '"', false); }));
@@ -398,10 +414,16 @@ const NEW_KEYS = [
       const pv = await openPage(browser);
       const shape = await pv.evaluate(async () => {
         const out = {};
-        for (const w of window.PPP.RECORDING_WEIGHTS) { const j = await (await fetch('./' + w[1])).json(); out[w[0]] = { real: window.PPP.recWeightsShapeOk(w[0], j), empty: window.PPP.recWeightsShapeOk(w[0], {}), arr: window.PPP.recWeightsShapeOk(w[0], []), nul: window.PPP.recWeightsShapeOk(w[0], null), noWeights: window.PPP.recWeightsShapeOk(w[0], Object.assign({}, j, { weights: undefined, params: undefined })) }; }
+        for (const w of window.PPP.RECORDING_WEIGHTS) { const j = await (await fetch('./' + w[1])).json(); out[w[0]] = { real: window.PPP.recWeightsShapeOk(w[0], j), empty: window.PPP.recWeightsShapeOk(w[0], {}), arr: window.PPP.recWeightsShapeOk(w[0], []), nul: window.PPP.recWeightsShapeOk(w[0], null), noWeights: window.PPP.recWeightsShapeOk(w[0], Object.assign({}, j, { weights: undefined, params: undefined })),
+          /* the schema's MAJOR version is what is checked: /1.1 and /1.2.3 are the same family, /2, /10 and /1x are not; a file with keys the stages do not read is still the file */
+          minor: window.PPP.recWeightsShapeOk(w[0], Object.assign({}, j, { schema: j.schema.replace(/\/1$/, '/1.1') })), minor3: window.PPP.recWeightsShapeOk(w[0], Object.assign({}, j, { schema: j.schema.replace(/\/1$/, '/1.2.3') })),
+          major2: window.PPP.recWeightsShapeOk(w[0], Object.assign({}, j, { schema: j.schema.replace(/\/1$/, '/2') })), ten: window.PPP.recWeightsShapeOk(w[0], Object.assign({}, j, { schema: j.schema.replace(/\/1$/, '/10') })),
+          junk: window.PPP.recWeightsShapeOk(w[0], Object.assign({}, j, { schema: j.schema.replace(/\/1$/, '/1x') })), noSchema: window.PPP.recWeightsShapeOk(w[0], Object.assign({}, j, { schema: undefined })),
+          extra: window.PPP.recWeightsShapeOk(w[0], Object.assign({}, j, { somethingNew: [1, 2, 3], another: { a: 1 } })) }; }
         return out;
       });
       ok('the real files pass the shape check and {}, [], null and a file without its weights do not (' + Object.keys(shape).join(', ') + ')', Object.values(shape).every(r => r.real === true && r.empty === false && r.arr === false && r.nul === false), JSON.stringify(shape));
+      ok('the schema is checked by its major version: /1.1 and /1.2.3 are accepted, /2, /10, /1x and no schema are not; keys the stages do not read do not matter', Object.values(shape).every(r => r.minor === true && r.minor3 === true && r.major2 === false && r.ten === false && r.junk === false && r.noSchema === false && r.extra === true), JSON.stringify(shape));
       await pv.close();
     }
 
@@ -431,6 +453,50 @@ const NEW_KEYS = [
       ok('when the file arrives v2 is ready and the next import is v2 at once (' + secs3.toFixed(1) + ' s)', readyNow === true && imp3.screen === 'review' && s3.pipeline === 'v2' && secs3 < 12, JSON.stringify({ ready: readyNow, p: s3.pipeline, secs: secs3 }));
       ok('and each script ran once (one element a request), no page error', (await ph.evaluate(() => document.querySelectorAll('script[src*="/rec/"]').length)) === recReqs(ph).filter(u => /\.js$/.test(u)).length && ph.__rec.pageErrors.length === 0, errs(ph));
       await ph.close();
+    }
+
+    /* G10a-5b: a WEIGHTS file that never answers: every attempt waits for the one request that is on its way (a hung socket a try would pile up), and the three that came are kept */
+    console.log('\n\u2500\u2500 a weights file that never answers (ai5b-grid-v1.json held): one request a file however many imports wait \u2500\u2500');
+    {
+      const pw2 = await openPage(browser, { holdWhile: /ai5b-grid-v1\.json/ });
+      await addChecker(pw2);
+      const impA = await importHeard(pw2, heardFor.sextuplets);
+      const sA = await stateOf(pw2);
+      const impB = await importHeard(pw2, heardFor.sextuplets);
+      const sB = await stateOf(pw2);
+      const wreq = w => recReqs(pw2).filter(u => u === w).length;
+      ok('two imports, each held about 15 s: both reach the review screen, classic, with the notice', impA.screen === 'review' && impB.screen === 'review' && sA.pipeline === null && sB.pipeline === null && sA.issues.indexOf('recording-v2') > -1 && sB.issues.indexOf('recording-v2') > -1, JSON.stringify({ a: sA.pipeline, b: sB.pipeline }));
+      ok('each of the four weights files was asked for exactly once over both (the stalled one is shared, the three that came are kept), and no script was asked for (none runs without its weights)',
+        WEIGHTS.every(w => wreq(w) === 1) && recReqs(pw2).filter(u => /\.js$/.test(u)).length === 0, WEIGHTS.map(w => w.slice(-14) + ':' + wreq(w)).join(' '));
+      pw2.__rec.release();
+      await pw2.waitForFunction(() => window.PPP.recordingModulesReady(), { timeout: 30000 }).catch(() => {});
+      const impC = await importHeard(pw2, heardFor.sextuplets);
+      const sC = await stateOf(pw2);
+      ok('when the file arrives the next import is v2 (and the file was still asked for once)', impC.screen === 'review' && sC.pipeline === 'v2' && wreq('/rec/weights/ai5b-grid-v1.json') === 1, JSON.stringify({ p: sC.pipeline, n: wreq('/rec/weights/ai5b-grid-v1.json') }));
+      await pw2.close();
+    }
+
+    /* G10a-5b: "Play as recorded" while rec/app.js is slow: the button says it is loading, and when the file does not come in time the message says that, not that the notes are not kept */
+    console.log('\n\u2500\u2500 "Play as recorded" with rec/app.js held: Loading, then the right message; plays once the file is there \u2500\u2500');
+    {
+      const pa2 = await openPage(browser, { legacy: true, holdWhile: /\/rec\/app\.js/ });
+      await importHeard(pa2, heardFor.sextuplets);
+      ok('a classic import asks for none of v2\'s files (so the held file has not been asked for yet)', recReqs(pa2).length === 0, recReqs(pa2).join(' '));
+      await press(pa2, '[data-recording-choice="review"] [data-as-recorded]');
+      await sleep(1500);
+      const busyLabel = await pa2.evaluate(() => document.querySelector('[data-as-recorded]').innerText.trim());
+      ok('while the file is on its way the button says Loading' + '\u2026' + ' (not the idle label)', busyLabel === 'Loading\u2026', busyLabel);
+      await pa2.waitForFunction(() => /could not be loaded yet/.test(window.PPP.app.state.toast || ''), { timeout: 40000 }).catch(() => {});
+      const msg = await pa2.evaluate(() => ({ toast: window.PPP.app.state.toast || '', label: document.querySelector('[data-as-recorded]').innerText.trim(), on: !!window.PPP.app.state.asRecorded }));
+      ok('after the 15 s the message says the files could not be loaded yet (the connection may be slow), not that the heard notes are not kept; the button is idle again; nothing plays',
+        /could not be loaded yet \(the connection may be slow\)/.test(msg.toast) && !/not kept/.test(msg.toast) && msg.label === 'Play as recorded' && msg.on === false, JSON.stringify(msg));
+      pa2.__rec.release();
+      await pa2.waitForFunction(() => !!window.PPPRecApp, { timeout: 30000 }).catch(() => {});
+      await press(pa2, '[data-recording-choice="review"] [data-as-recorded]');
+      await pa2.waitForFunction(() => window.PPP.app.state.asRecorded === true, { timeout: 30000 }).catch(() => {});
+      ok('once the file has arrived, pressing it again plays as recorded', await pa2.evaluate(() => window.PPP.app.state.asRecorded === true));
+      await pa2.evaluate(() => { if (window.PPP.app._ar) window.PPP.app.stopAsRecorded(); });
+      await pa2.close();
     }
 
         }
@@ -846,11 +912,35 @@ const NEW_KEYS = [
     ok('its source says so: arrangement.classicFallback true (and no handsFallback), the one-note-per-hand engine; the saved v2 song is untouched',
       !!copyE && copyE.importSource.arrangement.classicFallback === true && !copyE.importSource.arrangement.handsFallback && copyE.importSource.arrangement.engine === 'ppp.g9-single'
       && !!origE && origE.importSource.recordingPipeline === 'v2' && origE.importSource.transcriptionVersion === 8 && !origE.importSource.arrangement, copyE ? JSON.stringify(copyE.importSource.arrangement) : 'no copy');
+    ok('the copy made from the classic reading says so on its composer line ("PPP one-note-per-hand arrangement (classic reading)"); the copy of the hands retry (above) has the plain line',
+      !!copyE && JSON.stringify(copyE).indexOf('PPP one-note-per-hand arrangement (classic reading)') > -1 && !!copy && JSON.stringify(copy).indexOf('(classic reading)') < 0 && JSON.stringify(copy).indexOf('PPP one-note-per-hand arrangement') > -1);
     /* any other code: no retry */
     const rC = await arrangerCopy(pk2, idK, 'advanced', 'other');
     ok('a refusal with another code (NO_SELECTION) is not retried: the candidates stage ran once, no conversion, the notice is shown', rC.refusal === 'NO_SELECTION' && rC.notice && rC.runs === 1 && rC.conv.length === 0 && rC.newKeys.length === 0, JSON.stringify(rC));
     ok('no page or console error', clean(pk2), errs(pk2));
     await pk2.close();
+    /* G10a-5b: the review screen's "Apply arrangement" has the same two retries as the Song Arranger (it used to arrange once, and was refused where the Song Arranger arranged) */
+    const reviewApply = async mode => {
+      const pg = await openPage(browser);
+      await addChecker(pg);
+      await importHeard(pg, heardFor.sextuplets);
+      await pg.waitForFunction(() => !!(window.PPPCandidates && window.PPPCandidates.runAsync), { timeout: 60000 });
+      await pg.evaluate(src => { (0, eval)('(' + src + ')')(); }, wrap.toString());
+      await pg.evaluate(m => { window.__refuse = m; }, mode);
+      await pg.select('[data-arrangement-level]', 'intermediate');
+      await pg.click('[data-apply-arrangement]');
+      await pg.waitForFunction(() => { const st = window.PPP.app.state; return !st.arrangementBusy && st.importSource && st.importSource.arrangement && st.importSource.arrangement.level; }, { timeout: 180000 });
+      await sleep(600);
+      const r = await pg.evaluate(() => { const a = window.PPP.app.state.importSource.arrangement; return { engine: a.engine, hands: a.handsFallback || null, classic: a.classicFallback || null, single: a.singleFallback || null, runs: window.__runs.length, conv: window.__conv.slice(), notes: window.PPP.app.state.score.notes.filter(n => !n.rest).length }; });
+      r.errs = errs(pg); r.clean = clean(pg);
+      await pg.close();
+      return r;
+    };
+    const vA = await reviewApply('none'), vB = await reviewApply('first'), vC = await reviewApply('twice'), vD = await reviewApply('always');
+    ok('Apply arrangement on the review screen, nothing refused: one run, one note per hand, no fallback mark', vA.engine === 'ppp.g9-single' && vA.runs === 1 && !vA.hands && !vA.classic && !vA.single && vA.clean, JSON.stringify(vA));
+    ok('refused once: the classic-hands retry arranges it (two runs), the copy says handsFallback legacy, no refusal fallback', vB.engine === 'ppp.g9-single' && vB.runs === 2 && vB.hands === 'legacy' && !vB.classic && !vB.single && vB.notes > 20 && vB.clean, JSON.stringify(vB));
+    ok('refused twice: the classic conversion of the same heard notes is arranged (three runs, the last conversion is the classic one), the copy says classicFallback', vC.engine === 'ppp.g9-single' && vC.runs === 3 && vC.classic === true && !vC.hands && !vC.single && vC.conv.length >= 2 && vC.conv[vC.conv.length - 1].recording === null && vC.clean, JSON.stringify(vC));
+    ok('refused every time: the standard arrangement with the refusal named, three runs (the notice as before)', vD.engine !== 'ppp.g9-single' && vD.single === 'ALL_CANDIDATES_HAVE_HARD_VIOLATIONS' && vD.runs === 3 && vD.clean, JSON.stringify(vD));
     /* a classic song: the same refusal is not retried */
     const pk3 = await openPage(browser, { legacy: true });
     await addChecker(pk3);
