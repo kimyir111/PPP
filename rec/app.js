@@ -5,7 +5,8 @@
    modules (rec/index.js's header gives their order), the first time one of these is needed (a v2 conversion's flags, "Play as recorded"); it needs
    scoregraph/rational.js and time.js, which every page has, and nothing of the stages (hands are passed in).
 
-     normalizeMode(v)             'v2' only for the exact string 'v2'; anything else is 'legacy' (the convention of PPP.arranger and PPP.fingering)
+     normalizeMode(v)             'v2' only for the exact string 'v2'; anything else is 'legacy'. NOT used by the page any more (G10a-5b: the page's own recordingChoice decides: 'v2' and 'legacy' are choices,
+                                  anything else is no choice and the default, v2, applies); kept, with its test, as the old convention's helper
      flags(input)                 the bars PPP is not sure about -> {measures, why, detail, piece, thresholds}; see FLAGS below
      heardFromGraph(graph)        the heard performance a kept graph carries -> {notes: [{on, off, midi, vel}], pedals: [{on, off}], duration} (seconds), or null
      timeMap(graph, opts)         where the heard time t is in the written score: {kind: 'links'|'bars'|'none', us: [..], q: [..]} (microseconds, quarter notes from
@@ -48,7 +49,7 @@
 
   const round = (x, k) => Math.round(x * k) / k;
 
-  /* 'v2' only for the string 'v2'; every other value (a typo, null, 'V2', a stored 'g8') is 'legacy' */
+  /* 'v2' only for the string 'v2'; every other value (a typo, null, 'V2', a stored 'g8') is 'legacy'. Not what the page does since G10a-5b (see the header): the page's default is v2 */
   function normalizeMode(v) { return v === 'v2' ? 'v2' : 'legacy'; }
 
   /* the bar (0-based) a time falls in, from the start time of every bar */

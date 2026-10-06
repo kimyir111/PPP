@@ -2,7 +2,7 @@
  "align": {
   "window_s": 0.3
  },
- "description": "The production browser model (Onsets & Frames, tfjs, 30-s windows) on the calibrated humanizer's cover-pedal performances rendered with real piano samples, a damper pedal and a short room (G10 section 7.4): real AMT behaviour on rendered audio, replayed from committed heard notes (tests/bench/replay-of, made by tools/of_replay.js). The app's options with the recording conversion v2 (G10a-1: closeGaps, exactBars, recording 'v2'), what the app will pass when PPP.recording is 'v2'; replay-of is the library default, replay-of-app the app today.",
+ "description": "The production browser model (Onsets & Frames, tfjs, 30-s windows) on the calibrated humanizer's cover-pedal performances rendered with real piano samples, a damper pedal and a short room (G10 section 7.4): real AMT behaviour on rendered audio, replayed from committed heard notes (tests/bench/replay-of, made by tools/of_replay.js). The app's options with the recording conversion v2 (G10a-1: closeGaps, exactBars, recording 'v2'), what the app passes when PPP.recording is 'v2' (its default since G10a-5b); replay-of is the library default, replay-of-app the app today.",
  "dir": "replay-of",
  "fixtures": "replay",
  "gate": {

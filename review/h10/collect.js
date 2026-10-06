@@ -15,8 +15,8 @@
    music" - with the real in-browser Onsets & Frames model (about 6 minutes a piece). The one thing the local server cannot do is download the
    audio (it has no yt-dlp), so the page's GET /api/youtube-audio is answered by the PRODUCTION endpoint (the audio base; a read-only GET, the only
    request this tool makes of production; every other request is the page's own and goes where the page sends it, nothing but GETs to anywhere
-   outside this machine). The notes are taken from the review screen's state; the conversion that runs there is the page's default (classic)
-   and is not used: the builder converts the heard notes itself.
+   outside this machine). The notes are taken from the review screen's state; the conversion that runs there is the page's default (v2 since G10a-5b, classic before; the mode
+   is recorded in the status as recordingMode) and is not used: the builder converts the heard notes itself.
 
    Never silent: an item that is refused (the link, the download, the model), too long (the decoded audio is longer than --max-minutes, default 15 = the
    app's own limit, checked before the model starts so no 40 minutes are spent), cut by the app (truncated), hears no notes, or times out is

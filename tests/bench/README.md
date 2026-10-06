@@ -600,7 +600,7 @@ generalisation to unseen pieces, not to real playing.
 | `smoke` | 44 (16 references × 2 + 4 each with AMT errors, rubato and pedal) | before a commit |
 | `core` | 553 (141 references × 3 main profiles + 60 amt + 40 rubato + 30 pedal) | **the CI gate** |
 | `robust` | 282 (the core references × `human-alt`, onset path and oracle beats) | CI gate |
-| `smoke-app`, `core-app`, `robust-app` | 44, 553, 282 (the same cases as `smoke`, `core`, `robust`) | CI gate. Run with the options the app passes at its four recording call sites, `stage.opts = {closeGaps, exactBars}` (G10a-0): the score users get. The library-default suites above keep running as the regression baseline of the plain writer. A suite's `stage.opts` are merged under each matrix row's own `opts` |
+| `smoke-app`, `core-app`, `robust-app` | 44, 553, 282 (the same cases as `smoke`, `core`, `robust`) | CI gate. Run with the options the app passes at its recording call sites (six since G10a-4), `stage.opts = {closeGaps, exactBars}` (G10a-0): the score users got while the app's default was the classic conversion (the app's default has been v2 since G10a-5b, 2026-10-06: the v2 suites, `rec-*` and `replay-of-v2`, are the score users get now). The library-default suites above keep running as the regression baseline of the plain writer. A suite's `stage.opts` are merged under each matrix row's own `opts` |
 | `full` | 4,976 (311 references × 8 profiles × 2 seeds; hold-out seeds 11, 12) | nightly, hold-out |
 | `mutation` | 171 | `mutation-check` only |
 | `golden` | 17 snapshots | `golden` |

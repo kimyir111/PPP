@@ -33,10 +33,15 @@ const WAV = path.join(os.tmpdir(), 'zz-ppp-fixture-' + process.pid + '.wav');
   fs.writeFileSync(WAV, buf);
 })();
 
-/* o.query: appended to the address; o.locale; o.store {key: value} set before the page's scripts run; o.failWhile {re}: matching requests fail while rec.failOn is true;
-   o.corrupt {re, body}: matching requests are answered 200 with `body` (a file that is not the file) while rec.failOn is true */
+/* G10a-5b: v2 is the DEFAULT, so a page opened with no store is a v2 page. A test of the classic path asks for it the way a person gets it: the device remembers 'legacy' (the chip turned off) */
+const CLASSIC = { 'ppp.recording.v1': 'legacy' };
+/* o.query: appended to the address; o.locale; o.store {key: value} set before the page's scripts run; o.legacy: the device remembers 'legacy' (CLASSIC), the way the chip turned off leaves it;
+   o.failWhile {re}: matching requests fail while rec.failOn is true;
+   o.corrupt {re, body}: matching requests are answered 200 with `body` (a file that is not the file) while rec.failOn is true;
+   o.holdWhile {re}: matching requests are never answered (a server that stalls) until page.__rec.release() lets the held ones go on */
 async function openPage(browser, o) {
   o = o || {};
+  if (o.legacy) o = Object.assign({}, o, { store: Object.assign({}, o.store || {}, CLASSIC) });
   /* a browser context of its own: localStorage (the remembered choice) is not shared with another page of this suite */
   const ctx = await browser.createBrowserContext();
   const page = await ctx.newPage();
@@ -45,7 +50,7 @@ async function openPage(browser, o) {
   await preparePage(page);
   if (o.locale) await page.evaluateOnNewDocument(loc => { try { localStorage.setItem('ppp-locale', loc); } catch (e) {} }, o.locale);
   if (o.store) await page.evaluateOnNewDocument(st => { try { Object.keys(st).forEach(k => localStorage.setItem(k, st[k])); } catch (e) {} }, o.store);
-  const rec = { requests: [], consoleErrors: [], pageErrors: [], failOn: true, failed: [] };
+  const rec = { requests: [], consoleErrors: [], pageErrors: [], failOn: true, failed: [], held: [], holdOn: true, release: () => { rec.holdOn = false; rec.held.splice(0).forEach(r => { try { r.continue(); } catch (e) { /* the page is gone */ } }); } };
   page.__rec = rec;
   await page.setRequestInterception(true);
   page.on('request', req => {
@@ -53,6 +58,7 @@ async function openPage(browser, o) {
     rec.requests.push(u.replace(/^https?:\/\/[^/]+/, ''));
     if (HELPER.test(u)) return req.abort();
     if (o.failWhile && rec.failOn && o.failWhile.test(u)) { rec.failed.push(u.replace(/^https?:\/\/[^/]+/, '')); return req.abort(); }
+    if (o.holdWhile && rec.holdOn && o.holdWhile.test(u)) { rec.held.push(req); return; }
     if (o.corrupt && rec.failOn && o.corrupt.re.test(u)) { rec.failed.push(u.replace(/^https?:\/\/[^/]+/, '')); return req.respond({ status: 200, contentType: 'application/javascript', body: o.corrupt.body, headers: { 'Cache-Control': 'no-store' } }); }
     req.continue();
   });
@@ -159,4 +165,4 @@ async function accept(page) {
 }
 async function slotOf(page, songId) { return page.evaluate(i => JSON.parse(localStorage.getItem('ppp.song.v1.' + i) || 'null'), songId); }
 
-module.exports = { fs, os, path, REPO, errors, sleep, ok, HELPER, REC_FILES, SCRIPTS, WEIGHTS, CATALOG, ONLY, want, WAV, setBase, openPage, recReqs, clean, errs, addChecker, stubAmt, importHeard, press, stateOf, drawSound, arrangeCheck, accept, slotOf };
+module.exports = { fs, os, path, REPO, errors, sleep, ok, HELPER, REC_FILES, SCRIPTS, WEIGHTS, CATALOG, ONLY, want, WAV, CLASSIC, setBase, openPage, recReqs, clean, errs, addChecker, stubAmt, importHeard, press, stateOf, drawSound, arrangeCheck, accept, slotOf };

@@ -1,0 +1,93 @@
+{
+ "madeFrom": "origin/main 26417f4 (PPP.recording legacy, the default then)",
+ "fixtures": {
+  "sextuplets": {
+   "calls": [
+    {
+     "options": "{\"closeGaps\":true,\"easy\":false,\"exactBars\":true,\"title\":\"zz-ppp-fixture-N\"}",
+     "xml": "4b9e7d2bf5678786",
+     "graph": "a10ec9aa05935e7e",
+     "stats": "568e2139f85cbf47",
+     "keys": "gapReport,graph,graphIssues,gridReport,restReport,stats,tupletReport,xml",
+     "v2": false
+    }
+   ],
+   "score": "35c981c2d704c5e6",
+   "sourceKeys": "a464bc4c8c9ff2a3",
+   "tempo": 100,
+   "version": 7,
+   "pipeline": null,
+   "engine": "Piano Onsets & Frames",
+   "quantizer": "heuristic",
+   "reportKeys": "0bcb1b0e36082b64",
+   "issues": "fallback,time",
+   "level": "fair"
+  },
+  "keys": {
+   "calls": [
+    {
+     "options": "{\"closeGaps\":true,\"easy\":false,\"exactBars\":true,\"title\":\"zz-ppp-fixture-N\"}",
+     "xml": "93f8b3f36b3109cf",
+     "graph": "19a64fe7ecfa2a75",
+     "stats": "099f444b7767ba6f",
+     "keys": "gapReport,graph,graphIssues,gridReport,restReport,stats,tupletReport,xml",
+     "v2": false
+    }
+   ],
+   "score": "e2d6769f368ca14f",
+   "sourceKeys": "a464bc4c8c9ff2a3",
+   "tempo": 120,
+   "version": 7,
+   "pipeline": null,
+   "engine": "Piano Onsets & Frames",
+   "quantizer": "heuristic",
+   "reportKeys": "0bcb1b0e36082b64",
+   "issues": "fallback",
+   "level": "fair"
+  },
+  "pedal": {
+   "calls": [
+    {
+     "options": "{\"closeGaps\":true,\"easy\":false,\"exactBars\":true,\"title\":\"zz-ppp-fixture-N\"}",
+     "xml": "ec3ebc9cafa7d5b0",
+     "graph": "63b7448958990e1a",
+     "stats": "d55ae4e9a08b14a5",
+     "keys": "gapReport,graph,graphIssues,gridReport,restReport,stats,tupletReport,xml",
+     "v2": false
+    }
+   ],
+   "score": "464b92600a9a741e",
+   "sourceKeys": "a464bc4c8c9ff2a3",
+   "tempo": 120,
+   "version": 7,
+   "pipeline": null,
+   "engine": "Piano Onsets & Frames",
+   "quantizer": "heuristic",
+   "reportKeys": "0bcb1b0e36082b64",
+   "issues": "fallback",
+   "level": "fair"
+  },
+  "hymn": {
+   "calls": [
+    {
+     "options": "{\"closeGaps\":true,\"easy\":false,\"exactBars\":true,\"title\":\"zz-ppp-fixture-N\"}",
+     "xml": "0c902da52f30d6e3",
+     "graph": "745e13ed7cfa4491",
+     "stats": "766cc2eb28850a23",
+     "keys": "gapReport,graph,graphIssues,gridReport,restReport,stats,tupletReport,xml",
+     "v2": false
+    }
+   ],
+   "score": "f591e6b44c1fc1e2",
+   "sourceKeys": "a464bc4c8c9ff2a3",
+   "tempo": 80,
+   "version": 7,
+   "pipeline": null,
+   "engine": "Piano Onsets & Frames",
+   "quantizer": "heuristic",
+   "reportKeys": "0bcb1b0e36082b64",
+   "issues": "fallback",
+   "level": "fair"
+  }
+ }
+}

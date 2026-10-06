@@ -22,6 +22,8 @@ humanizer calibrated on the teacher's real transcription, plus the same scores r
 by the real models. The first phase (G10a-0) is that benchmark — and repairing the CI gate, which has not
 run past its unit tests on `main` since 2026-09-27.
 
+**Update 2026-10-06 (G10a-5b, section 31).** The recording conversion v2 is the default in the app (the user approved the flip after H-10); `PPP.recording` is `'v2'` unless a device remembers `'legacy'` or the address says `?recording=legacy`. Where sections 6, 10, 13, 25 and 27 say the default is `'legacy'`, they describe the app until this change.
+
 ## 1. What was measured before designing (evidence)
 
 All numbers below were measured for this document at `415a4c4` (scripts and logs in the Lead's scratchpad
@@ -102,7 +104,7 @@ user's word.
 | **G10-D2** | **One rule per consumer** (§6.2): the engraver draws notation; "Play" plays the notation; "Play as recorded" plays the performance (or the original audio); practice judges onsets and pitches of the notation, timed by whichever rendering is playing; arrangers and analysers read notation, with performance-derived confidences as features. | Playback that silently mixes written and heard timing | E9 |
 | **G10-D3** | **The north-star invariant, restated for recordings** (§6.3): what is drawn = what PPP plays when it plays the score = what practice judges; a recording's heard performance is a second, *labelled* rendering, linked note by note, never drawn. | Keeping "drawn = played" literally, which pushes performance noise into the notation | §2 point 2 |
 | **G10-D4** | **Releases are evidence, not values.** A written value comes from onsets (the inter-onset interval of the voice, on the decided grid); a release only decides whether a silence is a rest, and a pedal-down release says nothing. | Heard release → written value (the pre-#134 writer); fixed `REST_MIN` forever | E5, E6, E2 |
-| **G10-D5** | **A staged pipeline in a new module family `rec/`** (UMD, Node + browser, pure functions, one stage per file, each with its own report and metric), dispatched by `toMusicXml(input, {recording: 'v2'})`; the current writer (heuristic beats + `closeGaps`/`exactBars`) stays as `'legacy'`. App switch `PPP.recording = 'legacy' \| 'v2'`, default `'legacy'` until H-10. | Keep patching `audio-score.js` in place (the last week's pattern) | E1-E3 |
+| **G10-D5** | **A staged pipeline in a new module family `rec/`** (UMD, Node + browser, pure functions, one stage per file, each with its own report and metric), dispatched by `toMusicXml(input, {recording: 'v2'})`; the current writer (heuristic beats + `closeGaps`/`exactBars`) stays as `'legacy'`. App switch `PPP.recording = 'legacy' \| 'v2'`, default `'legacy'` until H-10 (**since G10a-5b, 2026-10-06, the app's default is `'v2'`**: section 31; the library's default stays `'legacy'`: `opts.recording` absent = the legacy writer). | Keep patching `audio-score.js` in place (the last week's pattern) | E1-E3 |
 | **G10-D6** | **Measure first, on truth, on the app's path.** G10a-0 repairs the gate (E1), adds suites that run the app's options (E2) and the calibrated humanizer; every later phase reports Δ on rec-core, rec-robust, hold-out, the real-AMT tier and the teacher tier, and merges only on a green gate. | Judging recording changes by the teacher's eye | E1, E2 |
 | **G10-D7** | **The humanizer is G0's performer, extended, calibrated by data.** New profiles in `perform.py` (Python, LCG, G0-D8) whose noise is drawn from committed *quantile tables* measured on real transcriptions (aggregate statistics only, no notes), with a test that the humanized catalogue reproduces those statistics within bands. | A new generator in JS; hand-picked noise constants (what perform/2 and `rec-synth.js` did) | E5, E7 |
 | **G10-D8** | **Order of attack by measured error mass:** (1) time skeleton — metre, tempo octave, downbeat, compound tempo (issue 1); (2) hands; (3) grid per beat (straight / triplet / swing / 32nd); (4) rests (silence classifier); (5) voices; (6) key and spelling; (7) pedal marks. | Rests first (the visible symptom) | E3 |
@@ -299,7 +301,7 @@ not fitted to results).
 
 From G10a-1 the stage-opts axis gains `v2` (`{recording: 'v2'}`), so every rec suite reports legacy-default,
 app (production today) and v2 side by side. The existing `core`, `smoke`, `robust`, `full` keep running
-unchanged (the library default path) until v2 is the default, as the regression baseline of the legacy writer.
+unchanged (the library default path, which stays the legacy writer: G10a-5b changed the app's default, not the library's), as the regression baseline of the legacy writer.
 
 ## 8. The conversion pipeline (C)
 
@@ -428,7 +430,7 @@ idle-sliced). Model JSON ≤ 200 KB in total, lazy-loaded with the recording scr
 
 ## 13. Rollback
 
-`PPP.recording = 'legacy'` (default until H-10) restores today's writer exactly; `opts.recording` absent in
+`PPP.recording = 'legacy'` (the default until G10a-5b, 2026-10-06; since then the chip, `?recording=legacy` or a remembered `'legacy'`: section 31.10) restores today's writer exactly; `opts.recording` absent in
 the library = legacy; each model has a deterministic fallback; `PPP.recordingArrange = 'reduce'`; benchmark
 additions are new suites and new profiles (old ones byte-identical), revertable by commit.
 
@@ -1835,6 +1837,8 @@ move only in the corrected class 3 (5.1 -> 0 per 100 bars).
 
 ## 25. G10a-4: the recording conversion v2 in the app (2026-10-04; implementer on Sonnet)
 
+*History: this section describes the app as G10a-4 shipped it, OFF by default. Since 2026-10-06 (G10a-5b, section 31) the default is `'v2'`; where this section says the default is `'legacy'` (the opening paragraph, 25.1, 25.2, 25.6, 25.9) it was true then.*
+
 Worktree `D:/PPP-g10a4`, from `origin/main` `9f3d8b5`. Three PRs: #161 (the switch, the loader, the chips, v2 at the recording call sites, "Write the notation again", the flags), #162 (stacked: "Play as recorded"), and this one (the record). **It ships OFF**: `PPP.recording` defaults to `'legacy'`, and with it the page is `origin/main` (25.2). Not deployed. The headline finding is in 25.4: **on the teacher's real piece the one-note Song Arranger refuses the v2 graph at all three levels** (two gates, both from the hand split of S4: the review of the three PRs corrected the first diagnosis, 25.4 and 25.8), and v2's hand split puts high notes in the left staff; the rhythm is much cleaner. The Song Arranger now retries that refusal once with the classic hands, and the teacher's flow is arranged at all three levels (25.8).
 
 ### 25.1 What shipped
@@ -3044,3 +3048,196 @@ order independence, the blind assignment, the key, what is drawn against the Sco
 the introduction, a class, an id, a drawing attribute, a script comment, the manifest, a Korean word, `local` as a word: each caught by both the test scan and the builder's own), the builder
 refusing a leaking link and warning about a leaking title, skipped pieces reported, identical readings, a reading the page threw away, decode of fake answers against the key, swapped sides, the command lines) and
 `h10-engine-page.test.js` (3 tests in headless Chrome, skipped with a reason if puppeteer is missing). All 162 review tests pass (the 137 existing ones unchanged). The `gate` job does not run `test:review`.
+
+## 31. G10a-5b: the flip, the recording conversion v2 is the default (2026-10-06; implementer on Sonnet)
+
+Worktree `D:/PPP-g10flip`, branch `g10-flip-v2-default` from `main` `26417f4`. **The user approved the flip on 2026-10-06** ("default on and deploy"; the Lead deploys after the review of this PR). This section supersedes every "`PPP.recording` defaults to `'legacy'`" of G10-D5 (section 5), the G10a-4 row of section 10, section 13 and section 25 (its opening paragraph, 25.1, 25.2, 25.6, 25.9): those were true when written and are history now (the library's `opts.recording` default stays `'legacy'`). The classic conversion is not removed: it is the chip's OFF state, `?recording=legacy`, a remembered `'legacy'`, and the automatic fallback when v2's files do not load or the result is not believable (25.8, point 7).
+
+### 31.1 The evidence, and what it does not show
+
+| | |
+| --- | --- |
+| H-10 (the first blind review, the teacher, 6 pieces, v2 against the classic conversion, same heard notes) | v2 preferred or equal in 6 of 6, the classic one preferred in 0; handed to a student: v2 1 of 6, classic 0 of 6 (part T); the teacher's "strange rests" complaint is largely gone: mean rests per excerpt 5.8 against 33 |
+| the second blind review (the same v2 conversion on two sources of heard notes) | with the browser model's notes v2 was passed 4 of 7; with a stronger model's notes 7 of 7 (section 30) |
+| checks that do not need a person | classes 1-7 of `scoregraph/tools/notation-check.js` are 0 on the real pieces, every bar adds up, drawn = played (25.3, 25.8, 29.4) |
+
+**Not claimed.** v2 is not proven better for every piece: the blind reviews were six pieces and one reviewer, with wide intervals; the classic conversion is better on some bars (25.4); both fail mostly on notes the browser model did not hear (30.1), which no conversion fixes. The flip changes the default: the same code, the same fallbacks, the same chip, now pressed. The other changes of this PR are the independent review's fixes (31.12).
+
+### 31.2 What changed
+
+| File | Change |
+| --- | --- |
+| `Piano Coach App.dc.html` | `RECORDING_DEFAULT = 'v2'`; `recordingChoice(v)` (a choice is `'v2'` or `'legacy'`, nothing else); the initial value and `setRecordingMode` rewritten around it (31.3); the chip's label and its line under it (31.4); `isRecordingSong(src)`, used so that the review screen of a PDF or a MusicXML import no longer asks for v2's files (the Add screen and the review screen of a recording do). **After the independent review of #177 (31.12):** a Full-song review has no chip and no "new method is on" note; the load of v2's files is bounded at 15 s (`REC_LOAD_TIMEOUT_MS`) with one `<script>` element a file; the shape of the four weights files is checked (`RECORDING_WEIGHT_SHAPE`); the Song Arranger's second fallback (the classic conversion); an "Unsure measures" tile; Space on the chip does not play |
+| `i18n/{ko-KR,ja-JP,zh-CN}.json` | the chip's two strings replaced by three (label, "on" line, "off" line); "Unsure measures" |
+| `tests/recording-v2-app.test.js` (+ lib, play, ottava, single-note-app, `tests/rec/hands-fallback.test.js`, `tests/bench/unit/test_app_suites.py`) | the new default, both ways off, the chip, every one of the 17 files blocked, the weights served as `{}` and `[]`, a file that never answers, which review screens ask for the files, the Full-song review, the classic identity (31.7), the second fallback |
+| `tests/recording-v2-identity.js`, `tests/fixtures/g10a5b-classic-identity.json` | the fingerprint of what the classic conversion hands the page, and what `origin/main` `26417f4` handed it |
+| comments and text only | `rec/app.js` (`normalizeMode`'s comments: the function is exported and has its test, the page does not use it any more), `audio-score.js` (six call sites, not four), `review/h10/collect.js`, `README.md` (a paragraph on the two methods), `tests/bench/README.md`, `tests/bench/tools/make_rec_suites.py` and `tests/bench/suites/replay-of-v2.json` (a description), this document |
+
+### 31.3 The semantics of the switch
+
+`PPP.recording` is `'v2'` (default) or `'legacy'`. **A choice is one of those two strings; anything else is no choice, and no choice is the default.** Three layers, the first that holds a choice wins:
+
+| Layer | Where | Lasts |
+| --- | --- | --- |
+| 1. the address | `?recording=legacy` or `?recording=v2` | that visit; **never stored** and it does not overwrite the stored choice |
+| 2. the device's remembered choice | `localStorage` key **`ppp.recording.v1`**: `'v2'` or `'legacy'` | until changed (the chip, or `PPP.recording = ...`) |
+| 3. the default | `'v2'` | - |
+
+- **The key was absent while the choice was legacy** (G10a-4 stored `'v2'` and removed the key for legacy), so **every device that never turned the chip on has the key absent, and now gets v2**: that is the flip. **Nobody stored a `'v2'` that meant something other than v2** (the only writer was the chip, and `PPP.recording = 'v2'`): a device that stored `'v2'` is v2, as before. A device that stores `'legacy'` (the chip turned off, or `PPP.recording = 'legacy'`, new in this PR: it used to remove the key) stays classic. **Loading the page writes nothing.** The same holds for a device that turned the old chip on and later off (the old chip removed the key for legacy): its key is absent, so **it gets v2 too**; and for a device whose storage is cleared, blocked or unreadable (private mode): no remembered choice, v2, and what the chip chooses lasts for that tab only. **An already-open tab keeps the mode it loaded with** (there is no storage listener): the chip turned off in one tab changes another tab when it is reloaded.
+- **Unknown values.** The G10a-4 rule was "any other value is `'legacy'`" (the convention of `PPP.arranger` and `PPP.fingering`, whose unknown value is their OFF state, which was also their default). The rule is the same one stated for a default that is now v2: *a value that is not a choice is not a choice, and the default applies*. `PPP.recording = 'typo'` (or `null`, `'V2'`, `true`, `''`) gives v2 **and forgets the remembered choice, a remembered `'legacy'` too** (so it is the way to put a device back to "no choice", and not a way to keep the classic method). In the address, an unknown value (`?recording=bogus`, `?recording=`) **has no say**: the remembered choice stands, else the default. The old rule made `?recording=bogus` legacy even over a remembered `'v2'`; now it leaves the remembered choice alone (a typo in the address does not take away a remembered `'legacy'`, nor a remembered `'v2'`). A remembered value that is neither (corrupt, from another build) is ignored the same way. This differs on purpose from `PPP.arranger`, whose unknown value stays `'legacy'` (G9e default-on left it): there the unknown value is the OFF state; here it is the default.
+- The chip writes the choice it makes (`'legacy'` or `'v2'`), so a person who turned it off and on again has `'v2'` stored: harmless, and it is what they chose.
+
+### 31.4 The chip
+
+On the Add-sheet-music screen (under "Recording type") and on the review screen of a faithful transcription, as before (a Full-song review has none: 31.12); **pressed** on a fresh page. The label is the same in both states (`aria-pressed` carries the state); the line under it follows the state:
+
+| | label | on (the default) | off |
+| --- | --- | --- | --- |
+| en | New transcription method | On (the default): a newer way of reading the beat, the hands and the rests. Turn it off to use the classic method. | Off: the classic method writes the notation. Turn it on to use the newer way of reading the beat, the hands and the rests. |
+| ko | 새 받아쓰기 방식 | 켜짐(기본): 박자·양손·쉼표를 새로운 방식으로 읽어요. 끄면 기존 방식을 써요. | 꺼짐: 기존 방식으로 악보를 적어요. 켜면 박자·양손·쉼표를 새로운 방식으로 읽어요. |
+| ja | 新しい採譜方式 | オン（標準）：拍・左右の手・休符を新しい方法で読み取ります。オフにすると従来の方法を使います。 | オフ：従来の方法で楽譜を書きます。オンにすると、拍・左右の手・休符を新しい方法で読み取ります。 |
+| zh | 新的扒谱方式 | 已开启（默认）：用新的方式读取节拍、左右手和休止符。关闭后使用原来的方式。 | 已关闭：用原来的方式写谱。开启后用新的方式读取节拍、左右手和休止符。 |
+
+The "(experimental)" of the opt-in (ko "(실험)", ja "（試験版）", zh "（实验）") is gone: it would tell people that the default is experimental. The honesty is in the line instead ("a newer way"; how to go back) and in 31.1. The 400 px layout is unchanged (the chip and its line are the same elements; no sideways scroll, in all four languages, tested).
+
+### 31.5 What default-on costs (measured; a local server of the tree, headless Chrome, the app's own flow, `scratchpad` driver, not committed)
+
+| | classic (`legacy` held) | v2 (the default) |
+| --- | --- | --- |
+| requests for `rec/` at page load, and while the person is on Home, My Songs, Practice | 0 | **0** (lazy: the files come when the Add screen, or the review screen of a recording, opens, after the load event) |
+| page load, load event / first contentful paint in ms (here the classic column is main `26417f4`, 5 runs; the v2 column is this tree's default page, 12 runs, normal and throttled) | 406-575 / 588-756 | 421-521 / 608-712 (the same, within noise) |
+| what opening Add fetches | 0 | **17 files, each once: 273,242 bytes of body, 277,460 on the wire** (four weights 71,846; thirteen scripts 201,396); `realize/ottava.js` (15.6 KB) too when the Song Arranger has not asked for it. The local server does not compress; gzip -9 of the same files is 86,480 bytes, brotli 75,303: what a compressing edge would send (not verified: no production access) |
+| against the page itself | one cold load of the page is 4.81 MB here (also uncompressed) | +5.8% on a visit that opens Add |
+| Add screen opens -> `recordingModulesReady()` | - | 88-92 ms; CPU 4x 259 ms; **Fast 3G 3.35 s; Fast 3G + CPU 4x 3.37 s** (DevTools Fast 3G: 1.6 Mbit/s down, 562.5 ms latency; throttled after the page loaded: the page itself is unchanged) |
+| import (a stub model that answers at once, 320 notes), file chosen -> review screen, files already there | 3.79 s; CPU 4x 4.74 s; Fast 3G + CPU 4x 5.93 s | 3.82-3.87 s; 5.11 s; 6.11 s (the v2 conversion itself: +0.1 s, +0.4 s, +0.2 s; the teacher's 1,214 notes take 301 ms against 99 ms, 25.1) |
+| **worst case: the import starts the instant Add opens** (the person has a file ready) | Fast 3G 5.12 s; Fast 3G + CPU 4x 6.19 s | 5.30 s; **6.78 s (+0.6 s)**: the import takes 4-6 s of its own (search, conversion, checks) even with a stub model, and the download runs inside that |
+
+With the real in-browser model (the teacher's piece: 332-399 s for 1,214 notes) or the helper, the download is entirely hidden behind the transcription: `fromRecording` asks for the files before it starts the model, `finishHeard` waits for them. **The loader is unchanged** (G10a-4, 25.1): lazy, once each, weights before scripts, in `rec/index.js`'s order; a failure is asked for again alone. One change in this PR keeps default-on from costing more than it must: **the review screen of a PDF or a MusicXML import no longer asks for the files** (it has no chip and no use for them); the Add screen and the review screen of a recording do (`isRecordingSong`, the test of `showRecordingChoice`).
+
+**Two measurements of the same step, both reported.** The independent review of this PR measured Add -> `recordingModulesReady()` on Fast 3G at **8.9-10.9 s** (three runs a profile, 1.6 Mbit/s and 562.5 ms applied before the screen opens, pages opened through a request-intercepting wrapper, local HTTP/1.1) against the **3.35 s** above (no request interception, 1.44 Mbit/s effective, one run). The two harnesses disagree on what a cold, throttled fetch of 17 files costs, by a factor of three; the cause was not isolated here, and a person on a slow link should be expected to wait the longer figure for the files. What both agree on is the part that matters: **the import is not slowed** (Fast 3G + CPU 4x, import started when Add opens: 12.5 s with v2 against 12.3-12.7 s classic, 12.6-12.7 s on main).
+
+**Where the 15 s race (31.6) sits against these figures, said plainly: 15 s is thin on a slow phone.** The delta review measured **12.6-14.5 s** until v2 was ready on Fast 3G with the CPU 4x slower (the time to ready, as in the table), and 12.5 s for the whole stubbed import there (v2 12.5 s, classic 12.3-12.7 s, import started when Add opens; the 6.78 s above is the same step in the other harness). Both are inside the bound by 0.5 to 2.4 s: a slower link loses the race. Why that is acceptable: (1) the race bounds a person's *wait*, not the download: the file requests keep going and are shared, and **each call that finds no load in progress starts a window of its own** (the Add screen's warm-up, the import's first call, and `finishHeard`'s call after the transcription are three); the one that decides is `finishHeard`'s, made when the model has finished, which is tens of seconds to minutes after the Add screen opened (332-399 s for the teacher's piece), so the files have arrived long before; (2) when a window is lost the import is classic with a notice that says it may just be slow, and **"Write the notation again" retries** (31.12): the same song is written by v2 once the files are there (tested: the held file released, the button pressed, the song is v2); (3) the stall that matters, a file that never comes, costs 15 s once per import and not a hang.
+
+**`no-store` for `rec/` was reconsidered and is not changed.** `server.js` answers every `.js` and `.json` (and the page) with `no-store`, so a repeat visit downloads the files again, as it downloads the whole 4.8 MB page again; the 277 KB is 5.8% of what a visit already costs, and the load overlaps the person choosing a file. A change would be `Cache-Control: no-cache` plus an `ETag` for `/rec/` (a 304 per file, never stale); it is a server change that belongs with the same treatment of the rest of the static set, not in this PR (a note for the Lead, not a roadmap item).
+
+### 31.6 When a file does not load: every one of the 17, blocked in turn
+
+`tests/recording-v2-app.test.js`, section `block`: a fresh default profile, **one** of the 17 files refused for the whole life of the page (the four weights and the thirteen scripts, one run each), the person imports as usual (stubbed model, the real screens). **17 of 17**: the import reaches the review screen, is the classic conversion (no v2 mark, `transcriptionVersion` 7, no flags), says why on the review screen ("The new transcription method could not be loaded, so the classic method wrote this score."), its bars add up (classes 1-7 of the notation checker are 0), nothing blocks. The earlier sections of the same test keep the finer cases (G10a-4, 25.8 point 5): a failed file is asked for again alone, with the three files that read its export when they loaded; a script served 200 as an HTML page is a failure; a file that arrives later makes the next import v2; nothing that loaded runs twice. The plausibility check (tempo 30-240, length 0.6-1.6 times the heard length) is unchanged and is tested as before (section `plausible`, default page now).
+
+**Two failures the 17-file test did not cover (the review of #177, 31.12).** A file that is *served* but wrong: each of the four weights files answered as `{}` and as `[]` (valid JSON of the wrong shape, 8 runs) was accepted before, and the stages then ran on an empty model (an empty rests model wrote 205 rests where the real one writes 45, without a word). `RECORDING_WEIGHT_SHAPE` checks each file's schema family and major version (`ppp.rec-time-skeleton/1`, `ppp.rec-hands-model/1`, `ppp.rec-grid-model/1`, `ppp.rec-rests-model/1`) and the keys and types the stages read; a file that fails it is a failed load: the classic conversion and the notice, no stage script runs. A file that is *never answered* (a held request, `rec/grid.js`): the import waited for ever, and so did every later import of the session (the load promise is shared). The load is now raced against 15 s: the import falls back to the classic conversion with the same notice, the shared promise is reset so the next import tries again, and each script has one `<script>` element however many askers wait for it (a second element would run the file twice when it arrived); when the file does arrive, v2 is ready and the next import is v2 at once. A stall costs the person 15 s per import, not a hang.
+
+### 31.7 The classic path is what it was
+
+`tests/fixtures/g10a5b-classic-identity.json` holds, for four heard-note fixtures (3:2 sextuplets, key changes, pedal, a four-part hymn played with human timing), what the page's own `PPPAudioScore.toMusicXml` was asked and answered when the **clean `git archive` of `main` `26417f4`** (default classic) imported them: the options, sha-256 of the MusicXML, of the graph and of the stats, the Score, the source's keys and values, the report. Two runs of that page gave the same hashes. **This tree gives the same for all four fixtures with `'legacy'` remembered, and for the first fixture through `?recording=legacy` (nothing remembered) and through the chip pressed off on a default page** (the Add screen had already asked for v2's files; they are loaded and unused): one conversion each, the same options, XML, graph, stats, Score, source and report, and **zero `/rec/` requests** on a page that remembers legacy. `node tests/recording-v2-identity.js --write <page url>` makes the fixture again from another build.
+
+### 31.8 The six real pieces, a fresh profile, nothing touched (the app flow)
+
+`scratchpad` driver (not committed; the heard notes of the teacher's six pieces stay outside the repository), a local server of this tree, a **fresh browser context for each run: nothing remembered, the chip never touched**; the model stubbed with the saved heard notes of H-10 (`p1`-`p6`), everything after the notes the real app. **A**: import -> review -> Accept -> reload -> My Songs -> open -> "Write the notation again" with the chip on -> chip off + Write again -> Undo. **B**: a fresh profile, the chip turned off on the Add screen, then the same import.
+
+| piece | heard | A: review (default) | pipeline | chip | 8va lines | flags | classes 1-7 (Score + graph) | saved, reopened (graph from the store) | Write again (v2) | chip off + Write again | Undo | B: chip off first |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| p1 | 1,214 | **89 bars, 4/4, 162**, 45 rests, 9 brackets | v2, 8 | on | 59 | 7 | 0 | same notation | same | 90 bars, 238 rests, 147 brackets, no lines | v2 again, same | **90 bars**, classic, chip off, no `/rec/` request after the chip |
+| p2 | 1,393 | 76 bars, 4/4, 120, 3 rests, 245 brackets | v2, 8 | on | 15 | 32 | 0 | same | same | 76 bars, 44 rests | same | 76 bars |
+| p3 | 2,589 | 122 bars, 4/4, 97, 19 rests | v2, 8 | on | 128 | 52 | 0 | same | same | 241 bars, 630 rests | same | 241 bars |
+| p4 | 1,514 | 86 bars, 4/4, 86, 64 rests | v2, 8 | on | 31 | 18 | 0 | same | same | 174 bars, 570 rests | same | 174 bars |
+| p5 | 2,273 | 136 bars, 4/4, 132, 83 rests | v2, 8 | on | 89 | 52 | 0 | same | not identical to the import's notation (the heard notes of a kept graph are its performance layer, and the ottava test records the same for p5: a kept graph can lose a note; not this PR's) | 177 bars, 478 rests, classes 1-7 **2,057** | v2 again, same as before the classic write | 177 bars, 2,057 |
+| p6 | 1,302 | 77 bars, 4/4, 140, 12 rests | v2, 8 | on | 69 | 17 | 0 | same | same | 103 bars, 181 rests, classes 1-7 796 | same | 103 bars, 796 |
+
+On all six: the review screen shows the chip **on** and says "This notation was written with the new method", the files were asked for once each (17), no page or console error, and the classic conversion of the same notes (the chip off) is the classic one, **with its own defects**: its classes 1-7 are 0 on p1-p4 and large on p5 and p6, its bar counts are twice v2's on p3 and p4. p1's classic numbers (90 bars, 238 rests, 147 brackets) are exactly those of 25.3.
+
+### 31.9 Tests, and what each planted defect was caught by
+
+| Suite | Result |
+| --- | --- |
+| `node tests/recording-v2-app.test.js` | **249 checks pass** in one run of the whole file (sections `basics`, `block`, `warm`, `fixtures`, `calls`, `saved`, `flags`, `fullsong`, `undo`, `fallback`, `plausible`; `block` and `warm` are new, `basics` is rewritten) |
+| `node tests/recording-v2-play.test.js` | 13 checks pass (the classic song with `legacy: true`; the rest on the default; a Full song's review has no chip) |
+| `node tests/recording-v2-ottava.test.js` | 34 checks pass |
+| `node tests/single-note-app.test.js` | 170 checks pass (two request counts know that the Add screen asks for v2's files by default and that `realize/ottava.js` has two askers with one address) |
+| browser suites `library` 27, `interactions` 52, `import-and-persistence` 8, `i18n-and-auth` 44, `engraving` 38, `follow` 32, `falling-notes` 26 | all pass; also `import` 40, `layout` 45, `alignment` 11, `pdf-layer` 52, `coach` 47, `fingering` 86, `score-search` 11, `musicxml` 42, `lessons` 130, `course` 49, `memory` 36, `learning` 33, `midi` 74, `video` 26 pass; `transcription` 84 pass, **2 fail identically on a clean `git archive` of `26417f4`** (the local venv `transkun` path) |
+| `npm run test:rec` 166 (164 pass, 2 todo; `tests/rec/hands-fallback.test.js` has 10), `test:scoregraph` 229, `test:engrave` 201, `test:realize` 181, `test:repair` 143, `python -m unittest discover -s tests/bench/unit -t tests/bench` 433 | all pass (the call-site tests of `tests/recording-v2-callsites.js` and `test_app_suites.py` read the options of each call site for the flag false and true, not the default; the fallback is one call site whose two branches are the two retries) |
+
+Run on free ports (`tests/serve-free.js`; `tests/engrave/tools/with-port.js` for the others). **Planted defects**, each on a copy of the tree, run against the section named (the mutated line is one expression of the page). All of them were run again on the tree of 31.13 and are caught as listed:
+
+| Planted defect | Section | Checks that fail |
+| --- | --- | --- |
+| the default back to `'legacy'` (`RECORDING_DEFAULT`) | `basics` | 8 (a fresh page is v2; no remembered choice is v2; an unknown value, an empty or unknown `?recording=`, a corrupt remembered value are v2; forgetting the choice) and the run stops when the Add screen never loads v2 |
+| a remembered `'legacy'` ignored (read and dropped) | `basics` | 12 (a remembered legacy after one reload **and after a second**; a legacy page asks for none of v2's files and has no v2 global; its import is v2-marked with 17 requests; the review chip and legend; the classic identity of the four fixtures; an unknown address does not take away a remembered legacy) |
+| `?recording=legacy` ignored | `basics` | 4 (legacy for that visit; `?recording=v2` over a remembered legacy; `?recording=legacy` over a remembered v2; the classic identity through the address) |
+| **the review screen of a recording not warmed** | `warm` | 1 (a saved recording's review, Add never opened, asks for no file) |
+| **`isRecordingSong` inverted** | `warm` | 2 (a saved MusicXML song's review asks for the files; a saved recording's does not) |
+| the Full-song chip always shown | `fullsong` | 2 (the Full-song review, fresh and reopened) |
+| the "new method is on" note not gated on Full song | `fullsong` | 1 |
+| the 15 s race removed (a held file hangs the import) | `block` | the held-file import never reaches the review screen: the section stops after the 90 s wait |
+| the weights shape check removed | `block` | 9 (each of the four files as `{}` and as `[]`, and the sum) |
+| the classic fallback removed (`[true]` instead of `[true, false]`) | `fallback`, `hands-fallback.test.js` | 6 and 2 (the Song Arranger's runs and the review screen's) |
+| the Space exemption of the chip removed | `basics` | 2 (Space on the chip plays; the control then finds playback already on) |
+| the "Unsure measures" tile removed | `flags` | 2 (English, Korean) |
+| **review screen's Apply arrangement back to one run** (31.13) | `fallback`, `hands-fallback.test.js` | 3 and 1 (the review's refused-once, refused-twice and refused-every-time runs; the call pinned in the page's source) |
+| **the Add chip's Full-song line removed** | `basics` | 4 (one in each language) |
+| **the weights fetch not shared / not kept** | `block` | 2 (a file asked for three times over two imports; the same after the release) |
+| **`rec/app.js` asked for after the heard notes, no busy label** | `block` | 1 for the label, 1 for the message (two mutants: no Loading label; the old "not kept" message) |
+| **the schema check back to `/1` only** | `block` | 1 |
+| **the shape check made strict (rejects keys it does not read)** | `block` | 1 (a file with keys the stages do not read is rejected: the gap) |
+
+### 31.10 Rollback, and what is left
+
+- **Rollback, in order of reach.** *One person, one device*: the chip off (remembered), or `PPP.recording = 'legacy'` in the console. *One visit*: `?recording=legacy`. *Everyone*: revert this PR (the page, the catalogs, the tests and this section): the page is `26417f4`'s again, default classic; a device that remembered `'legacy'` is classic on both pages, a device that remembered `'v2'` is v2 on both, one that remembered nothing follows the page's default. **Saved songs need nothing**: a v2 song keeps its mark (`recordingPipeline`, `transcriptionVersion` 8; the old page reads version 8 as current and ignores the mark), a classic song is untouched and opens as saved; neither is ever rewritten on open (a rewrite is the button, "Write the notation again", with its Undo).
+- **What this PR does not do.** It does not deploy (the Lead's manual route, then the usual live check: `PPP.recording` is `'v2'` on a fresh profile, the 17 files asked for by the Add screen and by no other, the chip pressed, the teacher's flow). It does not change `server.js` (31.5), the stages of `rec/` (a comment in `rec/app.js` apart), the weights, the code of `audio-score.js` (comments apart), the Song Arranger (but for its second fallback, 31.12), "Rewrite the rhythm" (a stated metre or tempo is written by the classic writer, as before; the lock box says so while v2 is on), the Full-song import (a transcription is not an arrangement: classic, no "Write the notation again": tested on the default page) or the plausibility check. Known and unchanged: the Song Arranger refuses some v2 graphs (25.4); it retries with the classic hands (25.8) and, since 31.12, with the classic conversion; p3 and p4 are still refused with another code (`UNREACHABLE`, in the reviewer's runs), which no retry touches.
+- **Known limit of v2 on long pieces (accepted, not fixed here).** The conversion runs on the main thread in one piece. The independent review measured it: p3 (305 s, 2,589 notes) 0.56 s against 0.21 s classic, and 2.7 s with the CPU 4x slower; a synthetic 15-minute piece (7,125 heard notes) **1.6 s against 0.28 s, 8.1 s at CPU 4x, 13 s at CPU 6x**; a dense one (11,536 heard notes) 2.1 s against 0.34 s, 10.9 s at CPU 4x, 17.7 s at CPU 6x. The page does not respond while it runs. The plausibility check does not shorten this; the app's own limit is 15 minutes of audio. A slow device with a long recording will feel it; the chip off writes the classic way (the classic conversion is 5-6 times faster).
+
+### 31.12 The independent review of #177, and what was done (2026-10-06; fixer on Sonnet)
+
+The review found no blocker (verdict: merge after fixes). Each finding, the fix, and the test that fails without it (the mutants are in 31.9):
+
+| # | Finding | Fix | Test |
+| --- | --- | --- | --- |
+| M1 | The Full-song review contradicted itself: the pressed chip said "On (the default) ..." under the badge "written with the classic method", and the Fix the beat box pointed to "Write the notation again", which a Full song does not have | `showMethodChip` and `showLockV2Note` are false for `taskMode 'piano-arrangement'`: **no chip, no line about the new method, no note** on a Full-song review (the method line "written with the classic method" and "Play as recorded" stay; the rhythm box stays, without the note). Checked in ko and en at 400 px (`scratchpad` shots: the block and the box). The Add screen's chip is the device's choice, not this import's: unchanged here, dimmed while Full song is chosen in 31.13 | section `fullsong`: a Full song, saved, reloaded, reopened; a faithful import keeps the chip and the note; with `'legacy'` remembered the note is not there either |
+| 1 | A v2 file that never answers hangs the import and every later one | the 15 s race, the reset of the shared promise, one `<script>` element a file (31.6) | section `block`: `rec/grid.js` held |
+| 3 | The Song Arranger regressed on p6 with v2 the default: the classic conversion arranges p6 at every level, v2 is refused (`ALL_CANDIDATES_HAVE_HARD_VIOLATIONS`) even after the hands retry | **A second fallback**: when the hands retry is refused with the same code, the **classic conversion of the same heard notes** (`{closeGaps, exactBars}`, the classic branch of "Write the notation again") is arranged, and the copy's `source.arrangement.classicFallback` is `true`. Bounded: `arrangeSingleNote` runs at most three times and the conversion at most twice, one call site (`for (const v2 of [true, false])`), never a loop; any other refusal code at any step is the first refusal; the saved song's Score and graph are not touched | `tests/rec/hands-fallback.test.js` (10: the new bound, the order, the options, the mark, the other codes); section `fallback` (refused twice -> the classic copy with the mark; refused every time -> the notice, three runs, two conversions); `test_app_suites.py` (the call site's two branches) |
+| 4 | The "Needs a look" tile read 0 while 7-52 amber "unsure" bars were drawn | a second tile **"Unsure measures"** (ko, ja, zh in the catalogs) with the count of the amber flags, only when there are some; "Needs a look" keeps its meaning (the red bars) and a classic review has exactly the tiles it had | sections `fixtures`, `flags` (including Korean), `basics` (the classic review's tiles) |
+| 6 | Space on the focused chip started playback (the global key handler exempted the one-note chip only) | the exemption covers `[data-recording-v2-option]` | section `basics`: Space on the focused chip does not play; the control: Space elsewhere does |
+| 8 | A weights file that parses as JSON but has the wrong shape was accepted silently | the shape check (31.6) | section `block`: each of the four files as `{}` and `[]`; the real files pass, `{}`, `[]`, `null` and a file without its weights do not |
+| 9, 7, 10 | Measurements and statements (31.5, 31.3), stale comments and docs | 31.3 and 31.5 say what is true (two harnesses, the key of an old chip turned off, storage unreadable, an open tab); G10-D5, section 13 and the notes of sections 25 and 7.6 say that the app's default moved and the library's did not; `rec/app.js`, `audio-score.js`, `review/h10/collect.js`, `README.md`, `tests/bench/README.md`, the bench tool and suite text, the ottava test's header (text only; the roadmap is the Lead's) | - |
+| (gaps the planted defects showed) | Nothing proved that the review screen of a saved MusicXML song asks for no file, or that a recording's review does ask; a second reload of a remembered legacy was not checked | section `warm`: a saved MusicXML song's review (Add never opened) asks for none, in the default and the legacy page; a saved recording's review asks for the 17 files once each, and for none with `'legacy'` remembered; a second reload keeps the key | the mutants "review not warmed" and "`isRecordingSong` inverted" (31.9) |
+
+**The Song Arranger on the teacher's pieces, fresh default profile, the one-note arranger at beginner, intermediate and advanced** (`scratchpad` driver, private heard notes, the page before and after the fix):
+
+| piece | before (e87172c) | after |
+| --- | --- | --- |
+| p6 (1,302 heard notes) | refused at all three levels (`ALL_CANDIDATES_HAVE_HARD_VIOLATIONS`, 10.5, 13.7, 17.2 s) | **arranged at all three levels** (14.9, 17.8, 20.9 s), 103 bars, **1,199 notes and 73 rests** (1,272 entries: the first run of this table counted the rests as notes), `classicFallback: true`, "relaxed plan" note. **The copy has the classic reading's 103 bars (6/8 at 93 BPM), not the saved v2 song's 77 (4/4 at 140)**: it is an arrangement of the classic conversion, and says so in its source and, since 31.13, on its composer line; the saved song is untouched |
+| p1, p2, p5 | arranged at all three levels with neither fallback (89 bars / 1,978 notes and rests; 76 / 885; 136 / 3,213) | **the same**, bar for bar and note for note, no `classicFallback`, no `handsFallback`: the fallback is reached only after two refusals |
+
+**The p6 fallback copy is exactly as flawed as `main`'s classic-based copy, because it is that copy**: the same 103 bars, 1,199 notes and 73 rests, 6/8 at 93 BPM (the classic reading's metre and tempo, which the teacher's complaints were about), measured on a clean `26417f4`. What it gains over a refusal is a copy to practise from; what it loses against the v2 notation is every improvement of v2 for that piece.
+
+What this does **not** show: that the p6 copy is good music (it was arranged, its bars were not looked at by a person), or that v2's graph for p6 is wrong (the refusal is the hand-crossing and velocity gates of 25.4, which the classic hands pass). p3 and p4 stay refused with `UNREACHABLE`: another cause, not this fix.
+
+### 31.13 The second review (the delta of `cd9f476`), and what was done (2026-10-06; fixer on Sonnet)
+
+No blocker; one MAJOR. Each finding, the fix, and the test that fails without it (the mutants are in 31.9):
+
+| # | Finding | Fix | Test |
+| --- | --- | --- | --- |
+| M-1 MAJOR | The review screen's "Apply arrangement" (`applyRichReviewArrangement`) still arranged **once** (`arrangeSingleNote`): p6 was refused there and got the standard arrangement, where `main` arranges it | it calls `arrangeSingleNoteWithHandsFallback` too: **both paths, the Song Arranger and the review screen, have the same two retries** (the classic hands, then the classic conversion); the review's copy carries `handsFallback` / `classicFallback` in its `source.arrangement` | section `fallback`: a v2 import on the review screen, the first arrangement refused once (the hands retry arranges it, `handsFallback`), twice (`classicFallback`, the last conversion is the classic one), every time (the standard arrangement, `singleFallback` named, three runs), never (one run, no mark); `hands-fallback.test.js` pins the call and the marks in the source |
+| 6 | The Add screen's chip still said "On (the default)" while "Full song" was chosen | while that type is chosen the chip is dimmed (opacity 0.55, still the device's choice, still pressable) and its line says it does not apply: "Does not apply to a Full song: its arrangement is always written by the classic method." (ko, ja, zh); en, ko, ja, zh at 400 px, no sideways scroll | section `basics`, each of the four languages: dimmed, pressed, the line, back to full strength with another type |
+| 1 | Weights fetches were not shared: each attempt asked for all four again, and a stalled file left a hung request per attempt (6 stuck sockets after 7 imports on HTTP/1.1) | one request a file however many attempts wait for it (`recFetchWeights`); a file that came with the right shape is kept, so a later attempt asks only for the others | section `block`: `ai5b-grid-v1.json` held, two imports of 15 s each: **each of the four files was asked for exactly once**; released, the next import is v2 and the file was still asked for once |
+| 3 | "Play as recorded" with a stalled `rec/app.js` showed nothing for 15 s and then said the heard notes "are not kept on this device", which is wrong | `rec/app.js` is asked for first; the button says **Loading...** meanwhile; when it does not come: "The files that play a recording as it was heard could not be loaded yet (the connection may be slow). Try again in a moment." (ko, ja, zh); "not kept" is said only when they are not | section `block`: `rec/app.js` held on a classic page: the label, the message (and not "not kept"), the idle button; released, the same press plays |
+| 7 | The fallback notice said only "could not be loaded" | "... so the classic method wrote this score. It may just be slow: \"Write the notation again\" tries the new method again." (the key changed in ko, ja, zh) | sections `block`/`basics` read the line, and the retry it promises is tested: the held file released, "Write the notation again" writes the same song with v2 |
+| 8 | A weights `schema` with a minor suffix would have been refused although the comment said the major version is checked | `/1`, `/1.1`, `/1.2.3` are accepted, `/2`, `/10`, `/1x` and no schema are not | section `block`: the four real files with each variant; and a file with keys the stages do not read is still accepted (the gap a "reject extra keys" check would have shown) |
+| docs (cheap) | The copy made from the classic reading did not say so | its composer line reads "PPP one-note-per-hand arrangement (classic reading)" (ko, ja, zh); the `build <sha>` tag convention is unchanged | section `fallback`: the classic-fallback copy has it, the hands-fallback copy has the plain line |
+| docs | 31.5 and 31.12 | the 15 s bound against the measured figures (31.5), the p6 note count and the plain statement (31.12) | - |
+
+**p6 and p1 on the review screen** (fresh default profile, "Apply arrangement" at intermediate, one note per hand; the Song Arranger's copy opened beside it; private heard notes):
+
+| | `cd9f476` (before) | this tree | `main` `26417f4` |
+| --- | --- | --- | --- |
+| p6, review | **refused** (`ALL_CANDIDATES_HAVE_HARD_VIOLATIONS`), the standard arrangement shown: 77 bars, 4/4 at 140 | **arranged one note per hand: 103 bars, 1,199 notes and 73 rests, 6/8 at 93, `classicFallback`** (the same at beginner and advanced; the table is at intermediate) | 102 bars, 1,219 notes and 84 rests, 6/8 at 93 (the classic reading's own review arrangement) |
+| p6, Song Arranger copy | 103 bars, 1,199 + 73, `classicFallback` | the same, composer line "(classic reading)" | 103 bars, 1,199 + 73 (identical notes) |
+| p1, review | 89 bars, 1,945 notes and 33 rests, 4/4 at 162, no fallback | **the same** | 90 bars, 1,924 notes and 123 rests (the classic reading) |
+
+**Not done, and why.** (a) A stalled v2 file makes the Song Arranger's classic fallback wait: the fallback begins with `loadRecordingModules()`, so it waits up to the same 15 s before it gives up and shows the refusal: accepted. (b) Space on other buttons of the page still starts playback: it is how the page behaved before this PR, and only the two method chips are exempt. (c) The race's timer is not cleared when the load wins a tie in the same tick: harmless.
+
+### 31.11 Verification (commands)
+
+`npm run test:rec`; `node tests/recording-v2-app.test.js` (`V2_ONLY=basics|block|...`), `node tests/recording-v2-play.test.js`, `node tests/recording-v2-ottava.test.js`, `node tests/single-note-app.test.js`; the browser suites `PPP_PORT=<free port> node -r ./tests/engrave/tools/with-port.js tests/<suite>.test.js` against `NODE_ENV=production HOST=127.0.0.1 PORT=<free port> node server.js`; `node tests/recording-v2-identity.js --write <page url of another build> [out.json]` makes the identity fixture from that build; `python -m unittest discover -s tests/bench/unit -t tests/bench`.
+
+**For the roadmap.** G10a-5b **DONE (this PR, not deployed)**: the recording conversion v2 is the default (the user approved the flip on 2026-10-06 after H-10: v2 preferred or equal in 6 of 6 pieces, the classic conversion in none; one reviewer, six pieces). The classic conversion stays: the chip, `?recording=legacy`, a remembered `'legacy'`, and the automatic fallback (any of the 17 files not loading: tested for each). Cost: 0 requests at first paint, +277 KB (5.8% of a cold visit) only when the Add screen or a recording's review opens, 3.4 s to ready on Fast 3G hidden behind the transcription; `server.js` unchanged. Next: the Lead's deploy and live check; then G10b (the engine) as the H-10 verdict says.

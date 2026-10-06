@@ -2,7 +2,7 @@
    G10a-6: automatic 8va/8vb for the recording conversion v2, in the real page (docs/GOALS/G10_AUDIO_TO_SCORE.md section 29)
 
    A recording's notes can sound far above or below the staff (the teacher's six real covers: 7-15% of the heard notes at or above E6); printed on ledger lines they cannot be read. With
-   PPP.recording = 'v2' the conversion puts realize/ottava.js's octave lines on the graph (audio-score.js, opts.ottava, on by default under v2 and 'off' / false to go without). What this checks, in the
+   PPP.recording = 'v2' (the app's default since G10a-5b; a page that remembers 'legacy' gets the classic conversion and no lines) the conversion puts realize/ottava.js's octave lines on the graph (audio-score.js, opts.ottava, on by default under v2 and 'off' / false to go without). What this checks, in the
    real page and the real screens (the transcription model is a stub that returns heard notes made from numbers, tests/recording-v2-fixtures.js crossLines; PPP_HEARD_FILE=<heard.json> runs the same
    flow on any recording's heard notes instead, for a private check; everything after the notes is the real app):
      - the lines are there: the Score the review screen holds has octave lines, the graph the page draws has the same ones, the engraver draws them (g.ppp-ottava), and no head needing 3 or more ledger lines
@@ -66,7 +66,7 @@ const mine = page => page.evaluate(() => {
   try {
     if (want('flow')) {
     console.log('\n── v2: the lines on the review screen, the music the same ──');
-    const pg = await openPage(browser, { store: { 'ppp.recording.v1': 'v2' } });
+    const pg = await openPage(browser);
     await addChecker(pg); await addLedger(pg);
     const imp = await importHeard(pg, HEARD);
     ok('the import reached the review screen', imp.screen === 'review' && !imp.error, JSON.stringify(imp));
@@ -174,7 +174,7 @@ const mine = page => page.evaluate(() => {
 
     if (want('options')) {
     console.log('\n── opts.ottava, the classic conversion, and a page without the file ──');
-    const po = await openPage(browser, { store: { 'ppp.recording.v1': 'v2' } });
+    const po = await openPage(browser);
     await po.evaluate(() => window.PPP.loadRecordingModules());
     await po.waitForFunction(() => window.PPP.recordingModulesReady() && !!(window.PPPRealizeModules && window.PPPRealizeModules.ottava), { timeout: 30000 });
     const opt = await po.evaluate(h => {
@@ -194,7 +194,7 @@ const mine = page => page.evaluate(() => {
     ok('the classic conversion has none, whatever the option says (same file for no option, \'on\' and true)', opt.classic.lines === 0 && opt.classicOn.lines === 0 && opt.classicTrue.lines === 0 && opt.classic.xml === 0 && !opt.classic.report && opt.sameClassic, JSON.stringify({ c: opt.classic, on: opt.classicOn }));
     await po.close();
 
-    const pn = await openPage(browser, { store: { 'ppp.recording.v1': 'v2' }, failWhile: /\/realize\/ottava\.js/ });
+    const pn = await openPage(browser, { failWhile: /\/realize\/ottava\.js/ });
     await addChecker(pn);
     const impN = await importHeard(pn, HEARD);
     const sN = await stateOf(pn);
@@ -206,19 +206,19 @@ const mine = page => page.evaluate(() => {
 
     if (want('classic')) {
     console.log('\n── the classic page: the same heard notes have no lines ──');
-    const pc = await openPage(browser);
+    const pc = await openPage(browser, { legacy: true });   /* the chip off: a device that remembers legacy */
     await addChecker(pc); await addLedger(pc);
     await importHeard(pc, HEARD);
     const sC = await stateOf(pc), oC = await lines(pc);
-    ok('with PPP.recording = legacy the Score and the graph have no octave lines and no head is drawn under one', sC.pipeline === null && oC.scoreLines === 0 && oC.graphLines === 0 && oC.under === 0 && oC.shiftedHeads === 0 && oC.ge3 === oC.ge3Plain, JSON.stringify({ p: sC.pipeline, s: oC.scoreLines, g: oC.graphLines }));
+    ok('with PPP.recording = legacy (remembered) the Score and the graph have no octave lines and no head is drawn under one', sC.pipeline === null && oC.scoreLines === 0 && oC.graphLines === 0 && oC.under === 0 && oC.shiftedHeads === 0 && oC.ge3 === oC.ge3Plain, JSON.stringify({ p: sC.pipeline, s: oC.scoreLines, g: oC.graphLines }));
     ok('no page or console error', clean(pc), errs(pc));
     await pc.close();
 
     console.log('\n── the file is asked for with the stages\' files, once, and by no page that does not use v2 ──');
-    const pl = await openPage(browser, { store: { 'ppp.recording.v1': 'v2' } });
+    const pl = await openPage(browser);
     const ottaReq = p => p.__rec.requests.filter(u => /^\/realize\/ottava\.js/.test(u));
     await sleep(2500);
-    ok('v2 remembered, no screen that converts is open: not asked for (the arranger\'s own warm-up may bring it, with the same address)', ottaReq(pl).every(u => u === '/realize/ottava.js?v=3'), ottaReq(pl).join(', '));
+    ok('v2 is the default, no screen that converts is open: not asked for (the arranger\'s own warm-up may bring it, with the same address)', ottaReq(pl).every(u => u === '/realize/ottava.js?v=3'), ottaReq(pl).join(', '));
     await pl.evaluate(() => window.__pppTest.nav('My Songs')); await sleep(250);
     await pl.evaluate(() => document.querySelector('[data-add-card]').click());
     await pl.waitForFunction(() => window.PPP.recordingModulesReady() && !!(window.PPPRealizeModules && window.PPPRealizeModules.ottava), { timeout: 30000 });

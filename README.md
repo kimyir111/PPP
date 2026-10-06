@@ -210,6 +210,16 @@ On Satie's Gymnopédie No. 1 from YouTube (4:05, one pianist's rubato): 3/4 at 6
 the bass on beat one of every one of its 78 bars, the chord on beat two in the left hand, the
 melody entering on the second beat of bar 5 — about 1 min 45 s on a CPU.
 
+**Two ways to write the notation.** Since 2026-10-06 the app writes a recording's notation with the
+staged conversion in `rec/` (time skeleton, grid per beat, hands, voices, rests, key, pedal, octave lines;
+the table above describes the classic one). It is the default: the chip "New transcription method" on the
+Add screen and on the review screen is pressed, bars it was not sure of are amber, and "Write the notation
+again" rewrites a song with whichever method is chosen. The classic conversion stays: turn the chip off (the
+choice is remembered on that device), open the page with `?recording=legacy` for one visit, or rely on the
+automatic fallback when one of the new method's files does not load or its result is not believable. A
+"Full song" arrangement is always written by the classic method. The record of the choice, the
+measurements and the rollback are in `docs/GOALS/G10_AUDIO_TO_SCORE.md` section 31.
+
 ### Checked by ear, not trusted
 
 A transcription always stops at the review screen, with the recording beside the notation:
