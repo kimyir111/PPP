@@ -4829,10 +4829,10 @@ async function arrangeSingleNote(builtGraph, plan) {
 }
 
 /* ============================ G10a-4: the recording conversion v2 (PPP.recording) ============================
-   docs/GOALS/G10_AUDIO_TO_SCORE.md sections 6 and 10. PPP.recording = 'legacy' (default) | 'v2'; any other value is 'legacy' (the convention of PPP.arranger and
-   PPP.fingering). 'legacy' is the conversion the app has always made: the page asks for nothing of v2 and the four recording call sites pass the options they always passed.
+   docs/GOALS/G10_AUDIO_TO_SCORE.md sections 6, 10 and 31. PPP.recording = 'v2' (default since G10a-5b) | 'legacy'; a value that is neither is no choice, and no choice is the default
+   (see RECORDING_DEFAULT below). 'legacy' is the conversion the app made before v2: a page that holds it asks for nothing of v2 and the recording call sites pass the options they always passed.
    'v2' hands the heard notes to audio-score.js with recording: 'v2' (the staged conversion of rec/: time skeleton, grid per beat, hands, voices, rests, writer, key, pedal).
-   The choice is remembered on this device (localStorage 'ppp.recording.v1'; the key is absent while it is 'legacy'); ?recording=v2 (or any other value) in the address is used for
+   The choice is remembered on this device (localStorage 'ppp.recording.v1': 'v2' or 'legacy'; the key is absent when nothing was chosen); ?recording=legacy or ?recording=v2 in the address is used for
    that visit and is not remembered. The chip on the "Add sheet music" screen and on the recognition review screen sets it.
    v2's scripts (13 files: the stages, rec/app.js) and weights (4 JSON files, 64 KB) are fetched only when v2 is selected and a screen that converts a recording opens, or by the first conversion if that comes sooner,
    once each, in the order rec/index.js's header gives (the weights as window globals BEFORE the modules that read them when they load). A failed file is asked for again next time; a
@@ -4854,16 +4854,23 @@ const REC_APP_SCRIPT = 'rec/app.js';
    loader (SINGLE_SCRIPTS) asks for the same file with the same ?v=, so the browser's cache serves the second asker, and a page that has it already does not ask. */
 const RECORDING_OPTIONAL_SCRIPTS = [['realize/ottava.js', 3]];
 const REC_FILE_V = 1; /* the ?v= of every rec/ file: bump it when one changes */
-function coerceRecordingMode(v) { return v === 'v2' ? 'v2' : 'legacy'; }
+/* G10a-5b (the flip, docs/GOALS/G10 section 31): the staged conversion is the DEFAULT. A choice is 'v2' or 'legacy' and nothing else; a value that is neither (a typo, null, 'V2', an old
+   convention's "any other value") is no choice, and no choice is the default. Layers, the first that holds a choice wins: ?recording= in the address (this visit only), the device's
+   remembered choice (localStorage RECORDING_KEY), the default. A device that remembered nothing (the key absent: every device until now unless the chip was turned on) is v2; a device
+   that remembered 'v2' is v2 (as it was); one that remembers 'legacy' (the chip turned off, or PPP.recording = 'legacy') stays classic. */
+const RECORDING_DEFAULT = 'v2';
+function recordingChoice(v) { return v === 'v2' || v === 'legacy' ? v : null; }
 let RECORDING_MODE = (() => {
-  let m = 'legacy';
-  try { m = coerceRecordingMode(localStorage.getItem(RECORDING_KEY)); } catch (e) { /* no storage: the default */ }
-  try { const u = new URLSearchParams(location.search).get('recording'); if (u != null) m = coerceRecordingMode(u); } catch (e) { /* no address to read */ }
+  let m = RECORDING_DEFAULT;
+  try { m = recordingChoice(localStorage.getItem(RECORDING_KEY)) || m; } catch (e) { /* no storage: the default */ }
+  try { const u = recordingChoice(new URLSearchParams(location.search).get('recording')); if (u) m = u; } catch (e) { /* no address to read */ }
   return m;
 })();
+/* a choice is remembered ('v2' or 'legacy'); a value that is no choice puts the default back and forgets the remembered one */
 function setRecordingMode(v) {
-  RECORDING_MODE = coerceRecordingMode(v);
-  try { if (RECORDING_MODE === 'v2') localStorage.setItem(RECORDING_KEY, 'v2'); else localStorage.removeItem(RECORDING_KEY); } catch (e) { /* not remembered */ }
+  const c = recordingChoice(v);
+  RECORDING_MODE = c || RECORDING_DEFAULT;
+  try { if (c) localStorage.setItem(RECORDING_KEY, c); else localStorage.removeItem(RECORDING_KEY); } catch (e) { /* not remembered */ }
   return RECORDING_MODE;
 }
 const _recLoaded = new Set();
@@ -4963,6 +4970,8 @@ function v2Plausible(built, heard) {
 }
 /* what a conversion's graph says wrote it: only a graph the staged conversion actually made (audio-score.js returns recReport for it) is marked v2 */
 function writtenByV2(built) { return !!(built && built.recReport); }
+/* G10a-5b: is this song a transcription of a recording, so that the method (the chip, "Write the notation again", v2's files) applies to it? The same test as showRecordingChoice and showAsRecorded. */
+function isRecordingSong(src) { return !!(src && inferredAudioNotation(src) && !src.referenceScore && src.kind !== 'arrangement' && src.kind !== 'built-in'); }
 /* G10a-4, the one-note arranger's refusal of a v2 transcription (the review of #161, docs/GOALS/G10 section 25.4): on the teacher's piece S4's hands (rec/hands.js) made every candidate fail two gates
    of candidates/index.js - a right-hand velocity violation (inner notes handed to the right hand just before a leap) and then the relaxed plan's hand-crossing limit (S4 crossed 1.8-2.4% of the moments,
    the limit is 1%, assignHands' hands 0.17%) - while the same conversion with the classic hands (audio-score.js opts.hands 'legacy': the same skeleton, grid, rests and writer) was arranged at every level.
@@ -9861,7 +9870,7 @@ window.PPP = {
   /* G08b §11: 'single' (default since G9e default-on: one note per hand) | 'legacy' | 'g8'. Any other value is 'legacy' (G4-F2-1's convention). */
   get arranger() { return ARRANGER_MODE; },
   set arranger(v) { ARRANGER_MODE = v === 'g8' ? 'g8' : v === 'single' ? 'single' : 'legacy'; },
-  /* G10a-4: 'legacy' (default) | 'v2' (the staged recording conversion, docs/GOALS/G10 section 6). Any other value is 'legacy'; the choice is remembered on this device. */
+  /* G10a-4/G10a-5b: 'v2' (default: the staged recording conversion, docs/GOALS/G10 section 6) | 'legacy' (the classic one). Any other value is no choice: the default comes back and the remembered choice is forgotten. A choice is remembered on this device. */
   get recording() { return RECORDING_MODE; },
   set recording(v) { setRecordingMode(v); },
   loadRecordingModules, recordingModulesReady, TRANSCRIPTION_VERSION_V2, RECORDING_SCRIPTS, RECORDING_WEIGHTS,
@@ -12072,7 +12081,8 @@ class Component extends DCLogic {
       /* what others have shared changes while you are away from it */
       if (this.state.screen === 'shared') this.loadShared(!!this.state.sharedList);
       if (this.state.screen === 'review') this.warmSingleModules();
-      if (this.state.screen === 'upload' || this.state.screen === 'review') this.warmRecordingModules();
+      /* the review screen of a PDF or a MusicXML import has no use for v2 (G10a-5b: v2 is the default, so only a recording's review asks for its files) */
+      if (this.state.screen === 'upload' || (this.state.screen === 'review' && isRecordingSong(this.state.importSource))) this.warmRecordingModules();
     }
     /* signing in or out changes which shared scores are yours */
     const uid = this.state.user ? this.state.user.id : null;
@@ -17895,9 +17905,12 @@ class Component extends DCLogic {
         this.setState(st => st.songArrange
           ? { songArrange: Object.assign({}, st.songArrange, { singleRefusal: null }, st.songArrange.autoTitle ? { copyTitle: this.songArrangeAutoTitle(st.songArrange) } : {}) } : {});
       },
-      /* G10a-4: the opt-in for the new transcription method (PPP.recording): on "Add sheet music" and on the recognition review screen; off by default, remembered on this device */
-      recordingV2Label: tx('New transcription method (experimental)'),
-      recordingV2Hint: tx('A newer way of reading the beat, the hands and the rests. Off keeps the classic method.'),
+      /* G10a-4: the switch for the new transcription method (PPP.recording): on "Add sheet music" and on the recognition review screen; G10a-5b: ON by default, the chip turns it off (the classic method) and on again,
+         remembered on this device. The label is the same in both states (aria-pressed carries the state); the line under it says what pressing does. */
+      recordingV2Label: tx('New transcription method'),
+      recordingV2Hint: RECORDING_MODE === 'v2'
+        ? tx('On (the default): a newer way of reading the beat, the hands and the rests. Turn it off to use the classic method.')
+        : tx('Off: the classic method writes the notation. Turn it on to use the newer way of reading the beat, the hands and the rests.'),
       recordingV2Pressed: RECORDING_MODE === 'v2' ? 'true' : 'false',
       recordingV2Style: this.chip(RECORDING_MODE === 'v2') + ';align-self:flex-start;',
       toggleRecordingV2: () => {

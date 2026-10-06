@@ -370,10 +370,14 @@ async function identityHashes(browser) {
     /* whether the background load or the first arrangement asked first, over the whole life of the page each file was asked for once */
     const asked = op.__rec.requests.filter(u => OPTION_FILES.test(u));
     const names = asked.map(u => u.split('?')[0]);
-    ok('the option\'s 14 scripts were requested once each over the whole session (background load or first arrangement, never both)', OPTION_SCRIPTS.every(f => names.filter(n => n === f).length === 1), names.join(' '));
+    /* G10a-5b: v2 is the default recording conversion and the Add-sheet-music screen (where addSong goes) asks for its files; realize/ottava.js is one of them (audio-score.js's octave lines), asked for with the
+       same address as the arranger's own loader asks: that one file is requested twice on such a page (once by each loader), every other file of the option once */
+    const viaRec = op.__rec.requests.some(u => /^\/rec\/index\.js/.test(u));
+    ok('the option\'s 14 scripts were requested once each over the whole session (background load or first arrangement, never both; realize/ottava.js once more for v2\'s own loader, same address)', OPTION_SCRIPTS.every(f => names.filter(n => n === f).length === (f === '/realize/ottava.js' && viaRec ? 2 : 1)), names.join(' '));
     ok('and so was the reference data (G6a weights, method books), once each', names.filter(n => /method-books\.json$/.test(n)).length === 1 && names.filter(n => /g6a-v1\.json$/.test(n)).length === 1, names.filter(n => /json$/.test(n)).join(' '));
-    const others = op.__rec.requests.slice(before).filter(u => !OPTION_FILES.test(u) && /\.(js|json)(\?|$)/.test(u) && !/engrave\/|i18n|catalog\//.test(u));
-    ok('no other script or data request came with it', others.length === 0, others.join(' '));
+    const others = op.__rec.requests.slice(before).filter(u => !OPTION_FILES.test(u) && /\.(js|json)(\?|$)/.test(u) && !/engrave\/|i18n|catalog\//.test(u) && !/^\/rec\//.test(u));   /* v2's own 17 files (G10a-5b) are the recording conversion's, not the arranger's */
+    ok('no other script or data request came with it (v2\'s own 17 files, which the Add screen asks for by default, are not the arranger\'s)', others.length === 0, others.join(' '));
+    ok('and v2\'s files are asked for once each, by the Add screen (the default recording conversion)', viaRec && op.__rec.requests.filter(u => /^\/rec\//.test(u)).length === 17, String(op.__rec.requests.filter(u => /^\/rec\//.test(u)).length));
 
     {
       const ch = await addSong(op, HYMN('christ-arose'));

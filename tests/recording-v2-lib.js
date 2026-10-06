@@ -33,10 +33,14 @@ const WAV = path.join(os.tmpdir(), 'zz-ppp-fixture-' + process.pid + '.wav');
   fs.writeFileSync(WAV, buf);
 })();
 
-/* o.query: appended to the address; o.locale; o.store {key: value} set before the page's scripts run; o.failWhile {re}: matching requests fail while rec.failOn is true;
+/* G10a-5b: v2 is the DEFAULT, so a page opened with no store is a v2 page. A test of the classic path asks for it the way a person gets it: the device remembers 'legacy' (the chip turned off) */
+const CLASSIC = { 'ppp.recording.v1': 'legacy' };
+/* o.query: appended to the address; o.locale; o.store {key: value} set before the page's scripts run; o.legacy: the device remembers 'legacy' (CLASSIC), the way the chip turned off leaves it;
+   o.failWhile {re}: matching requests fail while rec.failOn is true;
    o.corrupt {re, body}: matching requests are answered 200 with `body` (a file that is not the file) while rec.failOn is true */
 async function openPage(browser, o) {
   o = o || {};
+  if (o.legacy) o = Object.assign({}, o, { store: Object.assign({}, o.store || {}, CLASSIC) });
   /* a browser context of its own: localStorage (the remembered choice) is not shared with another page of this suite */
   const ctx = await browser.createBrowserContext();
   const page = await ctx.newPage();
@@ -159,4 +163,4 @@ async function accept(page) {
 }
 async function slotOf(page, songId) { return page.evaluate(i => JSON.parse(localStorage.getItem('ppp.song.v1.' + i) || 'null'), songId); }
 
-module.exports = { fs, os, path, REPO, errors, sleep, ok, HELPER, REC_FILES, SCRIPTS, WEIGHTS, CATALOG, ONLY, want, WAV, setBase, openPage, recReqs, clean, errs, addChecker, stubAmt, importHeard, press, stateOf, drawSound, arrangeCheck, accept, slotOf };
+module.exports = { fs, os, path, REPO, errors, sleep, ok, HELPER, REC_FILES, SCRIPTS, WEIGHTS, CATALOG, ONLY, want, WAV, CLASSIC, setBase, openPage, recReqs, clean, errs, addChecker, stubAmt, importHeard, press, stateOf, drawSound, arrangeCheck, accept, slotOf };

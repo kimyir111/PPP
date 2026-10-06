@@ -32,7 +32,7 @@ const PLAY_KEYS = [
   try {
     console.log('\n── Play as recorded ──');
     ok('every new string has a Korean, a Japanese and a Chinese translation (' + PLAY_KEYS.length + ' strings)', PLAY_KEYS.every(k => ['ko-KR', 'ja-JP', 'zh-CN'].every(l => CATALOG[l][k] && CATALOG[l][k] !== k)));
-    const pp = await openPage(browser, { store: { 'ppp.recording.v1': 'v2' } });
+    const pp = await openPage(browser);
     await importHeard(pp, heardFor.sextuplets);
     await pp.evaluate(() => {
       window.__strikes = [];
@@ -72,7 +72,7 @@ const PLAY_KEYS = [
     await pn.close();
 
     /* a saved song, after a reload: its heard notes are its kept graph's, and it plays as recorded from there (the review screen's notes are gone) */
-    const ps = await openPage(browser);
+    const ps = await openPage(browser, { legacy: true });   /* a classic song (the chip off): "Play as recorded" from its kept graph needs only rec/app.js */
     await importHeard(ps, heardFor.sextuplets);
     await accept(ps);
     const sid = await ps.evaluate(() => window.PPP.app.state.songId);
@@ -96,7 +96,7 @@ const PLAY_KEYS = [
     ok('no page or console error', clean(ps), errs(ps));
     await ps.close();
     /* a 'Full song' import has no "Write the notation again" (the review of #161: it would replace the easy arrangement), and keeps "Play as recorded" */
-    const pa = await openPage(browser, { store: { 'ppp.recording.v1': 'v2' } });
+    const pa = await openPage(browser);
     await pa.evaluate(() => window.PPP.app.setState({ transcriptionMode: 'arrange' }));
     await importHeard(pa, heardFor.sextuplets);
     const fa = await pa.evaluate(() => ({ taskMode: window.PPP.app.state.importSource.taskMode, write: !!document.querySelector('[data-write-again]'), play: !!document.querySelector('[data-recording-choice="review"] [data-as-recorded]'), chip: !!document.querySelector('[data-recording-choice="review"] [data-recording-v2-option]') }));
