@@ -124,11 +124,14 @@ async function startService(opts) {
   const clock = { t: Date.parse('2026-10-06T12:00:00Z') };
   const users = opts.users || ['u1', 'u2'];
   const logged = [];
+  const lookups = { findUser: 0 };
+  const warned = [];
   const svc = homeJobs.create({
     store: store, send: send, jsonError: jsonError, readBody: readBody, parseYoutube: youtubeParser(),
     clientIp: r => String((r.headers['x-forwarded-for'] || '127.0.0.1')).split(',').pop().trim(),
     sessionUid: r => { const u = r.headers['x-test-user']; return u && users.indexOf(String(u)) >= 0 ? String(u) : null; },
-    findUser: async id => (users.indexOf(id) >= 0 ? { id: id, displayName: 'User ' + id } : null),
+    findUser: async id => { lookups.findUser++; return users.indexOf(id) >= 0 ? { id: id, displayName: 'User ' + id } : null; },
+    warn: w => warned.push(w),
     now: () => clock.t, env: opts.env || {}, config: Object.assign({ longPollMs: 300 }, opts.config || {}),
     logError: e => logged.push(String(e && e.message))
   });
@@ -141,7 +144,7 @@ async function startService(opts) {
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   const port = server.address().port;
   return {
-    port: port, svc: svc, store: store, inner: inner, clock: clock, dir: dir, logged: logged,
+    port: port, svc: svc, store: store, inner: inner, clock: clock, dir: dir, logged: logged, lookups: lookups, warned: warned,
     advance: ms => { clock.t += ms; },
     close: () => new Promise(r => { server.closeAllConnections && server.closeAllConnections(); server.close(() => { rmDir(dir); r(); }); }),
     /* a signed-in user's request */

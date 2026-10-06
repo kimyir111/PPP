@@ -49,16 +49,24 @@ const LIMITS = {
   /* what all stored notes together may take of the free database (Neon Free is small, and shared with the shared scores): past it, no job is
      accepted and no result is stored until the keeping time frees room. Accounts are free to make, so the per-account caps alone are not a bound. */
   TOTAL_RESULT_BYTES: 64 * 1024 * 1024,
+  /* ... and what one account may hold of it, so one person (or a few) cannot use it all up: 8 MB is about 70 typical conversions, and
+     the 30 rows an account may keep are 3-4 MB when typical */
+  PER_USER_RESULT_BYTES: 8 * 1024 * 1024,
+  /* how long an idle worker is told to wait (nextPollSeconds). Every request wakes the free web service for 15 minutes, so an idle wait
+     under about 15 minutes keeps it awake all month; the default is an hour, and nothing under 15 minutes is accepted */
+  IDLE_POLL_DEFAULT_S: 3600,
+  IDLE_POLL_FLOOR_S: 900,
   SWEEP_EVERY_MS: 10 * 1000,
   /* request bodies */
   JOB_BODY: 4 * 1024,
   SMALL_BODY: 4 * 1024,
   RESULT_BODY: R.LIMITS.RESULT_MAX_BYTES + 1024 * 1024,
   RESULT_DRAIN: 8 * 1024 * 1024,
-  /* rates */
+  /* rates: per account, and per client address (the global bucket this replaces let one person use up everybody's hour) */
   ENQUEUE_PER_HOUR: 30,
-  ENQUEUE_ALL_PER_HOUR: 200,
+  ENQUEUE_PER_IP_PER_HOUR: 60,
   TOKENS_PER_HOUR: 10,
+  TOKENS_PER_IP_PER_HOUR: 20,
   CLAIMS_PER_HOUR: 600,
   BAD_TOKENS_PER_HOUR: 20,
   /* the account is looked up once and then remembered this long (the session cookie itself is signed and expires) */
@@ -66,15 +74,31 @@ const LIMITS = {
 };
 
 function configFrom(env, over) {
+  const warnings = [];
   const int = (v, d, lo, hi) => { const n = parseInt(v, 10); return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : d; };
+  let idle = LIMITS.IDLE_POLL_DEFAULT_S;
+  const raw = env.PPP_WORKER_IDLE_POLL_S;
+  if (raw != null && String(raw).trim() !== '') {
+    const n = parseInt(raw, 10);
+    if (!Number.isFinite(n)) warnings.push('PPP_WORKER_IDLE_POLL_S=' + JSON.stringify(String(raw).slice(0, 20)) + ' is not a number; using ' + idle + '.');
+    else if (n < LIMITS.IDLE_POLL_FLOOR_S) {
+      warnings.push('PPP_WORKER_IDLE_POLL_S=' + n + ' is below ' + LIMITS.IDLE_POLL_FLOOR_S + '; using ' + LIMITS.IDLE_POLL_FLOOR_S + '.');
+      idle = LIMITS.IDLE_POLL_FLOOR_S;
+    } else idle = Math.min(86400, n);
+  }
+  /* a poll keeps the free instance up about 15.8 minutes: with a shorter wait it never sleeps (Render: 750 free hours a month, shared) */
+  if (idle < 1800) warnings.push('an idle worker wait of ' + idle + ' s keeps ppp-web awake about ' + Math.min(100, Math.round(15.8 * 60 / idle * 100)) + '% of the month; 3600 or more is advised.');
+  const mb = int(env.PPP_WORKER_TOTAL_RESULT_MB, LIMITS.TOTAL_RESULT_BYTES / 1048576, 8, 512);
   return Object.assign({
-    idlePollS: int(env.PPP_WORKER_IDLE_POLL_S, 1200, 60, 86400),
+    idlePollS: idle,
     activePollS: int(env.PPP_WORKER_ACTIVE_POLL_S, 15, 5, 300),
     /* after something finished, this long the worker is still asked to come back soon (the next job of a batch) */
     activeTailMs: 5 * 60 * 1000,
     /* a poll with work in sight waits this long for a job to arrive; with nothing in sight it returns at once */
     longPollMs: 25 * 1000,
-    totalResultBytes: LIMITS.TOTAL_RESULT_BYTES
+    totalResultBytes: mb * 1048576,
+    perUserResultBytes: LIMITS.PER_USER_RESULT_BYTES,
+    warnings: warnings
   }, over || {});
 }
 
@@ -118,11 +142,13 @@ function create(deps) {
   const userCache = new Map();     /* uid -> { user, until } */
   let loaded = false, loading = null, lastSweep = 0, lastPurge = 0;
   const stats = { loads: 0 };
+  C.warnings.forEach(w => { if (deps.warn) deps.warn(w); });
 
   const limiters = {
     enqueue: guestShare.slidingWindow(L.ENQUEUE_PER_HOUR, HOUR),
-    enqueueAll: guestShare.slidingWindow(L.ENQUEUE_ALL_PER_HOUR, HOUR),
+    enqueueIp: guestShare.slidingWindow(L.ENQUEUE_PER_IP_PER_HOUR, HOUR),
     tokens: guestShare.slidingWindow(L.TOKENS_PER_HOUR, HOUR),
+    tokensIp: guestShare.slidingWindow(L.TOKENS_PER_IP_PER_HOUR, HOUR),
     claims: guestShare.slidingWindow(L.CLAIMS_PER_HOUR, HOUR),
     badTokens: guestShare.slidingWindow(L.BAD_TOKENS_PER_HOUR, HOUR)
   };
@@ -185,13 +211,13 @@ function create(deps) {
   function requireSameSite(req) {
     if (!sameSite(req)) throw httpError(403, 'That request did not come from this site.', 'cross-site');
   }
-  function authWorker(req) {
+  /* A failure (a token that is not shaped like one, or that is not a live token) is counted against the client address, and past 20 an hour
+     the answer to a failure is 429. A request with a VALID token is never refused for that: other people's wrong tokens from the same address
+     (a shared PC, a network) must not lock a working worker out. */
+  function badToken(req) {
     const ip = deps.clientIp(req) || 'unknown';
-    const t = parseToken(req.headers.authorization);
-    if (!limiters.badTokens.peek(ip)) throw httpError(429, 'Too many wrong tokens from here. Try again later.', 'too-many', { retryAfter: 600 });
-    const bad = () => { limiters.badTokens.take(ip); return httpError(401, 'That token is not valid.', 'bad-token'); };
-    if (!t) throw bad();
-    return t;
+    if (!limiters.badTokens.take(ip)) return httpError(429, 'Too many wrong tokens from here. Try again later.', 'too-many', { retryAfter: 600 });
+    return httpError(401, 'That token is not valid.', 'bad-token');
   }
   /* the token's record, or null. The id picks the record (it is not secret); the secret is checked by comparing hashes in
      constant time, and a token that does not exist is compared against a dummy so the time does not tell. */
@@ -213,7 +239,7 @@ function create(deps) {
     if (j.status === 'claimed' && j.progress) o.progress = j.progress;
     return o;
   }
-  const storedBytes = () => { let n = 0; jobs.forEach(j => { if (j.status === 'done') n += j.bytes || 0; }); return n; };
+  const storedBytes = ownerId => { let n = 0; jobs.forEach(j => { if (j.status === 'done' && (ownerId == null || j.ownerId === ownerId)) n += j.bytes || 0; }); return n; };
   const ownJobs = ownerId => { const out = []; jobs.forEach(j => { if (j.ownerId === ownerId) out.push(j); }); return out; };
   const pending = j => j.status === 'queued' || j.status === 'claimed';
 
@@ -321,35 +347,46 @@ function create(deps) {
   async function enqueue(req, res) {
     requireSameSite(req);
     const user = await requireUser(req);
+    const ip = deps.clientIp(req) || 'unknown';
+    /* the two hourly budgets are taken now and given back when the request turns out to make nothing (a body that is refused, a link that is not
+       YouTube, a duplicate, a full queue): a refused request is free, and so cannot be used to use up someone else's budget */
     if (!limiters.enqueue.take(user.id)) throw httpError(429, 'Too many conversions were asked for just now. Try again in a little while.', 'too-many', { retryAfter: 600 });
-    if (!limiters.enqueueAll.take('all')) { limiters.enqueue.release(user.id); throw httpError(429, 'Too many conversions were asked for just now. Try again in a little while.', 'too-many', { retryAfter: 600 }); }
-    const body = await readJson(req, L.JOB_BODY);
-    const parsed = parseYoutube(body.url);
-    if (!parsed) { limiters.enqueue.release(user.id); limiters.enqueueAll.release('all'); throw httpError(422, 'That is not a link to a YouTube video.', 'bad-url'); }
-    await ensureLoaded();
+    if (!limiters.enqueueIp.take(ip)) { limiters.enqueue.release(user.id); throw httpError(429, 'Too many conversions were asked for just now. Try again in a little while.', 'too-many', { retryAfter: 600 }); }
+    const release = () => { limiters.enqueue.release(user.id); limiters.enqueueIp.release(ip); };
+    let body, parsed;
+    try {
+      body = await readJson(req, L.JOB_BODY);
+      parsed = parseYoutube(body.url);
+      if (!parsed) throw httpError(422, 'That is not a link to a YouTube video.', 'bad-url');
+      await ensureLoaded();
+    } catch (e) { release(); throw e; }
     const t = now();
     await sweep(t);
     await purgeIfDue(t);
     const mine = ownJobs(user.id);
     const dup = mine.find(j => pending(j) && j.url === parsed.url);
-    if (dup) { limiters.enqueue.release(user.id); limiters.enqueueAll.release('all'); return reply(res, 200, { job: publicJob(dup), existing: true, worker: workerSummary(user.id, t) }); }
+    if (dup) { release(); return reply(res, 200, { job: publicJob(dup), existing: true, worker: workerSummary(user.id, t) }); }
     if (mine.filter(pending).length >= L.PENDING_PER_USER) {
-      limiters.enqueue.release(user.id); limiters.enqueueAll.release('all');
+      release();
       throw httpError(429, 'You already have ' + L.PENDING_PER_USER + ' conversions waiting. Wait for one to finish, or cancel one.', 'queue-full');
     }
-    if (storedBytes() >= C.totalResultBytes) { limiters.enqueue.release(user.id); limiters.enqueueAll.release('all'); throw httpError(503, 'The queue is full right now. Try again later.', 'busy'); }
-    if (jobs.size >= L.MAX_ROWS) { limiters.enqueue.release(user.id); limiters.enqueueAll.release('all'); throw httpError(503, 'The queue is full right now. Try again later.', 'busy'); }
+    if (storedBytes(user.id) >= C.perUserResultBytes) {
+      release();
+      throw httpError(429, 'Your finished conversions take up too much room on the site. Open them first; they are cleared after 3 days.', 'quota');
+    }
+    if (storedBytes() >= C.totalResultBytes) { release(); throw httpError(503, 'The queue is full right now. Try again later.', 'busy'); }
+    if (jobs.size >= L.MAX_ROWS) { release(); throw httpError(503, 'The queue is full right now. Try again later.', 'busy'); }
     /* room for it among the person's rows: the oldest finished ones go first */
     if (mine.length >= L.ROWS_PER_USER) {
       const old = mine.filter(j => !pending(j)).sort((a, b) => (a.finishedAt || a.createdAt) - (b.finishedAt || b.createdAt)).slice(0, mine.length - L.ROWS_PER_USER + 1);
-      if (old.length) { await store.deleteJobs(old.map(j => j.id)); old.forEach(j => jobs.delete(j.id)); }
+      if (old.length) { try { await store.deleteJobs(old.map(j => j.id)); } catch (e) { release(); throw e; } old.forEach(j => jobs.delete(j.id)); }
     }
     const job = { id: crypto.randomBytes(12).toString('base64url'), ownerId: user.id, kind: 'youtube', url: parsed.url,
       title: R.cleanText(body.title, 120), status: 'queued', attempts: 0, workerId: null, createdAt: t, claimedAt: 0, finishedAt: 0, error: '', bytes: 0, beatAt: 0, progress: null };
     /* the slot is taken now, before the write is awaited (two requests at once cannot both pass the cap); nothing claims it until it is durable */
     job.writing = true;
     jobs.set(job.id, job);
-    try { await store.insertJob(job); } catch (e) { jobs.delete(job.id); limiters.enqueue.release(user.id); limiters.enqueueAll.release('all'); throw e; }
+    try { await store.insertJob(job); } catch (e) { jobs.delete(job.id); release(); throw e; }
     job.writing = false;
     wake(user.id);
     reply(res, 201, { job: publicJob(job), worker: workerSummary(user.id, t) });
@@ -414,17 +451,20 @@ function create(deps) {
   async function createToken(req, res) {
     requireSameSite(req);
     const user = await requireUser(req);
+    const ip = deps.clientIp(req) || 'unknown';
     if (!limiters.tokens.take(user.id)) throw httpError(429, 'Too many tokens were made just now. Try again later.', 'too-many', { retryAfter: 600 });
-    const body = await readJson(req, L.SMALL_BODY);
-    await ensureLoaded();
+    if (!limiters.tokensIp.take(ip)) { limiters.tokens.release(user.id); throw httpError(429, 'Too many tokens were made just now. Try again later.', 'too-many', { retryAfter: 600 }); }
+    const release = () => { limiters.tokens.release(user.id); limiters.tokensIp.release(ip); };
+    let body;
+    try { body = await readJson(req, L.SMALL_BODY); await ensureLoaded(); } catch (e) { release(); throw e; }
     let n = 0;
     tokens.forEach(k => { if (k.ownerId === user.id) n++; });
-    if (n >= L.TOKENS_PER_USER) { limiters.tokens.release(user.id); throw httpError(429, 'You have ' + L.TOKENS_PER_USER + ' PC tokens already. Remove one first.', 'too-many-tokens'); }
+    if (n >= L.TOKENS_PER_USER) { release(); throw httpError(429, 'You have ' + L.TOKENS_PER_USER + ' PC tokens already. Remove one first.', 'too-many-tokens'); }
     const k = newToken();
     const rec = { id: k.id, ownerId: user.id, hash: Buffer.from(k.hash, 'hex'), label: R.cleanText(body.label, 40) || 'My PC', createdAt: now(), lastSeenAt: 0, pollS: 0 };
     tokens.set(rec.id, rec);   /* counted at once; the token is not shown to anyone until it is stored */
     try { await store.insertToken({ id: rec.id, ownerId: rec.ownerId, hash: k.hash, label: rec.label, createdAt: rec.createdAt }); }
-    catch (e) { tokens.delete(rec.id); limiters.tokens.release(user.id); throw e; }
+    catch (e) { tokens.delete(rec.id); release(); throw e; }
     /* the only time the token is ever shown */
     reply(res, 201, { id: rec.id, token: k.token, label: rec.label, createdAt: iso(rec.createdAt) });
   }
@@ -445,10 +485,11 @@ function create(deps) {
   /* ================= worker routes (a bearer token) ================= */
 
   async function workerOf(req) {
-    const t = authWorker(req);
+    const t = parseToken(req.headers.authorization);
+    if (!t) throw badToken(req);          /* not shaped like a token: no need to read the queue to say so */
     const cold = await ensureLoaded();
     const rec = verifyToken(t);
-    if (!rec) { limiters.badTokens.take(deps.clientIp(req) || 'unknown'); throw httpError(401, 'That token is not valid.', 'bad-token'); }
+    if (!rec) throw badToken(req);
     return { rec: rec, cold: cold };
   }
 
@@ -560,6 +601,7 @@ function create(deps) {
     const body = await readJson(req, L.RESULT_BODY, L.RESULT_DRAIN);
     const v = R.validateResult(body);
     if (!v.ok) throw httpError(422, v.error, v.code || 'bad-result');
+    if (storedBytes(rec.ownerId) + v.bytes > C.perUserResultBytes) throw httpError(503, 'This account has too many finished conversions on the site. Open them first; they are cleared after 3 days.', 'quota');
     if (storedBytes() + v.bytes > C.totalResultBytes) throw httpError(503, 'The site cannot keep more notes right now.', 'busy');
     /* the body took a while to arrive: the job may have been cancelled meanwhile */
     if (job.status !== 'claimed' && job.status !== 'queued') throw httpError(409, job.status === 'cancelled' ? 'That job was cancelled.' : 'That job is not waiting for this any more.', job.status === 'cancelled' ? 'cancelled' : 'not-open', { status: job.status });

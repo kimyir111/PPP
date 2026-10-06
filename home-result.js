@@ -29,9 +29,10 @@ const isNum = v => typeof v === 'number' && Number.isFinite(v);
 
 function bad(error, code) { return { ok: false, error: error, code: code }; }
 
-/* a short line of text for the review screen and the status list: one line, no control characters, no markup brackets */
+/* a short line of text for the review screen and the status list: one line, no control characters, no markup brackets, and none of the
+   characters that reorder or split text (bidi marks and overrides U+202A-202E, U+2066-2069, U+200E/F, U+061C; line and paragraph separators) */
 function cleanText(value, max) {
-  return String(value == null ? '' : value).replace(/[\u0000-\u001f\u007f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+  return String(value == null ? '' : value).replace(/[\u0000-\u001f\u007f<>\u061c\u200e\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 }
 
 /* body (parsed JSON) -> { ok: true, result, bytes } | { ok: false, error, code }.

@@ -49,6 +49,28 @@ const SCHEMA_SQL = `
   CREATE INDEX IF NOT EXISTS ppp_worker_tokens_owner ON ppp_worker_tokens (owner_id);
 `;
 
+/* Two instances booting together (a deploy overlap) would race on CREATE TABLE IF NOT EXISTS (a unique violation in pg_type): the migration runs in
+   one transaction under an advisory lock, so they take turns. `pool` is a pg Pool. */
+const MIGRATE_LOCK_KEY = 727002;
+async function migrate(pool) {
+  const c = await pool.connect();
+  let broken = false;
+  const onError = () => { broken = true; };
+  c.on('error', onError);
+  try {
+    await c.query('BEGIN');
+    await c.query('SELECT pg_advisory_xact_lock($1)', [MIGRATE_LOCK_KEY]);
+    await c.query(SCHEMA_SQL);
+    await c.query('COMMIT');
+  } catch (err) {
+    try { await c.query('ROLLBACK'); } catch (e2) { broken = true; }
+    throw err;
+  } finally {
+    c.removeListener('error', onError);
+    c.release(broken || undefined);
+  }
+}
+
 const ms = v => (v == null ? 0 : (v instanceof Date ? v.getTime() : Date.parse(v)) || 0);
 const at = t => new Date(t);
 
@@ -248,4 +270,4 @@ function fileJobStore(dir) {
   };
 }
 
-module.exports = { SCHEMA_SQL, pgJobStore, fileJobStore, jobOfRow, tokenOfRow };
+module.exports = { SCHEMA_SQL, MIGRATE_LOCK_KEY, migrate, pgJobStore, fileJobStore, jobOfRow, tokenOfRow };

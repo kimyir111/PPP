@@ -75,12 +75,13 @@ function findKongCheckpoint(dir) {
 function loadConfig(file, env) {
   env = env || process.env;
   let raw = {};
-  const where = file || env.PPP_WORKER_CONFIG || firstExisting([path.join(__dirname, 'worker.config.json')]);
+  /* next to worker.js, or under the person's own profile (a folder nobody else, and no cloud sync of the project, can see) */
+  const where = file || env.PPP_WORKER_CONFIG || firstExisting([path.join(__dirname, 'worker.config.json'), path.join(os.homedir(), '.ppp-home-worker', 'worker.config.json')]);
   if (where) {
     try { raw = JSON.parse(fs.readFileSync(where, 'utf8').replace(/^\uFEFF/, '')); }
     catch (e) { throw new Error('The settings file ' + where + ' could not be read as JSON: ' + e.message); }
   } else if (!env.PPP_WORKER_TOKEN) {
-    throw new Error('There is no settings file. Copy worker.config.example.json to worker.config.json (next to worker.js) and fill it in.');
+    throw new Error('There is no settings file. Copy worker.config.example.json to worker.config.json (next to worker.js, or in ' + path.join(os.homedir(), '.ppp-home-worker') + ') and fill it in; or set PPP_WORKER_TOKEN and PPP_WORKER_SITE.');
   }
   const cfg = Object.assign({}, DEFAULTS, raw);
   if (env.PPP_WORKER_TOKEN) cfg.token = env.PPP_WORKER_TOKEN.trim();
@@ -124,9 +125,15 @@ function makeLog(cfg, out, err) {
     if (cfg && cfg.token) t = t.split(cfg.token).join('ppw_***');
     return t.replace(/ppw_[A-Za-z0-9_-]{12}_[A-Za-z0-9_-]{43}/g, 'ppw_***').replace(/Bearer\s+[^\s]+/gi, 'Bearer ***');
   };
-  const log = m => out('[' + clock() + '] ' + redact(m));
-  log.warn = m => err('[' + clock() + '] ' + redact(m));
+  /* text that came from the site or from a video's title must not move the cursor, recolour or reorder the person's terminal: no ESC sequences, no other
+     control characters (a newline and a tab stay), no bidi marks or overrides, no line or paragraph separators */
+  const clean = s => String(s)
+    .replace(/\u001b(?:\[[0-?]*[ -\/]*[@-~]|\][^\u0007\u001b]*(?:\u0007|\u001b\\)?|[@-Z\\-_])/g, '')
+    .replace(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u061c\u200e\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g, ' ');
+  const log = m => out('[' + clock() + '] ' + clean(redact(m)));
+  log.warn = m => err('[' + clock() + '] ' + clean(redact(m)));
   log.redact = redact;
+  log.clean = clean;
   return log;
 }
 
@@ -234,53 +241,68 @@ function looksLikeAudioFile(file) {
   } catch (e) { return false; }
 }
 
-/* GET a URL into a file: the audio, as the page asks the site for it. Errors say which kind (retry: true when trying again can help). */
+/* GET a URL into a file: the audio, as the page asks the site for it. Errors say which kind (retry: true when trying again can help).
+   Only a redirect to the SAME origin (the site's own address, https in production) is followed, at most 4 times: a site that sends the worker to
+   another host, another scheme (ftp:, file:) or an address that is not one is refused with a sentence - and nothing sent here carries the token. */
 function downloadTo(url, dest, o) {
   o = o || {};
   const maxBytes = (o.maxMB || 120) * 1024 * 1024;
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const fail = (message, retry) => { if (settled) return; settled = true; reject(Object.assign(new Error(message), { retry: !!retry })); };
+    const ok = v => { if (settled) return; settled = true; resolve(v); };
+    let origin0;
+    try { origin0 = new URL(url).origin; } catch (e) { return fail('The audio address is not usable.', false); }
     const hop = (target, hops) => {
-      let u;
-      try { u = new URL(target); } catch (e) { return reject(Object.assign(new Error('The audio address is not usable.'), { retry: false })); }
-      const lib = u.protocol === 'http:' ? http : https;
-      const req = lib.get({ protocol: u.protocol, hostname: u.hostname, port: u.port || undefined, path: u.pathname + u.search, agent: false,
-        headers: { 'User-Agent': 'ppp-home-worker/' + VERSION, 'Accept': 'audio/*,*/*' } }, res => {
-        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-          res.resume();
-          if (hops >= 4) return reject(Object.assign(new Error('Too many redirects fetching the audio.'), { retry: true }));
-          return hop(new URL(res.headers.location, target).href, hops + 1);
-        }
-        if (res.statusCode !== 200) {
-          res.resume();
-          const bad422 = res.statusCode === 422;
-          return reject(Object.assign(new Error(bad422 ? 'The site says that is not a YouTube video.' : 'The site could not get the audio (HTTP ' + res.statusCode + ').'), { retry: !bad422 }));
-        }
-        const type = String(res.headers['content-type'] || '').toLowerCase();
-        if (type.indexOf('text/html') >= 0 || type.indexOf('application/json') >= 0) {
-          res.resume();
-          return reject(Object.assign(new Error('The site answered with a page, not audio.'), { retry: true }));
-        }
-        const file = fs.createWriteStream(dest);
-        let n = 0, over = false;
-        res.on('data', c => { n += c.length; if (n > maxBytes && !over) { over = true; req.destroy(); file.destroy(); reject(Object.assign(new Error('The audio is larger than ' + (o.maxMB || 120) + ' MB.'), { retry: false })); } });
-        res.pipe(file);
-        file.on('finish', () => file.close(() => {
-          if (over) return;
-          if (!looksLikeAudioFile(dest)) return reject(Object.assign(new Error('What came back is not an audio file.'), { retry: true }));
-          resolve({ bytes: n });
-        }));
-        file.on('error', e => reject(Object.assign(new Error('Could not write the audio: ' + e.message), { retry: false })));
-        res.on('error', e => reject(Object.assign(new Error('The audio download broke off.'), { retry: true })));
-      });
-      req.setTimeout(o.idleMs || 180000, () => req.destroy(Object.assign(new Error('The audio download stalled.'), { retry: true })));
-      req.on('error', e => reject(Object.assign(e.retry === undefined ? new Error('Could not reach the site for the audio (' + (e.code || e.message) + ').') : e, { retry: true })));
+      try {
+        const u = new URL(target);
+        if (u.origin !== origin0) return fail('The site sent the audio download to another address; it was not followed.', false);
+        const lib = u.protocol === 'http:' ? http : https;
+        const req = lib.get({ protocol: u.protocol, hostname: u.hostname, port: u.port || undefined, path: u.pathname + u.search, agent: false,
+          headers: { 'User-Agent': 'ppp-home-worker/' + VERSION, 'Accept': 'audio/*,*/*' } }, res => {
+          try {
+            if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+              res.resume();
+              if (hops >= 4) return fail('Too many redirects fetching the audio.', true);
+              let next;
+              try { next = new URL(res.headers.location, target); } catch (e) { return fail('The site sent a redirect to an address that cannot be used.', false); }
+              return hop(next.href, hops + 1);
+            }
+            if (res.statusCode !== 200) {
+              res.resume();
+              const bad422 = res.statusCode === 422;
+              return fail(bad422 ? 'The site says that is not a YouTube video.' : 'The site could not get the audio (HTTP ' + res.statusCode + ').', !bad422);
+            }
+            const type = String(res.headers['content-type'] || '').toLowerCase();
+            if (type.indexOf('text/html') >= 0 || type.indexOf('application/json') >= 0) {
+              res.resume();
+              return fail('The site answered with a page, not audio.', true);
+            }
+            const tooBig = () => fail('The audio is larger than ' + (o.maxMB || 120) + ' MB.', false);
+            if (+res.headers['content-length'] > maxBytes) { res.resume(); req.destroy(); return tooBig(); }
+            const file = fs.createWriteStream(dest);
+            let n = 0, over = false;
+            res.on('data', c => { n += c.length; if (n > maxBytes && !over) { over = true; req.destroy(); file.destroy(); tooBig(); } });
+            res.pipe(file);
+            file.on('finish', () => file.close(() => {
+              if (over) return;
+              if (!looksLikeAudioFile(dest)) return fail('What came back is not an audio file.', true);
+              ok({ bytes: n });
+            }));
+            file.on('error', e => fail('Could not write the audio: ' + e.message, false));
+            res.on('error', e => fail('The audio download broke off.', true));
+          } catch (e) { fail('The audio download could not be read (' + (e && e.code || e && e.message || 'error') + ').', false); }
+        });
+        req.setTimeout(o.idleMs || 180000, () => req.destroy(Object.assign(new Error('The audio download stalled.'), { retry: true })));
+        req.on('error', e => fail(e && e.retry !== undefined ? e.message : 'Could not reach the site for the audio (' + (e && (e.code || e.message)) + ').', true));
+      } catch (e) { fail('The audio could not be fetched (' + (e && e.code || e && e.message || 'error') + ').', false); }
     };
     hop(url, 0);
   });
 }
 
 /* ---------------- one job ---------------- */
-const YT_RE = /^https:\/\/www\.youtube\.com\/watch\?v=[\w-]{6,}$/;
+const YT_RE = /^https:\/\/www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}$/;
 class JobError extends Error {
   constructor(message, retry) { super(message); this.retry = !!retry; }
 }
@@ -304,6 +326,24 @@ function createWorker(cfg, deps) {
   };
   const scratchRoot = cfg.scratchDir;
   const stats = { done: 0, failed: 0, checks: 0 };
+
+  /* a crash or a power cut leaves a job-XXXXXX folder (audio, WAVs) behind: at the start, those older than 2 hours go (a newer one may belong to another
+     run of this script that is working right now) */
+  function sweepScratch(maxAgeMs) {
+    let n = 0;
+    try {
+      fs.readdirSync(scratchRoot).forEach(name => {
+        if (!/^job-[A-Za-z0-9]{6}$/.test(name)) return;
+        const p = path.join(scratchRoot, name);
+        try {
+          const st = fs.statSync(p);
+          if (st.isDirectory() && Date.now() - st.mtimeMs > (maxAgeMs == null ? 2 * 3600 * 1000 : maxAgeMs)) { fs.rmSync(p, { recursive: true, force: true }); n++; }
+        } catch (e) { /* in use, or gone */ }
+      });
+    } catch (e) { /* no scratch folder yet */ }
+    if (n) log('Removed ' + n + ' old scratch folder' + (n === 1 ? '' : 's') + ' left by an earlier run.');
+    return n;
+  }
 
   /* tell the site where the job is; the answer says whether the person cancelled it meanwhile */
   async function beat(job, stage, pct) {
@@ -346,7 +386,7 @@ function createWorker(cfg, deps) {
 
   async function decode(input, dir) {
     const master = path.join(dir, 'audio-master.wav'), kong = path.join(dir, 'audio-kong-16k.wav');
-    const r1 = await run(cfg.ffmpegPath, ['-hide_banner', '-nostdin', '-y', '-i', input, '-map', '0:a:0', '-vn', '-ac', '2', '-ar', '44100', '-t', String(cfg.maxSeconds), '-c:a', 'pcm_s16le', '-f', 'wav', master],
+    const r1 = await run(cfg.ffmpegPath, ['-hide_banner', '-nostdin', '-y', '-protocol_whitelist', 'file,pipe', '-i', input, '-map', '0:a:0', '-vn', '-ac', '2', '-ar', '44100', '-t', String(cfg.maxSeconds), '-c:a', 'pcm_s16le', '-f', 'wav', master],
       { cwd: dir, timeoutMs: 5 * 60 * 1000, onChild: c => { ctl.child = c; } });
     check();
     let bytes = 0; try { bytes = fs.statSync(master).size; } catch (e) { /* none */ }
@@ -355,7 +395,7 @@ function createWorker(cfg, deps) {
       const noAudio = /does not contain any stream|Output file #0 does not contain|matches no streams/i.test(r1.tail || '');
       throw new JobError(noAudio ? 'That video has no audio track.' : 'The audio could not be decoded.', false);
     }
-    const r2 = await run(cfg.ffmpegPath, ['-hide_banner', '-nostdin', '-y', '-i', master, '-vn', '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', '-f', 'wav', kong],
+    const r2 = await run(cfg.ffmpegPath, ['-hide_banner', '-nostdin', '-y', '-protocol_whitelist', 'file,pipe', '-i', master, '-vn', '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', '-f', 'wav', kong],
       { cwd: dir, timeoutMs: 5 * 60 * 1000, onChild: c => { ctl.child = c; } });
     check();
     let kb = 0; try { kb = fs.statSync(kong).size; } catch (e) { /* none */ }
@@ -505,7 +545,7 @@ function createWorker(cfg, deps) {
   }
   /* how long to wait: the site's word, lengthened (never shortened) by the settings */
   function waitFor(next) {
-    let w = next > 0 ? next : (cfg.idlePollSeconds || 1200);
+    let w = next > 0 ? next : (cfg.idlePollSeconds || 3600);
     if (w >= 300) { if (cfg.idlePollSeconds > w) w = cfg.idlePollSeconds; }
     else if (cfg.activePollSeconds) w = Math.max(cfg.activePollSeconds, 5);
     return Math.max(5, w);
@@ -516,6 +556,7 @@ function createWorker(cfg, deps) {
   /* --once: check, do everything waiting, leave. Returns the exit code. */
   async function runOnce() {
     log('PPP home worker ' + VERSION + ': one check of ' + cfg.siteUrl);
+    sweepScratch();
     let jobs = 0;
     for (;;) {
       let p;
@@ -535,27 +576,44 @@ function createWorker(cfg, deps) {
     log(jobs ? 'All waiting conversions are handled (' + stats.done + ' done, ' + stats.failed + ' failed).' : 'Nothing is waiting.');
     return stats.failed && !stats.done ? 1 : 0;
   }
+  /* The wait after a poll that did not work, from ONE counter of consecutive failures (a network that is down, a 5xx, a 429, anything that is
+     not a 200): it doubles from 30 s (60 s for an answer from the site) and stops growing at the idle wait (at least 15 minutes), and a 200 resets it.
+     A site that answers 404, 405 or 410 no longer has this feature (a revert): the worker waits as long as an idle wait, never less than an hour. */
+  function failureWait(kind, status, retryAfter, count, idleKnown) {
+    const cap = Math.max(900, idleKnown);
+    if (status === 404 || status === 405 || status === 410 || status === 501) return Math.max(3600, idleKnown);
+    const base = kind === 'net' ? 30 : 60;
+    const w = Math.min(base * Math.pow(2, Math.max(0, count - 1)), cap);
+    return status === 429 ? Math.max(retryAfter || 0, Math.min(w, cap)) : w;
+  }
+  const jitter = deps.jitter || (() => Math.floor(Math.random() * 10));
+
   /* the loop: poll, work, wait as told. Resolves when stopped; returns the exit code. */
   async function runForever() {
     log('PPP home worker ' + VERSION + ' is watching ' + cfg.siteUrl + '. Ctrl-C stops it' + (cfg.idlePollSeconds ? '; idle checks are at least ' + humanWait(cfg.idlePollSeconds) + ' apart.' : '.'));
-    let backoff = 0;
+    sweepScratch();
+    let failures = 0;
+    let idleKnown = cfg.idlePollSeconds || 3600;
     while (!ctl.stop) {
-      let p;
-      try { p = await poll(false); backoff = 0; }
+      let p, why = null, status = 0, retryAfter = 0, kind = 'net';
+      try { p = await poll(false); }
       catch (e) {
         if (e.fatalToken) { tokenRejected(); return 2; }
-        backoff = Math.min(backoff ? backoff * 2 : 30, 900);
-        const w = backoff + Math.floor(Math.random() * 10);
-        log('Could not reach the site (' + e.message + '). Trying again in ' + humanWait(w) + '.');
+        why = 'Could not reach the site (' + e.message + ')';
+      }
+      if (p && p.failed) {
+        kind = 'http'; status = p.status; retryAfter = p.retryAfter;
+        why = 'The site answered ' + p.status + (p.message ? ' (' + p.message + ')' : '');
+      }
+      if (why) {
+        failures++;
+        const w = failureWait(kind, status, retryAfter, failures, idleKnown) + (status === 404 || status === 405 || status === 410 ? 0 : jitter());
+        log(why + '. Trying again in ' + humanWait(w) + '.' + (status === 404 || status === 405 || status === 410 ? ' (This site does not have the conversion queue now.)' : ''));
         await ctl.sleep(w * 1000);
         continue;
       }
-      if (p.failed) {
-        const w = Math.max(p.retryAfter || 0, p.status >= 500 ? 60 : 30);
-        log('The site answered ' + p.status + (p.message ? ' (' + p.message + ')' : '') + '. Trying again in ' + humanWait(w) + '.');
-        await ctl.sleep(w * 1000);
-        continue;
-      }
+      failures = 0;
+      if (p.next >= 300) idleKnown = Math.max(p.next, cfg.idlePollSeconds || 0);
       if (p.job) {
         try { await processJob(p.job); } catch (e) { if (e.fatalToken) { tokenRejected(); return 2; } }
         continue;
@@ -568,7 +626,7 @@ function createWorker(cfg, deps) {
     return 0;
   }
 
-  return { runOnce: runOnce, runForever: runForever, processJob: processJob, poll: poll, waitFor: waitFor, toResult: toResult, ctl: ctl, stats: stats, getAudio: getAudio, decode: decode, transcribe: transcribe, log: log };
+  return { runOnce: runOnce, runForever: runForever, processJob: processJob, poll: poll, waitFor: waitFor, toResult: toResult, ctl: ctl, stats: stats, failureWait: failureWait, sweepScratch: sweepScratch, getAudio: getAudio, decode: decode, transcribe: transcribe, log: log };
 }
 
 /* --check: say what is set up and what is not, without claiming a job */

@@ -1974,7 +1974,6 @@
     "Before: {{m1}} measures, {{r1}} rests, {{b1}} tuplet brackets. Now: {{m2}} measures, {{r2}} rests, {{b2}} tuplet brackets.": "以前：{{m1}}小節、休符{{r1}}個、連符{{b1}}個。今：{{m2}}小節、休符{{r2}}個、連符{{b2}}個。",
     "High-quality (my PC)": "高品質変換（自分のPC）",
     "Sending…": "送信中…",
-    "High-quality conversion runs on your own PC. It checks for new links about every {{min}} minutes and must be switched on; once it starts, a song takes a few minutes. To start now, open the PC shortcut.": "高品質変換はあなたのPCで実行されます。新しいリンクを約{{min}}分ごとに確認するのでPCの電源を入れておく必要があり、始まると1曲に数分かかります。すぐに始めるには、PCのショートカットを開いてください。",
     "Your PC has not checked in lately, so the conversion will wait until it does.": "PCが最近確認に来ていないため、来るまで変換は待機します。",
     "My conversions (on my PC)": "マイ変換（自分のPC）",
     "Waiting for your PC": "PCを待っています",
@@ -2014,6 +2013,13 @@
     "That conversion has already finished.": "その変換はすでに完了しています。",
     "You have 5 PC tokens already. Remove one first.": "PCトークンがすでに5個あります。先に1個削除してください。",
     "Too many tokens were made just now. Try again later.": "たった今トークンを作りすぎました。後でもう一度お試しください。",
-    "That token is not there.": "そのトークンは見つかりません。"
+    "That token is not there.": "そのトークンは見つかりません。",
+    "High-quality conversion runs on your own PC. It checks for new links {{every}} and must be switched on; once it starts, a song takes a few minutes. To start now, run the desktop shortcut.": "高品質変換はあなたのPCで実行されます。新しいリンクを{{every}}確認するのでPCの電源を入れておく必要があり、始まると1曲に数分かかります。すぐに始めるには、デスクトップのショートカットを実行してください。",
+    "about once an hour": "約1時間に1回",
+    "about every {{n}} minutes": "約{{n}}分ごとに",
+    "about every {{n}} hours": "約{{n}}時間ごとに",
+    "Check again": "再確認",
+    "Not checking any more, to spare the server. Press Check again.": "サーバーを節約するため、確認を止めました。「再確認」を押してください。",
+    "Your finished conversions take up too much room on the site. Open them first; they are cleared after 3 days.": "完了した変換がサイトの容量を使いすぎています。先に開いてください。3日後に消えます。"
   }
 }

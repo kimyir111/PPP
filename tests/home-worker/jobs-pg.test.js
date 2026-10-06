@@ -69,6 +69,16 @@ const cookieOf = r => { const c = [].concat(r.headers['set-cookie'] || [])[0] ||
     heading('the migration');
     await q(Store.SCHEMA_SQL); await q(Store.SCHEMA_SQL);
     ok('the migration run twice, by hand, on the production-shaped tables: no error, no row of theirs touched', JSON.stringify(await counts()) === JSON.stringify(before));
+    /* two instances booting together (a deploy overlap): without a lock, CREATE TABLE IF NOT EXISTS from two sessions can fail on pg_type's unique index */
+    await q('DROP TABLE IF EXISTS ppp_worker_tokens, ppp_transcribe_jobs');
+    const pool12 = new Pool({ connectionString: URL_, max: 12 });
+    pool12.on('error', () => { /* a reset idle connection */ });
+    const raced = await Promise.all(Array.from({ length: 12 }, () => Store.migrate(pool12).then(() => 'ok', e => (e.code || '') + ' ' + String(e.message).slice(0, 70))));
+    const raced2 = await Promise.all(Array.from({ length: 12 }, () => Store.migrate(pool12).then(() => 'ok', e => (e.code || '') + ' ' + String(e.message).slice(0, 70))));
+    await pool12.end();
+    ok('twelve instances migrating at the same moment, twice over (a deploy overlap) take turns under an advisory lock: all succeed, the tables are there once', raced.concat(raced2).every(x => x === 'ok')
+      && (await one(`SELECT count(*)::int n FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('ppp_transcribe_jobs', 'ppp_worker_tokens')`))[0].n === 2, raced.concat(raced2).filter(x => x !== 'ok').slice(0, 2).join(' | '));
+    ok('the lock is a transaction-level advisory lock, taken before the DDL', /pg_advisory_xact_lock/.test(L.fs.readFileSync(path.join(L.MODS, 'home-jobs-store.js'), 'utf8')) && Store.MIGRATE_LOCK_KEY === 727002);
     srv = await startServer();
     const afterBoot = await counts();
     const tables = async () => (await one(`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('ppp_transcribe_jobs', 'ppp_worker_tokens') ORDER BY 1`)).map(r => r.table_name).join();

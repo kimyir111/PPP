@@ -7,7 +7,7 @@
        only claim and complete the jobs of its own account; somebody else's job is "not there"; a revoked token is dead at once
      - the tokens: shown once, only a hash is kept (the file store is searched for the secret), listed without it
      - the queue: the caps (5 waiting, 5 tokens, rows per account), duplicates, rate limits, the lease, the attempts, the 3 days
-     - the waits: nextPollSeconds idle (1200) and active (15), the long-poll that only waits when a job is in sight, and that it
+     - the waits: nextPollSeconds idle (3600 by default, never under 900) and active (15), the long-poll that only waits when a job is in sight, and that it
        gives up a disconnected request
      - THE FREE-TIER RULE: after one read per boot, polls that find nothing run NO store call at all (counted)
      - a store that fails: "try again", nothing leaks, the queue is as it was
@@ -37,6 +37,10 @@ async function resultRules() {
   const v = R.validateResult(good);
   ok('a well-formed result is accepted', v.ok && v.result.notes.length === 40 && v.result.v === 1, JSON.stringify(v).slice(0, 120));
   ok('notes come back sorted by onset, pitch', v.ok && v.result.notes.every((n, i, a) => !i || a[i - 1].on <= n.on));
+  const shuffled = JSON.parse(JSON.stringify(good)); shuffled.notes.reverse();
+  shuffled.notes.push({ on: 1.5, off: 1.8, midi: 30, vel: 50 }, { on: 1.5, off: 1.7, midi: 90, vel: 50 });
+  const vs = R.validateResult(shuffled);
+  ok('a result whose notes arrive in any order is stored in order: by onset, then pitch (so the page, which reads them in order, can)', vs.ok && vs.result.notes.every((n, i, a) => !i || a[i - 1].on < n.on || (a[i - 1].on === n.on && a[i - 1].midi <= n.midi)) && vs.result.notes[0].on === 0, vs.ok ? JSON.stringify(vs.result.notes.slice(0, 3)) : vs.error);
   ok('the result keeps only on, off, midi, vel per note', v.ok && v.result.notes.every(n => Object.keys(n).sort().join() === 'midi,off,on,vel'));
   const dirty = Object.assign({}, good, { pedals: [{ on: 1, off: 2 }], beats: [1, 2, 3], downbeats: [1], uncertainNotes: [{ on: 1, off: 2, midi: 60 }], __proto__x: 1, evil: '<script>' });
   dirty.notes = good.notes.map(n => Object.assign({}, n, { confidence: 1, support: 2, models: ['x'], extra: 'y' }));
@@ -83,6 +87,7 @@ async function resultRules() {
   const noMeta = R.validateResult({ notes: good.notes });
   ok('engine, model, device and ensemble are optional', noMeta.ok && noMeta.result.engine === 'ensemble' && noMeta.result.ensemble === null && noMeta.result.model === null);
   ok('a text of control characters and tags is cleaned', R.cleanText('a\u0000b<c>\n d', 50) === 'a b c d');
+  ok('and of the characters that reorder or split text: bidi overrides and isolates, marks, line and paragraph separators', ['\u202a', '\u202b', '\u202c', '\u202d', '\u202e', '\u2066', '\u2067', '\u2068', '\u2069', '\u200e', '\u200f', '\u061c', '\u2028', '\u2029'].every(c => R.cleanText('ab' + c + 'cd', 20) === 'ab cd'), JSON.stringify(R.cleanText('gpj\u202etxt.exe', 20)));
 }
 
 async function tokenRules() {
@@ -127,6 +132,11 @@ async function main() {
     const badRes = [];
     for (const u of badUrls) badRes.push((await S.as('u1').post('/api/jobs', { url: u })).status);
     ok('anything that is not one YouTube video is 422 (the same rule as /api/youtube-audio)', badRes.every(s => s === 422), badRes.join());
+    const yt = L.youtubeParser();
+    const good11 = ['https://www.youtube.com/watch?v=abcdefghijk', 'https://youtu.be/ab-_Efgh1jK', 'https://m.youtube.com/watch?v=-bcdefghij_', 'https://www.youtube.com/shorts/abcdefghijk', 'https://www.youtube.com/live/abcdefghijk/', 'https://www.youtube.com/embed/abcdefghijk?x=1', 'https://music.youtube.com/watch?v=abcdefghijk&list=PLxxxxxxxxx'];
+    const not11 = ['https://www.youtube.com/watch?v=abcdef', 'https://www.youtube.com/watch?v=abcdefghij', 'https://www.youtube.com/watch?v=abcdefghijkl', 'https://youtu.be/abcdef', 'https://youtu.be/abcdefghijkl', 'https://www.youtube.com/shorts/abcdefghijkl', 'https://www.youtube.com/embed/abcdefghijkmore', 'https://www.youtube.com/watch?v=abcdefghi%2Fk', 'https://www.youtube.com/watch?v=abcdefghi.k', 'https://www.youtube.com/watch?v=' + 'a'.repeat(64)];
+    ok('a video id is exactly 11 of [A-Za-z0-9_-]: the usual links are accepted (watch, youtu.be, shorts, live, embed, music.)', good11.every(u => { const r = yt(u); return r && /^https:\/\/www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}$/.test(r.url); }), good11.filter(u => !yt(u)).join(' '));
+    ok('and 6, 10, 12 and 64 characters, a slash or a dot inside, or characters after the id of an embed are not', not11.every(u => yt(u) === null), not11.filter(u => yt(u)).join(' '));
     ok('a body that is not JSON, an array, or a number is refused', (await req(S.port, 'POST', '/api/jobs', { user: 'u1', body: '{nope' })).status === 400
       && (await req(S.port, 'POST', '/api/jobs', { user: 'u1', body: '[1]' })).status === 422 && (await req(S.port, 'POST', '/api/jobs', { user: 'u1', body: '5' })).status === 422);
     ok('a body of 100 KB is 413', (await req(S.port, 'POST', '/api/jobs', { user: 'u1', body: { url: URL1, pad: 'x'.repeat(100 * 1024) } })).status === 413);
@@ -189,10 +199,15 @@ async function main() {
     ok('4 minutes after it still is', (await S.worker(tok1).post('/api/worker/claim', {})).body.nextPollSeconds === 15);
     S.advance(61 * 1000);
     const idle = await S.worker(tok1).post('/api/worker/claim', {});
-    ok('5 minutes after, the wait is the idle one: 1200 s', idle.body.nextPollSeconds === 1200 && idle.body.job === null, JSON.stringify(idle.body));
-    ok("another account's activity does not change this one's wait", (await enqueue(S, 'u2', 'bbbbbbbbbbb')).status === 201 && (await S.worker(tok1).post('/api/worker/claim', { once: true })).body.nextPollSeconds === 1200);
-    ok('the idle wait is a setting (PPP_WORKER_IDLE_POLL_S) with bounds: 1..3 s are raised to 60', J.configFrom({ PPP_WORKER_IDLE_POLL_S: '3' }).idlePollS === 60 && J.configFrom({ PPP_WORKER_IDLE_POLL_S: '99999' }).idlePollS === 86400
-      && J.configFrom({ PPP_WORKER_IDLE_POLL_S: 'x' }).idlePollS === 1200 && J.configFrom({}).activePollS === 15 && J.configFrom({ PPP_WORKER_ACTIVE_POLL_S: '1' }).activePollS === 5);
+    ok('5 minutes after, the wait is the idle one: 3600 s (an hour)', idle.body.nextPollSeconds === 3600 && idle.body.job === null, JSON.stringify(idle.body));
+    ok("another account's activity does not change this one's wait", (await enqueue(S, 'u2', 'bbbbbbbbbbb')).status === 201 && (await S.worker(tok1).post('/api/worker/claim', { once: true })).body.nextPollSeconds === 3600);
+    const cfgOf = v => J.configFrom(v == null ? {} : { PPP_WORKER_IDLE_POLL_S: v });
+    ok('the idle wait is an hour unless it is set (PPP_WORKER_IDLE_POLL_S), the busy one 15 s; no warning for the default', cfgOf().idlePollS === 3600 && cfgOf().activePollS === 15 && cfgOf().warnings.length === 0);
+    ok('the floor is 900 s: 3, 60 and 899 are raised to 900, each with a warning that says so', ['3', '60', '899'].every(v => cfgOf(v).idlePollS === 900 && cfgOf(v).warnings.some(w => /below 900; using 900/.test(w))));
+    ok('900 is allowed but warned about (it keeps ppp-web awake all month); 1799 too; 1800 and up say nothing', cfgOf('900').idlePollS === 900 && /awake about 100%/.test(cfgOf('900').warnings.join()) && cfgOf('1799').warnings.length === 1 && cfgOf('1800').warnings.length === 0 && cfgOf('7200').idlePollS === 7200);
+    ok('too long is cut to a day; a word is the default (and warned about); the busy wait has its own bounds', cfgOf('99999').idlePollS === 86400 && cfgOf('x').idlePollS === 3600 && cfgOf('x').warnings.length === 1 && J.configFrom({ PPP_WORKER_ACTIVE_POLL_S: '1' }).activePollS === 5 && J.configFrom({ PPP_WORKER_ACTIVE_POLL_S: '9999' }).activePollS === 300);
+    const SW = await L.startService({ env: { PPP_WORKER_IDLE_POLL_S: '60' } });
+    try { ok('the service hands the warnings to the server to log (once, at start)', SW.warned.length >= 2 && SW.warned.some(w => /below 900/.test(w)), SW.warned.join(' | ')); } finally { await SW.close(); }
 
     heading('result: after it is done');
     const gj = await S.as('u1').get('/api/jobs/' + e1.body.job.id);
@@ -250,6 +265,9 @@ async function main() {
       && JSON.stringify((await S.as('u1').get('/api/jobs')).body.jobs.find(j => j.id === q5.id).progress) === JSON.stringify({ stage: 'transcribe', pct: 0.4 }));
     ok('a stage with odd characters is "working"', (await S.worker(tok1).post('/api/worker/jobs/' + q5.id + '/heartbeat', { stage: '<x>', pct: 5 })).status === 200
       && (await S.as('u1').get('/api/jobs')).body.jobs.find(j => j.id === q5.id).progress.stage === 'working');
+    S.store.reset();
+    for (let i = 0; i < 30; i++) await S.worker(tok1).post('/api/worker/jobs/' + q5.id + '/heartbeat', { stage: 'transcribe', pct: i / 30 });
+    ok('30 heartbeats run ZERO store calls (progress and the lease live in memory; the database knows the claim, the result and nothing in between)', S.store.total() === 0, JSON.stringify(S.store.calls));
     const cn = await S.as('u1').post('/api/jobs/' + q5.id + '/cancel');
     ok('the owner cancels a claimed job', cn.status === 200 && cn.body.job.status === 'cancelled');
     const hb = await S.worker(tok1).post('/api/worker/jobs/' + q5.id + '/heartbeat', { pct: 0.5 });
@@ -300,7 +318,7 @@ async function main() {
       /* rows: the cap of 30 rows per account drops the oldest finished ones */
       const tk = await mkToken(S2, 'p2');
       for (let i = 0; i < 34; i++) {
-        const j = (await S2.as('p2').post('/api/jobs', { url: WATCH('rowsrowsro' + String(i).padStart(2, '0')) })).body.job;
+        const j = (await S2.as('p2').post('/api/jobs', { url: WATCH('rowsrowsr' + String(i).padStart(2, '0')) })).body.job;
         const got = (await S2.worker(tk).post('/api/worker/claim', { once: true })).body.job;
         if (got) await S2.worker(tk).post('/api/worker/jobs/' + got.id + '/result', goodResult(10));
         void j;
@@ -321,13 +339,48 @@ async function main() {
       const rr = await S3.worker('ppw_' + 'A'.repeat(12) + '_' + 'C'.repeat(43)).get('/api/worker/ping', { ip: '9.9.9.9' });
       ok('and it says when to come back', rr.status === 429 && Number(rr.headers['retry-after']) > 0);
       ok('another address is not affected', (await S3.worker(tk).get('/api/worker/ping', { ip: '8.8.8.8' })).status === 200);
-      ok('a real token from the blocked address is held too, until the hour is out', (await S3.worker(tk).get('/api/worker/ping', { ip: '9.9.9.9' })).status === 429);
+      ok('a VALID token from that same address still works (the wrong tokens of others must not lock a working worker out), claim and result too', (await S3.worker(tk).get('/api/worker/ping', { ip: '9.9.9.9' })).status === 200 && (await S3.worker(tk).post('/api/worker/claim', { once: true }, { ip: '9.9.9.9' })).status === 200);
+      ok('and a token that is not shaped like one counts as a failure too (and is 429 once the budget is gone)', (await S3.worker('nonsense').get('/api/worker/ping', { ip: '9.9.9.9' })).status === 429 && (await S3.worker('nonsense').get('/api/worker/ping', { ip: '7.7.7.7' })).status === 401);
+      ok('a valid token never spends the budget: 30 pings from a fresh address leave its wrong-token budget whole', await (async () => {
+        for (let i = 0; i < 30; i++) await S3.worker(tk).get('/api/worker/ping', { ip: '6.6.6.6' });
+        const bad = [];
+        for (let i = 0; i < 21; i++) bad.push((await S3.worker('ppw_' + 'A'.repeat(12) + '_' + String(i).padStart(43, 'D')).get('/api/worker/ping', { ip: '6.6.6.6' })).status);
+        return bad.slice(0, 20).every(x => x === 401) && bad[20] === 429;
+      })());
       let made = 0, refused = null;
       for (let i = 0; i < 34; i++) {
         const r = await S3.as('r1').post('/api/jobs', { url: WATCH('qqqqqqqq' + String(i).padStart(3, '0')) });
         if (r.status === 201) { made++; await S3.as('r1').post('/api/jobs/' + r.body.job.id + '/cancel'); } else if (!refused) refused = r;
       }
       ok('30 enqueues an hour per account, then 429 (too-many, with Retry-After); each refused one is free', made === 30 && !!refused && refused.status === 429 && refused.body.code === 'too-many' && Number(refused.headers['retry-after']) > 0, made + ' ' + (refused && refused.status));
+      /* a request that makes nothing is free: refused bodies, links that are not YouTube, duplicates, a full queue */
+      const SR = await L.startService({ users: ['f1', 'f2', 'f3'] });
+      try {
+        const junk = [];
+        for (let i = 0; i < 45; i++) junk.push((await req(SR.port, 'POST', '/api/jobs', { user: 'f1', body: i % 3 === 0 ? '{bad' : i % 3 === 1 ? { url: 'https://example.com/x' } : { url: WATCH('freefreefre'), pad: 'x'.repeat(8000) } })).status);
+        ok('45 refused requests (bad JSON, not YouTube, too big) used none of the 30 hourly enqueues: a good one still works', junk.every(x => x === 400 || x === 422 || x === 413) && (await enqueue(SR, 'f1', 'goodgoodgoo')).status === 201, junk.slice(0, 6).join());
+        const tokJunk = [];
+        for (let i = 0; i < 12; i++) tokJunk.push((await req(SR.port, 'POST', '/api/worker/tokens', { user: 'f2', body: '{bad' })).status);
+        ok('and 12 refused token requests used none of the 10 hourly token makes', tokJunk.every(x => x === 400) && (await SR.as('f2').post('/api/worker/tokens', {})).status === 201);
+        const dups = [];
+        for (let i = 0; i < 40; i++) dups.push((await enqueue(SR, 'f1', 'goodgoodgoo')).status);
+        ok('the same link asked 40 more times (it is already waiting) costs nothing either', dups.every(x => x === 200) && (await SR.as('f1').post('/api/jobs', { url: WATCH('goodgoodgo2') })).status === 201);
+      } finally { await SR.close(); }
+      /* the busiest address cannot use up everybody's hour: the limit is per address (60) and per account (30), not one bucket for the site */
+      const SA = await L.startService({ users: ['a1', 'a2', 'a3'] });
+      try {
+        let madeA = 0, firstRefusal = null;
+        for (let i = 0; i < 70; i++) {
+          const who = ['a1', 'a2', 'a3'][i % 3];
+          const r = await req(SA.port, 'POST', '/api/jobs', { user: who, ip: '10.1.1.1', body: { url: WATCH('addraddr' + String(i).padStart(3, '0')) } });
+          if (r.status === 201) { madeA++; await SA.as(who).post('/api/jobs/' + r.body.job.id + '/cancel'); } else if (!firstRefusal) firstRefusal = r;
+        }
+        ok('one address: 60 enqueues an hour (over three accounts), then 429', madeA === 60 && !!firstRefusal && firstRefusal.status === 429 && firstRefusal.body.code === 'too-many', madeA + ' ' + (firstRefusal && firstRefusal.status));
+        ok('another address is not touched by it (its person can still ask)', (await req(SA.port, 'POST', '/api/jobs', { user: 'a1', ip: '10.2.2.2', body: { url: WATCH('otheraddr01') } })).status === 201);
+        const tokA = [];
+        for (let i = 0; i < 6; i++) tokA.push((await req(SA.port, 'POST', '/api/worker/tokens', { user: ['a1', 'a2', 'a3'][i % 3], ip: '10.3.3.3', body: {} })).status);
+        ok('tokens: 20 an hour per address too (a2 and a3 made 2 each here; the account cap is 10)', tokA.every(x => x === 201));
+      } finally { await SA.close(); }
       const lim = J.LIMITS;
       ok('the limits are the ones the design states', lim.PENDING_PER_USER === 5 && lim.ROWS_PER_USER === 30 && lim.TOKENS_PER_USER === 5 && lim.MAX_ATTEMPTS === 3 && lim.LEASE_MS === 30 * 60 * 1000
         && lim.DONE_TTL_MS === 3 * 86400000 && lim.OTHER_TTL_MS === 86400000 && R.LIMITS.RESULT_MAX_BYTES === 2 * 1024 * 1024 && R.LIMITS.MAX_NOTES === 20000 && R.LIMITS.MAX_SECONDS === 900);
@@ -380,30 +433,80 @@ async function main() {
       } finally { await SC.close(); }
     }
 
+    heading('one account cannot use up the room: a share of the stored notes for each');
+    {
+      /* (a) the share is reached exactly: the next JOB is refused; (b) the share would be passed by a result: the RESULT is refused */
+      for (const [cap, where] of [[3712, 'enqueue'], [3000, 'result']]) {
+        const SU = await L.startService({ users: ['hog', 'teacher'], config: { perUserResultBytes: cap, totalResultBytes: 1e9 } });
+        try {
+          const th = await mkToken(SU, 'hog'), tt = await mkToken(SU, 'teacher');
+          let hogDone = 0, refused = null;
+          for (let i = 0; i < 5 && !refused; i++) {
+            const q = await enqueue(SU, 'hog', 'hoghoghog0' + i);
+            if (q.status !== 201) { refused = { at: 'enqueue', status: q.status, code: q.body.code }; break; }
+            const g = (await SU.worker(th).post('/api/worker/claim', { once: true })).body.job;
+            const r = await SU.worker(th).post('/api/worker/jobs/' + g.id + '/result', goodResult(40));
+            if (r.status === 200) hogDone++; else refused = { at: 'result', status: r.status, code: r.body.code };
+          }
+          ok('cap ' + cap + ': an account that holds its share is refused with "quota" - at ' + where + ' (not "busy": the site as a whole is not full)', refused && refused.at === where && refused.code === 'quota' && hogDone === (where === 'enqueue' ? 2 : 1), JSON.stringify([hogDone, refused]));
+          const q2 = await enqueue(SU, 'teacher', 'teacherteac');
+          const g2 = (await SU.worker(tt).post('/api/worker/claim', { once: true })).body.job;
+          const r2 = await SU.worker(tt).post('/api/worker/jobs/' + g2.id + '/result', goodResult(40));
+          ok('cap ' + cap + ': another account (the teacher) is not affected at all: it queues and stores as usual', q2.status === 201 && r2.status === 200);
+          await SU.advance(4 * 86400000); await SU.svc._state.purge(SU.clock.t);
+          ok('cap ' + cap + ': and the hog has room again when its old results are cleared (3 days)', (await enqueue(SU, 'hog', 'hoghoghog9x')).status === 201);
+        } finally { await SU.close(); }
+      }
+    }
+
+    heading('the account is looked up once, then remembered (the page polls often)');
+    {
+      const SL = await L.startService({ users: ['m1'] });
+      try {
+        for (let i = 0; i < 25; i++) { await SL.as('m1').get('/api/jobs'); await SL.as('m1').get('/api/worker/status'); }
+        ok('50 page requests by one account read the account once', SL.lookups.findUser === 1, SL.lookups.findUser + '');
+        SL.advance(11 * 60 * 1000);
+        await SL.as('m1').get('/api/jobs'); await SL.as('m1').get('/api/jobs');
+        ok('and again, once, after the 10 minutes it is remembered for', SL.lookups.findUser === 2, SL.lookups.findUser + '');
+      } finally { await SL.close(); }
+    }
+
+    heading('no timer reads the queue or the database (an idle server has to stay idle)');
+    {
+      const strip = src => src.replace(/\/\*[\s\S]*?\*\//g, '').split('\n').map(l => l.replace(/(^|\s)\/\/.*$/, '')).join('\n');
+      const files = ['home-jobs.js', 'home-jobs-store.js', 'home-result.js'].map(f => [f, strip(L.fs.readFileSync(L.path.join(L.MODS, f), 'utf8'))]);
+      const timers = files.map(([f, src]) => [f, (src.match(/\b(setInterval|setImmediate|setTimeout)\s*\(/g) || []), (src.match(/\.unref\s*\(/g) || []).length]);
+      ok('home-result.js and home-jobs-store.js start no timer at all, and home-jobs.js none but the long-poll\'s own wait', timers.every(([f, t]) => f === 'home-jobs.js' ? t.length === 1 && t[0].indexOf('setTimeout') === 0 : t.length === 0) && timers.every(t => t[2] === 0), JSON.stringify(timers));
+      const jobsSrc = files[0][1];
+      const w = jobsSrc.indexOf('function waitForJob');
+      const end = jobsSrc.indexOf('async function claim');
+      ok('that one setTimeout is inside waitForJob (it resolves a promise; it reads nothing)', jobsSrc.indexOf('setTimeout(') > w && jobsSrc.indexOf('setTimeout(') < end && !/store\./.test(jobsSrc.slice(w, end)));
+    }
+
     heading('THE FREE-TIER RULE: an idle poll runs no SQL');
     const S5 = await L.startService({ users: ['z1'], config: { longPollMs: 600 } });
     try {
       const tk = await mkToken(S5, 'z1');
       const mine = (await S5.as('z1').get('/api/jobs')).body.worker;
-      ok('the owner sees a token that has not connected yet: has one, never seen, not alive', mine.hasToken && !mine.everSeen && !mine.alive && mine.idlePollSeconds === 1200);
+      ok('the owner sees a token that has not connected yet: has one, never seen, not alive', mine.hasToken && !mine.everSeen && !mine.alive && mine.idlePollSeconds === 3600);
       /* a boot: the memory is gone, the store is what is left */
       S5.svc._state.forgetAll();
       S5.store.reset();
       const t0 = Date.now();
-      const p1 = await S5.worker(tk).post('/api/worker/claim', { waitSeconds: 1200 });
+      const p1 = await S5.worker(tk).post('/api/worker/claim', { waitSeconds: 3600 });
       const c1c = Object.assign({}, S5.store.calls);
       ok('the first poll after a boot reads the store once (loadAll) and writes the token\'s last-seen once (touchSeen), nothing else', c1c.loadAll === 1 && c1c.touchSeen === 1 && S5.store.total() === 2, JSON.stringify(c1c));
-      ok('and it answers: no job, wait 1200', p1.status === 200 && p1.body.job === null && p1.body.nextPollSeconds === 1200);
+      ok('and it answers: no job, wait 3600', p1.status === 200 && p1.body.job === null && p1.body.nextPollSeconds === 3600);
       S5.store.reset();
       const times = [];
       for (let i = 0; i < 60; i++) {
-        S5.advance(20 * 60 * 1000);
+        S5.advance(60 * 60 * 1000);
         const a = Date.now();
-        const r = await S5.worker(tk).post('/api/worker/claim', { waitSeconds: 1200 });
+        const r = await S5.worker(tk).post('/api/worker/claim', { waitSeconds: 3600 });
         times.push(Date.now() - a);
         if (r.status !== 200 || r.body.job !== null) { ok('idle poll ' + i + ' answered 200, no job', false, r.status + ' ' + r.text); break; }
       }
-      ok('60 idle polls (20 minutes apart, 20 hours) ran ZERO store calls', S5.store.total() === 0, JSON.stringify(S5.store.calls));
+      ok('60 idle polls (an hour apart, 60 hours) ran ZERO store calls', S5.store.total() === 0, JSON.stringify(S5.store.calls));
       ok('and none of them waited (an idle poll returns at once)', Math.max.apply(null, times) < 300, 'slowest ' + Math.max.apply(null, times) + ' ms');
       S5.store.reset();
       for (let i = 0; i < 20; i++) await S5.worker(tk).get('/api/worker/ping');

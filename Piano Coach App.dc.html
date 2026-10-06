@@ -999,6 +999,12 @@
               <sc-if value="{{ hasHomeJobs }}" hint-placeholder-val="{{ false }}">
                 <div data-home-jobs style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px;">
                   <div style="font-size: 12px; font-weight: 600; color: var(--ink2);">{{ homeJobsTitle }}</div>
+                  <sc-if value="{{ homeStale }}" hint-placeholder-val="{{ false }}">
+                    <div data-home-stale style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--ink3);">
+                      <span>{{ homeStaleNote }}</span>
+                      <button onClick="{{ checkHomeAgain }}" data-home-check-again style="padding: 6px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12px; font-weight: 500; cursor: pointer;">{{ homeCheckAgainLabel }}</button>
+                    </div>
+                  </sc-if>
                   <sc-for list="{{ homeJobs }}" as="j" hint-placeholder-count="2">
                     <div data-home-job="{{ j.id }}" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                       <div style="min-width: 0; flex: 1; flex-basis: 200px;">
@@ -12151,11 +12157,11 @@ class Component extends DCLogic {
     if (this._shownScreen !== this.state.screen) {
       this._shownScreen = this.state.screen;
       if (this.state.sidebarOpen) this.setState({ sidebarOpen: false });
+      if (this.state.screen === 'upload' || this.state.screen === 'settings') this.homeRefresh(this.state.screen === 'settings');   /* G10b-1 */
       /* what others have shared changes while you are away from it */
       if (this.state.screen === 'shared') this.loadShared(!!this.state.sharedList);
       if (this.state.screen === 'review') this.warmSingleModules();
       if (this.state.screen === 'upload' || this.state.screen === 'review') this.warmRecordingModules();
-      if (this.state.screen === 'upload' || this.state.screen === 'settings') this.homeRefresh(this.state.screen === 'settings');   /* G10b-1 */
     }
     /* signing in or out changes which shared scores are yours */
     const uid = this.state.user ? this.state.user.id : null;
@@ -14212,9 +14218,20 @@ class Component extends DCLogic {
         throw Object.assign(new Error(tx((body && body.error) || 'Could not reach the server.')), { status: r.status, code: body && body.code });
       });
   }
+  /* How long to wait before looking again at jobs that are waiting or being converted, given how long this watch has been going (a watch starts when the
+     person opens the screen, asks for a conversion, comes back to the tab or presses "Check again", and starts again when a status changes): 20 s while one is being
+     converted; while one waits for the PC 90 s, after 5 minutes 5 minutes, after 15 minutes 15 minutes; and 0, stop, after 30 minutes - every look keeps the free
+     server awake, and a PC that checks once an hour is not going to answer sooner. */
+  homePollDelay(jobs, elapsedMs) {
+    const open = (jobs || []).filter(j => j.status === 'queued' || j.status === 'claimed');
+    if (!open.length || elapsedMs >= 30 * 60 * 1000) return 0;
+    if (open.some(j => j.status === 'claimed')) return 20000;
+    return elapsedMs < 5 * 60 * 1000 ? 90000 : elapsedMs < 15 * 60 * 1000 ? 300000 : 900000;
+  }
   /* what the server holds for this account: the list, and whether a PC is connected. Asked when the Add or Settings screen opens, when the
-     account changes, and every 20 s (a job being converted) or 90 s (one waiting) while the page is in view; never when nothing is pending. */
-  async homeRefresh(withTokens) {
+     account changes, and on the watch's timer (homePollDelay) while the page is in view; never when nothing is pending or the tab is hidden.
+     fromTimer: the call is the watch's own (it does not restart the watch). */
+  async homeRefresh(withTokens, fromTimer) {
     clearTimeout(this._homeTimer); this._homeTimer = 0;
     if (this._dead) return;
     if (!this.state.user) {
@@ -14248,8 +14265,12 @@ class Component extends DCLogic {
     }
     if (this._dead || !this.state.user || (typeof document !== 'undefined' && document.visibilityState === 'hidden')) return;
     const jobs = this.state.homeJobs || [];
-    if (jobs.some(j => j.status === 'claimed')) this._homeTimer = setTimeout(() => this.homeRefresh(), 20000);
-    else if (jobs.some(j => j.status === 'queued')) this._homeTimer = setTimeout(() => this.homeRefresh(), 90000);
+    const sig = jobs.map(j => j.id + ':' + j.status).join(',');
+    if (!fromTimer || !this._homeWatch || this._homeWatch.sig !== sig) this._homeWatch = { t0: Date.now(), sig: sig };
+    const delay = this.homePollDelay(jobs, Date.now() - this._homeWatch.t0);
+    const stale = !delay && jobs.some(j => j.status === 'queued' || j.status === 'claimed');
+    if (!!this.state.homeStale !== stale) this.setState({ homeStale: stale });
+    if (delay) this._homeTimer = setTimeout(() => this.homeRefresh(false, true), delay);
   }
   async addYoutubeHome() {
     const S = this.state;
@@ -14314,7 +14335,8 @@ class Component extends DCLogic {
   /* what the Add screen and the Settings card show */
   homeView(S) {
     const W = S.homeWorker, jobs = S.homeJobs || [];
-    const min = Math.max(1, Math.round(((W && W.idlePollSeconds) || 1200) / 60));
+    /* how often the PC checks, in words: the site says it (an hour unless it was set otherwise) */
+    const every = secs => { const m = Math.max(1, Math.round(secs / 60)); return m >= 55 && m <= 65 ? tx('about once an hour') : m < 90 ? tx('about every {{n}} minutes', { n: m }) : tx('about every {{n}} hours', { n: Math.round(m / 60) }); };
     const pendingJob = j => j.status === 'queued' || j.status === 'claimed';
     const statusOf = j => j.status === 'queued' ? tx('Waiting for your PC') + (j.error ? ' · ' + j.error : '')
       : j.status === 'claimed' ? tx('Converting on your PC') + (j.progress && j.progress.stage === 'transcribe' && j.progress.pct > 0 ? ' — ' + R0(j.progress.pct * 100) + '%' : '')
@@ -14326,9 +14348,11 @@ class Component extends DCLogic {
       showHomePc: !!(S.user && W && W.everSeen && S.transcriptionMode !== 'arrange'),
       homePcLabel: S.homeBusy ? tx('Sending…') : tx('High-quality (my PC)'),
       addYoutubeHome: () => this.addYoutubeHome(),
-      homePcNote: tx('High-quality conversion runs on your own PC. It checks for new links about every {{min}} minutes and must be switched on; once it starts, a song takes a few minutes. To start now, open the PC shortcut.', { min: min })
+      homePcNote: tx('High-quality conversion runs on your own PC. It checks for new links {{every}} and must be switched on; once it starts, a song takes a few minutes. To start now, run the desktop shortcut.', { every: every((W && W.idlePollSeconds) || 3600) })
         + (W && !W.alive ? ' ' + tx('Your PC has not checked in lately, so the conversion will wait until it does.') : ''),
       hasHomeJobs: !!(S.user && jobs.length),
+      homeStale: !!S.homeStale, homeStaleNote: tx('Not checking any more, to spare the server. Press Check again.'), homeCheckAgainLabel: tx('Check again'),
+      checkHomeAgain: () => this.homeRefresh(),
       homeJobsTitle: tx('My conversions (on my PC)'),
       homeJobs: jobs.slice(0, 8).map(j => ({
         id: j.id, title: j.title || j.url, status: statusOf(j), canOpen: j.status === 'done', canCancel: pendingJob(j),

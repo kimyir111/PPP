@@ -1976,7 +1976,6 @@
     "Before: {{m1}} measures, {{r1}} rests, {{b1}} tuplet brackets. Now: {{m2}} measures, {{r2}} rests, {{b2}} tuplet brackets.": "이전: {{m1}}마디, 쉼표 {{r1}}개, 잇단음표 {{b1}}개. 지금: {{m2}}마디, 쉼표 {{r2}}개, 잇단음표 {{b2}}개.",
     "High-quality (my PC)": "고품질 변환 (내 PC)",
     "Sending…": "보내는 중…",
-    "High-quality conversion runs on your own PC. It checks for new links about every {{min}} minutes and must be switched on; once it starts, a song takes a few minutes. To start now, open the PC shortcut.": "고품질 변환은 내 PC에서 실행돼요. 새 링크를 약 {{min}}분마다 확인하므로 PC가 켜져 있어야 하고, 시작되면 한 곡에 몇 분 걸려요. 바로 시작하려면 PC의 바로가기를 여세요.",
     "Your PC has not checked in lately, so the conversion will wait until it does.": "PC가 최근에 확인하러 오지 않아서, 올 때까지 변환이 기다려요.",
     "My conversions (on my PC)": "내 변환 (내 PC)",
     "Waiting for your PC": "PC를 기다리는 중",
@@ -2016,6 +2015,13 @@
     "That conversion has already finished.": "그 변환은 이미 끝났어요.",
     "You have 5 PC tokens already. Remove one first.": "PC 토큰이 이미 5개예요. 먼저 하나를 지우세요.",
     "Too many tokens were made just now. Try again later.": "방금 토큰을 너무 많이 만들었어요. 나중에 다시 시도하세요.",
-    "That token is not there.": "그 토큰을 찾을 수 없어요."
+    "That token is not there.": "그 토큰을 찾을 수 없어요.",
+    "High-quality conversion runs on your own PC. It checks for new links {{every}} and must be switched on; once it starts, a song takes a few minutes. To start now, run the desktop shortcut.": "고품질 변환은 내 PC에서 실행돼요. 새 링크를 {{every}} 확인하므로 PC가 켜져 있어야 하고, 시작되면 한 곡에 몇 분 걸려요. 바로 시작하려면 바탕화면 바로가기를 실행하세요.",
+    "about once an hour": "약 한 시간에 한 번",
+    "about every {{n}} minutes": "약 {{n}}분마다",
+    "about every {{n}} hours": "약 {{n}}시간마다",
+    "Check again": "다시 확인",
+    "Not checking any more, to spare the server. Press Check again.": "서버를 아끼려고 더는 확인하지 않아요. \"다시 확인\"을 누르세요.",
+    "Your finished conversions take up too much room on the site. Open them first; they are cleared after 3 days.": "완료된 변환이 사이트에서 너무 많은 공간을 차지해요. 먼저 열어 보세요. 3일 뒤에 지워져요."
   }
 }

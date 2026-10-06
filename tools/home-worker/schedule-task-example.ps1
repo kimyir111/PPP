@@ -4,7 +4,7 @@
 # It registers one task, "PPP home worker", that runs `worker.js --once` at your log-on and then every $IntervalHours hours
 # while you are logged on. Each run is one check of the site: when nothing is waiting it ends at once. Every check wakes the
 # free PPP server for 15 minutes (see docs/GOALS/G10B_HOME_WORKER.md), so do not make the interval short: 3 hours or more
-# costs the server about 12% of its month; 20 minutes costs about 75%.
+# costs the server about 9% of its month; an hour about 26%; 20 minutes about 77%.
 # To remove it:  Unregister-ScheduledTask -TaskName "PPP home worker" -Confirm:$false
 param([int]$IntervalHours = 3)
 $ErrorActionPreference = 'Stop'

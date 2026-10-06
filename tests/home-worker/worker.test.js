@@ -41,9 +41,23 @@ function tools(state) {
 }
 function siteRoutes(state) {
   return (rq, rs, url) => {
+    if (url.pathname === '/api/audio-final' || url.pathname === '/api/hop') (state.audioHeaders = state.audioHeaders || []).push({ authorization: rq.headers.authorization, cookie: rq.headers.cookie });
+    if (url.pathname === '/api/audio-final') { rs.writeHead(200, { 'Content-Type': 'audio/wav', 'Content-Length': 5000 }); rs.end(Buffer.concat([WAVHDR, Buffer.alloc(5000 - WAVHDR.length)])); return true; }
+    if (url.pathname === '/api/hop') { const n = +url.searchParams.get('n'); if (n >= 6) { rs.writeHead(200, { 'Content-Type': 'audio/wav', 'Content-Length': 5000 }); rs.end(Buffer.concat([WAVHDR, Buffer.alloc(5000 - WAVHDR.length)])); return true; } rs.writeHead(302, { Location: '/api/hop?n=' + (n + 1) }); rs.end(); return true; }
     if (url.pathname !== '/api/youtube-audio') return false;
     state.audioRequests.push(url.searchParams.get('url'));
+    (state.audioHeaders = state.audioHeaders || []).push({ authorization: rq.headers.authorization, cookie: rq.headers.cookie });
     const mode = state.audioMode;
+    const wav = () => { rs.writeHead(200, { 'Content-Type': 'audio/wav', 'Content-Length': 5000 }); rs.end(Buffer.concat([WAVHDR, Buffer.alloc(5000 - WAVHDR.length)])); return true; };
+    const to = loc => { rs.writeHead(302, { Location: loc }); rs.end(); return true; };
+    if (mode === 'redir') return to('/api/audio-final');
+    if (mode === 'chain') return to('/api/hop?n=1');
+    if (mode === 'ftp') return to('ftp://example.com/a.m4a');
+    if (mode === 'file') return to('file:///etc/passwd');
+    if (mode === 'garbage') return to('http://[');
+    if (mode === 'other') return to('http://127.0.0.1:' + state.lanPort + '/steal');
+    if (mode === 'big-length') { rs.writeHead(200, { 'Content-Type': 'audio/wav', 'Content-Length': 3 * 1048576 }); rs.write(WAVHDR); rs.end(Buffer.alloc(3 * 1048576 - WAVHDR.length)); return true; }
+    if (mode === 'big-chunked') { rs.writeHead(200, { 'Content-Type': 'audio/wav' }); rs.write(WAVHDR); let k = 0; const more = () => { if (k++ >= 60 || rs.destroyed) return rs.end(); rs.write(Buffer.alloc(64 * 1024), more); }; more(); return true; }
     if (mode === '502') { L.send(rs, 502, { error: 'The audio could not be downloaded from that link.', code: 'download-failed' }); return true; }
     if (mode === 'html') { L.send(rs, 200, '<html>blocked</html>', { 'Content-Type': 'text/html' }); return true; }
     if (mode === '422') { L.send(rs, 422, { error: 'Not a YouTube video.' }); return true; }
@@ -89,12 +103,12 @@ async function queue(S, user, id) { return (await S.as(user).post('/api/jobs', {
   const S0 = await L.startService({ extra: siteRoutes(st0) });
   try {
     const wait = (over, n) => newWorker(S0, 'ppw_x', st0, over).w.waitFor(n);
-    ok('the site says 1200: it waits 1200', wait({}, 1200) === 1200);
+    ok('the site says 3600: it waits 3600', wait({}, 3600) === 3600);
     ok('the site says 15: it waits 15', wait({}, 15) === 15);
-    ok('a setting of 3600 lengthens an idle wait of 1200 to 3600, and a setting of 60 does not shorten it', wait({ idlePollSeconds: 3600 }, 1200) === 3600 && wait({ idlePollSeconds: 60 }, 1200) === 1200);
+    ok('a setting of 7200 lengthens an idle wait of 3600 to 7200, and a setting of 60 does not shorten it', wait({ idlePollSeconds: 7200 }, 3600) === 7200 && wait({ idlePollSeconds: 60 }, 3600) === 3600);
     ok('the setting does not touch the active wait (15 s)...', wait({ idlePollSeconds: 3600 }, 15) === 15);
     ok('...which has its own setting, never under 5 s', wait({ activePollSeconds: 40 }, 15) === 40 && wait({ activePollSeconds: 1 }, 15) === 5 && wait({}, 1) === 5);
-    ok('no answer from the site: the idle wait of the settings, or 20 minutes', wait({}, 0) === 1200 && wait({ idlePollSeconds: 2000 }, 0) === 2000);
+    ok('no answer from the site: the idle wait of the settings, or an hour', wait({}, 0) === 3600 && wait({ idlePollSeconds: 2000 }, 0) === 2000);
   } finally { await S0.close(); }
 
   heading('the conversion of the helper\'s notes');
@@ -138,9 +152,10 @@ async function queue(S, user, id) { return (await S.as(user).post('/api/jobs', {
     ok('transcribe.py was given what omr-service.js gives it: --wav, --kong-wav, --out, --engine auto, --checkpoint', a[a.indexOf('--engine') + 1] === 'auto' && a[a.indexOf('--checkpoint') + 1] === '/fake/kong.pth' && /audio-master\.wav$/.test(a[a.indexOf('--wav') + 1]) && /audio-kong-16k\.wav$/.test(a[a.indexOf('--kong-wav') + 1]) && /notes\.json$/.test(a[a.indexOf('--out') + 1]) && a.indexOf('--aria-checkpoint') < 0, JSON.stringify(a));
     ok('and the two WAVs existed when it ran', argv.wavExists && argv.kongExists);
     const f1 = st.ffmpegCalls[0], f2 = st.ffmpegCalls[1];
-    ok('ffmpeg ran twice as in omr-service.js: 44.1 kHz stereo master cut at 900 s, then 16 kHz mono for Kong', st.ffmpegCalls.length === 2 && f1.join(' ').includes('-ac 2 -ar 44100 -t 900') && f2.join(' ').includes('-ac 1 -ar 16000'), st.ffmpegCalls.map(x => x.join(' ')).join(' || ').slice(0, 300));
+    ok('ffmpeg ran twice as in omr-service.js: 44.1 kHz stereo master cut at 900 s, then 16 kHz mono for Kong - each limited to local files and pipes (-protocol_whitelist file,pipe before -i), so a container cannot make it open a network address', st.ffmpegCalls.length === 2 && f1.join(' ').includes('-ac 2 -ar 44100 -t 900') && f2.join(' ').includes('-ac 1 -ar 16000') && [f1, f2].every(f => f[f.indexOf('-protocol_whitelist') + 1] === 'file,pipe' && f.indexOf('-protocol_whitelist') < f.indexOf('-i')), st.ffmpegCalls.map(x => x.join(' ')).join(' || ').slice(0, 300));
     ok('the scratch folder is gone', scratchLeft(cfg) === 0);
     ok('the log tells the person, in plain lines, what happened', /A conversion is waiting/.test(cap.out.join('\n')) && /Heard 120 notes \(17 more were kept apart/.test(cap.out.join('\n')) && /Done: the notes are on the site/.test(cap.out.join('\n')), cap.out.join('\n').slice(0, 900));
+    ok('the token never went to the audio endpoint: no Authorization header, no cookie (the site\'s audio endpoint is public; the worker\'s token is for the queue only)', st.audioHeaders.length === 1 && st.audioHeaders.every(h => h.authorization === undefined && h.cookie === undefined), JSON.stringify(st.audioHeaders));
     ok('the token is nowhere in the log', cap.lines().every(l => l.indexOf(token) < 0 && l.indexOf(token.slice(17)) < 0 && !/ppw_[A-Za-z0-9_-]{12}_[A-Za-z0-9_-]{20}/.test(l)));
     const none = await newWorker(S, token, st).w.runOnce();
     ok('--once with nothing waiting says so and exits 0', none === 0);
@@ -197,6 +212,69 @@ async function queue(S, user, id) { return (await S.as(user).post('/api/jobs', {
     reset();
     delete process.env.FAKE_ARGV_FILE;
 
+    heading('the audio download: redirects, sizes');
+    {
+      const LAN = L.http.createServer((q, r) => { lan.hits.push(q.url); r.writeHead(200, { 'Content-Type': 'audio/wav' }); r.end('RIFFxxxx'); });
+      const lan = { hits: [] };
+      await new Promise(r => LAN.listen(0, '127.0.0.1', r));
+      st.lanPort = LAN.address().port;
+      let rn = 0;
+      const run = async (name, mode, over) => {
+        reset(); st.audioMode = mode;
+        const j = await queue(S, 'u1', 'redirtest' + String(rn++).padStart(2, '0'));
+        const x = newWorker(S, token, st, over || {});
+        const rc = await x.w.runOnce();
+        const row = jobOf(S, j.id);
+        return { rc: rc, row: row, x: x, name: name, text: x.cap.lines().join('\n') };
+      };
+      const same = await run('same origin', 'redir');
+      ok('a redirect to the site\'s own address is followed', same.row.status === 'done' && same.rc === 0, same.row.status + ' ' + same.row.error);
+      const chain = await run('chain', 'chain');
+      ok('five redirects in a row are too many (4 at most): the job is given back, not run for ever', chain.row.status !== 'done' && /Too many redirects/.test(chain.text), chain.row.status + ' ' + chain.row.error);
+      if (chain.row.status === 'queued') await S.as('u1').post('/api/jobs/' + chain.row.id + '/cancel');
+      for (const mode of ['ftp', 'file', 'garbage']) {
+        const r = await run(mode, mode);
+        ok('a redirect to ' + (mode === 'ftp' ? 'ftp://' : mode === 'file' ? 'file://' : 'an address that is not one (http://[)') + ' fails that job cleanly (no crash, the process goes on, failed for good, a sentence)', r.row.status === 'failed' && /another address|cannot be used/.test(r.row.error) && scratchLeft(r.x.cfg) === 0, r.row.status + ' / ' + r.row.error + ' / exit ' + r.rc);
+      }
+      const other = await run('other', 'other');
+      ok('a redirect to another origin (a machine on the local network) is not followed: the other machine is never asked', other.row.status === 'failed' && /another address/.test(other.row.error) && lan.hits.length === 0, other.row.status + ' ' + other.row.error + ' hits ' + lan.hits.length);
+      st.audioHeaders = [];
+      await run('headers', 'redir');
+      ok('nothing sent for the audio, redirects included, carried the token or a cookie', st.audioHeaders.length === 2 && st.audioHeaders.every(h => h.authorization === undefined && h.cookie === undefined), JSON.stringify(st.audioHeaders));
+      for (const mode of ['big-length', 'big-chunked']) {
+        const r = await run(mode, mode, { maxAudioMB: 1 });
+        ok('audio of 3 MB against a cap of 1 MB (' + (mode === 'big-length' ? 'announced by its length' : 'streamed, no length') + '): refused for good, nothing kept', r.row.status === 'failed' && /larger than 1 MB/.test(r.row.error) && scratchLeft(r.x.cfg) === 0, r.row.status + ' / ' + r.row.error);
+      }
+      await new Promise(r => LAN.close(r));
+      reset();
+    }
+
+    heading('scratch folders left by a crash');
+    {
+      const x = newWorker(S, token, st);
+      fs.mkdirSync(x.cfg.scratchDir, { recursive: true });
+      const old = fs.mkdtempSync(path.join(x.cfg.scratchDir, 'job-')), fresh = fs.mkdtempSync(path.join(x.cfg.scratchDir, 'job-')), other = path.join(x.cfg.scratchDir, 'photos');
+      fs.mkdirSync(other); fs.writeFileSync(path.join(old, 'source.audio'), 'x');
+      const three = new Date(Date.now() - 3 * 3600 * 1000);
+      fs.utimesSync(old, three, three);
+      const rc = await x.w.runOnce();
+      ok('at the start, a job-XXXXXX folder older than 2 hours is removed; a newer one (another run may be using it) and folders that are not the worker\'s stay', rc === 0 && !fs.existsSync(old) && fs.existsSync(fresh) && fs.existsSync(other) && /Removed 1 old scratch folder/.test(x.cap.out.join('\n')), x.cap.out.join(' | '));
+      ok('...and a name that only looks like one is not touched', (() => { const odd = path.join(x.cfg.scratchDir, 'job-keep'); fs.mkdirSync(odd); fs.utimesSync(odd, three, three); x.w.sweepScratch(); const kept = fs.existsSync(odd); return kept; })());
+    }
+
+    heading('what the log may show: no escape sequences, no bidi tricks');
+    {
+      const lg = W.makeLog({ token: token }, () => {}, () => {});
+      ok('colour and cursor sequences (CSI), operating-system commands (OSC) and the other control characters are removed; a newline and a tab stay', lg.clean('a\u001b[31mRED\u001b[0m b\u001b]0;pwned\u0007c \u001b[2J\u001b[Hd\u0000e\u0008f\tg\nh') === 'aRED bc d e f\tg\nh', JSON.stringify(lg.clean('a\u001b[31mRED\u001b[0m b\u001b]0;pwned\u0007c \u001b[2J\u001b[Hd\u0000e\u0008f\tg\nh')));
+      ok('bidi overrides and isolates, directional marks and line separators become a space (a file name that reads as photo.jpg and is photo.exe cannot be written)', lg.clean('x\u202etxt.exe\u2066y\u2069z\u2028w\u200fv') === 'x txt.exe y z w v', JSON.stringify(lg.clean('x\u202etxt.exe\u2066y\u2069z\u2028w\u200fv')));
+      const hostile = (cfg, m, p, o) => /claim$/.test(p) ? Promise.resolve({ status: 200, body: n0++ === 0 ? { job: { id: 'abcdefgh1234', url: WATCH('abcdefghijk'), title: 'Song\u001b[31m RED \u001b]0;pwned\u0007\u202etxt.exe', attempt: 1 }, nextPollSeconds: 15 } : { job: null, nextPollSeconds: 15 }, text: '', headers: {} }) : Promise.resolve({ status: 200, body: { ok: true }, text: '', headers: {} });
+      let n0 = 0;
+      const xh = newWorker(S, token, st, {}, { request: hostile, download: () => Promise.reject(Object.assign(new Error('no audio here'), { retry: false })) });
+      await xh.w.runOnce();
+      const all = xh.cap.lines().join('\n');
+      ok('a title that carries escape sequences and a bidi override reaches the log without them', /Song/.test(all) && !/[\u001b\u202e\u0007]/.test(all), JSON.stringify(all.slice(0, 200)));
+    }
+
     heading('the network and the token');
     const jr = await queue(S, 'u1', 'retryresult');
     let posts = 0;
@@ -218,46 +296,89 @@ async function queue(S, user, id) { return (await S.as(user).post('/api/jobs', {
 
     heading('the site is trusted with the queue, not with what this PC runs');
     {
-      const seen = []; let n = 0;
+      const links = ['file:///etc/passwd', 'https://evil.example/x.mp3', 'https://www.youtube.com.evil.example/watch?v=abcdefghijk', 'http://www.youtube.com/watch?v=abcdefghijk', 'https://www.youtube.com/watch?v=abcdefghijk&list=x',
+        'https://www.youtube.com/watch?v=abcdefghijk\nHost: evil', 'https://evil.example/https://www.youtube.com/watch?v=abcdefghijk', 'https://www.youtube.com/watch?v=abcdefghijkl', 'https://www.youtube.com/watch?v=abcde',
+        'https://youtu.be/abcdefghijk', ' https://www.youtube.com/watch?v=abcdefghijk', '--exec=calc https://www.youtube.com/watch?v=abcdefghijk', 'https://www.youtube.com/watch?v=abcdefghijk#x', 'https://user@www.youtube.com/watch?v=abcdefghijk',
+        'https://www.youtube.com/watch?v=abcdefghi$(id)', 'https://www.youtube.com/watch?v=\u202eabcdefghij', 'https://www.youtube.com/watch?v=', 'javascript:alert(1)', '', null];
+      const seen = []; const ran = [];
+      let at = 0;
       const evil = (cfg, m, p, o) => {
         seen.push(m + ' ' + p.replace(/[A-Za-z0-9_-]{12,}/, ':id'));
-        if (/claim$/.test(p)) return Promise.resolve({ status: 200, body: n++ === 0 ? { job: { id: 'abcdefgh1234', url: 'file:///etc/passwd', title: 'x', attempt: 1 }, nextPollSeconds: 15 } : { job: null, nextPollSeconds: 15 }, text: '', headers: {} });
+        if (/claim$/.test(p)) return Promise.resolve({ status: 200, body: at < links.length ? { job: { id: 'abcdefgh' + String(1000 + at++), url: links[at - 1], title: 'x', attempt: 1 }, nextPollSeconds: 15 } : { job: null, nextPollSeconds: 15 }, text: '', headers: {} });
         return Promise.resolve({ status: 200, body: { ok: true }, text: '', headers: {} });
       };
-      const ran = [];
-      const xe = newWorker(S, token, st, { ytdlpPath: 'yt-dlp-stub' }, { request: evil, runTool: (c, a, o) => { ran.push(c); return tools(st)(c, a, o); }, download: () => { ran.push('download'); return Promise.reject(new Error('no')); } });
+      const xe = newWorker(S, token, st, { ytdlpPath: 'yt-dlp-stub' }, { request: evil, runTool: (c, a2, o) => { ran.push(c); return tools(st)(c, a2, o); }, download: () => { ran.push('download'); return Promise.reject(new Error('no')); } });
       const rc = await xe.w.runOnce();
-      ok('a job whose link is not a YouTube video is not run: no download, no yt-dlp, no ffmpeg; it is failed for good, with a sentence', ran.length === 0 && seen.some(x => /\/fail$/.test(x)) && !seen.some(x => /heartbeat/.test(x)) && rc === 1, JSON.stringify({ ran: ran, seen: seen }));
+      ok(links.length + ' hostile or malformed links from the site (another host, a look-alike host, http, extra query, a newline, a nested URL, 5 or 12 characters of id, an option, credentials, a command substitution, a bidi character, nothing): none is downloaded, none reaches yt-dlp or ffmpeg; each is failed for good', ran.length === 0 && seen.filter(x => /\/fail$/.test(x)).length === links.length && !seen.some(x => /heartbeat/.test(x)) && rc === 1, JSON.stringify({ ran: ran, fails: seen.filter(x => /fail$/.test(x)).length, of: links.length, rc: rc }));
+      /* and the one good link goes through to the download and to yt-dlp, with -- before it (an id that begins with - is not an option) */
+      const calls = [];
+      let once = 0;
+      const good = (cfg, m, p, o) => /claim$/.test(p) ? Promise.resolve({ status: 200, body: once++ === 0 ? { job: { id: 'abcdefgh2000', url: 'https://www.youtube.com/watch?v=-abcdefghij', title: 'x', attempt: 1 }, nextPollSeconds: 15 } : { job: null, nextPollSeconds: 15 }, text: '', headers: {} }) : Promise.resolve({ status: 200, body: { ok: true }, text: '', headers: {} });
+      const xg = newWorker(S, token, st, { ytdlpPath: 'yt-dlp-stub' }, { request: good, runTool: (c, a2, o) => { calls.push([c, a2]); return c === 'yt-dlp-stub' ? Promise.resolve({ code: 1, tail: 'blocked' }) : tools(st)(c, a2, o); }, download: () => Promise.reject(Object.assign(new Error('no'), { retry: false })) });
+      await xg.w.runOnce();
+      const yd = calls.find(c => c[0] === 'yt-dlp-stub');
+      ok('a canonical link (even an id that begins with -) is handed to yt-dlp after "--", as its last argument, and the site\'s download is the fallback', !!yd && yd[1][yd[1].length - 2] === '--' && yd[1][yd[1].length - 1] === 'https://www.youtube.com/watch?v=-abcdefghij' && yd[1].indexOf('--') === yd[1].length - 2, JSON.stringify(yd && yd[1].slice(-4)));
     }
 
     heading('the loop: patient, and it never dies of the network');
-    const lp = newWorker(S, token, st, {}, {});
-    const seenPolls = [];
-    const realPoll = lp.w.poll;
-    void realPoll;
-    let calls = 0;
-    const scripted = (cfg, m, p, o) => {
-      calls++;
-      if (calls === 1) return Promise.reject(new Error('ECONNREFUSED'));
-      if (calls === 2) return Promise.resolve({ status: 502, body: null, text: 'bad gateway', headers: {} });
-      if (calls === 3) return Promise.resolve({ status: 429, body: { error: 'slow down' }, text: '', headers: { 'retry-after': '1' } });
-      seenPolls.push(o.json);
-      if (calls === 4) return Promise.resolve({ status: 200, body: { job: null, nextPollSeconds: 1200 }, text: '', headers: {} });
-      lp.w.ctl.stop = true; if (lp.w.ctl.wake) lp.w.ctl.wake();
-      return Promise.resolve({ status: 200, body: { job: null, nextPollSeconds: 15 }, text: '', headers: {} });
-    };
-    const lw = newWorker(S, token, st, { idlePollSeconds: 3000 }, { request: scripted });
-    lp.w.ctl.stop = false;
-    lw.w.ctl.stop = false;
-    const stopLater = setTimeout(() => { lw.w.ctl.stop = true; if (lw.w.ctl.wake) lw.w.ctl.wake(); }, 3000);
-    const origCall = scripted;
-    void origCall;
-    const lrc = await lw.w.runForever();
-    clearTimeout(stopLater);
-    const text = lw.cap.out.join('\n');
-    ok('a refused connection, a 502 and a 429 are each waited out with a sentence, and the loop goes on', lrc === 0 && /Could not reach the site/.test(text) && /answered 502/.test(text) && /answered 429/.test(text), text.slice(0, 700));
-    ok('an idle answer (1200) with the setting 3000 is waited as 3000 and said so', /Next check in 50 min/.test(text), text.slice(-300));
-    ok('the poll tells the site how long it will wait when idle (so "is the PC alive" is right)', seenPolls.length >= 1 && seenPolls[0].waitSeconds === 3000 && seenPolls[0].once === false, JSON.stringify(seenPolls));
+    {
+      /* what the loop waits (in seconds, as it asks to sleep) after a script of answers; then it is stopped */
+      const waitsFor = async (script, over, nWaits) => {
+        let i = 0;
+        const request = () => { const a2 = script[Math.min(i++, script.length - 1)]; return a2 instanceof Error ? Promise.reject(a2) : Promise.resolve(Object.assign({ text: '', headers: {} }, a2)); };
+        const x = newWorker(S, token, st, over || {}, { request: request, jitter: () => 0 });
+        const waits = [];
+        const orig = x.w.ctl.sleep;
+        x.w.ctl.sleep = ms => { waits.push(ms / 1000); if (waits.length >= nWaits) x.w.ctl.stop = true; return orig(0); };
+        const code = await x.w.runForever();
+        return { waits: waits, code: code, text: x.cap.out.join('\n') };
+      };
+      const r502 = Array(9).fill({ status: 502, body: null });
+      const w502 = await waitsFor(r502, {}, 8);
+      ok('a 502 again and again: 60, 120, 240, 480, 960, 1920, then an hour (the idle wait) - never a fixed loop', w502.waits.join() === '60,120,240,480,960,1920,3600,3600', w502.waits.join());
+      const w503 = await waitsFor(Array(9).fill({ status: 503, body: { error: 'x', code: 'store' } }), {}, 8);
+      ok('a 503 from the queue\'s store the same', w503.waits.join() === '60,120,240,480,960,1920,3600,3600', w503.waits.join());
+      const wnet = await waitsFor(Array(10).fill(new Error('ECONNREFUSED')), {}, 9);
+      ok('a network that is down: 30, 60, 120 ... 1920, then an hour', wnet.waits.join() === '30,60,120,240,480,960,1920,3600,3600', wnet.waits.join());
+      for (const code of [404, 405, 410]) {
+        const w4 = await waitsFor(Array(5).fill({ status: code, body: null }), {}, 4);
+        ok('a site that answers ' + code + ' (the queue is gone: a revert) is asked once an hour at most, from the first answer on', w4.waits.every(x => x === 3600) && /does not have the conversion queue/.test(w4.text), w4.waits.join());
+      }
+      const w404long = await waitsFor(Array(5).fill({ status: 404, body: null }), { idlePollSeconds: 7200 }, 3);
+      ok('...or as long as the idle wait the person set, when that is longer', w404long.waits.every(x => x === 7200), w404long.waits.join());
+      const w429 = await waitsFor(Array(8).fill({ status: 429, body: { error: 'slow' }, headers: { 'retry-after': '600' } }), {}, 6);
+      ok('a 429 with Retry-After 600: never sooner than that, and it grows like the rest', w429.waits.every(x => x >= 600) && w429.waits[5] > w429.waits[0] && w429.waits.every((x, i, a2) => !i || x >= a2[i - 1]), w429.waits.join());
+      const wreset = await waitsFor([{ status: 502, body: null }, { status: 502, body: null }, { status: 200, body: { job: null, nextPollSeconds: 3600 } }, { status: 502, body: null }, { status: 502, body: null }], {}, 4);
+      ok('an answer that works starts the count again (60, 120, then the site\'s hour, then 60 again)', wreset.waits.join() === '60,120,3600,60', wreset.waits.join());
+      const wcap = await waitsFor([{ status: 200, body: { job: null, nextPollSeconds: 7200 } }].concat(Array(9).fill({ status: 502, body: null })), {}, 9);
+      ok('the growth stops at the idle wait the site last told (7200 here)', wcap.waits[0] === 7200 && wcap.waits.slice(1).join() === '60,120,240,480,960,1920,3840,7200', wcap.waits.join());
+      const wpeak = await waitsFor(r502, {}, 40);
+      ok('forty failures in a row: the waits only ever grow, and the last ten are all an hour', wpeak.waits.every((x, i, a2) => !i || x >= a2[i - 1]) && wpeak.waits.slice(-10).every(x => x === 3600), wpeak.waits.slice(-12).join());
+      ok('the log says what happened, in a sentence', /The site answered 502\. Trying again in 60 s\./.test(w502.text), w502.text.slice(0, 200));
+    }
+    {
+      const lp = newWorker(S, token, st, {}, {});
+      const seenPolls = [];
+      let calls = 0;
+      const scripted = (cfg, m, p, o) => {
+        calls++;
+        if (calls === 1) return Promise.reject(new Error('ECONNREFUSED'));
+        if (calls === 2) return Promise.resolve({ status: 502, body: null, text: 'bad gateway', headers: {} });
+        if (calls === 3) return Promise.resolve({ status: 429, body: { error: 'slow down' }, text: '', headers: { 'retry-after': '1' } });
+        seenPolls.push(o.json);
+        if (calls === 4) return Promise.resolve({ status: 200, body: { job: null, nextPollSeconds: 1200 }, text: '', headers: {} });
+        lw.w.ctl.stop = true; if (lw.w.ctl.wake) lw.w.ctl.wake();
+        return Promise.resolve({ status: 200, body: { job: null, nextPollSeconds: 15 }, text: '', headers: {} });
+      };
+      const lw = newWorker(S, token, st, { idlePollSeconds: 3000 }, { request: scripted });
+      const stopLater = setTimeout(() => { lw.w.ctl.stop = true; if (lw.w.ctl.wake) lw.w.ctl.wake(); }, 3000);
+      const lrc = await lw.w.runForever();
+      clearTimeout(stopLater);
+      const text = lw.cap.out.join('\n');
+      ok('a refused connection, a 502 and a 429 are each waited out with a sentence, and the loop goes on', lrc === 0 && /Could not reach the site/.test(text) && /answered 502/.test(text) && /answered 429/.test(text), text.slice(0, 700));
+      ok('an idle answer (1200) with the setting 3000 is waited as 3000 and said so', /Next check in 50 min/.test(text), text.slice(-300));
+      ok('the poll tells the site how long it will wait when idle (so "is the PC alive" is right)', seenPolls.length >= 1 && seenPolls[0].waitSeconds === 3000 && seenPolls[0].once === false, JSON.stringify(seenPolls));
+    }
 
     heading('a job found by the loop, then a stop');
     const jl = await queue(S, 'u1', 'loopjob0001');

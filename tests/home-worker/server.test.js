@@ -70,11 +70,12 @@ const cookieOf = r => { const c = [].concat(r.headers['set-cookie'] || [])[0] ||
     const got = await get(c1, '/api/jobs/' + cl.body.job.id);
     ok('the page can read it: done, with its notes', got.status === 200 && got.body.job.status === 'done' && got.body.result.notes.length === 300 && got.body.result.ensemble.models.length === 2);
     const idle = await req(srv.port, 'POST', '/api/worker/claim', { token: token, body: {} });
-    ok('right after, the worker is still told 15 s; then idle would be 1200 (the server default)', idle.body.nextPollSeconds === 15);
+    ok('right after, the worker is still told 15 s (an hour once nothing has happened for 5 minutes: the server default)', idle.body.nextPollSeconds === 15);
 
     heading('nothing else changed');
     ok('/api/auth/me still answers the signed-in user', (await get(c1, '/api/auth/me')).body.email === 'hw1@example.com');
     ok('/api/shares is unchanged (401 to create without a session or key)', (await req(srv.port, 'POST', '/api/shares', { body: {} })).status === 401);
+    ok('a video id of 6 characters is refused by /api/youtube-audio and /api/youtube-title as well (the one rule: 11)', (await req(srv.port, 'GET', '/api/youtube-audio?url=' + encodeURIComponent('https://youtu.be/abcdef'))).status === 422 && (await req(srv.port, 'GET', '/api/youtube-title?url=' + encodeURIComponent('https://www.youtube.com/watch?v=abcdef'))).status === 422);
     ok('an unknown /api route is still 404', (await req(srv.port, 'GET', '/api/nothing')).status === 404 && (await req(srv.port, 'GET', '/api/worker/nothing', { token: token })).status === 404);
     ok('a wrong method is 405', (await req(srv.port, 'PUT', '/api/jobs', { cookie: c1, body: {} })).status === 405);
     ok('the worker script and its folder are not served (tools/ is blocked)', (await req(srv.port, 'GET', '/tools/home-worker/worker.js')).status === 404 && (await req(srv.port, 'GET', '/tools/home-worker/worker.config.json')).status === 404);
@@ -82,11 +83,18 @@ const cookieOf = r => { const c = [].concat(r.headers['set-cookie'] || [])[0] ||
     const jf = L.fs.readFileSync(L.path.join(dir, 'jobs.json'), 'utf8');
     ok('the data file has no token secret', jf.indexOf(token) < 0 && jf.indexOf(token.slice(17)) < 0);
 
+    heading('the idle wait: an hour unless it is set, and never under 15 minutes');
+    await srv.close();
+    srv = await start(dir, { PPP_WORKER_IDLE_POLL_S: '60' });
+    ok('PPP_WORKER_IDLE_POLL_S=60 is raised to 900 (and the server says so in its log)', (await get(c1, '/api/worker/status')).body.worker.idlePollSeconds === 900);
+    await srv.close();
+    srv = await start(dir, {});
+    ok('with nothing set the page is told an hour', (await get(c1, '/api/worker/status')).body.worker.idlePollSeconds === 3600);
     heading('the idle wait is a setting');
     await srv.close();
-    srv = await start(dir, { PPP_WORKER_IDLE_POLL_S: '3600', PPP_WORKER_ACTIVE_POLL_S: '20' });
+    srv = await start(dir, { PPP_WORKER_IDLE_POLL_S: '7200', PPP_WORKER_ACTIVE_POLL_S: '20' });
     const pi = await req(srv.port, 'POST', '/api/worker/claim', { token: token, body: {} });
     ok('PPP_WORKER_IDLE_POLL_S / PPP_WORKER_ACTIVE_POLL_S are read (the finish was a few seconds ago: active 20)', pi.body.nextPollSeconds === 20, pi.text);
-    ok('and the page is told the idle wait', (await get(c1, '/api/worker/status')).body.worker.idlePollSeconds === 3600);
+    ok('and the page is told the idle wait', (await get(c1, '/api/worker/status')).body.worker.idlePollSeconds === 7200);
   } finally { await srv.close(); L.rmDir(dir); }
 })().then(() => L.finish('server.js with the home-PC queue'), e => { console.error(e); process.exit(1); });

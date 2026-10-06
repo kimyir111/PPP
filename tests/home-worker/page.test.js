@@ -151,11 +151,12 @@ const refresh = async (page, withTokens) => { await page.evaluate(w => window.PP
     await goAdd(pg); await refresh(pg);
     ok('a PC that has checked in: the button is there, beside "Make sheet music"', await has(pg, '[data-home-pc]') && /High-quality \(my PC\)/.test(await text(pg, '[data-home-pc]')));
     const note = await text(pg, '[data-home-note]');
-    ok('the note is honest: about every 20 minutes, must be on, a few minutes a song, the shortcut', /about every 20 minutes/.test(note) && /switched on/.test(note) && /few minutes/.test(note) && /shortcut/.test(note), note);
+    ok('the note is honest: about once an hour, must be on, a few minutes a song, run the desktop shortcut to start now', /about once an hour/.test(note) && /switched on/.test(note) && /few minutes/.test(note) && /run the desktop shortcut/.test(note) && !/20 minutes/.test(note), note);
     ok('the PC is alive, so no "has not checked in" sentence', !/has not checked in/.test(note));
     ok('the two buttons are in the same row', await pg.evaluate(() => { const a = document.querySelector('[data-home-pc]'), b = [...document.querySelectorAll('[data-youtube] button')].find(x => /Make sheet music/.test(x.innerText)); return !!a && !!b && a.parentElement === b.parentElement; }));
     ok('the Full song recording type hides it (the helper makes faithful transcriptions)', await (async () => { await pg.evaluate(() => window.PPP.app.setState({ transcriptionMode: 'arrange' })); await sleep(300); const gone = !(await has(pg, '[data-home-pc]')); await pg.evaluate(() => window.PPP.app.setState({ transcriptionMode: 'auto' })); await sleep(300); return gone; })());
-    ok('a PC the server has not heard of lately adds one honest sentence', await pg.evaluate(() => { const n = window.PPP.app.homeView({ user: { id: 1 }, homeWorker: { everSeen: true, alive: false, idlePollSeconds: 3600 }, homeJobs: [] }).homePcNote; return /about every 60 minutes/.test(n) && /has not checked in lately/.test(n); }));
+    ok('a PC the server has not heard of lately adds one honest sentence', await pg.evaluate(() => { const n = window.PPP.app.homeView({ user: { id: 1 }, homeWorker: { everSeen: true, alive: false, idlePollSeconds: 3600 }, homeJobs: [] }).homePcNote; return /about once an hour/.test(n) && /has not checked in lately/.test(n); }));
+    ok('the interval is said in the words the site\'s setting calls for: 15 minutes, half an hour, an hour, 3 hours, a day', await pg.evaluate(() => { const f = secs => window.PPP.app.homeView({ user: { id: 1 }, homeWorker: { everSeen: true, alive: true, idlePollSeconds: secs }, homeJobs: [] }).homePcNote; return /about every 15 minutes/.test(f(900)) && /about every 30 minutes/.test(f(1800)) && /about once an hour/.test(f(3600)) && /about every 3 hours/.test(f(10800)) && /about every 24 hours/.test(f(86400)); }));
 
     heading('asking for a conversion');
     await typeLink(pg, YT);
@@ -181,13 +182,43 @@ const refresh = async (page, withTokens) => { await page.evaluate(w => window.PP
     await sleep(500);
     ok('a link that is not YouTube is refused by the page, before any request', /not a link to a YouTube video/.test(await text(pg, '[data-youtube]')) && pg.__rec.posts.filter(p => p.path === '/api/jobs').length === postsBefore);
 
+    heading('looking again: backing off, stopping, a way to look once more');
+    {
+      const table = await pg.evaluate(() => {
+        const A = window.PPP.app, M = 60 * 1000, q = [{ status: 'queued' }], c = [{ status: 'claimed' }];
+        return { q0: A.homePollDelay(q, 0), q49: A.homePollDelay(q, 4.9 * M), q5: A.homePollDelay(q, 5 * M), q149: A.homePollDelay(q, 14.9 * M), q15: A.homePollDelay(q, 15 * M), q299: A.homePollDelay(q, 29.9 * M), q30: A.homePollDelay(q, 30 * M), q90: A.homePollDelay(q, 90 * M),
+          c0: A.homePollDelay(c, 0), c29: A.homePollDelay(c, 29 * M), c31: A.homePollDelay(c, 31 * M), both: A.homePollDelay(q.concat(c), 20 * M), done: A.homePollDelay([{ status: 'done' }, { status: 'failed' }, { status: 'cancelled' }], 0), none: A.homePollDelay([], 0), nul: A.homePollDelay(null, 0) };
+      });
+      ok('a waiting job is looked at every 90 s for 5 minutes, every 5 minutes until 15, every 15 minutes until 30, and then not any more', table.q0 === 90000 && table.q49 === 90000 && table.q5 === 300000 && table.q149 === 300000 && table.q15 === 900000 && table.q299 === 900000 && table.q30 === 0 && table.q90 === 0, JSON.stringify(table));
+      ok('one being converted is looked at every 20 s (until the 30 minutes are up); finished ones and an empty list are not looked at', table.c0 === 20000 && table.c29 === 20000 && table.c31 === 0 && table.both === 20000 && table.done === 0 && table.none === 0 && table.nul === 0, JSON.stringify(table));
+      await pg.evaluate(() => { window.__delays = []; const o = window.setTimeout; window.__setTimeout = o; window.setTimeout = (f, ms, ...r) => { window.__delays.push(ms); return o(f, ms, ...r); }; });
+      const lastDelay = async minutesAgo => pg.evaluate(async m => { const A = window.PPP.app; A._homeWatch.t0 = Date.now() - m * 60 * 1000; window.__delays.length = 0; await A.homeRefresh(false, true); return { d: window.__delays.filter(x => x >= 20000).slice(-1)[0] || 0, stale: !!A.state.homeStale, timer: !!A._homeTimer }; }, minutesAgo);
+      const d3 = await lastDelay(3), d8 = await lastDelay(8), d20 = await lastDelay(20);
+      ok('the page really uses it: its own timer is set for 90 s, then 5 minutes, then 15 minutes as the watch grows older', d3.d === 90000 && d8.d === 300000 && d20.d === 900000 && !d3.stale && !d8.stale && !d20.stale, JSON.stringify([d3, d8, d20]));
+      const d31 = await lastDelay(31);
+      ok('after 30 minutes it stops: no timer, and the list says so with a "Check again" button', d31.d === 0 && d31.stale && !d31.timer && (await has(pg, '[data-home-stale]')) && /Not checking any more/.test(await text(pg, '[data-home-stale]')) && /Check again/.test(await text(pg, '[data-home-check-again]')), JSON.stringify(d31));
+      await pg.evaluate(() => { window.__delays.length = 0; document.querySelector('[data-home-check-again]').click(); });
+      await sleep(900);
+      const again = await pg.evaluate(() => ({ stale: !!window.PPP.app.state.homeStale, timer: !!window.PPP.app._homeTimer, delays: window.__delays.filter(x => x >= 20000) }));
+      ok('"Check again" looks once more, starts a new watch (90 s) and the control goes', !again.stale && again.timer && again.delays.slice(-1)[0] === 90000 && !(await has(pg, '[data-home-stale]')), JSON.stringify(again));
+      /* a hidden tab keeps stopping */
+      await pg.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' }); });
+      const hid = await pg.evaluate(async () => { const A = window.PPP.app; window.__delays.length = 0; await A.homeRefresh(false, true); return { timer: !!A._homeTimer, delays: window.__delays.filter(x => x >= 20000) }; });
+      await pg.evaluate(() => { delete document.visibilityState; });
+      ok('a hidden tab sets no timer (and asks nothing more)', !hid.timer && hid.delays.length === 0, JSON.stringify(hid));
+      await pg.evaluate(() => { document.dispatchEvent(new Event('visibilitychange')); });
+      await sleep(900);
+      ok('and when the tab is seen again it looks once and starts a new watch', await pg.evaluate(() => !!window.PPP.app._homeTimer));
+      await pg.evaluate(() => { window.setTimeout = window.__setTimeout; });
+    }
+
     heading('the PC works on it');
     const got = await worker.claim({});
     ok('the PC claims it (the test plays the worker)', got.status === 200 && got.body.job && got.body.job.id === jobId);
     await worker.hb(jobId, { stage: 'transcribe', pct: 0.4 });
     await refresh(pg);
     ok('the page says it is being converted, with the percentage', /Converting on your PC — 40%/.test(await text(pg, '[data-home-status]')), await text(pg, '[data-home-status]'));
-    ok('and a faster timer is set (20 s)', await pg.evaluate(() => !!window.PPP.app._homeTimer));
+    ok('and a faster timer is set (20 s), and the status change started a new watch', await pg.evaluate(() => !!window.PPP.app._homeTimer && Date.now() - window.PPP.app._homeWatch.t0 < 60000));
     const heard = F.sextuplets(14, 7).notes;
     const posted = await worker.result(jobId, heard);
     ok('the PC posts the notes', posted.status === 200, posted.text);
@@ -284,7 +315,7 @@ const refresh = async (page, withTokens) => { await page.evaluate(w => window.PP
     await pg.close();
 
     heading('Korean, Japanese, Chinese');
-    for (const [loc, want] of [['ko-KR', { btn: '고품질 변환 (내 PC)', st: 'PC를 기다리는 중', note: '약 20분마다', card: '내 PC 연결' }], ['ja-JP', { btn: '高品質変換（自分のPC）', st: 'PCを待っています', note: '約20分ごと', card: '自分のPCを接続' }], ['zh-CN', { btn: '高质量转换（我的电脑）', st: '等待你的电脑', note: '每 20 分钟', card: '连接我的电脑' }]]) {
+    for (const [loc, want] of [['ko-KR', { btn: '고품질 변환 (내 PC)', st: 'PC를 기다리는 중', note: '약 한 시간에 한 번', card: '내 PC 연결' }], ['ja-JP', { btn: '高品質変換（自分のPC）', st: 'PCを待っています', note: '約1時間に1回', card: '自分のPCを接続' }], ['zh-CN', { btn: '高质量转换（我的电脑）', st: '等待你的电脑', note: '大约每小时', card: '连接我的电脑' }]]) {
       const lp = await openPage(browser, base, { locale: loc });
       await signUp(lp, 'home-' + loc.toLowerCase() + '@example.com');
       const t = (await lp.evaluate(() => window.PPP.app.state.user.id), (await lp.evaluate(async () => (await (await fetch('/api/worker/tokens', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: '{}' })).json()).token)));

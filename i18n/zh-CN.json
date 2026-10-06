@@ -1974,7 +1974,6 @@
     "Before: {{m1}} measures, {{r1}} rests, {{b1}} tuplet brackets. Now: {{m2}} measures, {{r2}} rests, {{b2}} tuplet brackets.": "之前：{{m1}} 小节、休止符 {{r1}} 个、连音 {{b1}} 组。现在：{{m2}} 小节、休止符 {{r2}} 个、连音 {{b2}} 组。",
     "High-quality (my PC)": "高质量转换（我的电脑）",
     "Sending…": "正在发送…",
-    "High-quality conversion runs on your own PC. It checks for new links about every {{min}} minutes and must be switched on; once it starts, a song takes a few minutes. To start now, open the PC shortcut.": "高质量转换在你自己的电脑上运行。它大约每 {{min}} 分钟检查一次新链接，电脑必须开机；开始后每首曲子需要几分钟。要立即开始，请打开电脑上的快捷方式。",
     "Your PC has not checked in lately, so the conversion will wait until it does.": "你的电脑最近没有来检查，转换会等到它来为止。",
     "My conversions (on my PC)": "我的转换（在我的电脑上）",
     "Waiting for your PC": "等待你的电脑",
@@ -2014,6 +2013,13 @@
     "That conversion has already finished.": "那个转换已经结束。",
     "You have 5 PC tokens already. Remove one first.": "已经有 5 个电脑令牌。请先移除一个。",
     "Too many tokens were made just now. Try again later.": "刚才创建的令牌太多。请稍后再试。",
-    "That token is not there.": "找不到那个令牌。"
+    "That token is not there.": "找不到那个令牌。",
+    "High-quality conversion runs on your own PC. It checks for new links {{every}} and must be switched on; once it starts, a song takes a few minutes. To start now, run the desktop shortcut.": "高质量转换在你自己的电脑上运行。它{{every}}检查一次新链接，电脑必须开机；开始后每首曲子需要几分钟。要立即开始，请运行桌面上的快捷方式。",
+    "about once an hour": "大约每小时",
+    "about every {{n}} minutes": "大约每 {{n}} 分钟",
+    "about every {{n}} hours": "大约每 {{n}} 小时",
+    "Check again": "再次检查",
+    "Not checking any more, to spare the server. Press Check again.": "为节省服务器资源，已停止自动检查。请点“再次检查”。",
+    "Your finished conversions take up too much room on the site. Open them first; they are cleared after 3 days.": "已完成的转换占用了太多站点空间。请先打开它们；3 天后会被清除。"
   }
 }

@@ -98,14 +98,15 @@ function parseYoutubeWatch(raw) {
   try {
     const u = new URL(String(raw || '').trim());
     const host = u.hostname.toLowerCase().replace(/^(www|m|music)\./, '');
+    /* a video id is exactly 11 characters of [A-Za-z0-9_-] (G10b-1: it used to be "6 or more", and the id is handed to yt-dlp and to a worker) */
     if (host === 'youtu.be') {
-      const m = /^\/([\w-]{6,})$/.exec(u.pathname);
+      const m = /^\/([A-Za-z0-9_-]{11})$/.exec(u.pathname);
       if (m) return { id: m[1], url: 'https://www.youtube.com/watch?v=' + m[1] };
     } else if (host === 'youtube.com' && u.pathname === '/watch') {
       const v = u.searchParams.get('v') || '';
-      if (/^[\w-]{6,}$/.test(v)) return { id: v, url: 'https://www.youtube.com/watch?v=' + v };
+      if (/^[A-Za-z0-9_-]{11}$/.test(v)) return { id: v, url: 'https://www.youtube.com/watch?v=' + v };
     } else if (host === 'youtube.com') {
-      const m = /^\/(shorts|live|embed)\/([\w-]{6,})/.exec(u.pathname);
+      const m = /^\/(shorts|live|embed)\/([A-Za-z0-9_-]{11})(?:\/|$)/.exec(u.pathname);
       if (m) return { id: m[2], url: 'https://www.youtube.com/watch?v=' + m[2] };
     }
   } catch (e) {}
@@ -794,7 +795,7 @@ function postgresStore(url) {
         END $$;
       `);
       /* G10b-1: two new tables, additive (CREATE ... IF NOT EXISTS only); dropping them is the whole rollback */
-      await q(homeJobsStore.SCHEMA_SQL);
+      await homeJobsStore.migrate(getPool());
     },
     async findByEmail(email) {
       const r = await q('SELECT id, email, display_name AS "displayName", password_hash AS "passwordHash" FROM ppp_users WHERE email = $1', [email]);
@@ -905,7 +906,8 @@ const store = process.env.DATABASE_URL ? postgresStore(process.env.DATABASE_URL)
 /* G10b-1: ONE instance holds the queue in memory (home-jobs.js says why); the database is only its durable copy */
 const jobsService = homeJobs.create({
   store: store.jobStore, send: send, jsonError: jsonError, readBody: readBody, parseYoutube: parseYoutubeWatch,
-  clientIp: guestShare.clientIp, sessionUid: sessionUid, findUser: id => store.findById(id), logError: logStoreError
+  clientIp: guestShare.clientIp, sessionUid: sessionUid, findUser: id => store.findById(id), logError: logStoreError,
+  warn: w => console.warn('Home-PC worker queue: ' + w)
 });
 
 /* ---- the seed library ----
