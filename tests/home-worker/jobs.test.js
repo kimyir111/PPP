@@ -1,12 +1,13 @@
-/* G10b-1: the home-PC transcription queue (home-jobs.js, home-jobs-store.js, home-result.js), driven over real HTTP with a counting
+/* G10b-1 / G10b-2: the home-PC transcription queue (home-jobs.js, home-jobs-store.js, home-result.js), driven over real HTTP with a counting
    store (the file store, so no Postgres is needed; tests/home-worker/jobs-pg.test.js runs the same store and the migration on Postgres).
+   NO ACCOUNT: the "users" of these tests are PC links, made as a browser makes them (POST /api/pc-links); tests/home-worker/links.test.js is about the links themselves.
 
    What it pins:
      - the result a worker may post: every bound of home-result.js, and that everything else is stripped
-     - who may do what: the browser routes need an account (a guest key is not one) and this site as origin; a worker token can
-       only claim and complete the jobs of its own account; somebody else's job is "not there"; a revoked token is dead at once
-     - the tokens: shown once, only a hash is kept (the file store is searched for the secret), listed without it
-     - the queue: the caps (5 waiting, 5 tokens, rows per account), duplicates, rate limits, the lease, the attempts, the 3 days
+     - who may do what: the browser routes need a PC link's client code (a guest key is not one) and this site as origin; a worker token can
+       only claim and complete the jobs of its own link; somebody else's job is "not there"; a rotated token is dead at once
+     - the secrets: shown once, only a hash is kept (the file store is searched for them)
+     - the queue: the caps (5 waiting, rows per link), duplicates, rate limits, the lease, the attempts, the 3 days
      - the waits: nextPollSeconds idle (3600 by default, never under 900) and active (15), the long-poll that only waits when a job is in sight, and that it
        gives up a disconnected request
      - THE FREE-TIER RULE: after one read per boot, polls that find nothing run NO store call at all (counted)
@@ -21,11 +22,10 @@ const J = L.mod('home-jobs.js');
 
 const URL1 = WATCH('vgnliVjJUOo');
 
-/* a token made through the API, as a person would: returns the secret string */
-async function mkToken(S, user, label) {
-  const r = await S.as(user).post('/api/worker/tokens', { label: label || 'My PC' });
-  if (r.status !== 201) throw new Error('token create ' + r.status + ' ' + r.text);
-  return r.body.token;
+/* the worker token the link was made with (a link has one live token, shown once when the link was made) */
+async function mkToken(S, user) {
+  if (!S.token(user)) throw new Error('no link ' + user);
+  return S.token(user);
 }
 async function enqueue(S, user, id, extra) {
   return S.as(user).post('/api/jobs', Object.assign({ url: WATCH(id || 'aaaaaaaaaaa'), title: 'A piece' }, extra));
@@ -45,7 +45,7 @@ async function failed(S, user, token, id) {
   await S.worker(token).post('/api/worker/jobs/' + g.id + '/fail', { error: 'no' });
   return { q: q, g: g };
 }
-const storedOf = (S, owner) => Array.from(S.svc._state.jobs.values()).filter(j => j.ownerId === owner && j.status === 'done').reduce((n, j) => n + j.bytes, 0);
+const storedOf = (S, owner) => Array.from(S.svc._state.jobs.values()).filter(j => j.ownerId === S.linkId(owner) && j.status === 'done').reduce((n, j) => n + j.bytes, 0);
 const idsOf = async (S, user) => (await S.as(user).get('/api/jobs')).body.jobs.map(j => j.id);
 /* a result of 20,000 notes: about 0.9 MB, the biggest a long, dense piece makes */
 const bigResult = () => ({ notes: Array.from({ length: 20000 }, (_, i) => ({ on: Math.round(i * 40) / 1000, off: Math.round(i * 40 + 30) / 1000, midi: 60 + (i % 12), vel: 64 })), duration: 800, engine: 'ensemble', device: 'cuda' });
@@ -116,6 +116,14 @@ async function tokenRules() {
   ok('parseToken reads a bearer header and rejects the rest', J.parseToken('Bearer ' + t.token).id === t.token.slice(4, 16)
     && !J.parseToken('Basic ' + t.token) && !J.parseToken('Bearer ' + t.token + 'x') && !J.parseToken('Bearer ppw_short') && !J.parseToken('') && !J.parseToken(undefined) && !J.parseToken('Bearer a b'));
   ok('two tokens differ', J.newToken().token !== t.token);
+  const k = J.newLink();
+  ok('a client code is 64 lowercase hex (256 bits); the link id is pc_ + 22 hex of the hash of the code, domain-separated; two links differ', /^[0-9a-f]{64}$/.test(k.code) && /^pc_[0-9a-f]{22}$/.test(k.id) && k.hash.length === 32
+    && k.id === 'pc_' + L.crypto.createHash('sha256').update('ppp-pc-link-v1:' + k.code).digest('hex').slice(0, 22) && J.newLink().code !== k.code, k.code.length + ' ' + k.id);
+  ok('the id never contains the code, and the hash is not the plain sha256 of it (so a guest-link key can never be a code)', k.id.indexOf(k.code.slice(0, 22)) < 0 && k.hash.toString('hex') !== L.crypto.createHash('sha256').update(k.code).digest('hex'));
+  ok('CODE_RE takes exactly 64 lowercase hex: not 63, 65, upper case, a dash, a space, a newline, base64url of 43', J.CODE_RE.test(k.code) && !J.CODE_RE.test(k.code.slice(1)) && !J.CODE_RE.test(k.code + '0') && !J.CODE_RE.test(k.code.toUpperCase().replace(/^([0-9A-F])/, 'G'))
+    && !J.CODE_RE.test(k.code.slice(0, 10) + '-' + k.code.slice(11)) && !J.CODE_RE.test(k.code + '\n') && !J.CODE_RE.test(' ' + k.code) && !J.CODE_RE.test(L.crypto.randomBytes(32).toString('base64url')) && !J.CODE_RE.test(k.code.toUpperCase()));
+  ok('an IPv6 address counts as its /64, an IPv4-mapped one as the IPv4, an IPv4 as itself', J.addrKey('2001:db8:1:2:aaaa:bbbb:cccc:dddd') === J.addrKey('2001:DB8:1:2::1') && J.addrKey('2001:db8:1:2::1') !== J.addrKey('2001:db8:1:3::1')
+    && J.addrKey('::ffff:1.2.3.4') === '1.2.3.4' && J.addrKey('1.2.3.4') === '1.2.3.4' && J.addrKey('fe80::1%eth0') === J.addrKey('fe80:0:0:0::7'), J.addrKey('2001:db8:1:2::1'));
 }
 
 async function main() {
@@ -126,22 +134,37 @@ async function main() {
   try {
     heading('who may ask');
     const anon = (m, p, b) => req(S.port, m, p, { body: b });
-    ok('no session: every browser route is 401', (await Promise.all([anon('GET', '/api/jobs'), anon('POST', '/api/jobs', { url: URL1 }), anon('GET', '/api/jobs/abcdefgh1234'), anon('POST', '/api/jobs/abcdefgh1234/cancel', {}),
-      anon('GET', '/api/worker/status'), anon('GET', '/api/worker/tokens'), anon('POST', '/api/worker/tokens', {}), anon('DELETE', '/api/worker/tokens/abcdefghijkl')])).every(r => r.status === 401));
-    ok('a guest key is not an account', (await req(S.port, 'POST', '/api/jobs', { body: { url: URL1 }, headers: { 'X-PPP-Guest': 'g'.repeat(40) } })).status === 401);
-    ok('a session for a user that does not exist is 401', (await req(S.port, 'GET', '/api/jobs', { user: 'nobody' })).status === 401);
+    const noLink = await Promise.all([anon('GET', '/api/jobs'), anon('POST', '/api/jobs', { url: URL1 }), anon('GET', '/api/jobs/abcdefgh1234'), anon('POST', '/api/jobs/abcdefgh1234/cancel', {}), anon('DELETE', '/api/jobs/abcdefgh1234'),
+      anon('GET', '/api/worker/status'), anon('DELETE', '/api/pc-links/me'), anon('POST', '/api/pc-links/me/worker-token', {})]);
+    ok('no X-PPP-PC header: every browser route is 401 "no-link" (nothing was guessed, so nothing is counted)', noLink.every(r => r.status === 401 && r.body.code === 'no-link' && r.body.error === 'No PC link on this device.'), noLink.map(r => r.status).join());
+    ok('a guest key is not a PC link', (await req(S.port, 'POST', '/api/jobs', { body: { url: URL1 }, headers: { 'X-PPP-Guest': 'g'.repeat(40) } })).status === 401
+      && (await req(S.port, 'POST', '/api/jobs', { body: { url: URL1 }, headers: { 'X-PPP-PC': 'g'.repeat(40) } })).body.code === 'bad-code');
+    ok('a code that no link has (64 hex) is 401 "bad-code"; a session cookie does nothing', (await req(S.port, 'GET', '/api/jobs', { user: 'nobody' })).status === 401 && (await req(S.port, 'GET', '/api/jobs', { user: 'nobody' })).body.code === 'bad-code'
+      && (await req(S.port, 'GET', '/api/jobs', { cookie: 'ppp_session=' + 'a'.repeat(40) })).body.code === 'no-link');
+    ok('the answer to a wrong code says nothing about why (the same for a malformed one, an unknown one and a revoked one)', await (async () => {
+      const a1 = await req(S.port, 'GET', '/api/jobs', { code: 'f'.repeat(64) }), a2 = await req(S.port, 'GET', '/api/jobs', { code: 'F'.repeat(64) }), a3 = await req(S.port, 'GET', '/api/jobs', { code: 'f'.repeat(63) });
+      return a1.text === a2.text && a2.text === a3.text && a1.text === JSON.stringify({ error: 'That PC link is not valid.', code: 'bad-code' });
+    })());
     const xs = await req(S.port, 'POST', '/api/jobs', { user: 'u1', body: { url: URL1 }, headers: { Origin: 'https://evil.example' } });
-    ok('a cross-site POST is refused (403) even with the cookie', xs.status === 403 && xs.body.code === 'cross-site', xs.status + '');
-    ok('and so are cross-site cancel, token create and revoke', (await Promise.all([
+    ok('a cross-site POST is refused (403) even with the right code', xs.status === 403 && xs.body.code === 'cross-site', xs.status + '');
+    ok('and so are cross-site cancel, rotate, revoke, remove, create and every READ (the header is only ever taken from this site\'s own page)', (await Promise.all([
       req(S.port, 'POST', '/api/jobs/abcdefgh1234/cancel', { user: 'u1', body: {}, headers: { Origin: 'null' } }),
-      req(S.port, 'POST', '/api/worker/tokens', { user: 'u1', body: {}, headers: { Origin: 'http://127.0.0.1:1' } }),
-      req(S.port, 'DELETE', '/api/worker/tokens/abcdefghijkl', { user: 'u1', headers: { Origin: 'https://evil.example' } })])).every(r => r.status === 403));
+      req(S.port, 'POST', '/api/pc-links/me/worker-token', { user: 'u1', body: {}, headers: { Origin: 'http://127.0.0.1:1' } }),
+      req(S.port, 'DELETE', '/api/pc-links/me', { user: 'u1', headers: { Origin: 'https://evil.example' } }),
+      req(S.port, 'DELETE', '/api/jobs/abcdefgh1234', { user: 'u1', headers: { Origin: 'https://evil.example' } }),
+      req(S.port, 'POST', '/api/pc-links', { body: {}, headers: { Origin: 'https://evil.example' } }),
+      req(S.port, 'GET', '/api/jobs', { user: 'u1', headers: { Origin: 'https://evil.example' } }),
+      req(S.port, 'GET', '/api/worker/status', { user: 'u1', headers: { Origin: 'https://evil.example' } }),
+      req(S.port, 'GET', '/api/jobs/abcdefgh1234', { user: 'u1', headers: { Origin: 'null' } })])).every(r => r.status === 403 && r.body.code === 'cross-site'));
+    ok('a request from another site is refused BEFORE the code is looked at: a wrong code from there is 403, not a counted failure', (await req(S.port, 'GET', '/api/jobs', { code: 'e'.repeat(64), headers: { Origin: 'https://evil.example' } })).status === 403);
     const same = await req(S.port, 'POST', '/api/jobs', { user: 'u1', body: { url: URL1 }, headers: { Origin: 'http://127.0.0.1:' + S.port } });
     ok('a POST from this site (same Origin) is fine', same.status === 201, same.status + ' ' + same.text.slice(0, 80));
     await S.as('u1').post('/api/jobs/' + same.body.job.id + '/cancel');
-    const opt = await req(S.port, 'OPTIONS', '/api/jobs', { headers: { Origin: 'https://evil.example', 'Access-Control-Request-Method': 'POST' } });
-    ok('CORS is closed: no Access-Control header on an answer, none on a preflight', !Object.keys(same.headers).some(h => /^access-control/i.test(h)) && !Object.keys(opt.headers).some(h => /^access-control/i.test(h)) && opt.status >= 400, opt.status + '');
+    const opt = await req(S.port, 'OPTIONS', '/api/jobs', { headers: { Origin: 'https://evil.example', 'Access-Control-Request-Method': 'POST', 'Access-Control-Request-Headers': 'x-ppp-pc' } });
+    ok('CORS is closed: no Access-Control header on an answer, none on a preflight (so no other site can ever send X-PPP-PC)', !Object.keys(same.headers).some(h => /^access-control/i.test(h)) && !Object.keys(opt.headers).some(h => /^access-control/i.test(h)) && opt.status >= 400, opt.status + '');
     ok('every answer is no-store and nosniff', same.headers['cache-control'] === 'no-store' && same.headers['x-content-type-options'] === 'nosniff');
+    ok('the account routes of PR 178 are gone: tokens are 404, and a cookie or a bearer is not a PC link', (await req(S.port, 'GET', '/api/worker/tokens', { user: 'u1' })).status === 404 && (await req(S.port, 'POST', '/api/worker/tokens', { user: 'u1', body: {} })).status === 404
+      && (await req(S.port, 'DELETE', '/api/worker/tokens/abcdefghijkl', { user: 'u1' })).status === 404 && (await req(S.port, 'GET', '/api/jobs', { token: S.token('u1') })).body.code === 'no-link');
 
     heading('enqueue: what is a job');
     const e1 = await S.as('u1').post('/api/jobs', { url: 'https://youtu.be/vgnliVjJUOo?t=5', title: '  Hello \t <b>World</b>  ' });
@@ -166,8 +189,8 @@ async function main() {
 
     heading('ownership');
     const list2 = await S.as('u2').get('/api/jobs');
-    ok('another account sees none of it', list2.status === 200 && list2.body.jobs.length === 0);
-    ok('and cannot read, cancel or find it: 404, not 403', (await S.as('u2').get('/api/jobs/' + e1.body.job.id)).status === 404 && (await S.as('u2').post('/api/jobs/' + e1.body.job.id + '/cancel')).status === 404);
+    ok('another link sees none of it', list2.status === 200 && list2.body.jobs.length === 0);
+    ok('and cannot read, cancel, remove or find it: 404, not 403', (await S.as('u2').get('/api/jobs/' + e1.body.job.id)).status === 404 && (await S.as('u2').post('/api/jobs/' + e1.body.job.id + '/cancel')).status === 404 && (await S.as('u2').del('/api/jobs/' + e1.body.job.id)).status === 404);
     const tok1 = await mkToken(S, 'u1'), tok2 = await mkToken(S, 'u2');
     const c2 = await S.worker(tok2).post('/api/worker/claim', {});
     ok("u2's token claims nothing of u1's", c2.status === 200 && c2.body.job === null, JSON.stringify(c2.body));
@@ -180,33 +203,38 @@ async function main() {
     ok("u1's token claims it", c1.status === 200 && c1.body.job && c1.body.job.id === e1.body.job.id && c1.body.job.url === URL1 && c1.body.job.attempt === 1, JSON.stringify(c1.body));
     ok('a claim answer carries only what the worker needs', Object.keys(c1.body.job).sort().join() === 'attempt,id,maxAttempts,title,url');
     const stolen = await S.worker(tok2).post('/api/worker/jobs/' + e1.body.job.id + '/result', goodResult(40));
-    ok("a claimed job still cannot be finished by another account's token", stolen.status === 404);
+    ok("a claimed job still cannot be finished by another link's token", stolen.status === 404);
     ok('the owner sees it claimed', (await S.as('u1').get('/api/jobs')).body.jobs.find(j => j.id === e1.body.job.id).status === 'claimed');
 
-    heading('tokens: shown once, stored as a hash');
-    const mk = await S.as('u1').post('/api/worker/tokens', { label: ' <b>Studio</b> PC ' });
-    ok('creating a token shows it once, with its id and label', mk.status === 201 && /^ppw_/.test(mk.body.token) && mk.body.label === 'b Studio /b PC' && mk.body.id === mk.body.token.slice(4, 16), JSON.stringify(mk.body).slice(0, 100));
-    const lt = await S.as('u1').get('/api/worker/tokens');
-    ok('the list never has the secret', lt.status === 200 && lt.body.tokens.length === 2 && !/ppw_/.test(lt.text) && lt.body.tokens.every(k => !('token' in k) && !('hash' in k)));
-    ok('u2 lists only its own', (await S.as('u2').get('/api/worker/tokens')).body.tokens.length === 1);
+    heading('the secrets: shown once, stored as a hash');
+    const mkr = await S.makeLink('t1');
+    const mk = { token: mkr.body.workerToken, code: mkr.body.clientCode, id: mkr.body.workerTokenId };
+    ok('making a link shows its id, the client code and the worker token (with its id) once', mkr.status === 201 && /^pc_[0-9a-f]{22}$/.test(mkr.body.id) && /^[0-9a-f]{64}$/.test(mk.code) && /^ppw_/.test(mk.token) && mk.id === mk.token.slice(4, 16)
+      && Object.keys(mkr.body).sort().join() === 'clientCode,createdAt,id,workerToken,workerTokenId' && mkr.headers['cache-control'] === 'no-store', JSON.stringify(Object.keys(mkr.body)));
+    const wst = (await S.as('t1').get('/api/worker/status'));
+    ok('and the status never has a secret in it', wst.status === 200 && wst.text.indexOf(mk.code) < 0 && !/ppw_/.test(wst.text) && !/clientCode|workerToken/.test((await S.as('t1').get('/api/jobs')).text));
     const disk = L.fs.readFileSync(L.path.join(S.dir, 'jobs.json'), 'utf8');
-    ok('the store holds the sha256 of the token and never the token (or its secret half)', disk.indexOf(mk.body.token) < 0 && disk.indexOf(mk.body.token.slice(17)) < 0
-      && disk.indexOf(L.crypto.createHash('sha256').update(mk.body.token).digest('hex')) > 0);
-    ok('a token works', (await S.worker(mk.body.token).get('/api/worker/ping')).status === 200);
-    ok('the secret half of another token with this id is not enough', (await S.worker(mk.body.token.slice(0, 17) + tok1.slice(17)).get('/api/worker/ping')).status === 401);
-    ok('a one-character change is 401', (await S.worker(mk.body.token.slice(0, -1) + (mk.body.token.slice(-1) === 'A' ? 'B' : 'A')).get('/api/worker/ping')).status === 401);
+    ok('the store holds the sha256 of the token and of the code, and neither of them (nor the secret half of the token)', disk.indexOf(mk.token) < 0 && disk.indexOf(mk.token.slice(17)) < 0 && disk.indexOf(mk.code) < 0
+      && disk.indexOf(L.crypto.createHash('sha256').update(mk.token).digest('hex')) > 0 && disk.indexOf(J.codeHash(mk.code).toString('hex')) > 0);
+    ok('the store holds no address: only a keyed tag', !/10\.250\./.test(disk) && /"ipTag":"[0-9a-f]{16}"/.test(disk));
+    ok('a token works', (await S.worker(mk.token).get('/api/worker/ping')).status === 200);
+    ok('the secret half of another token with this id is not enough', (await S.worker(mk.token.slice(0, 17) + tok1.slice(17)).get('/api/worker/ping')).status === 401);
+    ok('a one-character change is 401', (await S.worker(mk.token.slice(0, -1) + (mk.token.slice(-1) === 'A' ? 'B' : 'A')).get('/api/worker/ping')).status === 401);
     ok('a token that never existed is 401, with the same answer', (await S.worker('ppw_' + 'A'.repeat(12) + '_' + 'B'.repeat(43)).get('/api/worker/ping')).status === 401);
-    ok('no header, a cookie instead, the wrong scheme: 401', (await req(S.port, 'GET', '/api/worker/ping', {})).status === 401
-      && (await req(S.port, 'GET', '/api/worker/ping', { user: 'u1' })).status === 401 && (await req(S.port, 'GET', '/api/worker/ping', { headers: { Authorization: 'Token ' + mk.body.token } })).status === 401);
+    ok('no header, a cookie instead, a client code instead, the wrong scheme: 401', (await req(S.port, 'GET', '/api/worker/ping', {})).status === 401
+      && (await req(S.port, 'GET', '/api/worker/ping', { user: 'u1' })).status === 401 && (await S.worker(S.code('u1')).get('/api/worker/ping')).status === 401 && (await req(S.port, 'GET', '/api/worker/ping', { headers: { Authorization: 'Token ' + mk.token } })).status === 401);
     ok('the answer to a bad token says nothing about why', (await S.worker('nonsense').get('/api/worker/ping')).text === JSON.stringify({ error: 'That token is not valid.', code: 'bad-token' }));
-    const rv = await S.as('u2').del('/api/worker/tokens/' + mk.body.id);
-    ok("u2 cannot revoke u1's token", rv.status === 404 && (await S.worker(mk.body.token).get('/api/worker/ping')).status === 200);
-    const rv1 = await S.as('u1').del('/api/worker/tokens/' + mk.body.id);
-    ok('revoking kills it at once', rv1.status === 200 && (await S.worker(mk.body.token).get('/api/worker/ping')).status === 401 && (await S.as('u1').get('/api/worker/tokens')).body.tokens.length === 1);
-    ok('a worker token cannot use a browser route', (await req(S.port, 'GET', '/api/jobs', { token: tok1 })).status === 401 && (await req(S.port, 'POST', '/api/worker/tokens', { token: tok1, body: {} })).status === 401);
+    const rot2 = await S.as('u2').post('/api/pc-links/me/worker-token', {});
+    ok("u2 rotating its token does not touch t1's: both work, each its own", rot2.status === 201 && (await S.worker(mk.token).get('/api/worker/ping')).status === 200 && (await S.worker(rot2.body.workerToken).get('/api/worker/ping')).status === 200 && (await S.worker(tok2).get('/api/worker/ping')).status === 401);
+    S.tokens2 = { u2: rot2.body.workerToken };
+    const rot1 = await S.as('t1').post('/api/pc-links/me/worker-token', {});
+    ok('rotating shows the new token once (with its id); the old one is dead at once, the new one works', rot1.status === 201 && /^ppw_/.test(rot1.body.workerToken) && rot1.body.workerTokenId === rot1.body.workerToken.slice(4, 16) && rot1.headers['cache-control'] === 'no-store'
+      && (await S.worker(mk.token).get('/api/worker/ping')).status === 401 && (await S.worker(rot1.body.workerToken).get('/api/worker/ping')).status === 200);
+    ok('a worker token cannot use a browser route, and a client code cannot be a worker token', (await req(S.port, 'GET', '/api/jobs', { token: rot1.body.workerToken })).status === 401 && (await req(S.port, 'POST', '/api/pc-links/me/worker-token', { token: rot1.body.workerToken, body: {} })).status === 401
+      && (await req(S.port, 'DELETE', '/api/pc-links/me', { token: rot1.body.workerToken })).status === 401);
     const many = [];
-    for (let i = 0; i < 5; i++) many.push((await S.as('u2').post('/api/worker/tokens', {})).status);
-    ok('five tokens per account, then 429', many.join() === '201,201,201,201,429', many.join());
+    for (let i = 0; i < 12; i++) many.push((await S.as('t1').post('/api/pc-links/me/worker-token', {}, { ip: '12.0.0.' + i })).status);
+    ok('ten new tokens an hour per link (one was made above), then 429', many.join() === '201,201,201,201,201,201,201,201,201,429,429,429', many.join());
 
     heading('the answers to a worker: how long to wait');
     ok('with a job claimed, a poll is told to come back in 15 s', (await S.worker(tok1).post('/api/worker/claim', { once: true })).body.nextPollSeconds === 15);
@@ -250,7 +278,7 @@ async function main() {
     ok('a result of 3 MB is 413', (await post({ notes: goodResult(40).notes, pad: 'x'.repeat(3 * 1024 * 1024) })).status === 413);
     ok('a result of 12 MB (past the drain) is cut off without the server dying', await (async () => { try { const r = await post({ notes: goodResult(40).notes, pad: 'x'.repeat(12 * 1024 * 1024) }); return r.status === 413; } catch (e) { return /ECONNRESET|EPIPE|socket hang up/.test(e.message); } })());
     ok('the job is still claimed after all that, and a good result still works', (await S.as('u1').get('/api/jobs/' + q2.id)).body.job.status === 'claimed' && (await post(goodResult(60))).status === 200);
-    const stored = await S.inner.getResult(q2.id, 'u1');
+    const stored = await S.inner.getResult(q2.id, S.linkId('u1'));
     ok('what is stored is the stripped result', stored && Object.keys(stored).sort().join() === 'device,duration,engine,ensemble,model,notes,v');
 
     heading('fail, retry, attempts');
@@ -333,7 +361,7 @@ async function main() {
       const first = (await S2.as('p1').get('/api/jobs')).body.jobs.slice(-1)[0];
       await S2.as('p1').post('/api/jobs/' + first.id + '/cancel');
       ok('cancelling one makes room', (await S2.as('p1').post('/api/jobs', { url: WATCH('pppppppppp9') })).status === 201);
-      ok("one account's full queue does not block another", (await S2.as('p2').post('/api/jobs', { url: WATCH('pppppppppp0') })).status === 201);
+      ok("one link's full queue does not block another", (await S2.as('p2').post('/api/jobs', { url: WATCH('pppppppppp0') })).status === 201);
       /* rows: the cap of 30 rows per account drops the oldest finished ones */
       const tk = await mkToken(S2, 'p2');
       for (let i = 0; i < 34; i++) {
@@ -344,8 +372,8 @@ async function main() {
         S2.advance(1000);
       }
       const rows = (await S2.as('p2').get('/api/jobs')).body.jobs;
-      ok('an account keeps at most 30 rows: the oldest finished ones went', rows.length <= 30 && rows.length >= 28, rows.length + '');
-      ok('and the store agrees (rows deleted, not just hidden)', (await S2.inner.loadAll()).jobs.filter(j => j.ownerId === 'p2').length <= 30);
+      ok('a link keeps at most 30 rows: the oldest finished ones went', rows.length <= 30 && rows.length >= 28, rows.length + '');
+      ok('and the store agrees (rows deleted, not just hidden)', (await S2.inner.loadAll()).jobs.filter(j => j.ownerId === S2.linkId('p2')).length <= 30);
     } finally { await S2.close(); }
 
     heading('rates');
@@ -359,6 +387,12 @@ async function main() {
       ok('and it says when to come back', rr.status === 429 && Number(rr.headers['retry-after']) > 0);
       ok('another address is not affected', (await S3.worker(tk).get('/api/worker/ping', { ip: '8.8.8.8' })).status === 200);
       ok('a VALID token from that same address still works (the wrong tokens of others must not lock a working worker out), claim and result too', (await S3.worker(tk).get('/api/worker/ping', { ip: '9.9.9.9' })).status === 200 && (await S3.worker(tk).post('/api/worker/claim', { once: true }, { ip: '9.9.9.9' })).status === 200);
+      ok('wrong CLIENT CODES count against the same budget (a code that is not a live link, 64 hex or not), per address; a valid code is never refused for it, nor a valid token, nor is another address', await (async () => {
+        const out = [];
+        for (let i = 0; i < 21; i++) out.push((await req(S3.port, 'GET', '/api/jobs', { code: String(i).padStart(64, 'c'), ip: '4.4.4.4' })).status);
+        return out.slice(0, 20).every(x => x === 401) && out[20] === 429 && (await req(S3.port, 'GET', '/api/jobs', { user: 'r1', ip: '4.4.4.4' })).status === 200 && (await S3.worker(tk).get('/api/worker/ping', { ip: '4.4.4.4' })).status === 200
+          && (await req(S3.port, 'GET', '/api/jobs', { code: 'd'.repeat(64), ip: '4.4.4.5' })).status === 401 && (await req(S3.port, 'GET', '/api/jobs', { code: 'x', ip: '4.4.4.4' })).status === 429;
+      })());
       ok('and a token that is not shaped like one counts as a failure too (and is 429 once the budget is gone)', (await S3.worker('nonsense').get('/api/worker/ping', { ip: '9.9.9.9' })).status === 429 && (await S3.worker('nonsense').get('/api/worker/ping', { ip: '7.7.7.7' })).status === 401);
       ok('a valid token never spends the budget: 30 pings from a fresh address leave its wrong-token budget whole', await (async () => {
         for (let i = 0; i < 30; i++) await S3.worker(tk).get('/api/worker/ping', { ip: '6.6.6.6' });
@@ -371,7 +405,7 @@ async function main() {
         const r = await S3.as('r1').post('/api/jobs', { url: WATCH('qqqqqqqq' + String(i).padStart(3, '0')) });
         if (r.status === 201) { made++; await S3.as('r1').post('/api/jobs/' + r.body.job.id + '/cancel'); } else if (!refused) refused = r;
       }
-      ok('30 enqueues an hour per account, then 429 (too-many, with Retry-After); each refused one is free', made === 30 && !!refused && refused.status === 429 && refused.body.code === 'too-many' && Number(refused.headers['retry-after']) > 0, made + ' ' + (refused && refused.status));
+      ok('30 enqueues an hour per link, then 429 (too-many, with Retry-After); each refused one is free', made === 30 && !!refused && refused.status === 429 && refused.body.code === 'too-many' && Number(refused.headers['retry-after']) > 0, made + ' ' + (refused && refused.status));
       /* a request that makes nothing is free: refused bodies, links that are not YouTube, duplicates, a full queue */
       const SR = await L.startService({ users: ['f1', 'f2', 'f3'] });
       try {
@@ -379,8 +413,8 @@ async function main() {
         for (let i = 0; i < 45; i++) junk.push((await req(SR.port, 'POST', '/api/jobs', { user: 'f1', body: i % 3 === 0 ? '{bad' : i % 3 === 1 ? { url: 'https://example.com/x' } : { url: WATCH('freefreefre'), pad: 'x'.repeat(8000) } })).status);
         ok('45 refused requests (bad JSON, not YouTube, too big) used none of the 30 hourly enqueues: a good one still works', junk.every(x => x === 400 || x === 422 || x === 413) && (await enqueue(SR, 'f1', 'goodgoodgoo')).status === 201, junk.slice(0, 6).join());
         const tokJunk = [];
-        for (let i = 0; i < 12; i++) tokJunk.push((await req(SR.port, 'POST', '/api/worker/tokens', { user: 'f2', body: '{bad' })).status);
-        ok('and 12 refused token requests used none of the 10 hourly token makes', tokJunk.every(x => x === 400) && (await SR.as('f2').post('/api/worker/tokens', {})).status === 201);
+        for (let i = 0; i < 12; i++) tokJunk.push((await req(SR.port, 'POST', '/api/pc-links/me/worker-token', { user: 'f2', body: '{bad' })).status);
+        ok('and 12 refused rotation requests used none of the 10 hourly new tokens', tokJunk.every(x => x === 400) && (await SR.as('f2').post('/api/pc-links/me/worker-token', {})).status === 201);
         const dups = [];
         for (let i = 0; i < 40; i++) dups.push((await enqueue(SR, 'f1', 'goodgoodgoo')).status);
         ok('the same link asked 40 more times (it is already waiting) costs nothing either', dups.every(x => x === 200) && (await SR.as('f1').post('/api/jobs', { url: WATCH('goodgoodgo2') })).status === 201);
@@ -397,11 +431,11 @@ async function main() {
         ok('one address: 60 enqueues an hour (over three accounts), then 429', madeA === 60 && !!firstRefusal && firstRefusal.status === 429 && firstRefusal.body.code === 'too-many', madeA + ' ' + (firstRefusal && firstRefusal.status));
         ok('another address is not touched by it (its person can still ask)', (await req(SA.port, 'POST', '/api/jobs', { user: 'a1', ip: '10.2.2.2', body: { url: WATCH('otheraddr01') } })).status === 201);
         const tokA = [];
-        for (let i = 0; i < 6; i++) tokA.push((await req(SA.port, 'POST', '/api/worker/tokens', { user: ['a1', 'a2', 'a3'][i % 3], ip: '10.3.3.3', body: {} })).status);
-        ok('tokens: 20 an hour per address too (a2 and a3 made 2 each here; the account cap is 10)', tokA.every(x => x === 201));
+        for (let i = 0; i < 6; i++) tokA.push((await req(SA.port, 'POST', '/api/pc-links/me/worker-token', { user: ['a1', 'a2', 'a3'][i % 3], ip: '10.3.3.3', body: {} })).status);
+        ok('new tokens: 20 an hour per address too (three links made 2 each here; the link\'s own cap is 10)', tokA.every(x => x === 201));
       } finally { await SA.close(); }
       const lim = J.LIMITS;
-      ok('the limits are the ones the design states', lim.PENDING_PER_USER === 5 && lim.ROWS_PER_USER === 30 && lim.TOKENS_PER_USER === 5 && lim.MAX_ATTEMPTS === 3 && lim.LEASE_MS === 30 * 60 * 1000
+      ok('the limits are the ones the design states', lim.PENDING_PER_USER === 5 && lim.ROWS_PER_USER === 30 && lim.LINKS_PER_IP_PER_HOUR === 5 && lim.LINKS_PER_IP_PER_DAY === 20 && lim.MAX_LINKS === 500 && lim.LINK_UNUSED_TTL_MS === 60 * 86400000 && lim.LINK_NEVER_CONNECTED_TTL_MS === 14 * 86400000 && lim.MAX_ATTEMPTS === 3 && lim.LEASE_MS === 30 * 60 * 1000
         && lim.DONE_TTL_MS === 3 * 86400000 && lim.OTHER_TTL_MS === 86400000 && R.LIMITS.RESULT_MAX_BYTES === 2 * 1024 * 1024 && R.LIMITS.MAX_NOTES === 20000 && R.LIMITS.MAX_SECONDS === 900);
     } finally { await S3.close(); }
 
@@ -420,7 +454,7 @@ async function main() {
       S4.advance(49 * 3600 * 1000);
       await S4.svc._state.purge(S4.clock.t);
       ids = (await S4.as('k1').get('/api/jobs')).body.jobs.map(j => j.id);
-      ok('a done job is purged after three days', ids.indexOf(dn.id) < 0 && (await S4.inner.getResult(dn.id, 'k1')) === null);
+      ok('a done job is purged after three days', ids.indexOf(dn.id) < 0 && (await S4.inner.getResult(dn.id, S4.linkId('k1'))) === null);
       const qq = (await S4.as('k1').post('/api/jobs', { url: WATCH('purgepurg03') })).body.job;
       S4.advance(3 * 86400000 + 1000);
       await S4.svc._state.sweep(S4.clock.t);
@@ -452,7 +486,7 @@ async function main() {
       } finally { await SC.close(); }
     }
 
-    heading('one account cannot use up the room - and is never locked out of it: the oldest finished conversions are cleared to make room');
+    heading('one link cannot use up the room - and is never locked out of it: the oldest finished conversions are cleared to make room');
     {
       const small = { perUserResultBytes: 5000, resultReserveBytes: 1000, totalResultBytes: 1e9 };
       /* (a) the share would be passed by a result: the PC's work is NOT lost, the oldest finished conversion of the account is cleared */
@@ -465,7 +499,7 @@ async function main() {
         const c3 = await convert(SA, 'hog', th, 'hoghoghog03');
         const ids = await idsOf(SA, 'hog');
         ok('a third: asked for (room is made only if the share would not leave 1000 bytes for it: 3712 + 1000 fits), and its result, which would pass the share (5568), is TAKEN - the oldest finished conversion is cleared for it, the PC\'s work is not refused', c3.q.status === 201 && c3.r.status === 200 && ids.indexOf(c1.q.body.job.id) < 0 && ids.indexOf(c2.q.body.job.id) >= 0 && ids.indexOf(c3.q.body.job.id) >= 0, JSON.stringify([c3.q.status, c3.r.status, c3.r.text.slice(0, 80)]));
-        ok('and the share holds: 3712 bytes kept, the cleared one is gone from the database too', storedOf(SA, 'hog') === 3712 && (await SA.inner.getResult(c1.q.body.job.id, 'hog')) === null && (await SA.inner.getResult(c3.q.body.job.id, 'hog')) !== null);
+        ok('and the share holds: 3712 bytes kept, the cleared one is gone from the database too', storedOf(SA, 'hog') === 3712 && (await SA.inner.getResult(c1.q.body.job.id, SA.linkId('hog'))) === null && (await SA.inner.getResult(c3.q.body.job.id, SA.linkId('hog'))) !== null);
         const c4 = await convert(SA, 'teacher', tt, 'teacherteac');
         ok('another account is not touched by any of it', c4.q.status === 201 && c4.r.status === 200 && (await idsOf(SA, 'teacher')).length === 1);
       } finally { await SA.close(); }
@@ -539,13 +573,13 @@ async function main() {
         const done = await convert(SF, 'own', th, 'removeme001'), fl = await failed(SF, 'own', th, 'removeme002');
         const waiting = (await enqueue(SF, 'own', 'removeme003')).body.job;
         const before = storedOf(SF, 'own');
-        ok('another account cannot remove it (404); nobody without a session can (401); a request from another site is refused (403)', (await SF.as('other').del('/api/jobs/' + done.q.body.job.id)).status === 404 && (await req(SF.port, 'DELETE', '/api/jobs/' + done.q.body.job.id)).status === 401
+        ok('another link cannot remove it (404); nobody without a code can (401); a request from another site is refused (403)', (await SF.as('other').del('/api/jobs/' + done.q.body.job.id)).status === 404 && (await req(SF.port, 'DELETE', '/api/jobs/' + done.q.body.job.id)).status === 401
           && (await req(SF.port, 'DELETE', '/api/jobs/' + done.q.body.job.id, { user: 'own', headers: { Origin: 'https://evil.example' } })).status === 403 && (await idsOf(SF, 'own')).indexOf(done.q.body.job.id) >= 0);
         ok('a waiting conversion cannot be removed (409, "cancel it first"), a converting one neither', (await SF.as('own').del('/api/jobs/' + waiting.id)).status === 409 && (await SF.as('own').del('/api/jobs/' + waiting.id)).body.code === 'pending'
           && await (async () => { const g = (await SF.worker(th).post('/api/worker/claim', { once: true })).body.job; return g.id === waiting.id && (await SF.as('own').del('/api/jobs/' + waiting.id)).status === 409; })());
         const rd = await SF.as('own').del('/api/jobs/' + done.q.body.job.id);
         ok('a done conversion is removed (200): gone from the list, from the database, its notes out of the account\'s share; opening it is 404', rd.status === 200 && (await idsOf(SF, 'own')).indexOf(done.q.body.job.id) < 0 && (await SF.as('own').get('/api/jobs/' + done.q.body.job.id)).status === 404
-          && (await SF.inner.getResult(done.q.body.job.id, 'own')) === null && storedOf(SF, 'own') === before - 1856 && !(await SF.inner.loadAll()).jobs.some(j => j.id === done.q.body.job.id));
+          && (await SF.inner.getResult(done.q.body.job.id, SF.linkId('own'))) === null && storedOf(SF, 'own') === before - 1856 && !(await SF.inner.loadAll()).jobs.some(j => j.id === done.q.body.job.id));
         ok('a failed one too; a second removal is 404', (await SF.as('own').del('/api/jobs/' + fl.g.id)).status === 200 && (await SF.as('own').del('/api/jobs/' + fl.g.id)).status === 404);
         await SF.as('own').post('/api/jobs/' + waiting.id + '/cancel');
         ok('a cancelled one can be removed', (await SF.as('own').del('/api/jobs/' + waiting.id)).status === 200 && (await idsOf(SF, 'own')).length === 0);
@@ -573,13 +607,13 @@ async function main() {
         ok('a 5th row: the one finished conversion is cleared; the converting one and both waiting ones are not', w4.status === 201 && jobStatus(SM, d1.q.body.job.id) === 'gone'
           && jobStatus(SM, w1.id) === 'claimed' && jobStatus(SM, w2.id) === 'queued' && jobStatus(SM, w3.body.job.id) === 'queued', [d1.q.body.job.id, w1.id, w2.id].map(id => jobStatus(SM, id)).join());
         const w5 = await enqueue(SM, 'mb', 'mbwait00005');
-        const mineNow = () => Array.from(SM.svc._state.jobs.values()).filter(j => j.ownerId === 'mb');
+        const mineNow = () => Array.from(SM.svc._state.jobs.values()).filter(j => j.ownerId === SM.linkId('mb'));
         ok('a 6th with nothing finished left to clear is accepted past the row cap: none of the five rows that wait or convert is touched, in memory or in the store', w5.status === 201 && mineNow().length === 5
-          && mineNow().every(j => j.status === 'queued' || j.status === 'claimed') && (await SM.inner.loadAll()).jobs.filter(j => j.ownerId === 'mb').length === 5);
+          && mineNow().every(j => j.status === 'queued' || j.status === 'claimed') && (await SM.inner.loadAll()).jobs.filter(j => j.ownerId === SM.linkId('mb')).length === 5);
         const w6 = await enqueue(SM, 'mb', 'mbwait00006');
         ok('a 7th is the cap of waiting jobs (429 queue-full) and clears nothing', w6.status === 429 && w6.body.code === 'queue-full' && mineNow().length === 5);
         ok('the neighbour\'s finished rows, older than all of this, are exactly as they were (memory, store and the notes)', jobStatus(SM, n1.q.body.job.id) === 'done' && jobStatus(SM, n2.g.id) === 'failed'
-          && (await SM.inner.getResult(n1.q.body.job.id, 'nb')) !== null && (await SM.inner.loadAll()).jobs.filter(j => j.ownerId === 'nb').length === 2);
+          && (await SM.inner.getResult(n1.q.body.job.id, SM.linkId('nb'))) !== null && (await SM.inner.loadAll()).jobs.filter(j => j.ownerId === SM.linkId('nb')).length === 2);
       } finally { J.LIMITS.ROWS_PER_USER = rowsWas; await SM.close(); }
       /* (b) at the notes quota: only a finished conversion that holds notes goes (oldest first) - not a failed one, not one that waits or converts, not the neighbour's */
       const SQ = await L.startService({ users: ['mb', 'nb'], config: { perUserResultBytes: 4000, resultReserveBytes: 1000, totalResultBytes: 1e9 } });
@@ -601,7 +635,7 @@ async function main() {
         const r2 = await SQ.worker(tm).post('/api/worker/jobs/' + g2.id + '/result', goodResult(40));
         ok('a result that would pass the share is taken too, and the oldest finished conversion is cleared for it - the third job, still converting, and the failed row are not', r2.status === 200 && jobStatus(SQ, d2.q.body.job.id) === 'gone'
           && jobStatus(SQ, g3.id) === 'claimed' && g3.id === w3.id && jobStatus(SQ, f1.g.id) === 'failed' && storedOf(SQ, 'mb') === 3712 && jobStatus(SQ, w2.id) === 'done', [d2.q.body.job.id, g3.id, f1.g.id].map(id => jobStatus(SQ, id)).join());
-        ok('and still the neighbour\'s done conversion, with its notes, is exactly as it was', jobStatus(SQ, n1.q.body.job.id) === 'done' && (await SQ.inner.getResult(n1.q.body.job.id, 'nb')) !== null);
+        ok('and still the neighbour\'s done conversion, with its notes, is exactly as it was', jobStatus(SQ, n1.q.body.job.id) === 'done' && (await SQ.inner.getResult(n1.q.body.job.id, SQ.linkId('nb'))) !== null);
       } finally { await SQ.close(); }
     }
 
@@ -620,14 +654,14 @@ async function main() {
         }
         const realDelete = SK.store.deleteJobs;
         SK.store.deleteJobs = async function () { await sleep(40); return realDelete.apply(this, arguments); };
-        const pendingOf = u => Array.from(SK.svc._state.jobs.values()).filter(j => j.ownerId === u && (j.status === 'queued' || j.status === 'claimed')).length;
-        const rowsOf = u => Array.from(SK.svc._state.jobs.values()).filter(j => j.ownerId === u).length;
-        const storeRows = async u => (await SK.inner.loadAll()).jobs.filter(j => j.ownerId === u);
+        const pendingOf = u => Array.from(SK.svc._state.jobs.values()).filter(j => j.ownerId === SK.linkId(u) && (j.status === 'queued' || j.status === 'claimed')).length;
+        const rowsOf = u => Array.from(SK.svc._state.jobs.values()).filter(j => j.ownerId === SK.linkId(u)).length;
+        const storeRows = async u => (await SK.inner.loadAll()).jobs.filter(j => j.ownerId === SK.linkId(u));
         const eight = await Promise.all(Array.from({ length: 8 }, (_, i) => enqueue(SK, 'racer', 'racerace' + String(i).padStart(3, '0'))));
         const codes = eight.map(r => r.status).sort().join();
         ok('eight different links asked for at the same moment by an account at its row cap: exactly 5 are accepted and 3 are 429 queue-full (the cap of 5 waiting jobs)', codes === '201,201,201,201,201,429,429,429' && eight.filter(r => r.status === 429).every(r => r.body.code === 'queue-full'), codes);
         ok('5 waiting in memory and in the store - not 8 - and the row cap of 8 holds in both (not 13 or 16)', pendingOf('racer') === 5 && rowsOf('racer') === 8 && (await storeRows('racer')).length === 8 && (await storeRows('racer')).filter(j => j.status === 'queued').length === 5, [pendingOf('racer'), rowsOf('racer'), (await storeRows('racer')).length].join());
-        ok('and what was cleared for them is the finished conversions only, the 5 oldest: the 3 newest are what is left of the 8', Array.from(SK.svc._state.jobs.values()).filter(j => j.ownerId === 'racer' && j.status === 'done').map(j => j.id).sort().join() === filled.racer.slice(5).sort().join());
+        ok('and what was cleared for them is the finished conversions only, the 5 oldest: the 3 newest are what is left of the 8', Array.from(SK.svc._state.jobs.values()).filter(j => j.ownerId === SK.linkId('racer') && j.status === 'done').map(j => j.id).sort().join() === filled.racer.slice(5).sort().join());
         const three = await Promise.all([0, 1, 2].map(() => SK.as('twin').post('/api/jobs', { url: WATCH('twintwin001'), title: 'Same' })));
         const created = three.filter(r => r.status === 201), existing = three.filter(r => r.status === 200 && r.body.existing === true);
         ok('the same link asked for three times at the same moment: exactly one job is made, the other two are told it exists - the same one', created.length === 1 && existing.length === 2 && existing.every(r => r.body.job.id === created[0].body.job.id), three.map(r => r.status).join());
@@ -678,7 +712,7 @@ async function main() {
         SO.store.reset();
         const ask = [
           ['GET', '/api/jobs'], ['POST', '/api/jobs', { url: WATCH('offoffoff02') }], ['GET', '/api/jobs/' + jb.id], ['DELETE', '/api/jobs/' + jb.id], ['POST', '/api/jobs/' + jb.id + '/cancel'],
-          ['GET', '/api/worker/status'], ['GET', '/api/worker/tokens'], ['POST', '/api/worker/tokens', {}], ['DELETE', '/api/worker/tokens/abcdefghijkl'], ['GET', '/api/worker/nothing']
+          ['GET', '/api/worker/status'], ['POST', '/api/pc-links', {}], ['DELETE', '/api/pc-links/me'], ['POST', '/api/pc-links/me/worker-token', {}], ['GET', '/api/worker/nothing']
         ];
         const answers = [];
         for (const [m, p, b] of ask) answers.push([m + ' ' + p.replace(jb.id, ':id'), await req(SO.port, m, p, { user: 'off1', body: b })]);
@@ -693,10 +727,10 @@ async function main() {
     heading('every sentence the page can be shown from the queue has a Korean, Japanese and Chinese string');
     {
       /* the page shows the site's own sentence through tx(): the English text is the key of the catalog (i18n/*.json). These are the ones the browser routes answer with, the two that were English-only (a Remove of a waiting conversion, a result too big for an account) included. */
-      const shown = ['Sign in to use this.', 'That request did not come from this site.', 'Too many conversions were asked for just now. Try again in a little while.', 'That is not a link to a YouTube video.',
+      const shown = ['No PC link on this device.', 'That PC link is not valid.', 'Too many wrong codes from here. Try again later.', 'Too many PC links were made from here just now. Try again later.', 'PC links are full right now. Try again later.', 'That request did not come from this site.', 'Too many conversions were asked for just now. Try again in a little while.', 'That is not a link to a YouTube video.',
         'You already have 5 conversions waiting. Wait for one to finish, or cancel one.', 'The queue is full right now. Try again later.', 'The queue is not available right now. Try again in a minute.', 'That conversion is not there.',
         'The notes of that conversion are no longer kept.', 'Cancel that conversion first, then remove it.', 'That conversion has already finished.', 'This conversion is larger than one account may keep.',
-        'Too many tokens were made just now. Try again later.', 'You have 5 PC tokens already. Remove one first.', 'That token is not there.'];
+        'Too many tokens were made just now. Try again later.'];
       const src = L.fs.readFileSync(L.path.join(L.MODS, 'home-jobs.js'), 'utf8');
       ok('(the two that were English-only are still the sentences home-jobs.js sends)', src.indexOf('Cancel that conversion first, then remove it.') >= 0 && src.indexOf('This conversion is larger than one account may keep.') >= 0);
       for (const loc of ['ko-KR', 'ja-JP', 'zh-CN']) {
@@ -752,14 +786,14 @@ async function main() {
         for (let i = 0; i < 30; i++) { const r = await SH.as('h7').post('/api/jobs', { url: WATCH('upupupup' + String(i).padStart(3, '0')) }); if (r.status === 201) { again++; await SH.as('h7').post('/api/jobs/' + r.body.job.id + '/cancel'); } }
         ok('35 enqueues while the store cannot write (503 each) cost nothing: all 30 hourly enqueues are still there afterwards', down.every(s => s === 503) && again === 30, down.slice(0, 3).join() + ' ' + again);
       } finally { await SH.close(); }
-      /* tokens: 20 an hour per address, whoever the accounts are */
+      /* new tokens: 20 an hour per address, whoever the links are */
       const ST = await L.startService({ users: ['t1', 't2', 't3', 't4', 't5'] });
       try {
         const out = [];
-        for (const u of ['t1', 't2', 't3', 't4', 't5']) for (let i = 0; i < 4; i++) out.push((await req(ST.port, 'POST', '/api/worker/tokens', { user: u, ip: '11.0.0.1', body: {} })).status);
-        const over = await req(ST.port, 'POST', '/api/worker/tokens', { user: 't1', ip: '11.0.0.1', body: {} });
-        const elsewhere = await req(ST.port, 'POST', '/api/worker/tokens', { user: 't1', ip: '11.0.0.2', body: {} });
-        ok('five accounts at one address: 20 tokens an hour, the 21st is 429 (too-many) whoever asks; from another address the same account can (its own cap is 5)', out.every(s => s === 201) && over.status === 429 && over.body.code === 'too-many' && elsewhere.status === 201, out.filter(s => s !== 201).length + ' ' + over.status + ' ' + elsewhere.status);
+        for (const u of ['t1', 't2', 't3', 't4', 't5']) for (let i = 0; i < 4; i++) out.push((await req(ST.port, 'POST', '/api/pc-links/me/worker-token', { user: u, ip: '11.0.0.1', body: {} })).status);
+        const over = await req(ST.port, 'POST', '/api/pc-links/me/worker-token', { user: 't1', ip: '11.0.0.1', body: {} });
+        const elsewhere = await req(ST.port, 'POST', '/api/pc-links/me/worker-token', { user: 't1', ip: '11.0.0.2', body: {} });
+        ok('five links at one address: 20 new tokens an hour, the 21st is 429 (too-many) whoever asks; from another address the same link can (its own cap is 10 an hour)', out.every(s => s === 201) && over.status === 429 && over.body.code === 'too-many' && elsewhere.status === 201, out.filter(s => s !== 201).length + ' ' + over.status + ' ' + elsewhere.status);
       } finally { await ST.close(); }
     }
 
@@ -769,15 +803,24 @@ async function main() {
       ok('server.js runs the boot SQL and the queue\'s tables through homeJobsStore.migrate (one transaction under the advisory lock), not through a plain query', /homeJobsStore\.migrate\(getPool\(\), \`/.test(srv) && !/q\(homeJobsStore\.SCHEMA_SQL\)/.test(srv) && !/await q\(\`\s*CREATE TABLE IF NOT EXISTS ppp_users/.test(srv));
     }
 
-    heading('the account is looked up once, then remembered (the page polls often)');    heading('the account is looked up once, then remembered (the page polls often)');
+    heading('a link\'s use is written to the database rarely: at most every 6 hours, and only by a page request');
     {
       const SL = await L.startService({ users: ['m1'] });
       try {
+        SL.store.reset();
         for (let i = 0; i < 25; i++) { await SL.as('m1').get('/api/jobs'); await SL.as('m1').get('/api/worker/status'); }
-        ok('50 page requests by one account read the account once', SL.lookups.findUser === 1, SL.lookups.findUser + '');
-        SL.advance(11 * 60 * 1000);
-        await SL.as('m1').get('/api/jobs'); await SL.as('m1').get('/api/jobs');
-        ok('and again, once, after the 10 minutes it is remembered for', SL.lookups.findUser === 2, SL.lookups.findUser + '');
+        ok('50 page requests by one link in its first hours write nothing (the link was just made)', SL.store.total() === 0, JSON.stringify(SL.store.calls));
+        SL.advance(7 * 3600 * 1000);
+        for (let i = 0; i < 25; i++) { await SL.as('m1').get('/api/jobs'); await SL.as('m1').get('/api/worker/status'); }
+        ok('7 hours later the first one writes its last-use time (touchLink), the other 49 write nothing', SL.store.calls.touchLink === 1 && SL.store.total() === 1, JSON.stringify(SL.store.calls));
+        SL.advance(5 * 3600 * 1000);
+        await SL.as('m1').get('/api/jobs');
+        ok('and 5 hours after that, nothing', SL.store.calls.touchLink === 1);
+        SL.advance(2 * 3600 * 1000);
+        SL.store.fail.on = true; SL.store.fail.only = 'touchLink';
+        const f1 = await SL.as('m1').get('/api/jobs');
+        SL.store.fail.on = false;
+        ok('a write of it that fails does not fail the request (it is only logged), and is tried again by the next one', f1.status === 200 && SL.logged.length === 1 && (await SL.as('m1').get('/api/jobs')).status === 200 && SL.store.calls.touchLink === 3, JSON.stringify(SL.store.calls));
       } finally { await SL.close(); }
     }
 
@@ -820,8 +863,8 @@ async function main() {
       ok('and none of them waited (an idle poll returns at once)', Math.max.apply(null, times) < 300, 'slowest ' + Math.max.apply(null, times) + ' ms');
       S5.store.reset();
       for (let i = 0; i < 20; i++) await S5.worker(tk).get('/api/worker/ping');
-      for (let i = 0; i < 20; i++) { await S5.as('z1').get('/api/jobs'); await S5.as('z1').get('/api/worker/status'); await S5.as('z1').get('/api/worker/tokens'); }
-      ok('pings and the page\'s own status polls run none either (the account is remembered)', S5.store.total() === 0, JSON.stringify(S5.store.calls));
+      for (let i = 0; i < 20; i++) { await S5.as('z1').get('/api/jobs'); await S5.as('z1').get('/api/worker/status'); }
+      ok('pings run none either, and the page\'s own status polls only the one write of the link\'s last use (60 hours had gone by since it was made)', S5.store.total() === (S5.store.calls.touchLink || 0) && (S5.store.calls.touchLink || 0) <= 1, JSON.stringify(S5.store.calls));
       ok('the owner sees the worker alive (seen in memory, twice its wait)', (await S5.as('z1').get('/api/worker/status')).body.worker.alive === true);
       S5.advance(3 * 3600 * 1000);
       ok('and gone when it has not been heard of for more than twice its wait', (await S5.as('z1').get('/api/worker/status')).body.worker.alive === false);
@@ -890,10 +933,14 @@ async function main() {
       const e = await S7.as('s1').post('/api/jobs', { url: WATCH('storefail02') });
       S7.store.fail.on = false;
       ok('an enqueue whose write fails is 503, and leaves no ghost in the list or the cap', e.status === 503 && (await S7.as('s1').get('/api/jobs')).body.jobs.length === 1);
-      S7.store.fail.on = true; S7.store.fail.only = 'insertToken';
-      const tf = await S7.as('s1').post('/api/worker/tokens', {});
+      S7.store.fail.on = true; S7.store.fail.only = 'rotateToken';
+      const tf = await S7.as('s1').post('/api/pc-links/me/worker-token', {});
       S7.store.fail.on = false;
-      ok('a token whose write fails is 503 and is not listed', tf.status === 503 && (await S7.as('s1').get('/api/worker/tokens')).body.tokens.length === 1);
+      ok('a new token whose write fails is 503, and the old token still works (nothing was shown, nothing was replaced)', tf.status === 503 && (await S7.worker(tk).get('/api/worker/ping')).status === 200 && !tf.text.includes('ppw_'));
+      S7.store.fail.on = true; S7.store.fail.only = 'createLink';
+      const lf0 = await S7.makeLink('never').catch(e => ({ status: Number(/ (\d{3}) /.exec(e.message)[1]), text: e.message }));
+      S7.store.fail.on = false;
+      ok('a link whose write fails is 503 and is not kept: nothing in memory, and the next one works', lf0.status === 503 && S7.svc._state.links.size === 1 && (await S7.makeLink('later')).status === 201);
       S7.store.fail.on = true; S7.store.fail.only = 'loadAll';
       S7.svc._state.forgetAll();
       const lf = await S7.worker(tk).post('/api/worker/claim', {});
@@ -913,10 +960,10 @@ async function main() {
       jobA = (await A.as('b1').post('/api/jobs', { url: WATCH('restart0001'), title: 'Kept' })).body.job;
       await A.worker(tkA).post('/api/worker/claim', {});
     } finally { await A.close(); }
-    const B = await L.startService({ users: ['b1'], store: fileJobStore(dir) });
+    const B = await L.startService({ resume: A.creds(), store: fileJobStore(dir) });
     try {
       const lj = (await B.as('b1').get('/api/jobs')).body;
-      ok('a new process reads the queue back: the claimed job, its title, the token', lj.jobs.length === 1 && lj.jobs[0].id === jobA.id && lj.jobs[0].status === 'claimed' && lj.jobs[0].title === 'Kept' && lj.worker.hasToken && lj.worker.everSeen);
+      ok('a new process reads the queue back: the link (its code still works), the claimed job, its title, the token', lj.jobs.length === 1 && lj.jobs[0].id === jobA.id && lj.jobs[0].status === 'claimed' && lj.jobs[0].title === 'Kept' && lj.worker.hasToken && lj.worker.everSeen);
       ok('the token still works, and the claimed job takes its result', (await B.worker(tkA).post('/api/worker/jobs/' + jobA.id + '/result', goodResult(12))).status === 200);
     } finally { await B.close(); L.rmDir(dir); }
   } finally { await S.close(); }

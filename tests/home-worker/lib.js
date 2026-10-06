@@ -1,5 +1,8 @@
-/* Shared parts of the home-PC worker's tests (G10b-1): a checker, a request helper, the queue service on a real HTTP server of its
+/* Shared parts of the home-PC worker's tests (G10b-1, G10b-2): a checker, a request helper, the queue service on a real HTTP server of its
    own with a COUNTING store (so a test can say "this poll ran no SQL"), and a clock the test moves.
+
+   G10b-2 (no account): a "user" of these tests is a PC link made through POST /api/pc-links, as a browser makes one, from an address of its own.
+   req(port, ..., { user: 'u1' }) sends that link's client code as X-PPP-PC; S.token('u1') is its worker token; S.code('u1') its client code.
 
    The modules under test are the repository's, or - for the mutation runner (tests/home-worker/mutants.js) - the copies in HOME_MODULES_DIR. Nothing here is read by the app. */
 'use strict';
@@ -31,6 +34,8 @@ function finish(label) {
   console.log('\n' + passed + ' passed: ' + label);
 }
 
+/* the client codes of the links the services of these tests hold: port -> name -> code */
+const CODES = {};
 /* one request to 127.0.0.1:port; body: object (JSON) or string; returns { status, body (parsed or null), text, headers } */
 function req(port, method, p, o) {
   o = o || {};
@@ -38,7 +43,9 @@ function req(port, method, p, o) {
     const body = o.body == null ? null : Buffer.from(typeof o.body === 'string' ? o.body : JSON.stringify(o.body));
     const headers = Object.assign({}, o.headers || {});
     if (body) { headers['Content-Type'] = headers['Content-Type'] || 'application/json'; headers['Content-Length'] = body.length; }
-    if (o.user) headers['x-test-user'] = o.user;
+    /* a link of the service on this port, by the name the test gave it; a name that was never made is a code that no link has */
+    if (o.user) headers['X-PPP-PC'] = (CODES[port] && CODES[port][o.user]) || '0'.repeat(64);
+    if (o.code) headers['X-PPP-PC'] = o.code;
     if (o.token) headers['Authorization'] = 'Bearer ' + o.token;
     if (o.cookie) headers['Cookie'] = o.cookie;
     if (o.ip) headers['X-Forwarded-For'] = o.ip;
@@ -113,7 +120,9 @@ function countingStore(inner) {
 function tmpDir(prefix) { return fs.mkdtempSync(path.join(os.tmpdir(), prefix || 'ppp-hw-')); }
 function rmDir(d) { try { fs.rmSync(d, { recursive: true, force: true }); } catch (e) { /* gone */ } }
 
-/* The service on its own HTTP server. opts: { store (an inner store; default a file store in a temp dir), config, users (ids), env } */
+/* The service on its own HTTP server. opts: { store (an inner store; default a file store in a temp dir), config, users (names of the PC links to make; default u1, u2),
+   env, extra (more routes), ipSecret, resume (the creds() of an earlier service: the same links, on a store that kept them - a restart) }. Each link is made through POST /api/pc-links from an address of its own (10.250.x.y), so the per-address limits of making links
+   never get in the way of a test that is about something else. */
 async function startService(opts) {
   opts = opts || {};
   const homeJobs = mod('home-jobs.js');
@@ -124,13 +133,11 @@ async function startService(opts) {
   const clock = { t: Date.parse('2026-10-06T12:00:00Z') };
   const users = opts.users || ['u1', 'u2'];
   const logged = [];
-  const lookups = { findUser: 0 };
   const warned = [];
   const svc = homeJobs.create({
     store: store, send: send, jsonError: jsonError, readBody: readBody, parseYoutube: youtubeParser(),
     clientIp: r => String((r.headers['x-forwarded-for'] || '127.0.0.1')).split(',').pop().trim(),
-    sessionUid: r => { const u = r.headers['x-test-user']; return u && users.indexOf(String(u)) >= 0 ? String(u) : null; },
-    findUser: async id => { lookups.findUser++; return users.indexOf(id) >= 0 ? { id: id, displayName: 'User ' + id } : null; },
+    ipSecret: opts.ipSecret || 'test-secret',
     warn: w => warned.push(w),
     now: () => clock.t, env: opts.env || {}, config: Object.assign({ longPollMs: 300 }, opts.config || {}),
     logError: e => logged.push(String(e && e.message))
@@ -143,11 +150,25 @@ async function startService(opts) {
   });
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   const port = server.address().port;
-  return {
-    port: port, svc: svc, store: store, inner: inner, clock: clock, dir: dir, logged: logged, lookups: lookups, warned: warned,
+  const codes = CODES[port] = {}, tokens = {}, ids = {};
+  if (opts.resume) { Object.assign(codes, opts.resume.codes); Object.assign(tokens, opts.resume.tokens); Object.assign(ids, opts.resume.ids); }
+  let nextAddr = 1;
+  const S = {
+    port: port, svc: svc, store: store, inner: inner, clock: clock, dir: dir, logged: logged, warned: warned,
     advance: ms => { clock.t += ms; },
-    close: () => new Promise(r => { server.closeAllConnections && server.closeAllConnections(); server.close(() => { rmDir(dir); r(); }); }),
-    /* a signed-in user's request */
+    close: () => new Promise(r => { delete CODES[port]; server.closeAllConnections && server.closeAllConnections(); server.close(() => { rmDir(dir); r(); }); }),
+    code: u => codes[u], token: u => tokens[u], linkId: u => ids[u],
+    creds: () => ({ codes: Object.assign({}, codes), tokens: Object.assign({}, tokens), ids: Object.assign({}, ids) }),
+    /* make a link as a browser does (no sign-in); `name` is what the test calls it; opts.ip: the address it is made from (default: a new one each time) */
+    makeLink: async (name, o) => {
+      o = o || {};
+      const n = nextAddr++;
+      const r = await req(port, 'POST', '/api/pc-links', { body: {}, ip: o.ip || ('10.250.' + (n >> 8) + '.' + (n & 255)), headers: o.headers });
+      if (r.status !== 201) throw new Error('making the PC link ' + name + ': ' + r.status + ' ' + r.text);
+      codes[name] = r.body.clientCode; tokens[name] = r.body.workerToken; ids[name] = r.body.id;
+      return r;
+    },
+    /* a link's requests: S.as('u1').get(...) sends its client code */
     as: user => ({
       get: (p, o) => req(port, 'GET', p, Object.assign({ user: user }, o)),
       post: (p, body, o) => req(port, 'POST', p, Object.assign({ user: user, body: body == null ? {} : body }, o)),
@@ -159,6 +180,8 @@ async function startService(opts) {
       post: (p, body, o) => req(port, 'POST', p, Object.assign({ token: token, body: body == null ? {} : body }, o))
     })
   };
+  for (const u of (opts.resume ? [] : users)) await S.makeLink(u);
+  return S;
 }
 
 const WATCH = id => 'https://www.youtube.com/watch?v=' + id;
@@ -174,4 +197,4 @@ function notes(n, secs) {
 const goodResult = n => ({ notes: notes(n || 40, 60), duration: 61.5, engine: 'ensemble', model: 'TransKun V2 + Kong', device: 'cuda',
   ensemble: { models: ['transkun', 'piano-transcription'], primary: 'transkun', agreement: 0.83, accepted: n || 40, uncertain: 7 } });
 
-module.exports = { REPO, MODS, mod, ok, errors, sleep, heading, finish, req, readBody, send, jsonError, youtubeParser, countingStore, tmpDir, rmDir, startService, WATCH, notes, goodResult, crypto, http, fs, path, os };
+module.exports = { REPO, MODS, mod, ok, errors, sleep, heading, finish, req, CODES, readBody, send, jsonError, youtubeParser, countingStore, tmpDir, rmDir, startService, WATCH, notes, goodResult, crypto, http, fs, path, os };

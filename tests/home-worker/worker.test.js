@@ -76,7 +76,7 @@ function newWorker(S, token, st, over, depsOver) {
 }
 const scratchLeft = cfg => { try { return fs.readdirSync(cfg.scratchDir).length; } catch (e) { return 0; } };
 const jobOf = (S, id) => S.svc._state.jobs.get(id);
-async function mkToken(S, user) { return (await S.as(user).post('/api/worker/tokens', { label: 'PC' })).body.token; }
+async function mkToken(S, user) { return S.token(user); }   /* the token the link was made with */
 async function queue(S, user, id) { return (await S.as(user).post('/api/jobs', { url: WATCH(id), title: 'Piece ' + id })).body.job; }
 
 (async () => {
@@ -494,9 +494,12 @@ async function queue(S, user, id) { return (await S.as(user).post('/api/jobs', {
     const loopBad = newWorker(S, 'ppw_' + 'Z'.repeat(12) + '_' + 'y'.repeat(43), st);
     ok('the loop stops on it too (exit 2), instead of trying for ever', (await loopBad.w.runForever()) === 2);
     const rev = await mkToken(S, 'u2');
-    const id2 = rev.slice(4, 16);
-    await S.as('u2').del('/api/worker/tokens/' + id2);
-    ok('a revoked token is the same', (await newWorker(S, rev, st).w.runOnce()) === 2);
+    await S.as('u2').post('/api/pc-links/me/worker-token', {});
+    ok('a token that was replaced by a new one (rotated) is the same: --once exits 2', (await newWorker(S, rev, st).w.runOnce()) === 2);
+    await S.makeLink('gone');
+    const rev2 = S.token('gone');
+    await S.as('gone').del('/api/pc-links/me');
+    ok('and so is the token of a link that was removed', (await newWorker(S, rev2, st).w.runOnce()) === 2);
     const dead = L.http.createServer(() => {}); await new Promise(r => dead.listen(0, '127.0.0.1', r)); const deadPort = dead.address().port; await new Promise(r => dead.close(r));
     const down = newWorker(S, token, st, { siteUrl: 'http://127.0.0.1:' + deadPort, audioBase: 'http://127.0.0.1:' + deadPort });
     ok('--once with the site unreachable: tries 3 times, says so, exits 1 (not 0, not a crash)', (await down.w.runOnce()) === 1 && /Could not reach the site/.test(down.cap.out.join('\n')) && (down.cap.out.join('\n').match(/Trying again/g) || []).length === 2, down.cap.out.join('\n').slice(0, 400));
