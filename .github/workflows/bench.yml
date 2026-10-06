@@ -61,7 +61,7 @@ jobs:
   # shard-b: rec-grid, rec-arrange-smoke, robust, the engrave generator checks, test:rec, the key check
   #   (steps ~340 s on a fast runner, ~587 s on a slow one)
   shard-b:
-    if: github.event_name != 'schedule'
+    if: false                     # TD22 negative test: a SKIPPED shard must turn gate red
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
