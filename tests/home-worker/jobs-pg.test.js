@@ -22,7 +22,7 @@ const URL_ = process.env.PPP_TEST_PG_URL;
 if (!URL_) { console.log('  - PPP_TEST_PG_URL is not set: no throwaway Postgres to test against. Skipping.'); process.exit(0); }
 if (!/@(127\.0\.0\.1|localhost)[:/]/.test(URL_)) { console.error('Refusing: this test drops tables, and only runs against localhost.'); process.exit(2); }
 const { Pool } = require('pg');
-const Store = require('../../home-jobs-store');
+const Store = L.mod('home-jobs-store.js');
 
 async function startServer(env) {
   const port = await freePort();

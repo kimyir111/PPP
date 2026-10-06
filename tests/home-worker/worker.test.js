@@ -13,8 +13,8 @@
 'use strict';
 const L = require('./lib');
 const { ok, heading, sleep, req, WATCH } = L;
-const W = require('../../tools/home-worker/worker.js');
-const { convertHelperNotes } = require('../../review/h10/helper-heard.js');
+const W = L.mod('tools/home-worker/worker.js');
+const { convertHelperNotes } = L.mod('review/h10/helper-heard.js');
 const path = require('path');
 const fs = require('fs');
 
@@ -110,7 +110,7 @@ async function queue(S, user, id) { return (await S.as(user).post('/api/jobs', {
       ok('the 17 uncertain notes are not notes: they are a number', r.result.notes.length === 120 && r.result.ensemble.uncertain === 17 && r.result.ensemble.accepted === 120);
       ok('there is no pedal and no beats in what is sent, and no per-note confidence', !('pedals' in r.result) && !('beats' in r.result) && !('uncertainNotes' in r.result) && r.result.notes.every(n => Object.keys(n).sort().join() === 'midi,off,on,vel'));
       ok('the ensemble summary is what the page reads: models, primary, agreement', r.result.ensemble.models.join() === 'transkun,piano-transcription' && r.result.ensemble.primary === 'transkun' && r.result.ensemble.agreement === 0.812 && r.result.device === 'cuda' && r.result.engine === 'ensemble');
-      ok('what is sent passes the site\'s own checks', require('../../home-result').validateResult(r.result).ok);
+      ok('what is sent passes the site\'s own checks', L.mod('home-result.js').validateResult(r.result).ok);
       const long = JSON.parse(JSON.stringify(fakeRaw)); long.notes.forEach((n, i) => { n.on = i * 10; n.off = i * 10 + 5; }); long.duration = 1200;
       const lr = w.toResult(long);
       ok('notes past 15 minutes are cut, so a long piece is the first 15 minutes (as in the app), and still accepted', lr.result.notes.every(n => n.on < 901 && n.off <= 901) && lr.result.duration <= 901 && lr.result.notes.length > 80);
@@ -200,7 +200,7 @@ async function queue(S, user, id) { return (await S.as(user).post('/api/jobs', {
     heading('the network and the token');
     const jr = await queue(S, 'u1', 'retryresult');
     let posts = 0;
-    const real = require('../../tools/home-worker/worker.js').request;
+    const real = W.request;
     const flaky = (cfg, m, p, o) => { if (/\/result$/.test(p) && posts++ === 0) return Promise.resolve({ status: 503, body: { error: 'x' }, text: '', headers: {} }); return real(cfg, m, p, o); };
     const xr = newWorker(S, token, st, {}, { request: flaky });
     ok('a result the site answers 503 to is sent again, and then taken', (await xr.w.runOnce()) === 0 && jobOf(S, jr.id).status === 'done' && posts === 2, jobOf(S, jr.id).status + ' ' + posts);
@@ -215,6 +215,20 @@ async function queue(S, user, id) { return (await S.as(user).post('/api/jobs', {
     const dead = L.http.createServer(() => {}); await new Promise(r => dead.listen(0, '127.0.0.1', r)); const deadPort = dead.address().port; await new Promise(r => dead.close(r));
     const down = newWorker(S, token, st, { siteUrl: 'http://127.0.0.1:' + deadPort, audioBase: 'http://127.0.0.1:' + deadPort });
     ok('--once with the site unreachable: tries 3 times, says so, exits 1 (not 0, not a crash)', (await down.w.runOnce()) === 1 && /Could not reach the site/.test(down.cap.out.join('\n')) && (down.cap.out.join('\n').match(/Trying again/g) || []).length === 2, down.cap.out.join('\n').slice(0, 400));
+
+    heading('the site is trusted with the queue, not with what this PC runs');
+    {
+      const seen = []; let n = 0;
+      const evil = (cfg, m, p, o) => {
+        seen.push(m + ' ' + p.replace(/[A-Za-z0-9_-]{12,}/, ':id'));
+        if (/claim$/.test(p)) return Promise.resolve({ status: 200, body: n++ === 0 ? { job: { id: 'abcdefgh1234', url: 'file:///etc/passwd', title: 'x', attempt: 1 }, nextPollSeconds: 15 } : { job: null, nextPollSeconds: 15 }, text: '', headers: {} });
+        return Promise.resolve({ status: 200, body: { ok: true }, text: '', headers: {} });
+      };
+      const ran = [];
+      const xe = newWorker(S, token, st, { ytdlpPath: 'yt-dlp-stub' }, { request: evil, runTool: (c, a, o) => { ran.push(c); return tools(st)(c, a, o); }, download: () => { ran.push('download'); return Promise.reject(new Error('no')); } });
+      const rc = await xe.w.runOnce();
+      ok('a job whose link is not a YouTube video is not run: no download, no yt-dlp, no ffmpeg; it is failed for good, with a sentence', ran.length === 0 && seen.some(x => /\/fail$/.test(x)) && !seen.some(x => /heartbeat/.test(x)) && rc === 1, JSON.stringify({ ran: ran, seen: seen }));
+    }
 
     heading('the loop: patient, and it never dies of the network');
     const lp = newWorker(S, token, st, {}, {});

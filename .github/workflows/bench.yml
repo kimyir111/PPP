@@ -172,7 +172,7 @@ jobs:
             tests/bench/out/replay-public/summary.md
             tests/bench/out/correctness/report.json
 
-  # shard-e: test:engrave, the planner, the grid check, sg-roundtrip, robust-app, rec-robust
+  # shard-e: test:engrave, test:home-worker, the planner, the grid check, sg-roundtrip, robust-app, rec-robust
   #   (steps ~323 s on a fast runner, ~548 s on a slow one)
   shard-e:
     if: github.event_name != 'schedule'
@@ -185,6 +185,7 @@ jobs:
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5
         with: { python-version: '3.13' }
+      - run: npm run test:home-worker                # G10b-1: the home-PC queue, its worker and server.js with it (Node only, ~40 s; the Postgres part skips without PPP_TEST_PG_URL)
       - run: npm run test:engrave                    # G4a-G4d-1a: render source, NotationPlan and ledger, layout, notation, SVG, curves and marks (G04)
       - run: npm run test:arrangement-planner         # G7b: texture ladder, deterministic search, real-corpus coverage, mutation suite (G07B)
       - run: node tests/bench/tools/train_grid.js --check   # G10a-2 (AI-5b): the grid stage's committed weights are what the training makes (G10 section 20)

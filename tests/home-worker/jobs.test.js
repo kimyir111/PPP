@@ -16,8 +16,8 @@
 'use strict';
 const L = require('./lib');
 const { ok, heading, sleep, req, WATCH, goodResult, notes } = L;
-const R = require('../../home-result');
-const J = require('../../home-jobs');
+const R = L.mod('home-result.js');
+const J = L.mod('home-jobs.js');
 
 const URL1 = WATCH('vgnliVjJUOo');
 
@@ -322,9 +322,12 @@ async function main() {
       ok('and it says when to come back', rr.status === 429 && Number(rr.headers['retry-after']) > 0);
       ok('another address is not affected', (await S3.worker(tk).get('/api/worker/ping', { ip: '8.8.8.8' })).status === 200);
       ok('a real token from the blocked address is held too, until the hour is out', (await S3.worker(tk).get('/api/worker/ping', { ip: '9.9.9.9' })).status === 429);
-      const en = [];
-      for (let i = 0; i < 4; i++) en.push((await S3.as('r1').post('/api/jobs', { url: WATCH('qqqqqqqqqq' + i) })).status);
-      ok('enqueueing is rate limited per account per hour (30), a refused one costs nothing', en.every(s => s === 201 || s === 429), en.join());
+      let made = 0, refused = null;
+      for (let i = 0; i < 34; i++) {
+        const r = await S3.as('r1').post('/api/jobs', { url: WATCH('qqqqqqqq' + String(i).padStart(3, '0')) });
+        if (r.status === 201) { made++; await S3.as('r1').post('/api/jobs/' + r.body.job.id + '/cancel'); } else if (!refused) refused = r;
+      }
+      ok('30 enqueues an hour per account, then 429 (too-many, with Retry-After); each refused one is free', made === 30 && !!refused && refused.status === 429 && refused.body.code === 'too-many' && Number(refused.headers['retry-after']) > 0, made + ' ' + (refused && refused.status));
       const lim = J.LIMITS;
       ok('the limits are the ones the design states', lim.PENDING_PER_USER === 5 && lim.ROWS_PER_USER === 30 && lim.TOKENS_PER_USER === 5 && lim.MAX_ATTEMPTS === 3 && lim.LEASE_MS === 30 * 60 * 1000
         && lim.DONE_TTL_MS === 3 * 86400000 && lim.OTHER_TTL_MS === 86400000 && R.LIMITS.RESULT_MAX_BYTES === 2 * 1024 * 1024 && R.LIMITS.MAX_NOTES === 20000 && R.LIMITS.MAX_SECONDS === 900);
@@ -355,8 +358,30 @@ async function main() {
       ok('with nothing left to purge, no DELETE is run', (S4.store.calls.purge || 0) === before, before + ' -> ' + S4.store.calls.purge);
     } finally { await S4.close(); }
 
+    heading('the free database is small: one cap on all the notes kept');
+    for (const cap of [1900, 1856]) {
+      const SC = await L.startService({ users: ['c1', 'c2'], config: { totalResultBytes: cap } });
+      try {
+        const tc = await mkToken(SC, 'c1');
+        const j1 = (await enqueue(SC, 'c1', 'capcapcap01')).body.job;
+        await SC.worker(tc).post('/api/worker/claim', { once: true });
+        const r1 = await SC.worker(tc).post('/api/worker/jobs/' + j1.id + '/result', goodResult(40));
+        ok('cap ' + cap + ': the first result (1856 bytes) is kept', r1.status === 200);
+        const j2 = await enqueue(SC, 'c1', 'capcapcap02');
+        if (cap === 1856) {
+          ok('cap ' + cap + ': once the notes kept reach it, a new job is refused (503 busy), and the refusal is not counted against the person', j2.status === 503 && j2.body.code === 'busy');
+        } else {
+          await SC.worker(tc).post('/api/worker/claim', { once: true });
+          const r2 = await SC.worker(tc).post('/api/worker/jobs/' + j2.body.job.id + '/result', goodResult(40));
+          ok('cap ' + cap + ': a result that would pass it is refused (503 busy) and the job stays claimed', j2.status === 201 && r2.status === 503 && r2.body.code === 'busy' && jobStatus(SC, j2.body.job.id) === 'claimed', r2.status + ' ' + r2.text);
+          await SC.advance(4 * 86400000); await SC.svc._state.purge(SC.clock.t);
+          ok('cap ' + cap + ': after the keeping time frees room it is taken', (await SC.worker(tc).post('/api/worker/jobs/' + j2.body.job.id + '/result', goodResult(40))).status === 200);
+        }
+      } finally { await SC.close(); }
+    }
+
     heading('THE FREE-TIER RULE: an idle poll runs no SQL');
-    const S5 = await L.startService({ users: ['z1'], config: { longPollMs: 50 } });
+    const S5 = await L.startService({ users: ['z1'], config: { longPollMs: 600 } });
     try {
       const tk = await mkToken(S5, 'z1');
       const mine = (await S5.as('z1').get('/api/jobs')).body.worker;
@@ -379,7 +404,7 @@ async function main() {
         if (r.status !== 200 || r.body.job !== null) { ok('idle poll ' + i + ' answered 200, no job', false, r.status + ' ' + r.text); break; }
       }
       ok('60 idle polls (20 minutes apart, 20 hours) ran ZERO store calls', S5.store.total() === 0, JSON.stringify(S5.store.calls));
-      ok('and none of them waited (an idle poll returns at once)', Math.max.apply(null, times) < 40, 'slowest ' + Math.max.apply(null, times) + ' ms');
+      ok('and none of them waited (an idle poll returns at once)', Math.max.apply(null, times) < 300, 'slowest ' + Math.max.apply(null, times) + ' ms');
       S5.store.reset();
       for (let i = 0; i < 20; i++) await S5.worker(tk).get('/api/worker/ping');
       for (let i = 0; i < 20; i++) { await S5.as('z1').get('/api/jobs'); await S5.as('z1').get('/api/worker/status'); await S5.as('z1').get('/api/worker/tokens'); }
@@ -424,7 +449,7 @@ async function main() {
       ok('with nothing arriving it returns after the wait (about 400 ms here, 25 s in production), job null, still 15 s', none.body.job === null && waited >= 350 && waited < 900 && none.body.nextPollSeconds === 15, waited + ' ms');
       const t3 = Date.now();
       const once = await S6.worker(tk).post('/api/worker/claim', { once: true });
-      ok('--once never waits', once.body.job === null && Date.now() - t3 < 150, (Date.now() - t3) + ' ms');
+      ok('--once never waits', once.body.job === null && Date.now() - t3 < 300, (Date.now() - t3) + ' ms');
       /* a client that hangs up while waiting does not take the job that arrives later */
       const gone = S6.worker(tk).post('/api/worker/claim', {}, { abortAfter: 100 }).catch(() => 'aborted');
       await sleep(160);
@@ -467,7 +492,7 @@ async function main() {
 
     heading('a restart keeps the queue');
     const dir = L.tmpDir();
-    const { fileJobStore } = require('../../home-jobs-store');
+    const { fileJobStore } = L.mod('home-jobs-store.js');
     const A = await L.startService({ users: ['b1'], store: fileJobStore(dir) });
     let tkA, jobA;
     try {

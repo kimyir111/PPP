@@ -8050,13 +8050,13 @@ const Import = {
     }
 
     /* G10b-1: notes the person's own PC already heard (the home worker, with TransKun + Kong): no model runs here; they go the same way the browser model's go.
-       The recording itself is asked for as the browser path asks (best effort, 45 s): without it the review is by eye and says so. */
+       The recording itself is asked for as the browser path asks (best effort, up to 150 s: the site fetches it from YouTube again): without it the review is by eye and says so. */
     if (what.heard) {
       stage('download', { pct: 0 });
       let audioUrl = null;
       try {
         const ac = typeof AbortController === 'function' ? new AbortController() : null;
-        const cut = setTimeout(() => { if (ac) ac.abort(); }, 45000);
+        const cut = setTimeout(() => { if (ac) ac.abort(); }, 150000);
         const r = await fetch('/api/youtube-audio?url=' + encodeURIComponent(what.url), ac ? { signal: ac.signal } : undefined);
         if (r.ok) audioUrl = URL.createObjectURL(await r.blob());
         clearTimeout(cut);

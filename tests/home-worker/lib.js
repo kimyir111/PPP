@@ -1,8 +1,7 @@
 /* Shared parts of the home-PC worker's tests (G10b-1): a checker, a request helper, the queue service on a real HTTP server of its
    own with a COUNTING store (so a test can say "this poll ran no SQL"), and a clock the test moves.
 
-   The service under test is home-jobs.js, or - for the mutation runner (tests/home-worker/mutants.js) - the module named by
-   HOME_JOBS_MODULE (a mutated copy). Nothing here is read by the app. */
+   The modules under test are the repository's, or - for the mutation runner (tests/home-worker/mutants.js) - the copies in HOME_MODULES_DIR. Nothing here is read by the app. */
 'use strict';
 const fs = require('fs');
 const os = require('os');
@@ -11,6 +10,9 @@ const http = require('http');
 const crypto = require('crypto');
 
 const REPO = path.resolve(__dirname, '..', '..');
+/* where the modules under test are read from: the repository, or (the mutation runner, tests/home-worker/mutants.js) a copy with one rule broken */
+const MODS = process.env.HOME_MODULES_DIR ? path.resolve(process.env.HOME_MODULES_DIR) : REPO;
+const mod = rel => require(path.join(MODS, rel));
 const errors = [];
 let passed = 0;
 const ok = (name, cond, detail) => {
@@ -114,9 +116,8 @@ function rmDir(d) { try { fs.rmSync(d, { recursive: true, force: true }); } catc
 /* The service on its own HTTP server. opts: { store (an inner store; default a file store in a temp dir), config, users (ids), env } */
 async function startService(opts) {
   opts = opts || {};
-  const modPath = process.env.HOME_JOBS_MODULE || path.join(REPO, 'home-jobs.js');
-  const homeJobs = require(modPath);
-  const { fileJobStore } = require(path.join(REPO, 'home-jobs-store.js'));
+  const homeJobs = mod('home-jobs.js');
+  const { fileJobStore } = mod('home-jobs-store.js');
   const dir = tmpDir();
   const inner = opts.store || fileJobStore(dir);
   const store = countingStore(inner);
@@ -170,4 +171,4 @@ function notes(n, secs) {
 const goodResult = n => ({ notes: notes(n || 40, 60), duration: 61.5, engine: 'ensemble', model: 'TransKun V2 + Kong', device: 'cuda',
   ensemble: { models: ['transkun', 'piano-transcription'], primary: 'transkun', agreement: 0.83, accepted: n || 40, uncertain: 7 } });
 
-module.exports = { REPO, ok, errors, sleep, heading, finish, req, readBody, send, jsonError, youtubeParser, countingStore, tmpDir, rmDir, startService, WATCH, notes, goodResult, crypto, http, fs, path, os };
+module.exports = { REPO, MODS, mod, ok, errors, sleep, heading, finish, req, readBody, send, jsonError, youtubeParser, countingStore, tmpDir, rmDir, startService, WATCH, notes, goodResult, crypto, http, fs, path, os };

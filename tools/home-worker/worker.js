@@ -280,6 +280,7 @@ function downloadTo(url, dest, o) {
 }
 
 /* ---------------- one job ---------------- */
+const YT_RE = /^https:\/\/www\.youtube\.com\/watch\?v=[\w-]{6,}$/;
 class JobError extends Error {
   constructor(message, retry) { super(message); this.retry = !!retry; }
 }
@@ -422,6 +423,13 @@ function createWorker(cfg, deps) {
   /* one claimed job, start to finish. Never throws except for a rejected token (fatalToken). */
   async function processJob(job) {
     const t0 = Date.now();
+    /* the site is trusted with the queue, not with what this PC runs: only a YouTube watch link is ever handed to the download or to yt-dlp */
+    if (!job || typeof job.id !== 'string' || !YT_RE.test(String(job.url || ''))) {
+      log.warn('The site sent a job whose link is not a YouTube video; it is not run.');
+      stats.failed++;
+      if (job && typeof job.id === 'string') await postFail(job, 'The link is not a YouTube video.', false);
+      return false;
+    }
     const label = job.title ? '"' + job.title + '"' : job.url;
     log('A conversion is waiting: ' + label + (job.attempt > 1 ? ' (attempt ' + job.attempt + ' of ' + (job.maxAttempts || 3) + ')' : ''));
     fs.mkdirSync(scratchRoot, { recursive: true });

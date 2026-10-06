@@ -46,6 +46,9 @@ const LIMITS = {
   DONE_TTL_MS: 3 * DAY,
   OTHER_TTL_MS: 1 * DAY,
   PURGE_EVERY_MS: 6 * HOUR,
+  /* what all stored notes together may take of the free database (Neon Free is small, and shared with the shared scores): past it, no job is
+     accepted and no result is stored until the keeping time frees room. Accounts are free to make, so the per-account caps alone are not a bound. */
+  TOTAL_RESULT_BYTES: 64 * 1024 * 1024,
   SWEEP_EVERY_MS: 10 * 1000,
   /* request bodies */
   JOB_BODY: 4 * 1024,
@@ -70,7 +73,8 @@ function configFrom(env, over) {
     /* after something finished, this long the worker is still asked to come back soon (the next job of a batch) */
     activeTailMs: 5 * 60 * 1000,
     /* a poll with work in sight waits this long for a job to arrive; with nothing in sight it returns at once */
-    longPollMs: 25 * 1000
+    longPollMs: 25 * 1000,
+    totalResultBytes: LIMITS.TOTAL_RESULT_BYTES
   }, over || {});
 }
 
@@ -209,6 +213,7 @@ function create(deps) {
     if (j.status === 'claimed' && j.progress) o.progress = j.progress;
     return o;
   }
+  const storedBytes = () => { let n = 0; jobs.forEach(j => { if (j.status === 'done') n += j.bytes || 0; }); return n; };
   const ownJobs = ownerId => { const out = []; jobs.forEach(j => { if (j.ownerId === ownerId) out.push(j); }); return out; };
   const pending = j => j.status === 'queued' || j.status === 'claimed';
 
@@ -332,6 +337,7 @@ function create(deps) {
       limiters.enqueue.release(user.id); limiters.enqueueAll.release('all');
       throw httpError(429, 'You already have ' + L.PENDING_PER_USER + ' conversions waiting. Wait for one to finish, or cancel one.', 'queue-full');
     }
+    if (storedBytes() >= C.totalResultBytes) { limiters.enqueue.release(user.id); limiters.enqueueAll.release('all'); throw httpError(503, 'The queue is full right now. Try again later.', 'busy'); }
     if (jobs.size >= L.MAX_ROWS) { limiters.enqueue.release(user.id); limiters.enqueueAll.release('all'); throw httpError(503, 'The queue is full right now. Try again later.', 'busy'); }
     /* room for it among the person's rows: the oldest finished ones go first */
     if (mine.length >= L.ROWS_PER_USER) {
@@ -554,6 +560,7 @@ function create(deps) {
     const body = await readJson(req, L.RESULT_BODY, L.RESULT_DRAIN);
     const v = R.validateResult(body);
     if (!v.ok) throw httpError(422, v.error, v.code || 'bad-result');
+    if (storedBytes() + v.bytes > C.totalResultBytes) throw httpError(503, 'The site cannot keep more notes right now.', 'busy');
     /* the body took a while to arrive: the job may have been cancelled meanwhile */
     if (job.status !== 'claimed' && job.status !== 'queued') throw httpError(409, job.status === 'cancelled' ? 'That job was cancelled.' : 'That job is not waiting for this any more.', job.status === 'cancelled' ? 'cancelled' : 'not-open', { status: job.status });
     const t = now();
@@ -650,7 +657,7 @@ function create(deps) {
   }
 
   return {
-    owns: owns, handle: handle,
+    owns: owns, handle: handle, config: C,
     /* for tests */
     _state: { jobs: jobs, tokens: tokens, limiters: limiters, stats: stats, config: C, isLoaded: () => loaded, forgetAll: () => { loaded = false; userCache.clear(); }, purge: t => purgeIfDue(t, true), sweep: t => { lastSweep = 0; return sweep(t); } }
   };

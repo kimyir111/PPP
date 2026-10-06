@@ -159,7 +159,13 @@ function fileJobStore(dir) {
     fs.mkdirSync(dir, { recursive: true });
     const tmp = file + '.' + process.pid + '.tmp';
     fs.writeFileSync(tmp, JSON.stringify(d));
-    fs.renameSync(tmp, file);
+    for (let i = 0; ; i++) {
+      try { fs.renameSync(tmp, file); return; } catch (e) {
+        /* Windows: a scanner or another process can hold the file for a moment; the same rename a few milliseconds later works */
+        if (i >= 8 || !/^(EPERM|EBUSY|EACCES)$/.test(String(e && e.code))) throw e;
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 5 + i * 10);
+      }
+    }
   }
   const plain = r => { const o = Object.assign({}, r); delete o.result; return o; };
   const find = (d, id, ownerId) => d.jobs.find(j => j.id === id && j.ownerId === ownerId);
