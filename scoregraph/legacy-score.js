@@ -553,7 +553,10 @@
          bass staves both have a line in one bar is the same music in two orders (G10a-6). Score.finalize reads each
          note against the lines of ITS staff and takes the latest start, so their order in the array is not music;
          what is: the staff, both ends and the shift. */
-      const ottOrder = (x, y) => (x.m - y.m) || (x.b - y.b) || ((x.staff || 0) - (y.staff || 0)) || ((x.endM || 0) - (y.endM || 0)) || ((x.endB || 0) - (y.endB || 0)) || ((x.semitones || 0) - (y.semitones || 0));
+      /* the positions are summed beat by beat in the reader (3.2500000000000004 where the graph has 3.25), so the sort reads them to the millionth of a quarter, as cmpJson does when it compares them:
+         on the raw numbers two lines that start together on two staves sorted one way on the Score and the other on the graph (the third of the six covers, G10a-6 review) */
+      const q6 = v => Math.round((+v || 0) * 1e6);
+      const ottOrder = (x, y) => ((x.m || 0) - (y.m || 0)) || (q6(x.b) - q6(y.b)) || ((x.staff || 0) - (y.staff || 0)) || ((x.endM || 0) - (y.endM || 0)) || (q6(x.endB) - q6(y.endB)) || ((x.semitones || 0) - (y.semitones || 0));
       const order = k === 'dynamics' ? l => l.slice().sort((x, y) => x.m - y.m || x.b - y.b) : k === 'ottavas' ? l => l.slice().sort(ottOrder) : l => l;
       cmpJson(say, k, order((a[k] || []).map(drop)), order((b[k] || []).map(drop)));
     });
