@@ -287,6 +287,48 @@ async function queue(S, user, id) { return (await S.as(user).post('/api/jobs', {
       ok('the same through log.warn and through a token the log was not told about (the shape alone)', (() => { const o2 = [], lg2 = W.makeLog({}, s => o2.push(s), () => {}); lg2('t ' + token.slice(0, 30) + '\u001b[0m' + token.slice(30)); return /ppw_\*\*\*$/.test(o2[0]) && o2[0].indexOf(token.slice(30)) < 0; })());
     }
 
+    heading('the log hides the token whatever is put in it: escape sequences that swallow a letter of it, zero-width and invisible characters');
+    {
+      const out = [];
+      const lg = W.makeLog({ token: token }, s => out.push(s), s => out.push(s));
+      /* a character of the token is the letter an ESC sequence takes (ESC then one of @-Z \ ] ^ _): removed with the sequence, the token is not whole in the cleaned text */
+      const swallowed = [];
+      for (let i = 1; i < token.length; i++) if (/[@-Z\\-_]/.test(token[i])) swallowed.push(i);
+      ok('the token has letters that an ESC would swallow (so the cases below are real ones)', swallowed.length >= 3, swallowed.join());
+      const leaks = [];
+      const windows = []; for (let i = 0; i + 9 <= token.length; i++) windows.push(token.slice(i, i + 9));
+      const shows = line => windows.some(w => line.indexOf(w) >= 0);
+      let cases = 0;
+      /* every character the cleaner removes (found by trying them all), and the ones a reviewer found that split a token */
+      const seps = [];
+      for (let c = 0; c < 0x3000; c++) { const ch = String.fromCharCode(c); if (lg.clean('a' + ch + 'b') === 'ab') seps.push(ch); }
+      const more = ['\u200b', '\u200c', '\u200d', '\u2060', '\ufeff', '\u00ad', '\u180e', '\u2061', '\u2062', '\u2063', '\u2064', '\ud800', '\u0301', '\u001b'];
+      const positions = [1, 4, 5, 10, 16, 17, 30, token.length - 1].concat(swallowed.slice(0, 6));
+      for (const sep of seps.concat(more)) {
+        for (const pos of positions) {
+          for (const how of ['log', 'warn']) {
+            out.length = 0; cases++;
+            (how === 'log' ? lg : lg.warn)('boom ' + token.slice(0, pos) + sep + token.slice(pos) + ' end');
+            if (shows(out[0]) || /[\u001b]/.test(out[0])) leaks.push(JSON.stringify(sep) + '@' + pos + ' ' + how + ' -> ' + JSON.stringify(out[0].slice(0, 100)));
+          }
+        }
+      }
+      ok(cases + ' lines (each of the ' + seps.length + ' removed characters and ' + more.length + ' invisible or combining ones, at ' + positions.length + ' places in the token, through log and log.warn): not one shows 9 characters of the token, and none keeps an ESC', leaks.length === 0, leaks.length + ' leaks, e.g. ' + leaks.slice(0, 2).join(' | '));
+      /* an ESC and then the token's own letter, spelled out: the letter is not lost */
+      out.length = 0;
+      lg('x ' + token.slice(0, swallowed[0]) + '\u001b' + token.slice(swallowed[0]) + ' y');
+      ok('an ESC put in front of a letter of the token (ESC takes that letter as its second character): the line still shows only ppw_*** and no ESC', /^\[\d\d:\d\d:\d\d\] x ppw_\*\*\* y$/.test(out[0]), JSON.stringify(out[0]));
+      /* zero-width and invisible characters are removed from the text itself, token or not */
+      const zw = ['\u200b', '\u200c', '\u200d', '\u200e', '\u200f', '\u2060', '\ufeff'];
+      ok('the zero-width space, non-joiner, joiner, the two directional marks, the word joiner and the byte order mark are removed (not replaced)', zw.every(c => lg.clean('a' + c + 'b') === 'ab'), zw.filter(c => lg.clean('a' + c + 'b') !== 'ab').map(c => c.charCodeAt(0).toString(16)).join());
+      out.length = 0;
+      lg('Song' + zw.join('') + ' title \u2060x\ufeff');
+      ok('and a line with them reaches the log without them', /^\[\d\d:\d\d:\d\d\] Song title x$/.test(out[0]), JSON.stringify(out[0]));
+      out.length = 0;
+      lg('colour \u001b[31mred\u001b[0m and a title\u001b]0;pwned\u0007 stay\ttabbed\nnext');
+      ok('a line without a token is cleaned as before: the whole sequences go, a tab and a newline stay', out[0].replace(/^\[\d\d:\d\d:\d\d\] /, '') === 'colour red and a title stay\ttabbed\nnext', JSON.stringify(out[0]));
+    }
+
     heading('a wait is never longer than a day, and never NaN');
     {
       const waitsFor2 = async (script, over, nWaits) => {
@@ -360,6 +402,57 @@ async function queue(S, user, id) { return (await S.as(user).post('/api/jobs', {
       await sleep(200);
       ok('an answer of the site that never ends is cut at 8 MB (not read for 60 s): a NetError "larger than 8 MB", the connection dropped', errE && /larger than 8 MB/.test(errE.message) && m.st.closed && m.st.sent < 64 * 1048576 && Date.now() - t1 < 20000, errE && errE.message + ' sent ' + m.st.sent + ' ms ' + (Date.now() - t1));
       await m.close();
+    }
+
+    heading('the 8 MB cut is for the site\'s JSON answers only: a recording longer than that is downloaded whole (its own cap is 120 MB)');
+    {
+      const MB = 1048576;
+      /* a server with a body of exactly `bytes` (finite), announced by its length or not; `kind` is the content type; the body starts like a wav, or like JSON */
+      const serveBytes = (bytes, announced, kind) => new Promise(res => {
+        const srv = L.http.createServer((q, r) => {
+          const json = kind === 'application/json';
+          r.writeHead(200, Object.assign({ 'Content-Type': kind }, announced ? { 'Content-Length': String(bytes) } : {}));
+          const head = json ? Buffer.from('{"pad":"') : Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WAVEfmt ')]);
+          const tail = json ? Buffer.from('"}') : Buffer.alloc(0);
+          let sent = 0;
+          const chunk = Buffer.alloc(256 * 1024, json ? 0x61 : 1);
+          const pump = () => {
+            if (r.destroyed) return;
+            if (sent === 0) { sent = head.length; return r.write(head, pump); }
+            const left = bytes - tail.length - sent;
+            if (left <= 0) { sent += tail.length; return r.end(tail); }
+            const n = Math.min(chunk.length, left); sent += n; r.write(chunk.subarray(0, n), pump);
+          };
+          pump();
+        });
+        srv.listen(0, '127.0.0.1', () => res({ port: srv.address().port, close: () => new Promise(r2 => { srv.closeAllConnections && srv.closeAllConnections(); srv.close(r2); }) }));
+      });
+      const target = path.join(S.dir, 'big.bin');
+      for (const announced of [true, false]) {
+        const m = await serveBytes(12 * MB, announced, 'audio/wav');
+        let got = null, err = null;
+        try { got = await W.downloadTo('http://127.0.0.1:' + m.port + '/a', target, {}); } catch (x) { err = x; }
+        await m.close();
+        ok('a 12 MB recording (' + (announced ? 'its length announced' : 'streamed with no length') + ') is downloaded in full with the default cap: no "larger than" error, all 12 MB on disk', !err && got && got.bytes === 12 * MB && fs.statSync(target).size === 12 * MB, err ? err.message : JSON.stringify(got));
+        try { fs.unlinkSync(target); } catch (x) { /* gone */ }
+      }
+      {
+        const m = await serveBytes(12 * MB, true, 'audio/wav');
+        let err = null; try { await W.downloadTo('http://127.0.0.1:' + m.port + '/a', target, { maxMB: 10 }); } catch (x) { err = x; }
+        await m.close();
+        ok('...and the cap that does apply to audio is its own: with 10 MB set, the same 12 MB is refused with "larger than 10 MB"', err && /larger than 10 MB/.test(err.message), err && err.message);
+        try { fs.unlinkSync(target); } catch (x) { /* gone */ }
+      }
+      /* the site's answers: 7 MB of JSON is read, 9 MB is cut at 8 */
+      const cfgJ = port => ({ siteUrl: 'http://127.0.0.1:' + port, token: token });
+      const m7 = await serveBytes(7 * MB, true, 'application/json');
+      let r7 = null, e7 = null; try { r7 = await W.request(cfgJ(m7.port), 'POST', '/api/worker/claim', { json: {}, timeoutMs: 30000 }); } catch (x) { e7 = x; }
+      await m7.close();
+      ok('an answer of the site of 7 MB is read (under the 8 MB cut)', !e7 && r7 && r7.status === 200 && r7.text.length === 7 * MB && r7.body && r7.body.pad.length > 6 * MB, e7 ? e7.message : r7 && r7.text.length);
+      const m9 = await serveBytes(9 * MB, true, 'application/json');
+      let r9 = null, e9 = null; try { r9 = await W.request(cfgJ(m9.port), 'POST', '/api/worker/claim', { json: {}, timeoutMs: 30000 }); } catch (x) { e9 = x; }
+      await m9.close();
+      ok('an answer of the site of 9 MB (not endless, just long) is cut at 8 MB: a NetError "larger than 8 MB", nothing returned', !r9 && e9 && /larger than 8 MB/.test(e9.message), e9 ? e9.message : 'read ' + (r9 && r9.text.length));
     }
 
     heading('a redirect is followed only to the same origin - compared as parsed, not as text');

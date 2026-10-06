@@ -2013,6 +2013,8 @@
     "That conversion is not there.": "그 변환을 찾을 수 없어요.",
     "That request did not come from this site.": "이 사이트에서 보낸 요청이 아니에요.",
     "That conversion has already finished.": "그 변환은 이미 끝났어요.",
+    "Cancel that conversion first, then remove it.": "그 변환을 먼저 취소한 다음 지워 주세요.",
+    "This conversion is larger than one account may keep.": "이 변환은 한 계정이 보관할 수 있는 크기보다 커요.",
     "You have 5 PC tokens already. Remove one first.": "PC 토큰이 이미 5개예요. 먼저 하나를 지우세요.",
     "Too many tokens were made just now. Try again later.": "방금 토큰을 너무 많이 만들었어요. 나중에 다시 시도하세요.",
     "That token is not there.": "그 토큰을 찾을 수 없어요.",

@@ -750,8 +750,9 @@ function postgresStore(url) {
     jobStore: homeJobsStore.pgJobStore(q),
     async ready() {
       /* the whole schema work of a boot - this SQL, then the home-PC queue's two tables - runs in one transaction under an advisory lock (home-jobs-store.js): two
-         instances booting together take turns instead of racing or deadlocking */
-      await homeJobsStore.migrate(getPool(), `
+         instances booting together take turns instead of racing or deadlocking. This SQL is fatal when it fails, as it always was; the queue's tables are
+         optional (a failure there is undone on its own, the rest is committed, and the queue is switched off below). */
+      const migrated = await homeJobsStore.migrate(getPool(), `
         CREATE TABLE IF NOT EXISTS ppp_users (
           id TEXT PRIMARY KEY,
           email TEXT UNIQUE NOT NULL,
@@ -797,6 +798,12 @@ function postgresStore(url) {
         END $$;
       `);
       /* (G10b-1: the two new tables are the last part of that same migration: additive, CREATE ... IF NOT EXISTS only; dropping them is the whole rollback) */
+      if (!migrated.queue) {
+        const e0 = migrated.error || {};
+        const why = String(e0.code || e0.name || 'error') + ' ' + String(e0.message || '').split(/\r?\n/)[0].replace(/postgres(?:ql)?:\/\/\S+/gi, 'postgres://...').slice(0, 160);
+        console.error('Home-PC worker queue: OFF - its tables could not be created (' + why.trim() + '). Everything else is running; /api/jobs and /api/worker answer 503 until this is fixed and the server restarts.');
+        jobsService.disable(why);
+      }
     },
     async findByEmail(email) {
       const r = await q('SELECT id, email, display_name AS "displayName", password_hash AS "passwordHash" FROM ppp_users WHERE email = $1', [email]);
@@ -1501,7 +1508,7 @@ store.ready().then(() => {
   setInterval(sweepGuestShares, GUEST.SWEEP_MS).unref();
   server.listen(PORT, HOST, () => {
     console.log('PPP listening on http://' + HOST + ':' + PORT);
-    console.log('Home-PC worker queue: an idle worker is told to wait ' + jobsService.config.idlePollS + ' s, a busy one ' + jobsService.config.activePollS + ' s (PPP_WORKER_IDLE_POLL_S, PPP_WORKER_ACTIVE_POLL_S)');
+    if (!jobsService.isDisabled()) console.log('Home-PC worker queue: an idle worker is told to wait ' + jobsService.config.idlePollS + ' s, a busy one ' + jobsService.config.activePollS + ' s (PPP_WORKER_IDLE_POLL_S, PPP_WORKER_ACTIVE_POLL_S)');
     console.log('Guest links: the client address is read from ' + (process.env.RENDER ? 'CF-Connecting-IP, then True-Client-IP, then ' : '')
       + 'X-Forwarded-For (' + (Math.max(1, parseInt(process.env.PPP_PROXY_HOPS, 10) || 1)) + ' from the right), then the socket');
     if (HOST === '127.0.0.1' || HOST === 'localhost') startHelperIfMissing();

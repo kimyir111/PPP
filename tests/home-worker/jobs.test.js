@@ -552,6 +552,160 @@ async function main() {
       } finally { await SF.close(); }
     }
 
+    heading('eviction takes finished conversions only: never a waiting or converting one, never another account\'s');
+    {
+      /* (a) at the cap of rows (4 here instead of 30): three of the account's rows wait or convert, one is done; the neighbour's finished rows are the OLDEST of all */
+      const rowsWas = J.LIMITS.ROWS_PER_USER;
+      J.LIMITS.ROWS_PER_USER = 4;
+      const SM = await L.startService({ users: ['mb', 'nb'], config: { perUserResultBytes: 1e9, resultReserveBytes: 0, totalResultBytes: 1e9 } });
+      try {
+        const tm = await mkToken(SM, 'mb'), tn = await mkToken(SM, 'nb');
+        const n1 = await convert(SM, 'nb', tn, 'nbdone00001'); SM.advance(1000);
+        const n2 = await failed(SM, 'nb', tn, 'nbfail00001'); SM.advance(1000);
+        const d1 = await convert(SM, 'mb', tm, 'mbdone00001'); SM.advance(1000);
+        const w1 = (await enqueue(SM, 'mb', 'mbwait00001')).body.job; SM.advance(1000);
+        const w2 = (await enqueue(SM, 'mb', 'mbwait00002')).body.job; SM.advance(1000);
+        const w1claimed = (await SM.worker(tm).post('/api/worker/claim', { once: true })).body.job;
+        ok('the account has one done, one converting and one waiting row (3 of its 4)', w1claimed.id === w1.id && jobStatus(SM, w1.id) === 'claimed' && jobStatus(SM, w2.id) === 'queued' && jobStatus(SM, d1.q.body.job.id) === 'done');
+        const w3 = await enqueue(SM, 'mb', 'mbwait00003');
+        ok('a 4th row fits the cap: nothing is cleared', w3.status === 201 && jobStatus(SM, d1.q.body.job.id) === 'done');
+        const w4 = await enqueue(SM, 'mb', 'mbwait00004');
+        ok('a 5th row: the one finished conversion is cleared; the converting one and both waiting ones are not', w4.status === 201 && jobStatus(SM, d1.q.body.job.id) === 'gone'
+          && jobStatus(SM, w1.id) === 'claimed' && jobStatus(SM, w2.id) === 'queued' && jobStatus(SM, w3.body.job.id) === 'queued', [d1.q.body.job.id, w1.id, w2.id].map(id => jobStatus(SM, id)).join());
+        const w5 = await enqueue(SM, 'mb', 'mbwait00005');
+        const mineNow = () => Array.from(SM.svc._state.jobs.values()).filter(j => j.ownerId === 'mb');
+        ok('a 6th with nothing finished left to clear is accepted past the row cap: none of the five rows that wait or convert is touched, in memory or in the store', w5.status === 201 && mineNow().length === 5
+          && mineNow().every(j => j.status === 'queued' || j.status === 'claimed') && (await SM.inner.loadAll()).jobs.filter(j => j.ownerId === 'mb').length === 5);
+        const w6 = await enqueue(SM, 'mb', 'mbwait00006');
+        ok('a 7th is the cap of waiting jobs (429 queue-full) and clears nothing', w6.status === 429 && w6.body.code === 'queue-full' && mineNow().length === 5);
+        ok('the neighbour\'s finished rows, older than all of this, are exactly as they were (memory, store and the notes)', jobStatus(SM, n1.q.body.job.id) === 'done' && jobStatus(SM, n2.g.id) === 'failed'
+          && (await SM.inner.getResult(n1.q.body.job.id, 'nb')) !== null && (await SM.inner.loadAll()).jobs.filter(j => j.ownerId === 'nb').length === 2);
+      } finally { J.LIMITS.ROWS_PER_USER = rowsWas; await SM.close(); }
+      /* (b) at the notes quota: only a finished conversion that holds notes goes (oldest first) - not a failed one, not one that waits or converts, not the neighbour's */
+      const SQ = await L.startService({ users: ['mb', 'nb'], config: { perUserResultBytes: 4000, resultReserveBytes: 1000, totalResultBytes: 1e9 } });
+      try {
+        const tm = await mkToken(SQ, 'mb'), tn = await mkToken(SQ, 'nb');
+        const n1 = await convert(SQ, 'nb', tn, 'nbdone00001'); SQ.advance(1000);
+        const f1 = await failed(SQ, 'mb', tm, 'mbfail00001'); SQ.advance(1000);
+        const d1 = await convert(SQ, 'mb', tm, 'mbdone00001'); SQ.advance(1000);
+        const d2 = await convert(SQ, 'mb', tm, 'mbdone00002'); SQ.advance(1000);
+        ok('a failed row (the oldest) and two done results of 1856 bytes are kept (3712 of the 4000)', storedOf(SQ, 'mb') === 3712 && d1.r.status === 200 && d2.r.status === 200);
+        const w1 = (await enqueue(SQ, 'mb', 'mbwait00001')).body.job;
+        ok('a new job asks for 1000 more than 3712 holds in 4000: the OLDEST done conversion goes; the newer one, the failed row and the neighbour\'s are kept', jobStatus(SQ, d1.q.body.job.id) === 'gone'
+          && jobStatus(SQ, d2.q.body.job.id) === 'done' && jobStatus(SQ, f1.g.id) === 'failed' && jobStatus(SQ, n1.q.body.job.id) === 'done' && storedOf(SQ, 'mb') === 1856, [d1.q.body.job.id, d2.q.body.job.id, f1.g.id].map(id => jobStatus(SQ, id)).join());
+        const w2 = (await enqueue(SQ, 'mb', 'mbwait00002')).body.job, w3 = (await enqueue(SQ, 'mb', 'mbwait00003')).body.job;
+        ok('two more jobs fit (1856 + 1000 is under the share): nothing else is cleared', jobStatus(SQ, d2.q.body.job.id) === 'done');
+        const g1 = (await SQ.worker(tm).post('/api/worker/claim', { once: true })).body.job, g2 = (await SQ.worker(tm).post('/api/worker/claim', { once: true })).body.job, g3 = (await SQ.worker(tm).post('/api/worker/claim', { once: true })).body.job;
+        const r1 = await SQ.worker(tm).post('/api/worker/jobs/' + g1.id + '/result', goodResult(40));
+        ok('a result that fits (1856 + 1856 is under 4000): taken, nothing cleared', g1.id === w1.id && r1.status === 200 && jobStatus(SQ, d2.q.body.job.id) === 'done');
+        const r2 = await SQ.worker(tm).post('/api/worker/jobs/' + g2.id + '/result', goodResult(40));
+        ok('a result that would pass the share is taken too, and the oldest finished conversion is cleared for it - the third job, still converting, and the failed row are not', r2.status === 200 && jobStatus(SQ, d2.q.body.job.id) === 'gone'
+          && jobStatus(SQ, g3.id) === 'claimed' && g3.id === w3.id && jobStatus(SQ, f1.g.id) === 'failed' && storedOf(SQ, 'mb') === 3712 && jobStatus(SQ, w2.id) === 'done', [d2.q.body.job.id, g3.id, f1.g.id].map(id => jobStatus(SQ, id)).join());
+        ok('and still the neighbour\'s done conversion, with its notes, is exactly as it was', jobStatus(SQ, n1.q.body.job.id) === 'done' && (await SQ.inner.getResult(n1.q.body.job.id, 'nb')) !== null);
+      } finally { await SQ.close(); }
+    }
+
+    heading('the caps are taken before anything is awaited: requests at the same moment');
+    {
+      const rowsWas = J.LIMITS.ROWS_PER_USER;
+      J.LIMITS.ROWS_PER_USER = 8;
+      const SK = await L.startService({ users: ['racer', 'twin', 'flaky'], config: { perUserResultBytes: 1e9, resultReserveBytes: 0, totalResultBytes: 1e9 } });
+      try {
+        /* each account is AT its row cap with finished conversions, so every new job has to clear room first: a database call, which is where two requests used to pass the same checks */
+        const filled = {};
+        for (const u of ['racer', 'twin', 'flaky']) {
+          const t = await mkToken(SK, u);
+          filled[u] = [];
+          for (let i = 0; i < 8; i++) { filled[u].push((await convert(SK, u, t, u.slice(0, 4) + 'full' + String(i).padStart(3, '0'))).q.body.job.id); SK.advance(1000); }
+        }
+        const realDelete = SK.store.deleteJobs;
+        SK.store.deleteJobs = async function () { await sleep(40); return realDelete.apply(this, arguments); };
+        const pendingOf = u => Array.from(SK.svc._state.jobs.values()).filter(j => j.ownerId === u && (j.status === 'queued' || j.status === 'claimed')).length;
+        const rowsOf = u => Array.from(SK.svc._state.jobs.values()).filter(j => j.ownerId === u).length;
+        const storeRows = async u => (await SK.inner.loadAll()).jobs.filter(j => j.ownerId === u);
+        const eight = await Promise.all(Array.from({ length: 8 }, (_, i) => enqueue(SK, 'racer', 'racerace' + String(i).padStart(3, '0'))));
+        const codes = eight.map(r => r.status).sort().join();
+        ok('eight different links asked for at the same moment by an account at its row cap: exactly 5 are accepted and 3 are 429 queue-full (the cap of 5 waiting jobs)', codes === '201,201,201,201,201,429,429,429' && eight.filter(r => r.status === 429).every(r => r.body.code === 'queue-full'), codes);
+        ok('5 waiting in memory and in the store - not 8 - and the row cap of 8 holds in both (not 13 or 16)', pendingOf('racer') === 5 && rowsOf('racer') === 8 && (await storeRows('racer')).length === 8 && (await storeRows('racer')).filter(j => j.status === 'queued').length === 5, [pendingOf('racer'), rowsOf('racer'), (await storeRows('racer')).length].join());
+        ok('and what was cleared for them is the finished conversions only, the 5 oldest: the 3 newest are what is left of the 8', Array.from(SK.svc._state.jobs.values()).filter(j => j.ownerId === 'racer' && j.status === 'done').map(j => j.id).sort().join() === filled.racer.slice(5).sort().join());
+        const three = await Promise.all([0, 1, 2].map(() => SK.as('twin').post('/api/jobs', { url: WATCH('twintwin001'), title: 'Same' })));
+        const created = three.filter(r => r.status === 201), existing = three.filter(r => r.status === 200 && r.body.existing === true);
+        ok('the same link asked for three times at the same moment: exactly one job is made, the other two are told it exists - the same one', created.length === 1 && existing.length === 2 && existing.every(r => r.body.job.id === created[0].body.job.id), three.map(r => r.status).join());
+        ok('one waiting row for that link in memory and in the store', pendingOf('twin') === 1 && (await storeRows('twin')).filter(j => j.url === WATCH('twintwin001')).length === 1);
+        /* a write that fails gives the slot back, and the requests that were told "it exists" are not left holding a job that is not there */
+        SK.store.fail.only = 'insertJob'; SK.store.fail.on = true;
+        const bad = await Promise.all([0, 1, 2].map(() => SK.as('flaky').post('/api/jobs', { url: WATCH('flakyflaky1') })));
+        SK.store.fail.on = false; SK.store.fail.only = null;
+        ok('the same link three times while the store cannot write: all three are 503 "store" (the two that waited for the first do not report a job that was never kept)', bad.every(r => r.status === 503 && r.body.code === 'store' && !r.body.job), bad.map(r => r.status).join());
+        ok('and nothing is left of it: no row, no slot of the cap of waiting jobs', pendingOf('flaky') === 0 && rowsOf('flaky') <= 8 && (await storeRows('flaky')).filter(j => j.url === WATCH('flakyflaky1')).length === 0 && !Array.from(SK.svc._state.jobs.values()).some(j => j.url === WATCH('flakyflaky1')));
+        ok('and the same link can be asked for again', (await SK.as('flaky').post('/api/jobs', { url: WATCH('flakyflaky1') })).status === 201);
+      } finally { J.LIMITS.ROWS_PER_USER = rowsWas; await SK.close(); }
+    }
+
+    heading('the store: deleteJobs names the owner and a finished state (the file store here; tests/home-worker/jobs-pg.test.js runs the SQL)');
+    {
+      const dir = L.tmpDir();
+      const { fileJobStore } = L.mod('home-jobs-store.js');
+      const st = fileJobStore(dir);
+      try {
+        const mkj = (id, owner) => ({ id: id, ownerId: owner, kind: 'youtube', url: WATCH('ddddddddddd'), title: 'T', createdAt: 1 });
+        for (const [id, o] of [['a-queued01', 'A'], ['a-claimed1', 'A'], ['a-failed01', 'A'], ['a-done0001', 'A'], ['b-failed01', 'B'], ['b-queued01', 'B']]) await st.insertJob(mkj(id, o));
+        await st.claimJob('a-claimed1', 'A', 'w', 2);
+        await st.finishJob('a-failed01', 'A', 'failed', 3, { error: 'e' });
+        await st.finishJob('a-done0001', 'A', 'done', 3, { result: { v: 1 }, bytes: 5 });
+        await st.finishJob('b-failed01', 'B', 'failed', 3, { error: 'e' });
+        const all = ['a-queued01', 'a-claimed1', 'a-failed01', 'a-done0001', 'b-failed01', 'b-queued01', 'nothing-here'];
+        ok('with every id of both accounts in the list, account A\'s call removes only A\'s finished rows (2)', (await st.deleteJobs(all, 'A')) === 2);
+        const left = (await st.loadAll()).jobs.map(j => j.id).sort().join();
+        ok('a queued and a claimed row of A, and both rows of B (a failed one, a queued one), are still there', left === 'a-claimed1,a-queued01,b-failed01,b-queued01', left);
+        ok('no owner given: nothing is removed, whatever the ids (not even a finished row)', (await st.deleteJobs(['b-failed01'], undefined)) === 0 && (await st.deleteJobs(['b-failed01'], '')) === 0 && (await st.deleteJobs(['b-failed01'], 'A')) === 0 && (await st.deleteJobs([], 'A')) === 0 && (await st.loadAll()).jobs.length === 4);
+        ok('and the owner\'s own finished row goes', (await st.deleteJobs(['b-failed01'], 'B')) === 1 && (await st.loadAll()).jobs.length === 3);
+      } finally { L.rmDir(dir); }
+    }
+
+    heading('a queue that is switched off (its tables could not be made at the boot): every route says "store", and nothing is read or written');
+    {
+      const SO = await L.startService({ users: ['off1'] });
+      try {
+        const tkn = await mkToken(SO, 'off1');
+        const jb = (await enqueue(SO, 'off1', 'offoffoff01')).body.job;
+        ok('a queue that is on is not marked off', SO.svc.isDisabled() === false);
+        SO.store.fail.on = true; SO.store.fail.only = 'loadAll'; SO.svc._state.forgetAll();
+        const blip = await SO.as('off1').get('/api/jobs');
+        SO.store.fail.on = false; SO.store.fail.only = null;
+        ok('a passing store failure is 503 "store" WITHOUT the disabled mark (the page keeps its button and card for it)', blip.status === 503 && blip.body.code === 'store' && blip.body.disabled === undefined, blip.text);
+        SO.svc.disable('test: the tables could not be created');
+        SO.store.reset();
+        const ask = [
+          ['GET', '/api/jobs'], ['POST', '/api/jobs', { url: WATCH('offoffoff02') }], ['GET', '/api/jobs/' + jb.id], ['DELETE', '/api/jobs/' + jb.id], ['POST', '/api/jobs/' + jb.id + '/cancel'],
+          ['GET', '/api/worker/status'], ['GET', '/api/worker/tokens'], ['POST', '/api/worker/tokens', {}], ['DELETE', '/api/worker/tokens/abcdefghijkl'], ['GET', '/api/worker/nothing']
+        ];
+        const answers = [];
+        for (const [m, p, b] of ask) answers.push([m + ' ' + p.replace(jb.id, ':id'), await req(SO.port, m, p, { user: 'off1', body: b })]);
+        for (const [m, p, b] of [['GET', '/api/worker/ping'], ['POST', '/api/worker/claim', {}], ['POST', '/api/worker/jobs/' + jb.id + '/result', goodResult(10)], ['POST', '/api/worker/jobs/' + jb.id + '/fail', { error: 'x' }], ['POST', '/api/worker/jobs/' + jb.id + '/heartbeat', {}]]) answers.push([m + ' ' + p.replace(jb.id, ':id'), await req(SO.port, m, p, { token: tkn, body: b })]);
+        ok(answers.length + ' routes (the browser\'s and the worker\'s, and a path under /api/worker that is not one): every one answers 503 with code "store", disabled true, the usual sentence and no-store', answers.every(([, r]) => r.status === 503 && r.body.code === 'store' && r.body.disabled === true && r.body.error === 'The queue is not available right now. Try again in a minute.' && /no-store/.test(r.headers['cache-control'] || '')), answers.filter(([, r]) => r.status !== 503 || r.body.disabled !== true).map(([n, r]) => n + ' ' + r.status).join(' | '));
+        ok('and not one store call was made for any of them (the tables may not be there)', SO.store.total() === 0, JSON.stringify(SO.store.calls));
+        ok('a route that is not the queue\'s is still the server\'s own (here: 404 from the harness)', (await req(SO.port, 'GET', '/api/shares')).status === 404);
+        ok('it says so once it is off', SO.svc.isDisabled() === true);
+      } finally { await SO.close(); }
+    }
+
+    heading('every sentence the page can be shown from the queue has a Korean, Japanese and Chinese string');
+    {
+      /* the page shows the site's own sentence through tx(): the English text is the key of the catalog (i18n/*.json). These are the ones the browser routes answer with, the two that were English-only (a Remove of a waiting conversion, a result too big for an account) included. */
+      const shown = ['Sign in to use this.', 'That request did not come from this site.', 'Too many conversions were asked for just now. Try again in a little while.', 'That is not a link to a YouTube video.',
+        'You already have 5 conversions waiting. Wait for one to finish, or cancel one.', 'The queue is full right now. Try again later.', 'The queue is not available right now. Try again in a minute.', 'That conversion is not there.',
+        'The notes of that conversion are no longer kept.', 'Cancel that conversion first, then remove it.', 'That conversion has already finished.', 'This conversion is larger than one account may keep.',
+        'Too many tokens were made just now. Try again later.', 'You have 5 PC tokens already. Remove one first.', 'That token is not there.'];
+      const src = L.fs.readFileSync(L.path.join(L.MODS, 'home-jobs.js'), 'utf8');
+      ok('(the two that were English-only are still the sentences home-jobs.js sends)', src.indexOf('Cancel that conversion first, then remove it.') >= 0 && src.indexOf('This conversion is larger than one account may keep.') >= 0);
+      for (const loc of ['ko-KR', 'ja-JP', 'zh-CN']) {
+        const cat = JSON.parse(L.fs.readFileSync(L.path.join(L.REPO, 'i18n', loc + '.json'), 'utf8')).content;
+        const missing = shown.filter(s => typeof cat[s] !== 'string' || !cat[s].trim() || cat[s] === s);
+        ok(loc + ': all ' + shown.length + ' have a string of their own', missing.length === 0, missing.join(' | ').slice(0, 160));
+      }
+    }
+
     heading('a check is not a heartbeat (worker.js --check asks /api/worker/ping)');
     {
       const SP = await L.startService({ users: ['ck'] });

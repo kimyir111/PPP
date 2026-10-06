@@ -2011,6 +2011,8 @@
     "That conversion is not there.": "找不到那个转换。",
     "That request did not come from this site.": "该请求不是来自本站。",
     "That conversion has already finished.": "那个转换已经结束。",
+    "Cancel that conversion first, then remove it.": "请先取消那个转换，然后再删除它。",
+    "This conversion is larger than one account may keep.": "这个转换比一个账户可以保存的大小还要大。",
     "You have 5 PC tokens already. Remove one first.": "已经有 5 个电脑令牌。请先移除一个。",
     "Too many tokens were made just now. Try again later.": "刚才创建的令牌太多。请稍后再试。",
     "That token is not there.": "找不到那个令牌。",

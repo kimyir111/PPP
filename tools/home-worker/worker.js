@@ -129,14 +129,25 @@ function makeLog(cfg, out, err) {
     if (cfg && cfg.token) t = t.split(cfg.token).join('ppw_***');
     return t.replace(/ppw_[A-Za-z0-9_-]{12}_[A-Za-z0-9_-]{43}/g, 'ppw_***').replace(/Bearer\s+[^\s]+/gi, 'Bearer ***');
   };
-  /* text that came from the site or from a video's title must not move the cursor, recolour or reorder the person's terminal: no ESC sequences, no other
-     control characters (a newline and a tab stay), no bidi marks or overrides, no line or paragraph separators. They are REMOVED, not replaced, and this runs
-     before the token is hidden: a token split by any of them is joined again, and then hidden. */
+  /* text that came from the site or from a video's title must not move the cursor, recolour or reorder the person's terminal: no ESC sequences (a whole one:
+     CSI "ESC [ ... final", OSC "ESC ] ... BEL", and the two-character ones, ESC and one of @-Z \ ] ^ _), no other control characters (a newline and a tab
+     stay), no zero-width, soft-hyphen or invisible-operator characters (U+200B-200F, U+2060-2064, U+00AD, U+FEFF), no bidi marks or overrides, no line or
+     paragraph separators. They are REMOVED, not replaced, and this runs before the token is hidden: a token split by any of them is joined again, and then
+     hidden. */
   const clean = s => String(s)
     .replace(/\u001b(?:\[[0-?]*[ -\/]*[@-~]|\][^\u0007\u001b]*(?:\u0007|\u001b\\)?|[@-Z\\-_])/g, '')
-    .replace(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u061c\u200e\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g, '');
-  const log = m => out('[' + clock() + '] ' + redact(clean(m)));
-  log.warn = m => err('[' + clock() + '] ' + redact(clean(m)));
+    .replace(/[\u0000-\u0008\u000b-\u001f\u007f-\u009f\u00ad\u061c\u180e\u200b-\u200f\u2028\u2029\u202a-\u202e\u2060-\u2064\u2066-\u2069\ufeff]/g, '');
+  /* Removing a whole escape sequence also removes the letter after the ESC, and that letter may be a character of the token (ESC G in the middle of it): the
+     token is then not whole in the cleaned text and would show. So the text is looked at a second way too: with every control, format, lone-surrogate and
+     combining character deleted ONE BY ONE (nothing after it goes), where a token that was cut by any of them is whole again. When that view holds a token, that
+     view - token hidden, no control character in it - is what is shown; otherwise the cleaned one is. */
+  const flat = s => String(s).replace(/[\p{Cc}\p{Cf}\p{Cs}\p{Mn}\p{Me}\u2028\u2029]/gu, c => (c === '\n' || c === '\t' ? c : ''));
+  const shown = m => {
+    const raw = String(m), f = flat(raw), hidden = redact(f);
+    return hidden !== f ? hidden : redact(clean(raw));
+  };
+  const log = m => out('[' + clock() + '] ' + shown(m));
+  log.warn = m => err('[' + clock() + '] ' + shown(m));
   log.redact = redact;
   log.clean = clean;
   return log;

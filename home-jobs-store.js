@@ -52,7 +52,13 @@ const SCHEMA_SQL = `
 /* Two instances booting together (a deploy overlap) would race on CREATE TABLE IF NOT EXISTS (a unique violation in pg_type) or deadlock on the
    ALTERs of the older tables: the whole of the boot's schema work runs in ONE transaction under an advisory lock, so they take turns. `pool` is a
    pg Pool; `preSql` (optional) is the SQL the server ran before this feature existed (server.js: users, progress, shares and their ALTERs), run
-   first in the same transaction - a multi-statement query was already one implicit transaction, so for a single boot nothing differs. */
+   first in the same transaction - a multi-statement query was already one implicit transaction, so for a single boot nothing differs.
+
+   The queue is OPTIONAL, the site is not: preSql runs exactly as it did before this feature, and a failure of it is fatal as it always was (rolled back,
+   thrown, the server does not start). The queue's two tables come after it, in a SAVEPOINT of the same transaction, so that a failure there (a name
+   taken by something else, a role that may not create them) undoes only the queue's own tables, the rest of the boot is committed, and the caller is told:
+   it resolves { queue: true }, or { queue: false, error } and the caller turns the feature off (server.js: every queue route then answers 503 "store").
+   A connection that is lost is still fatal: nothing was committed then. */
 const MIGRATE_LOCK_KEY = 727002;
 async function migrate(pool, preSql) {
   const c = await pool.connect();
@@ -63,8 +69,17 @@ async function migrate(pool, preSql) {
     await c.query('BEGIN');
     await c.query('SELECT pg_advisory_xact_lock($1)', [MIGRATE_LOCK_KEY]);
     if (preSql) await c.query(preSql);
-    await c.query(SCHEMA_SQL);
+    let queue = { queue: true };
+    await c.query('SAVEPOINT home_queue_tables');
+    try {
+      await c.query(SCHEMA_SQL);
+      await c.query('RELEASE SAVEPOINT home_queue_tables');
+    } catch (queueError) {
+      await c.query('ROLLBACK TO SAVEPOINT home_queue_tables');
+      queue = { queue: false, error: queueError };
+    }
     await c.query('COMMIT');
+    return queue;
   } catch (err) {
     try { await c.query('ROLLBACK'); } catch (e2) { broken = true; }
     throw err;
@@ -140,9 +155,11 @@ function pgJobStore(query) {
         [id, ownerId, at(t)]);
       return (r.rowCount || 0) === 1;
     },
-    async deleteJobs(ids) {
-      if (!ids.length) return 0;
-      const r = await query('DELETE FROM ppp_transcribe_jobs WHERE id = ANY($1::text[])', [ids]);
+    /* remove finished rows of ONE account: the owner and "not waiting or converting" are in the WHERE, like every other change here (an id that is
+       somebody else's, or still queued or claimed, in the list is simply not deleted) */
+    async deleteJobs(ids, ownerId) {
+      if (!ids.length || !ownerId) return 0;
+      const r = await query("DELETE FROM ppp_transcribe_jobs WHERE id = ANY($1::text[]) AND owner_id = $2 AND status NOT IN ('queued', 'claimed')", [ids, ownerId]);
       return r.rowCount || 0;
     },
     async getResult(id, ownerId) {
@@ -235,9 +252,10 @@ function fileJobStore(dir) {
       save(d);
       return true;
     },
-    async deleteJobs(ids) {
+    async deleteJobs(ids, ownerId) {
+      if (!ids.length || !ownerId) return 0;
       const d = load(), n = d.jobs.length;
-      d.jobs = d.jobs.filter(j => ids.indexOf(j.id) < 0);
+      d.jobs = d.jobs.filter(j => !(ids.indexOf(j.id) >= 0 && j.ownerId === ownerId && j.status !== 'queued' && j.status !== 'claimed'));
       if (d.jobs.length !== n) save(d);
       return n - d.jobs.length;
     },
