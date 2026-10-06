@@ -1,0 +1,17 @@
+{
+  "siteUrl": "https://ppp-web-2o99.onrender.com",
+  "token": "ppw_PASTE_THE_TOKEN_FROM_SETTINGS_CONNECT_MY_PC",
+
+  "pythonPath": "D:/PPP/tools/transcribe-venv/Scripts/python.exe",
+  "transcribePy": "D:/PPP/transcribe.py",
+  "kongCheckpoint": "D:/PPP/tools/piano-transcription/note_F1=0.9677_pedal_F1=0.9186.pth",
+  "ariaCheckpoint": "",
+  "ffmpegPath": "ffmpeg",
+
+  "scratchDir": "D:/PPP-worker-scratch",
+  "idlePollSeconds": 0,
+  "activePollSeconds": 0,
+
+  "audioBase": "",
+  "ytdlpPath": ""
+}

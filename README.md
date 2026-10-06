@@ -49,6 +49,7 @@ with subresource integrity, which `file://` blocks.
 | `tests/bench/` | Score-quality benchmark and regression gate (Python stdlib + Node, no browser). See `tests/bench/README.md`. |
 | `omr-service.js` | The local helper: OMR (page images in, MusicXML out), audio transcription jobs (a recording or a YouTube link in, notes out) and the coach endpoint. Holds the API key. |
 | `transcribe.py` | Runs the piano transcription model over a WAV for the helper. Notes and pedal out, as JSON. |
+| `home-jobs.js`, `home-jobs-store.js`, `home-result.js`, `tools/home-worker/` | G10b-1, the high-quality conversion on your own PC: the site queues a YouTube link, `tools/home-worker/worker.js` on your GPU PC polls the site with a token, runs `transcribe.py` (TransKun + Kong) and posts the notes back; the page writes the score from them. See `tools/home-worker/README.md` and `docs/GOALS/G10B_HOME_WORKER.md`. |
 | `audio-score.js` | Notes heard in a recording → beats, metre, key, hands → MusicXML. Browser and Node, no dependencies. |
 | `score-search.js` | Title → public-domain catalog hit → bar times aligned to the recording. |
 | `catalog/` | CC0 / public-domain MusicXML (not committed model weights; not commercial scrapes). |
