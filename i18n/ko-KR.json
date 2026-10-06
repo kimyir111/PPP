@@ -1950,6 +1950,7 @@
     "New transcription method": "새 받아쓰기 방식",
     "On (the default): a newer way of reading the beat, the hands and the rests. Turn it off to use the classic method.": "켜짐(기본): 박자·양손·쉼표를 새로운 방식으로 읽어요. 끄면 기존 방식을 써요.",
     "Off: the classic method writes the notation. Turn it on to use the newer way of reading the beat, the hands and the rests.": "꺼짐: 기존 방식으로 악보를 적어요. 켜면 박자·양손·쉼표를 새로운 방식으로 읽어요.",
+    "Unsure measures": "불확실한 마디",
     "This notation was written with the new method.": "이 악보는 새 방식으로 적었어요.",
     "This notation was written with the classic method.": "이 악보는 기존 방식으로 적었어요.",
     "Write the notation again": "악보 다시 쓰기",

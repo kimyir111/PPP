@@ -4,7 +4,9 @@
    What is pinned:
      - a refusal with exactly ALL_CANDIDATES_HAVE_HARD_VIOLATIONS of a graph the staged conversion wrote is tried once more, on the conversion of the same heard notes with the classic hands
        (toMusicXml {recording: 'v2', hands: 'legacy', closeGaps, exactBars}); the result says so (handsFallback)
-     - ONE retry, never a loop: a second refusal is the first refusal, and arrangeSingleNote ran twice
+     - G10a-5b: when that is refused for the same reason too, the classic conversion of the same heard notes (toMusicXml {closeGaps, exactBars}, no recording, no hands) is arranged, and the
+       result says so (classicFallback); the third refusal is the first refusal
+     - BOUNDED, never a loop: arrangeSingleNote runs at most three times and the conversion at most twice; a second or a third refusal for another code ends it (the first refusal is the answer)
      - no retry for a graph the classic conversion wrote (or an arrangement, or a rebuilt one: no v2 source), for any other code, for a graph that keeps no heard notes, when v2's files do not load,
        when the conversion does not come back v2 or throws; a success is returned as it is
    node --test tests/rec */
@@ -42,14 +44,18 @@ function harness(answers, opt) {
   opt = opt || {};
   const log = { arrange: [], convert: [], loads: 0 };
   const rebuilt = { recReport: { skeleton: true }, graph: { rebuilt: true } };
+  const classicBuilt = { graph: { classic: true } };   /* what the classic conversion returns: no recReport */
   const window = {
     PPPRecApp: opt.noRecApp ? null : RA,
-    PPPAudioScore: { toMusicXml: (input, o) => { log.convert.push({ input, o }); if (opt.convertThrows) throw new Error('boom'); return opt.convertResult === undefined ? rebuilt : opt.convertResult; } }
+    /* convertResult is the answer to the v2 conversion (the first), classicResult to the classic one (the second) */
+    PPPAudioScore: { toMusicXml: (input, o) => { log.convert.push({ input, o }); if (opt.convertThrows) throw new Error('boom');
+      if (o && o.recording === 'v2') return opt.convertResult === undefined ? rebuilt : opt.convertResult;
+      return opt.classicResult === undefined ? classicBuilt : opt.classicResult; } }
   };
   const arrangeSingleNote = async (g, plan) => { log.arrange.push({ g, plan }); return answers[Math.min(log.arrange.length - 1, answers.length - 1)]; };
   const loadRecordingModules = async () => { log.loads++; return opt.modulesLoad === undefined ? true : opt.modulesLoad; };
   const api = make({ arrangeSingleNote, loadRecordingModules, window });
-  return Object.assign({ log, rebuilt }, api);
+  return Object.assign({ log, rebuilt, classicBuilt }, api);
 }
 const REFUSED = { ok: false, reason: CODE };
 const ARRANGED = { ok: true, graph: { arranged: true }, levelNote: null, rescued: null, report: {} };
@@ -81,18 +87,60 @@ test('a v2 graph refused for hard violations is tried once more: the same heard 
   assert.equal(h.log.loads, 1);
 });
 
-test('the retry is the only one: a second refusal is the first refusal (same object), arrangeSingleNote ran twice and never a third time', async () => {
+test('the retries are bounded: both refused with the same code is the first refusal (same object), arrangeSingleNote ran three times and never a fourth, two conversions', async () => {
   const second = { ok: false, reason: CODE, message: 'again' };
-  const h = harness([REFUSED, second]);
+  const third = { ok: false, reason: CODE, message: 'and again' };
+  const h = harness([REFUSED, second, third]);
   const r = await h.arrangeSingleNoteWithHandsFallback(v2Graph(), plan, 'T');
   assert.equal(r, REFUSED, 'the refusal the person sees is the first one, unchanged');
   assert.equal(r.handsFallback, undefined);
-  assert.equal(h.log.arrange.length, 2);
-  assert.equal(h.log.convert.length, 1);
-  /* and a second refusal for another reason is still the first refusal */
+  assert.equal(r.classicFallback, undefined);
+  assert.equal(h.log.arrange.length, 3);
+  assert.equal(h.log.convert.length, 2, 'the v2 conversion with the classic hands, then the classic one');
+  /* a second refusal for another reason ends it at two runs: no classic conversion */
   const h2 = harness([REFUSED, { ok: false, reason: 'UNREACHABLE' }]);
   assert.equal(await h2.arrangeSingleNoteWithHandsFallback(v2Graph(), plan, 'T'), REFUSED);
   assert.equal(h2.log.arrange.length, 2);
+  assert.equal(h2.log.convert.length, 1);
+  /* so does a third refusal for another reason (three runs, still the first refusal) */
+  const h3 = harness([REFUSED, second, { ok: false, reason: 'SINGLE_CRASH' }]);
+  assert.equal(await h3.arrangeSingleNoteWithHandsFallback(v2Graph(), plan, 'T'), REFUSED);
+  assert.equal(h3.log.arrange.length, 3);
+});
+
+test('G10a-5b: refused again with the classic hands, the CLASSIC conversion of the same heard notes is arranged; the result says so, with the classic conversion\'s own options', async () => {
+  const h = harness([REFUSED, { ok: false, reason: CODE }, ARRANGED]);
+  const g = v2Graph();
+  const r = await h.arrangeSingleNoteWithHandsFallback(g, plan, 'Title');
+  assert.equal(r.ok, true);
+  assert.equal(r.classicFallback, true);
+  assert.equal(r.handsFallback, undefined, 'only the second retry made it');
+  assert.equal(r.graph, ARRANGED.graph);
+  assert.equal(h.log.arrange.length, 3, 'arrangeSingleNote ran exactly three times');
+  assert.equal(h.log.arrange[0].g, g);
+  assert.equal(h.log.arrange[1].g, h.rebuilt.graph, 'the second on the v2 graph with the classic hands');
+  assert.equal(h.log.arrange[2].g, h.classicBuilt.graph, 'the third on the classic conversion\'s graph');
+  assert.equal(h.log.arrange[2].plan, plan, 'the same plan');
+  assert.equal(h.log.convert.length, 2);
+  assert.deepEqual(h.log.convert[1].o, { title: 'Title', closeGaps: true, exactBars: true }, 'the classic branch: no recording, no hands');
+  assert.deepEqual(h.log.convert[1].input.notes.map(n => n.midi), [60, 64, 67, 72], 'the same heard notes');
+  assert.equal(h.log.loads, 1, 'v2\'s files are asked for once');
+});
+
+test('the classic fallback is not tried when the first retry already arranged it, and not when the v2 retry cannot be made', async () => {
+  const h = harness([REFUSED, ARRANGED]);
+  const r = await h.arrangeSingleNoteWithHandsFallback(v2Graph(), plan, 'T');
+  assert.equal(r.handsFallback, 'legacy');
+  assert.equal(r.classicFallback, undefined);
+  assert.equal(h.log.convert.length, 1, 'no classic conversion');
+  /* the v2 conversion did not come back v2 (rec/ cannot read the performance): the refusal as it was, no classic conversion either */
+  const h2 = harness([REFUSED, ARRANGED], { convertResult: { graph: { x: 1 } } });
+  assert.equal(await h2.arrangeSingleNoteWithHandsFallback(v2Graph(), plan, 'T'), REFUSED);
+  assert.equal(h2.log.convert.length, 1);
+  /* the classic conversion gives nothing: the refusal */
+  const h3 = harness([REFUSED, { ok: false, reason: CODE }, ARRANGED], { classicResult: null });
+  assert.equal(await h3.arrangeSingleNoteWithHandsFallback(v2Graph(), plan, 'T'), REFUSED);
+  assert.equal(h3.log.arrange.length, 2);
 });
 
 test('no retry for a graph the classic conversion wrote, an arrangement, or any graph without the v2 source', async () => {
@@ -151,6 +199,6 @@ test('the page uses it where the Song Arranger arranges, marks the copy, and now
   const uses = html.match(/arrangeSingleNoteWithHandsFallback\(/g) || [];
   assert.equal(uses.length, 2, 'its definition and the Song Arranger');
   assert.match(html, /sn = await arrangeSingleNoteWithHandsFallback\(src\.graph, plan, sourceScore\.title\)/);
-  assert.match(html, /sn\.handsFallback \? \{ handsFallback: sn\.handsFallback \} : \{\}/, 'the copy\'s source.arrangement names the fallback');
+  assert.match(html, /sn\.handsFallback \? \{ handsFallback: sn\.handsFallback \} : \{\}, sn\.classicFallback \? \{ classicFallback: true \} : \{\}/, 'the copy\'s source.arrangement names the fallback');
   assert.equal((html.match(/await arrangeSingleNote\(/g) || []).length, 3, 'arrangeSingleNote: the fallback twice, the review screen once');
 });

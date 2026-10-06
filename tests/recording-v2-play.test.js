@@ -7,7 +7,7 @@
      - what is struck is what was heard, at its velocity
      - the ordinary Play stops it (and plays); it stops the ordinary Play; pressing it again stops it; the practice screen has it next to Play and it runs there too
      - a song whose heard notes are not kept on this device says so and plays nothing; a saved song opened from My Songs plays from its kept graph (its heard notes), after a reload
-     - the review screen of a 'Full song' (playable piano arrangement) import keeps Play as recorded and the chip, and has no "Write the notation again" (#161 review)
+     - the review screen of a 'Full song' (playable piano arrangement) import keeps Play as recorded, has no chip (G10a-5b) and no "Write the notation again" (#161 review)
      - the English, Korean, Japanese and Chinese strings exist; no page or console error
 
    Runs against its own server on a free port (tests/serve-free.js). node tests/recording-v2-play.test.js
@@ -100,7 +100,7 @@ const PLAY_KEYS = [
     await pa.evaluate(() => window.PPP.app.setState({ transcriptionMode: 'arrange' }));
     await importHeard(pa, heardFor.sextuplets);
     const fa = await pa.evaluate(() => ({ taskMode: window.PPP.app.state.importSource.taskMode, write: !!document.querySelector('[data-write-again]'), play: !!document.querySelector('[data-recording-choice="review"] [data-as-recorded]'), chip: !!document.querySelector('[data-recording-choice="review"] [data-recording-v2-option]') }));
-    ok('the review screen of a Full song import has Play as recorded and the chip, and no Write the notation again', fa.taskMode === 'piano-arrangement' && fa.play && fa.chip && !fa.write, JSON.stringify(fa));
+    ok('the review screen of a Full song import has Play as recorded, no chip (G10a-5b: the method does not apply to an arrangement) and no Write the notation again', fa.taskMode === 'piano-arrangement' && fa.play && !fa.chip && !fa.write, JSON.stringify(fa));
     ok('no page or console error', clean(pa), errs(pa));
     await pa.close();
   } catch (e) {

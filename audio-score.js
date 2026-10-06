@@ -1337,7 +1337,7 @@
      a gap shorter than a 16th after a note lengthens that note (never shortening, never moving an onset or a pitch, never over a barline or the hand's next onset), and a 32nd or 64th rest among
      the pieces of a longer silence with a note after it is not drawn. A MIDI file (sourceKind 'midi-file') is the player's own file and is left as it is.
      Off by default in the library, like G3 below: the committed goldens, the benchmark's snapshots and the G3/G4 contracts on "the recording graphs" (one source, no per-entity provenance)
-     are about toMusicXml's own output; the APP asks for it (opts.closeGaps: true at its four recording call sites). A page that has not loaded scoregraph/gaps.js (an old cached page)
+     are about toMusicXml's own output; the APP asks for it (opts.closeGaps: true at its six recording call sites since G10a-4). A page that has not loaded scoregraph/gaps.js (an old cached page)
      writes the score as it did before: this never throws. */
   const CLOSE_GAPS_DEFAULT = false;
   function gapsLib() {
@@ -1346,7 +1346,7 @@
     } catch (e) { return null; }
   }
   /* "Recording notation: tuplets and the grid" (docs/GOALS/G09 section 12): scoregraph/rec-tuplet.js, the pass that writes one tuplet over each triplet beat. Asked for with opts.exactBars (the app
-     does, with closeGaps, at its four recording call sites; off by default for the same reason closeGaps is: the goldens, the benchmark's snapshots and the G3/G4 contracts are about toMusicXml's own
+     does, with closeGaps, at its six recording call sites since G10a-4; off by default for the same reason closeGaps is: the goldens, the benchmark's snapshots and the G3/G4 contracts are about toMusicXml's own
      output); only for a recording (a MIDI file is the player's own); a page that has not loaded it writes the score as before. */
   function tupletLib() {
     try {

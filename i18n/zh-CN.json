@@ -1948,6 +1948,7 @@
     "New transcription method": "新的扒谱方式",
     "On (the default): a newer way of reading the beat, the hands and the rests. Turn it off to use the classic method.": "已开启（默认）：用新的方式读取节拍、左右手和休止符。关闭后使用原来的方式。",
     "Off: the classic method writes the notation. Turn it on to use the newer way of reading the beat, the hands and the rests.": "已关闭：用原来的方式写谱。开启后用新的方式读取节拍、左右手和休止符。",
+    "Unsure measures": "不确定的小节",
     "This notation was written with the new method.": "这份乐谱是用新方式写出来的。",
     "This notation was written with the classic method.": "这份乐谱是用原来的方式写出来的。",
     "Write the notation again": "重新写谱",

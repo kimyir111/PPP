@@ -2,7 +2,7 @@
    G10a-6: automatic 8va/8vb for the recording conversion v2, in the real page (docs/GOALS/G10_AUDIO_TO_SCORE.md section 29)
 
    A recording's notes can sound far above or below the staff (the teacher's six real covers: 7-15% of the heard notes at or above E6); printed on ledger lines they cannot be read. With
-   PPP.recording = 'v2' the conversion puts realize/ottava.js's octave lines on the graph (audio-score.js, opts.ottava, on by default under v2 and 'off' / false to go without). What this checks, in the
+   PPP.recording = 'v2' (the app's default since G10a-5b; a page that remembers 'legacy' gets the classic conversion and no lines) the conversion puts realize/ottava.js's octave lines on the graph (audio-score.js, opts.ottava, on by default under v2 and 'off' / false to go without). What this checks, in the
    real page and the real screens (the transcription model is a stub that returns heard notes made from numbers, tests/recording-v2-fixtures.js crossLines; PPP_HEARD_FILE=<heard.json> runs the same
    flow on any recording's heard notes instead, for a private check; everything after the notes is the real app):
      - the lines are there: the Score the review screen holds has octave lines, the graph the page draws has the same ones, the engraver draws them (g.ppp-ottava), and no head needing 3 or more ledger lines

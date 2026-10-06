@@ -2294,7 +2294,7 @@
             </sc-if>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 1px; margin-top: 22px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--line);">
               <sc-for list="{{ reviewStats }}" as="rs" hint-placeholder-count="6">
-                <div style="background: var(--bg); padding: 14px;">
+                <div data-review-stat="{{ rs.k }}" style="background: var(--bg); padding: 14px;">
                   <div style="font-size: 11px; color: var(--ink3); letter-spacing: 0.04em; text-transform: uppercase;">{{ rs.k }}</div>
                   <div style="font-size: 17px; font-weight: 600; margin-top: 5px; letter-spacing: -0.01em;">{{ rs.v }}</div>
                 </div>
@@ -2303,8 +2303,10 @@
             <sc-if value="{{ showRecordingChoice }}" hint-placeholder-val="{{ false }}">
               <div data-recording-choice="review" style="margin-top: 18px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
                 <div data-recording-method style="font-size: 12.5px; font-weight: 600; color: var(--ink2);">{{ recordingBadge }}</div>
-                <button type="button" onClick="{{ toggleRecordingV2 }}" data-recording-v2-option aria-pressed="{{ recordingV2Pressed }}" style="{{ recordingV2Style }}">{{ recordingV2Label }}</button>
-                <p style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ recordingV2Hint }}</p>
+                <sc-if value="{{ showMethodChip }}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{ toggleRecordingV2 }}" data-recording-v2-option aria-pressed="{{ recordingV2Pressed }}" style="{{ recordingV2Style }}">{{ recordingV2Label }}</button>
+                  <p style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ recordingV2Hint }}</p>
+                </sc-if>
                 <sc-if value="{{ showWriteAgain }}" hint-placeholder-val="{{ false }}">
                   <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
                     <button type="button" onClick="{{ writeNotationAgain }}" data-write-again style="padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">{{ writeAgainLabel }}</button>
@@ -4875,8 +4877,27 @@ function setRecordingMode(v) {
 }
 const _recLoaded = new Set();
 const _recGlobals = new Set();
+const _recInflight = new Map(); /* src -> the promise of the <script> that is on its way: a second asker waits for it, and never adds a second element (a late file would run twice) */
 let _recPromise = null, _recAppPromise = null;
 let RECORDING_LOAD_ERROR = null;
+/* G10a-5b: a v2 file that never answers must not hold an import (nor every later one: _recPromise is shared). The load is raced against this; the loser is the person's wait, not the download, which may
+   still arrive, and then the next import finds v2 ready. */
+const REC_LOAD_TIMEOUT_MS = 15000;
+/* the shape of each weights file the modules read as a window global: a file that parses as JSON but is not what the stage expects ({}, [], another file) would be accepted by the stage and make a worse
+   score without a word (an empty rests model writes four times the rests). The check is on the keys and types the stages read, and on the schema family and its major version. */
+const _isObj = x => !!x && typeof x === 'object' && !Array.isArray(x);
+const _numbers = (o, keys) => keys.every(k => typeof o[k] === 'number' && isFinite(o[k]));
+const _numArray = a => Array.isArray(a) && a.length > 0 && a.every(v => typeof v === 'number' && isFinite(v));
+const RECORDING_WEIGHT_SHAPE = {
+  PPPRecWeights: w => _isObj(w) && /^ppp\.rec-time-skeleton\/1$/.test(w.schema) && Array.isArray(w.features) && _numArray(w.weights) && w.weights.length === w.features.length
+    && _numArray(w.alpha) && _numbers(w, ['sigma', 'tight', 'maxTracks', 'beatCap']) && _isObj(w.tables) && _isObj(w.tables.metres) && _isObj(w.conventionPrior),
+  PPPRecHandsWeights: w => _isObj(w) && /^ppp\.rec-hands-model\/1$/.test(w.schema) && _isObj(w.weights) && _numbers(w.weights, ['part', 'span', 'move', 'reg', 'gap', 'rel', 'cnt', 'ioi'])
+    && _isObj(w.params) && typeof w.params.beam === 'number' && _numArray(w.params.dtEdges) && Array.isArray(w.styles) && w.styles.length > 0,
+  PPPRecGridModel: w => _isObj(w) && /^ppp\.rec-grid-model\/1$/.test(w.schema) && Array.isArray(w.kinds) && _numbers(w, ['sigmaSec', 'sigmaPrior', 'sigmaMin', 'sigmaMax', 'outlier', 'early', 'split', 'joinGap', 'chordSigmaSec'])
+    && _isObj(w.patterns) && _isObj(w.prior) && _isObj(w.stay),
+  PPPRecRestsModel: w => _isObj(w) && /^ppp\.rec-rests-model\/1$/.test(w.schema) && Array.isArray(w.features) && _numArray(w.weights) && w.weights.length === w.features.length && typeof w.threshold === 'number'
+};
+function recWeightsShapeOk(global, w) { try { const f = RECORDING_WEIGHT_SHAPE[global]; return !!f && f(w); } catch (e) { return false; } }
 /* v2 can run: every file is in and the weights are the page's globals */
 function recordingModulesReady() {
   return RECORDING_SCRIPTS.every(s => _recLoaded.has(s)) && RECORDING_WEIGHTS.every(w => _recGlobals.has(w[0]))
@@ -4909,14 +4930,23 @@ function forgetRecScript(src) {
   if (g && typeof window !== 'undefined') { try { if (g.length === 2) { if (window[g[0]]) delete window[g[0]][g[1]]; } else delete window[g[0]]; } catch (e) { /* the global stays */ } }
 }
 function recScriptTag(src, v) {
-  return new Promise(resolve => {
+  if (_recInflight.has(src)) return _recInflight.get(src);
+  const p = new Promise(resolve => {
     const el = document.createElement('script');
     el.src = './' + src + '?v=' + (v || REC_FILE_V);
     el.async = false;
-    el.onload = () => { const ok = recScriptGlobalPresent(src); if (ok) _recLoaded.add(src); else _recLoaded.delete(src); resolve(ok); };
-    el.onerror = () => { _recLoaded.delete(src); resolve(false); };
+    el.onload = () => { _recInflight.delete(src); const ok = recScriptGlobalPresent(src); if (ok) _recLoaded.add(src); else _recLoaded.delete(src); resolve(ok); };
+    el.onerror = () => { _recInflight.delete(src); _recLoaded.delete(src); resolve(false); };
     document.head.appendChild(el);
   });
+  _recInflight.set(src, p);
+  return p;
+}
+/* the promise, or false when it has not settled in REC_LOAD_TIMEOUT_MS (RECORDING_LOAD_ERROR then says 'timeout'); the timer never outlives the answer */
+function recRaceTimeout(promise) {
+  let timer = null;
+  const stalled = new Promise(res => { timer = setTimeout(() => { RECORDING_LOAD_ERROR = 'timeout'; res(false); }, REC_LOAD_TIMEOUT_MS); });
+  return Promise.race([promise, stalled]).then(v => { clearTimeout(timer); return v; });
 }
 /* the scripts to ask for now: the ones not loaded, and the loaded ones that took an export of one of those (in list order) */
 function recordingScriptsToLoad() {
@@ -4932,14 +4962,14 @@ function recordingScriptsToLoad() {
 function loadRecordingModules() {
   if (recordingModulesReady()) return Promise.resolve(true);
   if (_recPromise) return _recPromise;
-  _recPromise = (async () => {
+  _recPromise = recRaceTimeout((async () => {
     RECORDING_LOAD_ERROR = null;
     try {
       /* the weights are asked for together, then set as the globals the modules read when they load (grid.js and rests.js at load, the others when they run) */
       const todoW = RECORDING_WEIGHTS.filter(w => !_recGlobals.has(w[0]));
       const got = await Promise.all(todoW.map(w => (typeof fetch === 'function'
         ? fetch('./' + w[1] + '?v=' + REC_FILE_V).then(r => (r.ok ? r.json() : null)).catch(() => null) : Promise.resolve(null))));
-      const bad = todoW.find((w, i) => !got[i]);
+      const bad = todoW.find((w, i) => !recWeightsShapeOk(w[0], got[i]));
       if (bad) { RECORDING_LOAD_ERROR = bad[1]; return false; }
       todoW.forEach((w, i) => { window[w[0]] = got[i]; _recGlobals.add(w[0]); });
       if (_recAppPromise) await _recAppPromise; /* rec/app.js alone may be on its way (loadRecApp): not asked for twice */
@@ -4952,7 +4982,7 @@ function loadRecordingModules() {
       if (badS) { RECORDING_LOAD_ERROR = badS; return false; }
       return recordingModulesReady();
     } catch (e) { RECORDING_LOAD_ERROR = String(e && e.message || e); return false; }
-  })().then(ok => { _recPromise = null; return ok; });
+  })()).then(ok => { _recPromise = null; return ok; });
   return _recPromise;
 }
 /* rec/app.js alone: the heard notes of a kept graph, "Play as recorded", the flags. It needs none of the stages, so a song written the classic way can play as recorded
@@ -4960,7 +4990,7 @@ function loadRecordingModules() {
 function loadRecApp() {
   if (typeof window !== 'undefined' && window.PPPRecApp) return Promise.resolve(true);
   if (_recAppPromise) return _recAppPromise;
-  _recAppPromise = recScriptTag(REC_APP_SCRIPT).then(ok => { _recAppPromise = null; return ok && !!window.PPPRecApp; });
+  _recAppPromise = recRaceTimeout(recScriptTag(REC_APP_SCRIPT).then(ok => ok && !!window.PPPRecApp)).then(ok => { _recAppPromise = null; return ok; });
   return _recAppPromise;
 }
 /* is a v2 conversion's result believable (rec/app.js plausible: the tempo in the rhythm controls' range, the written length about the heard length)? A page without rec/app.js, or a check that
@@ -4977,13 +5007,17 @@ function isRecordingSong(src) { return !!(src && inferredAudioNotation(src) && !
    the limit is 1%, assignHands' hands 0.17%) - while the same conversion with the classic hands (audio-score.js opts.hands 'legacy': the same skeleton, grid, rests and writer) was arranged at every level.
    So a refusal with exactly that code, of a graph the staged conversion wrote, is tried ONCE more on the conversion of the same heard notes with the classic hands. The saved song is not touched (its
    Score and graph stay what they are); only the copy comes from the other graph, and its source says so (arrangement.handsFallback). Anything else - another code, a graph the classic conversion wrote,
-   notes that are not kept, a second refusal - is the refusal the person sees today. */
+   notes that are not kept - is the refusal the person sees today; a second refusal with the same code goes on to the classic conversion (arrangeSingleNoteWithHandsFallback, G10a-5b: arrangement.classicFallback),
+   and a third is the refusal. */
 const SINGLE_HANDS_FALLBACK_CODE = 'ALL_CANDIDATES_HAVE_HARD_VIOLATIONS';
 /* a graph the staged conversion v2 wrote: its provenance names the pipeline (audio-score.js; scoregraph/rec-tuplet.js isV2Recording reads the same). An arrangement made from one carries no such source. */
 function graphFromV2Recording(g) {
   return !!(g && g.provenance && (g.provenance.sources || []).some(x => x && x.kind === 'audio-score' && x.params && x.params.recording && x.params.recording.pipeline === 'v2'));
 }
-/* arrangeSingleNote, and (see above) one more try for a v2 transcription it refused for hard violations. Never throws; resolves what arrangeSingleNote does, with handsFallback: 'legacy' on a result made by the retry. */
+/* arrangeSingleNote, and (see above) up to two more tries for a v2 transcription it refused for hard violations: first the conversion of the same heard notes with the classic hands, then (G10a-5b: v2 is
+   the default, and one of the teacher's six pieces, p6, was refused by both v2 graphs and arranged from the classic one at every level) the classic conversion of them, the options the classic branch of
+   "Write the notation again" passes. ONE call site makes both conversions (v2 true, then false): at most three arrangeSingleNote runs, never a loop, and a refusal with another code at any step is the
+   refusal the person sees. Never throws; resolves what arrangeSingleNote does, with handsFallback: 'legacy' on a result made by the first retry and classicFallback: true on one made by the second. */
 async function arrangeSingleNoteWithHandsFallback(graph, plan, title) {
   const first = await arrangeSingleNote(graph, plan);
   if (first.ok || first.reason !== SINGLE_HANDS_FALLBACK_CODE || !graphFromV2Recording(graph)) return first;
@@ -4991,11 +5025,15 @@ async function arrangeSingleNoteWithHandsFallback(graph, plan, title) {
     if (!(await loadRecordingModules())) return first;
     const heard = window.PPPRecApp.heardFromGraph(graph);
     if (!heard || !window.PPPAudioScore) return first;
-    const built = window.PPPAudioScore.toMusicXml({ notes: heard.notes, pedals: heard.pedals },
-      { title: title, closeGaps: true, exactBars: true, recording: 'v2', hands: 'legacy' });
-    if (!writtenByV2(built) || !built.graph) return first;
-    const second = await arrangeSingleNote(built.graph, plan);
-    return second.ok ? Object.assign({}, second, { handsFallback: 'legacy' }) : first;
+    for (const v2 of [true, false]) {
+      const built = window.PPPAudioScore.toMusicXml({ notes: heard.notes, pedals: heard.pedals },
+        Object.assign({ title: title, closeGaps: true, exactBars: true }, v2 ? { recording: 'v2', hands: 'legacy' } : {}));
+      if (!built || !built.graph || writtenByV2(built) !== v2) { if (v2) return first; continue; }
+      const next = await arrangeSingleNote(built.graph, plan);
+      if (next.ok) return Object.assign({}, next, v2 ? { handsFallback: 'legacy' } : { classicFallback: true });
+      if (next.reason !== SINGLE_HANDS_FALLBACK_CODE) return first;
+    }
+    return first;
   } catch (e) { return first; }
 }
 /* the song's source after a conversion: v2 writes recordingPipeline and version 8; anything else drops a v2 mark that a previous conversion left and is otherwise as it was */
@@ -9873,7 +9911,7 @@ window.PPP = {
   /* G10a-4/G10a-5b: 'v2' (default: the staged recording conversion, docs/GOALS/G10 section 6) | 'legacy' (the classic one). Any other value is no choice: the default comes back and the remembered choice is forgotten. A choice is remembered on this device. */
   get recording() { return RECORDING_MODE; },
   set recording(v) { setRecordingMode(v); },
-  loadRecordingModules, recordingModulesReady, TRANSCRIPTION_VERSION_V2, RECORDING_SCRIPTS, RECORDING_WEIGHTS,
+  loadRecordingModules, recordingModulesReady, recWeightsShapeOk, TRANSCRIPTION_VERSION_V2, RECORDING_SCRIPTS, RECORDING_WEIGHTS,
   pitchToMidi, midiToFreq, keyName,
   PIANO, PianoSamples, PianoScore, PianoPlayer,
   PianoVisual: {
@@ -13858,8 +13896,8 @@ class Component extends DCLogic {
     if (e.key === 'Escape' && this.state.shareDlg) { this.closeShareDialog(); return; }
     const t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-    /* the one-note-per-hand chip is a button: Space and Enter press it, they do not start playback */
-    if (t && t.closest && t.closest('[data-single-note-option]') && (e.key === ' ' || e.key === 'Enter')) return;
+    /* the one-note-per-hand chip and the transcription-method chip (G10a-5b) are buttons: Space and Enter press them, they do not start playback */
+    if (t && t.closest && t.closest('[data-single-note-option], [data-recording-v2-option]') && (e.key === ' ' || e.key === 'Enter')) return;
     if (e.key === 'Escape' && this.state.screen === 'learn' && this.state.learnFocus) { this.toggleLearnFocus(); return; }
     /* On Piano Basics the letter row is a piano (A S D F… from Do) and the
        space bar taps the rhythm, so no practice shortcut fires there. */
@@ -15439,7 +15477,7 @@ class Component extends DCLogic {
         /* legacy-score.js takes the title of the graph's own meta over the name it is given: the copy is named what the person typed */
         arranged.title = title;
         engraveRemember(arranged, sn.graph, 'g9-single');
-        arranged.source = { arrangement: Object.assign({ engine: 'ppp.g9-single', level: plan.level, style: plan.style, source: plan.source || 'local' }, levelNote ? { levelNote: levelNote } : {}, rescued ? { rescued: rescued.length } : {}, sn.handsFallback ? { handsFallback: sn.handsFallback } : {}) };
+        arranged.source = { arrangement: Object.assign({ engine: 'ppp.g9-single', level: plan.level, style: plan.style, source: plan.source || 'local' }, levelNote ? { levelNote: levelNote } : {}, rescued ? { rescued: rescued.length } : {}, sn.handsFallback ? { handsFallback: sn.handsFallback } : {}, sn.classicFallback ? { classicFallback: true } : {}) };
         usedSingle = true;
       }
     }
@@ -17922,6 +17960,8 @@ class Component extends DCLogic {
       showRecordingChoice: !!(S.importSource && inferredAudioNotation(S.importSource) && !S.importSource.referenceScore && S.importSource.kind !== 'arrangement' && S.importSource.kind !== 'built-in'),
       /* the 'Full song' (playable piano arrangement) import is not a transcription of what was played: writing it again from the heard notes would replace the easy arrangement with the full one */
       showWriteAgain: !!(S.importSource && S.importSource.taskMode !== 'piano-arrangement'),
+      /* G10a-5b: the chip, and the note beside the rhythm controls that points to "Write the notation again", are for a faithful transcription; a 'Full song' arrangement is always written by the classic method (no chip, no button) */
+      showMethodChip: !!(S.importSource && S.importSource.taskMode !== 'piano-arrangement'),
       recordingBadge: S.importSource && S.importSource.recordingPipeline === 'v2' ? tx('This notation was written with the new method.') : tx('This notation was written with the classic method.'),
       writeAgainLabel: S.recWriteBusy ? tx('Writing…') : tx('Write the notation again'),
       writeAgainHint: tx('Writes the notation of this song again from the notes PPP heard, with the method chosen above. The bars may change, so practice history for this song starts over.')
@@ -17934,7 +17974,7 @@ class Component extends DCLogic {
       notationStatus: S.recNotation ? tx(S.recNotation.method === 'v2' ? 'Wrote the notation again with the new method.' : 'Wrote the notation again with the classic method.') + ' '
         + tx('Before: {{m1}} measures, {{r1}} rests, {{b1}} tuplet brackets. Now: {{m2}} measures, {{r2}} rests, {{b2}} tuplet brackets.',
           { m1: S.recNotation.from.measures, r1: S.recNotation.from.rests, b1: S.recNotation.from.brackets, m2: S.recNotation.to.measures, r2: S.recNotation.to.rests, b2: S.recNotation.to.brackets }) : '',
-      showLockV2Note: RECORDING_MODE === 'v2',
+      showLockV2Note: RECORDING_MODE === 'v2' && !!(S.importSource && S.importSource.taskMode !== 'piano-arrangement'),
       lockV2Note: tx('With the new method on, a metre or tempo you set here is written by the classic method. To let the new method decide again, use "Write the notation again".'),
       showAsRecorded: !!(S.importSource && inferredAudioNotation(S.importSource) && !S.importSource.referenceScore && S.importSource.kind !== 'arrangement' && S.importSource.kind !== 'built-in'),
       asRecordedLabel: S.asRecorded ? tx('Stop') : tx('Play as recorded'),
@@ -17994,7 +18034,9 @@ class Component extends DCLogic {
           /* Global tempo/rhythm notices remain below the score, but they are
              not red measures. This counter must agree with the red strip. */
           { k: 'Needs a look', v: String((rep.suspectMeasures || []).length) }
-        ].concat(src.referenceScore ? [{ k: 'Score source', v: src.referenceScore.kind === 'musicxml' || src.referenceScore.kind === 'mxl' ? 'MusicXML' : tx('uploaded score') }] : [])
+        /* G10a-5b: the new method also marks the bars it was not sure of (amber, not red: rec/app.js flags): their own count, beside the red one, so that the tiles say what the strip shows; a classic review has none */
+        ].concat((rep.uncertainMeasures || []).length ? [{ k: 'Unsure measures', v: String(rep.uncertainMeasures.length) }] : [])
+         .concat(src.referenceScore ? [{ k: 'Score source', v: src.referenceScore.kind === 'musicxml' || src.referenceScore.kind === 'mxl' ? 'MusicXML' : tx('uploaded score') }] : [])
          .concat(src.retrieved ? [{ k: 'Score', v: tx('catalog') }] : [])
          .concat(src.taskMode ? [{ k: 'Mode', v: src.taskMode === 'piano-arrangement'
            ? tx('playable arrangement') : tx('faithful solo piano') }] : [])

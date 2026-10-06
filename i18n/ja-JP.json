@@ -1948,6 +1948,7 @@
     "New transcription method": "新しい採譜方式",
     "On (the default): a newer way of reading the beat, the hands and the rests. Turn it off to use the classic method.": "オン（標準）：拍・左右の手・休符を新しい方法で読み取ります。オフにすると従来の方法を使います。",
     "Off: the classic method writes the notation. Turn it on to use the newer way of reading the beat, the hands and the rests.": "オフ：従来の方法で楽譜を書きます。オンにすると、拍・左右の手・休符を新しい方法で読み取ります。",
+    "Unsure measures": "不確かな小節",
     "This notation was written with the new method.": "この楽譜は新しい方式で書かれています。",
     "This notation was written with the classic method.": "この楽譜は従来の方式で書かれています。",
     "Write the notation again": "楽譜を書き直す",

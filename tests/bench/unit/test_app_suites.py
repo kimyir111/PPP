@@ -45,7 +45,7 @@ class StageOptsReachTheSut(unittest.TestCase):
 
     def test_the_options_are_the_ones_the_app_passes(self):
         """The six recording call sites in the page (the import, "Rewrite the rhythm", the review screen's arrangement, the rhythm rewrite, G10a-4's
-        "Write the notation again" and the one-note arranger's hands fallback) pass closeGaps and exactBars IN EACH BRANCH of their condition: the classic
+        "Write the notation again" and the one-note arranger's fallback conversions) pass closeGaps and exactBars IN EACH BRANCH of their condition: the classic
         options and v2's (PPP.recording 'v2' adds `recording: 'v2'` and nothing else). tests/recording-v2-callsites.js reads the page source (each call's
         argument list, parentheses balanced) and evaluates the options for the flag false and true; a regex over the whole call cannot tell
         `Object.assign({.., exactBars: true}, v2 ? {recording: 'v2'} : {})` from `Object.assign({..}, v2 ? {recording: 'v2', exactBars: true} : {})`."""
@@ -58,14 +58,14 @@ class StageOptsReachTheSut(unittest.TestCase):
             for branch in ("classic", "v2"):
                 self.assertIs(c[branch].get("closeGaps"), True, f"{branch}: {c['call']}")
                 self.assertIs(c[branch].get("exactBars"), True, f"{branch}: {c['call']}")
-        # the classic branch never asks for v2, except the hands fallback, which converts a v2 transcription's heard notes again and says so with both options
-        fallback = [c for c in calls if c["classic"].get("hands") == "legacy"]
-        self.assertEqual(len(fallback), 1)
-        self.assertEqual(fallback[0]["classic"].get("recording"), "v2")
+        # the classic branch never asks for v2 (G10a-5b: the one-note arranger's fallback is ONE call site that converts a refused v2 transcription's heard notes again, first with v2's options
+        # and the classic hands - its v2 branch - then the classic way - its classic branch); only that call says `hands`, and only in its v2 branch
         for c in calls:
-            if c is not fallback[0]:
-                self.assertNotIn("recording", c["classic"], c["call"])
-                self.assertNotIn("hands", c["classic"], c["call"])
+            self.assertNotIn("recording", c["classic"], c["call"])
+            self.assertNotIn("hands", c["classic"], c["call"])
+        fallback = [c for c in calls if c["v2"].get("hands") == "legacy"]
+        self.assertEqual(len(fallback), 1)
+        self.assertEqual(fallback[0]["v2"].get("recording"), "v2")
         # v2 is asked for by one option and nothing else changes; five of the six can ask for it ("Rewrite the rhythm" states the metre itself,
         # which v2 does not take from a person: it is the classic writer's, always)
         self.assertEqual(sum(1 for c in calls if c["v2"].get("recording") == "v2"), 5)
