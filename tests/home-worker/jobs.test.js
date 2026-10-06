@@ -122,7 +122,7 @@ async function tokenRules() {
   ok('the id never contains the code, and the hash is not the plain sha256 of it (so a guest-link key can never be a code)', k.id.indexOf(k.code.slice(0, 22)) < 0 && k.hash.toString('hex') !== L.crypto.createHash('sha256').update(k.code).digest('hex'));
   ok('CODE_RE takes exactly 64 lowercase hex: not 63, 65, upper case, a dash, a space, a newline, base64url of 43', J.CODE_RE.test(k.code) && !J.CODE_RE.test(k.code.slice(1)) && !J.CODE_RE.test(k.code + '0') && !J.CODE_RE.test(k.code.toUpperCase().replace(/^([0-9A-F])/, 'G'))
     && !J.CODE_RE.test(k.code.slice(0, 10) + '-' + k.code.slice(11)) && !J.CODE_RE.test(k.code + '\n') && !J.CODE_RE.test(' ' + k.code) && !J.CODE_RE.test(L.crypto.randomBytes(32).toString('base64url')) && !J.CODE_RE.test(k.code.toUpperCase()));
-  ok('an IPv6 address counts as its /64, an IPv4-mapped one as the IPv4, an IPv4 as itself', J.addrKey('2001:db8:1:2:aaaa:bbbb:cccc:dddd') === J.addrKey('2001:DB8:1:2::1') && J.addrKey('2001:db8:1:2::1') !== J.addrKey('2001:db8:1:3::1')
+  ok('an IPv6 address counts as its /56, an IPv4-mapped one as the IPv4, an IPv4 as itself', J.addrKey('2001:db8:1:2:aaaa:bbbb:cccc:dddd') === J.addrKey('2001:DB8:1:2::1') && J.addrKey('2001:db8:1:2::1') === J.addrKey('2001:db8:1:3::1') && J.addrKey('2001:db8:1:2::1') !== J.addrKey('2001:db8:1:102::1') && J.addrKey('2001:db8:1:2::1') !== J.addrKey('2001:db8:2:2::1')
     && J.addrKey('::ffff:1.2.3.4') === '1.2.3.4' && J.addrKey('1.2.3.4') === '1.2.3.4' && J.addrKey('fe80::1%eth0') === J.addrKey('fe80:0:0:0::7'), J.addrKey('2001:db8:1:2::1'));
 }
 
@@ -820,7 +820,9 @@ async function main() {
         SL.store.fail.on = true; SL.store.fail.only = 'touchLink';
         const f1 = await SL.as('m1').get('/api/jobs');
         SL.store.fail.on = false;
-        ok('a write of it that fails does not fail the request (it is only logged), and is tried again by the next one', f1.status === 200 && SL.logged.length === 1 && (await SL.as('m1').get('/api/jobs')).status === 200 && SL.store.calls.touchLink === 3, JSON.stringify(SL.store.calls));
+        ok('a write of it that fails does not fail the request (it is only logged)', f1.status === 200 && SL.logged.length === 1 && SL.store.calls.touchLink === 2, JSON.stringify(SL.store.calls));
+        ok('and it is not tried again by every request while the database is down: the next request, and 30 more seconds later the next, do not try; a minute later one does', (await SL.as('m1').get('/api/jobs')).status === 200 && SL.store.calls.touchLink === 2
+          && (SL.advance(30 * 1000), (await SL.as('m1').get('/api/jobs')).status === 200) && SL.store.calls.touchLink === 2 && (SL.advance(31 * 1000), (await SL.as('m1').get('/api/jobs')).status === 200) && SL.store.calls.touchLink === 3, JSON.stringify(SL.store.calls));
       } finally { await SL.close(); }
     }
 

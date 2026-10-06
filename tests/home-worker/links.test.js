@@ -79,8 +79,8 @@ async function main() {
     try {
       const out = [];
       for (let i = 0; i < 6; i++) out.push((await mk(S, ['2001:db8:5:6::1', '2001:db8:5:6:aaaa:bbbb:cccc:dddd', '2001:DB8:5:6:0:0:0:7'][i % 3])).status);
-      ok('an IPv6 address counts as its /64: three spellings in one network are one address (5, then 429)', out.join() === '201,201,201,201,201,429', out.join());
-      ok('another /64 is another address; so is an IPv4', (await mk(S, '2001:db8:5:7::1')).status === 201 && (await mk(S, '1.2.3.4')).status === 201);
+      ok('an IPv6 address counts as its /56: three spellings in one network are one address (5, then 429); so is another /64 of the same /56', out.join() === '201,201,201,201,201,429' && (await mk(S, '2001:db8:5:7::1')).status === 429, out.join());
+      ok('another /56 is another address; so is an IPv4', (await mk(S, '2001:db8:5:107::1')).status === 201 && (await mk(S, '1.2.3.4')).status === 201);
       ok('an IPv4-mapped IPv6 address is the IPv4 (the same budget)', await (async () => { const o = []; for (let i = 0; i < 5; i++) o.push((await mk(S, i % 2 ? '::ffff:9.9.9.9' : '9.9.9.9')).status); o.push((await mk(S, '9.9.9.9')).status); return o.join() === '201,201,201,201,201,429'; })());
     } finally { await S.close(); }
   }
@@ -231,7 +231,7 @@ async function main() {
       await L.sleep(150);
       await S.as('W').del('/api/pc-links/me');
       const r = await waiting;
-      ok('a PC that was waiting for work when the link was revoked is answered at once, with no job (not after the whole wait)', r.status === 200 && r.body.job === null && Date.now() - t0 < 1000, r.status + ' ' + (Date.now() - t0) + ' ms');
+      ok('a PC that was waiting for work when the link was revoked is answered at once with 401 (the token is dead: it is not told there is no work), not after the whole wait', r.status === 401 && Date.now() - t0 < 1000, r.status + ' ' + (Date.now() - t0) + ' ms');
       ok('and its next ask is 401', (await S.worker(S.token('W')).post('/api/worker/claim', { once: true })).status === 401);
     } finally { await S.close(); }
   }
@@ -247,6 +247,22 @@ async function main() {
     } finally { await S.close(); }
   }
 
+  heading('a link removed while a conversion is being written for it: nothing is left of it');
+  {
+    const S = await L.startService({ users: ['E'] });
+    try {
+      const real = S.store.insertJob;
+      S.store.insertJob = async function () { await L.sleep(120); return real.apply(this, arguments); };
+      const asking = queue(S, 'E', 'raceremove1');
+      await L.sleep(40);
+      const rv = await S.as('E').del('/api/pc-links/me');
+      const r = await asking;
+      S.store.insertJob = real;
+      ok('the removal is 200 and the conversion asked for at the same moment is told the link is gone (401), not 201', rv.status === 200 && r.status === 401 && r.body.code === 'bad-code', rv.status + ' ' + r.status + ' ' + r.text);
+      ok('and no row of it is left in memory or in the store (the one that was being written is swept)', S.svc._state.jobs.size === 0 && (await S.inner.loadAll()).jobs.length === 0);
+    } finally { await S.close(); }
+  }
+
   heading('a new worker token: the old one is dead at once, the PC stays heard of');
   {
     const S = await L.startService({ users: ['T'], config: { longPollMs: 100 } });
@@ -258,6 +274,8 @@ async function main() {
       const rot = await S.as('T').post('/api/pc-links/me/worker-token', {});
       const fresh = rot.body.workerToken;
       ok('POST /api/pc-links/me/worker-token: 201, a new token, shown once; it is not the old one', rot.status === 201 && /^ppw_/.test(fresh) && fresh !== old && rot.body.workerTokenId === fresh.slice(4, 16));
+      const wRot = (await S.as('T').get('/api/worker/status')).body.worker;
+      ok('right after the rotation, before the new token has been used once: the PC is still "heard of" (the page keeps its button) and the last-seen time is the old token\'s', wRot.everSeen === true && wRot.hasToken === true && !!wRot.lastSeenAt, JSON.stringify(wRot));
       ok('the old token: 401 on everything (ping, claim, heartbeat, result)', (await S.worker(old).get('/api/worker/ping')).status === 401 && (await S.worker(old).post('/api/worker/claim', {})).status === 401 && (await S.worker(old).post('/api/worker/jobs/' + j.id + '/heartbeat', {})).status === 401
         && (await S.worker(old).post('/api/worker/jobs/' + j.id + '/result', goodResult(40))).status === 401);
       ok('the job claimed under the old token is finished by the new one (the PC was reconfigured while it worked)', (await S.worker(fresh).post('/api/worker/jobs/' + j.id + '/heartbeat', { pct: 0.5 })).status === 200 && (await S.worker(fresh).post('/api/worker/jobs/' + j.id + '/result', goodResult(40))).status === 200);
@@ -284,6 +302,115 @@ async function main() {
     try {
       ok('a boot that finds two live tokens for one link keeps only the newest', (await B.worker(creds.tokens.D).get('/api/worker/ping')).status === 401 && (await B.worker(nt.token).get('/api/worker/ping')).status === 200);
     } finally { await B.close(); L.rmDir(dir); }
+  }
+
+  heading('after the review: rows per address, a token or a link that goes while a request waits, a link being made while the queue is re-read');
+  {
+    /* (a) the rows (any state) of all the links made from one address are bounded: with no PC a link can queue and cancel 30 of them */
+    const was = J.LIMITS.ROWS_PER_ADDRESS;
+    J.LIMITS.ROWS_PER_ADDRESS = 7;
+    const S = await L.startService({ users: [] });
+    try {
+      for (const n of ['ra', 'rb', 'rc']) await S.makeLink(n, { ip: '77.0.0.1' });
+      await S.makeLink('other', { ip: '77.0.0.2' });
+      const out = [];
+      for (let i = 0; i < 9; i++) { const n = ['ra', 'rb', 'rc'][i % 3]; const r = await queue(S, n, 'addrrows' + String(i).padStart(3, '0')); out.push(r.status); if (r.status === 201) await S.as(n).post('/api/jobs/' + r.body.job.id + '/cancel'); }
+      ok('the links of one address hold 7 rows together (here; 100 by default): the 8th row is 503 "busy" whichever link asks, and leaves nothing behind', out.join() === '201,201,201,201,201,201,201,503,503' && Array.from(S.svc._state.jobs.values()).length === 7 && (await S.inner.loadAll()).jobs.length === 7, out.join());
+      ok('a link made from another address is not touched; removing a conversion of the first address makes room', (await queue(S, 'other', 'addrrowsoth')).status === 201 && (await S.as('ra').del('/api/jobs/' + Array.from(S.svc._state.jobs.values()).find(j => j.ownerId === S.linkId('ra')).id)).status === 200 && (await queue(S, 'rb', 'addrrows100')).status === 201);
+    } finally { J.LIMITS.ROWS_PER_ADDRESS = was; await S.close(); }
+  }
+  {
+    /* (b) a PC that waits for work (the long-poll) when its token is replaced is told so, and is not handed the next job */
+    const S = await L.startService({ users: ['W'], config: { longPollMs: 1500 } });
+    try {
+      const j1 = (await queue(S, 'W', 'longwait001')).body.job;
+      const old = S.token('W');
+      await S.worker(old).post('/api/worker/claim', { once: true });
+      const t0 = Date.now();
+      const waiting = S.worker(old).post('/api/worker/claim', {});
+      await L.sleep(150);
+      const rot = await S.as('W').post('/api/pc-links/me/worker-token', {});
+      const r = await waiting;
+      ok('the owner replaces the token while the old one waits for work: the waiting poll is answered at once with 401 (not after the whole wait)', r.status === 401 && Date.now() - t0 < 1000, r.status + ' ' + (Date.now() - t0) + ' ms');
+      const j2 = (await queue(S, 'W', 'longwait002')).body.job;
+      ok('a job queued right after goes to the new token, and the old token is given nothing', (await S.worker(old).post('/api/worker/claim', { once: true })).status === 401 && (await S.worker(rot.body.workerToken).post('/api/worker/claim', { once: true })).body.job.id === j2.id);
+      void j1;
+    } finally { await S.close(); }
+  }
+  {
+    /* (c) a result being taken (the body read, room cleared) when the token is replaced is refused, and the job stays the link's */
+    const S = await L.startService({ users: ['X'], config: { perUserResultBytes: 4000, resultReserveBytes: 0, totalResultBytes: 1e9 } });
+    try {
+      const tok = S.token('X');
+      const done = async id => { const q = (await queue(S, 'X', id)).body.job; const g = (await S.worker(tok).post('/api/worker/claim', { once: true })).body.job; await S.worker(tok).post('/api/worker/jobs/' + g.id + '/result', goodResult(40)); S.advance(1000); return q; };
+      await done('postrot0001'); await done('postrot0002');
+      const q3 = (await queue(S, 'X', 'postrot0003')).body.job;
+      const g3 = (await S.worker(tok).post('/api/worker/claim', { once: true })).body.job;
+      const real = S.store.deleteJobs;
+      S.store.deleteJobs = async function () { await L.sleep(250); return real.apply(this, arguments); };
+      const posting = S.worker(tok).post('/api/worker/jobs/' + g3.id + '/result', goodResult(40));
+      await L.sleep(80);
+      await S.as('X').post('/api/pc-links/me/worker-token', {});
+      const r = await posting;
+      S.store.deleteJobs = real;
+      ok('a result that was being taken (room was being cleared for it) when the token was replaced is refused (401), and the job is still claimed: nothing was written for a token that is dead', r.status === 401 && S.svc._state.jobs.get(g3.id).status === 'claimed' && g3.id === q3.id, r.status + ' ' + r.text);
+    } finally { await S.close(); }
+  }
+  {
+    /* (d) a request of a link that ran out in the purge it triggered writes nothing and is told the link is not valid */
+    const S = await L.startService({ users: ['P'] });
+    try {
+      await S.as('P').get('/api/jobs');
+      S.advance(15 * DAY);
+      const r = await queue(S, 'P', 'purgeinreq1');
+      ok('a link made 15 days ago whose PC never connected, asking for a conversion: the purge it triggers removes it, and the request is 401 "bad-code" - not a 201 for a row nobody owns', r.status === 401 && r.body.code === 'bad-code' && (await S.inner.loadAll()).jobs.length === 0 && S.svc._state.jobs.size === 0, r.status + ' ' + r.text);
+      ok('and the hourly budgets it took were given back', (await S.makeLink('P2')) && (await queue(S, 'P2', 'purgeinreq2')).status === 201);
+    } finally { await S.close(); }
+  }
+  {
+    /* (e) the queue is re-read (a claim that found the memory behind) while a link is being made: the link must not be lost */
+    const S = await L.startService({ users: [] });
+    try {
+      const real = S.store.createLink;
+      S.store.createLink = async function () { await L.sleep(200); return real.apply(this, arguments); };
+      const making = S.makeLink('M', { ip: '78.0.0.1' });
+      await L.sleep(60);
+      S.svc._state.forgetAll();
+      await S.makeLink('N', { ip: '78.0.0.2' }).catch(() => null);
+      const r = await making;
+      S.store.createLink = real;
+      ok('a link being made while the queue was read again is still there afterwards: its code and its token work', r.status === 201 && (await S.as('M').get('/api/jobs')).status === 200 && (await S.worker(S.token('M')).get('/api/worker/ping')).status === 200);
+    } finally { await S.close(); }
+  }
+  {
+    /* (f) two replacements of the token at the same moment, the first one's write failing: the token it replaced does not come back */
+    const S = await L.startService({ users: ['Y'] });
+    try {
+      const a = S.token('Y');
+      const real = S.store.rotateToken;
+      let n = 0;
+      S.store.rotateToken = async function () { const me = ++n; await L.sleep(me === 1 ? 200 : 20); if (me === 1) throw new Error('store is down (test)'); return real.apply(this, arguments); };
+      const r1 = S.as('Y').post('/api/pc-links/me/worker-token', {});
+      await L.sleep(60);
+      const r2 = await S.as('Y').post('/api/pc-links/me/worker-token', {});
+      const r1r = await r1;
+      S.store.rotateToken = real;
+      ok('the second replacement is 201 and its token works; the first one failed (503); the token the first one had replaced (and the second one replaced again) is NOT alive again', r2.status === 201 && r1r.status === 503 && (await S.worker(r2.body.workerToken).get('/api/worker/ping')).status === 200 && (await S.worker(a).get('/api/worker/ping')).status === 401
+        && Array.from(S.svc._state.tokens.values()).filter(k => k.ownerId === S.linkId('Y')).length === 1, r1r.status + ' ' + r2.status);
+    } finally { await S.close(); }
+  }
+
+  heading('the hourly enqueue limit counts an IPv6 network as one address (its /56), not each of its billions');
+  {
+    const was = J.LIMITS.ENQUEUE_PER_IP_PER_HOUR;
+    J.LIMITS.ENQUEUE_PER_IP_PER_HOUR = 4;
+    const S = await L.startService({ users: ['v6a', 'v6b'] });
+    try {
+      const out = [];
+      for (let i = 0; i < 6; i++) { const ip = '2001:db8:9:' + (1 + i) + '::' + (i + 1); const r = await req(S.port, 'POST', '/api/jobs', { user: i % 2 ? 'v6a' : 'v6b', ip: ip, body: { url: WATCH('ipvsixrow' + String(i).padStart(2, '0')) } }); out.push(r.status); if (r.status === 201) await req(S.port, 'POST', '/api/jobs/' + r.body.job.id + '/cancel', { user: i % 2 ? 'v6a' : 'v6b', ip: ip, body: {} }); }
+      ok('four enqueues an hour (here; 60 by default) from six different /64s of one /56: the 5th and 6th are 429', out.join() === '201,201,201,201,429,429', out.join());
+      ok('another /56 is not touched', (await req(S.port, 'POST', '/api/jobs', { user: 'v6a', ip: '2001:db8:9:101::1', body: { url: WATCH('ipvsixother') } })).status === 201);
+    } finally { J.LIMITS.ENQUEUE_PER_IP_PER_HOUR = was; await S.close(); }
   }
 
   heading('a record found by the id alone is not enough: the whole hash of the code is compared');

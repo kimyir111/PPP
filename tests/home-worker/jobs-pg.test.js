@@ -279,6 +279,18 @@ const PRODUCTION_SQL = `
     } else console.log('  - PPP_TEST_PG_CONTAINER is not set: the database-log count of the server\'s statements is skipped (the in-process count above ran).');
     await srv.close(); srv = null;
 
+    heading('the per-address limit on making links survives a restart of the real server (the tag of the address is keyed by the server\'s secret, which does not change)');
+    {
+      await q('DELETE FROM ppp_transcribe_jobs; DELETE FROM ppp_worker_tokens; DELETE FROM ppp_pc_links');
+      const b1 = await startServer();
+      const first = [];
+      try { for (let i = 0; i < 6; i++) first.push((await req(b1.port, 'POST', '/api/pc-links', { ip: '192.0.2.44', body: {} })).status); } finally { await b1.close(); }
+      const b2 = await startServer();
+      let again, other;
+      try { again = (await req(b2.port, 'POST', '/api/pc-links', { ip: '192.0.2.44', body: {} })).status; other = (await req(b2.port, 'POST', '/api/pc-links', { ip: '192.0.2.45', body: {} })).status; } finally { await b2.close(); }
+      ok('five links an hour from one address, the 6th is 429; a restart later the same address is still at its five (the counts and the keyed tags are in the database); another address can', first.join() === '201,201,201,201,201,429' && again === 429 && other === 201, first.join() + ' ' + again + ' ' + other);
+    }
+
     console.log('\n\u2500\u2500 the whole boot, twelve at once \u2500\u2500');
     /* the boot's whole schema work goes through the lock: the SQL server.js ran before the queue existed (users, progress, shares, the foreign-key DO block) is the first part of the same transaction */
     const srvSrc = L.fs.readFileSync(path.join(L.MODS, 'server.js'), 'utf8');

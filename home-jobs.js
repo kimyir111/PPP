@@ -55,15 +55,18 @@ const LIMITS = {
   OTHER_TTL_MS: 1 * DAY,
   PURGE_EVERY_MS: 6 * HOUR,
   /* what all stored notes together may take of the free database (Neon Free is small, and shared with the shared scores): past it, no job is
-     accepted and no result is stored until the keeping time frees room. Accounts are free to make, so the per-account caps alone are not a bound. */
+     accepted and no result is stored until the keeping time frees room. PC links are free to make, so the per-link caps alone are not a bound. */
   TOTAL_RESULT_BYTES: 64 * 1024 * 1024,
-  /* ... and what one account may hold of it, so one person (or a few) cannot use it all up: 8 MB is about 70 typical conversions, and
-     the 30 rows an account may keep are 3-4 MB when typical */
+  /* ... and what one link may hold of it, so one person (or a few) cannot use it all up: 8 MB is about 70 typical conversions, and
+     the 30 rows a link may keep are 3-4 MB when typical */
   PER_USER_RESULT_BYTES: 8 * 1024 * 1024,
   /* ... and what all the links made from ONE address (a keyed hash of it, kept on the link) may hold: links are free to make, and each one has its own
      worker token, so without this a single address could fill the site's whole share with results it wrote itself */
   PER_ADDRESS_RESULT_BYTES: 16 * 1024 * 1024,
-  /* a new job asks for this much room among its account's share (the oldest finished conversions are cleared to make it), so that the result
+  /* ... and how many rows (any state) all the links made from one address may hold together: with no PC at all a link can queue and cancel 30 rows, and the site holds
+     MAX_ROWS in all, so a few addresses could otherwise fill it */
+  ROWS_PER_ADDRESS: 100,
+  /* a new job asks for this much room among its link's share (the oldest finished conversions are cleared to make it), so that the result
      the PC posts later is not refused: a typical result is 100-400 KB, the biggest the schema allows is 2 MB, a 20,000-note one 0.9 MB */
   RESULT_RESERVE_BYTES: 1024 * 1024,
   /* how long an idle worker is told to wait (nextPollSeconds). Every request wakes the free web service for 15 minutes, so an idle wait
@@ -76,7 +79,7 @@ const LIMITS = {
   SMALL_BODY: 4 * 1024,
   RESULT_BODY: R.LIMITS.RESULT_MAX_BYTES + 1024 * 1024,
   RESULT_DRAIN: 8 * 1024 * 1024,
-  /* rates: per account, and per client address (the global bucket this replaces let one person use up everybody's hour) */
+  /* rates: per link, and per client address (the global bucket this replaces let one person use up everybody's hour) */
   ENQUEUE_PER_HOUR: 30,
   ENQUEUE_PER_IP_PER_HOUR: 60,
   /* a new worker token for a link (rotation), per link and per address */
@@ -164,7 +167,8 @@ function newLink() {
   const hash = codeHash(code);
   return { code: code, hash: hash, id: linkIdOf(hash) };
 }
-/* an address as the per-address limits see it: an IPv6 address is its /64 (one person's network has billions of addresses in it), an IPv4-mapped one is the IPv4 */
+/* an address as the per-address limits see it: an IPv6 address is its /56 (what a home connection is given is a /56 or a /64, and one network has billions of addresses
+   in it), an IPv4-mapped one is the IPv4 */
 function addrKey(ip) {
   const s = String(ip || 'unknown').toLowerCase();
   const m = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(s);
@@ -175,7 +179,8 @@ function addrKey(ip) {
   const head = halves[0] ? halves[0].split(':') : [];
   const tail = halves.length > 1 && halves[1] ? halves[1].split(':') : [];
   const groups = head.concat(new Array(Math.max(0, 8 - head.length - tail.length)).fill('0'), tail);
-  return groups.slice(0, 4).map(g => g.padStart(4, '0')).join(':') + '::/64';
+  const g = groups.map(x => x.padStart(4, '0'));
+  return g[0] + ':' + g[1] + ':' + g[2] + ':' + g[3].slice(0, 2) + '00::/56';
 }
 
 const iso = t => (t ? new Date(t).toISOString() : null);
@@ -213,6 +218,9 @@ function create(deps) {
   };
 
   function fill(data) {
+    /* a link that is being made right now (its row is not in the database yet) is not in what was read: it must not be lost to a re-read (a claim that found the memory behind) */
+    const making = Array.from(links.values()).filter(l => l.writing);
+    const makingTokens = Array.from(tokens.values()).filter(k => making.some(l => l.id === k.ownerId));
     jobs.clear(); tokens.clear(); links.clear(); lastFinished.clear();
     (data.links || []).forEach(l => {
       if (!l || typeof l.id !== 'string' || l.id.slice(0, 3) !== LINK_PREFIX) return;
@@ -239,6 +247,8 @@ function create(deps) {
         lastSeenAt: k.lastSeenAt || 0, pollS: k.pollS || 0 });
     });
     tokens.forEach(k => { const l = links.get(k.ownerId); if (l && k.lastSeenAt > l.lastWorkerAt) l.lastWorkerAt = k.lastSeenAt; });
+    making.forEach(l => { if (!links.has(l.id)) links.set(l.id, l); });
+    makingTokens.forEach(k => { if (!tokens.has(k.id)) tokens.set(k.id, k); });
   }
 
   /* The one read of a boot. Shared by every request that arrives meanwhile; a failure is not remembered (the next
@@ -287,6 +297,8 @@ function create(deps) {
     const same = want.length === got.length && crypto.timingSafeEqual(want, got);
     return same && rec ? rec : null;
   }
+  /* is this token still the live one of a live link? (asked again after anything that waited: a long-poll, a body, a clearing of room - the token may have been replaced or the link removed meanwhile) */
+  const alive = rec => { const l = links.get(rec.ownerId); return tokens.get(rec.id) === rec && !!l && !l.revokedAt; };
   function verifyCode(code) {
     const got = codeHash(code);
     const rec = links.get(linkIdOf(got)) || null;
@@ -321,10 +333,11 @@ function create(deps) {
     return o;
   }
   /* the notes kept for all the links made from one address (by the keyed hash on the link) */
+  const addressRows = tag => { let n = 0; jobs.forEach(j => { const l = links.get(j.ownerId); if (l && l.ipTag === tag) n++; }); return n; };
   const addressBytes = tag => { let n = 0; jobs.forEach(j => { if (j.status === 'done') { const l = links.get(j.ownerId); if (l && l.ipTag === tag) n += j.bytes || 0; } }); return n; };
   const storedBytes = ownerId => { let n = 0; jobs.forEach(j => { if (j.status === 'done' && (ownerId == null || j.ownerId === ownerId)) n += j.bytes || 0; }); return n; };
-  /* Room for one account's new row and notes among ITS OWN finished rows: the oldest go first (failed, cancelled and expired ones before done ones),
-     until the notes kept plus needBytes fit the account's share and the rows plus needRows fit its row cap. The account's share is never a reason to
+  /* Room for one link's new row and notes among ITS OWN finished rows: the oldest go first (failed, cancelled and expired ones before done ones),
+     until the notes kept plus needBytes fit the link's share and the rows plus needRows fit its row cap. The link's share is never a reason to
      refuse a person's work or to lock them out until the keeping time is over; nobody else's rows are touched, and a waiting or converting one never goes
      (only finished rows are candidates). `except` is the job that is asking (already in the queue as a reserved slot: it is the row that needRows stands for).
      Returns the rows removed. */
@@ -389,7 +402,8 @@ function create(deps) {
     if (!link || link.revokedAt || t - link.persistedAt < L.LINK_TOUCH_MS) return;
     const was = link.persistedAt;
     link.persistedAt = t;
-    try { await store.touchLink(link.id, link.lastUsedAt, link.lastWorkerAt); } catch (e) { link.persistedAt = was; logError(e); }
+    /* a write that fails is tried again in a minute (not by every request while the database is down) */
+    try { await store.touchLink(link.id, link.lastUsedAt, link.lastWorkerAt); } catch (e) { link.persistedAt = Math.max(was, t - L.LINK_TOUCH_MS + 60 * 1000); logError(e); }
   }
   /* write the token's last-seen time to the database: only where the database is being used anyway */
   async function persistSeen(rec) {
@@ -487,7 +501,7 @@ function create(deps) {
 
   async function enqueue(req, res) {
     const link = await requireLink(req);
-    const ip = deps.clientIp(req) || 'unknown';
+    const ip = addrKey(deps.clientIp(req) || 'unknown');
     /* the two hourly budgets are taken now and given back when the request turns out to make nothing (a body that is refused, a link that is not
        YouTube, a duplicate, a full queue): a refused request is free, and so cannot be used to use up someone else's budget */
     if (!limiters.enqueue.take(link.id)) throw httpError(429, 'Too many conversions were asked for just now. Try again in a little while.', 'too-many', { retryAfter: 600 });
@@ -503,6 +517,8 @@ function create(deps) {
     const t = now();
     await sweep(t);
     await purgeIfDue(t);
+    /* the link itself may have run out in that purge (made more than 14 days ago, its PC never connected, nothing queued): it is not valid any more, and nothing is written for it */
+    if (links.get(link.id) !== link || link.revokedAt) { release(); throw httpError(401, 'That PC link is not valid.', 'bad-code'); }
     /* From here to jobs.set below nothing is awaited: the checks and the taking of the slot are one turn of the event loop, so two requests at once cannot
        both pass the cap of waiting jobs or both add the same link, whatever the store is doing meanwhile (clearing room is a database call). */
     const mine = ownJobs(link.id);
@@ -529,7 +545,11 @@ function create(deps) {
     const giveUp = e => { jobs.delete(job.id); job.settle(false); release(); throw e; };
     /* room for it among the person's own rows and notes: the oldest finished conversions are cleared first, and room is kept for its result */
     try { await evict(link.id, C.resultReserveBytes, 1, job); } catch (e) { giveUp(e); }
+    /* the rows of all the links made from one address (this one's reserved row included) are bounded too */
+    if (link.ipTag && addressRows(link.ipTag) > L.ROWS_PER_ADDRESS) giveUp(httpError(503, 'The queue is full right now. Try again later.', 'busy'));
     try { await store.insertJob(job); } catch (e) { giveUp(e); }
+    /* the link was removed while the row was being written: the row is not anybody's now - sweep it (removing a link deletes what it owns) and say the link is gone */
+    if (link.revokedAt) { try { await store.revokeLink(link.id, link.revokedAt); } catch (e) { logError(e); } giveUp(httpError(401, 'That PC link is not valid.', 'bad-code')); }
     job.writing = false;
     job.settle(true);
     wake(link.id);
@@ -556,7 +576,7 @@ function create(deps) {
     reply(res, 200, out);
   }
 
-  /* A finished conversion (done, failed, cancelled, expired) can be removed by its owner: its notes go from the database and from the account's share. A waiting
+  /* A finished conversion (done, failed, cancelled, expired) can be removed by its owner: its notes go from the database and from the link's share. A waiting
      or converting one is cancelled first. */
   async function deleteJob(req, res, id) {
     const { link, job } = await ownJob(req, id);
@@ -655,7 +675,7 @@ function create(deps) {
      ONCE. It is how a lost token, or a token that leaked, is dealt with; limited per link and per address. */
   async function rotateToken(req, res) {
     const link = await requireLink(req);
-    const ip = deps.clientIp(req) || 'unknown';
+    const ip = addrKey(deps.clientIp(req) || 'unknown');
     if (!limiters.tokens.take(link.id)) throw httpError(429, 'Too many tokens were made just now. Try again later.', 'too-many', { retryAfter: 600 });
     if (!limiters.tokensIp.take(ip)) { limiters.tokens.release(link.id); throw httpError(429, 'Too many tokens were made just now. Try again later.', 'too-many', { retryAfter: 600 }); }
     const release = () => { limiters.tokens.release(link.id); limiters.tokensIp.release(ip); };
@@ -667,10 +687,14 @@ function create(deps) {
     const rec = { id: k.id, ownerId: link.id, hash: Buffer.from(k.hash, 'hex'), label: 'My PC', createdAt: t, lastSeenAt: inherit.lastSeenAt, pollS: inherit.pollS };
     old.forEach(x => tokens.delete(x.id));
     tokens.set(rec.id, rec);
+    /* put the old tokens back only if nothing replaced this one meanwhile (a second rotation at the same moment): a token that was replaced must not come back to life */
+    const undoRotation = () => { if (tokens.get(rec.id) === rec) { tokens.delete(rec.id); old.forEach(x => tokens.set(x.id, x)); } };
     let ok = false;
     try { ok = await store.rotateToken(link.id, { id: rec.id, hash: k.hash, label: rec.label, lastSeenAt: rec.lastSeenAt, pollS: rec.pollS }, t); }
-    catch (e) { tokens.delete(rec.id); old.forEach(x => tokens.set(x.id, x)); release(); throw e; }
-    if (!ok) { tokens.delete(rec.id); old.forEach(x => tokens.set(x.id, x)); release(); throw httpError(401, 'That PC link is not valid.', 'bad-code'); }
+    catch (e) { undoRotation(); release(); throw e; }
+    if (!ok) { undoRotation(); release(); throw httpError(401, 'That PC link is not valid.', 'bad-code'); }
+    /* a PC that is waiting with the old token is let go now (it is asked again, and refused) */
+    wake(link.id);
     reply(res, 201, { workerToken: k.token, workerTokenId: rec.id, createdAt: iso(t) });
   }
 
@@ -744,6 +768,8 @@ function create(deps) {
     if (!job && !once && isActive(rec.ownerId, t0) && C.longPollMs > 0) {
       await waitForJob(rec.ownerId, Math.min(C.longPollMs, 25000), res);
       if (res.destroyed || res.writableEnded) return;
+      /* the token may have been replaced, or the link removed, while it waited */
+      if (!alive(rec)) throw httpError(401, 'That token is not valid.', 'bad-token');
       job = nextQueued(rec.ownerId);
     }
     if (!job) {
@@ -768,7 +794,7 @@ function create(deps) {
     reply(res, 200, { job: { id: job.id, url: job.url, title: job.title, attempt: job.attempts, maxAttempts: L.MAX_ATTEMPTS }, nextPollSeconds: a.next });
   }
 
-  /* the job named in the path, if the token's account owns it and it is still the worker's to work on */
+  /* the job named in the path, if the token's link owns it and it is still the worker's to work on */
   async function workerJob(req, id, states) {
     const { rec, link, cold } = await workerOf(req);
     const job = jobs.get(id);
@@ -798,7 +824,7 @@ function create(deps) {
     const body = await readJson(req, L.RESULT_BODY, L.RESULT_DRAIN);
     const v = R.validateResult(body);
     if (!v.ok) throw httpError(422, v.error, v.code || 'bad-result');
-    /* the PC's work is never refused for the account's own share: the oldest finished conversions of this account are cleared to make room for it
+    /* the PC's work is never refused for the link's own share: the oldest finished conversions of this link are cleared to make room for it
        (a result is at most 2 MB and the share is 8 MB, so there is always room that way); only the site's total can say no */
     if (v.bytes > C.perUserResultBytes) throw httpError(503, 'This conversion is larger than one account may keep.', 'quota');
     await evict(rec.ownerId, v.bytes, 0);
@@ -806,7 +832,8 @@ function create(deps) {
        the other links of that address are somebody else's to clear) */
     if (link.ipTag && addressBytes(link.ipTag) + v.bytes > C.perAddressResultBytes) throw httpError(503, 'This network has stored as many conversions as the site keeps for it. Remove some, or wait for them to expire.', 'quota');
     if (storedBytes() + v.bytes > C.totalResultBytes) throw httpError(503, 'The site cannot keep more notes right now.', 'busy');
-    /* the body took a while to arrive, and so may the eviction: the job may have been cancelled meanwhile */
+    /* the body took a while to arrive, and so may the eviction: the token may have been replaced or the link removed, and the job may have been cancelled meanwhile */
+    if (!alive(rec)) throw httpError(401, 'That token is not valid.', 'bad-token');
     if (job.status !== 'claimed' && job.status !== 'queued') throw httpError(409, job.status === 'cancelled' ? 'That job was cancelled.' : 'That job is not waiting for this any more.', job.status === 'cancelled' ? 'cancelled' : 'not-open', { status: job.status });
     const t = now();
     const was = { status: job.status, finishedAt: job.finishedAt, error: job.error, bytes: job.bytes, progress: job.progress };
