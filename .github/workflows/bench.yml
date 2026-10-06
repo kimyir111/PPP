@@ -208,7 +208,7 @@ jobs:
   # without a place in `needs` is red, not silently ignored. No schedule run: the shards are skipped there, the nightly jobs run.
   gate:
     if: ${{ always() && github.event_name != 'schedule' }}
-    needs: [shard-a, shard-b, shard-c, shard-d, shard-e]
+    needs: [shard-a, shard-b, shard-c, shard-d]            # TD22 negative test: shard-e missing from needs
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
