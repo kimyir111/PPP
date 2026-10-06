@@ -502,10 +502,15 @@ function itemCard(item) {
     parts + '</article>';
 }
 
-function intro(n, minutes, lo, hi) {
+/* the first step of the introduction: the version comparison says "two ways"; the engine comparison (G10b-0) says the two scores are two readings of the same recording, and nothing more (no name of either) */
+const STEP_ONE = {
+  version: '<li>곡마다 같은 노래를 PPP가 <b>두 가지 방법</b>으로 악보로 만들었습니다. 그 악보가 <b>X</b>와 <b>Y</b>입니다. 어느 쪽이 어떤 방법인지는 알려드리지 않고, 곡마다 X와 Y가 바뀝니다.</li>',
+  engine: '<li>곡마다 같은 노래를 PPP가 <b>두 가지로 듣고</b> 악보로 만들었습니다. 같은 녹음을 서로 다르게 읽어서 받아쓴 두 악보가 <b>X</b>와 <b>Y</b>입니다. 어느 쪽이 어떤 것인지는 알려드리지 않고, 곡마다 X와 Y가 바뀝니다. 그래서 두 악보는 음의 수, 쉼표, 마디 나눔이 서로 다를 수 있어요. 원곡과 견주어 어느 쪽이 더 맞는지 봐 주세요. 원곡에 없는 음이 적혀 있거나 있는 음이 빠져 있으면 <b>음이 빠졌거나 많아요</b>를 눌러 주세요.</li>'
+};
+function intro(n, minutes, lo, hi, compare) {
   return '<section class="intro"><h2>진행 방법</h2>' +
     '<ol>' +
-    '<li>곡마다 같은 노래를 PPP가 <b>두 가지 방법</b>으로 악보로 만들었습니다. 그 악보가 <b>X</b>와 <b>Y</b>입니다. 어느 쪽이 어떤 방법인지는 알려드리지 않고, 곡마다 X와 Y가 바뀝니다.</li>' +
+    STEP_ONE[compare === 'engine' ? 'engine' : 'version'] +
     '<li>곡마다 두 부분이에요. <b>① 받아쓴 악보</b>는 원곡을 듣고 PPP가 적은 악보 그대로입니다. <b>② 편곡</b>은 ①의 악보에 PPP의 편곡 기능(한 손에 한 음, 중급)을 쓴 결과예요.</li>' +
     '<li>악보는 곡 중간의 일부(열두 마디 안팎, ' + (lo === hi ? '약 ' + lo + '초' : '약 ' + lo + '~' + hi + '초') + ')만 보여드립니다. X와 Y는 <b>같은 구간</b>이에요. 원곡은 <b>원곡 열기</b>로 새 탭에서 열어 그 구간을 들어 보세요 (이 페이지에는 원곡 소리가 들어 있지 않아요).</li>' +
     '<li><b>재생</b>은 악보에 적힌 음을 PPP 앱의 피아노 소리로 들려줍니다 (원곡 소리가 아니에요). 처음 한 번은 소리를 불러오느라 잠깐 걸려요.</li>' +
@@ -515,7 +520,7 @@ function intro(n, minutes, lo, hi) {
     '<label for="role">역할 (예: "피아노 선생님"; 이름은 적지 마세요)<input type="text" id="role" autocomplete="off" maxlength="60"></label></section>';
 }
 
-/* data: { packetId, samples: [30 base64 mp3], items: [{ id, label, title, url, start, end, parts: ['T'|'A'...],
+/* data: { packetId, compare?: 'engine' (G10b-0: the introduction says the two scores are two readings of the same recording), samples: [30 base64 mp3], items: [{ id, label, title, url, start, end, parts: ['T'|'A'...],
      draw: { T: { X: part, Y: part }, A?: ... } }] } with part = { svg, svgNarrow, notes, seconds } from h10-draw.js */
 function pageHtml(data) {
   const items = data.items;
@@ -543,16 +548,19 @@ function pageHtml(data) {
   const minutes = Math.round(items.length * MINUTES_PER_ITEM / 5) * 5;
   const secs = items.map(i => Math.round(i.end - i.start)).filter(x => x > 0);
   const secLo = secs.length ? Math.min.apply(null, secs) : 0, secHi = secs.length ? Math.max.apply(null, secs) : 0;
-  const title = 'H-10 악보 비교';
+  const engine = data.compare === 'engine';
+  const title = engine ? 'H-10b 악보 비교' : 'H-10 악보 비교';
+  /* the engine comparison names no browser anywhere, in the Korean words either (the alert of a device without Web Audio says "this device") */
+  const script = engine ? JS.split('이 브라우저는').join('이 기기는') : JS;
   return '<!DOCTYPE html>\n<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
     '<title>' + esc(title) + '</title><style>' + CSS + '</style></head><body>\n' +
     '<svg class="hidden-defs" aria-hidden="true" focusable="false"><defs>' + hoisted.symbols.join('') + '</defs></svg>\n' +
     '<header class="bar"><div class="bar-row"><h1>' + esc(title) + '</h1><span id="save-state"></span><span class="progress" id="progress" aria-live="polite"></span>' +
     '<button type="button" class="small primary" id="resume-btn" hidden>이어서 하기</button></div><div class="meter"><i id="meter-fill"></i></div></header>\n' +
-    '<main>' + intro(items.length, minutes, secLo, secHi) + '\n' + items.map(itemCard).join('\n') + '\n' +
+    '<main>' + intro(items.length, minutes, secLo, secHi, data.compare) + '\n' + items.map(itemCard).join('\n') + '\n' +
     '<section id="summary"><h2>마무리</h2><p id="summary-status" class="prog-line"></p>' +
     '<div id="summary-open-wrap" hidden><p class="prog-line">아직 안 한 부분 (눌러서 이동):</p><ul class="summary-list" id="summary-open"></ul></div>' +
-    '<p>답은 이 기기(브라우저)에 저장되어 있고, 서버에 저장되는 환경에서는 서버에도 저장됩니다 (맨 위 오른쪽 글자로 알 수 있어요). 아래 단추로 결과를 내려받거나 복사해서 보내 주세요.</p>' +
+    '<p>답은 이 기기' + (engine ? '' : '(브라우저)') + '에 저장되어 있고, 서버에 저장되는 환경에서는 서버에도 저장됩니다 (맨 위 오른쪽 글자로 알 수 있어요). 아래 단추로 결과를 내려받거나 복사해서 보내 주세요.</p>' +
     '<div class="row two"><button type="button" class="primary" id="export-btn">결과 내려받기 (JSON)</button><button type="button" id="copy-btn">결과 복사</button></div>' +
     '<details class="export"><summary>결과를 글자로 보기 (내려받기가 막혔을 때 여기서 복사하세요)</summary><textarea id="export-json" readonly aria-label="결과"></textarea></details>' +
     '<p><button type="button" class="ghost small" id="clear-btn">모든 답 지우기</button></p></section>\n' +
@@ -560,7 +568,7 @@ function pageHtml(data) {
     (data.samples && data.samples.length ? '<script id="piano-samples" type="application/json">' + scriptJson(data.samples) + '</script>\n' : '') +
     '<script id="svg-dict" type="application/json">' + scriptJson(packed.dict) + '</script>\n' +
     '<script id="svg-data" type="application/json">' + scriptJson(svgData) + '</script>\n' +
-    '<script id="packet-data" type="application/json">' + scriptJson(payload) + '</script>\n<script>' + JS + '</script>\n</body></html>\n';
+    '<script id="packet-data" type="application/json">' + scriptJson(payload) + '</script>\n<script>' + script + '</script>\n</body></html>\n';
 }
 
 /* the drawings of a finished page as plain SVG strings, for tests and checks: key (e.g. "i01tX") -> [wide, narrow] with the shared glyphs put back in */

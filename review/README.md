@@ -282,6 +282,51 @@ node review/decode.js --mode h10 --key <key-dir>/key.json --db rows.json        
   part A of a v2 piece the arranger refused is made through the hands fallback, so it judges that conversion and not v2's own hand split; the page does not show the review
   screen's amber "not sure" bars (they would give v2 away); the fingering the arranger writes is drawn, as the app draws it.
 
+## H-10b - the engine comparison (G10b-0)
+
+The same review page and pipeline, for another question: the teacher's H-10 verdict was that both ways of writing a recording down fail mostly on **missing, extra and off-beat
+notes** - the ceiling of the in-browser model. The helper ensemble (TransKun + Kong, run on the Lead's PC) hears about 1.6 times as many notes. Are the scores written from the
+helper's notes **better** (the extra notes are real) or **worse** (clutter)? `docs/GOALS/G10_AUDIO_TO_SCORE.md` section 30. Both arms use the **v2** conversion with the page's own
+options (as the H-10 builder's v2 arm does), from the notes alone: arm `browser` = the in-browser model's heard notes (what production serves), arm `helper` = the helper's accepted
+notes. **No pedal and no Beat This beats for either** (measured on six pieces, the helper's beats made v2 write bars two to four times too short as wired).
+
+```
+# 1. the browser notes: the H-10 heard folder (review/h10/collect.js), unchanged
+# 2. the helper notes of the same pieces: <root>/<id>/notes-cuda.json is what transcribe.py wrote on the helper PC; this makes a heard folder of them (items.json copied)
+node review/h10/helper-heard.js --from <root> --heard <heard-dir> --out <helper-heard-dir> [--file notes-cuda.json]
+# 3. the packet
+node review/build.js --mode h10 --compare engine --heard <heard-dir> --heard-b <helper-heard-dir> --out <packet-dir> --key-out <key-dir> [--seed <secret>] [--jobs 3]
+                     [--excerpt-bars 12] [--excerpt-seconds N] [--level intermediate] [--no-titles] [--list]
+# 4. the answers (the page's export, or --db rows, exactly as H-10)
+node review/decode.js --mode h10 --compare engine --key <key-dir>/key.json --ratings ratings-h10-<id>.json [--out summary.json]
+```
+
+- **The converter** (`h10/helper-heard.js`) keeps the helper's *accepted* notes as `{ on, off, midi, vel }` and nothing else (no confidence, support or models; no pedal; no beats; the
+  single-model `uncertainNotes` are not notes and are only counted in `helper.uncertain`), `duration`, `engine`. A piece with no helper file, or one that is not helper notes, is said
+  (`MISSING`) and left out; the builder then reports it as skipped. The files are the teacher's pieces' notes: keep them out of the repository like the packets.
+- **Per piece** (`lib/h10-item.js buildEngineItem`): both note sets go through `APP.convertHeard(..., v2)` (the page's own function; the plausibility check applies and a score it
+  throws away is kept, written by the classic conversion, and said in the key and on the console). Part **T** (the transcription as the review screen shows it) for every piece;
+  part **A** (the one-note-per-hand arrangement) only when the arranger accepts **both** readings (the H-10 rule). X or Y per piece by `HMAC(seed, id)`, an even split, the same sides for T
+  and A; the key records it.
+- **One window of seconds per piece, from the BROWSER notes**: the helper hears more, so its density would pick another stretch. `lib/h10-excerpt.js pickExcerpt({ lengthArms: ['browser'] })`:
+  the start is the H-10 rule (sounding, dense, closest to the middle) on the browser's notes, the default length is twelve of the browser's bars; each reading shows the bars that
+  cover those seconds. When the readings have different bar lengths (a tempo octave) the one with shorter bars shows more of them for the same seconds.
+- **Agreement** (the key's `agreement`, per piece; `DISAGREE` on the console): tempo, metre, bar length and where the bars begin (the share of aligned bar starts for the whole piece and for
+  the excerpt, and the offset in beats). Flags: `tempo-octave`, `metre`, `bar-length`, `bar-phase`. A flagged piece is **kept** (nothing is hidden): the Lead decides whether the teacher's eyes
+  should go there (edit `items.json`), and `decode.js` splits the counts by agreeing and disagreeing pieces.
+- **The page** is the H-10 page (Korean, phone first, the same db adapter and export). Only the introduction differs: the two scores are "two readings of the same recording" of the audio
+  (`두 가지로 듣고`), they may differ in notes, rests and bars, look for notes that are not in the original or are missing; the title is "H-10b". It names neither source. The builder
+  **refuses to write the packet** if the page, the manifest or a drawing carries the vocabulary of the sources (`lib/h10-leak.js`: browser, helper, engine, TransKun, Kong, ensemble, onsets,
+  model, local as a word, the Korean words for browser and engine, ..., plus the H-10 list, versions and the seed), and **warns** about a piece title that does (titles are the pieces' own;
+  `--no-titles` leaves them out). The tests carry a mutation test for it.
+- **Decode** (`h10/decode-engine.js`) prints, per source: wins, losses and ties (overall and per part, with the helper's share of the decisive parts, a Wilson interval and an exact sign test),
+  pass rates, tags per source (part, piece), the notes in the teacher's words, per piece what each reading wrote (bars, tempo, metre, heard notes, rests, tuplet brackets), what the excerpt
+  drew, the agreement flags, the arranger's outcome, the **visible differences** (note heads, rests, tuplet brackets per excerpt: how often the helper draws more, means), the counts split
+  by agreeing and disagreeing pieces, and the disclaimers - the two sources differ visibly in how many notes they hold, so **the blinding is partial** and a preference can follow density.
+  `--compare engine` must match the key (it is refused for another key; an engine key without the flag is decoded as one). It decides nothing.
+- **Limits**: one excerpt per piece; one reviewer; notes only (the helper path as it would ship, with its beats and pedal, is not what is judged); "missing or extra notes" is one tag for both
+  directions (her notes say which); part A exists for few pieces (the arranger refuses many of them, differently for the two readings, which is itself a result).
+
 ## Files
 
 - `build.js` - packet builder CLI and `buildPacket()`; `decode.js` - ratings + key.
@@ -293,3 +338,5 @@ node review/decode.js --mode h10 --key <key-dir>/key.json --db rows.json        
 - H-10: `h10/collect.js` (the collector), `h10/packet.js` (the packet), `h10/item-worker.js` (one piece in its own process), `h10/decode-h10.js`, `h10/db-to-ratings.js`;
   `lib/appcode.js` (the page's own options, Score, player and arranger, read out of the app file), `lib/h10-item.js`, `lib/h10-draw.js`, `lib/h10-excerpt.js`, `lib/svgpack.js`, `lib/page-h10.js`.
   Tests: `tests/review/h10-*.test.js` (excerpt, pack and the page's own code, packets and decode, the page in a browser, the collector).
+- H-10b (G10b-0): `h10/helper-heard.js` (the helper's notes -> heard notes), `h10/decode-engine.js`, `lib/h10-leak.js` (the vocabulary scan); `buildEngineItem` in `lib/h10-item.js`.
+  Tests: `tests/review/h10-engine.test.js` (Node only), `tests/review/h10-engine-page.test.js` (the page in a browser).

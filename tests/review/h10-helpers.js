@@ -34,30 +34,15 @@ function heardDir(names, extra) {
 /* ---- the leak scan ----
    What a reader can see or a script can read must not say which score is v2 and which is classic, nor how a score was made, nor carry a version or a
    build stamp, nor the seed. Path data (d="...") is checked to be nothing but path characters and then left out (a glyph outline is numbers and the
-   letters M L H V C S Q T A Z, "V2.5" is not a version); the piano recordings are checked by helpers.js splitAudio. Returns a list of problems. */
-const WORDS = ['classic', 'legacy', 'fallback', 'pipeline', 'hmac', 'seed', 'exactbars', 'closegaps', 'audio-score', 'handsfallback', 'hands:', 'arranger', 'g9', 'g10', 'sha256', 'commit', 'recording:', 'rec/'];
-const STAMPS = [/\bv\d+(\.\d+)*\b/i, /\bbuild\b/i];
-const PATHDATA = /\sd="([^"]*)"/g;
+   letters M L H V C S Q T A Z, "V2.5" is not a version); the piano recordings are checked by helpers.js splitAudio. Returns a list of problems.
+   G10b-0: the word lists and the scanning functions live in review/lib/h10-leak.js (the engine comparison's builder uses them too); the engine comparison's extra
+   vocabulary (browser, helper, engine, TransKun, Kong, ensemble, local ...) is passed as `opts.engine`. */
+const LEAK = require(path.join(REPO, 'review/lib/h10-leak.js'));
+const { WORDS, STAMPS, PATHDATA, scanText, withoutPathData } = LEAK;
 
-function scanText(label, text, extra) {
-  const bad = [];
-  const low = text.toLowerCase();
-  WORDS.concat(extra || []).forEach(w => {
-    const at = low.indexOf(w.toLowerCase());
-    if (at >= 0) bad.push(label + ' contains "' + w + '": ' + JSON.stringify(text.slice(Math.max(0, at - 30), at + 40)));
-  });
-  /* a word that names a way of writing (the plain words, so a class or an id cannot say it either) */
-  STAMPS.forEach(re => { const m = re.exec(text); if (m) bad.push(label + ' has a version or build stamp ' + JSON.stringify(m[0]) + ' near ' + JSON.stringify(text.slice(Math.max(0, m.index - 30), m.index + 40))); });
-  return bad;
-}
-function withoutPathData(text) {
-  const bad = [];
-  const rest = text.replace(PATHDATA, (all, d) => { if (!/^[MmLlHhVvCcSsQqTtAaZz0-9eE.,\s-]*$/.test(d)) bad.push('path data holds more than path characters: ' + d.slice(0, 60)); return ' d=""'; });
-  return { rest: rest, bad: bad };
-}
-
-/* html: the page; manifest: its text; drawings: { key: [wide, narrow] } from page-h10 drawingsOf; seed: the packet's secret */
-function leakScan(html, manifest, drawings, seed) {
+/* html: the page; manifest: its text; drawings: { key: [wide, narrow] } from page-h10 drawingsOf; seed: the packet's secret; opts.engine: also the engine comparison's vocabulary */
+function leakScan(html, manifest, drawings, seed, opts) {
+  const engine = !!(opts && opts.engine), extraWords = engine ? LEAK.ENGINE_WORDS : [], whole = engine ? LEAK.ENGINE_WHOLE : [];
   const bad = [];
   const PAGE = require(path.join(REPO, 'review/lib/page-h10.js'));
   if (html.indexOf(PAGE.CREDIT) < 0) bad.push('the piano credit is missing or changed');
@@ -66,14 +51,37 @@ function leakScan(html, manifest, drawings, seed) {
   /* the drawings travel packed inside svg-data: they are scanned below, unpacked, which covers every byte of them (the shared glyphs and the fragment list stay in the page scan) */
   const page = withoutPathData(parts.rest.replace(/(<script id="svg-data" type="application\/json">)[\s\S]*?(<\/script>)/, '$1[drawings]$2'));
   bad.push.apply(bad, page.bad);
-  bad.push.apply(bad, scanText('the page', page.rest, seed ? [seed] : []));
-  bad.push.apply(bad, scanText('the manifest', manifest, seed ? [seed] : []));
+  bad.push.apply(bad, scanText('the page', page.rest, (seed ? [seed] : []).concat(extraWords), whole));
+  bad.push.apply(bad, scanText('the manifest', manifest, (seed ? [seed] : []).concat(extraWords), whole));
   Object.keys(drawings).forEach(k => drawings[k].forEach((svg, i) => {
     const d = withoutPathData(svg);
     bad.push.apply(bad, d.bad);
-    bad.push.apply(bad, scanText('drawing ' + k + (i ? ' narrow' : ' wide'), d.rest, seed ? [seed] : []));
+    bad.push.apply(bad, scanText('drawing ' + k + (i ? ' narrow' : ' wide'), d.rest, (seed ? [seed] : []).concat(extraWords), whole));
   }));
   return bad;
 }
 
-module.exports = { REPO, FIXTURES, heardOf, heardDir, leakScan, scanText, withoutPathData, WORDS, tmpDir, os };
+/* ---- G10b-0: the engine comparison's fixtures ----
+   The "helper" notes of a fixture piece: a deterministic, helper-shaped file (the raw output of transcribe.py: notes with confidence, support and models, pedals, uncertain
+   notes, an ensemble summary) that holds more notes than the browser's (a third above every fourth note) and lacks some (every ninth is kept apart as uncertain). Synthetic:
+   nothing of the teacher's pieces is in the repository. */
+function helperRaw(heard) {
+  const notes = [], uncertain = [], models = ['piano-transcription', 'transkun'];
+  heard.notes.forEach((n, i) => {
+    if (i % 9 === 4) { uncertain.push({ on: n.on, off: n.off, midi: n.midi, vel: n.vel, confidence: 0.5, support: 1, models: ['piano-transcription'] }); return; }
+    notes.push({ on: Math.round((n.on + 0.004) * 10000) / 10000, off: n.off, midi: n.midi, vel: n.vel, confidence: 1, support: 2, models: models });
+    if (i % 4 === 0 && n.midi + 4 <= 100) notes.push({ on: Math.round((n.on + 0.003) * 10000) / 10000, off: n.off, midi: n.midi + 4, vel: 70, confidence: 1, support: 2, models: models });
+  });
+  return { engine: 'ensemble', model: 'TransKun V2 + Kong et al. (synthetic test fixture)', device: 'cpu', duration: heard.duration, ms: 1, notes: notes, pedals: [{ on: 1, off: 2 }, { on: 3, off: 4 }], uncertainNotes: uncertain,
+    ensemble: { models: ['transkun', 'piano-transcription'], primary: 'transkun', agreement: 1, accepted: notes.length, uncertain: uncertain.length, pedalSource: 'transkun' }, modelFailures: [] };
+}
+/* two folders like the collector's and review/h10/helper-heard.js's: the browser's heard notes and the helper's (converted), for the same pieces */
+function heardDirs(names, extra) {
+  const { convertHelperNotes } = require(path.join(REPO, 'review/h10/helper-heard.js'));
+  const heard = heardDir(names, extra), heardB = tmpDir('h10helper');
+  fs.copyFileSync(path.join(heard, 'items.json'), path.join(heardB, 'items.json'));
+  names.forEach(n => fs.writeFileSync(path.join(heardB, n + '.json'), JSON.stringify(convertHelperNotes(helperRaw(heardOf(n))).heard)));
+  return { heard: heard, heardB: heardB };
+}
+
+module.exports = { REPO, FIXTURES, heardOf, heardDir, heardDirs, helperRaw, leakScan, scanText, withoutPathData, WORDS, LEAK, tmpDir, os };

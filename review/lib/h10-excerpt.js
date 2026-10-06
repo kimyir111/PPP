@@ -82,7 +82,9 @@ function chooseWindow(heard, opts) {
 /* the whole choice for an item: heard notes and each arm's bar starts -> { start, end, seconds, how, arms: { name: { bars: [i0, i1], covers: [t0, t1], count } } } */
 function pickExcerpt(o) {
   const names = Object.keys(o.barStarts);
-  const bars = names.map(n => medianBarSeconds(o.barStarts[n])).filter(x => x > 0);
+  /* `lengthArms` (G10b-0, the engine comparison): the arms whose bar length sets the default length of the window; every arm still shows the bars that cover it */
+  const lengthNames = (o.lengthArms || names).filter(n => o.barStarts[n]);
+  const bars = lengthNames.map(n => medianBarSeconds(o.barStarts[n])).filter(x => x > 0);
   const barSeconds = bars.length ? bars.reduce((a, b) => a + b, 0) / bars.length : 2;
   const w = chooseWindow(o.heard, { seconds: o.seconds, start: o.start, bars: o.bars, barSeconds: barSeconds });
   const arms = {};
