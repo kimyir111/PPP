@@ -2066,6 +2066,7 @@
     "That PC link is not valid.": "そのPCリンクは無効です。",
     "Too many wrong codes from here. Try again later.": "ここから間違ったコードが多すぎます。しばらくしてからもう一度お試しください。",
     "Too many PC links were made from here just now. Try again later.": "ここから短時間にPCリンクが作られすぎました。しばらくしてからもう一度お試しください。",
-    "PC links are full right now. Try again later.": "PCリンクはいま満杯です。しばらくしてからもう一度お試しください。"
+    "PC links are full right now. Try again later.": "PCリンクはいま満杯です。しばらくしてからもう一度お試しください。",
+    "Too many PC links were made on this site just now. Try again later.": "このサイトで短時間にPCリンクが作られすぎました。しばらくしてからもう一度お試しください。"
   }
 }

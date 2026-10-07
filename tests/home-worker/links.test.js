@@ -140,6 +140,170 @@ async function main() {
     } finally { J.LIMITS.MAX_LINKS = was; await S2.close(); }
   }
 
+  heading('at MAX_LINKS a link nobody would miss is given up for the new one (the review: cheap links must not lock the site out until day 14)');
+  {
+    /* what is left of a link: in memory (with its token) and in the store */
+    const have = (S, n) => S.svc._state.links.has(S.linkId(n));
+    const tokenOf = (S, n) => Array.from(S.svc._state.tokens.values()).some(k => k.ownerId === S.linkId(n));
+    const inDb = async (S, n) => (await S.inner.loadAll()).links.some(l => l.id === S.linkId(n)) || (await S.inner.loadAll()).tokens.some(k => k.ownerId === S.linkId(n));
+    const liveCount = S => Array.from(S.svc._state.links.values()).filter(l => !l.revokedAt).length;
+    const wasMax = J.LIMITS.MAX_LINKS;
+    J.LIMITS.MAX_LINKS = 6;
+    try {
+      {
+        const S = await L.startService({ users: [] });
+        try {
+          const names = ['p0', 'p1', 'p2', 'p3', 'p4', 'p5'];
+          for (const n of names) { await S.makeLink(n); S.advance(11 * 60 * 1000); }            /* made 66, 55, 44, 33, 22 and 11 minutes ago */
+          const r7 = await S.makeLink('p6').then(r => r, e => ({ status: Number(/ (\d{3}) /.exec(e.message)[1]) }));
+          ok('the site is at its 6 links; the oldest was made 66 minutes ago and nothing has used it since, its PC never connected, it holds no conversion: the 7th link is made (201), not 503', r7.status === 201 && liveCount(S) === 6 && have(S, 'p6'), r7.status + ' ' + liveCount(S));
+          ok('the link given up is that one, and nothing is left of it: its code is 401, its token is dead, no row of it, no token of it in memory or in the store', !have(S, 'p0') && !tokenOf(S, 'p0') && !(await inDb(S, 'p0')) && (await S.as('p0').get('/api/jobs')).status === 401 && (await S.worker(S.token('p0')).get('/api/worker/ping')).status === 401);
+          ok('the other five are untouched (memory and store) and the new link works', ['p1', 'p2', 'p3', 'p4', 'p5'].every(n => have(S, n)) && (await S.inner.loadAll()).links.length === 6 && (await S.as('p6').get('/api/worker/status')).status === 200);
+          const r8 = await mk(S, '45.1.1.1');
+          ok('the next link is 503 "busy": the five that are left were last used less than an hour ago (the person may still be setting their PC up), the new one just now', r8.status === 503 && r8.body.code === 'busy' && liveCount(S) === 6 && ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'].every(n => have(S, n)), r8.status + ' ' + liveCount(S));
+          S.advance(30 * 60 * 1000);
+          const r9 = await mk(S, '45.1.1.2');
+          ok('half an hour later the oldest of those is an hour idle and goes (p1, not p2): the site never holds more than its 6', r9.status === 201 && !have(S, 'p1') && have(S, 'p2') && liveCount(S) === 6 && (await S.inner.loadAll()).links.length === 6, r9.status + ' ' + liveCount(S));
+        } finally { await S.close(); }
+      }
+      {
+        /* who is never given up: a link whose PC connected, one that holds a conversion; and who goes first: the one nothing has used for the longest (not simply the oldest) */
+        J.LIMITS.MAX_LINKS = 5;
+        const S = await L.startService({ users: [] });
+        try {
+          for (const n of ['c', 'd', 'e', 'pc', 'job']) await S.makeLink(n);
+          await S.worker(S.token('pc')).get('/api/worker/ping');                                 /* the PC of "pc" connected once */
+          await queue(S, 'job', 'evictjob001');                                                  /* "job" holds a conversion */
+          S.advance(3 * 3600 * 1000);
+          await S.as('c').get('/api/jobs');                                                      /* the page used "c" (the oldest link) three hours in */
+          S.advance(90 * 60 * 1000);
+          const gone = [];
+          for (let i = 0; i < 5; i++) {
+            const before = ['c', 'd', 'e'].filter(n => have(S, n));
+            const r = await mk(S, '45.2.2.' + i);
+            gone.push(r.status + (r.status === 201 ? ':' + before.filter(n => !have(S, n)).join('') : ''));
+          }
+          ok('three abandoned links (c made first but used by the page later; d and e never used again), one with a connected PC, one with a conversion: d goes first, then e, then c (the one nothing has used for longest, not the one made first); then 503', gone.join() === '201:d,201:e,201:c,503,503', gone.join());
+          ok('the link whose PC connected and the one that holds a conversion are still there, with their token and their job, whatever the pressure', have(S, 'pc') && have(S, 'job') && tokenOf(S, 'pc') && tokenOf(S, 'job') && (await S.inner.loadAll()).jobs.length === 1 && (await S.as('job').get('/api/jobs')).body.jobs.length === 1 && (await S.worker(S.token('pc')).get('/api/worker/ping')).status === 200);
+          ok('three more links were made on the way in (the three given up) and the site holds its 5', liveCount(S) === 5 && (await S.inner.loadAll()).links.length === 5, liveCount(S) + '');
+        } finally { await S.close(); }
+      }
+      {
+        /* a revoked link is not live: it does not count towards the cap and nobody is given up for the place it left */
+        J.LIMITS.MAX_LINKS = 4;
+        const S = await L.startService({ users: ['a', 'b', 'c', 'd'] });
+        try {
+          S.advance(2 * 3600 * 1000);
+          await S.as('b').del('/api/pc-links/me');
+          const r = await mk(S, '45.3.3.1');
+          ok('4 links, one revoked: the site has a free place, so a new link is made and no old link is given up; the revoked row stays (the per-address limits remember it)', r.status === 201 && ['a', 'c', 'd'].every(n => have(S, n)) && have(S, 'b') && S.svc._state.links.get(S.linkId('b')).revokedAt > 0 && liveCount(S) === 4);
+        } finally { await S.close(); }
+      }
+      {
+        /* requests at the same moment: each gives up a link of its own, and the site never holds more than its cap */
+        J.LIMITS.MAX_LINKS = 6;
+        const S = await L.startService({ users: ['q0', 'q1', 'q2', 'q3', 'q4', 'q5'] });
+        try {
+          S.advance(2 * 3600 * 1000);
+          const real = S.store.createLink;
+          S.store.createLink = async function () { await L.sleep(40); return real.apply(this, arguments); };
+          const all = await Promise.all(Array.from({ length: 4 }, (_, i) => mk(S, '45.4.4.' + i)));
+          S.store.createLink = real;
+          ok('four requests at the same moment at the cap, all links old enough: all four are made, each gave up a different link (the four oldest), and the site holds exactly 6', all.every(r => r.status === 201) && ['q0', 'q1', 'q2', 'q3'].every(n => !have(S, n)) && have(S, 'q4') && have(S, 'q5') && liveCount(S) === 6 && (await S.inner.loadAll()).links.length === 6, all.map(r => r.status).join() + ' ' + liveCount(S));
+          const more = await Promise.all(Array.from({ length: 4 }, (_, i) => mk(S, '45.5.5.' + i)));
+          ok('and when only two of them can be given up (q4, q5: the four new ones are minutes old) four more at the same moment make exactly two links and are told "busy" twice', more.filter(r => r.status === 201).length === 2 && more.filter(r => r.status === 503).length === 2 && !have(S, 'q4') && !have(S, 'q5') && liveCount(S) === 6, more.map(r => r.status).join() + ' ' + liveCount(S));
+        } finally { await S.close(); }
+      }
+      {
+        /* the queue is read again while the new link is being written: the old link, still in the database, comes back with that read, and must go once the new one is kept */
+        J.LIMITS.MAX_LINKS = 3;
+        const S = await L.startService({ users: ['r0', 'r1', 'r2'] });
+        try {
+          S.advance(2 * 3600 * 1000);
+          const real = S.store.createLink;
+          S.store.createLink = async function () { await L.sleep(200); return real.apply(this, arguments); };
+          const making = mk(S, '45.7.7.1');
+          await L.sleep(60);
+          S.svc._state.forgetAll();
+          await S.as('r2').get('/api/worker/status');
+          const r = await making;
+          S.store.createLink = real;
+          ok('a re-read of the database while the new link is being written brings the old link back in memory; once the new one is kept it goes again (memory and store agree)', r.status === 201 && !have(S, 'r0') && !tokenOf(S, 'r0') && !(await inDb(S, 'r0')) && liveCount(S) === 3 && (await req(S.port, 'GET', '/api/worker/status', { code: r.body.clientCode })).status === 200, r.status + ' ' + liveCount(S));
+        } finally { await S.close(); }
+      }
+      {
+        /* a store that fails: nothing is given up for a link that was not made; a failed delete of the old rows does not undo the new link */
+        J.LIMITS.MAX_LINKS = 3;
+        const S = await L.startService({ users: ['f0', 'f1', 'f2'] });
+        try {
+          S.advance(2 * 3600 * 1000);
+          S.store.fail.on = true; S.store.fail.only = 'createLink';
+          const r = await mk(S, '45.6.6.1');
+          S.store.fail.on = false; S.store.fail.only = null;
+          ok('the new link cannot be written (503): the link that was to make room is still there - memory, store, token - and works', r.status === 503 && have(S, 'f0') && tokenOf(S, 'f0') && await inDb(S, 'f0') && liveCount(S) === 3 && (await S.as('f0').get('/api/jobs')).status === 200 && (await S.worker(S.token('f0')).get('/api/worker/ping')).status === 200, r.status + ' ' + liveCount(S));
+          S.advance(2 * 3600 * 1000);
+          S.store.fail.on = true; S.store.fail.only = 'deleteLinks';
+          const r2 = await mk(S, '45.6.6.2');
+          S.store.fail.on = false; S.store.fail.only = null;
+          ok('the old link\'s rows cannot be deleted (the write that makes the new link is fine): the new link is made (201) and the old one (f1: f0 was used and its PC connected above) is gone from memory at once; the failure is logged', r2.status === 201 && !have(S, 'f1') && have(S, 'f0') && liveCount(S) === 3 && S.logged.some(m => /store is down/.test(m)) && (await S.as('f1').get('/api/jobs')).status === 401, r2.status + ' ' + S.logged.join('|'));
+        } finally { await S.close(); }
+      }
+    } finally { J.LIMITS.MAX_LINKS = wasMax; }
+  }
+
+  heading('the site makes at most LINKS_PER_HOUR links an hour, whoever asks (the review\'s 25 IPv4 addresses)');
+  {
+    const S = await L.startService({ users: [] });
+    try {
+      const out = [];
+      /* 25 addresses x 5 = 125 requests in one hour: each address is inside its own 5 an hour */
+      for (let k = 0; k < 5; k++) for (let a = 0; a < 25; a++) out.push(await mk(S, '46.0.' + a + '.1'));
+      const made = out.filter(r => r.status === 201).length, refused = out.filter(r => r.status === 429);
+      ok('125 links asked for in an hour from 25 addresses: 100 are made, 25 are 429 "too-many" with the site\'s own sentence and a Retry-After of at most an hour', made === 100 && refused.length === 25 && refused.every(r => r.body.code === 'too-many' && /on this site/.test(r.body.error) && Number(r.headers['retry-after']) >= 60 && Number(r.headers['retry-after']) <= 3600) && S.svc._state.links.size === 100, made + ' ' + refused.length);
+      const honest = await mk(S, '46.9.9.9');
+      ok('an honest visitor in that hour is told to try later too (429), and the refusal made nothing', honest.status === 429 && /on this site/.test(honest.body.error) && S.svc._state.links.size === 100);
+      S.advance(61 * 60 * 1000);
+      ok('an hour later they can make theirs', (await mk(S, '46.9.9.9')).status === 201);
+    } finally { await S.close(); }
+  }
+  {
+    const was = J.LIMITS.LINKS_PER_HOUR;
+    J.LIMITS.LINKS_PER_HOUR = 6;
+    const dir = L.tmpDir();
+    const { fileJobStore } = L.mod('home-jobs-store.js');
+    try {
+      const A = await L.startService({ users: [], store: fileJobStore(dir) });
+      try {
+        const made = [];
+        for (let i = 0; i < 6; i++) made.push(await mk(A, '47.0.0.' + i));
+        for (let i = 0; i < 3; i++) await req(A.port, 'DELETE', '/api/pc-links/me', { code: made[i].body.clientCode });
+        ok('six links in the hour (here; 100 by default), three of them removed at once: the 7th is 429 all the same (a removed link still counts: making and removing is no way round it)', (await mk(A, '47.0.1.1')).status === 429 && A.svc._state.links.size === 6);
+      } finally { await A.close(); }
+      const B = await L.startService({ users: [], store: fileJobStore(dir) });
+      try {
+        ok('a restart does not forget them (counted from the links in the store): still 429', (await mk(B, '47.0.1.2')).status === 429);
+        B.advance(61 * 60 * 1000);
+        ok('and an hour later it is 201', (await mk(B, '47.0.1.2')).status === 201);
+      } finally { await B.close(); }
+    } finally { J.LIMITS.LINKS_PER_HOUR = was; L.rmDir(dir); }
+  }
+  {
+    /* the review's scenario, end to end: cheap links fill the site hour after hour; an honest visitor is still let in */
+    const wasMax = J.LIMITS.MAX_LINKS;
+    J.LIMITS.MAX_LINKS = 150;
+    const S = await L.startService({ users: [] });
+    try {
+      for (let h = 0; h < 3; h++) {
+        for (let k = 0; k < 5; k++) for (let a = 0; a < 25; a++) await mk(S, '48.0.' + a + '.1');
+        S.advance(61 * 60 * 1000);
+      }
+      const live = Array.from(S.svc._state.links.values()).filter(l => !l.revokedAt).length;
+      ok('three hours of 125 cheap requests an hour from 25 addresses (the cap is 150 here): the site is full - 150 live links, never more', live === 150, live + '');
+      const honest = await mk(S, '48.9.9.9');
+      ok('an honest visitor is let in (201), not "busy" until day 14: the oldest idle link made room', honest.status === 201 && Array.from(S.svc._state.links.values()).filter(l => !l.revokedAt).length === 150 && (await req(S.port, 'GET', '/api/worker/status', { code: honest.body.clientCode })).status === 200);
+    } finally { J.LIMITS.MAX_LINKS = wasMax; await S.close(); }
+  }
+
   heading('cross-link isolation: link B can never touch what is link A\'s');
   {
     const S = await L.startService({ users: ['A', 'B'] });

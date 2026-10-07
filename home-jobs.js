@@ -92,7 +92,13 @@ const LIMITS = {
      themselves (not from a timer in memory), so a restart does not forget them */
   LINKS_PER_IP_PER_HOUR: 5,
   LINKS_PER_IP_PER_DAY: 20,
+  /* ... all addresses together: new links an hour for the whole site (revoked ones count, so making and removing is no way round it). Cheap addresses are not rare
+     (25 IPv4 ones would make 125 an hour), and every link is a row of the boot read; honest use is a handful a day */
+  LINKS_PER_HOUR: 100,
   MAX_LINKS: 500,
+  /* at MAX_LINKS the site does not shut its door: it gives up the link that has been unused the longest among those nobody would miss (the PC never connected, no conversion),
+     provided nothing has used it for this long - a person who has just made a link is still setting up their PC */
+  LINK_EVICT_MIN_IDLE_MS: 1 * HOUR,
   /* a link nobody used (the page, or its PC) for this long is purged; one whose PC never connected and that holds no job, after the shorter time; a revoked
      one is kept this long (so that making and removing links does not get round the per-address limits) and then purged */
   LINK_UNUSED_TTL_MS: 60 * DAY,
@@ -440,6 +446,20 @@ function create(deps) {
     }
   }
 
+  /* the newest time each link's worker tokens were seen at (a link whose PC has been heard of at all has a time here) */
+  function seenByLink() {
+    const seen = new Map();
+    tokens.forEach(k => { if (k.lastSeenAt > (seen.get(k.ownerId) || 0)) seen.set(k.ownerId, k.lastSeenAt); });
+    return seen;
+  }
+  /* links leave memory with their tokens and conversions (the database is the caller's business) */
+  function forgetLinks(ids) {
+    const gone = new Set(ids);
+    ids.forEach(id => { links.delete(id); lastFinished.delete(id); wake(id); });
+    tokens.forEach((k, id) => { if (gone.has(k.ownerId)) tokens.delete(id); });
+    jobs.forEach((j, id) => { if (gone.has(j.ownerId)) jobs.delete(id); });
+  }
+
   /* A link that ran out. Not used by anybody (the page, its PC) for LINK_UNUSED_TTL_MS; or one whose PC never connected and that holds no job, after the shorter
      LINK_NEVER_CONNECTED_TTL_MS (the ones made and abandoned); or revoked longer ago than LINK_REVOKED_KEEP_MS. `seen` is each link's newest token last-seen time. */
   function linkExpired(l, t, seen) {
@@ -455,17 +475,13 @@ function create(deps) {
   async function purgeIfDue(t, force) {
     if (!force && t - lastPurge < L.PURGE_EVERY_MS) return;
     lastPurge = t;
-    const seen = new Map();
-    tokens.forEach(k => { if (k.lastSeenAt > (seen.get(k.ownerId) || 0)) seen.set(k.ownerId, k.lastSeenAt); });
+    const seen = seenByLink();
     const dead = [];
     links.forEach(l => { if (linkExpired(l, t, seen)) dead.push(l.id); });
     if (dead.length) {
       try {
         await store.deleteLinks(dead);
-        const gone = new Set(dead);
-        dead.forEach(id => { links.delete(id); lastFinished.delete(id); wake(id); });
-        tokens.forEach((k, id) => { if (gone.has(k.ownerId)) tokens.delete(id); });
-        jobs.forEach((j, id) => { if (gone.has(j.ownerId)) jobs.delete(id); });
+        forgetLinks(dead);
       } catch (e) { logError(e); }
     }
     const doneBefore = t - L.DONE_TTL_MS, otherBefore = t - L.OTHER_TTL_MS;
@@ -622,10 +638,37 @@ function create(deps) {
     return Math.max(60, Math.min(86400, Math.ceil(wait / 1000)));
   }
 
+  /* the site cannot take another link this hour: the seconds until the oldest link of the last hour ages out of it, or 0. Every link counts, a revoked one too, so removing links
+     gives nothing back; counted from the links, so a restart does not forget them. */
+  function siteLinkWait(t) {
+    let n = 0, oldest = 0;
+    links.forEach(l => { if (t - l.createdAt < HOUR) { n++; if (!oldest || l.createdAt < oldest) oldest = l.createdAt; } });
+    if (n < L.LINKS_PER_HOUR) return 0;
+    return Math.max(60, Math.min(3600, Math.ceil((oldest + HOUR - t) / 1000)));
+  }
+
+  /* The link to give up when the site is at its cap of live links: the one nothing has used for the longest among those nobody would miss - its PC never connected, it holds no
+     conversion, it is not being made, and nothing has used it for LINK_EVICT_MIN_IDLE_MS (a person who has just made a link is still setting up their PC). null when there is none.
+     A revoked link is not live, does not count towards the cap and is kept for the per-address limits, so it is never a candidate. */
+  function evictableLink(t) {
+    const seen = seenByLink();
+    const owners = new Set();
+    jobs.forEach(j => owners.add(j.ownerId));
+    let best = null, bestAt = 0;
+    links.forEach(l => {
+      if (l.revokedAt || l.writing || owners.has(l.id) || Math.max(l.lastWorkerAt || 0, seen.get(l.id) || 0)) return;
+      const used = Math.max(l.createdAt, l.lastUsedAt);
+      if (t - used < L.LINK_EVICT_MIN_IDLE_MS) return;
+      if (!best || used < bestAt) { best = l; bestAt = used; }
+    });
+    return best;
+  }
+
   /* POST /api/pc-links - NO sign-in. Makes a link and its first worker token, and shows both secrets ONCE (the answer is the only place either is ever
-     seen; the site keeps only their hashes). What an unknown visitor can do here is bounded: 5 links an hour and 20 a day from one address (counted from the links, so a
-     restart does not forget them; a request that makes nothing costs nothing), and 500 live links in all. The slot is taken in memory before anything is awaited, so
-     requests at the same moment cannot pass the limits together. */
+     seen; the site keeps only their hashes). What an unknown visitor can do here is bounded: 5 links an hour and 20 a day from one address (an IPv6 /48), 100 an hour for the
+     whole site (all counted from the links, so a restart does not forget them; a request that makes nothing costs nothing), and 500 live links in all - at which a link nobody
+     would miss is given up for the new one (evictableLink) and only a site with none is 503. The slot is taken in memory before anything is awaited, so requests at the same moment
+     cannot pass the limits together. */
   async function createLink(req, res) {
     requireSameSite(req);
     await readJson(req, L.SMALL_BODY);
@@ -635,17 +678,30 @@ function create(deps) {
     const tag = tagOf(deps.clientIp(req) || 'unknown');
     const wait = linkWait(tag, t);
     if (wait) throw httpError(429, 'Too many PC links were made from here just now. Try again later.', 'too-many', { retryAfter: wait });
-    let live = 0;
+    const siteWait = siteLinkWait(t);
+    if (siteWait) throw httpError(429, 'Too many PC links were made on this site just now. Try again later.', 'too-many', { retryAfter: siteWait });
+    let live = 0, victim = null;
     links.forEach(l => { if (!l.revokedAt) live++; });
-    if (live >= L.MAX_LINKS) throw httpError(503, 'PC links are full right now. Try again later.', 'busy');
+    if (live >= L.MAX_LINKS && !(victim = evictableLink(t))) throw httpError(503, 'PC links are full right now. Try again later.', 'busy');
     const made = newLink(), k = newToken();
     const link = { id: made.id, hash: made.hash, createdAt: t, lastUsedAt: t, lastWorkerAt: 0, ipTag: tag, revokedAt: 0, persistedAt: t, writing: true };
     const rec = { id: k.id, ownerId: link.id, hash: Buffer.from(k.hash, 'hex'), label: 'My PC', createdAt: t, lastSeenAt: 0, pollS: 0 };
     if (links.has(link.id) || tokens.has(rec.id)) throw httpError(503, 'The queue is not available right now. Try again in a minute.', 'store');
+    /* the site is at its cap: the link that makes room leaves memory in this same turn (so a request at the same moment picks another, and the count stays right) */
+    const victimTokens = victim ? Array.from(tokens.values()).filter(x => x.ownerId === victim.id) : [];
+    if (victim) forgetLinks([victim.id]);
     links.set(link.id, link); tokens.set(rec.id, rec);
     try { await store.createLink({ id: link.id, hash: made.hash.toString('hex'), createdAt: t, ipTag: tag }, { id: rec.id, hash: k.hash, label: rec.label }); }
-    catch (e) { links.delete(link.id); tokens.delete(rec.id); throw e; }
+    catch (e) {
+      links.delete(link.id); tokens.delete(rec.id);
+      /* nothing was made, so nothing is given up: the link that was to make room is still in the database, and so it is back here */
+      if (victim) { links.set(victim.id, victim); victimTokens.forEach(x => tokens.set(x.id, x)); }
+      throw e;
+    }
     link.writing = false;
+    /* the database lets go of the old link only now that the new one is kept (a failure leaves a row the next purge or boot finds again, never a site with neither); and if the queue
+       was read again meanwhile, the old link was read back with it: it goes again */
+    if (victim) { try { await store.deleteLinks([victim.id]); } catch (e) { logError(e); } forgetLinks([victim.id]); }
     /* the only time either secret is ever shown */
     reply(res, 201, { id: link.id, clientCode: made.code, workerToken: k.token, workerTokenId: rec.id, createdAt: iso(t) });
   }
