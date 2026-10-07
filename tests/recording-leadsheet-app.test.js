@@ -46,6 +46,7 @@ const ON_LINE = (DEFAULT === 'leadsheet' ? 'On (the default): ' : 'On: ') + ON_B
 const OFF_LINE = (DEFAULT === 'reduce' ? 'Off (the default): ' : 'Off: ') + OFF_BODY;
 const RELAXED_EN = 'This arrangement keeps the recording\'s own key signature and melody as they are, so it may be harder than the level you chose. The difficulty comes from the key signature and the melody itself, not from the left hand.';
 const RELAXED_OLD = 'This piece has many notes, so the arrangement may be a little harder than the level you chose.';
+const RELAXED_NEUTRAL = 'This arrangement may be harder than the level you chose.';
 const FELL_EN = 'The lead sheet could not be used, so the recording\'s own notes were thinned out instead.';
 const told = says => (says || []).filter(s => s.indexOf(FELL_EN) > -1).length;   /* how many of the page's messages carry the fallback notice */
 const CODE = 'ALL_CANDIDATES_HAVE_HARD_VIOLATIONS';
@@ -373,6 +374,20 @@ const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i])
       const a = r.arrangement;
       ok('beginner: a lead sheet copy is made, with the relaxed plan\'s note recorded (levelNote "relaxed-plan")', r.refusal === null && !!a && a.recordingArrange === 'leadsheet' && a.levelNote === 'relaxed-plan', JSON.stringify(a));
       ok('and what the page says is the lead-sheet words (the key signature and the melody, not the left hand), not the old "many notes" line', r.says.some(s => s.indexOf(RELAXED_EN) > -1) && !r.says.some(s => s.indexOf(RELAXED_OLD) > -1), JSON.stringify(r.says));
+      /* a lead-sheet copy that is "relaxed" with no key signature to blame: the words claim no cause (a tune in C major gets the note too) */
+      const TOY = { notes: Array.from({ length: 12 }, (_, i) => ({ on: 0.5 + i * 0.25, off: 0.72 + i * 0.25, midi: [60, 62, 64, 65, 67, 69, 71, 72][i % 8], vel: 80 })) };   /* a C major scale in sixteenths */
+      const st = await savedSong(browser, TOY);
+      const pt = st.page;
+      ok('the toy is in C major (no sharps or flats in the kept key)', await pt.evaluate(() => Math.max.apply(null, window.PPPEngrave.app.resolveSync(window.PPP.app.state.score).graph.timeline.keys.map(k => Math.abs(k.fifths)))) < 3);
+      const rt = await arrangeCopy(pt, st.id, 'beginner');
+      ok('a lead sheet copy is made and the relaxed plan\'s note is recorded (levelNote "relaxed-plan")', rt.refusal === null && !!rt.arrangement && rt.arrangement.recordingArrange === 'leadsheet' && rt.arrangement.levelNote === 'relaxed-plan', JSON.stringify(rt.arrangement));
+      ok('and what the page says is the neutral sentence, not one that blames the key signature, the melody or the left hand', rt.says.some(s => s.indexOf(RELAXED_NEUTRAL) > -1) && !rt.says.some(s => s.indexOf(RELAXED_EN) > -1 || s.indexOf(RELAXED_OLD) > -1 || /key signature|left hand/.test(s)), JSON.stringify(rt.says));
+      ok('the words by the number of sharps or flats: 0, 1, 2 the neutral sentence; 3 and more the key signature and the melody; a reduction copy the old words', await pt.evaluate((neutral, key, old) => {
+        const A = window.PPP.app, ok3 = [0, 1, 2].every(n => A.levelNoteText(true, n) === neutral) && [3, 5, 7].every(n => A.levelNoteText(true, n) === key);
+        return ok3 && A.levelNoteText(false, 6) === old && A.levelNoteText() === old;
+      }, RELAXED_NEUTRAL, RELAXED_EN, RELAXED_OLD));
+      ok('no page or console error', clean(pt), errs(pt));
+      await pt.close();
       /* the same cover in reduce mode is refused by the arranger (UNREACHABLE: six sharps beat the beginner's ceiling) - the notice as before */
       await p.evaluate(() => { window.PPP.recordingArrange = 'reduce'; });
       const rr = await arrangeCopy(p, sv.id, 'beginner');

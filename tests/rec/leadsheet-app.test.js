@@ -322,6 +322,31 @@ test('isRecordingGraph is the one question the lead sheet and its chip ask of a 
   assert.match(html, /leadGraph: null \};/, 'the Song Arranger starts with the graph not known: no chip until it is');
 });
 
+test('the relaxed note names the key signature only where it is a cause (three or more sharps or flats); with fewer it claims no cause', () => {
+  const m = /\n  (levelNoteText\(lead, accidentals\) \{[\s\S]*?\n  \})\n/.exec(html);
+  assert.ok(m, 'the page\'s levelNoteText');
+  const from = Number(/^const LEAD_KEY_NAMED_FROM = (\d+);$/m.exec(html)[1]);
+  assert.equal(from, 3, 'three sharps or flats');
+  const { levelNoteText } = new Function('tx', 'LEAD_KEY_NAMED_FROM', 'return { ' + m[1] + ' };')(s => s, from);
+  const KEY = 'This arrangement keeps the recording\'s own key signature and melody as they are, so it may be harder than the level you chose. The difficulty comes from the key signature and the melody itself, not from the left hand.';
+  const NEUTRAL = 'This arrangement may be harder than the level you chose.';
+  const OLD = 'This piece has many notes, so the arrangement may be a little harder than the level you chose.';
+  [0, 1, 2].forEach(n => assert.equal(levelNoteText(true, n), NEUTRAL, n + ' accidentals: no cause is named'));
+  [3, 4, 5, 6, 7].forEach(n => assert.equal(levelNoteText(true, n), KEY, n + ' accidentals: the key signature and the melody'));
+  assert.equal(levelNoteText(true), NEUTRAL, 'a lead sheet copy whose key is not known claims nothing');
+  assert.equal(levelNoteText(true, NaN), NEUTRAL);
+  [undefined, 0, 6].forEach(n => assert.equal(levelNoteText(false, n), OLD, 'a copy the reduction made says what it always said'));
+  assert.equal(levelNoteText(), OLD, 'the call that clears the status line (no arguments) is the old words');
+  assert.equal(NEUTRAL.indexOf('key signature'), -1); assert.equal(NEUTRAL.indexOf('left hand'), -1); assert.equal(NEUTRAL.indexOf('melody'), -1);
+  const { graphAccidentals } = new Function(fnSource('graphAccidentals') + 'return { graphAccidentals };')();
+  const g = keys => ({ timeline: { keys } });
+  assert.equal(graphAccidentals(g([{ fifths: 0 }])), 0); assert.equal(graphAccidentals(g([{ fifths: -3 }])), 3); assert.equal(graphAccidentals(g([{ fifths: 6 }])), 6);
+  assert.equal(graphAccidentals(g([{ fifths: 2 }, { fifths: -5 }, { fifths: 1 }])), 5, 'the most of any key');
+  [null, undefined, {}, g([]), g('x'), g([null]), g([{ fifths: 'x' }]), { timeline: {} }].forEach(x => assert.equal(graphAccidentals(x), 0));
+  assert.equal((html.match(/leadAcc = leadCopy \? graphAccidentals\(sn\.graph\) : 0;/g) || []).length, 2, 'both screens count the arranged copy\'s key signature');
+  assert.equal((html.match(/\{ fell: leadFell, accidentals: leadAcc \}/g) || []).length, 3, 'and pass it to the words');
+});
+
 test('the page: rec/leadsheet.js is in no up-front list, not in RECORDING_SCRIPTS or SINGLE_SCRIPTS; one loader asks for it after v2\'s files; the two screens call the one entry and it alone calls the reduction', () => {
   const L = E.scriptListOfPage();
   assert.equal(L.lead, 'rec/leadsheet.js');
@@ -373,8 +398,8 @@ test('the words: every string of the lead-sheet chip and the relaxed note is in 
   };
   const strings = ['Arrange from a lead sheet', 'PPP one-note-per-hand arrangement (lead sheet)',
     txString('On (the default): a recording is arranged'), txString('Off: a recording'), txString('This arrangement keeps the recording'), txString('The lead sheet could not be used'),
-    txString('On: a recording is arranged'), txString('Off (the default): a recording')];
-  assert.equal(new Set(strings).size, 8, 'eight different strings');
+    txString('On: a recording is arranged'), txString('Off (the default): a recording'), txString('This arrangement may be harder than')];
+  assert.equal(new Set(strings).size, 9, 'nine different strings');
   for (const loc of ['ko-KR', 'ja-JP', 'zh-CN']) {
     const cat = JSON.parse(fs.readFileSync(path.join(REPO, 'i18n', loc + '.json'), 'utf8')).content;
     strings.forEach(s => { assert.ok(typeof cat[s] === 'string' && cat[s].length > 3, loc + ' lacks: ' + s.slice(0, 60)); assert.notEqual(cat[s], s, loc + ' is not translated: ' + s.slice(0, 60)); });
@@ -393,6 +418,9 @@ test('the words: every string of the lead-sheet chip and the relaxed note is in 
   assert.match(note, /왼손이 아니라/, 'and says it is not the left hand');
   assert.match(ko[strings[1]], /리드 시트/);
   assert.equal(strings[4].includes('many notes'), false);
+  const koNeutral = ko[strings[8]];
+  assert.match(koNeutral, /난이도/, 'the Korean neutral note speaks of the level');
+  assert.doesNotMatch(koNeutral, /조표|멜로디|왼손/, 'and names no cause: no key signature, no melody, no left hand');
   const koFell = ko[strings[5]];
   assert.match(koFell, /리드 시트/, 'the Korean fallback notice names the lead sheet');
   assert.match(koFell, /덜어내/, 'and says the recording\'s own notes were thinned out');

@@ -2076,6 +2076,7 @@
     "This arrangement keeps the recording's own key signature and melody as they are, so it may be harder than the level you chose. The difficulty comes from the key signature and the melody itself, not from the left hand.": "録音された演奏の調号とメロディをそのまま生かした編曲のため、選んだレベルより難しくなることがあります。難しさの原因は左手ではなく、調号とメロディそのものです。",
     "The lead sheet could not be used, so the recording's own notes were thinned out instead.": "リードシートを使えなかったため、代わりに録音された音を間引いて作りました。",
     "On: a recording is arranged from its melody and chords. The melody stays one line and an easy accompaniment is written under it. Turn it off to thin out the recording's own notes instead.": "オン：録音は、メロディとコードを取り出して編曲します。メロディは1本の線のまま残し、その下にやさしい伴奏を新しく書きます。オフにすると、録音された音を間引く方法になります。",
-    "Off (the default): a recording's own notes are thinned out to fit the level. Turn it on to arrange from its melody and chords instead.": "オフ（標準）：録音された音をレベルに合わせて間引きます。オンにすると、メロディとコードを取り出してやさしい伴奏を新しく書きます。"
+    "Off (the default): a recording's own notes are thinned out to fit the level. Turn it on to arrange from its melody and chords instead.": "オフ（標準）：録音された音をレベルに合わせて間引きます。オンにすると、メロディとコードを取り出してやさしい伴奏を新しく書きます。",
+    "This arrangement may be harder than the level you chose.": "この編曲は、選んだレベルより難しくなることがあります。"
   }
 }
