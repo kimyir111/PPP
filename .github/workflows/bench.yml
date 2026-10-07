@@ -527,6 +527,7 @@ jobs:
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5
         with: { python-version: '3.13' }
+      - run: exit 1
       - run: python tests/bench/run.py lint-corpus
       - run: python tests/bench/tools/make_provenance.py --check
       - if: ${{ needs.plan.outputs.mode == 'tooling' }}
