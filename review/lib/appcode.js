@@ -7,8 +7,9 @@
      plausible(built, heard) the page's check that a v2 result is believable (rec/app.js), exactly as finishHeard applies it
      scoreOf(graph)          the Score the app holds for a graph: Score.finalize(legacy.toScore(graph)) (the app's own finalize)
      playPlan(score)         the app's PianoScore plan for that Score (written ties joined, pedal, velocities, the tempo map)
-     arranger({reference})   the Song Arranger's own function: arrangeSingleNoteWithHandsFallback(graph, plan, title) with the page's glue
-                             (arrangeSingleNote + the hands retry for a v2 graph the one-note arranger refused), as the page defines them
+     arranger({reference})   the Song Arranger's own function: arrangeSingleNoteWithLeadsheet(graph, plan, title) with the page's glue (G10c-1b: a recording is arranged from its lead sheet
+                             when the plan says recordingArrange 'leadsheet', the reduction when it says 'reduce' or nothing; a lead sheet that refuses falls back to the reduction), and the
+                             reduction is arrangeSingleNoteWithHandsFallback (arrangeSingleNote + the hands retry for a v2 graph the one-note arranger refused), as the page defines them
 
    Everything is extracted by name from the app file with the technique tests/engrave/helpers.js appFinalize, tests/scoregraph/app-playback.test.js
    and tests/realize/app-single-extract.js already use. If the app changes the name or shape of one of these, the extraction throws (it never
@@ -97,18 +98,22 @@ function fnSource(name, isAsync) {
 }
 const constLine = name => { const m = new RegExp('^const ' + name + ' = .*$', 'm').exec(html()); if (!m) throw new Error('appcode: const ' + name + ' is not in the app'); return m[0] + '\n'; };
 
-/* arranger({ reference? }) -> { arrange(graph, level, title) -> { ...arrangeSingleNote's result, handsFallback? } }. One closure (and so one arrangement cache) per call. */
+/* arranger({ reference? }) -> { arrange(graph, level, title, options?) -> { ...arrangeSingleNote's result, handsFallback?, recordingArrange?, leadsheetRefusal? }, app }. One closure (and so one arrangement cache) per call.
+   options.recordingArrange (G10c-1b): 'leadsheet' | 'reduce', the plan's own statement of how a recording is arranged (the page's PPP.recordingArrange for a request that states none). Absent, the tool's
+   own default stands: 'reduce', what it always did, so no packet built before this option changes. The result of a recording's request says which path made the copy (recordingArrange) and, when the lead
+   sheet refused and the reduction was made instead, why (leadsheetRefusal); a request the lead sheet was not asked for carries neither. */
 function arranger(opts) {
   opts = opts || {};
   const ref = opts.reference || SINGLE.reference();
   const app = SINGLE.make({ window: SINGLE.nodeWindow(), loadArrangerReference: () => Promise.resolve(ref) });
-  const SRC = constLine('SINGLE_HANDS_FALLBACK_CODE') + fnSource('graphFromV2Recording') + fnSource('writtenByV2') + fnSource('arrangeSingleNoteWithHandsFallback', true) +
-    'return { arrangeSingleNoteWithHandsFallback };';
-  /* the page's recording modules are Node requires here (audio-score.js and rec/app.js find rec/ themselves), so "loading" them is a given */
+  const SRC = constLine('SINGLE_HANDS_FALLBACK_CODE') + fnSource('recordingArrangeChoice') + fnSource('isRecordingGraph') + fnSource('leadsheetWanted') + fnSource('graphFromV2Recording') + fnSource('writtenByV2') +
+    fnSource('arrangeSingleNoteWithHandsFallback', true) + fnSource('arrangeSingleNoteWithLeadsheet', true) +
+    'return { arrangeSingleNoteWithLeadsheet, arrangeSingleNoteWithHandsFallback };';
+  /* the page's recording modules are Node requires here (audio-score.js, rec/app.js and rec/leadsheet.js find rec/ themselves), so "loading" them is a given; the page's mode is the tool's: 'reduce' */
   const win = { PPPRecApp: RA, PPPAudioScore: AS };
-  const glue = new Function('arrangeSingleNote', 'loadRecordingModules', 'window', SRC)(app.arrangeSingleNote, () => Promise.resolve(true), win);
+  const glue = new Function('arrangeSingleNote', 'loadRecordingModules', 'loadLeadsheetModule', 'RECORDING_ARRANGE_MODE', 'window', SRC)(app.arrangeSingleNote, () => Promise.resolve(true), () => Promise.resolve(true), 'reduce', win);
   return {
-    arrange: (graph, level, title) => glue.arrangeSingleNoteWithHandsFallback(graph, { level: level || 'intermediate' }, title),
+    arrange: (graph, level, title, options) => glue.arrangeSingleNoteWithLeadsheet(graph, Object.assign({ level: level || 'intermediate' }, options && options.recordingArrange ? { recordingArrange: options.recordingArrange } : {}), title),
     app: app
   };
 }

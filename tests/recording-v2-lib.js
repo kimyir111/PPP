@@ -35,6 +35,9 @@ const WAV = path.join(os.tmpdir(), 'zz-ppp-fixture-' + process.pid + '.wav');
 
 /* G10a-5b: v2 is the DEFAULT, so a page opened with no store is a v2 page. A test of the classic path asks for it the way a person gets it: the device remembers 'legacy' (the chip turned off) */
 const CLASSIC = { 'ppp.recording.v1': 'legacy' };
+/* G10c-1b: the lead sheet is the DEFAULT way a recording is arranged at the easier levels (PPP.recordingArrange). A test of the reduction (the hands retry, the refusal notice and what counts its runs)
+   asks for it the way a person gets it: the device remembers 'reduce' (o.reduce) */
+const REDUCE = { 'ppp.recordingArrange.v1': 'reduce' };
 /* o.query: appended to the address; o.locale; o.store {key: value} set before the page's scripts run; o.legacy: the device remembers 'legacy' (CLASSIC), the way the chip turned off leaves it;
    o.failWhile {re}: matching requests fail while rec.failOn is true;
    o.corrupt {re, body}: matching requests are answered 200 with `body` (a file that is not the file) while rec.failOn is true;
@@ -42,6 +45,7 @@ const CLASSIC = { 'ppp.recording.v1': 'legacy' };
 async function openPage(browser, o) {
   o = o || {};
   if (o.legacy) o = Object.assign({}, o, { store: Object.assign({}, o.store || {}, CLASSIC) });
+  if (o.reduce) o = Object.assign({}, o, { store: Object.assign({}, o.store || {}, REDUCE) });
   /* a browser context of its own: localStorage (the remembered choice) is not shared with another page of this suite */
   const ctx = await browser.createBrowserContext();
   const page = await ctx.newPage();
@@ -165,4 +169,4 @@ async function accept(page) {
 }
 async function slotOf(page, songId) { return page.evaluate(i => JSON.parse(localStorage.getItem('ppp.song.v1.' + i) || 'null'), songId); }
 
-module.exports = { fs, os, path, REPO, errors, sleep, ok, HELPER, REC_FILES, SCRIPTS, WEIGHTS, CATALOG, ONLY, want, WAV, CLASSIC, setBase, openPage, recReqs, clean, errs, addChecker, stubAmt, importHeard, press, stateOf, drawSound, arrangeCheck, accept, slotOf };
+module.exports = { fs, os, path, REPO, errors, sleep, ok, HELPER, REC_FILES, SCRIPTS, WEIGHTS, CATALOG, ONLY, want, WAV, CLASSIC, REDUCE, setBase, openPage, recReqs, clean, errs, addChecker, stubAmt, importHeard, press, stateOf, drawSound, arrangeCheck, accept, slotOf };

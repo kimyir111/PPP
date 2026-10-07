@@ -304,11 +304,17 @@ test('the glue: a lead sheet refusal is the arranger\'s refusal with the lead sh
 });
 
 test('the browser: the module loads in a bare vm after the page\'s own scripts and gives the lead sheet Node gives, byte for byte', () => {
+  /* G10c-1b: the extractor's browserWindow() is what the page has when a recording is arranged, in the page's own order read from the page: scoregraph/ (build, time, gaps ...), songgraph/, v2's weights
+     and its 13 files (rec/grid.js and rec/writer.js among them) and then LEADSHEET_SCRIPT; nothing here loads a file by hand any more */
+  const L = E.scriptListOfPage();
+  assert.equal(L.lead, 'rec/leadsheet.js');
+  assert.deepEqual(L.leadNeeds, ['rec/grid.js', 'rec/writer.js'], 'what the page loads before it: the two files it reads when it loads, and the grid model rec/grid.js reads, nothing more of v2');
+  assert.deepEqual(L.leadModel, ['PPPRecGridModel', 'rec/weights/ai5b-grid-v1.json']);
+  assert.ok(L.leadNeeds.every(f => L.rec.indexOf(f) >= 0) && L.head.some(p => p === 'scoregraph/gaps.js'), 'the two are files of v2\'s own list (shared with its loader); scoregraph/gaps.js is in the page already');
   const win = E.browserWindow();
-  const rel = f => fs.readFileSync(path.join(REPO, f), 'utf8');
-  /* what the page has by the time a recording is arranged: scoregraph/ (build, time ...), songgraph/, rec/grid.js and rec/writer.js (after scoregraph/gaps.js) */
-  ['scoregraph/gaps.js', 'rec/grid.js', 'rec/writer.js', 'rec/leadsheet.js'].forEach(f => vm.runInContext(rel(f), win, { filename: f }));
+  assert.equal(typeof win.require, 'undefined'); assert.equal(typeof win.module, 'undefined');
   assert.equal(typeof win.PPPRecLeadsheet, 'object');
+  assert.equal(typeof win.PPPRecWriter, 'object'); assert.equal(typeof win.PPPRecGrid, 'object');
   const g = convert(cover(16, tune));
   const node = LS.prepare(g, { songgraph: SGG });
   const page = win.PPPRecLeadsheet.prepare(JSON.parse(JSON.stringify(g)), { songgraph: win.PPPSongGraph });

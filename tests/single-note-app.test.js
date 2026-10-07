@@ -823,6 +823,9 @@ async function identityHashes(browser) {
        the same notes (onsets and pitches), the right hand's rests as they are, a valid graph; the control (written without the pass) has them. */
     {
       const lp = await openPage(browser);
+      /* G10c-1b: this section is about what the reduction does to the left hand's small gaps and about its copy keeping 90% of the transcription's notes; a lead-sheet copy of a recording is
+         the melody and a bass note a beat (fewer notes by design: tests/recording-leadsheet-app.test.js), so the page is asked for the reduction the way a person gets it (the chip off) */
+      await lp.evaluate(() => { window.PPP.recordingArrange = 'reduce'; });
       await lp.evaluate(() => {
         const P = window.PPP, A = P.app;
         let s = 3; const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };

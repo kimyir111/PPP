@@ -524,7 +524,8 @@ pitch, onset within 0.15 quarter) and `.f1pc` (pitch classes: octave-free), `arr
 `arr.relaxed` (share of the levels made with the relaxed plan's note). `PPP_RECARR_DETAIL=<file>` (environment, any suite) writes one JSON line per case with each level's
 metrics on its own, the right-hand F1s of a reduce row included (the tables of docs/GOALS/G10 section 33); it is not part of the results: a case's metrics are the same with it set
 (`test_the_detail_file_does_not_change_a_result`). `tests/bench/tools/real-covers.js` runs the six private covers (aggregates only),
-`tests/bench/tools/arrange-identity.js` the identity of the reduction (catalogue: 975 requests; `--recordings jobs.jsonl`: the recording graphs of a suite's jobs and, with `--heard DIR`, the covers).
+`tests/bench/tools/arrange-identity.js` the identity of the reduction (catalogue: 975 requests; `--recordings jobs.jsonl`: the recording graphs of a suite's jobs and, with `--heard DIR`, the covers; G10c-1b: `--page reduce|leadsheet`
+sends the requests through the page's own Song Arranger entry, review/lib/appcode.js `arranger()`, instead of `arrangeSingleNote`: `--page reduce` on main and on the branch is the identity of the page's reduction, `--page leadsheet` on the catalogue the identity of the default mode, docs/GOALS/G10 section 34.6).
 `tests/bench/tools/arrange_jobs.py --suite rec-arrange-core --opts app,v2 --out jobs.jsonl` writes that `jobs.jsonl` (168 jobs: the identity's 522 requests with the six covers).
 `tests/bench/tools/level-table.js` measures how hard the copies are by G6a (`level.position`), reduce against lead sheet, on the benchmark's jobs, the covers and the printed hymns (docs/GOALS/G10 section 33.3a).
 

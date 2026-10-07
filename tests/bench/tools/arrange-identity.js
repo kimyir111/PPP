@@ -3,6 +3,7 @@
 
      node tests/bench/tools/arrange-identity.js --root DIR --out result.json [--shard I/N] [--only substring]
      node tests/bench/tools/arrange-identity.js --root DIR --out result.json --recordings jobs.jsonl [--heard DIR]   # G10c-1a: the RECORDING graphs
+     node tests/bench/tools/arrange-identity.js --root DIR --out result.json [--recordings jobs.jsonl --heard DIR] --page reduce|leadsheet   # G10c-1b: through the page's own Song Arranger entry
      node tests/bench/tools/arrange-identity.js --compare a.json b.json         # exit 1 unless every request is identical
 
    --root is a checkout (or a `git archive` extract) of the tree to test: its own app file, modules and catalogue are used, so running it on a clean
@@ -62,6 +63,12 @@ const SG = require(path.join(root, 'scoregraph/index.js'));
 const SER = require(path.join(root, 'scoregraph/serialize.js'));
 const ref = E.reference();
 const app = E.make({ window: E.nodeWindow(), Score: {}, loadArrangerReference: () => Promise.resolve(ref) });
+/* G10c-1b: --page reduce|leadsheet runs the requests through the Song Arranger's own entry (review/lib/appcode.js arranger of the ROOT: the page's arrangeSingleNoteWithHandsFallback, and in this tree
+   arrangeSingleNoteWithLeadsheet in front of it) instead of arrangeSingleNote, with recordingArrange set to that value on the request. A tree whose entry does not know the option (origin/main) ignores it.
+   `--page reduce` on a recording is therefore the reduction (with its hands retry) on both sides: byte identity with main; `--page leadsheet` on the catalogue must be the same too (a printed score is no lead sheet's) */
+const pageMode = arg('--page');
+const pageArranger = pageMode ? require(path.join(root, 'review', 'lib', 'appcode.js')).arranger({ reference: ref }) : null;
+const arrangeOne = (graph, level, id) => (pageArranger ? pageArranger.arrange(graph, level, id || 'T', { recordingArrange: pageMode }) : app.arrangeSingleNote(graph, { level }));
 
 function files() {
   const out = [];
@@ -83,7 +90,7 @@ async function recordingRequests() {
   const arrangeAll = async (id, graph) => {
     for (const level of ['beginner', 'intermediate', 'advanced']) {
       let a;
-      try { a = await app.arrangeSingleNote(graph, { level }); } catch (e) { a = { ok: false, reason: 'THROW:' + String(e && e.message || e).slice(0, 80) }; }
+      try { a = await arrangeOne(graph, level, id); } catch (e) { a = { ok: false, reason: 'THROW:' + String(e && e.message || e).slice(0, 80) }; }
       requests[id + '|' + level] = hashOf(a);
     }
   };
@@ -131,7 +138,7 @@ async function recordingRequests() {
       if (!graph) v = 'REFUSED:' + why;
       else {
         let a;
-        try { a = await app.arrangeSingleNote(graph, { level }); } catch (e) { a = { ok: false, reason: 'THROW:' + String(e && e.message || e).slice(0, 80) }; }
+        try { a = await arrangeOne(graph, level, rel); } catch (e) { a = { ok: false, reason: 'THROW:' + String(e && e.message || e).slice(0, 80) }; }
         v = a.ok ? crypto.createHash('sha256').update(SER.serialize(a.graph) + '|' + (a.levelNote || '') + '|' + JSON.stringify(a.rescued || null)).digest('hex') : 'REFUSED:' + a.reason;
       }
       requests[rel + '|' + level] = v;

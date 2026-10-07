@@ -275,6 +275,8 @@ function harness() {
     R.freshWeakRanges === 0 && R.freshHasHistory === false, R.freshWeakRanges + ' weak ranges');
   ok('it asks for a reading instead of inventing one',
     /not been practised|play it through|where you stand|not heard you play/i.test(R.detFresh.tasks[0].reason), R.detFresh.tasks[0].reason);
+  ok('the first task on a piece never played is at the score tempo',
+    R.detFresh.tasks[0].tempoPercent === 100, R.detFresh.tasks[0].tempoPercent + '%');
   ok('structural difficulty is still offered', R.freshStructural);
   ok('and is labelled as prediction, not measurement',
     /not a measurement of this player/i.test(R.ctx.structuralNote), R.ctx.structuralNote);

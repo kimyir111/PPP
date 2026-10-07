@@ -1788,6 +1788,12 @@
                   <button type="button" onClick="{{ toggleSingleNote }}" data-single-note-option aria-pressed="{{ singleNotePressed }}" style="{{ singleNoteStyle }}">{{ singleNoteLabel }}</button>
                   <p style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ singleNoteHint }}</p>
                 </div>
+                <sc-if value="{{ showSongRecordingArrange }}" hint-placeholder-val="{{ false }}">
+                  <div data-recording-arrange-row="song" style="display: flex; flex-direction: column; align-items: flex-start; gap: 5px;">
+                    <button type="button" onClick="{{ toggleRecordingArrange }}" data-recording-arrange-option aria-pressed="{{ recordingArrangePressed }}" style="{{ recordingArrangeStyle }}">{{ recordingArrangeLabel }}</button>
+                    <p style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ recordingArrangeHint }}</p>
+                  </div>
+                </sc-if>
                 <label style="font-size: 12px; color: var(--ink3);">{{ arrangementCopyTitleLabel }}
                   <input type="text" value="{{ songArrangeCopyTitle }}" onChange="{{ setSongArrangeCopyTitle }}" data-song-arrange-title style="display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:10px 11px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-family:inherit;" />
                 </label>
@@ -2591,6 +2597,12 @@
                     <button type="button" onClick="{{ toggleSingleNote }}" data-single-note-option aria-pressed="{{ singleNotePressed }}" style="{{ singleNoteStyle }}">{{ singleNoteLabel }}</button>
                     <p style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ singleNoteHint }}</p>
                   </div>
+                  <sc-if value="{{ showReviewRecordingArrange }}" hint-placeholder-val="{{ false }}">
+                    <div data-recording-arrange-row="review" style="display: flex; flex-direction: column; align-items: flex-start; gap: 5px;">
+                      <button type="button" onClick="{{ toggleRecordingArrange }}" data-recording-arrange-option aria-pressed="{{ recordingArrangePressed }}" style="{{ recordingArrangeStyle }}">{{ recordingArrangeLabel }}</button>
+                      <p style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ recordingArrangeHint }}</p>
+                    </div>
+                  </sc-if>
                   <sc-if value="{{ hasArrangementStatus }}" hint-placeholder-val="{{ false }}">
                     <p style="margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ arrangementStatus }}</p>
                   </sc-if>
@@ -5123,6 +5135,29 @@ function setRecordingMode(v) {
   try { if (c) localStorage.setItem(RECORDING_KEY, c); else localStorage.removeItem(RECORDING_KEY); } catch (e) { /* not remembered */ }
   return RECORDING_MODE;
 }
+/* ============================ G10c-1b: the lead sheet of a recording (PPP.recordingArrange) ============================
+   docs/GOALS/G10_AUDIO_TO_SCORE.md sections 33 and 34. PPP.recordingArrange = 'leadsheet' | 'reduce'. It says how a RECORDING (a graph with an 'audio-score' source) is arranged at the easier levels
+   by the one-note-per-hand arranger: 'leadsheet' writes the melody as one line and the accompaniment from the harmony of every heard note (rec/leadsheet.js); 'reduce' thins the recording's own notes
+   (what the page did before this phase, byte for byte). It never touches a printed score, a MIDI file or a catalogue piece, and never the "Original transcription" level.
+   The semantics are PPP.recording's: a choice is one of those two strings, anything else is no choice and no choice is the default; layers, the first that holds a choice wins: ?recordingArrange= in the
+   address (this visit only, never stored), the device's remembered choice (localStorage RECORDING_ARRANGE_KEY), the default. THE FLIP IS THE NEXT LINE: 'reduce' here puts every device that never touched the chip
+   back on today's arrangement (a device that pressed the chip has a stored choice, which stays; to reset those too, change RECORDING_ARRANGE_KEY's suffix). */
+const RECORDING_ARRANGE_KEY = 'ppp.recordingArrange.v1';
+const RECORDING_ARRANGE_DEFAULT = 'reduce';
+function recordingArrangeChoice(v) { return v === 'leadsheet' || v === 'reduce' ? v : null; }
+let RECORDING_ARRANGE_MODE = (() => {
+  let m = RECORDING_ARRANGE_DEFAULT;
+  try { m = recordingArrangeChoice(localStorage.getItem(RECORDING_ARRANGE_KEY)) || m; } catch (e) { /* no storage: the default */ }
+  try { const u = recordingArrangeChoice(new URLSearchParams(location.search).get('recordingArrange')); if (u) m = u; } catch (e) { /* no address to read */ }
+  return m;
+})();
+/* a choice is remembered; a value that is no choice puts the default back and forgets the remembered one */
+function setRecordingArrangeMode(v) {
+  const c = recordingArrangeChoice(v);
+  RECORDING_ARRANGE_MODE = c || RECORDING_ARRANGE_DEFAULT;
+  try { if (c) localStorage.setItem(RECORDING_ARRANGE_KEY, c); else localStorage.removeItem(RECORDING_ARRANGE_KEY); } catch (e) { /* not remembered */ }
+  return RECORDING_ARRANGE_MODE;
+}
 const _recLoaded = new Set();
 const _recGlobals = new Set();
 const _recInflight = new Map(); /* src -> the promise of the <script> that is on its way: a second asker waits for it, and never adds a second element (a late file would run twice) */
@@ -5166,7 +5201,8 @@ const RECORDING_SCRIPT_GLOBALS = {
   'rec/attacks.js': ['PPPRecModules', 'attacks'], 'rec/beats.js': ['PPPRecModules', 'beats'], 'rec/model.js': ['PPPRecModules', 'model'], 'rec/metre.js': ['PPPRecModules', 'metre'],
   'rec/hands.js': ['PPPRecModules', 'hands'], 'rec/index.js': ['PPPRec'], 'rec/grid.js': ['PPPRecGrid'], 'rec/voices.js': ['PPPRecVoices'], 'rec/rests.js': ['PPPRecRests'],
   'rec/writer.js': ['PPPRecWriter'], 'rec/key.js': ['PPPRecKey'], 'rec/pedal.js': ['PPPRecPedal'], 'rec/app.js': ['PPPRecApp'],
-  'realize/ottava.js': ['PPPRealizeModules', 'ottava']
+  'realize/ottava.js': ['PPPRealizeModules', 'ottava'],
+  'rec/leadsheet.js': ['PPPRecLeadsheet'] /* G10c-1b: not one of RECORDING_SCRIPTS (loadLeadsheetModule asks for it, after them, when a lead sheet is about to be made) */
 };
 /* the scripts whose factory takes another script's export when it loads (rec/index.js's header: the stages' own order). One of those files asked for again brings these with it: they
    hold what was missing (nothing) when they ran. The others read nothing at load and are alone. */
@@ -5224,7 +5260,7 @@ function loadRecordingModules() {
     try {
       /* the weights are asked for together, then set as the globals the modules read when they load (grid.js and rests.js at load, the others when they run) */
       const todoW = RECORDING_WEIGHTS.filter(w => !_recGlobals.has(w[0]));
-      await Promise.all(todoW.map(w => recFetchWeights(w[1]).then(j => { if (recWeightsShapeOk(w[0], j)) { window[w[0]] = j; _recGlobals.add(w[0]); } })));
+      await Promise.all(todoW.map(w => recFetchWeights(w[1]).then(j => { if (!_recGlobals.has(w[0]) && recWeightsShapeOk(w[0], j)) { window[w[0]] = j; _recGlobals.add(w[0]); } }))); /* G10c-1b: the lead sheet's loader may have set the grid model meanwhile: the first one set stays (rec/grid.js has read it) */
       const bad = todoW.find(w => !_recGlobals.has(w[0]));   /* a file that came with the right shape stays: the next attempt asks only for the others */
       if (bad) { RECORDING_LOAD_ERROR = bad[1]; return false; }
       if (_recAppPromise) await _recAppPromise; /* rec/app.js alone may be on its way (loadRecApp): not asked for twice */
@@ -5257,6 +5293,8 @@ function v2Plausible(built, heard) {
 function writtenByV2(built) { return !!(built && built.recReport); }
 /* G10a-5b: is this song a transcription of a recording, so that the method (the chip, "Write the notation again", v2's files) applies to it? The same test as showRecordingChoice and showAsRecorded. */
 function isRecordingSong(src) { return !!(src && inferredAudioNotation(src) && !src.referenceScore && src.kind !== 'arrangement' && src.kind !== 'built-in'); }
+/* G10c-1b: a song the lead-sheet arrangement is for: a transcription of a recording, and not a "Full song" import (taskMode 'piano-arrangement': that is an arrangement already, written by the classic method) */
+function isLeadsheetSong(src) { return isRecordingSong(src) && src.taskMode !== 'piano-arrangement'; }
 /* G10a-4, the one-note arranger's refusal of a v2 transcription (the review of #161, docs/GOALS/G10 section 25.4): on the teacher's piece S4's hands (rec/hands.js) made every candidate fail two gates
    of candidates/index.js - a right-hand velocity violation (inner notes handed to the right hand just before a leap) and then the relaxed plan's hand-crossing limit (S4 crossed 1.8-2.4% of the moments,
    the limit is 1%, assignHands' hands 0.17%) - while the same conversion with the classic hands (audio-score.js opts.hands 'legacy': the same skeleton, grid, rests and writer) was arranged at every level.
@@ -5290,6 +5328,102 @@ async function arrangeSingleNoteWithHandsFallback(graph, plan, title) {
     }
     return first;
   } catch (e) { return first; }
+}
+/* G10c-1b (docs/GOALS/G10 section 34): rec/leadsheet.js is asked for when a lead sheet is about to be made, and only then: nothing of it loads with the page, the Add screen or the review screen (it is in
+   neither RECORDING_SCRIPTS nor SINGLE_SCRIPTS). It reads two of v2's files when it loads - rec/grid.js (PPPRecGrid.writable) and rec/writer.js (the exact-bars writer) - and rec/grid.js reads its model
+   (PPPRecGridModel, one of v2's four weights files) when it loads, so those come first, in that order, and nothing else of v2: a saved v2 song opened in a fresh page makes four requests (87 KB) for its first lead
+   sheet, not the conversion's seventeen. They are the very files and the very global loadRecordingModules makes, shared with it (_recLoaded, _recGlobals, _recInflight, _recWeightFetches): a page that later converts
+   a recording asks only for the rest, the model is the one a page that never arranged would have. The two loaders may be on their way at once and NEITHER WAITS FOR THE OTHER (a wait each way is a deadlock: with v2
+   first and the lead sheet asked for during its weights fetch, each held the other until its 15 s ran out and both said no); a file is asked for once and runs once because both ask through recScriptTag, which shares
+   the element in flight, and the script elements run in the order they were added (async = false), so what rec/leadsheet.js reads is always there before it runs. Resolves true when PPPRecLeadsheet is on the page
+   and false when it could not be had (the lead sheet then refuses with LEADSHEET_NOT_LOADED and the reduction is made); bounded like the others; never rejects.
+   A module is on the page only when the files it read when it ran were (rec/leadsheet.js takes PPPRecWriter and PPPRecGrid then, and keeps what it took): a load in which one of them failed takes the module away
+   again, so that the page never holds a lead sheet with no writer (or with no grid, which would write another lead sheet without a word); the next asker asks for the missing file AND for rec/leadsheet.js, which
+   runs again and takes the file that is there now. */
+const LEADSHEET_SCRIPT = 'rec/leadsheet.js';
+const LEADSHEET_NEEDS = ['rec/grid.js', 'rec/writer.js'];
+const LEADSHEET_MODEL = ['PPPRecGridModel', 'rec/weights/ai5b-grid-v1.json'];
+let _leadPromise = null;
+function loadLeadsheetModule() {
+  /* the module AND what it reads are on the page: nothing to ask for */
+  if (typeof window !== 'undefined' && window.PPPRecLeadsheet && LEADSHEET_NEEDS.every(recScriptGlobalPresent)) return Promise.resolve(true);
+  if (_leadPromise) return _leadPromise;
+  _leadPromise = recRaceTimeout((async () => {
+    try {
+      if (!_recGlobals.has(LEADSHEET_MODEL[0])) {
+        const j = await recFetchWeights(LEADSHEET_MODEL[1]);
+        if (!recWeightsShapeOk(LEADSHEET_MODEL[0], j)) return false;
+        if (!_recGlobals.has(LEADSHEET_MODEL[0])) { window[LEADSHEET_MODEL[0]] = j; _recGlobals.add(LEADSHEET_MODEL[0]); }
+      }
+      /* requested at once, executed in this order (async = false); what is on the page already is not asked for again, and so not run again - except rec/leadsheet.js, which is asked for whenever one of the files it
+         reads is (it kept what it read when it ran: a copy that ran with no writer has none) */
+      const all = LEADSHEET_NEEDS.concat([LEADSHEET_SCRIPT]);
+      const need = new Set(all.filter(s => !_recLoaded.has(s)));
+      if (LEADSHEET_NEEDS.some(s => need.has(s))) need.add(LEADSHEET_SCRIPT);
+      const todo = all.filter(s => need.has(s));
+      todo.forEach(forgetRecScript);
+      const results = await Promise.all(todo.map(s => recScriptTag(s)));
+      if (!results.every(Boolean) || !window.PPPRecLeadsheet) { forgetRecScript(LEADSHEET_SCRIPT); return false; }   /* a file failed: rec/leadsheet.js may have run without it; it goes, and comes again */
+      return true;
+    } catch (e) { return false; }
+  })()).then(ok => { _leadPromise = null; return ok; });
+  return _leadPromise;
+}
+/* is this graph a recording's? It has an 'audio-score' source (scoregraph/gaps.js isTranscription: the gate repair/ closes gaps on). The lead sheet is made from those and from no other graph: a printed score, a
+   MIDI file, a catalogue piece and the graph of an arrangement (what a copy made by the arranger, or by Apply arrangement on the review screen, keeps) have none. leadsheetWanted asks it, and so does the chip
+   (checkLeadsheetGraph): the chip is shown only where Create would make a lead sheet. */
+function isRecordingGraph(graph) {
+  const sources = !!graph && !!graph.provenance && graph.provenance.sources;
+  return Array.isArray(sources) && sources.some(x => !!x && x.kind === 'audio-score');
+}
+/* is this request one the lead sheet may make? The mode is the caller's (plan.recordingArrange, when it states one: the review tooling and the tests do) or the page's (PPP.recordingArrange); the level is one
+   of the arranger's (never "Original transcription"); the graph is a recording (an 'audio-score' source: scoregraph/gaps.js isTranscription, the gate repair/ closes gaps on). A printed score, a MIDI
+   file and a catalogue piece are never touched. */
+function leadsheetWanted(graph, plan) {
+  const mode = (plan && recordingArrangeChoice(plan.recordingArrange)) || RECORDING_ARRANGE_MODE;
+  if (mode !== 'leadsheet' || !plan || plan.level === 'original') return false;
+  return isRecordingGraph(graph);
+}
+/* The Song Arranger's and the review screen's one entry for the one-note-per-hand arranger (G10c-1b). A request the lead sheet may make (leadsheetWanted) is made from the lead sheet first; when it refuses - any
+   reason: LEADSHEET_* (an irregular bar, a meter change, no melody, the module not loaded), UNREACHABLE, a hard violation, a crash - the reduction is made as it always was, with its own chain
+   (arrangeSingleNoteWithHandsFallback: the classic hands, then the classic conversion; the hands do not matter to a lead sheet, so none of that is tried for it), and only when that refuses too is the answer
+   the refusal the person sees today (and the callers' standard-arrangement notice). Any other request goes to the reduction untouched, with the very plan it was given.
+   Never throws. Resolves what arrangeSingleNote resolves, and for a request the lead sheet was asked for: recordingArrange 'leadsheet' | 'reduce' (the path that made the copy) and, when the lead sheet
+   refused, leadsheetRefusal (its reason, on a refusal of the reduction as well). `allow` false (the caller knows the song is no recording of a performance: a "Full song" import, which is an arrangement
+   already) is the reduction's answer for the request, whatever the mode. */
+async function arrangeSingleNoteWithLeadsheet(graph, plan, title, allow) {
+  const reducePlan = plan && plan.recordingArrange === 'leadsheet' ? Object.assign({}, plan, { recordingArrange: 'reduce' }) : plan;
+  if (allow === false || !leadsheetWanted(graph, plan)) return arrangeSingleNoteWithHandsFallback(graph, reducePlan, title);
+  let lead;
+  try {
+    lead = (await loadLeadsheetModule()) ? await arrangeSingleNote(graph, Object.assign({}, plan, { recordingArrange: 'leadsheet' })) : { ok: false, reason: 'LEADSHEET_NOT_LOADED' };
+  } catch (e) { lead = { ok: false, reason: 'LEADSHEET_CRASH', message: e && e.message }; }
+  if (lead && lead.ok) return Object.assign({}, lead, { recordingArrange: 'leadsheet' });
+  const why = (lead && lead.reason) || 'unknown';
+  const red = await arrangeSingleNoteWithHandsFallback(graph, reducePlan, title);
+  return Object.assign({}, red, red.ok ? { recordingArrange: 'reduce', leadsheetRefusal: why } : { leadsheetRefusal: why });
+}
+/* how many sharps or flats the graph's key signature has at most (0 for a graph with no key): the lead sheet copies the recording's own key signature as it is, and the relaxed note may name it as a cause
+   only when it is one (LEAD_KEY_NAMED_FROM or more: a C major tune that is hard to read is hard for another reason) */
+const LEAD_KEY_NAMED_FROM = 3;
+function graphAccidentals(g) {
+  const keys = g && g.timeline && g.timeline.keys;
+  return Array.isArray(keys) ? keys.reduce((m, k) => Math.max(m, Math.abs(+(k && k.fifths) || 0)), 0) : 0;
+}
+/* the part of the lead sheet's own report a copy keeps in its source (small: the library card carries source.arrangement too) */
+function leadsheetMark(sn) {
+  const r = sn && sn.leadsheet;
+  return sn && sn.recordingArrange === 'leadsheet' ? { recordingArrange: 'leadsheet', leadsheet: r ? { version: r.version, notes: r.notes, melodyNotes: r.melodyNotes, shifted: r.shifted } : {} }
+    : sn && sn.leadsheetRefusal ? { recordingArrange: 'reduce', leadsheetRefusal: sn.leadsheetRefusal } : {};
+}
+/* A stored arrangement (source.arrangement) is a RECORD of how a copy was made: its level, its style, its engine and, from G10c-1b, which path made it (recordingArrange, the lead sheet's counts, the refusal).
+   When the review screen reuses it as the PLAN of a new request (rewriteRhythm) the path it records must not decide the new copy - a stored 'leadsheet' would win over the chip (leadsheetWanted reads
+   plan.recordingArrange first) and a person who has turned the chip off would get the lead sheet again. The new request is what the chip says now: those three keys are not part of a plan. */
+function arrangementAsPlan(a) {
+  if (!a || typeof a !== 'object') return null;
+  const p = Object.assign({}, a);
+  delete p.recordingArrange; delete p.leadsheet; delete p.leadsheetRefusal;
+  return p;
 }
 /* the song's source after a conversion: v2 writes recordingPipeline and version 8; anything else drops a v2 mark that a previous conversion left and is otherwise as it was */
 function applyRecordingMark(source, built) {
@@ -6367,14 +6501,16 @@ const Learning = {
       kind: o.kind
     });
 
-    /* Nothing played yet: take a reading before claiming to know anything. */
+    /* Nothing played yet: take a reading before claiming to know anything.
+       The reading is at the score tempo, so a piece the player just transcribed
+       opens at the speed they heard; slowing down is for passages found weak. */
     if (!played.length) {
       const first = score.sections[0] || { from: nums[0], to: nums[Math.min(3, nums.length - 1)] };
       return mk({
         from: first.from, to: Math.min(first.to, Score.step(score, first.from, 7)),
-        hands: 'both', tempoPct: 75, kind: 'assess',
+        hands: 'both', tempoPct: 100, kind: 'assess',
         headline: tx('No practice data yet'),
-        action: tx('Play it once at 75% so PPP can find your weak spots'),
+        action: tx('Play it once at full tempo so PPP can find your weak spots'),
         reasons: [tx('PPP has not heard you play this yet.')]
       });
     }
@@ -6454,8 +6590,10 @@ const Learning = {
     const steps = [];
     const push = (label, hands, tempoPct, reps) => steps.push({ label: label, hands: hands, tempoPct: tempoPct, reps: reps });
 
+    /* Never played: the read-through is at the score tempo, like the first
+       recommendation, so the Loop panel matches the tempo the player opened at. */
     if (overall == null) {
-      push(tx('Read it through'), 'both', 75, 1);
+      push(tx('Read it through'), 'both', 100, 1);
       push(tx('Hands together'), 'both', 75, 2);
       push(tx('Full tempo'), 'both', 100, 1);
       return steps;
@@ -9017,7 +9155,7 @@ const Coach = {
       const from = ctx.song.firstMeasure;
       const to = Math.min(ctx.song.lastMeasure, from + 7);
       tasks.push({
-        range: { start: from, end: to }, hand: 'both', tempoPercent: 75, mode: 'practice',
+        range: { start: from, end: to }, hand: 'both', tempoPercent: 100, mode: 'practice',
         repetitions: 2, reason: tx('Nothing has been practised yet — play it through so PPP can see where you stand.')
       });
     }
@@ -10187,6 +10325,11 @@ window.PPP = {
   get recording() { return RECORDING_MODE; },
   set recording(v) { setRecordingMode(v); },
   loadRecordingModules, recordingModulesReady, recWeightsShapeOk, TRANSCRIPTION_VERSION_V2, RECORDING_SCRIPTS, RECORDING_WEIGHTS,
+  /* G10c-1b (docs/GOALS/G10 section 34): 'leadsheet' (the default: RECORDING_ARRANGE_DEFAULT, one line to flip) | 'reduce' (what the page did before). How a recording is arranged at the easier levels by the one-note-per-hand arranger.
+     Any other value is no choice: the default comes back and the remembered choice is forgotten (PPP.recording's rule). A choice is remembered on this device; ?recordingArrange= in the address is for that visit only. */
+  get recordingArrange() { return RECORDING_ARRANGE_MODE; },
+  set recordingArrange(v) { setRecordingArrangeMode(v); },
+  arrangeSingleNoteWithLeadsheet, loadLeadsheetModule,
   pitchToMidi, midiToFreq, keyName,
   PIANO, PianoSamples, PianoScore, PianoPlayer,
   PianoVisual: {
@@ -13306,6 +13449,11 @@ class Component extends DCLogic {
   warmRecordingModules() {
     if (RECORDING_MODE === 'v2') loadRecordingModules();
   }
+  /* G10c-1b: rec/leadsheet.js, and v2's files it reads, fetched ahead of the first lead sheet: when the Song Arranger opens on a recording, and by the chip. A no-op unless a lead sheet would be made
+     (the mode is 'leadsheet' and the one-note-per-hand arranger is on); a page that never arranges a recording never asks for them. */
+  warmLeadsheetModule() {
+    if (RECORDING_ARRANGE_MODE === 'leadsheet' && ARRANGER_MODE === 'single') loadLeadsheetModule();
+  }
   warmMidiIfAllowed() {
     const m = this.midiLayer();
     if (!m.supported()) return;
@@ -14240,7 +14388,7 @@ class Component extends DCLogic {
     const t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
     /* the one-note-per-hand chip and the transcription-method chip (G10a-5b) are buttons: Space and Enter press them, they do not start playback */
-    if (t && t.closest && t.closest('[data-single-note-option], [data-recording-v2-option]') && (e.key === ' ' || e.key === 'Enter')) return;
+    if (t && t.closest && t.closest('[data-single-note-option], [data-recording-v2-option], [data-recording-arrange-option]') && (e.key === ' ' || e.key === 'Enter')) return;
     if (e.key === 'Escape' && this.state.screen === 'learn' && this.state.learnFocus) { this.toggleLearnFocus(); return; }
     /* On Piano Basics the letter row is a piano (A S D F… from Do) and the
        space bar taps the rhythm, so no practice shortcut fires there. */
@@ -15462,7 +15610,7 @@ class Component extends DCLogic {
       bpm: +S.lockBpm || S.score.tempo || 80,
       firstDownbeat: S.lockDownbeat == null ? 0 : +S.lockDownbeat
     };
-    const arrangement = (S.importSource && S.importSource.arrangement) || null;
+    const arrangement = arrangementAsPlan(S.importSource && S.importSource.arrangement); /* G10c-1b: the plan, not the record of the path that made the copy (the chip decides that now) */
     if (arrangement && ((ScoreArranger.styles.indexOf(arrangement.style) > -1 && arrangement.style !== 'balanced') || singleRoute(arrangement)))
       return this.applyRichReviewArrangement(arrangement, S.arrangementStatus || '');
     let built;
@@ -15533,7 +15681,7 @@ class Component extends DCLogic {
       bpm: +S.lockBpm || S.score.tempo || 80,
       firstDownbeat: S.lockDownbeat == null ? 0 : +S.lockDownbeat
     };
-    let built, base, arranged, g8Degraded = false, singleFailure = null, standardInstead = false, levelNote = null, rescued = null;
+    let built, base, arranged, g8Degraded = false, singleFailure = null, standardInstead = false, levelNote = null, rescued = null, leadCopy = false, leadFell = false, leadAcc = 0;
     try {
       built = A.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
@@ -15545,14 +15693,18 @@ class Component extends DCLogic {
            standard arrangement below is then shown with a notice that stays on screen, and the result is marked in its source. */
         this.setState({ arrangementStatus: tx('Writing one note per hand…') });
         /* G10a-5b: the same two retries as the Song Arranger (a v2 graph refused for hard violations: the classic hands, then the classic conversion of the same heard notes) */
-        const sn = await arrangeSingleNoteWithHandsFallback(built.graph, plan, S.score.title);
+        /* G10c-1b: a recording is arranged from its lead sheet first (arrangeSingleNoteWithLeadsheet; the reduction, with those two retries, when it refuses); anything else goes to the reduction as before */
+        const sn = await arrangeSingleNoteWithLeadsheet(built.graph, plan, S.score.title, isLeadsheetSong(S.importSource));
         if (sn.ok) {
           arranged = graphToReviewScore(sn.graph, S.score.title);
           engraveRemember(arranged, sn.graph, 'g9-single');
-          arranged.source = { arrangement: Object.assign({ engine: 'ppp.g9-single' }, sn.handsFallback ? { handsFallback: sn.handsFallback } : {}, sn.classicFallback ? { classicFallback: true } : {}) };
+          arranged.source = { arrangement: Object.assign({ engine: 'ppp.g9-single' }, sn.handsFallback ? { handsFallback: sn.handsFallback } : {}, sn.classicFallback ? { classicFallback: true } : {}, leadsheetMark(sn)) };
           g8Degraded = sn.degraded;
           levelNote = sn.levelNote || null;
           rescued = sn.rescued || null;
+          leadCopy = sn.recordingArrange === 'leadsheet';
+          leadAcc = leadCopy ? graphAccidentals(sn.graph) : 0;
+          leadFell = sn.recordingArrange === 'reduce' && !!sn.leadsheetRefusal;   /* the lead sheet could not be used: the status line and the message say so (the reason is in the copy's source) */
         } else {
           singleFailure = sn.reason || 'unknown';
           /* what the option-off request would have done: a balanced/melody/accompaniment texture is written by the rhythm rewriter (rewriteFromHeard),
@@ -15629,13 +15781,13 @@ class Component extends DCLogic {
     this.setState({
       importReport: report, importSource: source,
       arrangementLevel: plan.level, arrangementStyle: plan.style,
-      arrangementBusy: false, arrangementStatus: singleNotice || this.singleNoticeText(levelNote, rescued) || (source.arrangement.engine === 'ppp.g9-single' ? '' : arrangementStatus) || '', /* an AI line about a texture says nothing true of a one-note-per-hand result; the harder-than-chosen note stays on the screen like the fallback notice */
+      arrangementBusy: false, arrangementStatus: singleNotice || this.singleNoticeText(levelNote, rescued, leadCopy, { fell: leadFell, accidentals: leadAcc }) || (source.arrangement.engine === 'ppp.g9-single' ? '' : arrangementStatus) || '', /* an AI line about a texture says nothing true of a one-note-per-hand result; the harder-than-chosen note stays on the screen like the fallback notice */
       reviewFrom: Score.first(arranged)
     }, () => this.saveNow());
     if (singleNotice) this.say(singleNotice);
     else if (source.arrangement.engine === 'ppp.g9-single') this.say((g8Degraded
       ? tx('Created a {{level}} arrangement. Some passages had low melody/bass confidence, so PPP kept them simple rather than guess.', { level: tx(plan.level) })
-      : tx('Created a {{level}} one-note-per-hand arrangement.', { level: tx(plan.level) })) + (levelNote || rescued ? ' ' + this.singleNoticeText(levelNote, rescued) : ''));
+      : tx('Created a {{level}} one-note-per-hand arrangement.', { level: tx(plan.level) })) + (levelNote || rescued || leadFell ? ' ' + this.singleNoticeText(levelNote, rescued, leadCopy, { fell: leadFell, accidentals: leadAcc }) : ''));
     else this.say(g8Degraded
       ? tx('Created a {{level}} arrangement. Some passages had low melody/bass confidence, so PPP kept them simple rather than guess.', { level: tx(plan.level) })
       : tx('Created a {{level}} {{style}} arrangement.', { level: tx(plan.level), style: this.arrangementStyleName(plan.style) }));
@@ -16197,22 +16349,53 @@ class Component extends DCLogic {
     const title = id === (this.state.songId || 'demo') ? this.state.score.title : card && card.title;
     if (!title) return;
     const style = 'balanced';
-    const d = { songId: id, songTitle: title, level: 'intermediate', style: style, autoTitle: true, busy: false, status: '' };
+    /* G10c-1b: is the song a recording (a transcription: the lead-sheet chip is for those and no others)? The open song's own source, or the slot of another one */
+    let src = null;
+    try { src = id === (this.state.songId || 'demo') ? this.state.importSource : (this.readSong(id) || {}).importSource; } catch (e) { src = null; }
+    const d = { songId: id, songTitle: title, level: 'intermediate', style: style, autoTitle: true, busy: false, status: '', recording: isLeadsheetSong(src), leadGraph: null };
     d.copyTitle = this.songArrangeAutoTitle(d);
     this.setState({ songArrange: d, armedRemove: null });
     this.warmSingleModules(); /* the arranging screen is open: its scripts come now, so Create does not wait for them */
+    if (d.recording) this.checkLeadsheetGraph(id);
+  }
+  /* G10c-1b: the chip is for the songs that CAN become lead sheets, and that is a fact about the song's GRAPH (isRecordingGraph, the very test leadsheetWanted makes), not about its importSource: a recording whose
+     arrangement was applied on the review screen and accepted is kept as that arrangement's graph, which has no 'audio-score' source, so Create would never make a lead sheet for it and a chip that says "on" would
+     promise what it does not do. The graph is resolved as Create resolves it (PPPEngrave.app.resolve: the kept one, or one rebuilt from the Score). Until it is known (songArrange.leadGraph null) and when it is no
+     recording's (false) the chip is not shown; when it is (true) the chip is shown and the lead sheet's files are asked for ahead of Create. Never throws. */
+  async checkLeadsheetGraph(id) {
+    let yes = false;
+    try {
+      const sc = this.scoreForArrangement(id);
+      const r = sc && window.PPPEngrave ? await window.PPPEngrave.app.resolve(sc, { key: id }) : null;
+      yes = !!(r && r.graph && isRecordingGraph(r.graph));
+    } catch (e) { yes = false; }
+    this.setState(st => st.songArrange && st.songArrange.songId === id ? { songArrange: Object.assign({}, st.songArrange, { leadGraph: yes }) } : null);
+    if (yes) this.warmLeadsheetModule();
   }
   closeSongArranger() {
     if (this.state.songArrange && this.state.songArrange.busy) return;
     this.setState({ songArrange: null });
   }
   /* G9e refusals: the piece was planned by the relaxed pass (arrangement/plan.js relax), so it can be harder than the level asked for */
-  levelNoteText() { return tx('This piece has many notes, so the arrangement may be a little harder than the level you chose.'); }
+  /* G10c-1b: on a lead-sheet copy of a recording the cause is not "many notes" and not the left hand (the realizer writes that): it can be the recording's own key signature and its melody, which the lead sheet
+     copies as heard and does not simplify (docs/GOALS/G10 33.8). The words say the key signature only where it is a cause (graphAccidentals: LEAD_KEY_NAMED_FROM or more sharps or flats); otherwise they say only
+     that the copy may be harder than the level, which is all that is known. */
+  levelNoteText(lead, accidentals) {
+    if (!lead) return tx('This piece has many notes, so the arrangement may be a little harder than the level you chose.');
+    /* the key signature is named as the cause only where it is one; with fewer sharps or flats the cause is not known (a tune in C major gets the note too), and the sentence claims none */
+    return accidentals >= LEAD_KEY_NAMED_FROM
+      ? tx('This arrangement keeps the recording\'s own key signature and melody as they are, so it may be harder than the level you chose. The difficulty comes from the key signature and the melody itself, not from the left hand.')
+      : tx('This arrangement may be harder than the level you chose.');
+  }
+  /* G10c-1b: the lead sheet was asked for (the chip is on) and could not be used - whatever the reason: the file did not load, the recording has an irregular bar, no melody could be found... - so the copy is the
+     reduction's, as the chip off makes it. It is said once, with the copy (the Song Arranger's message, the review screen's message and its status line); the reason itself is in the copy's source (leadsheetRefusal). */
+  leadFallbackText() { return tx('The lead sheet could not be used, so the recording\'s own notes were thinned out instead.'); }
   /* G9e stray-note rescue: notes the arranger left out because no hand could play them in the time between their neighbours (candidates/index.js strayRescue) */
   rescuedText(n) { return tx(n === 1 ? '{{n}} note was left out because it could not be played smoothly.' : '{{n}} notes were left out because they could not be played smoothly.', { n: n }); }
   /* the one line a one-note-per-hand result can carry: the level note and/or the left-out notes ('' when neither); remembered, so that choosing another level can take exactly it off the screen */
-  singleNoticeText(levelNote, rescued) {
-    const text = [levelNote ? this.levelNoteText() : '', rescued && rescued.length ? this.rescuedText(rescued.length) : ''].filter(Boolean).join(' ');
+  singleNoticeText(levelNote, rescued, lead, info) {
+    info = info || {};
+    const text = [info.fell ? this.leadFallbackText() : '', levelNote ? this.levelNoteText(lead, info.accidentals) : '', rescued && rescued.length ? this.rescuedText(rescued.length) : ''].filter(Boolean).join(' ');
     this._singleNoticeText = text || null;
     return text;
   }
@@ -16274,7 +16457,7 @@ class Component extends DCLogic {
     plan = ScoreArranger.norm(Object.assign({}, plan || {}, { source: provider ? 'ai' : (plan && plan.source) }));
     let title = (d.autoTitle ? this.arrangementCopyTitle(d.songTitle, plan.style, singleRoute(plan)) : String(d.copyTitle || '').trim())
       || this.arrangementCopyTitle(d.songTitle, plan.style, singleRoute(plan));
-    let arranged, usedFallback = false, usedSingle = false, singleFailure = null, levelNote = null, rescued = null, classicRead = false;
+    let arranged, usedFallback = false, usedSingle = false, singleFailure = null, levelNote = null, rescued = null, classicRead = false, leadCopy = false, leadFell = false, leadAcc = 0;
     if (saveOpts && saveOpts.standardAfter) {
       /* the person pressed "Save the standard arrangement" after a refusal: no second try of the one-note-per-hand arranger */
       singleFailure = saveOpts.standardAfter.reason || 'unknown';
@@ -16288,7 +16471,8 @@ class Component extends DCLogic {
       let sn = { ok: false, reason: 'NO_GRAPH' };
       try {
         const src = window.PPPEngrave ? await window.PPPEngrave.app.resolve(sourceScore, { key: d.songId }) : null;
-        if (src && src.graph) sn = await arrangeSingleNoteWithHandsFallback(src.graph, plan, sourceScore.title);
+        /* G10c-1b: a recording is arranged from its lead sheet first (arrangeSingleNoteWithLeadsheet), the reduction when that refuses; anything else is the reduction as before */
+        if (src && src.graph) sn = await arrangeSingleNoteWithLeadsheet(src.graph, plan, sourceScore.title, !!d.recording);
       } catch (e) { sn = { ok: false, reason: 'SINGLE_CRASH', message: e && e.message }; }
       if (!sn.ok) {
         /* G9e refusals: nothing is saved. The window stays open with the notice (which does not go away by itself) and the choice; the standard arrangement is saved only on its click */
@@ -16298,11 +16482,14 @@ class Component extends DCLogic {
         levelNote = sn.levelNote || null;
         rescued = sn.rescued || null;
         classicRead = !!sn.classicFallback;
+        leadCopy = sn.recordingArrange === 'leadsheet';
+        leadAcc = leadCopy ? graphAccidentals(sn.graph) : 0;
+        leadFell = sn.recordingArrange === 'reduce' && !!sn.leadsheetRefusal;   /* the lead sheet was asked for and could not be used (the reason is in the copy's source): say so */
         arranged = graphToReviewScore(sn.graph, title);
         /* legacy-score.js takes the title of the graph's own meta over the name it is given: the copy is named what the person typed */
         arranged.title = title;
         engraveRemember(arranged, sn.graph, 'g9-single');
-        arranged.source = { arrangement: Object.assign({ engine: 'ppp.g9-single', level: plan.level, style: plan.style, source: plan.source || 'local' }, levelNote ? { levelNote: levelNote } : {}, rescued ? { rescued: rescued.length } : {}, sn.handsFallback ? { handsFallback: sn.handsFallback } : {}, sn.classicFallback ? { classicFallback: true } : {}) };
+        arranged.source = { arrangement: Object.assign({ engine: 'ppp.g9-single', level: plan.level, style: plan.style, source: plan.source || 'local' }, levelNote ? { levelNote: levelNote } : {}, rescued ? { rescued: rescued.length } : {}, sn.handsFallback ? { handsFallback: sn.handsFallback } : {}, sn.classicFallback ? { classicFallback: true } : {}, leadsheetMark(sn)) };
         usedSingle = true;
       }
     }
@@ -16330,7 +16517,7 @@ class Component extends DCLogic {
     arranged.source = source;
     /* which build made this copy (the server puts it in the page): a screenshot of the song then says whether it is an old copy */
     const buildTag = typeof window !== 'undefined' && window.PPP_BUILD ? tx('build {{build}}', { build: window.PPP_BUILD }) : '';
-    arranged.composer = [sourceScore.composer, usedSingle ? (classicRead ? tx('PPP one-note-per-hand arrangement (classic reading)') : tx('PPP one-note-per-hand arrangement')) : tx('PPP {{style}} arrangement', { style: this.arrangementStyleName(plan.style) }), buildTag]
+    arranged.composer = [sourceScore.composer, usedSingle ? (classicRead ? tx('PPP one-note-per-hand arrangement (classic reading)') : leadCopy ? tx('PPP one-note-per-hand arrangement (lead sheet)') : tx('PPP one-note-per-hand arrangement')) : tx('PPP {{style}} arrangement', { style: this.arrangementStyleName(plan.style) }), buildTag]
       .filter(Boolean).join(' · ');
     const first = arranged.sections[0] || { from: Score.first(arranged), to: Score.last(arranged) };
     const slot = {
@@ -16354,7 +16541,7 @@ class Component extends DCLogic {
     if (this._thumbs) delete this._thumbs[id];
     this.setState({ songArrange: null });
     const saved = tx('Saved {{title}} as a new song. The original was not changed.', { title: arranged.title });
-    this.say(singleFailure ? tx('This piece could not be made in one-note-per-hand mode, so the standard arrangement was saved.') + ' ' + saved : saved + (levelNote || rescued ? ' ' + this.singleNoticeText(levelNote, rescued) : ''));
+    this.say(singleFailure ? tx('This piece could not be made in one-note-per-hand mode, so the standard arrangement was saved.') + ' ' + saved : saved + (levelNote || rescued || leadFell ? ' ' + this.singleNoticeText(levelNote, rescued, leadCopy, { fell: leadFell, accidentals: leadAcc }) : ''));
     return true;
   }
   async createSongArrangement() {
@@ -18783,6 +18970,29 @@ class Component extends DCLogic {
         : RECORDING_MODE === 'v2'
           ? tx('On (the default): a newer way of reading the beat, the hands and the rests. Turn it off to use the classic method.')
           : tx('Off: the classic method writes the notation. Turn it on to use the newer way of reading the beat, the hands and the rests.'),
+      /* G10c-1b: the switch for the lead-sheet arrangement of a recording (PPP.recordingArrange), on the Song Arranger and on the review screen's arrangement panel. Like the chip above, the label is the same in both
+         states (aria-pressed carries the state) and the line under it says what pressing does; shown only where it can matter: a recording (a transcription, not a printed score or a hymn) whose graph is a recording's
+         (the Song Arranger looks: checkLeadsheetGraph), one note per hand on, a level other than "Original transcription". Remembered on this device. */
+      recordingArrangeLabel: tx('Arrange from a lead sheet'),
+      /* "(the default)" is said of the state that IS the default (RECORDING_ARRANGE_DEFAULT): flipping that one constant moves the label with it */
+      recordingArrangeHint: RECORDING_ARRANGE_MODE === 'leadsheet'
+        ? (RECORDING_ARRANGE_DEFAULT === 'leadsheet'
+          ? tx('On (the default): a recording is arranged from its melody and chords. The melody stays one line and an easy accompaniment is written under it. Turn it off to thin out the recording\'s own notes instead.')
+          : tx('On: a recording is arranged from its melody and chords. The melody stays one line and an easy accompaniment is written under it. Turn it off to thin out the recording\'s own notes instead.'))
+        : (RECORDING_ARRANGE_DEFAULT === 'reduce'
+          ? tx('Off (the default): a recording\'s own notes are thinned out to fit the level. Turn it on to arrange from its melody and chords instead.')
+          : tx('Off: a recording\'s own notes are thinned out to fit the level. Turn it on to arrange from its melody and chords instead.')),
+      recordingArrangePressed: RECORDING_ARRANGE_MODE === 'leadsheet' ? 'true' : 'false',
+      recordingArrangeStyle: this.chip(RECORDING_ARRANGE_MODE === 'leadsheet') + ';align-self:flex-start;',
+      showReviewRecordingArrange: isLeadsheetSong(S.importSource) && singleRoute({ level: S.arrangementLevel || 'intermediate' }),
+      showSongRecordingArrange: !!songArrange.recording && songArrange.leadGraph === true && singleRoute({ level: songArrange.level || 'intermediate' }), /* a recording whose graph is a recording's (checkLeadsheetGraph), not only a song whose source says so */
+      toggleRecordingArrange: () => {
+        setRecordingArrangeMode(RECORDING_ARRANGE_MODE === 'leadsheet' ? 'reduce' : 'leadsheet');
+        /* turning it on starts the download of its one file (and v2's, which it reads) now, so Create does not wait for it */
+        this.warmLeadsheetModule();
+        /* the refusal notice of the Song Arranger was about the way that has just been switched: it goes (as the one-note chip does) */
+        this.setState(st => Object.assign({ recordingTick: (st.recordingTick || 0) + 1 }, st.songArrange && st.songArrange.singleRefusal ? { songArrange: Object.assign({}, st.songArrange, { singleRefusal: null }) } : {}));
+      },
       toggleRecordingV2: () => {
         setRecordingMode(RECORDING_MODE === 'v2' ? 'legacy' : 'v2');
         /* turning it on starts the download of its files now, so the next transcription does not wait for them */
