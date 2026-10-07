@@ -207,7 +207,8 @@ const typeLink = async (p, url) => {
   await sleep(250);
 };
 const goAdd = async p => { await p.evaluate(() => window.PPP.app.go('upload')()); await p.waitForSelector('[data-youtube-url]', { timeout: 10000 }); await sleep(500); };
-const cardButtons = p => p.evaluate(() => [...document.querySelectorAll('[data-home-settings] button')].filter(b => b.offsetParent !== null).map(b => (b.innerText || '').trim()));
+/* (G10b-6: the card's new connect block - "Connect this PC", the phone button - is checked by bridge-page.test.js; this is the list of the OLD card) */
+const cardButtons = p => p.evaluate(() => [...document.querySelectorAll('[data-home-settings] button')].filter(b => b.offsetParent !== null && !b.closest('[data-bridge-box]')).map(b => (b.innerText || '').trim()));
 const goSettings = async p => { await p.evaluate(() => window.PPP.app.go('settings')()); await sleep(900); };
 
 /* what the page's requests and console show of the codes: the code may be in the X-PPP-PC header of a call to /api/ - and nowhere else */

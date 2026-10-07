@@ -287,12 +287,18 @@ function freePort() { return new Promise((resolve, reject) => { const s = net.cr
       ok('the site marks the PC as seen at once (the page can offer its button)', (await S.as('u1').get('/api/worker/status')).body.worker.everSeen === true);
       st = (await bx(p, 'GET', '/v1/status')).body;
       ok('status now: linked, the name equals the site\'s linkTag, shareable (the code is held)', st.link.has === true && st.link.tag === (await S.as('u1').get('/api/worker/status')).body.worker.linkTag && st.link.shareable === true);
+      ok('the status answer holds no secret (neither the token nor the code, anywhere in it)', !JSON.stringify(st).includes(X.cfg.token) && !JSON.stringify(st).includes(c1) && !/ppw_/.test(JSON.stringify(st)));
       const l = await bx(p, 'GET', '/v1/link');
       ok('/v1/link gives the code and the name to the allowed origin', l.status === 200 && l.body.clientCode === c1 && l.body.linkTag === st.link.tag);
       const rot = (await S.as('u1').get('/api/worker/status')).body;
       const again = [];
       for (let i = 0; i < 12; i++) again.push(await M.ctl.connect(c1));
       ok('pressing it twelve more times is "already connected": no rotation, the token is the same (the site allows ten new tokens an hour)', again.every(a => a.status === 200 && a.body.rotated === false) && S.worker(X.cfg.token) && (await S.worker(X.cfg.token).get('/api/worker/ping')).status === 200 && X.cfg.token === saved.token);
+      const NL = await makeBridge(X, { allowLink: false });
+      try {
+        const nl = await bx(NL.port, 'GET', '/v1/link');
+        ok('with "bridgeLink": false the program gives the code to nobody: /v1/link is 404 and the status says it is not shareable', nl.status === 404 && !nl.text.includes(c1) && (await bx(NL.port, 'GET', '/v1/status')).body.link.shareable === false);
+      } finally { await NL.close(); }
       /* a wrong code */
       const tokenNow = X.cfg.token, fileNow = fs.readFileSync(X.file, 'utf8');
       const wrong = await bx(p, 'POST', '/v1/connect', { body: { clientCode: rnd() } });

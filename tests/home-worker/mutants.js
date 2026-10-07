@@ -14,8 +14,10 @@ const { spawn } = require('child_process');
 const REPO = path.resolve(__dirname, '..', '..');
 /* (catalog/shared-seeds.json: the server.js copy is run for real by the Postgres test, and its seed library is read from beside it) */
 const PAGE = 'Piano Coach App.dc.html';
-const FILES = [PAGE, 'home-jobs.js', 'home-result.js', 'home-jobs-store.js', 'server.js', 'share-guest.js', 'tools/home-worker/worker.js', 'review/h10/helper-heard.js', 'catalog/shared-seeds.json'];
-const JOBS = 'jobs.test.js', WORKER = 'worker.test.js', PG = 'jobs-pg.test.js', LINKS = 'links.test.js', SERVER = 'server.test.js', PAIRW = 'pair.test.js', PAIRPAGE = 'pairing.test.js', PROTO = 'protocol.test.js';
+const FILES = [PAGE, 'home-jobs.js', 'home-result.js', 'home-jobs-store.js', 'server.js', 'share-guest.js', 'tools/home-worker/worker.js', 'review/h10/helper-heard.js', 'catalog/shared-seeds.json',
+  'tools/home-worker/bridge.js', 'tools/home-worker/start-hidden.vbs', 'tools/home-worker/start-hidden.cmd', 'tools/home-worker/install-startup.cmd', 'tools/home-worker/uninstall-startup.cmd', 'tools/home-worker/startup-shortcut.ps1',
+  'i18n/ko-KR.json', 'i18n/ja-JP.json', 'i18n/zh-CN.json'];
+const JOBS = 'jobs.test.js', WORKER = 'worker.test.js', PG = 'jobs-pg.test.js', LINKS = 'links.test.js', SERVER = 'server.test.js', PAIRW = 'pair.test.js', PAIRPAGE = 'pairing.test.js', PROTO = 'protocol.test.js', BRIDGE = 'bridge.test.js', BRSTART = 'bridge-startup.test.js', BRPAGE = 'bridge-page.test.js';
 
 /* id, file, what the mutant breaks, [from, to] (strings, replaced once), the test that must fail */
 const M = [
@@ -56,7 +58,7 @@ const M = [
   ['C2', 'home-jobs-store.js', 'Postgres: a finished job can be finished again', ["WHERE id = $1 AND owner_id = $2 AND status IN ('claimed', 'queued')\",\n        [id, ownerId, status", "WHERE id = $1 AND owner_id = $2\",\n        [id, ownerId, status"], PG],
   ['C3', 'home-jobs-store.js', 'Postgres: the notes of any account\'s job can be read', ["WHERE id = $1 AND owner_id = $2 AND status = 'done'\", [id, ownerId]", "WHERE id = $1 AND $2::text IS NOT NULL AND status = 'done'\", [id, ownerId]"], PG],
   ['W1', 'tools/home-worker/worker.js', 'the log shows the token', ['const redact = s => {\n    let t = String(s);', 'const redact = s => {\n    return String(s);\n    let t = String(s);'], WORKER],
-  ['W2', 'tools/home-worker/worker.js', 'a rejected token is not fatal', ["if (r.status === 401) throw Object.assign(new Error('token'), { fatalToken: true });\n    if (r.status === 200 && r.body) return", "if (r.status === 200 && r.body) return"], WORKER],
+  ['W2', 'tools/home-worker/worker.js', 'a rejected token is not fatal', ["      state.rejected = true;\n      throw Object.assign(new Error('token'), { fatalToken: true });\n    }\n    if (r.status === 200 && r.body) {", "      state.rejected = true;\n    }\n    if (r.status === 200 && r.body) {"], WORKER],
   ['W3', 'tools/home-worker/worker.js', 'notes past 15 minutes are sent', ['const notes = h.notes.filter(n => n.on < cut).map(', 'const notes = h.notes.map('], WORKER],
   ['W4', 'tools/home-worker/worker.js', 'a cancel on the site does not stop the models', ["{ ctl.cancelled = true; killTree(ctl.child); }", "{ ctl.cancelled = true; }"], WORKER],
   ['W5', 'tools/home-worker/worker.js', 'the scratch folder is left behind', ['if (!cfg.keepScratch) {', 'if (false) {'], WORKER],
@@ -261,9 +263,9 @@ const M = [
   ['R10', PAGE, 'in-app browsers get no hint', [".test((typeof navigator !== 'undefined' && navigator.userAgent) || '');", ".test('');"], PAIRPAGE],
   ['R11', PAGE, 'what follows an "&" is taken for part of the code (a link with &local=1 or &utm= is "incomplete")', ["var c = amp < 0 ? rest : rest.slice(0, amp);", "var c = rest;"], PAIRPAGE],
   ['R12', PAGE, '"local=10" (or any text with local=1 in it) counts as the flag', ["('&' + rest.slice(amp + 1) + '&').indexOf('&local=1&') >= 0", "rest.indexOf('local=1') >= 0"], PAIRPAGE],
-  ['R13', PAGE, 'the PC is asked to start BEFORE the job is queued (a run that starts first finds nothing)', ["      const r = await this.homeApi('/api/jobs', { method: 'POST', body: { url: url, title: title } });\n      const launched", "      if (local) this.launchPcWorker();\n      const r = await this.homeApi('/api/jobs', { method: 'POST', body: { url: url, title: title } });\n      const launched"], PAIRPAGE],
+  ['R13', PAGE, 'the PC is asked to start BEFORE the job is queued (a run that starts first finds nothing)', ["      const r = await this.homeApi('/api/jobs', { method: 'POST', body: { url: url, title: title } });\n", "      if (local) this.launchPcWorker();\n      const r = await this.homeApi('/api/jobs', { method: 'POST', body: { url: url, title: title } });\n"], PAIRPAGE],
   ['R14', PAGE, 'every desktop browser launches pppworker:// (not only the PC\'s own)', ["const local = PcLocal.get();", "const local = true;"], PAIRPAGE],
-  ['R15', PAGE, 'the launch is made twice', ["r.job.status === 'queued' && this.launchPcWorker());", "r.job.status === 'queued' && (this.launchPcWorker(), this.launchPcWorker()));"], PAIRPAGE],
+  ['R15', PAGE, 'the launch is made twice', ["return this.launchPcWorker() ? 'protocol' : '';", "return (this.launchPcWorker(), this.launchPcWorker()) ? 'protocol' : '';"], PAIRPAGE],
   ['R16', PAGE, 'the launch carries data (the link being converted rides on pppworker://)', ["a.href = 'pppworker://run';", "a.href = 'pppworker://run?u=' + encodeURIComponent(this._yt || document.title);"], PAIRPAGE],
   ['R17', PAGE, 'the question times out after 5 seconds (it must wait for the person)', ["this.setState({ pairNote: null, pairAsk: { code: code, tag: tag,", "setTimeout(() => this.setState({ pairAsk: null }), 5000); this.setState({ pairNote: null, pairAsk: { code: code, tag: tag,"], PAIRPAGE],
   ['R18', PAGE, 'the link in its read-only field and the shown code stay when Settings is left', ["if (this.state.screen !== 'settings' && (this.state.homePairManual || this.state.homeCodeShown)) this.setState({ homePairManual: false, homeCodeShown: false });", ""], PAIRPAGE],
@@ -298,6 +300,61 @@ const M = [
   ['T1', 'home-jobs.js', 'the link\'s name is the whole id (more of the hash than 6 characters)', ["String(id).slice(-6) : null);", "String(id) : null);"], LINKS],
   ['T2', 'home-jobs.js', 'the status answer has no linkTag', [", activePollSeconds: C.activePollS, linkTag: linkTagOf(ownerId) };", ", activePollSeconds: C.activePollS };"], LINKS],
   ['T3', 'home-jobs.js', 'the link\'s name is the first 6 hex of the id (the same bytes as the hash start, a different name than the last 6)', ["String(id).slice(-6) : null);", "String(id).slice(3, 9) : null);"], LINKS],
+  /* G10b-6: the localhost bridge (bridge.js, worker.js --serve) - the security rules of the HTTP layer, the connect/run/serve logic, the Startup launcher and the page's side */
+  ['U1', 'tools/home-worker/bridge.js', 'the Host header is not checked (DNS rebinding)', ['if (!hostOk(req.headers.host)) {', 'if (false) {'], BRIDGE],
+  ['U2', 'tools/home-worker/bridge.js', 'a request with no Origin is served', ["if (typeof origin !== 'string' || !allowed.has(origin)) {", "if (typeof origin === 'string' && !allowed.has(origin)) {"], BRIDGE],
+  ['U3', 'tools/home-worker/bridge.js', 'the Origin is matched by its beginning (https://ppp.example.com.attacker.example passes)', ["if (typeof origin !== 'string' || !allowed.has(origin)) {", "if (typeof origin !== 'string' || !Array.from(allowed).some(a => origin.startsWith(a))) {"], BRIDGE],
+  ['U4', 'tools/home-worker/bridge.js', 'the answer allows every origin (Access-Control-Allow-Origin: *)', ["const cors = { 'Access-Control-Allow-Origin': origin, 'Vary': 'Origin' };", "const cors = { 'Access-Control-Allow-Origin': '*', 'Vary': 'Origin' };"], BRIDGE],
+  ['U5', 'tools/home-worker/bridge.js', 'the preflight does not answer Chrome\'s Private Network Access question', ["'Access-Control-Allow-Private-Network': 'true', ", ''], BRIDGE],
+  ['U6', 'tools/home-worker/bridge.js', 'a body may be any size', ['const MAX_BODY = 2048;', 'const MAX_BODY = 1000000000;'], BRIDGE],
+  ['U7', 'tools/home-worker/bridge.js', 'a body may have any content type (a POST with no preflight)', ["return reject({ status: 415, error: 'content-type' });", ''], BRIDGE],
+  ['U8', 'tools/home-worker/bridge.js', 'the bridge listens on every address', ["o.port == null ? DEFAULT_PORT : o.port, '127.0.0.1', () => {", "o.port == null ? DEFAULT_PORT : o.port, '0.0.0.0', () => {"], BRIDGE],
+  ['U9', 'tools/home-worker/bridge.js', '/v1/connect is not rate limited', ["if (wait('connect')) return;", ''], BRIDGE],
+  ['U10', 'tools/home-worker/bridge.js', 'the status answer carries the worker token', ['link: { has: !!cfg.token, tag:', 'link: { has: !!cfg.token, token: cfg.token, tag:'], BRIDGE],
+  ['U11', 'tools/home-worker/bridge.js', 'the log line of a connect holds the client code', ["log('Bridge: this PC is now connected to PC link ...' + tag + '.');", "log('Bridge: this PC is now connected to PC link ...' + tag + ' ' + code + '.');"], BRIDGE],
+  ['U12', 'tools/home-worker/bridge.js', 'any origin string is accepted as a test origin', ['if (TEST_ORIGIN_RE.test(String(x))) allowed.add(String(x));', 'if (true) allowed.add(String(x));'], BRIDGE],
+  ['U13', 'tools/home-worker/bridge.js', 'every press rotates the worker token, even for the link it already has (the site allows ten an hour)', ['if (cfg.token && heldCode() === code && !state.rejected) {', 'if (false) {'], BRIDGE],
+  ['U14', 'tools/home-worker/bridge.js', 'another link is connected while a conversion is running', ["if (state.job) return done(409, { ok: false, error: 'busy' });", ''], BRIDGE],
+  ['U15', 'tools/home-worker/worker.js', '"run now" ignores a run lock that another run holds', ["if (!lock.ok) return { started: false, reason: 'other-run' };", ''], BRIDGE],
+  ['U16', 'tools/home-worker/worker.js', 'the --serve loop ends when the site rejects the token (the page could not reconnect it)', ["        if (e.fatalToken) { tokenRejected(); return serve ? { sleep: 0 } : { exit: 2 }; }\n        why = ", "        if (e.fatalToken) { tokenRejected(); return { exit: 2 }; }\n        why = "], BRIDGE],
+  ['U17', 'tools/home-worker/worker.js', 'a settings file that cannot be read is overwritten', ["else throw Object.assign(new Error('the settings file cannot be read as JSON'), { code: 'EBADSETTINGS' });", 'else { raw = {}; existed = false; }'], BRIDGE],
+  ['U18', 'tools/home-worker/worker.js', 'the 401 answer for the OLD token marks the NEW link as rejected', ['if (cfg.token !== used) return { job: null, next: 5 };', ''], BRIDGE],
+  ['U19', 'tools/home-worker/bridge.js', '/v1/connect takes more keys than the code', ["if (!onlyKeys(body, ['clientCode']) || typeof body.clientCode !== 'string'", "if (typeof body.clientCode !== 'string'"], BRIDGE],
+  ['U20', 'tools/home-worker/bridge.js', 'a code may be any hex of 32 to 128 characters, in capitals too', ['const CODE_RE = /^[0-9a-f]{64}$/;', 'const CODE_RE = /^[0-9a-fA-F]{32,128}$/;'], BRIDGE],
+  ['U21', 'tools/home-worker/bridge.js', 'the Host check ignores the port', ["const hostOk = h => typeof h === 'string' && (h.toLowerCase() === '127.0.0.1:' + portNow() || h.toLowerCase() === 'localhost:' + portNow());", "const hostOk = h => typeof h === 'string' && /^(127[.]0[.]0[.]1|localhost)(:[0-9]+)?$/i.test(h);"], BRIDGE],
+  ['U22', 'tools/home-worker/bridge.js', '/v1/link gives the code although "bridgeLink": false', ['if (!d.allowLink) return null;', ''], BRIDGE],
+  ['U23', 'tools/home-worker/worker.js', 'runs can be started as fast as the page asks (no 2 s between starts)', ["if (Date.now() - state.lastRunAt < 2000) return { started: false, reason: 'too-soon' };", ''], BRIDGE],
+  ['U24', 'tools/home-worker/worker.js', 'a "run now" while a run is going is dropped (a link queued a moment after the last look waits an hour)', ["if (state.running) { state.rerun = Math.min(2, state.rerun + 1); return { started: true, queued: true }; }", "if (state.running) return { started: true, queued: true };"], BRIDGE],
+  ['U25', 'tools/home-worker/worker.js', 'the --serve loop checks the site again at once after an idle answer (faster than the site says)', ['      const w = waitFor(p.next);\n      state.nextCheckAt', '      const w = 5;\n      state.nextCheckAt'], BRIDGE],
+  ['U26', 'tools/home-worker/worker.js', 'the --serve loop polls the site with no PC link', ['if (serve && (!cfg.token || state.rejected)) {', 'if (serve && state.rejected) {'], BRIDGE],
+  ['U27', 'tools/home-worker/worker.js', 'a second --serve does not notice that the port is taken', ["if (e && e.code === 'EADDRINUSE') {", 'if (false) {'], BRIDGE],
+  ['U28', 'tools/home-worker/worker.js', 'test mode needs only the origin variable', ["env.PPP_WORKER_TEST_MODE === '1' && env.PPP_WORKER_TEST_ORIGIN ? [env.PPP_WORKER_TEST_ORIGIN] : []", 'env.PPP_WORKER_TEST_ORIGIN ? [env.PPP_WORKER_TEST_ORIGIN] : []'], BRIDGE],
+  ['U29', 'tools/home-worker/bridge.js', 'the status answer shows the bridge is shareable even without a code', ['shareable: !!(d.allowLink && code) }', 'shareable: !!d.allowLink }'], BRIDGE],
+  ['X1', 'tools/home-worker/startup-shortcut.ps1', 'install overwrites a different file that has the shortcut\'s name', ['  if ((Test-Path $link) -and -not (Test-OurLink $link)) { throw "A different file with that name is already in the Startup folder; it was not touched: $link" }\n', ''], BRSTART],
+  ['X2', 'tools/home-worker/startup-shortcut.ps1', 'uninstall removes a different file that has the shortcut\'s name', ['    if (-not (Test-OurLink $link)) { Write-Host "The file in the Startup folder is not the one install makes; it was not removed: $link"; exit 1 }\n', ''], BRSTART],
+  ['X3', 'tools/home-worker/startup-shortcut.ps1', 'uninstall stops whatever listens on the bridge port', ["    if ($p -and $p.CommandLine -match 'worker\\.js' -and $p.CommandLine -match '--serve') { return $p }", '    if ($p) { return $p }'], BRSTART],
+  ['X4', 'tools/home-worker/start-hidden.vbs', 'the launcher reads an argument', ['here = fso.GetParentFolderName(WScript.ScriptFullName)\n', 'here = fso.GetParentFolderName(WScript.ScriptFullName) & WScript.Arguments.Count\n'], BRSTART],
+  ['X5', 'tools/home-worker/start-hidden.cmd', 'the launcher passes its arguments on', ['node tools\\home-worker\\worker.js --serve --log-file >nul 2>nul\n  exit /b 0\n)\nif exist', 'node tools\\home-worker\\worker.js --serve --log-file %* >nul 2>nul\n  exit /b 0\n)\nif exist'], BRSTART],
+  ['X6', 'tools/home-worker/startup-shortcut.ps1', 'the shortcut passes more than the script', ["  $sc.Arguments = '//B //Nologo \"' + $vbs + '\"'", "  $sc.Arguments = '//B //Nologo \"' + $vbs + '\" %1'"], BRSTART],
+  ['X7', 'tools/home-worker/startup-shortcut.ps1', 'the shortcut is made in another folder than the Startup folder (the test hook is ignored)', ["$startup = if ($env:PPP_STARTUP_DIR) { $env:PPP_STARTUP_DIR } else { [Environment]::GetFolderPath('Startup') }", "$startup = [Environment]::GetFolderPath('Startup')"], BRSTART],
+  ['V1', PAGE, 'a different live link on the program is replaced without asking', ['if (workerLive && mine && !replaceOk) return this.bridgeFail(', 'if (false) return this.bridgeFail('], BRPAGE],
+  ['V2', PAGE, '"Keep as it is" connects anyway', ["bridgeAskNo: () => this.setState({ bridgeAsk: null, bridgeMsg: { kind: 'note', text: tx('Left as it was.') } }),", "bridgeAskNo: () => { this.setState({ bridgeAsk: null }); this.bridgeConnect(true); },"], BRPAGE],
+  ['V3', PAGE, 'the page looks at the program without a press (a browser that was never connected)', ['  bridgeWatch() {\n    clearTimeout(this._bridgeTimer); this._bridgeTimer = 0;', '  bridgeWatch() {\n    clearTimeout(this._bridgeTimer); this._bridgeTimer = 0; this.bridgeLook();'], BRPAGE],
+  ['V4', PAGE, 'a phone counts as the PC with the program (the desktop test is gone from on())', ['on() { return PcLocal.get() && this.marked() && !!PcLink.get(); }', 'on() { return this.marked() && !!PcLink.get(); }'], BRPAGE],
+  ['V5', PAGE, 'the status is looked at on every screen', [["if (this._dead || !PcBridge.on() || (s !== 'settings' && s !== 'upload') || document.visibilityState === 'hidden') return;", "if (this._dead || !PcBridge.on() || document.visibilityState === 'hidden') return;"], ["if (this._dead || !PcBridge.on() || (sc !== 'settings' && sc !== 'upload') || document.visibilityState === 'hidden') return;\n      await", "if (this._dead || !PcBridge.on() || document.visibilityState === 'hidden') return;\n      await"]], BRPAGE],
+  ['V6', PAGE, 'the status is looked at while the tab is hidden', ["if (this._dead || !PcBridge.on() || (sc !== 'settings' && sc !== 'upload') || document.visibilityState === 'hidden') return;\n      await", "if (this._dead || !PcBridge.on() || (sc !== 'settings' && sc !== 'upload')) return;\n      await"], BRPAGE],
+  ['V7', PAGE, 'High-quality never asks the program to run (the pppworker:// launch only)', ["    if (PcBridge.on()) {\n      const r = await PcBridge.call('POST', '/v1/run', {}, 6000);", "    if (false) {\n      const r = await PcBridge.call('POST', '/v1/run', {}, 6000);"], BRPAGE],
+  ['V8', PAGE, 'a program that did not start (another run holds the lock) is taken as started', ['r.body.ok && r.body.started === true)', 'r.body.ok)'], BRPAGE],
+  ['V9', PAGE, 'the browser is remembered as connected as soon as the program answers (even when the connect fails)', ["      const workerLive = !!(wl.has && !wl.rejected);\n      let mine", "      PcBridge.mark(true);\n      const workerLive = !!(wl.has && !wl.rejected);\n      let mine"], BRPAGE],
+  ['V10', PAGE, 'the PC code is written to the console', ["    const r = await PcBridge.call('POST', '/v1/connect', { clientCode: code }, 30000);", "    console.log('connect', code);\n    const r = await PcBridge.call('POST', '/v1/connect', { clientCode: code }, 30000);"], BRPAGE],
+  ['V11', PAGE, 'the QR code is not the pairing link', ['    const link = this.pairLink();\n    if (!link) return;\n    this._bridgeQr = qrMatrix(link);', '    const link = this.pairLink();\n    if (!link) return;\n    this._bridgeQr = qrMatrix(location.origin);'], BRPAGE],
+  ['V12', PAGE, 'the program\'s code is kept without asking the site whether it is a link', ['            if (!t.dead) {\n              if (!PcLink.set(code))', '            if (true) {\n              if (!PcLink.set(code))'], BRPAGE],
+  ['V13', PAGE, 'the worker token of a new link is kept in storage', ["    try { r = await this.homeApi('/api/pc-links', { method: 'POST', body: {}, code: null }); }\n    catch (e) { return this.bridgeError(e.message); }", "    try { r = await this.homeApi('/api/pc-links', { method: 'POST', body: {}, code: null }); try { localStorage.setItem('ppp.workertoken', r.workerToken); } catch (x) { /* none */ } }\n    catch (e) { return this.bridgeError(e.message); }"], BRPAGE],
+  ['V14', PAGE, 'a conversion that ends does not make the site\'s list be read', ['if (was && was.st && was.st.busy && !st.busy) this.homeRefresh();', ''], BRPAGE],
+  ['V15', PAGE, 'the connect body carries more than the code', ["{ clientCode: code }, 30000);", "{ clientCode: code, workerToken: 'x' }, 30000);"], BRPAGE],
+  ['V16', PAGE, 'a success does not mark this browser as the PC (ppp.pclocal.v1)', ['    PcLocal.set(true); PcBridge.mark(true); PcLink.clearPrev();', '    PcBridge.mark(true); PcLink.clearPrev();'], BRPAGE],
+  ['V17', PAGE, 'the line ignores which link the program has (always "connected")', ['const same = live && (!myTag || !/^[0-9a-f]{6}$/.test(String(wl.tag)) || wl.tag === myTag);', 'const same = live;'], BRPAGE],
+  ['V18', PAGE, 'a link that the site no longer knows (a rejected one) is asked about like a live one', ['const workerLive = !!(wl.has && !wl.rejected);\n      let mine', 'const workerLive = !!wl.has;\n      let mine'], BRPAGE],
 ];
 
 const only = process.argv.slice(2);
@@ -336,7 +393,7 @@ function run(dir, test, pgUrl) {
     child.stdout.on('data', d => { out += d; }); child.stderr.on('data', d => { out += d; });
     /* the page suite is long (it waits 21 s for a question that must not time out, and drives a browser through 270 checks): 25 minutes for it, 4 for the others; the unmutated copies are checked against the same limits first */
     let timedOut = false;
-    const t = setTimeout(() => { timedOut = true; child.kill(); }, test === PAIRPAGE ? 1500000 : 240000);
+    const t = setTimeout(() => { timedOut = true; child.kill(); }, test === PAIRPAGE || test === BRPAGE ? 1500000 : 240000);
     child.on('close', code => { clearTimeout(t); resolve({ code: code, out: out, timedOut: timedOut }); });
   });
 }
@@ -352,7 +409,8 @@ const firstFail = out => {
     /* the unmutated copy must pass, or a "killed" means nothing */
     const clean = path.join(base, 'clean'); copyTree(clean);
     const wantPage = M.some(m => (!only.length || only.indexOf(m[0]) >= 0) && m[4] === PAIRPAGE);
-    const tests = [JOBS, LINKS, SERVER, WORKER, PAIRW, PROTO].concat(wantPage ? [PAIRPAGE] : []).concat(runPg ? [PG] : []);
+    const wantBrPage = M.some(m => (!only.length || only.indexOf(m[0]) >= 0) && m[4] === BRPAGE);
+    const tests = [JOBS, LINKS, SERVER, WORKER, PAIRW, PROTO, BRIDGE, BRSTART].concat(wantPage ? [PAIRPAGE] : []).concat(wantBrPage ? [BRPAGE] : []).concat(runPg ? [PG] : []);
     for (const t of tests) {
       const r = await run(clean, t);
       if (r.code !== 0 || r.timedOut) { console.error('The unmutated copy ' + (r.timedOut ? 'was cut off (too slow) in ' : 'fails ') + t + ':\n' + r.out.slice(-1500)); process.exit(2); }
@@ -379,7 +437,7 @@ const firstFail = out => {
       results.push({ id: m[0], what: m[2], test: m[4], status: r.code !== 0 || r.timedOut ? 'killed' : 'SURVIVED', by: r.timedOut ? 'hangs: cut off by the runner' : r.code !== 0 ? firstFail(r.out) : '' });
     };
     /* the Postgres ones share a database: one at a time; the others in fours */
-    const par = todo.filter(m => m[4] !== PG && m[4] !== PAIRPAGE), seq = todo.filter(m => m[4] === PG), pages = todo.filter(m => m[4] === PAIRPAGE);
+    const par = todo.filter(m => m[4] !== PG && m[4] !== PAIRPAGE && m[4] !== BRPAGE), seq = todo.filter(m => m[4] === PG), pages = todo.filter(m => m[4] === PAIRPAGE || m[4] === BRPAGE);
     for (let i = 0; i < par.length; i += 4) await Promise.all(par.slice(i, i + 4).map(work));
     /* the page's ones are browser runs (a Chrome and a server each): three at a time (MUT_PAGE_PAR) */
     const pagePar = Math.max(1, +process.env.MUT_PAGE_PAR || 3);
