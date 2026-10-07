@@ -5,25 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="google" content="notranslate">
 <script>
-/* G10b-3: the pairing link. https://<this site>/#pc=<the 64 hex characters of a PC link's code> pairs the device that opens it (docs/GOALS/G10B_HOME_WORKER.md section 14).
+/* G10b-3 / G10b-4: the pairing link. https://<this site>/#pc=<the 64 hex characters of a PC link's code>[&local=1] pairs the device that opens it (docs/GOALS/G10B_HOME_WORKER.md sections 14 and 15).
    This runs before every other script of the page, so the code is taken off the address bar (history.replaceState: the path, the query and other parameters stay, and no history
    entry keeps the code) before the page has made a single request. A URL fragment is never sent to a server, and nothing here navigates. The code is not written anywhere: it is kept in this
-   closure until the page asks for it, once (PPP_PAIR.take). A fragment that is not "#pc=" is left alone; "#pc=" followed by anything that is not a code is taken off too, and reported as not valid. */
+   closure until the page asks for it, once (PPP_PAIR.take). The code is what stands between "#pc=" and the first "&" (what follows an "&" is not part of it: "&local=1" means "this browser is on
+   the PC that runs the worker", anything else is ignored); a code that is not exactly 64 hex is reported as not valid. A fragment that is not "#pc=" is left alone.
+   live: the link arrived AFTER the page had started (a hashchange: a link opened in this tab, or an address another window - window.opener - sets on this one); the page never takes such a link
+   without asking. A link that was in the address when the page was opened is not live. */
 (function () {
-  var pending = null, listener = null;
+  var pending = null, listener = null, started = false;
   function look() {
     var h = '';
     try { h = String(location.hash || ''); } catch (e) { return; }
     if (h.slice(0, 4) !== '#pc=') return;
-    var c = h.slice(4);
+    var rest = h.slice(4), amp = rest.indexOf('&');
+    var c = amp < 0 ? rest : rest.slice(0, amp);
+    var local = amp >= 0 && ('&' + rest.slice(amp + 1) + '&').indexOf('&local=1&') >= 0;
     try { c = decodeURIComponent(c); } catch (e) { /* as it is */ }
     c = c.replace(/[\s-]+/g, '').toLowerCase();
     try { history.replaceState(history.state, '', location.href.replace(/#.*$/, '')); } catch (e) { /* the address stays as it is; the pairing goes on */ }
-    pending = /^[0-9a-f]{64}$/.test(c) ? { code: c } : { bad: true };
+    pending = /^[0-9a-f]{64}$/.test(c) ? { code: c, local: local, live: started } : { bad: true, live: started };
     if (listener) listener();
   }
   window.PPP_PAIR = { has: function () { return !!pending; }, take: function () { var p = pending; pending = null; return p; }, listen: function (fn) { listener = fn; } };
   look();
+  started = true;
   window.addEventListener('hashchange', look);
 })();
 </script>
@@ -1016,12 +1022,23 @@
                 <div style="font-size: 12.5px; color: var(--bad); margin-top: 8px;">{{ ytError }}</div>
               </sc-if>
               <div style="font-size: 11.5px; color: var(--ink3); margin-top: 8px;">{{ helperNote }}</div>
+              <sc-if value="{{ hasHomeTag }}" hint-placeholder-val="{{ false }}">
+                <div data-home-tag data-no-i18n="1" style="font-size: 11.5px; line-height: 1.5; color: var(--ink2); margin-top: 6px;">{{ homeTagCaption }}</div>
+              </sc-if>
               <sc-if value="{{ showHomePc }}" hint-placeholder-val="{{ false }}">
                 <div data-home-note style="font-size: 11.5px; line-height: 1.5; color: var(--ink3); margin-top: 6px;">{{ homePcNote }}</div>
               </sc-if>
               <sc-if value="{{ hasHomeJobs }}" hint-placeholder-val="{{ false }}">
                 <div data-home-jobs style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px;">
                   <div style="font-size: 12px; font-weight: 600; color: var(--ink2);">{{ homeJobsTitle }}</div>
+                  <sc-if value="{{ hasHomeAsked }}" hint-placeholder-val="{{ false }}">
+                    <div data-home-asked style="font-size: 12px; line-height: 1.5; color: var(--ink3);">{{ homeAskedNote }}</div>
+                  </sc-if>
+                  <sc-if value="{{ hasHomeStart }}" hint-placeholder-val="{{ false }}">
+                    <div>
+                      <button onClick="{{ startHomeNow }}" data-home-start-now style="padding: 6px 11px; border-radius: 9px; border: 1px solid var(--accent-2); background: var(--accent-3); color: var(--accent); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">{{ homeStartLabel }}</button>
+                    </div>
+                  </sc-if>
                   <sc-if value="{{ homeStale }}" hint-placeholder-val="{{ false }}">
                     <div data-home-stale style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--ink3);">
                       <span>{{ homeStaleNote }}</span>
@@ -2361,6 +2378,14 @@
                   </sc-if>
                 </div>
               </sc-if>
+              <sc-if value="{{ showHomeLocal }}" hint-placeholder-val="{{ false }}">
+                <div data-home-local-box style="display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line);">
+                  <div>
+                    <button type="button" onClick="{{ toggleHomeLocal }}" data-home-local aria-pressed="{{ homeLocalPressed }}" style="{{ homeLocalStyle }}">{{ homeLocalLabel }}</button>
+                  </div>
+                  <div data-home-local-note style="font-size: 12px; line-height: 1.5; color: var(--ink3);">{{ homeLocalNote }}</div>
+                </div>
+              </sc-if>
               <div>
                 <button onClick="{{ toggleHomeMore }}" data-home-more style="{{ btnStyle }}">{{ homeMoreLabel }}</button>
               </div>
@@ -2747,9 +2772,28 @@
   </sc-if>
 
   <sc-if value="{{ hasPairNote }}" hint-placeholder-val="{{ false }}">
-    <div data-pair-note role="status" style="{{ pairNoteStyle }}">
-      <div style="flex: 1; min-width: 0;">{{ pairNoteText }}</div>
-      <button onClick="{{ closePairNote }}" data-pair-note-close style="flex: none; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12px; cursor: pointer;">{{ closePairLabel }}</button>
+    <div data-pair-note data-pair-kind="{{ pairKind }}" role="status" style="{{ pairNoteStyle }}">
+      <div data-pair-body style="flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+        <div data-pair-text>{{ pairNoteText }}</div>
+        <sc-if value="{{ hasPairState }}" hint-placeholder-val="{{ false }}">
+          <div data-pair-state style="font-size: 12px; color: var(--ink3);">{{ pairStateText }}</div>
+        </sc-if>
+        <sc-if value="{{ hasPairHint }}" hint-placeholder-val="{{ false }}">
+          <div data-pair-hint style="font-size: 12px; color: var(--bad);">{{ pairHintText }}</div>
+        </sc-if>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; flex: none; max-width: 100%;">
+        <sc-if value="{{ pairAskOn }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ pairAskYes }}" data-pair-ask-yes style="padding: 6px 12px; border-radius: 8px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">{{ pairAskYesLabel }}</button>
+          <button onClick="{{ pairAskNo }}" data-pair-ask-no style="padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">{{ pairAskNoLabel }}</button>
+        </sc-if>
+        <sc-if value="{{ pairUndoOn }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ pairUndo }}" data-pair-undo style="padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">{{ pairUndoLabel }}</button>
+        </sc-if>
+        <sc-if value="{{ pairCloseOn }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ closePairNote }}" data-pair-note-close style="padding: 4px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12px; cursor: pointer;">{{ closePairLabel }}</button>
+        </sc-if>
+      </div>
     </div>
   </sc-if>
   <div style="{{ toastStyle }}">{{ toast }}</div>
@@ -12130,7 +12174,7 @@ const PcLink = (() => {
   return {
     valid: valid,
     /* what a person pastes: spaces, line breaks and dashes are dropped, capitals are lowered; a whole pairing link (https://site/#pc=...) gives its code */
-    normalize: s => { let t = String(s == null ? '' : s); const i = t.indexOf('#pc='); if (i >= 0) { t = t.slice(i + 4); try { t = decodeURIComponent(t); } catch (e) { /* as it is */ } } return t.replace(/[\s-]+/g, '').toLowerCase(); },
+    normalize: s => { let t = String(s == null ? '' : s); const i = t.indexOf('#pc='); if (i >= 0) { t = t.slice(i + 4); const a = t.indexOf('&'); if (a >= 0) t = t.slice(0, a); try { t = decodeURIComponent(t); } catch (e) { /* as it is */ } } return t.replace(/[\s-]+/g, '').toLowerCase(); },
     /* the code this browser has, or null */
     get() { try { const v = JSON.parse(localStorage.getItem(LS) || 'null'); return v && valid(v.code) ? v.code : null; } catch (e) { return null; } },
     /* keep a code; true when it can be read back */
@@ -12142,7 +12186,36 @@ const PcLink = (() => {
       const t = Date.now();
       if (can === null || t - canAt > 10000) { can = probe(); canAt = t; }
       return can;
-    }
+    },
+    /* G10b-4: the link this device had before a pairing link replaced it, kept (one step back) so that "Disconnect" in the banner can put it back; cleared once the person has used the new link, removed
+       it or forgotten it, and by Disconnect itself */
+    prev() { try { const v = JSON.parse(localStorage.getItem('ppp.pclink.prev.v1') || 'null'); return v && valid(v.code) ? v.code : null; } catch (e) { return null; } },
+    setPrev(code) { try { if (code && valid(code)) localStorage.setItem('ppp.pclink.prev.v1', JSON.stringify({ v: 1, code: code })); else localStorage.removeItem('ppp.pclink.prev.v1'); } catch (e) { return false; } return true; },
+    clearPrev() { try { localStorage.removeItem('ppp.pclink.prev.v1'); } catch (e) { /* nothing to remove */ } }
+  };
+})();
+
+/* G10b-4: is THIS browser on the PC that runs the home worker? Then "High-quality (my PC)" starts the worker at once (the pppworker:// link, registered once in Windows by tools/home-worker/register-protocol.cmd).
+   localStorage ppp.pclocal.v1 = '1' says so. It is set by the pairing link of the PC itself (#pc=<code>&local=1: worker.js --pair opens that one in the PC's browser; the link it copies for the phone
+   never has it) once the pairing is accepted, and by the switch in Settings; it is never set by anything else. It counts only in a desktop browser (no mobile user agent, no touch-first screen):
+   a phone cannot run the worker, so the flag is ignored there and the switch is not offered. */
+const PcLocal = (() => {
+  const LS = 'ppp.pclocal.v1';
+  const desktop = () => {
+    try {
+      const ua = navigator.userAgent || '';
+      if (/Android|iPhone|iPad|iPod|Mobile|Windows Phone|CriOS|FxiOS|Silk|Kindle/i.test(ua)) return false;
+      if (navigator.userAgentData && navigator.userAgentData.mobile) return false;
+      if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return false;
+      if (window.matchMedia && matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches) return false;
+      return true;
+    } catch (e) { return false; }
+  };
+  return {
+    desktop: desktop,
+    raw() { try { return localStorage.getItem(LS) === '1'; } catch (e) { return false; } },
+    get() { return desktop() && this.raw(); },
+    set(on) { try { if (on) localStorage.setItem(LS, '1'); else localStorage.removeItem(LS); } catch (e) { return false; } return this.raw() === !!on; }
   };
 })();
 
@@ -12381,6 +12454,8 @@ class Component extends DCLogic {
       this._shownScreen = this.state.screen;
       if (this.state.sidebarOpen) this.setState({ sidebarOpen: false });
       if (this.state.screen === 'upload' || this.state.screen === 'settings') this.homeRefresh(this.state.screen === 'settings');   /* G10b-1 */
+      /* G10b-4: the link in its read-only field (the copy fallback) and the shown code are put away when Settings is left */
+      if (this.state.screen !== 'settings' && (this.state.homePairManual || this.state.homeCodeShown)) this.setState({ homePairManual: false, homeCodeShown: false });
       /* what others have shared changes while you are away from it */
       if (this.state.screen === 'shared') this.loadShared(!!this.state.sharedList);
       if (this.state.screen === 'review') this.warmSingleModules();
@@ -14522,13 +14597,20 @@ class Component extends DCLogic {
     if (!url) return this.setState({ ytError: tx('Paste a YouTube link first.') });
     if (!Import.youtubeId(url)) return this.setState({ ytError: tx('That is not a link to a YouTube video.') });
     if (S.homeBusy) return;
-    this.setState({ homeBusy: true, ytError: null });
+    /* G10b-4: a device that IS the PC (the switch in Settings, or the PC's own pairing link) asks the PC to start at once, right after the job is queued - not before: a run that starts first finds nothing */
+    const local = PcLocal.get();
+    this.setState({ homeBusy: true, ytError: null, homeAsked: 0 });
     try {
-      const title = (await Import.youtubeTitle(url).catch(() => null)) || '';
+      /* the browser lets a page launch a registered scheme from a click it has seen; the title is waited for at most 2.5 s on a local device so the launch comes while the click is fresh */
+      const titleP = Import.youtubeTitle(url).catch(() => null);
+      const title = (local ? await Promise.race([titleP, new Promise(res => setTimeout(() => res(null), 2500))]) : await titleP) || '';
       const r = await this.homeApi('/api/jobs', { method: 'POST', body: { url: url, title: title } });
-      this.say(r.existing ? tx('That link is already waiting for your PC.') : tx('Sent to your PC. It will be converted when your PC checks in.'));
-      this.setState({ homeBusy: false });
+      const launched = !!(local && r.job && r.job.status === 'queued' && this.launchPcWorker());
+      PcLink.clearPrev();         /* using the link is the person saying it is theirs: nothing to go back to */
+      this.say(launched ? tx('Asked this PC to start. If nothing happens, run the desktop shortcut.') : r.existing ? tx('That link is already waiting for your PC.') : tx('Sent to your PC. It will be converted when your PC checks in.'));
+      this.setState({ homeBusy: false, homeAsked: launched ? Date.now() : 0 });
       await this.homeRefresh();
+      if (launched) this.watchSoon();
     } catch (e) { this.setState({ homeBusy: false, ytError: e.message }); }
   }
   /* the notes the PC heard, as the page's heard-notes object: the accepted notes only (no pedal, no beats: the helper's own beats made v2 write bars
@@ -14572,6 +14654,7 @@ class Component extends DCLogic {
     try {
       const r = await this.homeApi('/api/pc-links', { method: 'POST', body: {}, code: null });
       const stored = PcLink.set(r.clientCode);
+      PcLink.clearPrev();
       this.setState({ homeBusy: false, homeNew: { token: r.workerToken, code: r.clientCode, rotated: false, notStored: !stored }, homeCopied: '', homeCodeShown: false, homeArm: null });
       this.homeRefresh();
     } catch (e) { this.setState({ homeBusy: false, homeError: e.message, homeOff: !!e.off || this.state.homeOff }); }
@@ -14596,9 +14679,9 @@ class Component extends DCLogic {
       /* 401 "bad-code": it is gone already, which is what was asked for; anything else is shown and the link stays */
       if (!(e.status === 401 && e.code === 'bad-code')) return this.afterLinkError(e);
     }
-    PcLink.clear();
+    PcLink.clear(); PcLink.clearPrev(); PcLocal.set(false);
     clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};
-    this.setState({ homeBusy: false, homeWorker: null, homeJobs: [], homeNew: null, homeCodeShown: false, homeStale: false });
+    this.setState({ homeBusy: false, homeWorker: null, homeJobs: [], homeNew: null, homeCodeShown: false, homeStale: false, homeAsked: 0 });
     this.say(tx('PC link removed. Your PC can no longer fetch conversions.'));
   }
   afterLinkError(e) {
@@ -14607,9 +14690,9 @@ class Component extends DCLogic {
   }
   /* this device stops using the link (the link itself is not touched: with its code it can be used again, here or elsewhere) */
   forgetPcLink() {
-    PcLink.clear();
+    PcLink.clear(); PcLink.clearPrev(); PcLocal.set(false);
     clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};
-    this.setState({ homeWorker: null, homeJobs: [], homeNew: null, homeArm: null, homeCodeShown: false, homeStale: false, homeError: '' });
+    this.setState({ homeWorker: null, homeJobs: [], homeNew: null, homeArm: null, homeCodeShown: false, homeStale: false, homeError: '', homeAsked: 0 });
     this.say(tx('This device no longer uses that PC link. It still works: keep its code to use it again.'));
   }
   /* use the link of another device: the code is typed or pasted (spaces, dashes and capitals are forgiven), checked with the site, and kept */
@@ -14622,6 +14705,7 @@ class Component extends DCLogic {
       await this.homeApi('/api/worker/status', { code: code });
     } catch (e) { return this.setState({ homeBusy: false, homeError: e.message }); }
     if (!PcLink.set(code)) return this.setState({ homeBusy: false, homeError: tx('This browser could not keep the PC link.') });
+    PcLink.clearPrev();
     this.setState({ homeBusy: false, homeCodeInput: '', homeGone: false, homeNew: null, homeCodeShown: false });
     this.say(tx('This device now uses that PC link.'));
     this.homeRefresh();
@@ -14643,32 +14727,112 @@ class Component extends DCLogic {
   shareHomeLink(link) {
     try { const p = navigator.share({ url: link }); if (p && p.catch) p.catch(() => { /* cancelled */ }); } catch (e) { /* no share sheet here */ }
   }
-  /* ---- G10b-3: pairing by link. The head script has already taken "#pc=..." off the address bar and kept the code (PPP_PAIR.take gives it once). The code is checked with the site
-     (GET /api/worker/status with it in X-PPP-PC: 200 means the link exists), and only then kept. Nothing is kept for a code the site does not know, or where the browser cannot keep it.
-     The notice says which. ---- */
-  pairNote(text, bad) {
+  /* ---- G10b-3 / G10b-4: pairing by link. The head script has already taken "#pc=..." off the address bar and kept the code (PPP_PAIR.take gives it once). The code is checked with the site
+     (GET /api/worker/status with it in X-PPP-PC: 200 means the link exists; the answer carries the link's NAME, linkTag: 6 characters that are not secret). What happens next depends on what this
+     device already has (docs/GOALS/G10B_HOME_WORKER.md section 15.3 - a link must not silently take a device away from the person's own PC link):
+       - no link here, and the link was in the address when the page opened -> connected at once (zero extra taps). The banner says the link's name, what the PC is doing, and offers Disconnect;
+       - the same link as the stored one -> nothing changes; the banner says so;
+       - a DIFFERENT link than the stored one, or ANY link that arrives while the page is already open (a hashchange; another window setting this one's address) -> NOTHING is stored: a banner with no timeout
+         names both links and asks. The code waits in memory only, until Connect is pressed; Keep / Cancel drops it. A replaced link is kept one step back (ppp.pclink.prev.v1) for Disconnect.
+     "&local=1" (this browser is on the PC that runs the worker) is applied only once the pairing is accepted. The banner never shows a character of the code, only the name. ---- */
+  pairNote(text, bad, extra) {
     clearTimeout(this._pairTimer);
-    this.setState({ pairNote: { text: text, bad: !!bad } });
-    this._pairTimer = setTimeout(() => { if (!this._dead) this.setState({ pairNote: null }); }, 20000);
+    const x = extra || {};
+    this.setState({ pairAsk: null, pairNote: { text: text, bad: !!bad, state: x.state || '', undo: x.undo || null, hint: !!this._pairHint } });
+    this._pairTimer = setTimeout(() => { if (!this._dead) this.setState({ pairNote: null }); }, x.undo ? 60000 : 20000);
   }
+  /* the name the site gave the link (6 hex), or dashes when it gave none */
+  pairTagOf(w) { const t = w && w.linkTag; return typeof t === 'string' && /^[0-9a-f]{6}$/.test(t) ? t : '------'; }
   async pairFromLink() {
     const p = window.PPP_PAIR && window.PPP_PAIR.take();
     if (!p) return;
+    const seq = this._pairSeq = (this._pairSeq || 0) + 1;
+    /* in-app browsers (KakaoTalk, Naver, Instagram, Facebook, Line) keep their own storage: said in the banner, pairing goes on */
+    this._pairHint = /KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\//.test((typeof navigator !== 'undefined' && navigator.userAgent) || '');
+    clearTimeout(this._pairTimer);
+    if (this.state.pairAsk || this.state.pairNote) this.setState({ pairAsk: null, pairNote: null });     /* the latest link wins */
     if (!p.code) return this.pairNote(tx('This link is incomplete. Copy it again from the device that made the connection.'), true);
     const code = p.code, old = PcLink.get();
     if (!PcLink.supported()) return this.pairNote(tx('This browser cannot keep the connection (a private window, or blocked storage). Open the link in a normal window.'), true);
-    const seq = this._pairSeq = (this._pairSeq || 0) + 1;
-    try { await this.homeApi('/api/worker/status', { code: code }); }
+    let r;
+    try { r = await this.homeApi('/api/worker/status', { code: code }); }
     catch (e) {
       if (this._dead || seq !== this._pairSeq) return;
       return this.pairNote(e.status === 401 ? tx('That connection code does not match. Copy a new link from the device that made the connection.') : tx('The connection could not be checked right now. Open the link again in a minute.'), true);
     }
     if (this._dead || seq !== this._pairSeq) return;
+    const W = r.worker || {}, tag = this.pairTagOf(W);
+    if (old === code) {
+      if (p.local && PcLocal.desktop()) PcLocal.set(true);
+      return this.pairNote(tx('This device already uses PC link …{{tag}}.', { tag: tag }), false, { state: this.homeStateText(W) });
+    }
+    /* the link this device uses now: its name, for the question (a link that the site no longer knows is not a link: nothing is replaced) */
+    let oldTag = '', oldLive = false;
+    if (old) {
+      try { const o = await this.homeApi('/api/worker/status', { code: old }); oldLive = true; oldTag = this.pairTagOf(o.worker); }
+      catch (e) { oldLive = !(e.status === 401 && e.code === 'bad-code'); oldTag = '------'; }
+      if (this._dead || seq !== this._pairSeq) return;
+    }
+    if (oldLive || p.live) {
+      this.setState({ pairNote: null, pairAsk: { code: code, tag: tag, worker: W, old: oldLive ? old : null, oldTag: oldTag, local: !!p.local, hint: this._pairHint } });
+      return;
+    }
+    this.pairAccept(code, tag, W, p.local, null);
+  }
+  /* the pairing is accepted (at once, or by the tap): keep the code, put the replaced link one step back, apply &local=1, say what happened */
+  pairAccept(code, tag, W, local, prevCode) {
+    const wasLocal = PcLocal.raw();
     if (!PcLink.set(code)) return this.pairNote(tx('This browser cannot keep the connection (a private window, or blocked storage). Open the link in a normal window.'), true);
+    PcLink.setPrev(prevCode || null);
+    if (local && PcLocal.desktop()) PcLocal.set(true);
     clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};
-    this.setState({ homeWorker: null, homeJobs: [], homeNew: null, homeArm: null, homeCodeShown: false, homeGone: false, homeError: '', homeOff: false, homeStale: false, homePairManual: false });
-    this.pairNote(old && old !== code ? tx('Your PC is connected. This device used another PC link before; it now uses this new one.') : tx('Your PC is connected. Now paste a YouTube link and the "High-quality (my PC)" button will show.'));
+    this.setState({ homeWorker: null, homeJobs: [], homeNew: null, homeArm: null, homeCodeShown: false, homeGone: false, homeError: '', homeOff: false, homeStale: false, homePairManual: false, homeAsked: 0 });
+    this.pairNote(tx('This device now uses PC link …{{tag}}. If you did not make that link, press Disconnect.', { tag: tag }), false, { state: this.homeStateText(W), undo: { wasLocal: wasLocal, replaced: !!prevCode } });
     this.homeRefresh();
+  }
+  /* Disconnect: the link this device had before comes back (or, if it had none, it has none again), and so does the "this is the PC" switch */
+  pairUndo() {
+    const n = this.state.pairNote, u = n && n.undo;
+    const prev = PcLink.prev();
+    if (prev) PcLink.set(prev); else PcLink.clear();
+    PcLink.clearPrev();
+    if (u) PcLocal.set(!!u.wasLocal);
+    clearTimeout(this._pairTimer); clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};
+    this.setState({ pairNote: null, pairAsk: null, homeWorker: null, homeJobs: [], homeNew: null, homeArm: null, homeCodeShown: false, homePairManual: false, homeStale: false, homeAsked: 0 });
+    this.homeRefresh();
+  }
+  /* "ago" in the person's language, and the one line about the PC that the card, the banner and the pairing question share */
+  homeAgo(at) {
+    const m = Math.max(0, Math.round((Date.now() - new Date(at).getTime()) / 60000));
+    return m < 1 ? tx('just now') : m < 60 ? tx('{{n}} min ago', { n: m }) : m < 48 * 60 ? tx('{{n}} h ago', { n: Math.round(m / 60) }) : tx('{{n}} days ago', { n: Math.round(m / 1440) });
+  }
+  homeStateText(W) {
+    if (!W) return '';
+    const seen = W.lastSeenAt ? tx('last seen {{ago}}', { ago: this.homeAgo(W.lastSeenAt) }) : '';
+    return (W.alive ? tx('PC connected') : tx('Waiting for your PC')) + (seen ? ' · ' + seen : '');
+  }
+  /* G10b-4: ask the browser to open pppworker://run (registered in Windows by tools/home-worker/register-protocol.cmd): a click on a hidden link, made from inside the click that asked for the conversion.
+     The address carries no data. Chrome and Edge let a page that the person has clicked on hand a registered scheme to Windows (first time: their own "Open PPP worker?" question; and never to a page
+     nobody has clicked). If nothing is registered the browser does nothing visible (a console line) - which is why the page never says "started", only "asked". */
+  launchPcWorker() {
+    try {
+      const a = document.createElement('a');
+      a.href = 'pppworker://run'; a.rel = 'noopener'; a.style.display = 'none'; a.setAttribute('data-pc-launch', '');
+      document.body.appendChild(a); a.click(); a.remove();
+      return true;
+    } catch (e) { return false; }
+  }
+  /* after asking this PC to start, look at the queue again soon: a worker that started claims the job in seconds ("Converting on your PC" then shows) */
+  watchSoon() {
+    clearTimeout(this._homeTimer);
+    this._homeTimer = setTimeout(() => this.homeRefresh(false, true), 8000);
+  }
+  /* "Start now": the same launch again, from its own click (a conversion that is still waiting) */
+  startHomeNow() {
+    if (!PcLocal.get() || !(this.state.homeJobs || []).some(j => j.status === 'queued')) return;
+    const launched = this.launchPcWorker();
+    this.setState({ homeAsked: launched ? Date.now() : 0 });
+    if (launched) { this.say(tx('Asked this PC to start. If nothing happens, run the desktop shortcut.')); this.watchSoon(); }
   }
   /* what the Add screen and the Settings card show */
   homeView(S) {
@@ -14699,24 +14863,42 @@ class Component extends DCLogic {
       N.rotated ? tx('Check it: node tools/home-worker/worker.js --check') : dot(tx('4. Convert what is waiting: node tools/home-worker/worker.js --once'))
     ].filter(x => x !== '').join('\n') : '';
     const arm = S.homeArm;
-    /* "5 min ago", in the person's language, from the PC's last contact */
-    const ago = at => {
-      const m = Math.max(0, Math.round((Date.now() - new Date(at).getTime()) / 60000));
-      return m < 1 ? tx('just now') : m < 60 ? tx('{{n}} min ago', { n: m }) : m < 48 * 60 ? tx('{{n}} h ago', { n: Math.round(m / 60) }) : tx('{{n}} days ago', { n: Math.round(m / 1440) });
-    };
-    const lastSeen = linked && W && W.lastSeenAt ? tx('last seen {{ago}}', { ago: ago(W.lastSeenAt) }) : '';
+    /* the name of this device's link (6 characters, not secret): the same ones in the pairing banner, here, under the Add button and in worker.js --pair */
+    const myTag = linked && W && typeof W.linkTag === 'string' && /^[0-9a-f]{6}$/.test(W.linkTag) ? W.linkTag : '';
+    /* G10b-4: this browser is on the PC that runs the worker (and the desktop switch is on) */
+    const local = !!(linked && PcLocal.get());
     const pairCode = linked ? PcLink.get() : (N && N.code) || '';
     const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
-    const warnLink = tx('Anyone with this link can send conversions to your PC: send it only to yourself.');
+    const warnLink = tx('Anyone with this link can send conversions to your PC, read their results, replace the PC token and remove the link: send it only to yourself.');
+    const ask = S.pairAsk, pnote = S.pairNote;
     return {
-      /* the pairing notice (G10b-3), above everything, also above the sign-in gate */
-      hasPairNote: !!S.pairNote, pairNoteText: S.pairNote ? S.pairNote.text : '', closePairNote: () => { clearTimeout(this._pairTimer); this.setState({ pairNote: null }); }, closePairLabel: tx('Close'),
-      pairNoteStyle: 'position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:90;box-sizing:border-box;width:min(560px,calc(100vw - 32px));display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:var(--shadow);font-size:13px;line-height:1.5;border:1px solid ' + (S.pairNote && S.pairNote.bad ? 'var(--bad)' : 'var(--good)') + ';',
+      /* the pairing banner (G10b-3, G10b-4), above everything, also above the sign-in gate: a notice (20 s, or 60 s with Disconnect), or the question that stays until it is answered */
+      hasPairNote: !!(pnote || ask),
+      pairKind: ask ? 'ask' : pnote ? (pnote.bad ? 'bad' : pnote.undo ? 'paired' : 'note') : '',
+      pairNoteText: ask
+        ? (ask.old ? tx('Connect this device to PC link …{{id}}? It would replace the PC link …{{old}} that this device uses now. Do this only if you made the link you opened yourself.', { id: ask.tag, old: ask.oldTag })
+          : tx('A link on this page asks to connect this device to PC link …{{id}}. Do this only if you made that link yourself.', { id: ask.tag }))
+        : pnote ? pnote.text : '',
+      hasPairState: !!(ask ? ask.worker : pnote && pnote.state), pairStateText: ask ? this.homeStateText(ask.worker) : pnote ? pnote.state : '',
+      hasPairHint: !!((ask && ask.hint) || (pnote && pnote.hint)), pairHintText: tx('This browser keeps its own data. Open the site in Chrome or Safari to connect.'),
+      pairAskOn: !!ask, pairAskYesLabel: ask ? tx('Connect …{{id}}', { id: ask.tag }) : '', pairAskNoLabel: ask ? (ask.old ? tx('Keep …{{id}}', { id: ask.oldTag }) : tx('Cancel')) : '',
+      pairAskYes: () => { const a = this.state.pairAsk; if (a) this.pairAccept(a.code, a.tag, a.worker, a.local, a.old); },
+      pairAskNo: () => { this.setState({ pairAsk: null }); },
+      pairUndoOn: !!(pnote && pnote.undo), pairUndoLabel: tx('Disconnect'), pairUndo: () => this.pairUndo(),
+      pairCloseOn: !!(pnote && !ask), closePairNote: () => { clearTimeout(this._pairTimer); this.setState({ pairNote: null }); }, closePairLabel: tx('Close'),
+      pairNoteStyle: 'position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:90;box-sizing:border-box;width:min(560px,calc(100vw - 32px));display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:var(--shadow);font-size:13px;line-height:1.5;border:1px solid ' + (ask ? 'var(--accent)' : pnote && pnote.bad ? 'var(--bad)' : 'var(--good)') + ';',
       showHomePc: !!(linked && W && W.everSeen && S.transcriptionMode !== 'arrange'),
       homePcLabel: S.homeBusy ? tx('Sending…') : tx('High-quality (my PC)'),
       addYoutubeHome: () => this.addYoutubeHome(),
-      homePcNote: tx('High-quality conversion runs on your own PC. It checks for new links {{every}} and must be switched on; once it starts, a song takes a few minutes. To start now, run the desktop shortcut.', { every: every((W && W.idlePollSeconds) || 3600) })
+      hasHomeTag: !!(linked && W && W.everSeen && S.transcriptionMode !== 'arrange' && myTag), homeTagCaption: myTag ? tx('Sends to PC link …{{tag}}', { tag: myTag }) : '',
+      homeLocal: local,
+      /* a phone waits for the PC's next check (the PC says how often); the PC itself is asked to start at once */
+      homePcNote: local
+        ? tx('High-quality conversion runs on your own PC. This button asks this PC to start at once; a song takes a few minutes. If nothing starts, run the desktop shortcut.')
+        : tx('High-quality conversion runs on your own PC. It checks for new links {{every}} and must be switched on; once it starts, a song takes a few minutes. To start now, run the desktop shortcut.', { every: every((W && W.idlePollSeconds) || 3600) })
         + (W && !W.alive ? ' ' + tx('Your PC has not checked in lately, so the conversion will wait until it does.') : ''),
+      hasHomeStart: !!(local && jobs.some(j => j.status === 'queued')), homeStartLabel: tx('Start now'), startHomeNow: () => this.startHomeNow(),
+      hasHomeAsked: !!(local && S.homeAsked && jobs.some(j => j.status === 'queued')), homeAskedNote: tx('Asked this PC to start. If nothing happens, run the desktop shortcut.'),
       hasHomeJobs: !!(linked && jobs.length),
       homeStale: !!S.homeStale, homeStaleNote: tx('Not checking any more, to spare the server. Press Check again.'), homeCheckAgainLabel: tx('Check again'),
       checkHomeAgain: () => this.homeRefresh(),
@@ -14735,7 +14917,7 @@ class Component extends DCLogic {
       homeSettingsNote: tx('No account or sign-in is needed: make a PC link here, then put its token on your PC.'),
       homeLinked: linked, homeNoLink: !linked,
       /* one line: "PC connected · last seen 5 min ago" or "Waiting for your PC" (· last seen ...) */
-      homeStatusLine: !linked || !W ? '' : (W.alive ? tx('PC connected') : tx('Waiting for your PC')) + (lastSeen ? ' · ' + lastSeen : ''),
+      homeStatusLine: !linked || !W ? '' : this.homeStateText(W) + (myTag ? ' · ' + tx('PC link …{{tag}}', { tag: myTag }) : ''),
       hasHomeStatus: !!(linked && W && (W.alive || W.everSeen || W.hasToken)),
       makePcLink: () => this.makePcLink(),
       homeMakeLabel: S.homeBusy ? tx('Sending…') : tx('Create my PC link'),
@@ -14765,6 +14947,10 @@ class Component extends DCLogic {
       copyPairLink: () => this.copyHomeText(this.pairLink(), 'pair', '[data-home-pair-link]', true),
       sharePairLink: () => this.shareHomeLink(this.pairLink()),
       homePairManualNote: tx('Could not copy by itself. The link is selected: copy it by hand.'),
+      /* G10b-4: "this browser is on the PC that runs the worker" - offered in a desktop browser only */
+      showHomeLocal: !!(linked && PcLocal.desktop()), homeLocalLabel: tx('Start at once from this PC'), homeLocalPressed: PcLocal.get() ? 'true' : 'false', homeLocalStyle: this.chip(PcLocal.get()),
+      homeLocalNote: tx('Needs a one-time Windows setup: double-click tools/home-worker/register-protocol.cmd (or run node tools/home-worker/worker.js --register-protocol). After that, "High-quality (my PC)" pressed in this browser starts the conversion right away. Turn this on only on the PC that runs the worker.'),
+      toggleHomeLocal: () => { PcLocal.set(!PcLocal.raw()); this.setState({ homeLocalTick: (this.state.homeLocalTick || 0) + 1, homeAsked: 0 }); },
       homeMoreOpen: !!S.homeMore, homeMoreLabel: S.homeMore ? tx('Hide') : tx('More'), toggleHomeMore: () => this.setState({ homeMore: !S.homeMore }),
       /* a link on this device */
       homeCodeShown: !!(linked && S.homeCodeShown), homeCodeValue: linked && S.homeCodeShown ? PcLink.get() : '',
