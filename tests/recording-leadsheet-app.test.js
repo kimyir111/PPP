@@ -30,6 +30,10 @@ const E = require('./realize/app-single-extract.js');
 const ONLY = process.env.LS_ONLY ? new RegExp(process.env.LS_ONLY) : null;
 const want = n => !ONLY || ONLY.test(n);
 const KEY = 'ppp.recordingArrange.v1';
+/* the page's own default (its one line, RECORDING_ARRANGE_DEFAULT): the sections that need the lead sheet ask for it as a person who pressed the chip would (the device remembers it), so that the flip of the default
+   changes this test in one place (the 'defaults' section's pin) and nowhere else; the 'defaults' section is the one that looks at the default itself */
+const DEFAULT = /^const RECORDING_ARRANGE_DEFAULT = '(\w+)';$/m.exec(fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8').replace(/\r\n/g, '\n'))[1];
+const LEAD = { [KEY]: 'leadsheet' };
 const LABEL = 'Arrange from a lead sheet';
 const ON_LINE = 'On (the default): a recording is arranged from its melody and chords. The melody stays one line and an easy accompaniment is written under it. Turn it off to thin out the recording\'s own notes instead.';
 const OFF_LINE = 'Off: a recording\'s own notes are thinned out to fit the level. Turn it on to arrange from its melody and chords instead.';
@@ -51,6 +55,7 @@ const toSongs = async page => { await page.evaluate(() => window.PPP.app.go('son
 
 /* a fresh page with the saved song, v2's files NOT loaded: import the cover, accept, reload (what a saved v2 song is when it is opened later) */
 async function savedSong(browser, cover, o) {
+  o = Object.assign({}, o, { store: Object.assign({}, LEAD, o && o.store) });
   const p = await openPage(browser, o);
   await addChecker(p);
   await importHeard(p, cover);
@@ -131,7 +136,8 @@ const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i])
       const p0 = await openPage(browser);
       const mode = p => p.evaluate(() => window.PPP.recordingArrange);
       const stored = p => p.evaluate(k => localStorage.getItem(k), KEY);
-      ok('a fresh page is leadsheet (the default), nothing stored, loading writes nothing', (await mode(p0)) === 'leadsheet' && (await stored(p0)) === null);
+      ok('THE PIN of the user\'s decision (2026-10-07): the page\'s default is leadsheet. To flip it back change the one line RECORDING_ARRANGE_DEFAULT and this check', DEFAULT === 'leadsheet');
+      ok('a fresh page holds the page\'s default (' + DEFAULT + '), nothing stored, loading writes nothing', (await mode(p0)) === DEFAULT && (await stored(p0)) === null);
       await sleep(3500);
       const idle = p0.__rec.requests.map(u => u.split('?')[0]);
       ok('a fresh page asks for no file of rec/ (not v2\'s 17, not rec/leadsheet.js) however long it stays idle', idle.filter(u => /^\/rec\//.test(u)).length === 0, idle.filter(u => /^\/rec\//.test(u)).join(' '));
@@ -148,9 +154,9 @@ const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i])
       ok('leadsheet is remembered too (the choice made is the choice kept)', (await mode(p0)) === 'leadsheet' && (await stored(p0)) === 'leadsheet');
       for (const bad of ['typo', null, true, 'Reduce', 'v2', '']) {
         await p0.evaluate(v => { window.PPP.recordingArrange = 'reduce'; window.PPP.recordingArrange = v; }, bad);
-        if (!((await mode(p0)) === 'leadsheet' && (await stored(p0)) === null)) ok('a value that is no choice (' + JSON.stringify(bad) + '): the default, the remembered choice forgotten', false, (await mode(p0)) + ' ' + (await stored(p0)));
+        if (!((await mode(p0)) === DEFAULT && (await stored(p0)) === null)) ok('a value that is no choice (' + JSON.stringify(bad) + '): the default, the remembered choice forgotten', false, (await mode(p0)) + ' ' + (await stored(p0)));
       }
-      ok('a value that is no choice (typo, null, true, "Reduce", "v2", ""): the default comes back and the remembered choice is forgotten', (await mode(p0)) === 'leadsheet' && (await stored(p0)) === null);
+      ok('a value that is no choice (typo, null, true, "Reduce", "v2", ""): the default comes back and the remembered choice is forgotten', (await mode(p0)) === DEFAULT && (await stored(p0)) === null);
       await p0.close();
       const q1 = await openPage(browser, { query: '?recordingArrange=reduce' });
       ok('?recordingArrange=reduce in the address is reduce for that visit and is not remembered', (await mode(q1)) === 'reduce' && (await stored(q1)) === null);
@@ -162,7 +168,7 @@ const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i])
       ok('an unknown value in the address has no say: a remembered reduce stands', (await mode(q3)) === 'reduce');
       await q3.close();
       const q4 = await openPage(browser, { store: { [KEY]: 'garbage' } });
-      ok('a remembered value that is neither is no choice: the default', (await mode(q4)) === 'leadsheet');
+      ok('a remembered value that is neither is no choice: the default', (await mode(q4)) === DEFAULT);
       ok('no page or console error', clean(q4), errs(q4));
       await q4.close();
     }
@@ -341,7 +347,7 @@ const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i])
         await sleep(600);
         return page.evaluate(() => { const S = window.PPP.app.state; return { arrangement: S.importSource.arrangement, status: S.arrangementStatus, notes: S.score.notes.filter(n => !n.rest).length, composer: S.score.composer }; });
       };
-      const pr = await openPage(browser);
+      const pr = await openPage(browser, { store: LEAD });
       await importHeard(pr, COVERS.sc0);
       await pr.waitForFunction(() => !!document.querySelector('[data-arrangement] [data-single-note-option]'), { timeout: 30000 });
       const cr = await pr.evaluate(() => { const b = document.querySelector('[data-recording-arrange-row="review"] [data-recording-arrange-option]'); const p = b && b.parentElement.querySelector('p'); return b ? { text: b.innerText.trim(), pressed: b.getAttribute('aria-pressed'), hint: p && p.innerText.trim() } : null; });
@@ -361,7 +367,7 @@ const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i])
       ok('no page or console error', clean(pr), errs(pr));
       await pr.close();
       /* the review screen of the six-sharp cover: the relaxed words */
-      const ps = await openPage(browser);
+      const ps = await openPage(browser, { store: LEAD });
       await importHeard(ps, COVERS.sc6);
       await ps.waitForFunction(() => !!document.querySelector('[data-arrangement] [data-single-note-option]'), { timeout: 30000 });
       const a3 = await apply(ps, 'beginner');
@@ -400,7 +406,7 @@ const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i])
       ok('no page or console error', clean(p), errs(p));
       await p.close();
       /* a "Full song" import is an arrangement already (written by the classic method): its review screen has no lead-sheet chip, and Apply arrangement does not ask for the lead sheet */
-      const pf = await openPage(browser);
+      const pf = await openPage(browser, { store: LEAD });
       await pf.evaluate(() => window.PPP.app.setState({ transcriptionMode: 'arrange' }));
       await importHeard(pf, COVERS.sc0);
       await sleep(600);

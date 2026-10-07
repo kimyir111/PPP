@@ -71,10 +71,17 @@ function harness(answers, opt) {
   return Object.assign({ log }, make({ arrangeSingleNote, loadRecordingModules, loadLeadsheetModule, mode: opt.mode, window }));
 }
 
-test('PPP.recordingArrange: the default is one constant and it says leadsheet; the choice, the address and the remembered value layer as PPP.recording\'s do', () => {
+/* the page's own default, read from its one line: every other check of this file (and of tests/recording-leadsheet-app.test.js) is written for either value, so the flip is that line and the pin below */
+const D = /^const RECORDING_ARRANGE_DEFAULT = '(\w+)';$/m.exec(html)[1];
+
+test('THE PIN of the user\'s decision (2026-10-07): the default is leadsheet. To flip it back put \'reduce\' on the one line of RECORDING_ARRANGE_DEFAULT in the page and change this check; nothing else needs to change', () => {
   const lines = html.match(/^const RECORDING_ARRANGE_DEFAULT = .*$/gm) || [];
   assert.deepEqual(lines, ["const RECORDING_ARRANGE_DEFAULT = 'leadsheet';"], 'one line, the whole flip');
-  assert.equal((html.match(/RECORDING_ARRANGE_DEFAULT/g) || []).length >= 4, true);
+  assert.equal(D, 'leadsheet');
+  assert.equal((html.match(/RECORDING_ARRANGE_DEFAULT/g) || []).length >= 4, true, 'the constant is what the mode, the setter and the reset use');
+});
+
+test('PPP.recordingArrange: the default is one constant; the choice, the address and the remembered value layer as PPP.recording\'s do (whichever the default is)', () => {
   /* the mode's own code, run with a fake store and address */
   const a = html.indexOf('const RECORDING_ARRANGE_KEY'), b = html.indexOf('const _recLoaded');
   assert.ok(a > 0 && b > a);
@@ -87,25 +94,25 @@ test('PPP.recordingArrange: the default is one constant and it says leadsheet; t
     return { m, store };
   };
   const K = 'ppp.recordingArrange.v1';
-  assert.equal(open().m.DEFAULT, 'leadsheet');
-  assert.equal(open().m.mode, 'leadsheet', 'a fresh page');
+  assert.equal(open().m.DEFAULT, D);
+  assert.equal(open().m.mode, D, 'a fresh page');
   assert.equal(open({ [K]: 'reduce' }).m.mode, 'reduce', 'a remembered reduce');
   assert.equal(open({ [K]: 'leadsheet' }).m.mode, 'leadsheet');
-  ['bogus', '', 'LEADSHEET', 'true', 'v2'].forEach(v => assert.equal(open({ [K]: v }).m.mode, 'leadsheet', 'a corrupt remembered value is ignored: ' + v));
+  ['bogus', '', 'LEADSHEET', 'true', 'v2'].forEach(v => assert.equal(open({ [K]: v }).m.mode, D, 'a corrupt remembered value is ignored: ' + v));
   assert.equal(open({}, '?recordingArrange=reduce').m.mode, 'reduce', 'the address, this visit');
   assert.equal(open({ [K]: 'reduce' }, '?recordingArrange=leadsheet').m.mode, 'leadsheet', 'the address wins over the remembered choice');
   assert.equal(open({ [K]: 'reduce' }, '?recordingArrange=bogus').m.mode, 'reduce', 'an unknown address value has no say');
   assert.equal(open({ [K]: 'reduce' }, '?recordingArrange=').m.mode, 'reduce');
   const o = open({}, '?recordingArrange=reduce');
   assert.equal(K in o.store, false, 'the address is never stored');
-  assert.equal(open(null, null, true).m.mode, 'leadsheet', 'no storage: the default');
+  assert.equal(open(null, null, true).m.mode, D, 'no storage: the default');
   /* the setter */
   const s = open();
   assert.equal(s.m.set('reduce'), 'reduce'); assert.equal(s.store[K], 'reduce', 'a choice is remembered'); assert.equal(s.m.mode, 'reduce');
   assert.equal(s.m.set('leadsheet'), 'leadsheet'); assert.equal(s.store[K], 'leadsheet', 'and so is the other (PPP.recording writes the choice it makes)');
   assert.equal(s.m.set('reduce'), 'reduce');
-  assert.equal(s.m.set('typo'), 'leadsheet', 'a value that is no choice: the default'); assert.equal(K in s.store, false, 'and the remembered choice is forgotten');
-  assert.equal(s.m.set(null), 'leadsheet'); assert.equal(s.m.set(true), 'leadsheet'); assert.equal(s.m.set('Reduce'), 'leadsheet');
+  assert.equal(s.m.set('typo'), D, 'a value that is no choice: the default'); assert.equal(K in s.store, false, 'and the remembered choice is forgotten');
+  assert.equal(s.m.set(null), D); assert.equal(s.m.set(true), D); assert.equal(s.m.set('Reduce'), D);
   assert.doesNotThrow(() => open(null, null, true).m.set('reduce'), 'an unwritable store does not throw');
   assert.equal(open(null, null, true).m.set('reduce'), 'reduce', 'and the choice holds for the tab');
 });
