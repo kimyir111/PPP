@@ -1512,3 +1512,5 @@ store.ready().then(() => {
   console.error('Store failed to start', err);
   process.exit(1);
 });
+
+// throwaway
