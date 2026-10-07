@@ -457,7 +457,7 @@
     "{{name}} added.": "已添加 {{name}}。",
     "{{title}} — demo library entry. Import its MusicXML to practise it.": "{{title}} — 示例曲子。导入它的 MusicXML 再练习。",
     "No practice data yet": "还没有练习记录",
-    "Play it once at 75% so PPP can find your weak spots": "用 75% 速度弹一遍，让 PPP 找出薄弱点",
+    "Play it once at full tempo so PPP can find your weak spots": "用原速弹一遍，让 PPP 找出薄弱点",
     "PPP has not heard you play this yet.": "PPP 还没听过你弹这段。",
     "Everything you have played is solid": "已经弹过的地方都很稳",
     "Learn the next passage at 75% tempo": "用 75% 速度学下一段",
