@@ -22,6 +22,18 @@ const jobOfLink = (S, name) => Array.from(S.svc._state.jobs.values()).filter(j =
 const queue = (S, name, id) => S.as(name).post('/api/jobs', { url: WATCH(id || 'aaaaaaaaaaa'), title: 'A piece' });
 /* a conversion of the link that the PC has finished (40 notes): queued, claimed by the link's worker token, result posted */
 const finished = async (S, name, id, n) => { const q = (await queue(S, name, id)).body.job; const g = (await S.worker(S.token(name)).post('/api/worker/claim', { once: true })).body.job; await S.worker(S.token(name)).post('/api/worker/jobs/' + g.id + '/result', goodResult(n || 40)); return q; };
+/* a POST whose body arrives in two parts (the first 8 characters now, the rest after delayMs): a request that waits for its body while other things happen */
+const slowPost = (S, code, p, bodyText, delayMs) => new Promise((resolve, reject) => {
+  const r = L.http.request({ host: '127.0.0.1', port: S.port, method: 'POST', path: p, agent: false,
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(bodyText), 'X-PPP-PC': code } }, res => {
+    const chunks = [];
+    res.on('data', c => chunks.push(c));
+    res.on('end', () => { const text = Buffer.concat(chunks).toString('utf8'); let body = null; try { body = JSON.parse(text); } catch (e) { body = null; } resolve({ status: res.statusCode, body: body, text: text }); });
+  });
+  r.on('error', reject);
+  r.write(bodyText.slice(0, 8));
+  setTimeout(() => r.end(bodyText.slice(8)), delayMs);
+});
 
 async function main() {
   heading('making a link, with no sign-in');
@@ -528,15 +540,23 @@ async function main() {
     } finally { await S.close(); }
   }
   {
-    /* (d) a request of a link that ran out in the purge it triggered writes nothing and is told the link is not valid */
+    /* (d) a request whose link runs out while it waits for its body: the purge the request triggers removes the link; it writes nothing and is told the link is not valid */
     const S = await L.startService({ users: ['P'] });
     try {
-      await S.as('P').get('/api/jobs');
-      S.advance(15 * DAY);
-      const r = await queue(S, 'P', 'purgeinreq1');
-      ok('a link made 15 days ago whose PC never connected, asking for a conversion: the purge it triggers removes it, and the request is 401 "bad-code" - not a 201 for a row nobody owns, and not even a write for it', r.status === 401 && r.body.code === 'bad-code' && (await S.inner.loadAll()).jobs.length === 0 && S.svc._state.jobs.size === 0 && !S.store.calls.insertJob, r.status + ' ' + r.text);
+      const asking = slowPost(S, S.code('P'), '/api/jobs', JSON.stringify({ url: WATCH('purgeinreq1') }), 300);
+      await L.sleep(100);
+      S.advance(15 * DAY);                                           /* the body is still on its way; the link has now been unused for 15 days, its PC never connected, nothing queued */
+      const r = await asking;
+      ok('a link whose PC never connected and that nothing has used for 15 days, whose request was still waiting for its body: the purge the request triggers removes it, and the request is 401 "bad-code" - not a 201 for a row nobody owns, and not even a write for it', r.status === 401 && r.body.code === 'bad-code' && (await S.inner.loadAll()).jobs.length === 0 && S.svc._state.jobs.size === 0 && !S.store.calls.insertJob, r.status + ' ' + r.text);
       ok('and the hourly budgets it took were given back', (await S.makeLink('P2')) && (await queue(S, 'P2', 'purgeinreq2')).status === 201);
     } finally { await S.close(); }
+    /* a request is a use: it renews the link BEFORE the purge it triggers looks at it, so a link past 14 days that has not been purged yet is served, and kept */
+    const S2 = await L.startService({ users: ['P3'] });
+    try {
+      S2.advance(15 * DAY);
+      const r = await queue(S2, 'P3', 'purgeinreq3');
+      ok('a link nobody used for 15 days (its PC never connected) that has not been purged yet is used by this request: served (201) and kept, not purged under it', r.status === 201 && S2.svc._state.links.has(S2.linkId('P3')) && (await S2.inner.loadAll()).jobs.length === 1, r.status + ' ' + r.text.slice(0, 80));
+    } finally { await S2.close(); }
   }
   {
     /* (e) the queue is re-read (a claim that found the memory behind) while a link is being made: the link must not be lost */
@@ -573,18 +593,6 @@ async function main() {
 
   heading('the queue is read again while a request waits: its link is looked up again, and does not look dead (the review: one 401 "bad-code" after a lost claim)');
   {
-    /* a request whose body arrives in two parts: the first part is sent, the queue is read again (another request after forgetAll(): every record is a new object), then the rest comes */
-    const slowPost = (S, code, p, bodyText, delayMs) => new Promise((resolve, reject) => {
-      const r = L.http.request({ host: '127.0.0.1', port: S.port, method: 'POST', path: p, agent: false,
-        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(bodyText), 'X-PPP-PC': code } }, res => {
-        const chunks = [];
-        res.on('data', c => chunks.push(c));
-        res.on('end', () => { const text = Buffer.concat(chunks).toString('utf8'); let body = null; try { body = JSON.parse(text); } catch (e) { body = null; } resolve({ status: res.statusCode, body: body, text: text }); });
-      });
-      r.on('error', reject);
-      r.write(bodyText.slice(0, 8));
-      setTimeout(() => r.end(bodyText.slice(8)), delayMs);
-    });
     const S = await L.startService({ users: ['rr'] });
     try {
       const waiting = slowPost(S, S.code('rr'), '/api/jobs', JSON.stringify({ url: WATCH('rereadjob01'), title: 'A piece' }), 300);
@@ -728,6 +736,37 @@ async function main() {
       await S.svc._state.purge(S.clock.t + 1000);
       ok('with nothing left to purge no DELETE is run', (S.store.calls.deleteLinks || 0) === before);
     } finally { await S.close(); }
+  }
+  {
+    /* the review: a link the page uses every day while the PC is not set up yet is not "abandoned"; the 14 days count from its last use */
+    const dir = L.tmpDir();
+    const { fileJobStore } = L.mod('home-jobs-store.js');
+    const A = await L.startService({ users: ['daily', 'gone'], store: fileJobStore(dir) });
+    let creds;
+    try {
+      for (let d = 1; d <= 20; d++) { A.advance(DAY); await A.as('daily').get('/api/jobs'); }
+      await A.svc._state.purge(A.clock.t);
+      const have = n => A.svc._state.links.has(A.linkId(n));
+      ok('day 20: the link whose page was opened every day (its PC never connected, nothing queued) is still there; the one nobody opened since day 0 was purged at 14 days', have('daily') && !have('gone') && (await A.as('daily').get('/api/jobs')).status === 200 && (await A.as('gone').get('/api/jobs')).status === 401);
+      ok('the last use was written to the store at most once per request, a day apart: 20 writes in 20 days', (A.store.calls.touchLink || 0) === 20, (A.store.calls.touchLink || 0) + '');
+      const row = (await A.inner.loadAll()).links.find(l => l.id === A.linkId('daily'));
+      ok('and what was written is the time of THAT request (day 20), not of the one before it', !!row && row.lastUsedAt === A.clock.t, row && (row.lastUsedAt - A.clock.t) + '');
+      const w0 = A.store.calls.touchLink || 0;
+      for (let i = 0; i < 10; i++) { A.advance(60 * 1000); await A.as('daily').get('/api/jobs'); }
+      ok('and ten more requests within ten minutes write nothing: the last use is written at most every 6 hours per link, not at every request', (A.store.calls.touchLink || 0) === w0, (A.store.calls.touchLink || 0) + ' ' + w0);
+      creds = A.creds();
+    } finally { await A.close(); }
+    const B = await L.startService({ resume: creds, store: fileJobStore(dir) });
+    try {
+      B.advance(20 * DAY + 3600 * 1000);                                           /* a restart a little after day 20 */
+      ok('after a restart the link is still there (the day-20 use was in the store): the read of the next boot does not purge it', (await B.as('daily').get('/api/jobs')).status === 200 && (await B.inner.loadAll()).links.length === 1);
+      B.advance(13 * DAY);
+      await B.svc._state.purge(B.clock.t);
+      ok('13 days after its last use it is still there', B.svc._state.links.has(B.linkId('daily')));
+      B.advance(36 * 3600 * 1000);
+      await B.svc._state.purge(B.clock.t);
+      ok('more than 14 days after its last use (its PC never connected, nothing queued) it is purged, memory and store', !B.svc._state.links.has(B.linkId('daily')) && (await B.inner.loadAll()).links.length === 0);
+    } finally { await B.close(); L.rmDir(dir); }
   }
   {
     /* the purge at the boot read: dead links are not served and not loaded */

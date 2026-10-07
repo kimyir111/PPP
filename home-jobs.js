@@ -103,8 +103,9 @@ const LIMITS = {
   /* at MAX_LINKS the site does not shut its door: it gives up the link that has been unused the longest among those nobody would miss (the PC never connected, no conversion),
      provided nothing has used it for this long - a person who has just made a link is still setting up their PC */
   LINK_EVICT_MIN_IDLE_MS: 1 * HOUR,
-  /* a link nobody used (the page, or its PC) for this long is purged; one whose PC never connected and that holds no job, after the shorter time; a revoked
-     one is kept this long (so that making and removing links does not get round the per-address limits) and then purged */
+  /* a link nobody used (the page, or its PC) for this long is purged; one whose PC never connected and that holds no job, after the shorter time - counted from the last
+     use of the page, not from the day it was made (a person may use the page every day before the PC is set up); a revoked one is kept this long (so that making and removing
+     links does not get round the per-address limits) and then purged */
   LINK_UNUSED_TTL_MS: 60 * DAY,
   LINK_NEVER_CONNECTED_TTL_MS: 14 * DAY,
   LINK_REVOKED_KEEP_MS: 2 * DAY,
@@ -479,13 +480,16 @@ function create(deps) {
   }
 
   /* A link that ran out. Not used by anybody (the page, its PC) for LINK_UNUSED_TTL_MS; or one whose PC never connected and that holds no job, after the shorter
-     LINK_NEVER_CONNECTED_TTL_MS (the ones made and abandoned); or revoked longer ago than LINK_REVOKED_KEEP_MS. `seen` is each link's newest token last-seen time. */
+     LINK_NEVER_CONNECTED_TTL_MS since the page last used it, or since it was made if it never did (the ones made and abandoned); or revoked longer ago than
+     LINK_REVOKED_KEEP_MS. `seen` is each link's newest token last-seen time. The page's use is in memory at once and written to the database at most every LINK_TOUCH_MS
+     (persistLink), which is exact enough for days. */
   function linkExpired(l, t, seen) {
     if (l.writing) return false;
     if (l.revokedAt) return t - l.revokedAt > L.LINK_REVOKED_KEEP_MS;
     const heard = Math.max(l.lastWorkerAt || 0, seen.get(l.id) || 0);
-    if (t - Math.max(l.createdAt, l.lastUsedAt, heard) > L.LINK_UNUSED_TTL_MS) return true;
-    if (!heard && t - l.createdAt > L.LINK_NEVER_CONNECTED_TTL_MS) { for (const j of jobs.values()) if (j.ownerId === l.id) return false; return true; }
+    const used = Math.max(l.createdAt, l.lastUsedAt);
+    if (t - Math.max(used, heard) > L.LINK_UNUSED_TTL_MS) return true;
+    if (!heard && t - used > L.LINK_NEVER_CONNECTED_TTL_MS) { for (const j of jobs.values()) if (j.ownerId === l.id) return false; return true; }
     return false;
   }
 
