@@ -5,6 +5,8 @@ tests/.shots/
 !/tools/home-worker/
 # ... but its settings hold the person's token
 /tools/home-worker/worker.config.json
+# the PC link's client code (a master secret) for pair.cmd - never committed
+/tools/home-worker/pc-code.txt
 /tools/home-worker/*.local.json
 # a tools/ folder deeper down (tests/*/tools, ...) is ignored as before; the ones below that are source say so
 */**/tools/

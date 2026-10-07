@@ -86,6 +86,8 @@ const errs = page => JSON.stringify(page.__rec.pageErrors.concat(page.__rec.cons
 const goAdd = async page => { await page.evaluate(() => window.PPP.app.go('upload')()); await page.waitForSelector('[data-youtube-url]', { timeout: 10000 }); await sleep(500); };
 const goSettings = async page => { await page.evaluate(() => window.PPP.app.go('settings')()); await sleep(900); };
 const has = (page, sel) => page.evaluate(q => !!document.querySelector(q), sel);
+/* G10b-3: the card shows ONE button; Show my PC code, New PC token, Remove link, Forget on this device and the paste form are under "More" */
+const openMore = async page => { if (!(await page.evaluate(() => !!document.querySelector('[data-home-more-box]')))) { await page.evaluate(() => document.querySelector('[data-home-more]').click()); await sleep(300); } };
 const text = (page, sel) => page.evaluate(q => { const e = document.querySelector(q); return e ? (e.innerText || '').trim() : null; }, sel);
 const val = (page, sel) => page.evaluate(q => { const e = document.querySelector(q); return e ? e.value : null; }, sel);
 const click = (page, sel) => page.evaluate(q => document.querySelector(q).click(), sel);
@@ -131,6 +133,7 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
       await old.close();
     } else console.log('  - git history of b7f9fb5 not available: the identical-card check is skipped');
     await goSettings(guest);
+    await openMore(guest);
     ok('Settings has the Connect my PC card for everybody, with no sign-in: the button to make a link, the way to use one from another device', await has(guest, '[data-home-settings]') && /Connect my PC/.test(await text(guest, '[data-home-settings]'))
       && /Create my PC link/.test(await text(guest, '[data-home-link-make]')) && (await has(guest, '[data-home-use-input]')) && (await has(guest, '[data-home-use-go]')) && /Use a PC link from another device/.test(await text(guest, '[data-home-use]')));
     ok('it says that no account or sign-in is needed, and offers none of the link\'s buttons yet', /No account or sign-in is needed/.test(await text(guest, '[data-home-no-account]')) && !(await has(guest, '[data-home-link]')) && !(await has(guest, '[data-home-new]')));
@@ -156,27 +159,30 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
     await goSettings(pg);
     await click(pg, '[data-home-link-make]');
     await pg.waitForSelector('[data-home-new]', { timeout: 8000 });
-    const token = await val(pg, '[data-home-token-value]'), code = await val(pg, '[data-home-code-value]');
+    const token = await val(pg, '[data-home-token-value]'), pairLink = await val(pg, '[data-home-pair-link-new]'), code = (pairLink || '').split('#pc=')[1];
     codeA = code;
     const post = pg.__rec.posts.filter(p => p.path === '/api/pc-links')[0];
     ok('Create my PC link POSTs /api/pc-links with an empty body and no PC code (there is none yet)', !!post && post.method === 'POST' && JSON.parse(post.body || '{}') && Object.keys(JSON.parse(post.body || '{}')).length === 0
       && (await pg.evaluate(() => window.__fetches.find(f => f.u === '/api/pc-links')).then(f => !!f && !('X-PPP-PC' in f.headers))));
-    ok('the PC token (ppw_...) and the PC code (64 hex) are shown, each with a Copy button', /^ppw_[A-Za-z0-9_-]{12}_[A-Za-z0-9_-]{43}$/.test(token) && /^[0-9a-f]{64}$/.test(code) && /Copy/.test(await text(pg, '[data-home-token-copy]')) && /Copy/.test(await text(pg, '[data-home-code-copy]')), token.slice(0, 8));
-    ok('an explicit warning: keep these secret - anyone with the code can queue conversions for your PC', /Keep these secret/.test(await text(pg, '[data-home-warning]')) && /anyone who has the code can queue conversions for your PC/.test(await text(pg, '[data-home-warning]')));
+    ok('the PC token (ppw_...) and the pairing link (this site, #pc=, the 64 hex of the code) are shown, each with a Copy button', /^ppw_[A-Za-z0-9_-]{12}_[A-Za-z0-9_-]{43}$/.test(token) && /^[0-9a-f]{64}$/.test(code) && pairLink === new URL(base).origin + '/#pc=' + code && /Copy/.test(await text(pg, '[data-home-token-copy]')) && /Copy/.test(await text(pg, '[data-home-pair-copy-new]')), token.slice(0, 8));
+    ok('an explicit warning under the link: anyone with this link can send conversions to your PC - send it only to yourself', /Anyone with this link can send conversions to your PC: send it only to yourself/.test(await text(pg, '[data-home-warning]')));
     const steps = await text(pg, '[data-home-steps]');
     ok('and the exact lines for the PC: the file to copy, the siteUrl of this site, this token, the --check and --once commands', /worker\.config\.example\.json/.test(steps) && steps.indexOf('"siteUrl": "' + new URL(base).origin + '"') > 0 && steps.indexOf('"token": "' + token + '"') > 0 && /worker\.js --check/.test(steps) && /worker\.js --once/.test(steps), JSON.stringify({ base: base, tokenLen: token.length, a: /worker\.config\.example\.json/.test(steps), b: steps.indexOf('"siteUrl": "' + new URL(base).origin + '"'), c: steps.indexOf('"token": "' + token + '"') }));
     ok('this browser keeps the code in localStorage (ppp.pclink.v1) - and only the code, not the token', JSON.parse(await stored(pg)).code === code && (await stored(pg)).indexOf(token) < 0 && (await pg.evaluate(() => Object.keys(localStorage).filter(k => localStorage.getItem(k).indexOf('ppw_') >= 0).length)) === 0);
     ok('no cookie is involved: every call to the queue was made with credentials "omit", and the code goes in X-PPP-PC', await pg.evaluate(() => window.__fetches.every(f => f.credentials === 'omit') && window.__fetches.some(f => f.headers && f.headers['X-PPP-PC'])));
-    ok('after the link is made the card shows its status (waiting for the PC) and the link\'s buttons; "Create my PC link" and the other-device form are gone', /Waiting for your PC to connect for the first time/.test(await text(pg, '[data-home-status-line]')) && (await has(pg, '[data-home-link]')) && !(await has(pg, '[data-home-link-make]')) && !(await has(pg, '[data-home-use]')));
-    ok('the card also says how many of the buttons there are: show my code, new token, remove link, forget on this device', ['[data-home-code-show]', '[data-home-token-rotate]', '[data-home-link-remove]', '[data-home-link-forget]'].every(sel => true) && await pg.evaluate(() => ['[data-home-code-show]', '[data-home-token-rotate]', '[data-home-link-remove]', '[data-home-link-forget]'].every(s => !!document.querySelector(s))));
+    ok('after the link is made the card shows its status (waiting for the PC); "Create my PC link" is gone, and the other buttons are under More (closed)', /^Waiting for your PC$/.test(await text(pg, '[data-home-status-line]')) && !(await has(pg, '[data-home-link-make]')) && !(await has(pg, '[data-home-use]')) && !(await has(pg, '[data-home-link]')));
+    await openMore(pg);
+    ok('under More: show my code, new token, remove link, forget on this device, and the paste form', await pg.evaluate(() => ['[data-home-code-show]', '[data-home-token-rotate]', '[data-home-link-remove]', '[data-home-link-forget]', '[data-home-use-input]'].every(s => !!document.querySelector(s))));
+    await pg.evaluate(() => document.querySelector('[data-home-more]').click()); await sleep(300);
     await click(pg, '[data-home-new-done]');
     await sleep(300);
     ok('"I have saved them" puts the secrets away', !(await has(pg, '[data-home-new]')));
     await pg.reload({ waitUntil: 'networkidle2' });
     await pg.waitForFunction(() => !!(window.PPP && window.PPP.app), { timeout: 20000 });
     await goSettings(pg);
-    ok('after a reload the link is still this device\'s (localStorage) and the token is NOT shown again (it is kept nowhere on this device)', (await has(pg, '[data-home-link]')) && !(await has(pg, '[data-home-new]')) && JSON.parse(await stored(pg)).code === code && !(await text(pg, '[data-home-settings]')).includes(token.slice(0, 20)));
-    ok('Show my PC code reveals the code (to type on another device) with a Copy button and the warning; Hide takes it away again', await (async () => {
+    ok('after a reload the link is still this device\'s (localStorage: the one button is there) and the token is NOT shown again (it is kept nowhere on this device)', (await has(pg, '[data-home-pair-copy]')) && !(await has(pg, '[data-home-new]')) && JSON.parse(await stored(pg)).code === code && !(await text(pg, '[data-home-settings]')).includes(token.slice(0, 20)));
+    ok('Show my PC code (under More) reveals the code (to type on another device) with a Copy button and the warning; Hide takes it away again', await (async () => {
+      await openMore(pg);
       await click(pg, '[data-home-code-show]'); await sleep(300);
       const shown = (await val(pg, '[data-home-code-shown]')) === code && /Type or paste this code on another device/.test(await text(pg, '[data-home-code-box]')) && /Keep these secret/.test(await text(pg, '[data-home-code-box]')) && /Hide my PC code/.test(await text(pg, '[data-home-code-show]'));
       await click(pg, '[data-home-code-show]'); await sleep(300);
@@ -207,7 +213,7 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
     ok('the interval is said in the words the site\'s setting calls for: 15 minutes, half an hour, an hour, 3 hours, a day', await pg.evaluate(() => { const f = secs => window.PPP.app.homeView({ homeWorker: { everSeen: true, alive: true, idlePollSeconds: secs }, homeJobs: [] }).homePcNote; return /about every 15 minutes/.test(f(900)) && /about every 30 minutes/.test(f(1800)) && /about once an hour/.test(f(3600)) && /about every 3 hours/.test(f(10800)) && /about every 24 hours/.test(f(86400)); }));
 
     await goSettings(pg); await refresh(pg);
-    ok('Settings now says the PC is connected, and when it was last seen (the time of its first check)', /Your PC is connected/.test(await text(pg, '[data-home-status-line]')) && /Last seen/.test(await text(pg, '[data-home-last-seen]')) && /20\d\d|\d{1,2}:\d\d/.test(await text(pg, '[data-home-last-seen]')), await text(pg, '[data-home-last-seen]'));
+    ok('Settings now says the PC is connected, and when it was last seen (the time of its first check): one line', /^PC connected · last seen (just now|\d+ min ago)$/.test(await text(pg, '[data-home-status-line]')) && !(await has(pg, '[data-home-last-seen]')), await text(pg, '[data-home-status-line]'));
     await goAdd(pg);
 
     heading('asking for a conversion');
@@ -284,7 +290,8 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
     {
       const dev2 = await openPage(browser, base);
       await goSettings(dev2);
-      ok('it starts with nothing: the Create button and the form', await has(dev2, '[data-home-link-make]') && await has(dev2, '[data-home-use-input]') && !(await has(dev2, '[data-home-link]')));
+      await openMore(dev2);
+      ok('it starts with nothing: the Create button and the form (under More)', await has(dev2, '[data-home-link-make]') && await has(dev2, '[data-home-use-input]') && !(await has(dev2, '[data-home-link]')));
       await typeCode(dev2, 'nonsense');
       const sent = dev2.__rec.requests.length;
       await click(dev2, '[data-home-use-go]'); await sleep(500);
@@ -297,7 +304,7 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
       await typeCode(dev2, spaced);
       await click(dev2, '[data-home-use-go]');
       await dev2.waitForSelector('[data-home-link]', { timeout: 8000 });
-      ok('the code pasted with capitals and spaces is accepted (the site is asked with the cleaned code in X-PPP-PC), the link is this device\'s now, and the status shows', JSON.parse(await stored(dev2)).code === code && !(await has(dev2, '[data-home-use]')) && /Your PC is connected|has not checked in|Waiting for your PC/.test(await text(dev2, '[data-home-status-line]'))
+      ok('the code pasted with capitals and spaces is accepted (the site is asked with the cleaned code in X-PPP-PC), the link is this device\'s now (the one button is there), and the status shows', JSON.parse(await stored(dev2)).code === code && (await has(dev2, '[data-home-pair-copy]')) && /PC connected|Waiting for your PC/.test(await text(dev2, '[data-home-status-line]'))
         && await dev2.evaluate(c => window.__fetches.some(f => f.u === '/api/worker/status' && f.headers['X-PPP-PC'] === c), code));
       await goAdd(dev2); await refresh(dev2);
       ok('its Add screen has the same list and the Open button (the server is the truth)', (await dev2.evaluate(() => document.querySelectorAll('[data-home-job]').length)) === 1 && (await has(dev2, '[data-home-open]')) && /Ready to open/.test(await text(dev2, '[data-home-status]')));
@@ -413,8 +420,9 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
 
     heading('a new PC token from the page: asked twice, the old token dies at once');
     await goSettings(pg);
+    await openMore(pg);
     await click(pg, '[data-home-token-rotate]'); await sleep(300);
-    ok('"New PC token" asks first (the old token would stop at once); nothing is sent yet', (await has(pg, '[data-home-confirm="rotate"]')) && /old token stops working at once/.test(await text(pg, '[data-home-confirm]')) && !pg.__rec.posts.some(p => /worker-token/.test(p.path)));
+    ok('"New PC token" (under More) asks first (the old token would stop at once); nothing is sent yet', (await has(pg, '[data-home-confirm="rotate"]')) && /old token stops working at once/.test(await text(pg, '[data-home-confirm]')) && !pg.__rec.posts.some(p => /worker-token/.test(p.path)));
     await click(pg, '[data-home-confirm-no]'); await sleep(300);
     ok('Cancel puts the question away and sends nothing; the token still works', !(await has(pg, '[data-home-confirm]')) && !pg.__rec.posts.some(p => /worker-token/.test(p.path)) && (await req(port, 'GET', '/api/worker/ping', { token: tokenNow })).status === 200);
     await click(pg, '[data-home-token-rotate]'); await sleep(300);
@@ -432,7 +440,8 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
     {
       const dev3 = await openPage(browser, base, { store: { 'ppp.pclink.v1': JSON.stringify({ v: 1, code: code }) } });
       await goSettings(dev3);
-      ok('a device that already has the code in localStorage shows the link', await has(dev3, '[data-home-link]'));
+      ok('a device that already has the code in localStorage shows the link: the one button', await has(dev3, '[data-home-pair-copy]'));
+      await openMore(dev3);
       await click(dev3, '[data-home-link-forget]'); await sleep(500);
       ok('Forget on this device: its localStorage is cleared, the card offers to make or use a link again, and the link itself still works on the site', (await stored(dev3)) === null && await has(dev3, '[data-home-link-make]') && !(await has(dev3, '[data-home-link]')) && (await req(port, 'GET', '/api/worker/status', { code: code })).status === 200);
       await goAdd(dev3);
@@ -457,8 +466,9 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
       await goAdd(devB); await refresh(devB);
       ok('(a second device that has the code, and sees the conversions)', (await devB.evaluate(() => document.querySelectorAll('[data-home-job]').length)) >= 1);
       await goSettings(pg);
+      await openMore(pg);
       await click(pg, '[data-home-link-remove]'); await sleep(300);
-      ok('"Remove link" asks first: its conversions are deleted, the PC stops, every device with the code loses it; nothing is sent yet', (await has(pg, '[data-home-confirm="remove"]')) && /conversions are deleted/.test(await text(pg, '[data-home-confirm]')) && !pg.__rec.posts.some(p => p.method === 'DELETE' && /pc-links/.test(p.path)));
+      ok('"Remove link" (under More) asks first: its conversions are deleted, the PC stops, every device with the code loses it; nothing is sent yet', (await has(pg, '[data-home-confirm="remove"]')) && /conversions are deleted/.test(await text(pg, '[data-home-confirm]')) && !pg.__rec.posts.some(p => p.method === 'DELETE' && /pc-links/.test(p.path)));
       await click(pg, '[data-home-confirm-yes]'); await sleep(900);
       ok('Yes: DELETE /api/pc-links/me with the code; this device\'s localStorage is cleared, the card is back to "Create my PC link"; the Add screen has no button and no list', pg.__rec.posts.some(p => p.method === 'DELETE' && p.path === '/api/pc-links/me') && (await stored(pg)) === null && await has(pg, '[data-home-link-make]') && !(await has(pg, '[data-home-link]')));
       await goAdd(pg);
@@ -496,11 +506,12 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
 
     heading('Korean, Japanese, Chinese');
     for (const [loc, want] of [
-      ['ko-KR', { btn: '고품질 변환 (내 PC)', st: 'PC를 기다리는 중', note: '약 한 시간에 한 번', card: '내 PC 연결', make: '내 PC 링크 만들기', warn: '비밀로 간직하세요', nolog: '계정이나 로그인 없이', use: '다른 기기의 PC 링크 쓰기', shown: '내 PC 코드 보기', rot: '새 PC 토큰', rm: '링크 지우기' }],
-      ['ja-JP', { btn: '高品質変換（自分のPC）', st: 'PCを待っています', note: '約1時間に1回', card: '自分のPCを接続', make: '自分のPCリンクを作る', warn: '秘密にしてください', nolog: 'アカウントやログインは不要', use: '別の端末のPCリンクを使う', shown: 'PCコードを表示', rot: '新しいPCトークン', rm: 'リンクを削除' }],
-      ['zh-CN', { btn: '高质量转换（我的电脑）', st: '等待你的电脑', note: '大约每小时', card: '连接我的电脑', make: '创建我的电脑链接', warn: '请保密', nolog: '无需账号或登录', use: '使用另一台设备的电脑链接', shown: '显示我的电脑代码', rot: '新电脑令牌', rm: '删除链接' }]]) {
+      ['ko-KR', { btn: '고품질 변환 (내 PC)', st: 'PC를 기다리는 중', note: '약 한 시간에 한 번', card: '내 PC 연결', make: '내 PC 링크 만들기', warn: '나에게만 보내세요', nolog: '계정이나 로그인 없이', use: '다른 기기의 PC 링크 쓰기', shown: '내 PC 코드 보기', rot: '새 PC 토큰', rm: '링크 지우기' }],
+      ['ja-JP', { btn: '高品質変換（自分のPC）', st: 'PCを待っています', note: '約1時間に1回', card: '自分のPCを接続', make: '自分のPCリンクを作る', warn: '自分だけに送ってください', nolog: 'アカウントやログインは不要', use: '別の端末のPCリンクを使う', shown: 'PCコードを表示', rot: '新しいPCトークン', rm: 'リンクを削除' }],
+      ['zh-CN', { btn: '高质量转换（我的电脑）', st: '等待你的电脑', note: '大约每小时', card: '连接我的电脑', make: '创建我的电脑链接', warn: '请只发给你自己', nolog: '无需账号或登录', use: '使用另一台设备的电脑链接', shown: '显示我的电脑代码', rot: '新电脑令牌', rm: '删除链接' }]]) {
       const lp = await openPage(browser, base, { locale: loc });
       await goSettings(lp);
+      await openMore(lp);
       ok(loc + ': the card of a device with no link is in the person\'s language (title, no-sign-in line, the button, the other-device form)', (await text(lp, '[data-home-settings]')).indexOf(want.card) >= 0 && (await text(lp, '[data-home-no-account]')).indexOf(want.nolog) >= 0 && (await text(lp, '[data-home-link-make]')).indexOf(want.make) >= 0 && (await text(lp, '[data-home-use]')).indexOf(want.use) >= 0, (await text(lp, '[data-home-settings]')).slice(0, 120));
       await click(lp, '[data-home-link-make]');
       await lp.waitForSelector('[data-home-new]', { timeout: 8000 });
@@ -508,6 +519,7 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
       const t = await val(lp, '[data-home-token-value]');
       ok(loc + ': the warning to keep the secrets is in the person\'s language, and the steps', (await text(lp, '[data-home-warning]')).indexOf(want.warn) >= 0 && !/^1\. On your PC/.test(await text(lp, '[data-home-steps]')), (await text(lp, '[data-home-warning]')).slice(0, 80));
       await click(lp, '[data-home-new-done]'); await sleep(300);
+      await openMore(lp);
       ok(loc + ': the buttons of the link (show the code, new token, remove)', (await text(lp, '[data-home-code-show]')).indexOf(want.shown) >= 0 && (await text(lp, '[data-home-token-rotate]')).indexOf(want.rot) >= 0 && (await text(lp, '[data-home-link-remove]')).indexOf(want.rm) >= 0);
       await req(port, 'POST', '/api/worker/claim', { token: t, body: { once: true } });
       await goAdd(lp); await refresh(lp);
@@ -518,6 +530,7 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
       ok(loc + ': the button, the note and the status are in the person\'s language', (await text(lp, '[data-home-pc]')).indexOf(want.btn) >= 0 && (await text(lp, '[data-home-note]')).indexOf(want.note) >= 0 && (await text(lp, '[data-home-status]')).indexOf(want.st) >= 0,
         [await text(lp, '[data-home-pc]'), await text(lp, '[data-home-status]')].join(' | '));
       await goSettings(lp);
+      await openMore(lp);
       await click(lp, '[data-home-link-remove]'); await sleep(300);
       ok(loc + ': the question before removing is in the person\'s language too', (await text(lp, '[data-home-confirm]')).length > 20 && !/Remove this PC link/.test(await text(lp, '[data-home-confirm]')), (await text(lp, '[data-home-confirm]')).slice(0, 60));
       ok(loc + ': no page or console error', clean(lp), errs(lp));

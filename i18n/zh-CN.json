@@ -2068,6 +2068,23 @@
     "Too many PC links were made from here just now. Try again later.": "刚才从这里创建了太多电脑链接。请稍后再试。",
     "PC links are full right now. Try again later.": "电脑链接目前已满。请稍后再试。",
     "Too many PC links were made on this site just now. Try again later.": "刚才本站创建了太多电脑链接。请稍后再试。",
-    "Too many conversions were opened just now. Try again later.": "刚才打开的转换次数太多。请稍后再试。"
+    "Too many conversions were opened just now. Try again later.": "刚才打开的转换次数太多。请稍后再试。",
+    "Your PC is connected. Now paste a YouTube link and the \"High-quality (my PC)\" button will show.": "电脑已连接。现在粘贴 YouTube 链接，就会出现“高质量转换（我的电脑）”按钮。",
+    "Your PC is connected. This device used another PC link before; it now uses this new one.": "电脑已连接。这台设备之前使用的另一个电脑链接已被这个新链接替换。",
+    "That connection code does not match. Copy a new link from the device that made the connection.": "连接代码不正确。请在创建连接的设备上重新复制链接。",
+    "This link is incomplete. Copy it again from the device that made the connection.": "链接没有完整复制。请在创建连接的设备上重新复制。",
+    "This browser cannot keep the connection (a private window, or blocked storage). Open the link in a normal window.": "此浏览器无法保存连接（隐私窗口或存储被禁用）。请在普通窗口中打开链接。",
+    "The connection could not be checked right now. Open the link again in a minute.": "现在无法确认连接。请稍后再打开链接。",
+    "Connect another device: copy link": "连接其他设备：复制链接",
+    "Anyone with this link can send conversions to your PC: send it only to yourself.": "拥有此链接的人都可以向你的电脑发送转换任务，请只发给你自己。",
+    "More": "更多",
+    "PC connected": "电脑已连接",
+    "last seen {{ago}}": "上次确认 {{ago}}",
+    "Could not copy by itself. The link is selected: copy it by hand.": "无法自动复制。链接已选中，请手动复制。",
+    "Your PC link is ready.": "电脑链接已创建。",
+    "1. Copy this link and open it on your other devices.": "1. 复制此链接，并在你的其他设备上打开。",
+    "2. Only if your PC has no worker yet:": "2. 仅当你的电脑还没有 worker 时：",
+    "This browser could not keep the PC link. Copy the link now: without it this device cannot use the connection.": "此浏览器无法保存电脑链接。请现在复制链接：没有它，这台设备就无法使用该连接。",
+    "Paste the link or the PC code from the device that made the connection.": "粘贴创建连接的设备上的链接或电脑代码。"
   }
 }

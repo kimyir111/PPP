@@ -4,6 +4,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="google" content="notranslate">
+<script>
+/* G10b-3: the pairing link. https://<this site>/#pc=<the 64 hex characters of a PC link's code> pairs the device that opens it (docs/GOALS/G10B_HOME_WORKER.md section 14).
+   This runs before every other script of the page, so the code is taken off the address bar (history.replaceState: the path, the query and other parameters stay, and no history
+   entry keeps the code) before the page has made a single request. A URL fragment is never sent to a server, and nothing here navigates. The code is not written anywhere: it is kept in this
+   closure until the page asks for it, once (PPP_PAIR.take). A fragment that is not "#pc=" is left alone; "#pc=" followed by anything that is not a code is taken off too, and reported as not valid. */
+(function () {
+  var pending = null, listener = null;
+  function look() {
+    var h = '';
+    try { h = String(location.hash || ''); } catch (e) { return; }
+    if (h.slice(0, 4) !== '#pc=') return;
+    var c = h.slice(4);
+    try { c = decodeURIComponent(c); } catch (e) { /* as it is */ }
+    c = c.replace(/[\s-]+/g, '').toLowerCase();
+    try { history.replaceState(history.state, '', location.href.replace(/#.*$/, '')); } catch (e) { /* the address stays as it is; the pairing goes on */ }
+    pending = /^[0-9a-f]{64}$/.test(c) ? { code: c } : { bad: true };
+    if (listener) listener();
+  }
+  window.PPP_PAIR = { has: function () { return !!pending; }, take: function () { var p = pending; pending = null; return p; }, listen: function (fn) { listener = fn; } };
+  look();
+  window.addEventListener('hashchange', look);
+})();
+</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231b1a18'/%3E%3Crect x='9' y='13' width='4' height='11' rx='2' fill='%23fffefc'/%3E%3Crect x='14' y='7' width='4' height='17' rx='2' fill='%237c5cd6'/%3E%3Crect x='19' y='16' width='4' height='8' rx='2' fill='%23fffefc'/%3E%3C/svg%3E">
 <script src="./i18n.js"></script>
 <script src="./scoregraph/rational.js?v=8"></script>
@@ -2275,12 +2298,9 @@
                   <sc-if value="{{ hasHomeStatus }}" hint-placeholder-val="{{ false }}">
                     <div data-home-status-line style="font-size: 12px; color: var(--ink2); margin-top: 4px;">{{ homeStatusLine }}</div>
                   </sc-if>
-                  <sc-if value="{{ hasHomeLastSeen }}" hint-placeholder-val="{{ false }}">
-                    <div data-home-last-seen data-no-i18n="1" style="font-size: 12px; color: var(--ink3); margin-top: 2px;">{{ homeLastSeen }}</div>
-                  </sc-if>
                 </div>
                 <sc-if value="{{ homeNoLink }}" hint-placeholder-val="{{ true }}">
-                  <button onClick="{{ makePcLink }}" data-home-link-make style="margin-left: auto; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--accent);">{{ homeMakeLabel }}</button>
+                  <button onClick="{{ makePcLink }}" data-home-link-make style="margin-left: auto; padding: 10px 16px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ homeMakeLabel }}</button>
                 </sc-if>
               </div>
               <sc-if value="{{ hasHomeGone }}" hint-placeholder-val="{{ false }}">
@@ -2292,66 +2312,96 @@
               <sc-if value="{{ hasHomeNew }}" hint-placeholder-val="{{ false }}">
                 <div data-home-new style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--accent-2); background: var(--accent-3);">
                   <div style="font-size: 12.5px; font-weight: 600;">{{ homeNewTitle }}</div>
-                  <div data-home-warning style="font-size: 12px; line-height: 1.5; color: var(--bad); font-weight: 600;">{{ homeKeepSecret }}</div>
-                  <div style="font-size: 12px; color: var(--ink2);">{{ homeTokenLabel }}</div>
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <input readonly value="{{ homeNewToken }}" data-home-token-value style="flex: 1; min-width: 0; flex-basis: 220px; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 11.5px;" />
-                    <button onClick="{{ copyHomeToken }}" data-home-token-copy style="padding: 9px 14px; border-radius: 9px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ homeCopyTokenLabel }}</button>
-                  </div>
                   <sc-if value="{{ homeNewHasCode }}" hint-placeholder-val="{{ false }}">
-                    <div style="display: flex; flex-direction: column; gap: 8px;">
-                      <div style="font-size: 12px; color: var(--ink2);">{{ homeCodeLabel }}</div>
+                    <div data-home-step1 style="display: flex; flex-direction: column; gap: 8px;">
+                      <div style="font-size: 12.5px; font-weight: 600;">{{ homeStep1 }}</div>
                       <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <input readonly value="{{ homeNewCode }}" data-home-code-value style="flex: 1; min-width: 0; flex-basis: 220px; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 11.5px;" />
-                        <button onClick="{{ copyHomeNewCode }}" data-home-code-copy style="padding: 9px 14px; border-radius: 9px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ homeCopyNewCodeLabel }}</button>
+                        <input readonly value="{{ homeNewLink }}" data-home-pair-link-new style="flex: 1; min-width: 0; flex-basis: 220px; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 11.5px;" />
+                        <button onClick="{{ copyHomeNewLink }}" data-home-pair-copy-new style="padding: 9px 14px; border-radius: 9px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ homeCopyNewLinkLabel }}</button>
+                        <sc-if value="{{ homeCanShare }}" hint-placeholder-val="{{ false }}">
+                          <button onClick="{{ shareHomeNewLink }}" data-home-pair-share-new style="{{ btnStyle }}">{{ homeShareLabel }}</button>
+                        </sc-if>
                       </div>
+                      <div data-home-warning style="font-size: 12px; line-height: 1.5; color: var(--bad); font-weight: 600;">{{ homePairWarning }}</div>
                     </div>
                   </sc-if>
                   <sc-if value="{{ homeNewNotStored }}" hint-placeholder-val="{{ false }}">
                     <div data-home-not-stored style="font-size: 12px; line-height: 1.5; color: var(--bad);">{{ homeNotStoredNote }}</div>
                   </sc-if>
-                  <div data-home-steps data-no-i18n="1" style="font-size: 12px; line-height: 1.6; color: var(--ink2); white-space: pre-wrap; overflow-wrap: anywhere;">{{ homeSteps }}</div>
+                  <div data-home-step2 style="display: flex; flex-direction: column; gap: 8px;">
+                    <sc-if value="{{ homeNewHasCode }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-size: 12.5px; font-weight: 600;">{{ homeStep2 }}</div>
+                    </sc-if>
+                    <div style="font-size: 12px; color: var(--ink2);">{{ homeTokenLabel }}</div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <input readonly value="{{ homeNewToken }}" data-home-token-value style="flex: 1; min-width: 0; flex-basis: 220px; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 11.5px;" />
+                      <button onClick="{{ copyHomeToken }}" data-home-token-copy style="padding: 9px 14px; border-radius: 9px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ homeCopyTokenLabel }}</button>
+                    </div>
+                    <div data-home-steps data-no-i18n="1" style="font-size: 12px; line-height: 1.6; color: var(--ink2); white-space: pre-wrap; overflow-wrap: anywhere;">{{ homeSteps }}</div>
+                  </div>
                   <div>
                     <button onClick="{{ dismissHomeNew }}" data-home-new-done style="padding: 8px 14px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer;">{{ homeDismissLabel }}</button>
                   </div>
                 </div>
               </sc-if>
-              <sc-if value="{{ homeLinked }}" hint-placeholder-val="{{ false }}">
-                <div data-home-link style="display: flex; flex-direction: column; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line);">
+              <sc-if value="{{ homePairBlock }}" hint-placeholder-val="{{ false }}">
+                <div data-home-pair style="display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line);">
                   <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button onClick="{{ toggleHomeCode }}" data-home-code-show style="{{ btnStyle }}">{{ homeShowCodeLabel }}</button>
-                    <button onClick="{{ askHomeRotate }}" data-home-token-rotate style="{{ btnStyle }}">{{ homeRotateLabel }}</button>
-                    <button onClick="{{ askHomeRemove }}" data-home-link-remove style="{{ btnStyle }}">{{ homeRemoveLinkLabel }}</button>
-                    <button onClick="{{ forgetHomeLink }}" data-home-link-forget style="{{ btnStyle }}">{{ homeForgetLabel }}</button>
+                    <button onClick="{{ copyPairLink }}" data-home-pair-copy style="padding: 10px 16px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; max-width: 100%;">{{ homePairCopyLabel }}</button>
+                    <sc-if value="{{ homeCanShare }}" hint-placeholder-val="{{ false }}">
+                      <button onClick="{{ sharePairLink }}" data-home-pair-share style="{{ btnStyle }}">{{ homeShareLabel }}</button>
+                    </sc-if>
                   </div>
-                  <sc-if value="{{ homeCodeShown }}" hint-placeholder-val="{{ false }}">
-                    <div data-home-code-box style="display: flex; flex-direction: column; gap: 8px;">
-                      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <input readonly value="{{ homeCodeValue }}" data-home-code-shown style="flex: 1; min-width: 0; flex-basis: 220px; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 11.5px;" />
-                        <button onClick="{{ copyHomeCode }}" data-home-code-shown-copy style="padding: 9px 14px; border-radius: 9px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ homeCopyCodeLabel }}</button>
-                      </div>
-                      <div style="font-size: 12px; line-height: 1.5; color: var(--ink3);">{{ homeShowCodeNote }}</div>
-                      <div style="font-size: 12px; line-height: 1.5; color: var(--bad);">{{ homeKeepSecret }}</div>
-                    </div>
-                  </sc-if>
-                  <sc-if value="{{ hasHomeConfirm }}" hint-placeholder-val="{{ false }}">
-                    <div data-home-confirm="{{ homeConfirmKind }}" style="display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--bad); background: var(--bg);">
-                      <div style="font-size: 12.5px; line-height: 1.5;">{{ homeConfirmText }}</div>
-                      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button onClick="{{ confirmHome }}" data-home-confirm-yes style="padding: 8px 14px; border-radius: 9px; border: 0; background: var(--bad); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ homeConfirmYes }}</button>
-                        <button onClick="{{ cancelHomeConfirm }}" data-home-confirm-no style="{{ btnStyle }}">{{ homeConfirmNo }}</button>
-                      </div>
+                  <div data-home-pair-warning style="font-size: 12px; line-height: 1.5; color: var(--bad);">{{ homePairWarning }}</div>
+                  <sc-if value="{{ homePairManual }}" hint-placeholder-val="{{ false }}">
+                    <div data-home-pair-manual style="display: flex; flex-direction: column; gap: 6px;">
+                      <input readonly value="{{ homePairLink }}" data-home-pair-link style="min-width: 0; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 11.5px;" />
+                      <div style="font-size: 12px; line-height: 1.5; color: var(--ink3);">{{ homePairManualNote }}</div>
                     </div>
                   </sc-if>
                 </div>
               </sc-if>
-              <sc-if value="{{ homeNoLink }}" hint-placeholder-val="{{ true }}">
-                <div data-home-use style="display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line);">
-                  <div style="font-size: 12.5px; font-weight: 600;">{{ homeUseTitle }}</div>
-                  <div style="font-size: 12px; line-height: 1.5; color: var(--ink3);">{{ homeUseHint }}</div>
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <input type="text" data-home-use-input placeholder="{{ homeCodePlaceholder }}" value="{{ homeCodeInput }}" onChange="{{ setHomeCodeInput }}" onKeyDown="{{ homeCodeKey }}" autocomplete="off" spellcheck="false" style="flex: 1; min-width: 0; flex-basis: 220px; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 11.5px; outline: none;" />
-                    <button onClick="{{ useHomeCode }}" data-home-use-go style="padding: 9px 14px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--accent);">{{ homeUseLabel }}</button>
+              <div>
+                <button onClick="{{ toggleHomeMore }}" data-home-more style="{{ btnStyle }}">{{ homeMoreLabel }}</button>
+              </div>
+              <sc-if value="{{ homeMoreOpen }}" hint-placeholder-val="{{ false }}">
+                <div data-home-more-box style="display: flex; flex-direction: column; gap: 10px;">
+                  <sc-if value="{{ homeLinked }}" hint-placeholder-val="{{ false }}">
+                    <div data-home-link style="display: flex; flex-direction: column; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line);">
+                      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button onClick="{{ toggleHomeCode }}" data-home-code-show style="{{ btnStyle }}">{{ homeShowCodeLabel }}</button>
+                        <button onClick="{{ askHomeRotate }}" data-home-token-rotate style="{{ btnStyle }}">{{ homeRotateLabel }}</button>
+                        <button onClick="{{ askHomeRemove }}" data-home-link-remove style="{{ btnStyle }}">{{ homeRemoveLinkLabel }}</button>
+                        <button onClick="{{ forgetHomeLink }}" data-home-link-forget style="{{ btnStyle }}">{{ homeForgetLabel }}</button>
+                      </div>
+                      <sc-if value="{{ homeCodeShown }}" hint-placeholder-val="{{ false }}">
+                        <div data-home-code-box style="display: flex; flex-direction: column; gap: 8px;">
+                          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <input readonly value="{{ homeCodeValue }}" data-home-code-shown style="flex: 1; min-width: 0; flex-basis: 220px; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 11.5px;" />
+                            <button onClick="{{ copyHomeCode }}" data-home-code-shown-copy style="padding: 9px 14px; border-radius: 9px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ homeCopyCodeLabel }}</button>
+                          </div>
+                          <div style="font-size: 12px; line-height: 1.5; color: var(--ink3);">{{ homeShowCodeNote }}</div>
+                          <div style="font-size: 12px; line-height: 1.5; color: var(--bad);">{{ homeKeepSecret }}</div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ hasHomeConfirm }}" hint-placeholder-val="{{ false }}">
+                        <div data-home-confirm="{{ homeConfirmKind }}" style="display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--bad); background: var(--bg);">
+                          <div style="font-size: 12.5px; line-height: 1.5;">{{ homeConfirmText }}</div>
+                          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button onClick="{{ confirmHome }}" data-home-confirm-yes style="padding: 8px 14px; border-radius: 9px; border: 0; background: var(--bad); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ homeConfirmYes }}</button>
+                            <button onClick="{{ cancelHomeConfirm }}" data-home-confirm-no style="{{ btnStyle }}">{{ homeConfirmNo }}</button>
+                          </div>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                  <div data-home-use style="display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line);">
+                    <div style="font-size: 12.5px; font-weight: 600;">{{ homeUseTitle }}</div>
+                    <div style="font-size: 12px; line-height: 1.5; color: var(--ink3);">{{ homeUseHint }}</div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <input type="text" data-home-use-input placeholder="{{ homeCodePlaceholder }}" value="{{ homeCodeInput }}" onChange="{{ setHomeCodeInput }}" onKeyDown="{{ homeCodeKey }}" autocomplete="off" spellcheck="false" style="flex: 1; min-width: 0; flex-basis: 220px; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 11.5px; outline: none;" />
+                      <button onClick="{{ useHomeCode }}" data-home-use-go style="padding: 9px 14px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--accent);">{{ homeUseLabel }}</button>
+                    </div>
                   </div>
                 </div>
               </sc-if>
@@ -2696,6 +2746,12 @@
     </div>
   </sc-if>
 
+  <sc-if value="{{ hasPairNote }}" hint-placeholder-val="{{ false }}">
+    <div data-pair-note role="status" style="{{ pairNoteStyle }}">
+      <div style="flex: 1; min-width: 0;">{{ pairNoteText }}</div>
+      <button onClick="{{ closePairNote }}" data-pair-note-close style="flex: none; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12px; cursor: pointer;">{{ closePairLabel }}</button>
+    </div>
+  </sc-if>
   <div style="{{ toastStyle }}">{{ toast }}</div>
   <div class="ppp-miss" data-miss="{{ missN }}" style="{{ missStyle }}">{{ missText }}</div>
 </div>
@@ -12073,8 +12129,8 @@ const PcLink = (() => {
   let can = null, canAt = 0;
   return {
     valid: valid,
-    /* what a person pastes: spaces, line breaks and dashes are dropped, capitals are lowered */
-    normalize: s => String(s == null ? '' : s).replace(/[\s-]+/g, '').toLowerCase(),
+    /* what a person pastes: spaces, line breaks and dashes are dropped, capitals are lowered; a whole pairing link (https://site/#pc=...) gives its code */
+    normalize: s => { let t = String(s == null ? '' : s); const i = t.indexOf('#pc='); if (i >= 0) { t = t.slice(i + 4); try { t = decodeURIComponent(t); } catch (e) { /* as it is */ } } return t.replace(/[\s-]+/g, '').toLowerCase(); },
     /* the code this browser has, or null */
     get() { try { const v = JSON.parse(localStorage.getItem(LS) || 'null'); return v && valid(v.code) ? v.code : null; } catch (e) { return null; } },
     /* keep a code; true when it can be read back */
@@ -12145,7 +12201,7 @@ class Component extends DCLogic {
       sidebarCollapsed: false,
       sidebarOpen: false,
       user: null,
-      guest: (function () { try { return localStorage.getItem('ppp-guest') === '1' || !!sharedParam(); } catch (e) { return false; } })(),
+      guest: (function () { try { return localStorage.getItem('ppp-guest') === '1' || !!sharedParam() || !!(window.PPP_PAIR && window.PPP_PAIR.has()); } catch (e) { return false; } })(),
       authReady: false,
       authMode: 'login',
       authBusy: false,
@@ -12298,6 +12354,8 @@ class Component extends DCLogic {
     this.bootI18n();
     this.checkAuth();
     if (this._viaShare) this.landShared(this._viaShare);
+    /* G10b-3: a pairing link (#pc=...) opened this page (the fragment is already off the address bar), or is opened later in this tab */
+    if (window.PPP_PAIR) { window.PPP_PAIR.listen(() => this.pairFromLink()); if (window.PPP_PAIR.has()) this.pairFromLink(); }
     /* Is an AI coach reachable? PPP plans the session either way — but not
        before the translations are in, since the plan's wording is written once
        and then kept. */
@@ -12340,7 +12398,8 @@ class Component extends DCLogic {
     if (this._i18nRaf) cancelAnimationFrame(this._i18nRaf);
     clearTimeout(this._an); clearTimeout(this._toast); clearTimeout(this._quiz); clearTimeout(this._save);
     clearTimeout(this._staffRetry);
-    clearTimeout(this._homeTimer);
+    clearTimeout(this._homeTimer); clearTimeout(this._pairTimer);
+    if (window.PPP_PAIR) window.PPP_PAIR.listen(null);
     if (this._homeVis) document.removeEventListener('visibilitychange', this._homeVis);
     clearTimeout(this._focusFollow);
     clearTimeout(this._miss);
@@ -14571,10 +14630,45 @@ class Component extends DCLogic {
   homeCodeKey(e) {
     if (e && e.key === 'Enter') { const v = e.target ? e.target.value : ''; this.setState({ homeCodeInput: v }, () => this.useHomeCode()); }
   }
-  copyHomeText(text, key, selector) {
-    const done = () => { this.setState({ homeCopied: key }); setTimeout(() => { if (!this._dead && this.state.homeCopied === key) this.setState({ homeCopied: '' }); }, 2500); };
-    try { navigator.clipboard.writeText(text).then(done, () => {}); }
-    catch (e) { const el = document.querySelector(selector); if (el) { el.select(); try { document.execCommand('copy'); done(); } catch (e2) { /* the person copies it by hand */ } } }
+  /* copy text to the clipboard; when the browser refuses (no clipboard, not a secure page, no permission) the text in the field named by `selector` is selected and copied the old way, and
+     when even that fails it stays selected for the person to copy by hand. reveal: the field is hidden until needed - show it first (state homePairManual) */
+  copyHomeText(text, key, selector, reveal) {
+    const done = () => { this.setState({ homeCopied: key, homePairManual: false }); setTimeout(() => { if (!this._dead && this.state.homeCopied === key) this.setState({ homeCopied: '' }); }, 2500); };
+    const select = () => { const el = document.querySelector(selector); if (el) { try { el.focus(); el.select(); if (document.execCommand('copy')) done(); } catch (e2) { /* the person copies it by hand */ } } };
+    const byHand = () => { if (reveal) this.setState({ homePairManual: true }, select); else select(); };
+    try { navigator.clipboard.writeText(text).then(done, byHand); } catch (e) { byHand(); }
+  }
+  /* the pairing link of this device's PC link (the code is the whole secret: it is shown on request and never logged) */
+  pairLink(code) { const c = code || PcLink.get(); return c ? ((typeof location !== 'undefined' && location.origin) || '') + '/#pc=' + c : ''; }
+  shareHomeLink(link) {
+    try { const p = navigator.share({ url: link }); if (p && p.catch) p.catch(() => { /* cancelled */ }); } catch (e) { /* no share sheet here */ }
+  }
+  /* ---- G10b-3: pairing by link. The head script has already taken "#pc=..." off the address bar and kept the code (PPP_PAIR.take gives it once). The code is checked with the site
+     (GET /api/worker/status with it in X-PPP-PC: 200 means the link exists), and only then kept. Nothing is kept for a code the site does not know, or where the browser cannot keep it.
+     The notice says which. ---- */
+  pairNote(text, bad) {
+    clearTimeout(this._pairTimer);
+    this.setState({ pairNote: { text: text, bad: !!bad } });
+    this._pairTimer = setTimeout(() => { if (!this._dead) this.setState({ pairNote: null }); }, 20000);
+  }
+  async pairFromLink() {
+    const p = window.PPP_PAIR && window.PPP_PAIR.take();
+    if (!p) return;
+    if (!p.code) return this.pairNote(tx('This link is incomplete. Copy it again from the device that made the connection.'), true);
+    const code = p.code, old = PcLink.get();
+    if (!PcLink.supported()) return this.pairNote(tx('This browser cannot keep the connection (a private window, or blocked storage). Open the link in a normal window.'), true);
+    const seq = this._pairSeq = (this._pairSeq || 0) + 1;
+    try { await this.homeApi('/api/worker/status', { code: code }); }
+    catch (e) {
+      if (this._dead || seq !== this._pairSeq) return;
+      return this.pairNote(e.status === 401 ? tx('That connection code does not match. Copy a new link from the device that made the connection.') : tx('The connection could not be checked right now. Open the link again in a minute.'), true);
+    }
+    if (this._dead || seq !== this._pairSeq) return;
+    if (!PcLink.set(code)) return this.pairNote(tx('This browser cannot keep the connection (a private window, or blocked storage). Open the link in a normal window.'), true);
+    clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};
+    this.setState({ homeWorker: null, homeJobs: [], homeNew: null, homeArm: null, homeCodeShown: false, homeGone: false, homeError: '', homeOff: false, homeStale: false, homePairManual: false });
+    this.pairNote(old && old !== code ? tx('Your PC is connected. This device used another PC link before; it now uses this new one.') : tx('Your PC is connected. Now paste a YouTube link and the "High-quality (my PC)" button will show.'));
+    this.homeRefresh();
   }
   /* what the Add screen and the Settings card show */
   homeView(S) {
@@ -14593,17 +14687,31 @@ class Component extends DCLogic {
     const N = S.homeNew;
     const site = (typeof location !== 'undefined' && location.origin) || '';
     /* the exact lines for the PC: the settings file of tools/home-worker, with this site's address and the token in them */
+    /* (the PC's part comes under "2. Only if your PC has no worker yet", so its own numbers become bullets) */
+    const dot = s => s.replace(/^\d+\.\s*/, '• ');
     const steps = N ? [
       N.rotated ? tx('Put the new token in the "token" line of worker.config.json on your PC (the old token stopped working).')
-        : tx('1. On your PC, copy worker.config.example.json to worker.config.json (in the tools/home-worker folder).'),
-      N.rotated ? '' : tx('2. Put these two lines in it:'),
+        : dot(tx('1. On your PC, copy worker.config.example.json to worker.config.json (in the tools/home-worker folder).')),
+      N.rotated ? '' : dot(tx('2. Put these two lines in it:')),
       N.rotated ? '' : '   "siteUrl": "' + site + '",',
       '   "token": "' + N.token + '",',
-      N.rotated ? '' : tx('3. Check it: node tools/home-worker/worker.js --check'),
-      N.rotated ? tx('Check it: node tools/home-worker/worker.js --check') : tx('4. Convert what is waiting: node tools/home-worker/worker.js --once')
+      N.rotated ? '' : dot(tx('3. Check it: node tools/home-worker/worker.js --check')),
+      N.rotated ? tx('Check it: node tools/home-worker/worker.js --check') : dot(tx('4. Convert what is waiting: node tools/home-worker/worker.js --once'))
     ].filter(x => x !== '').join('\n') : '';
     const arm = S.homeArm;
+    /* "5 min ago", in the person's language, from the PC's last contact */
+    const ago = at => {
+      const m = Math.max(0, Math.round((Date.now() - new Date(at).getTime()) / 60000));
+      return m < 1 ? tx('just now') : m < 60 ? tx('{{n}} min ago', { n: m }) : m < 48 * 60 ? tx('{{n}} h ago', { n: Math.round(m / 60) }) : tx('{{n}} days ago', { n: Math.round(m / 1440) });
+    };
+    const lastSeen = linked && W && W.lastSeenAt ? tx('last seen {{ago}}', { ago: ago(W.lastSeenAt) }) : '';
+    const pairCode = linked ? PcLink.get() : (N && N.code) || '';
+    const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+    const warnLink = tx('Anyone with this link can send conversions to your PC: send it only to yourself.');
     return {
+      /* the pairing notice (G10b-3), above everything, also above the sign-in gate */
+      hasPairNote: !!S.pairNote, pairNoteText: S.pairNote ? S.pairNote.text : '', closePairNote: () => { clearTimeout(this._pairTimer); this.setState({ pairNote: null }); }, closePairLabel: tx('Close'),
+      pairNoteStyle: 'position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:90;box-sizing:border-box;width:min(560px,calc(100vw - 32px));display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:var(--shadow);font-size:13px;line-height:1.5;border:1px solid ' + (S.pairNote && S.pairNote.bad ? 'var(--bad)' : 'var(--good)') + ';',
       showHomePc: !!(linked && W && W.everSeen && S.transcriptionMode !== 'arrange'),
       homePcLabel: S.homeBusy ? tx('Sending…') : tx('High-quality (my PC)'),
       addYoutubeHome: () => this.addYoutubeHome(),
@@ -14626,10 +14734,9 @@ class Component extends DCLogic {
       homeSettingsSub: tx('Convert YouTube links with the strong piano models on your own PC, for free. It needs a PC with a GPU that you switch on.'),
       homeSettingsNote: tx('No account or sign-in is needed: make a PC link here, then put its token on your PC.'),
       homeLinked: linked, homeNoLink: !linked,
-      homeStatusLine: !linked || !W ? '' : W.alive ? tx('Your PC is connected.') : W.everSeen ? tx('Your PC has not checked in lately.') : W.hasToken ? tx('Waiting for your PC to connect for the first time.') : '',
+      /* one line: "PC connected · last seen 5 min ago" or "Waiting for your PC" (· last seen ...) */
+      homeStatusLine: !linked || !W ? '' : (W.alive ? tx('PC connected') : tx('Waiting for your PC')) + (lastSeen ? ' · ' + lastSeen : ''),
       hasHomeStatus: !!(linked && W && (W.alive || W.everSeen || W.hasToken)),
-      hasHomeLastSeen: !!(linked && W && W.lastSeenAt),
-      homeLastSeen: linked && W && W.lastSeenAt ? tx('Last seen {{when}}', { when: new Date(W.lastSeenAt).toLocaleString(S.locale) }) : '',
       makePcLink: () => this.makePcLink(),
       homeMakeLabel: S.homeBusy ? tx('Sending…') : tx('Create my PC link'),
       hasHomeGone: !!S.homeGone && !linked,
@@ -14637,17 +14744,28 @@ class Component extends DCLogic {
       hasHomeError: !!S.homeError, homeError: S.homeError || '',
       /* the secrets, shown once */
       hasHomeNew: !!N, homeNewHasCode: !!(N && N.code), homeNewNotStored: !!(N && N.notStored),
-      homeNewTitle: N && N.rotated ? tx('Your new PC token. The old one no longer works.') : tx('Your PC link is ready. Copy these now.'),
+      homeNewTitle: N && N.rotated ? tx('Your new PC token. The old one no longer works.') : tx('Your PC link is ready.'),
       homeKeepSecret: tx('Keep these secret: anyone who has the code can queue conversions for your PC and read their results.'),
-      homeNotStoredNote: tx('This browser could not keep the PC link. Copy the code now: without it this device cannot use the link.'),
+      homeNotStoredNote: tx('This browser could not keep the PC link. Copy the link now: without it this device cannot use the connection.'),
       homeTokenLabel: tx('PC token: put it on your PC. Shown only now.'),
-      homeCodeLabel: tx('PC code: use this link on another device. This device keeps it, and can show it again.'),
-      homeNewToken: N ? N.token : '', homeNewCode: N && N.code ? N.code : '',
+      /* what to do, in order: 1. the link for the other devices; 2. the PC's own part, only if it has no worker yet */
+      homeStep1: tx('1. Copy this link and open it on your other devices.'), homeStep2: tx('2. Only if your PC has no worker yet:'),
+      homePairWarning: warnLink,
+      homeNewToken: N ? N.token : '', homeNewLink: N && N.code ? this.pairLink(N.code) : '',
       copyHomeToken: () => this.copyHomeText(N && N.token, 'token', '[data-home-token-value]'),
-      copyHomeNewCode: () => this.copyHomeText(N && N.code, 'newcode', '[data-home-code-value]'),
-      homeCopyTokenLabel: S.homeCopied === 'token' ? tx('Copied') : tx('Copy'), homeCopyNewCodeLabel: S.homeCopied === 'newcode' ? tx('Copied') : tx('Copy'),
+      copyHomeNewLink: () => this.copyHomeText(this.pairLink(N && N.code), 'newlink', '[data-home-pair-link-new]'),
+      shareHomeNewLink: () => this.shareHomeLink(this.pairLink(N && N.code)),
+      homeCopyTokenLabel: S.homeCopied === 'token' ? tx('Copied') : tx('Copy'), homeCopyNewLinkLabel: S.homeCopied === 'newlink' ? tx('Copied') : tx('Copy'),
+      homeCanShare: canShare, homeShareLabel: tx('Share'),
       homeSteps: steps,
       dismissHomeNew: () => this.setState({ homeNew: null }), homeDismissLabel: tx('I have saved them'),
+      /* a device with a link: ONE button to connect another device, with its one-line warning (the rest is under "More") */
+      homePairBlock: !!(linked && !N), homePairManual: !!(linked && S.homePairManual), homePairLink: linked && S.homePairManual ? this.pairLink(pairCode) : '',
+      homePairCopyLabel: S.homeCopied === 'pair' ? tx('Copied') : tx('Connect another device: copy link'),
+      copyPairLink: () => this.copyHomeText(this.pairLink(), 'pair', '[data-home-pair-link]', true),
+      sharePairLink: () => this.shareHomeLink(this.pairLink()),
+      homePairManualNote: tx('Could not copy by itself. The link is selected: copy it by hand.'),
+      homeMoreOpen: !!S.homeMore, homeMoreLabel: S.homeMore ? tx('Hide') : tx('More'), toggleHomeMore: () => this.setState({ homeMore: !S.homeMore }),
       /* a link on this device */
       homeCodeShown: !!(linked && S.homeCodeShown), homeCodeValue: linked && S.homeCodeShown ? PcLink.get() : '',
       toggleHomeCode: () => this.setState({ homeCodeShown: !S.homeCodeShown }),
@@ -14665,7 +14783,7 @@ class Component extends DCLogic {
       cancelHomeConfirm: () => this.setState({ homeArm: null }),
       /* a link from another device */
       homeUseTitle: tx('Use a PC link from another device'),
-      homeUseHint: tx('Paste the PC code that Settings shows on the device that made the link.'),
+      homeUseHint: tx('Paste the link or the PC code from the device that made the connection.'),
       homeCodeInput: S.homeCodeInput || '', homeCodePlaceholder: tx('PC code (64 letters and digits)'),
       setHomeCodeInput: e => this.setState({ homeCodeInput: e && e.target ? e.target.value : '' }), homeCodeKey: e => this.homeCodeKey(e),
       useHomeCode: () => this.useHomeCode(), homeUseLabel: S.homeBusy ? tx('Sending…') : tx('Use this link'),
