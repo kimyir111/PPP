@@ -1,26 +1,37 @@
-/* G10b-1: where the home-PC worker's jobs and tokens are kept (the rules are in home-jobs.js).
+/* G10b-1 / G10b-2: where the home-PC worker's jobs, tokens and links are kept (the rules are in home-jobs.js).
 
    Two stores with the same methods: a Postgres one (production; `query(sql, params)` is the pool's) and a file one (a local
    server and the tests: data/jobs.json). The service keeps the queue in memory and calls these only to make a change
    durable, or once after a boot to read what was there (loadAll); an idle poll calls none of them.
 
-   Every change names its owner in the WHERE clause (and the state it expects), so a job can only be changed by the account
-   it belongs to, whatever the caller got wrong, and two writers cannot both win a claim. Every statement is parameterized.
+   G10b-2 (login-free): nothing here knows an account. A "PC link" (ppp_pc_links) is a row named by a one-way hash of a secret the
+   person's browser keeps (the client code); jobs and worker tokens belong to a link: their owner_id is the link's id ('pc_' + 22 hex)
+   and is NOT a foreign key (the #178 tables had one to ppp_users: the migration drops it, whatever it is named).
+
+   Every change names its owner in the WHERE clause (and the state it expects), so a job can only be changed by the link it
+   belongs to, whatever the caller got wrong, and two writers cannot both win a claim. Every statement is parameterized.
 
    Times are milliseconds since the epoch here, and TIMESTAMPTZ in the database. A job is
      { id, ownerId, kind, url, title, status, attempts, workerId, createdAt, claimedAt, finishedAt, error, bytes }
    (the notes are not part of it: they are only written by finishJob and read by getResult). A token is
-     { id, ownerId, hash, label, createdAt, lastSeenAt, pollS, revokedAt }. */
+     { id, ownerId, hash, label, createdAt, lastSeenAt, pollS, revokedAt }. A link is
+     { id, hash (sha256 of the client code, hex), createdAt, lastUsedAt, lastWorkerAt, ipTag (a KEYED hash of the creating address, never the
+       address), revokedAt }. */
 'use strict';
 const fs = require('fs');
 const path = require('path');
 
-/* Additive and idempotent: CREATE ... IF NOT EXISTS only, nothing is altered or dropped. Run at every boot, after the
-   tables it points at (ppp_users). Dropping the two tables is the whole of a rollback. */
+/* Additive and idempotent: CREATE ... IF NOT EXISTS, and one DO block that drops the foreign key on owner_id (to ppp_users) from the two
+   tables of PR 178 - found by catalog lookup, whatever it is named, like the guest-share migration did for ppp_shares - and does nothing once it is
+   gone. No table is dropped and no column is removed or renamed, so the code of PR 178 (b7f9fb5) still boots on a database this has migrated: it
+   only needs the two old tables to exist. A database that has the PR 178 tables and one that has none both end up the same (the new tables are
+   made without the key); running it again changes nothing. Every table has an index made here: that is also what makes a name taken by something else (a
+   view), or a table of another shape, fail in this SQL - and so switch the queue off at the boot, inside migrate()'s savepoint - and not later, one request at a time.
+   Run at every boot, inside migrate() below. */
 const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS ppp_transcribe_jobs (
     id TEXT PRIMARY KEY,
-    owner_id TEXT NOT NULL REFERENCES ppp_users(id) ON DELETE CASCADE,
+    owner_id TEXT NOT NULL,
     kind TEXT NOT NULL DEFAULT 'youtube',
     url TEXT NOT NULL,
     title TEXT NOT NULL DEFAULT '',
@@ -38,7 +49,7 @@ const SCHEMA_SQL = `
   CREATE INDEX IF NOT EXISTS ppp_transcribe_jobs_owner ON ppp_transcribe_jobs (owner_id, created_at DESC);
   CREATE TABLE IF NOT EXISTS ppp_worker_tokens (
     id TEXT PRIMARY KEY,
-    owner_id TEXT NOT NULL REFERENCES ppp_users(id) ON DELETE CASCADE,
+    owner_id TEXT NOT NULL,
     token_hash TEXT NOT NULL,
     label TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -47,6 +58,24 @@ const SCHEMA_SQL = `
     revoked_at TIMESTAMPTZ
   );
   CREATE INDEX IF NOT EXISTS ppp_worker_tokens_owner ON ppp_worker_tokens (owner_id);
+  CREATE TABLE IF NOT EXISTS ppp_pc_links (
+    id TEXT PRIMARY KEY,
+    client_hash TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_used_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_worker_at TIMESTAMPTZ,
+    created_ip_hash TEXT NOT NULL DEFAULT '',
+    revoked_at TIMESTAMPTZ
+  );
+  CREATE INDEX IF NOT EXISTS ppp_pc_links_created ON ppp_pc_links (created_at);
+  DO $$ DECLARE t text; c text; BEGIN
+    FOREACH t IN ARRAY ARRAY['ppp_transcribe_jobs', 'ppp_worker_tokens'] LOOP
+      FOR c IN SELECT k.conname FROM pg_constraint k JOIN pg_attribute a ON a.attrelid = k.conrelid AND a.attnum = ANY (k.conkey)
+               WHERE k.conrelid = t::regclass AND k.contype = 'f' AND a.attname = 'owner_id' LOOP
+        EXECUTE format('ALTER TABLE %I DROP CONSTRAINT IF EXISTS %I', t, c);
+      END LOOP;
+    END LOOP;
+  END $$;
 `;
 
 /* Two instances booting together (a deploy overlap) would race on CREATE TABLE IF NOT EXISTS (a unique violation in pg_type) or deadlock on the
@@ -55,8 +84,8 @@ const SCHEMA_SQL = `
    first in the same transaction - a multi-statement query was already one implicit transaction, so for a single boot nothing differs.
 
    The queue is OPTIONAL, the site is not: preSql runs exactly as it did before this feature, and a failure of it is fatal as it always was (rolled back,
-   thrown, the server does not start). The queue's two tables come after it, in a SAVEPOINT of the same transaction, so that a failure there (a name
-   taken by something else, a role that may not create them) undoes only the queue's own tables, the rest of the boot is committed, and the caller is told:
+   thrown, the server does not start). The queue's tables come after it, in a SAVEPOINT of the same transaction, so that a failure there (a name
+   taken by something else, a role that may not create them or alter them) undoes only the queue's own part, the rest of the boot is committed, and the caller is told:
    it resolves { queue: true }, or { queue: false, error } and the caller turns the feature off (server.js: every queue route then answers 503 "store").
    A connection that is lost is still fatal: nothing was committed then. */
 const MIGRATE_LOCK_KEY = 727002;
@@ -94,6 +123,7 @@ const at = t => new Date(t);
 
 const JOB_COLS = 'id, owner_id, kind, url, title, status, attempts, worker_id, created_at, claimed_at, finished_at, error, bytes';
 const TOKEN_COLS = 'id, owner_id, token_hash, label, created_at, last_seen_at, poll_s, revoked_at';
+const LINK_COLS = 'id, client_hash, created_at, last_used_at, last_worker_at, created_ip_hash, revoked_at';
 
 function jobOfRow(r) {
   return {
@@ -108,19 +138,68 @@ function tokenOfRow(r) {
     lastSeenAt: ms(r.last_seen_at), pollS: r.poll_s || 0, revokedAt: ms(r.revoked_at)
   };
 }
+function linkOfRow(r) {
+  return {
+    id: r.id, hash: r.client_hash, createdAt: ms(r.created_at), lastUsedAt: ms(r.last_used_at), lastWorkerAt: ms(r.last_worker_at),
+    ipTag: r.created_ip_hash || '', revokedAt: ms(r.revoked_at)
+  };
+}
 
 /* ---------------- Postgres ---------------- */
 function pgJobStore(query) {
   const rowsOf = r => (r && r.rows) || [];
   return {
     kind: 'pg',
-    /* the one read of a boot: the live tokens, and every job without its notes (a few hundred bytes each) - one round trip */
+    /* the one read of a boot: the links (a few hundred rows at most), the live tokens, and every job without its notes (a few hundred bytes each) - one
+       round trip. Rows of the PC links only are used by the service: whatever else is in the tables (an account's rows from PR 178) is not loaded. */
     async loadAll() {
       const r = await query(
-        'SELECT ' + TOKEN_COLS + ' FROM ppp_worker_tokens WHERE revoked_at IS NULL;'
+        'SELECT ' + LINK_COLS + ' FROM ppp_pc_links;'
+        + ' SELECT ' + TOKEN_COLS + ' FROM ppp_worker_tokens WHERE revoked_at IS NULL;'
         + ' SELECT ' + JOB_COLS + ' FROM ppp_transcribe_jobs;');
       const parts = Array.isArray(r) ? r : [r];
-      return { tokens: rowsOf(parts[0]).map(tokenOfRow), jobs: rowsOf(parts[1]).map(jobOfRow) };
+      return { links: rowsOf(parts[0]).map(linkOfRow), tokens: rowsOf(parts[1]).map(tokenOfRow), jobs: rowsOf(parts[2]).map(jobOfRow) };
+    },
+    /* a new link and its first worker token: ONE statement, so a link never exists without its token (or the other way round) */
+    async createLink(l, k) {
+      await query(
+        'WITH l AS (INSERT INTO ppp_pc_links (id, client_hash, created_at, last_used_at, created_ip_hash) VALUES ($1, $2, $3, $3, $4))'
+        + ' INSERT INTO ppp_worker_tokens (id, owner_id, token_hash, label, created_at, poll_s) VALUES ($5, $1, $6, $7, $3, 0)',
+        [l.id, l.hash, at(l.createdAt), l.ipTag || '', k.id, k.hash, k.label]);
+    },
+    /* the link's one live token is replaced (the old one is dead from this statement on); only for a link that is live. The new token carries the
+       old one's last-seen time and wait, so a PC that has been heard of is still "heard of" while it is being moved to the new token. */
+    async rotateToken(ownerId, k, t) {
+      const r = await query(
+        'WITH rev AS (UPDATE ppp_worker_tokens SET revoked_at = $5 WHERE owner_id = $2 AND revoked_at IS NULL)'
+        + ' INSERT INTO ppp_worker_tokens (id, owner_id, token_hash, label, created_at, last_seen_at, poll_s)'
+        + ' SELECT $1::text, $2::text, $3::text, $4::text, $5::timestamptz, $6::timestamptz, $7::integer'
+        + ' WHERE EXISTS (SELECT 1 FROM ppp_pc_links WHERE id = $2 AND revoked_at IS NULL)',
+        [k.id, ownerId, k.hash, k.label, at(t), k.lastSeenAt ? at(k.lastSeenAt) : null, k.pollS | 0]);
+      return (r.rowCount || 0) === 1;
+    },
+    /* revoke: the link is marked, and its tokens and jobs (with their notes) are deleted - one statement. Only rows whose owner is a PC link ('pc_'). */
+    async revokeLink(id, t) {
+      const r = await query(
+        "WITH j AS (DELETE FROM ppp_transcribe_jobs WHERE owner_id = $1 AND left(owner_id, 3) = 'pc_'),"
+        + " k AS (DELETE FROM ppp_worker_tokens WHERE owner_id = $1 AND left(owner_id, 3) = 'pc_')"
+        + ' UPDATE ppp_pc_links SET revoked_at = $2 WHERE id = $1 AND revoked_at IS NULL',
+        [id, at(t)]);
+      return (r.rowCount || 0) === 1;
+    },
+    /* a link is used (the page) or its PC is heard of: written at most every few hours per link by the service, never by an idle poll */
+    async touchLink(id, usedAt, workerAt) {
+      await query('UPDATE ppp_pc_links SET last_used_at = $2, last_worker_at = $3 WHERE id = $1 AND revoked_at IS NULL', [id, at(usedAt), workerAt ? at(workerAt) : null]);
+    },
+    /* links that ran out (unused, never connected, or revoked a while ago) go, with their tokens and jobs: one statement */
+    async deleteLinks(ids) {
+      if (!ids.length) return 0;
+      const r = await query(
+        "WITH j AS (DELETE FROM ppp_transcribe_jobs WHERE owner_id = ANY($1::text[]) AND left(owner_id, 3) = 'pc_'),"
+        + " k AS (DELETE FROM ppp_worker_tokens WHERE owner_id = ANY($1::text[]) AND left(owner_id, 3) = 'pc_')"
+        + " DELETE FROM ppp_pc_links WHERE id = ANY($1::text[]) AND left(id, 3) = 'pc_'",
+        [ids]);
+      return r.rowCount || 0;
     },
     async insertJob(j) {
       await query(
@@ -173,15 +252,6 @@ function pgJobStore(query) {
         [at(doneBefore), at(otherBefore)]);
       return r.rowCount || 0;
     },
-    async insertToken(k) {
-      await query(
-        'INSERT INTO ppp_worker_tokens (id, owner_id, token_hash, label, created_at, poll_s) VALUES ($1, $2, $3, $4, $5, 0)',
-        [k.id, k.ownerId, k.hash, k.label, at(k.createdAt)]);
-    },
-    async revokeToken(id, ownerId, t) {
-      const r = await query('UPDATE ppp_worker_tokens SET revoked_at = $3 WHERE id = $1 AND owner_id = $2 AND revoked_at IS NULL', [id, ownerId, at(t)]);
-      return (r.rowCount || 0) === 1;
-    },
     async touchSeen(id, ownerId, t, pollS) {
       await query('UPDATE ppp_worker_tokens SET last_seen_at = $3, poll_s = $4 WHERE id = $1 AND owner_id = $2 AND revoked_at IS NULL', [id, ownerId, at(t), pollS | 0]);
     }
@@ -194,8 +264,8 @@ function fileJobStore(dir) {
   function load() {
     try {
       const d = JSON.parse(fs.readFileSync(file, 'utf8'));
-      return { jobs: Array.isArray(d.jobs) ? d.jobs : [], tokens: Array.isArray(d.tokens) ? d.tokens : [] };
-    } catch (e) { return { jobs: [], tokens: [] }; }
+      return { jobs: Array.isArray(d.jobs) ? d.jobs : [], tokens: Array.isArray(d.tokens) ? d.tokens : [], links: Array.isArray(d.links) ? d.links : [] };
+    } catch (e) { return { jobs: [], tokens: [], links: [] }; }
   }
   function save(d) {
     fs.mkdirSync(dir, { recursive: true });
@@ -215,7 +285,47 @@ function fileJobStore(dir) {
     kind: 'file',
     async loadAll() {
       const d = load();
-      return { tokens: d.tokens.filter(k => !k.revokedAt).map(k => Object.assign({}, k)), jobs: d.jobs.map(plain) };
+      return { links: d.links.map(l => Object.assign({}, l)), tokens: d.tokens.filter(k => !k.revokedAt).map(k => Object.assign({}, k)), jobs: d.jobs.map(plain) };
+    },
+    async createLink(l, k) {
+      const d = load();
+      d.links.push({ id: l.id, hash: l.hash, createdAt: l.createdAt, lastUsedAt: l.createdAt, lastWorkerAt: 0, ipTag: l.ipTag || '', revokedAt: 0 });
+      d.tokens.push({ id: k.id, ownerId: l.id, hash: k.hash, label: k.label, createdAt: l.createdAt, lastSeenAt: 0, pollS: 0, revokedAt: 0 });
+      save(d);
+    },
+    async rotateToken(ownerId, k, t) {
+      const d = load();
+      if (!d.links.some(l => l.id === ownerId && !l.revokedAt)) return false;
+      d.tokens.forEach(x => { if (x.ownerId === ownerId && !x.revokedAt) x.revokedAt = t; });
+      d.tokens.push({ id: k.id, ownerId: ownerId, hash: k.hash, label: k.label, createdAt: t, lastSeenAt: k.lastSeenAt || 0, pollS: k.pollS | 0, revokedAt: 0 });
+      save(d);
+      return true;
+    },
+    async revokeLink(id, t) {
+      const d = load();
+      const own = x => x.ownerId === id && String(x.ownerId).slice(0, 3) === 'pc_';
+      d.jobs = d.jobs.filter(j => !own(j));
+      d.tokens = d.tokens.filter(k => !own(k));
+      const l = d.links.find(x => x.id === id && !x.revokedAt);
+      if (l) l.revokedAt = t;
+      save(d);
+      return !!l;
+    },
+    async touchLink(id, usedAt, workerAt) {
+      const d = load(), l = d.links.find(x => x.id === id && !x.revokedAt);
+      if (!l) return;
+      l.lastUsedAt = usedAt; l.lastWorkerAt = workerAt || 0;
+      save(d);
+    },
+    async deleteLinks(ids) {
+      if (!ids.length) return 0;
+      const d = load(), n = d.links.length;
+      const gone = x => ids.indexOf(x.ownerId) >= 0 && String(x.ownerId).slice(0, 3) === 'pc_';
+      d.jobs = d.jobs.filter(j => !gone(j));
+      d.tokens = d.tokens.filter(k => !gone(k));
+      d.links = d.links.filter(l => !(ids.indexOf(l.id) >= 0 && String(l.id).slice(0, 3) === 'pc_'));
+      save(d);
+      return n - d.links.length;
     },
     async insertJob(j) {
       const d = load();
@@ -270,18 +380,6 @@ function fileJobStore(dir) {
       if (d.jobs.length !== n) save(d);
       return n - d.jobs.length;
     },
-    async insertToken(k) {
-      const d = load();
-      d.tokens.push({ id: k.id, ownerId: k.ownerId, hash: k.hash, label: k.label, createdAt: k.createdAt, lastSeenAt: 0, pollS: 0, revokedAt: 0 });
-      save(d);
-    },
-    async revokeToken(id, ownerId, t) {
-      const d = load(), k = d.tokens.find(x => x.id === id && x.ownerId === ownerId && !x.revokedAt);
-      if (!k) return false;
-      k.revokedAt = t;
-      save(d);
-      return true;
-    },
     async touchSeen(id, ownerId, t, pollS) {
       const d = load(), k = d.tokens.find(x => x.id === id && x.ownerId === ownerId && !x.revokedAt);
       if (!k) return;
@@ -291,4 +389,4 @@ function fileJobStore(dir) {
   };
 }
 
-module.exports = { SCHEMA_SQL, MIGRATE_LOCK_KEY, migrate, pgJobStore, fileJobStore, jobOfRow, tokenOfRow };
+module.exports = { SCHEMA_SQL, MIGRATE_LOCK_KEY, migrate, pgJobStore, fileJobStore, jobOfRow, tokenOfRow, linkOfRow };

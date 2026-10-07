@@ -59,7 +59,7 @@ function wav() {
     return true;
   } });
   try {
-    const token = (await S.as('u1').post('/api/worker/tokens', { label: 'PC' })).body.token;
+    const token = S.token('u1');
     const job = (await S.as('u1').post('/api/jobs', { url: L.WATCH('realtools01'), title: 'Synthetic arpeggio' })).body.job;
     const site = 'http://127.0.0.1:' + S.port;
     const cfg = Object.assign({}, W.DEFAULTS, { siteUrl: site, audioBase: site, token: token, pythonPath: python, transcribePy: path.join(L.MODS, 'transcribe.py'), kongCheckpoint: kong, ffmpegPath: ffmpeg, scratchDir: L.tmpDir('ppp-hw-real-') });

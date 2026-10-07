@@ -2269,34 +2269,90 @@
                 <div style="min-width: 0; flex: 1; flex-basis: 260px;">
                   <div style="font-size: 13.5px; font-weight: 500;">{{ homeSettingsTitle }}</div>
                   <div style="font-size: 12px; color: var(--ink3); margin-top: 2px;">{{ homeSettingsSub }}</div>
+                  <sc-if value="{{ homeNoLink }}" hint-placeholder-val="{{ true }}">
+                    <div data-home-no-account style="font-size: 12px; color: var(--ink3); margin-top: 2px;">{{ homeSettingsNote }}</div>
+                  </sc-if>
                   <sc-if value="{{ hasHomeStatus }}" hint-placeholder-val="{{ false }}">
                     <div data-home-status-line style="font-size: 12px; color: var(--ink2); margin-top: 4px;">{{ homeStatusLine }}</div>
                   </sc-if>
+                  <sc-if value="{{ hasHomeLastSeen }}" hint-placeholder-val="{{ false }}">
+                    <div data-home-last-seen data-no-i18n="1" style="font-size: 12px; color: var(--ink3); margin-top: 2px;">{{ homeLastSeen }}</div>
+                  </sc-if>
                 </div>
-                <button onClick="{{ makeHomeToken }}" data-home-token-make style="margin-left: auto; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--accent);">{{ homeTokenButton }}</button>
+                <sc-if value="{{ homeNoLink }}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{ makePcLink }}" data-home-link-make style="margin-left: auto; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--accent);">{{ homeMakeLabel }}</button>
+                </sc-if>
               </div>
-              <sc-if value="{{ hasHomeError }}" hint-placeholder-val="{{ false }}">
-                <div style="font-size: 12.5px; color: var(--bad);">{{ homeError }}</div>
+              <sc-if value="{{ hasHomeGone }}" hint-placeholder-val="{{ false }}">
+                <div data-home-gone style="font-size: 12.5px; color: var(--bad);">{{ homeGoneNote }}</div>
               </sc-if>
-              <sc-if value="{{ hasHomeNewToken }}" hint-placeholder-val="{{ false }}">
-                <div data-home-token-new style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--accent-2); background: var(--accent-3);">
-                  <div style="font-size: 12.5px; font-weight: 600;">{{ homeNewTokenNote }}</div>
+              <sc-if value="{{ hasHomeError }}" hint-placeholder-val="{{ false }}">
+                <div data-home-error style="font-size: 12.5px; color: var(--bad);">{{ homeError }}</div>
+              </sc-if>
+              <sc-if value="{{ hasHomeNew }}" hint-placeholder-val="{{ false }}">
+                <div data-home-new style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--accent-2); background: var(--accent-3);">
+                  <div style="font-size: 12.5px; font-weight: 600;">{{ homeNewTitle }}</div>
+                  <div data-home-warning style="font-size: 12px; line-height: 1.5; color: var(--bad); font-weight: 600;">{{ homeKeepSecret }}</div>
+                  <div style="font-size: 12px; color: var(--ink2);">{{ homeTokenLabel }}</div>
                   <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <input readonly value="{{ homeNewToken }}" data-home-token-value style="flex: 1; min-width: 0; flex-basis: 220px; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 11.5px;" />
-                    <button onClick="{{ copyHomeToken }}" data-home-token-copy style="padding: 9px 14px; border-radius: 9px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ homeCopyLabel }}</button>
+                    <button onClick="{{ copyHomeToken }}" data-home-token-copy style="padding: 9px 14px; border-radius: 9px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ homeCopyTokenLabel }}</button>
                   </div>
-                  <div style="font-size: 12px; line-height: 1.5; color: var(--ink2);">{{ homeSteps }}</div>
+                  <sc-if value="{{ homeNewHasCode }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                      <div style="font-size: 12px; color: var(--ink2);">{{ homeCodeLabel }}</div>
+                      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <input readonly value="{{ homeNewCode }}" data-home-code-value style="flex: 1; min-width: 0; flex-basis: 220px; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 11.5px;" />
+                        <button onClick="{{ copyHomeNewCode }}" data-home-code-copy style="padding: 9px 14px; border-radius: 9px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ homeCopyNewCodeLabel }}</button>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ homeNewNotStored }}" hint-placeholder-val="{{ false }}">
+                    <div data-home-not-stored style="font-size: 12px; line-height: 1.5; color: var(--bad);">{{ homeNotStoredNote }}</div>
+                  </sc-if>
+                  <div data-home-steps data-no-i18n="1" style="font-size: 12px; line-height: 1.6; color: var(--ink2); white-space: pre-wrap; overflow-wrap: anywhere;">{{ homeSteps }}</div>
+                  <div>
+                    <button onClick="{{ dismissHomeNew }}" data-home-new-done style="padding: 8px 14px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer;">{{ homeDismissLabel }}</button>
+                  </div>
                 </div>
               </sc-if>
-              <sc-if value="{{ hasHomeTokens }}" hint-placeholder-val="{{ false }}">
-                <div style="display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line);">
-                  <sc-for list="{{ homeTokens }}" as="k" hint-placeholder-count="1">
-                    <div data-home-token="{{ k.id }}" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                      <span data-no-i18n="1" style="font-size: 12.5px; font-weight: 500;">{{ k.label }}</span>
-                      <span data-no-i18n="1" style="font-size: 12px; color: var(--ink3);">{{ k.seen }}</span>
-                      <button onClick="{{ k.remove }}" data-home-token-remove="{{ k.id }}" style="{{ k.btnStyle }} margin-left: auto;">{{ k.removeLabel }}</button>
+              <sc-if value="{{ homeLinked }}" hint-placeholder-val="{{ false }}">
+                <div data-home-link style="display: flex; flex-direction: column; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line);">
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button onClick="{{ toggleHomeCode }}" data-home-code-show style="{{ btnStyle }}">{{ homeShowCodeLabel }}</button>
+                    <button onClick="{{ askHomeRotate }}" data-home-token-rotate style="{{ btnStyle }}">{{ homeRotateLabel }}</button>
+                    <button onClick="{{ askHomeRemove }}" data-home-link-remove style="{{ btnStyle }}">{{ homeRemoveLinkLabel }}</button>
+                    <button onClick="{{ forgetHomeLink }}" data-home-link-forget style="{{ btnStyle }}">{{ homeForgetLabel }}</button>
+                  </div>
+                  <sc-if value="{{ homeCodeShown }}" hint-placeholder-val="{{ false }}">
+                    <div data-home-code-box style="display: flex; flex-direction: column; gap: 8px;">
+                      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <input readonly value="{{ homeCodeValue }}" data-home-code-shown style="flex: 1; min-width: 0; flex-basis: 220px; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 11.5px;" />
+                        <button onClick="{{ copyHomeCode }}" data-home-code-shown-copy style="padding: 9px 14px; border-radius: 9px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ homeCopyCodeLabel }}</button>
+                      </div>
+                      <div style="font-size: 12px; line-height: 1.5; color: var(--ink3);">{{ homeShowCodeNote }}</div>
+                      <div style="font-size: 12px; line-height: 1.5; color: var(--bad);">{{ homeKeepSecret }}</div>
                     </div>
-                  </sc-for>
+                  </sc-if>
+                  <sc-if value="{{ hasHomeConfirm }}" hint-placeholder-val="{{ false }}">
+                    <div data-home-confirm="{{ homeConfirmKind }}" style="display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--bad); background: var(--bg);">
+                      <div style="font-size: 12.5px; line-height: 1.5;">{{ homeConfirmText }}</div>
+                      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button onClick="{{ confirmHome }}" data-home-confirm-yes style="padding: 8px 14px; border-radius: 9px; border: 0; background: var(--bad); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ homeConfirmYes }}</button>
+                        <button onClick="{{ cancelHomeConfirm }}" data-home-confirm-no style="{{ btnStyle }}">{{ homeConfirmNo }}</button>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+              <sc-if value="{{ homeNoLink }}" hint-placeholder-val="{{ true }}">
+                <div data-home-use style="display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line);">
+                  <div style="font-size: 12.5px; font-weight: 600;">{{ homeUseTitle }}</div>
+                  <div style="font-size: 12px; line-height: 1.5; color: var(--ink3);">{{ homeUseHint }}</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <input type="text" data-home-use-input placeholder="{{ homeCodePlaceholder }}" value="{{ homeCodeInput }}" onChange="{{ setHomeCodeInput }}" onKeyDown="{{ homeCodeKey }}" autocomplete="off" spellcheck="false" style="flex: 1; min-width: 0; flex-basis: 220px; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 11.5px; outline: none;" />
+                    <button onClick="{{ useHomeCode }}" data-home-use-go style="padding: 9px 14px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--accent);">{{ homeUseLabel }}</button>
+                  </div>
                 </div>
               </sc-if>
             </div>
@@ -11984,6 +12040,37 @@ const GuestKey = (() => {
   };
 })();
 
+/* G10b-2: the PC link of the home-PC worker (docs/GOALS/G10B_HOME_WORKER.md section 12) needs no account. The site makes it for anybody (POST /api/pc-links) and answers once with
+   two secrets: the PC code - this browser keeps it in localStorage (ppp.pclink.v1), sends it as X-PPP-PC, and can show it so it can be typed on another device - and the PC token for
+   the PC. Everything is in try/catch: where localStorage is blocked (a private window) supported() is false and the feature is simply not offered. */
+const PcLink = (() => {
+  const LS = 'ppp.pclink.v1';
+  const valid = c => typeof c === 'string' && /^[0-9a-f]{64}$/.test(c);
+  const probe = () => {
+    try { localStorage.setItem('ppp.pclink.probe', '1'); const ok = localStorage.getItem('ppp.pclink.probe') === '1'; localStorage.removeItem('ppp.pclink.probe'); return ok; } catch (e) { return false; }
+  };
+  /* the page draws often and asks "can this browser keep a link?" each time: the answer is remembered for ten seconds (a probe writes to storage) */
+  let can = null, canAt = 0;
+  return {
+    valid: valid,
+    /* what a person pastes: spaces, line breaks and dashes are dropped, capitals are lowered */
+    normalize: s => String(s == null ? '' : s).replace(/[\s-]+/g, '').toLowerCase(),
+    /* the code this browser has, or null */
+    get() { try { const v = JSON.parse(localStorage.getItem(LS) || 'null'); return v && valid(v.code) ? v.code : null; } catch (e) { return null; } },
+    /* keep a code; true when it can be read back */
+    set(code) { if (!valid(code)) return false; try { localStorage.setItem(LS, JSON.stringify({ v: 1, code: code })); } catch (e) { return false; } return this.get() === code; },
+    clear() { try { localStorage.removeItem(LS); } catch (e) { /* nothing to remove */ } },
+    /* can this browser keep a link? */
+    supported() {
+      if (this.get()) return true;
+      const t = Date.now();
+      if (can === null || t - canAt > 10000) { can = probe(); canAt = t; }
+      return can;
+    }
+  };
+})();
+
+
 class Component extends DCLogic {
   state = (() => {
     const score = buildDemoScore();
@@ -12226,7 +12313,6 @@ class Component extends DCLogic {
     const uid = this.state.user ? this.state.user.id : null;
     if (this._shareUid !== undefined && uid !== this._shareUid && this.state.screen === 'shared') this.loadShared(true);
     this._shareUid = uid;
-    if (uid !== this._homeUid) { this._homeUid = uid; this.homeRefresh(this.state.screen === 'settings'); }   /* G10b-1: signing in or out */
   }
   componentWillUnmount() {
     this._dead = true;
@@ -14259,16 +14345,24 @@ class Component extends DCLogic {
     this.startImport({ url: url, name: url, meta: 'YouTube', kind: 'youtube',
       mode: this.state.transcriptionMode || 'auto' });
   }
-  /* ============================ G10b-1: high-quality conversion on my own PC ============================
+  /* ============================ G10b-1 / G10b-2: high-quality conversion on my own PC ============================
      The strong piano models (TransKun + Kong) cannot run on the free server, but they can run on the person's own PC. The page asks the site to
      queue the link (POST /api/jobs); a worker script on that PC (tools/home-worker/) checks the site, converts the link on the PC's GPU and posts
      the notes back; "Open" below then writes the score FROM THOSE NOTES, in the browser, the way it writes one from the browser model's notes
      (Import.fromRecording with what.heard: v2 or the classic conversion, the flags, Write again, Undo and saving all work as they do there).
-     The server is the source of truth for the list, so it survives a reload. Nothing here runs for a guest, or for an account whose PC has never
-     connected: the button, the list and the Settings card are hidden, and the browser and local-helper paths are not touched. */
+     The server is the source of truth for the list, so it survives a reload.
+     NO ACCOUNT, NO SIGN-IN (G10b-2): a "PC link" is two random secrets the site makes for anybody (POST /api/pc-links): the PC code, which this browser keeps in
+     localStorage (ppp.pclink.v1) and sends as X-PPP-PC - it is what lets this device queue, list, cancel and open the link's conversions, and what can be typed on another
+     device - and the PC token, which goes on the PC and is shown once. Nothing here runs for a device that has no link (the button, the list and the status are
+     hidden; only the Settings card is there, to make or use one), nor where the browser cannot keep a link (a private window with storage blocked: no card, no requests),
+     and the browser and local-helper paths are not touched. */
   homeApi(path, opts) {
-    const o = { credentials: 'include', cache: 'no-store', method: (opts && opts.method) || 'GET' };
-    if (opts && opts.body !== undefined) { o.headers = { 'Content-Type': 'application/json' }; o.body = JSON.stringify(opts.body); }
+    const o = { credentials: 'omit', cache: 'no-store', method: (opts && opts.method) || 'GET' };
+    /* the PC code of this browser's link, or the one the caller names (null: none - making a link needs none) */
+    const code = opts && opts.code !== undefined ? opts.code : PcLink.get();
+    o.headers = {};
+    if (code) o.headers['X-PPP-PC'] = code;
+    if (opts && opts.body !== undefined) { o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(opts.body); }
     return fetch(path, o)
       .catch(() => { throw Object.assign(new Error(tx('Could not reach the server.')), { status: 0 }); })
       .then(async r => {
@@ -14287,23 +14381,30 @@ class Component extends DCLogic {
     if (open.some(j => j.status === 'claimed')) return 20000;
     return elapsedMs < 5 * 60 * 1000 ? 90000 : elapsedMs < 15 * 60 * 1000 ? 300000 : 900000;
   }
-  /* what the server holds for this account: the list, and whether a PC is connected. Asked when the Add or Settings screen opens, when the
-     account changes, and on the watch's timer (homePollDelay) while the page is in view; never when nothing is pending or the tab is hidden.
-     fromTimer: the call is the watch's own (it does not restart the watch). */
-  async homeRefresh(withTokens, fromTimer) {
+  /* what the server holds for this PC link: the list, and whether a PC is connected. Asked when the Add or Settings screen opens, when the link
+     changes, and on the watch's timer (homePollDelay) while the page is in view; never when this device has no link, when nothing is pending or when the tab is hidden.
+     (the first argument is not used any more: it asked for the account's list of tokens.) fromTimer: the call is the watch's own (it does not restart the watch). */
+  async homeRefresh(unused, fromTimer) {
     clearTimeout(this._homeTimer); this._homeTimer = 0;
     if (this._dead) return;
-    if (!this.state.user) {
-      if (this.state.homeWorker || (this.state.homeJobs || []).length || (this.state.homeTokens || []).length) this.setState({ homeWorker: null, homeJobs: [], homeTokens: [] });
+    const code = PcLink.get();
+    if (!code) {
+      if (this.state.homeWorker || (this.state.homeJobs || []).length) this.setState({ homeWorker: null, homeJobs: [] });
+      /* the Settings screen of a device with no link: ask ONCE whether this site has the queue at all (no header: a site that has it answers 401 "no-link", one that has switched it
+         off 503 "disabled", an older one 404), so that the card is not offered where there is nothing to connect to. The Add screen asks nothing. */
+      if (unused && !this._homeProbed && PcLink.supported()) {
+        this._homeProbed = true;
+        try { await this.homeApi('/api/worker/status'); } catch (e) { if (!this._dead && (e.off || e.status === 404)) this.setState({ homeOff: true }); }
+      }
       return;
     }
     if (!this._homeVis && typeof document !== 'undefined') {
-      this._homeVis = () => { if (document.visibilityState === 'visible' && this.state.user && (this.state.homeJobs || []).some(j => j.status === 'queued' || j.status === 'claimed')) this.homeRefresh(); };
+      this._homeVis = () => { if (document.visibilityState === 'visible' && PcLink.get() && (this.state.homeJobs || []).some(j => j.status === 'queued' || j.status === 'claimed')) this.homeRefresh(); };
       document.addEventListener('visibilitychange', this._homeVis);
     }
     try {
       const r = await this.homeApi('/api/jobs');
-      if (this._dead || !this.state.user) return;
+      if (this._dead || PcLink.get() !== code) return;
       /* say so when a conversion finishes while the person is elsewhere in the app */
       const before = this._homeSeen || {};
       r.jobs.forEach(j => {
@@ -14314,15 +14415,20 @@ class Component extends DCLogic {
       });
       this._homeSeen = {};
       r.jobs.forEach(j => { this._homeSeen[j.id] = j.status; });
-      this.setState({ homeWorker: r.worker, homeJobs: r.jobs, homeOff: false });
+      this.setState({ homeWorker: r.worker, homeJobs: r.jobs, homeOff: false, homeGone: false });
     } catch (e) {
-      /* a server without the queue (404), or no longer signed in (401), or one that switched its queue off at the start (503 with disabled): the feature is simply not there */
-      if (e.status === 404 || e.status === 401 || e.off) this.setState({ homeWorker: null, homeJobs: [], homeOff: !!e.off });
+      if (this._dead || PcLink.get() !== code) return;
+      /* the site does not know this code (the link was removed on another device, or it was not used for a long time and was purged): this device forgets it and says so */
+      if (e.status === 401 && e.code === 'bad-code') {
+        PcLink.clear();
+        this._homeSeen = {};
+        this.setState({ homeWorker: null, homeJobs: [], homeGone: true, homeNew: null, homeArm: null, homeCodeShown: false });
+        return;
+      }
+      /* a server without the queue (404), or one that switched its queue off at the start (503 with disabled): the feature is simply not there */
+      if (e.status === 404 || e.off) this.setState({ homeWorker: null, homeJobs: [], homeOff: !!e.off });
     }
-    if (withTokens) {
-      try { const t = await this.homeApi('/api/worker/tokens'); if (!this._dead) this.setState({ homeTokens: t.tokens, homeWorker: t.worker }); } catch (e) { /* the card shows none */ }
-    }
-    if (this._dead || !this.state.user || (typeof document !== 'undefined' && document.visibilityState === 'hidden')) return;
+    if (this._dead || !PcLink.get() || (typeof document !== 'undefined' && document.visibilityState === 'hidden')) return;
     const jobs = this.state.homeJobs || [];
     const sig = jobs.map(j => j.id + ':' + j.status).join(',');
     if (!fromTimer || !this._homeWatch || this._homeWatch.sig !== sig) this._homeWatch = { t0: Date.now(), sig: sig };
@@ -14377,29 +14483,84 @@ class Component extends DCLogic {
     try { await this.homeApi('/api/jobs/' + encodeURIComponent(id) + '/cancel', { method: 'POST', body: {} }); } catch (e) { this.setState({ ytError: e.message }); }
     this.homeRefresh();
   }
-  async makeHomeToken() {
+  /* ---- the PC link itself (Settings > Connect my PC) ---- */
+  /* make a link: no sign-in. The site answers ONCE with the PC code (kept in this browser) and the PC token (for the PC); both are shown here until the person says they have them */
+  async makePcLink() {
     if (this.state.homeBusy) return;
+    if (PcLink.get()) { this.homeRefresh(); return; }       /* made in another tab meanwhile */
+    if (!PcLink.supported()) return;
+    this.setState({ homeBusy: true, homeError: '', homeGone: false });
+    try {
+      const r = await this.homeApi('/api/pc-links', { method: 'POST', body: {}, code: null });
+      const stored = PcLink.set(r.clientCode);
+      this.setState({ homeBusy: false, homeNew: { token: r.workerToken, code: r.clientCode, rotated: false, notStored: !stored }, homeCopied: '', homeCodeShown: false, homeArm: null });
+      this.homeRefresh();
+    } catch (e) { this.setState({ homeBusy: false, homeError: e.message, homeOff: !!e.off || this.state.homeOff }); }
+  }
+  /* a new PC token: the old one stops working at once (asked twice: the PC would stop until the new one is on it) */
+  async rotatePcToken() {
+    if (this.state.homeBusy) return;
+    this.setState({ homeBusy: true, homeError: '', homeArm: null });
+    try {
+      const r = await this.homeApi('/api/pc-links/me/worker-token', { method: 'POST', body: {} });
+      this.setState({ homeBusy: false, homeNew: { token: r.workerToken, code: null, rotated: true, notStored: false }, homeCopied: '' });
+      this.homeRefresh();
+    } catch (e) { this.afterLinkError(e); }
+  }
+  /* remove the link: it, its token and its conversions are deleted on the site (for every device that has the code) */
+  async removePcLink() {
+    if (this.state.homeBusy) return;
+    this.setState({ homeBusy: true, homeError: '', homeArm: null });
+    try {
+      await this.homeApi('/api/pc-links/me', { method: 'DELETE' });
+    } catch (e) {
+      /* 401 "bad-code": it is gone already, which is what was asked for; anything else is shown and the link stays */
+      if (!(e.status === 401 && e.code === 'bad-code')) return this.afterLinkError(e);
+    }
+    PcLink.clear();
+    clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};
+    this.setState({ homeBusy: false, homeWorker: null, homeJobs: [], homeNew: null, homeCodeShown: false, homeStale: false });
+    this.say(tx('PC link removed. Your PC can no longer fetch conversions.'));
+  }
+  afterLinkError(e) {
+    if (e.status === 401 && e.code === 'bad-code') { PcLink.clear(); this.setState({ homeBusy: false, homeWorker: null, homeJobs: [], homeGone: true, homeNew: null, homeArm: null, homeCodeShown: false }); return; }
+    this.setState({ homeBusy: false, homeError: e.message });
+  }
+  /* this device stops using the link (the link itself is not touched: with its code it can be used again, here or elsewhere) */
+  forgetPcLink() {
+    PcLink.clear();
+    clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};
+    this.setState({ homeWorker: null, homeJobs: [], homeNew: null, homeArm: null, homeCodeShown: false, homeStale: false, homeError: '' });
+    this.say(tx('This device no longer uses that PC link. It still works: keep its code to use it again.'));
+  }
+  /* use the link of another device: the code is typed or pasted (spaces, dashes and capitals are forgiven), checked with the site, and kept */
+  async useHomeCode() {
+    if (this.state.homeBusy) return;
+    const code = PcLink.normalize(this.state.homeCodeInput);
+    if (!PcLink.valid(code)) return this.setState({ homeError: tx('That is not a PC code. It is 64 letters and digits (0-9 and a-f).') });
     this.setState({ homeBusy: true, homeError: '' });
     try {
-      const r = await this.homeApi('/api/worker/tokens', { method: 'POST', body: { label: 'My PC' } });
-      this.setState({ homeBusy: false, homeNewToken: r.token, homeCopied: false });
-      this.homeRefresh(true);
-    } catch (e) { this.setState({ homeBusy: false, homeError: e.message }); }
+      await this.homeApi('/api/worker/status', { code: code });
+    } catch (e) { return this.setState({ homeBusy: false, homeError: e.message }); }
+    if (!PcLink.set(code)) return this.setState({ homeBusy: false, homeError: tx('This browser could not keep the PC link.') });
+    this.setState({ homeBusy: false, homeCodeInput: '', homeGone: false, homeNew: null, homeCodeShown: false });
+    this.say(tx('This device now uses that PC link.'));
+    this.homeRefresh();
   }
-  async revokeHomeToken(id) {
-    try { await this.homeApi('/api/worker/tokens/' + encodeURIComponent(id), { method: 'DELETE' }); this.say(tx('Token removed. That PC can no longer fetch conversions.')); } catch (e) { this.setState({ homeError: e.message }); }
-    this.setState({ homeNewToken: '' });
-    this.homeRefresh(true);
+  /* Enter in the code field uses the link (the field's own text, which may not have been "changed" yet) */
+  homeCodeKey(e) {
+    if (e && e.key === 'Enter') { const v = e.target ? e.target.value : ''; this.setState({ homeCodeInput: v }, () => this.useHomeCode()); }
   }
-  copyHomeToken() {
-    const t = this.state.homeNewToken;
-    const done = () => { this.setState({ homeCopied: true }); setTimeout(() => this.setState({ homeCopied: false }), 2500); };
-    try { navigator.clipboard.writeText(t).then(done, () => {}); }
-    catch (e) { const el = document.querySelector('[data-home-token-value]'); if (el) { el.select(); try { document.execCommand('copy'); done(); } catch (e2) { /* the person copies it by hand */ } } }
+  copyHomeText(text, key, selector) {
+    const done = () => { this.setState({ homeCopied: key }); setTimeout(() => { if (!this._dead && this.state.homeCopied === key) this.setState({ homeCopied: '' }); }, 2500); };
+    try { navigator.clipboard.writeText(text).then(done, () => {}); }
+    catch (e) { const el = document.querySelector(selector); if (el) { el.select(); try { document.execCommand('copy'); done(); } catch (e2) { /* the person copies it by hand */ } } }
   }
   /* what the Add screen and the Settings card show */
   homeView(S) {
     const W = S.homeWorker, jobs = S.homeJobs || [];
+    /* does this device have a PC link? (read each time: another tab may have made or removed it) */
+    const linked = !!PcLink.get();
     /* how often the PC checks, in words: the site says it (an hour unless it was set otherwise) */
     const every = secs => { const m = Math.max(1, Math.round(secs / 60)); return m >= 55 && m <= 65 ? tx('about once an hour') : m < 90 ? tx('about every {{n}} minutes', { n: m }) : tx('about every {{n}} hours', { n: Math.round(m / 60) }); };
     const pendingJob = j => j.status === 'queued' || j.status === 'claimed';
@@ -14409,13 +14570,26 @@ class Component extends DCLogic {
           : j.status === 'failed' ? tx('Failed') + (j.error ? ' · ' + j.error : '')
             : j.status === 'cancelled' ? tx('Cancelled') : tx('No PC picked this up in time');
     const btn = 'padding:7px 12px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;';
+    const N = S.homeNew;
+    const site = (typeof location !== 'undefined' && location.origin) || '';
+    /* the exact lines for the PC: the settings file of tools/home-worker, with this site's address and the token in them */
+    const steps = N ? [
+      N.rotated ? tx('Put the new token in the "token" line of worker.config.json on your PC (the old token stopped working).')
+        : tx('1. On your PC, copy worker.config.example.json to worker.config.json (in the tools/home-worker folder).'),
+      N.rotated ? '' : tx('2. Put these two lines in it:'),
+      N.rotated ? '' : '   "siteUrl": "' + site + '",',
+      '   "token": "' + N.token + '",',
+      N.rotated ? '' : tx('3. Check it: node tools/home-worker/worker.js --check'),
+      N.rotated ? tx('Check it: node tools/home-worker/worker.js --check') : tx('4. Convert what is waiting: node tools/home-worker/worker.js --once')
+    ].filter(x => x !== '').join('\n') : '';
+    const arm = S.homeArm;
     return {
-      showHomePc: !!(S.user && W && W.everSeen && S.transcriptionMode !== 'arrange'),
+      showHomePc: !!(linked && W && W.everSeen && S.transcriptionMode !== 'arrange'),
       homePcLabel: S.homeBusy ? tx('Sending…') : tx('High-quality (my PC)'),
       addYoutubeHome: () => this.addYoutubeHome(),
       homePcNote: tx('High-quality conversion runs on your own PC. It checks for new links {{every}} and must be switched on; once it starts, a song takes a few minutes. To start now, run the desktop shortcut.', { every: every((W && W.idlePollSeconds) || 3600) })
         + (W && !W.alive ? ' ' + tx('Your PC has not checked in lately, so the conversion will wait until it does.') : ''),
-      hasHomeJobs: !!(S.user && jobs.length),
+      hasHomeJobs: !!(linked && jobs.length),
       homeStale: !!S.homeStale, homeStaleNote: tx('Not checking any more, to spare the server. Press Check again.'), homeCheckAgainLabel: tx('Check again'),
       checkHomeAgain: () => this.homeRefresh(),
       homeJobsTitle: tx('My conversions (on my PC)'),
@@ -14426,24 +14600,56 @@ class Component extends DCLogic {
         open: () => this.openHomeJob(j.id), cancel: () => this.cancelHomeJob(j.id),
         openLabel: S.homeOpening === j.id ? tx('Opening…') : tx('Open'), cancelLabel: tx('Cancel'), btnStyle: btn
       })),
-      showHomeSettings: !!(S.user && !S.homeOff),
+      /* Settings > Connect my PC: for everybody (no account), unless the site has no queue or this browser cannot keep a link */
+      showHomeSettings: !!(!S.homeOff && (linked || PcLink.supported())),
       homeSettingsTitle: tx('Connect my PC'),
       homeSettingsSub: tx('Convert YouTube links with the strong piano models on your own PC, for free. It needs a PC with a GPU that you switch on.'),
-      homeStatusLine: !W ? '' : W.alive ? tx('Your PC is connected.') : W.everSeen ? tx('Your PC has not checked in lately.') : W.hasToken ? tx('Waiting for your PC to connect for the first time.') : '',
-      hasHomeStatus: !!(W && (W.alive || W.everSeen || W.hasToken)),
-      makeHomeToken: () => this.makeHomeToken(),
-      homeTokenButton: S.homeBusy ? tx('Sending…') : (S.homeTokens || []).length ? tx('Make another token') : tx('Make a token'),
-      hasHomeNewToken: !!S.homeNewToken, homeNewToken: S.homeNewToken || '',
-      homeNewTokenNote: tx('Copy this token now. It is shown only once.'),
-      copyHomeToken: () => this.copyHomeToken(), homeCopyLabel: S.homeCopied ? tx('Copied') : tx('Copy'),
-      homeSteps: tx('On the PC: copy worker.config.example.json to worker.config.json (in the tools/home-worker folder), put this token and this site\u2019s address in it, then run: node tools/home-worker/worker.js --once. The README in that folder has the details.'),
+      homeSettingsNote: tx('No account or sign-in is needed: make a PC link here, then put its token on your PC.'),
+      homeLinked: linked, homeNoLink: !linked,
+      homeStatusLine: !linked || !W ? '' : W.alive ? tx('Your PC is connected.') : W.everSeen ? tx('Your PC has not checked in lately.') : W.hasToken ? tx('Waiting for your PC to connect for the first time.') : '',
+      hasHomeStatus: !!(linked && W && (W.alive || W.everSeen || W.hasToken)),
+      hasHomeLastSeen: !!(linked && W && W.lastSeenAt),
+      homeLastSeen: linked && W && W.lastSeenAt ? tx('Last seen {{when}}', { when: new Date(W.lastSeenAt).toLocaleString(S.locale) }) : '',
+      makePcLink: () => this.makePcLink(),
+      homeMakeLabel: S.homeBusy ? tx('Sending…') : tx('Create my PC link'),
+      hasHomeGone: !!S.homeGone && !linked,
+      homeGoneNote: tx('Your PC link is no longer valid. It was removed, or it was not used for a long time. Create a new one.'),
       hasHomeError: !!S.homeError, homeError: S.homeError || '',
-      hasHomeTokens: (S.homeTokens || []).length > 0,
-      homeTokens: (S.homeTokens || []).map(k => ({
-        id: k.id, label: k.label,
-        seen: k.lastSeenAt ? tx('Last seen {{when}}', { when: new Date(k.lastSeenAt).toLocaleString(S.locale) }) : tx('Not seen yet'),
-        remove: () => this.revokeHomeToken(k.id), removeLabel: tx('Remove'), btnStyle: btn
-      }))
+      /* the secrets, shown once */
+      hasHomeNew: !!N, homeNewHasCode: !!(N && N.code), homeNewNotStored: !!(N && N.notStored),
+      homeNewTitle: N && N.rotated ? tx('Your new PC token. The old one no longer works.') : tx('Your PC link is ready. Copy these now.'),
+      homeKeepSecret: tx('Keep these secret: anyone who has the code can queue conversions for your PC and read their results.'),
+      homeNotStoredNote: tx('This browser could not keep the PC link. Copy the code now: without it this device cannot use the link.'),
+      homeTokenLabel: tx('PC token: put it on your PC. Shown only now.'),
+      homeCodeLabel: tx('PC code: use this link on another device. This device keeps it, and can show it again.'),
+      homeNewToken: N ? N.token : '', homeNewCode: N && N.code ? N.code : '',
+      copyHomeToken: () => this.copyHomeText(N && N.token, 'token', '[data-home-token-value]'),
+      copyHomeNewCode: () => this.copyHomeText(N && N.code, 'newcode', '[data-home-code-value]'),
+      homeCopyTokenLabel: S.homeCopied === 'token' ? tx('Copied') : tx('Copy'), homeCopyNewCodeLabel: S.homeCopied === 'newcode' ? tx('Copied') : tx('Copy'),
+      homeSteps: steps,
+      dismissHomeNew: () => this.setState({ homeNew: null }), homeDismissLabel: tx('I have saved them'),
+      /* a link on this device */
+      homeCodeShown: !!(linked && S.homeCodeShown), homeCodeValue: linked && S.homeCodeShown ? PcLink.get() : '',
+      toggleHomeCode: () => this.setState({ homeCodeShown: !S.homeCodeShown }),
+      homeShowCodeLabel: S.homeCodeShown ? tx('Hide my PC code') : tx('Show my PC code'),
+      homeShowCodeNote: tx('Type or paste this code on another device: Settings, Connect my PC, Use a PC link from another device.'),
+      copyHomeCode: () => this.copyHomeText(PcLink.get(), 'code', '[data-home-code-shown]'), homeCopyCodeLabel: S.homeCopied === 'code' ? tx('Copied') : tx('Copy'),
+      askHomeRotate: () => this.setState({ homeArm: 'rotate', homeError: '' }), homeRotateLabel: tx('New PC token'),
+      askHomeRemove: () => this.setState({ homeArm: 'remove', homeError: '' }), homeRemoveLinkLabel: tx('Remove link'),
+      forgetHomeLink: () => this.forgetPcLink(), homeForgetLabel: tx('Forget on this device'),
+      hasHomeConfirm: !!(linked && arm), homeConfirmKind: arm || '',
+      homeConfirmText: arm === 'rotate' ? tx('Make a new PC token? The old token stops working at once, so put the new one on your PC.')
+        : tx('Remove this PC link? Its conversions are deleted, and your PC can no longer use it. Every device that has its code loses it.'),
+      homeConfirmYes: arm === 'rotate' ? tx('Yes, make a new token') : tx('Yes, remove it'), homeConfirmNo: tx('Cancel'),
+      confirmHome: () => (arm === 'rotate' ? this.rotatePcToken() : this.removePcLink()),
+      cancelHomeConfirm: () => this.setState({ homeArm: null }),
+      /* a link from another device */
+      homeUseTitle: tx('Use a PC link from another device'),
+      homeUseHint: tx('Paste the PC code that Settings shows on the device that made the link.'),
+      homeCodeInput: S.homeCodeInput || '', homeCodePlaceholder: tx('PC code (64 letters and digits)'),
+      setHomeCodeInput: e => this.setState({ homeCodeInput: e && e.target ? e.target.value : '' }), homeCodeKey: e => this.homeCodeKey(e),
+      useHomeCode: () => this.useHomeCode(), homeUseLabel: S.homeBusy ? tx('Sending…') : tx('Use this link'),
+      btnStyle: btn
     };
   }
   startImport(src) {

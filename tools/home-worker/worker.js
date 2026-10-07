@@ -3,7 +3,7 @@
 
    Runs on YOUR PC. The site queues a YouTube link you asked to convert with the strong piano models (TransKun + Kong, on your GPU);
    this script asks the site for work, does it here, and sends the notes back. The site never connects to this PC: this script
-   only makes ordinary HTTPS requests OUT, with a token you made on the site (Settings > Connect my PC).
+   only makes ordinary HTTPS requests OUT, with the token of your PC link (made on the site, no account needed: Settings > Connect my PC > Create my PC link).
 
      node tools/home-worker/worker.js              keep checking (about once an hour when idle, every ~15 s while something is going on)
      node tools/home-worker/worker.js --once       check once, do everything that is waiting, exit (the desktop-shortcut mode)
@@ -114,7 +114,7 @@ function configProblems(cfg) {
     if (u && !/^https?:$/.test(u.protocol)) out.push('siteUrl must start with https://');
     if (u && u.protocol === 'http:' && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(u.hostname) && !cfg.allowInsecure) out.push('siteUrl is http://, which would send the token in the clear. Use https:// (or set allowInsecure for a test on your own network).');
   }
-  if (!/^ppw_[A-Za-z0-9_-]{12}_[A-Za-z0-9_-]{43}$/.test(cfg.token)) out.push('token is missing or is not a PPP worker token (it starts with ppw_; make one on the site: Settings > Connect my PC).');
+  if (!/^ppw_[A-Za-z0-9_-]{12}_[A-Za-z0-9_-]{43}$/.test(cfg.token)) out.push('token is missing or is not a PPP worker token (it starts with ppw_; it is shown once when the PC link is made: Settings > Connect my PC > Create my PC link).');
   if (!cfg.pythonPath || !fs.existsSync(cfg.pythonPath)) out.push('pythonPath does not exist: ' + (cfg.pythonPath || '(empty)') + ' (the Python of the transcription environment, e.g. D:/PPP/tools/transcribe-venv/Scripts/python.exe).');
   if (!cfg.transcribePy || !fs.existsSync(cfg.transcribePy)) out.push('transcribePy does not exist: ' + cfg.transcribePy);
   return out;
@@ -572,7 +572,7 @@ function createWorker(cfg, deps) {
     return Math.min(DAY_S, Math.max(5, w));
   }
 
-  const tokenRejected = () => log('The site does not accept this token (it was removed on the site, or is mistyped). Stopping. Make a new one: Settings > Connect my PC.');
+  const tokenRejected = () => log('The site does not accept this token (the PC link was removed, a newer token replaced it, or it is mistyped). Stopping. Get a new token: Settings > Connect my PC > New PC token (or Create my PC link).');
 
   /* --once: check, do everything waiting, leave. Returns the exit code. */
   async function runOnce() {
@@ -673,7 +673,7 @@ async function checkSetup(cfg, log, deps) {
     try {
       const r = await (deps.request || request)(cfg, 'GET', '/api/worker/ping', { timeoutMs: 60000 });
       if (r.status === 200) say(true, 'the site accepts the token; its idle wait is ' + humanWait(r.body && r.body.nextPollSeconds || 0));
-      else if (r.status === 401) say(false, 'the site does not accept this token (removed, or mistyped).');
+      else if (r.status === 401) say(false, 'the site does not accept this token (the PC link was removed, a newer token replaced it, or it is mistyped).');
       else say(false, 'the site answered ' + r.status + '.');
     } catch (e) { say(false, 'the site could not be reached: ' + e.message); }
   }

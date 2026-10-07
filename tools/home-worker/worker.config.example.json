@@ -1,6 +1,6 @@
 {
   "siteUrl": "https://ppp-web-2o99.onrender.com",
-  "token": "ppw_PASTE_THE_TOKEN_FROM_SETTINGS_CONNECT_MY_PC",
+  "token": "ppw_PASTE_THE_PC_TOKEN_FROM_SETTINGS_CONNECT_MY_PC_CREATE_MY_PC_LINK",
 
   "pythonPath": "D:/PPP/tools/transcribe-venv/Scripts/python.exe",
   "transcribePy": "D:/PPP/transcribe.py",

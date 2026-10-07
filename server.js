@@ -506,14 +506,6 @@ function readSession(token) {
   return data;
 }
 
-/* the account id a request's session cookie names, or null: no database (the home-PC queue looks the account up itself, and remembers it) */
-function sessionUid(req) {
-  try {
-    const sess = readSession(parseCookies(req)[COOKIE]);
-    return sess && sess.uid ? String(sess.uid) : null;
-  } catch (e) { return null; }
-}
-
 function normalizeEmail(value) {
   const email = String(value || '').trim().toLowerCase();
   const at = email.indexOf('@');
@@ -543,7 +535,8 @@ const SHARES_PER_USER = 200;
 const SHARE_LIST_LIMIT = 250;
 /* Guest link sharing (share-guest.js): the limits that keep a public write endpoint small. */
 const guestShare = require('./share-guest');
-/* G10b-1: the home-PC transcription queue (home-jobs.js; docs/GOALS/G10B_HOME_WORKER.md) and where it is kept */
+/* G10b-1 / G10b-2: the home-PC transcription queue (home-jobs.js; docs/GOALS/G10B_HOME_WORKER.md) and where it is kept. It needs no account: a PC link is a pair of
+   secrets any browser can make (/api/pc-links), and the queue is keyed by the link */
 const homeJobs = require('./home-jobs');
 const homeJobsStore = require('./home-jobs-store');
 const GUEST = guestShare.GUEST;
@@ -797,7 +790,8 @@ function postgresStore(url) {
           END LOOP;
         END $$;
       `);
-      /* (G10b-1: the two new tables are the last part of that same migration: additive, CREATE ... IF NOT EXISTS only; dropping them is the whole rollback) */
+      /* (G10b-1 / G10b-2: the queue's tables are the last part of that same migration: CREATE ... IF NOT EXISTS, and one DO block that drops the foreign key of the PR 178 tables
+         to ppp_users; nothing is dropped or removed, so the code of PR 178 still boots on the result - rolling back means deploying it again) */
       if (!migrated.queue) {
         const e0 = migrated.error || {};
         const why = String(e0.code || e0.name || 'error') + ' ' + String(e0.message || '').split(/\r?\n/)[0].replace(/postgres(?:ql)?:\/\/\S+/gi, 'postgres://...').slice(0, 160);
@@ -911,10 +905,11 @@ const SHARE_COLS = 'id, owner_id AS "ownerId", owner_name AS "ownerName", song_k
 
 const store = process.env.DATABASE_URL ? postgresStore(process.env.DATABASE_URL) : fileStore();
 
-/* G10b-1: ONE instance holds the queue in memory (home-jobs.js says why); the database is only its durable copy */
+/* G10b-1: ONE instance holds the queue in memory (home-jobs.js says why); the database is only its durable copy. G10b-2: no account, no session: ipSecret keys the hash of the
+   address a PC link was made from (the address itself is never kept) */
 const jobsService = homeJobs.create({
   store: store.jobStore, send: send, jsonError: jsonError, readBody: readBody, parseYoutube: parseYoutubeWatch,
-  clientIp: guestShare.clientIp, sessionUid: sessionUid, findUser: id => store.findById(id), logError: logStoreError,
+  clientIp: guestShare.clientIp, ipSecret: SECRET, logError: logStoreError,
   warn: w => console.warn('Home-PC worker queue: ' + w)
 });
 
@@ -1171,7 +1166,7 @@ async function handleApi(req, res, url) {
     return handleShares(req, res, url);
   }
 
-  /* G10b-1: /api/jobs..., and /api/worker/... for the worker script on the person's own PC */
+  /* G10b-1 / G10b-2: /api/jobs..., /api/pc-links... (no sign-in: the link's client code is the key) and /api/worker/... for the worker script on the person's own PC */
   if (jobsService.owns(p)) return jobsService.handle(req, res, url);
 
   jsonError(res, 404, 'Not found');

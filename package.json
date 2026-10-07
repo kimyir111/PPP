@@ -23,7 +23,7 @@
     "test:repair": "node --test \"tests/repair/**/*.test.js\"",
     "test:review": "node --test \"tests/review/**/*.test.js\"",
     "test:rec": "node --test \"tests/rec/**/*.test.js\"",
-    "test:home-worker": "node tests/home-worker/jobs.test.js && node tests/home-worker/server.test.js && node tests/home-worker/worker.test.js && node tests/home-worker/jobs-pg.test.js && node tests/home-worker/worker-real.test.js",
+    "test:home-worker": "node tests/home-worker/jobs.test.js && node tests/home-worker/links.test.js && node tests/home-worker/server.test.js && node tests/home-worker/worker.test.js && node tests/home-worker/jobs-pg.test.js && node tests/home-worker/worker-real.test.js",
     "test:home-worker-page": "node tests/home-worker/page.test.js",
     "test:home-worker-mutants": "node tests/home-worker/mutants.js",
     "test:single-note-app": "node tests/single-note-app.test.js",
