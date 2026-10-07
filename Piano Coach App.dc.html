@@ -767,6 +767,33 @@
   </aside>
 
   <main class="ppp-main">
+    <!-- The pairing banner (G10b-3 / G10b-4), first in the main column and IN THE FLOW: it pushes the header down instead of covering it (G10b-5; at 400 px it used to sit over the header until closed). Sticky, so it is
+         still in view when the page is scrolled, and above the sign-in gate (z-index 95 over its 80). -->
+    <sc-if value="{{ hasPairNote }}" hint-placeholder-val="{{ false }}">
+      <div data-pair-note data-pair-kind="{{ pairKind }}" role="status" style="{{ pairNoteStyle }}">
+        <div data-pair-body style="flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+          <div data-pair-text>{{ pairNoteText }}</div>
+          <sc-if value="{{ hasPairState }}" hint-placeholder-val="{{ false }}">
+            <div data-pair-state style="font-size: 12px; color: var(--ink3);">{{ pairStateText }}</div>
+          </sc-if>
+          <sc-if value="{{ hasPairHint }}" hint-placeholder-val="{{ false }}">
+            <div data-pair-hint style="font-size: 12px; color: var(--bad);">{{ pairHintText }}</div>
+          </sc-if>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; flex: none; max-width: 100%;">
+          <sc-if value="{{ pairAskOn }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ pairAskYes }}" data-pair-ask-yes style="padding: 6px 12px; border-radius: 8px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">{{ pairAskYesLabel }}</button>
+            <button onClick="{{ pairAskNo }}" data-pair-ask-no style="padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">{{ pairAskNoLabel }}</button>
+          </sc-if>
+          <sc-if value="{{ pairUndoOn }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ pairUndo }}" data-pair-undo style="padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">{{ pairUndoLabel }}</button>
+          </sc-if>
+          <sc-if value="{{ pairCloseOn }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ closePairNote }}" data-pair-note-close style="padding: 4px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12px; cursor: pointer;">{{ closePairLabel }}</button>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
     <header class="ppp-header">
       <button type="button" class="ppp-icon-btn ppp-menu-btn" data-sidebar-toggle="show" onClick="{{ showSidebar }}" title="{{ showSidebarLabel }}" aria-label="{{ showSidebarLabel }}">
         <span class="ppp-burger"></span>
@@ -1015,9 +1042,20 @@
                 <input type="url" data-youtube-url placeholder="https://www.youtube.com/watch?v=…" value="{{ ytUrl }}" onChange="{{ setYtUrl }}" onKeyDown="{{ ytKey }}" style="flex: 1; min-width: 0; flex-basis: 220px; padding: 10px 13px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px; outline: none;" />
                 <button onClick="{{ addYoutube }}" style="padding: 10px 16px; border-radius: 10px; border: 0; background: var(--ink); color: var(--surface); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;" style-hover="filter: brightness(1.3);">Make sheet music</button>
                 <sc-if value="{{ showHomePc }}" hint-placeholder-val="{{ false }}">
-                  <button onClick="{{ addYoutubeHome }}" data-home-pc style="padding: 10px 16px; border-radius: 10px; border: 1px solid var(--accent-2); background: var(--accent-3); color: var(--accent); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;" style-hover="filter: brightness(0.95);">{{ homePcLabel }}</button>
+                  <button onClick="{{ addYoutubeHome }}" data-home-pc disabled="{{ homePcDisabled }}" aria-disabled="{{ homePcDisabled }}" style="{{ homePcStyle }}" style-hover="filter: brightness(0.95);">{{ homePcLabel }}</button>
+                </sc-if>
+                <sc-if value="{{ showHomeHelp }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ openHomeSheet }}" data-home-pc-help aria-haspopup="dialog" style="padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;" style-hover="border-color: var(--ink3);">{{ homeHelpLabel }}</button>
                 </sc-if>
               </div>
+              <sc-if value="{{ hasHomePcState }}" hint-placeholder-val="{{ false }}">
+                <div data-home-pc-state="{{ homePcStateKind }}" role="status" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; line-height: 1.5; color: var(--ink3); margin-top: 8px;">
+                  <span>{{ homePcStateText }}</span>
+                  <sc-if value="{{ hasHomeRecheck }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ checkHomeAgain }}" data-home-pc-recheck style="{{ btnStyle }}">{{ homeCheckAgainLabel }}</button>
+                  </sc-if>
+                </div>
+              </sc-if>
               <sc-if value="{{ hasYtError }}" hint-placeholder-val="{{ false }}">
                 <div style="font-size: 12.5px; color: var(--bad); margin-top: 8px;">{{ ytError }}</div>
               </sc-if>
@@ -1025,7 +1063,7 @@
               <sc-if value="{{ hasHomeTag }}" hint-placeholder-val="{{ false }}">
                 <div data-home-tag data-no-i18n="1" style="font-size: 11.5px; line-height: 1.5; color: var(--ink2); margin-top: 6px;">{{ homeTagCaption }}</div>
               </sc-if>
-              <sc-if value="{{ showHomePc }}" hint-placeholder-val="{{ false }}">
+              <sc-if value="{{ showHomeNote }}" hint-placeholder-val="{{ false }}">
                 <div data-home-note style="font-size: 11.5px; line-height: 1.5; color: var(--ink3); margin-top: 6px;">{{ homePcNote }}</div>
               </sc-if>
               <sc-if value="{{ hasHomeJobs }}" hint-placeholder-val="{{ false }}">
@@ -2326,6 +2364,15 @@
                   <button onClick="{{ makePcLink }}" data-home-link-make style="margin-left: auto; padding: 10px 16px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ homeMakeLabel }}</button>
                 </sc-if>
               </div>
+              <sc-if value="{{ hasHomeUnrec }}" hint-placeholder-val="{{ false }}">
+                <div data-home-unrec style="display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--bad); background: var(--bg);">
+                  <div data-home-unrec-text style="font-size: 12.5px; line-height: 1.5;">{{ homeUnrecText }}</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button onClick="{{ checkHomeAgain }}" data-home-unrec-check style="{{ btnStyle }}">{{ homeCheckAgainLabel }}</button>
+                    <button onClick="{{ removeHomeUnrec }}" data-home-unrec-remove style="{{ btnStyle }}">{{ homeUnrecRemoveLabel }}</button>
+                  </div>
+                </div>
+              </sc-if>
               <sc-if value="{{ hasHomeGone }}" hint-placeholder-val="{{ false }}">
                 <div data-home-gone style="font-size: 12.5px; color: var(--bad);">{{ homeGoneNote }}</div>
               </sc-if>
@@ -2783,31 +2830,27 @@
     </div>
   </sc-if>
 
-  <sc-if value="{{ hasPairNote }}" hint-placeholder-val="{{ false }}">
-    <div data-pair-note data-pair-kind="{{ pairKind }}" role="status" style="{{ pairNoteStyle }}">
-      <div data-pair-body style="flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
-        <div data-pair-text>{{ pairNoteText }}</div>
-        <sc-if value="{{ hasPairState }}" hint-placeholder-val="{{ false }}">
-          <div data-pair-state style="font-size: 12px; color: var(--ink3);">{{ pairStateText }}</div>
-        </sc-if>
-        <sc-if value="{{ hasPairHint }}" hint-placeholder-val="{{ false }}">
-          <div data-pair-hint style="font-size: 12px; color: var(--bad);">{{ pairHintText }}</div>
-        </sc-if>
-      </div>
-      <div style="display: flex; gap: 8px; flex-wrap: wrap; flex: none; max-width: 100%;">
-        <sc-if value="{{ pairAskOn }}" hint-placeholder-val="{{ false }}">
-          <button onClick="{{ pairAskYes }}" data-pair-ask-yes style="padding: 6px 12px; border-radius: 8px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">{{ pairAskYesLabel }}</button>
-          <button onClick="{{ pairAskNo }}" data-pair-ask-no style="padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">{{ pairAskNoLabel }}</button>
-        </sc-if>
-        <sc-if value="{{ pairUndoOn }}" hint-placeholder-val="{{ false }}">
-          <button onClick="{{ pairUndo }}" data-pair-undo style="padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">{{ pairUndoLabel }}</button>
-        </sc-if>
-        <sc-if value="{{ pairCloseOn }}" hint-placeholder-val="{{ false }}">
-          <button onClick="{{ closePairNote }}" data-pair-note-close style="padding: 4px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12px; cursor: pointer;">{{ closePairLabel }}</button>
-        </sc-if>
+  <!-- G10b-5: how to connect a PC, from the "High-quality (my PC)" button of a device that has no link. It explains; it creates no link and shows no secret. -->
+  <sc-if value="{{ homeSheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div data-home-sheet style="position: fixed; inset: 0; z-index: 58; display: grid; place-items: center; padding: 16px;">
+      <button type="button" onClick="{{ closeHomeSheet }}" aria-label="{{ homeSheetCloseLabel }}" data-home-sheet-backdrop style="position: absolute; inset: 0; border: 0; padding: 0; background: rgba(20, 18, 16, .45); cursor: pointer;"></button>
+      <div role="dialog" aria-modal="true" aria-label="{{ homeHelpLabel }}" style="position: relative; width: 100%; max-width: 440px; max-height: calc(100dvh - 32px); overflow-y: auto; box-sizing: border-box; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow); padding: 20px; display: flex; flex-direction: column; gap: 14px; animation: rise .2s ease;">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <div data-home-sheet-title style="min-width: 0; flex: 1; font-size: 16px; font-weight: 600; letter-spacing: -0.01em;">{{ homeHelpLabel }}</div>
+          <button type="button" data-home-sheet-close onClick="{{ closeHomeSheet }}" aria-label="{{ homeSheetCloseLabel }}" style="width: 32px; height: 32px; flex: none; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 17px; line-height: 1; cursor: pointer;">×</button>
+        </div>
+        <p data-home-sheet-intro style="margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink2);">{{ homeSheetIntro }}</p>
+        <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; line-height: 1.55; color: var(--ink);">
+          <li data-home-sheet-step="pc">{{ homeSheetStep1 }}</li>
+          <li data-home-sheet-step="other">{{ homeSheetStep2 }}</li>
+        </ul>
+        <div>
+          <button type="button" data-home-sheet-settings onClick="{{ homeSheetMore }}" style="padding: 0; border: 0; background: transparent; color: var(--accent); font-family: inherit; font-size: 13px; font-weight: 600; text-decoration: underline; cursor: pointer;">{{ homeSheetMoreLabel }}</button>
+        </div>
       </div>
     </div>
   </sc-if>
+
   <div style="{{ toastStyle }}">{{ toast }}</div>
   <div class="ppp-miss" data-miss="{{ missN }}" style="{{ missStyle }}">{{ missText }}</div>
 </div>
@@ -12362,6 +12405,11 @@ const PcLocal = (() => {
   };
 })();
 
+/* G10b-5: when the site does not recognise this device's PC code, the code is NOT forgotten (see Component.homeNotRecognized). It is looked at again retryAtMs after the FIRST such answer (now, +5 s, +30 s), then
+   on every opening of the Add or Settings screen and every return to the tab; it is let go of only after `answers` answers of "not valid", each at least spacingMs after the one before, the first one at least
+   spanMs ago - or when the person removes it. */
+const PC_UNREC = { retryAtMs: [0, 5000, 30000], answers: 3, spanMs: 60000, spacingMs: 4000 };
+
 
 class Component extends DCLogic {
   state = (() => {
@@ -12596,7 +12644,9 @@ class Component extends DCLogic {
     if (this._shownScreen !== this.state.screen) {
       this._shownScreen = this.state.screen;
       if (this.state.sidebarOpen) this.setState({ sidebarOpen: false });
-      if (this.state.screen === 'upload' || this.state.screen === 'settings') this.homeRefresh(this.state.screen === 'settings');   /* G10b-1 */
+      /* G10b-1; G10b-5: a device with no link also asks (once per page) whether the site has the queue at all on the Add screen - the button that explains how to connect is shown only where there is something to connect to */
+      if (this.state.screen === 'upload' || this.state.screen === 'settings') this.homeRefresh(true);
+      if (this.state.homeSheet) this.setState({ homeSheet: false });       /* the sheet that explains the PC button belongs to the Add screen */
       /* G10b-4: the link in its read-only field (the copy fallback) and the shown code are put away when Settings is left */
       if (this.state.screen !== 'settings' && (this.state.homePairManual || this.state.homeCodeShown)) this.setState({ homePairManual: false, homeCodeShown: false });
       /* what others have shared changes while you are away from it */
@@ -14385,6 +14435,7 @@ class Component extends DCLogic {
 
   onKey(e) {
     if (e.key === 'Escape' && this.state.shareDlg) { this.closeShareDialog(); return; }
+    if (e.key === 'Escape' && this.state.homeSheet) { this.setState({ homeSheet: false }); return; }
     const t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
     /* the one-note-per-hand chip and the transcription-method chip (G10a-5b) are buttons: Space and Enter press them, they do not start playback */
@@ -14691,7 +14742,8 @@ class Component extends DCLogic {
     if (this._dead) return;
     const code = PcLink.get();
     if (!code) {
-      if (this.state.homeWorker || (this.state.homeJobs || []).length) this.setState({ homeWorker: null, homeJobs: [] });
+      if (this.state.homeWorker || (this.state.homeJobs || []).length || this.state.homeUnrec) this.setState({ homeWorker: null, homeJobs: [], homeUnrec: false });
+      this._unrec = null; clearTimeout(this._unrecTimer); this._unrecTimer = 0;
       /* the Settings screen of a device with no link: ask ONCE whether this site has the queue at all (no header: a site that has it answers 401 "no-link", one that has switched it
          off 503 "disabled", an older one 404), so that the card is not offered where there is nothing to connect to. The Add screen asks nothing. */
       if (unused && !this._homeProbed && PcLink.supported()) {
@@ -14701,7 +14753,8 @@ class Component extends DCLogic {
       return;
     }
     if (!this._homeVis && typeof document !== 'undefined') {
-      this._homeVis = () => { if (document.visibilityState === 'visible' && PcLink.get() && (this.state.homeJobs || []).some(j => j.status === 'queued' || j.status === 'claimed')) this.homeRefresh(); };
+      /* (G10b-5: a link the site did not recognise is looked at again whenever the tab is seen again) */
+      this._homeVis = () => { if (document.visibilityState === 'visible' && PcLink.get() && (this.state.homeUnrec || (this.state.homeJobs || []).some(j => j.status === 'queued' || j.status === 'claimed'))) this.homeRefresh(); };
       document.addEventListener('visibilitychange', this._homeVis);
     }
     try {
@@ -14717,18 +14770,19 @@ class Component extends DCLogic {
       });
       this._homeSeen = {};
       r.jobs.forEach(j => { this._homeSeen[j.id] = j.status; });
-      this.setState({ homeWorker: r.worker, homeJobs: r.jobs, homeOff: false, homeGone: false });
+      this._unrec = null; clearTimeout(this._unrecTimer); this._unrecTimer = 0;      /* the site knows the code: any doubt about it is over */
+      this.setState({ homeWorker: r.worker, homeJobs: r.jobs, homeOff: false, homeGone: false, homeUnrec: false, homeCheck: '' });
     } catch (e) {
       if (this._dead || PcLink.get() !== code) return;
-      /* the site does not know this code (the link was removed on another device, or it was not used for a long time and was purged): this device forgets it and says so */
-      if (e.status === 401 && e.code === 'bad-code') {
-        PcLink.clear();
-        this._homeSeen = {};
-        this.setState({ homeWorker: null, homeJobs: [], homeGone: true, homeNew: null, homeArm: null, homeCodeShown: false });
-        return;
-      }
+      /* the site does not know this code RIGHT NOW (G10b-5). That can be a link removed on another device or purged - or a restart, a cold start, a database hiccup. One answer proves
+         nothing, and this device holds the only copy of the code: it is kept, the state says so, and the site is asked again (homeNotRecognized). */
+      if (e.status === 401 && e.code === 'bad-code') { this.homeNotRecognized(code); return; }
       /* a server without the queue (404), or one that switched its queue off at the start (503 with disabled): the feature is simply not there */
-      if (e.status === 404 || e.off) this.setState({ homeWorker: null, homeJobs: [], homeOff: !!e.off });
+      if (e.status === 404 || e.off) { this._unrec = null; clearTimeout(this._unrecTimer); this._unrecTimer = 0; this.setState({ homeWorker: null, homeJobs: [], homeOff: !!e.off, homeUnrec: false, homeCheck: '' }); }
+      else {
+        this.setState({ homeCheck: 'failed' });       /* the site could not be reached just now: the Add screen says so instead of "Checking" for ever */
+        if (this._unrec && this._unrec.code === code) this.homeNotRecognized(code, true);       /* an attempt that got no answer still uses up its place in the schedule of looks */
+      }
     }
     if (this._dead || !PcLink.get() || (typeof document !== 'undefined' && document.visibilityState === 'hidden')) return;
     const jobs = this.state.homeJobs || [];
@@ -14738,6 +14792,43 @@ class Component extends DCLogic {
     const stale = !delay && jobs.some(j => j.status === 'queued' || j.status === 'claimed');
     if (!!this.state.homeStale !== stale) this.setState({ homeStale: stale });
     if (delay) this._homeTimer = setTimeout(() => this.homeRefresh(false, true), delay);
+  }
+  /* G10b-5: the site answered 401 "bad-code" to this device's PC code (or - noAnswer - the look at it failed in some other way). THE CODE IS NOT FORGOTTEN on one such answer: this device holds the
+     only copy of it, and a restart, a redeploy, a cold start, a database hiccup or an unanswered pairing banner can all make the site not know a good code for a minute (this made the "High-quality (my PC)"
+     button vanish with nothing on screen to say why). The state is "unrecognised" (Settings says so, with Check again and Remove it; the Add screen shows the button disabled with the reason), and the site
+     is asked again: now, 5 s and 30 s after the first answer (PC_UNREC.retryAtMs), then whenever the Add or Settings screen is opened and whenever the tab is seen again. The code is let go of only when the
+     person removes it (removeUnrecognizedLink), or after PC_UNREC.answers answers of "not valid", each at least PC_UNREC.spacingMs after the one before, the first at least PC_UNREC.spanMs ago.
+     The count lives in this page's memory only: a reload starts it again, which can only make the page keep a code longer. */
+  homeNotRecognized(code, noAnswer) {
+    if (this._dead || PcLink.get() !== code) return;
+    const t = Date.now();
+    let u = this._unrec;
+    if (!u || u.code !== code) u = this._unrec = { code: code, t0: t, answers: [], tries: 0 };
+    u.tries++;
+    clearTimeout(this._unrecTimer); this._unrecTimer = 0;
+    if (!noAnswer) {
+      const last = u.answers[u.answers.length - 1];
+      if (last === undefined || t - last >= PC_UNREC.spacingMs) u.answers.push(t);
+      if (u.answers.length >= PC_UNREC.answers && t - u.answers[0] >= PC_UNREC.spanMs) {
+        /* the site has said "not valid" on spaced looks over a minute and more: it is gone (removed on another device, or purged) */
+        PcLink.clear(); this._unrec = null; this._homeSeen = {};
+        this.setState({ homeWorker: null, homeJobs: [], homeGone: true, homeUnrec: false, homeCheck: '', homeNew: null, homeArm: null, homeCodeShown: false });
+        return;
+      }
+    }
+    this.setState({ homeWorker: null, homeJobs: [], homeUnrec: true, homeCheck: '' });
+    const at = PC_UNREC.retryAtMs[u.tries];
+    if (at !== undefined) {
+      this._unrecTimer = setTimeout(() => { this._unrecTimer = 0; if (!this._dead && PcLink.get() === code) this.homeRefresh(); }, Math.max(1000, u.t0 + at - t));
+    }
+  }
+  homeClearUnrec() { this._unrec = null; clearTimeout(this._unrecTimer); this._unrecTimer = 0; }
+  /* "Remove it" on a link the site does not recognise: this device lets go of its copy (the person said so). The link itself is not touched - the site may know it again, or another device may still hold it. */
+  removeUnrecognizedLink() {
+    PcLink.clear(); PcLink.clearPrev(); PcLocal.set(false);
+    clearTimeout(this._homeTimer); this._homeTimer = 0; clearTimeout(this._unrecTimer); this._unrecTimer = 0; this._unrec = null; this._homeSeen = {};
+    this.setState({ homeWorker: null, homeJobs: [], homeNew: null, homeArm: null, homeCodeShown: false, homeStale: false, homeError: '', homeAsked: 0, homeUnrec: false, homeCheck: '', homeGone: false });
+    this.say(tx('The PC link was removed from this device.'));
   }
   async addYoutubeHome() {
     const S = this.state;
@@ -14759,7 +14850,11 @@ class Component extends DCLogic {
       this.setState({ homeBusy: false, homeAsked: launched ? Date.now() : 0 });
       await this.homeRefresh();
       if (launched) this.watchSoon();
-    } catch (e) { this.setState({ homeBusy: false, ytError: e.message }); }
+    } catch (e) {
+      /* G10b-5: "not valid" is not a reason to forget the link: say what is wrong, keep the code, look again */
+      if (e.status === 401 && e.code === 'bad-code' && PcLink.get()) { this.setState({ homeBusy: false, ytError: tx('This device holds a PC link that the site does not recognise right now.') }); this.homeNotRecognized(PcLink.get()); return; }
+      this.setState({ homeBusy: false, ytError: e.message });
+    }
   }
   /* the notes the PC heard, as the page's heard-notes object: the accepted notes only (no pedal, no beats: the helper's own beats made v2 write bars
      two to four times too short), and the ensemble's summary, which the review screen reads for its model-agreement figure */
@@ -14780,7 +14875,11 @@ class Component extends DCLogic {
       this._homePre = { heard: this.homeHeard(r.result), title: r.job.title || '' };
       this.setState({ homeOpening: null });
       this.startImport({ url: r.job.url, name: r.job.title || r.job.url, meta: 'YouTube · ' + tx('my PC'), kind: 'youtube', mode: 'auto' });
-    } catch (e) { this._homePre = null; this.setState({ homeOpening: null, ytError: e.message }); }
+    } catch (e) {
+      this._homePre = null;
+      if (e.status === 401 && e.code === 'bad-code' && PcLink.get()) { this.setState({ homeOpening: null, ytError: tx('This device holds a PC link that the site does not recognise right now.') }); this.homeNotRecognized(PcLink.get()); return; }
+      this.setState({ homeOpening: null, ytError: e.message });
+    }
   }
   /* a finished conversion (ready, failed, cancelled, expired) is removed from the list and from the site: its notes stop taking room in this account's share */
   async removeHomeJob(id) {
@@ -14829,18 +14928,21 @@ class Component extends DCLogic {
     }
     PcLink.clear(); PcLink.clearPrev(); PcLocal.set(false);
     clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};
-    this.setState({ homeBusy: false, homeWorker: null, homeJobs: [], homeNew: null, homeCodeShown: false, homeStale: false, homeAsked: 0 });
+    this.homeClearUnrec();
+    this.setState({ homeBusy: false, homeWorker: null, homeJobs: [], homeNew: null, homeCodeShown: false, homeStale: false, homeAsked: 0, homeUnrec: false, homeCheck: '' });
     this.say(tx('PC link removed. Your PC can no longer fetch conversions.'));
   }
   afterLinkError(e) {
-    if (e.status === 401 && e.code === 'bad-code') { PcLink.clear(); this.setState({ homeBusy: false, homeWorker: null, homeJobs: [], homeGone: true, homeNew: null, homeArm: null, homeCodeShown: false }); return; }
+    /* G10b-5: "not valid" keeps the code (one answer proves nothing): the state is "unrecognised" and the site is asked again */
+    if (e.status === 401 && e.code === 'bad-code') { this.setState({ homeBusy: false, homeNew: null, homeArm: null, homeCodeShown: false }); if (PcLink.get()) this.homeNotRecognized(PcLink.get()); return; }
     this.setState({ homeBusy: false, homeError: e.message });
   }
   /* this device stops using the link (the link itself is not touched: with its code it can be used again, here or elsewhere) */
   forgetPcLink() {
     PcLink.clear(); PcLink.clearPrev(); PcLocal.set(false);
     clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};
-    this.setState({ homeWorker: null, homeJobs: [], homeNew: null, homeArm: null, homeCodeShown: false, homeStale: false, homeError: '', homeAsked: 0 });
+    this.homeClearUnrec();
+    this.setState({ homeWorker: null, homeJobs: [], homeNew: null, homeArm: null, homeCodeShown: false, homeStale: false, homeError: '', homeAsked: 0, homeUnrec: false, homeCheck: '' });
     this.say(tx('This device no longer uses that PC link. It still works: keep its code to use it again.'));
   }
   /* use the link of another device: the code is typed or pasted (spaces, dashes and capitals are forgiven), checked with the site, and kept */
@@ -14854,7 +14956,8 @@ class Component extends DCLogic {
     } catch (e) { return this.setState({ homeBusy: false, homeError: e.message }); }
     if (!PcLink.set(code)) return this.setState({ homeBusy: false, homeError: tx('This browser could not keep the PC link.') });
     PcLink.clearPrev();
-    this.setState({ homeBusy: false, homeCodeInput: '', homeGone: false, homeNew: null, homeCodeShown: false });
+    this.homeClearUnrec();
+    this.setState({ homeBusy: false, homeCodeInput: '', homeGone: false, homeNew: null, homeCodeShown: false, homeUnrec: false, homeCheck: '' });
     this.say(tx('This device now uses that PC link.'));
     this.homeRefresh();
   }
@@ -14934,7 +15037,8 @@ class Component extends DCLogic {
     PcLink.setPrev(prevCode || null);
     if (local && PcLocal.desktop()) PcLocal.set(true);
     clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};
-    this.setState({ homeWorker: null, homeJobs: [], homeNew: null, homeArm: null, homeCodeShown: false, homeGone: false, homeError: '', homeOff: false, homeStale: false, homePairManual: false, homeAsked: 0 });
+    this.homeClearUnrec();
+    this.setState({ homeWorker: null, homeJobs: [], homeNew: null, homeArm: null, homeCodeShown: false, homeGone: false, homeError: '', homeOff: false, homeStale: false, homePairManual: false, homeAsked: 0, homeUnrec: false, homeCheck: '' });
     this.pairNote(tx('This device now uses PC link …{{tag}}. If you did not make that link, press Disconnect.', { tag: tag }), false, { state: this.homeStateText(W), undo: { wasLocal: wasLocal, replaced: !!prevCode } });
     this.homeRefresh();
   }
@@ -14946,7 +15050,8 @@ class Component extends DCLogic {
     PcLink.clearPrev();
     if (u) PcLocal.set(!!u.wasLocal);
     clearTimeout(this._pairTimer); clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};
-    this.setState({ pairNote: null, pairAsk: null, homeWorker: null, homeJobs: [], homeNew: null, homeArm: null, homeCodeShown: false, homePairManual: false, homeStale: false, homeAsked: 0 });
+    this.homeClearUnrec();
+    this.setState({ pairNote: null, pairAsk: null, homeWorker: null, homeJobs: [], homeNew: null, homeArm: null, homeCodeShown: false, homePairManual: false, homeStale: false, homeAsked: 0, homeUnrec: false, homeCheck: '' });
     this.homeRefresh();
   }
   /* "ago" in the person's language, and the one line about the PC that the card, the banner and the pairing question share */
@@ -15019,8 +15124,19 @@ class Component extends DCLogic {
     const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
     const warnLink = tx('Anyone with this link can send conversions to your PC, read their results, replace the PC token and remove the link: send it only to yourself.');
     const ask = S.pairAsk, pnote = S.pairNote;
+    /* G10b-5: the "High-quality (my PC)" button must always be findable. Where it is offered: the site has the queue (not homeOff), the recording type is not "Full song", and this browser can keep a link
+       (a private window cannot: nothing is offered, as before). A device WITH a link always has the button - it says what it knows about the PC under it (Checking / has not connected yet / the site does not recognise
+       the link right now, which also disables it); a device with NO link has a second button that opens a sheet saying how to connect (it creates nothing and shows no secret). */
+    const queueOn = !S.homeOff, arrangeMode = S.transcriptionMode === 'arrange';
+    const unrec = !!(linked && S.homeUnrec);
+    const seen = !!(linked && W && W.everSeen);
+    const addOn = queueOn && !arrangeMode && !!(linked || PcLink.supported());
+    const unrecText = tx('This device holds a PC link that the site does not recognise right now.');
+    const pcState = !linked || seen ? '' : unrec ? unrecText
+      : !W ? (S.homeCheck === 'failed' ? tx('Could not check your PC right now. You can still send the job.') : tx('Checking your PC…'))
+        : tx('Your PC has not connected yet: it will take the job when it does');
     return {
-      /* the pairing banner (G10b-3, G10b-4), above everything, also above the sign-in gate: a notice (20 s, or 60 s with Disconnect), or the question that stays until it is answered */
+      /* the pairing banner (G10b-3, G10b-4), first in the main column and in the flow (G10b-5: it no longer floats over the header), above the sign-in gate: a notice (20 s, or 60 s with Disconnect), or the question that stays until it is answered */
       hasPairNote: !!(pnote || ask),
       pairKind: ask ? 'ask' : pnote ? (pnote.bad ? 'bad' : pnote.undo ? 'paired' : 'note') : '',
       pairNoteText: ask
@@ -15034,11 +15150,22 @@ class Component extends DCLogic {
       pairAskNo: () => { this.setState({ pairAsk: null }); },
       pairUndoOn: !!(pnote && pnote.undo), pairUndoLabel: tx('Disconnect'), pairUndo: () => this.pairUndo(),
       pairCloseOn: !!(pnote && !ask), closePairNote: () => { clearTimeout(this._pairTimer); this.setState({ pairNote: null }); }, closePairLabel: tx('Close'),
-      pairNoteStyle: 'position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:90;box-sizing:border-box;width:min(560px,calc(100vw - 32px));display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:var(--shadow);font-size:13px;line-height:1.5;border:1px solid ' + (ask ? 'var(--accent)' : pnote && pnote.bad ? 'var(--bad)' : 'var(--good)') + ';',
-      showHomePc: !!(linked && W && W.everSeen && S.transcriptionMode !== 'arrange'),
+      pairNoteStyle: 'position:sticky;top:env(safe-area-inset-top,0px);z-index:95;box-sizing:border-box;width:min(560px,calc(100% - 32px));margin:12px auto 0;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:var(--shadow);font-size:13px;line-height:1.5;border:1px solid ' + (ask ? 'var(--accent)' : pnote && pnote.bad ? 'var(--bad)' : 'var(--good)') + ';flex:none;',
+      showHomePc: !!(addOn && linked),
+      homePcDisabled: unrec,
+      homePcStyle: 'padding:10px 16px;border-radius:10px;border:1px solid var(--accent-2);background:var(--accent-3);color:var(--accent);font-family:inherit;font-size:13px;font-weight:600;white-space:nowrap;' + (unrec ? 'opacity:.55;cursor:not-allowed;' : 'cursor:pointer;'),
+      hasHomePcState: !!(addOn && pcState), homePcStateText: pcState, homePcStateKind: unrec ? 'unrecognised' : !W ? (S.homeCheck === 'failed' ? 'failed' : 'checking') : 'never-seen',
+      hasHomeRecheck: !!(addOn && unrec),
+      showHomeNote: !!(addOn && seen),
+      showHomeHelp: !!(addOn && !linked), homeHelpLabel: tx('High-quality (my PC)'), openHomeSheet: () => this.setState({ homeSheet: true }),
+      homeSheetOpen: !!(S.homeSheet && addOn && !linked), closeHomeSheet: () => this.setState({ homeSheet: false }), homeSheetCloseLabel: tx('Close'),
+      homeSheetIntro: tx('High-quality conversion uses your own PC. This device is not connected to it yet. The quickest way:'),
+      homeSheetStep1: tx('On your PC double-click the desktop shortcut “PPP connect my devices (pair)”: it opens PPP already connected.'),
+      homeSheetStep2: tx('From another device: open the link you copied with “Connect another device: copy link”.'),
+      homeSheetMoreLabel: tx('More in Settings'), homeSheetMore: () => { this.setState({ homeSheet: false }); this.go('settings')(); },
       homePcLabel: S.homeBusy ? tx('Sending…') : tx('High-quality (my PC)'),
       addYoutubeHome: () => this.addYoutubeHome(),
-      hasHomeTag: !!(linked && W && W.everSeen && S.transcriptionMode !== 'arrange' && myTag), homeTagCaption: myTag ? tx('Sends to PC link …{{tag}}', { tag: myTag }) : '',
+      hasHomeTag: !!(addOn && seen && myTag), homeTagCaption: myTag ? tx('Sends to PC link …{{tag}}', { tag: myTag }) : '',
       homeLocal: local,
       /* a phone waits for the PC's next check (the PC says how often); the PC itself is asked to start at once */
       homePcNote: local
@@ -15069,6 +15196,7 @@ class Component extends DCLogic {
       hasHomeStatus: !!(linked && W && (W.alive || W.everSeen || W.hasToken)),
       makePcLink: () => this.makePcLink(),
       homeMakeLabel: S.homeBusy ? tx('Sending…') : tx('Create my PC link'),
+      hasHomeUnrec: unrec, homeUnrecText: unrecText, homeUnrecRemoveLabel: tx('Remove it'), removeHomeUnrec: () => this.removeUnrecognizedLink(),
       hasHomeGone: !!S.homeGone && !linked,
       homeGoneNote: tx('Your PC link is no longer valid. It was removed, or it was not used for a long time. Create a new one.'),
       hasHomeError: !!S.homeError, homeError: S.homeError || '',
@@ -15090,7 +15218,7 @@ class Component extends DCLogic {
       homeSteps: steps,
       dismissHomeNew: () => this.setState({ homeNew: null }), homeDismissLabel: tx('I have saved them'),
       /* a device with a link: ONE button to connect another device, with its one-line warning (the rest is under "More") */
-      homePairBlock: !!(linked && !N), homePairManual: !!(linked && S.homePairManual), homePairLink: linked && S.homePairManual ? this.pairLink(pairCode) : '',
+      homePairBlock: !!(linked && !N && !unrec), homePairManual: !!(linked && S.homePairManual), homePairLink: linked && S.homePairManual ? this.pairLink(pairCode) : '',
       homePairCopyLabel: S.homeCopied === 'pair' ? tx('Copied') : tx('Connect another device: copy link'),
       copyPairLink: () => this.copyHomeText(this.pairLink(), 'pair', '[data-home-pair-link]', true),
       sharePairLink: () => this.shareHomeLink(this.pairLink()),

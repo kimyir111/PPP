@@ -2106,6 +2106,16 @@
     "Needs a one-time Windows setup: double-click tools/home-worker/register-protocol.cmd (or run node tools/home-worker/worker.js --register-protocol). After that, \"High-quality (my PC)\" pressed in this browser starts the conversion right away. Turn this on only on the PC that runs the worker.": "最初に一度だけ Windows の設定が必要です：tools/home-worker/register-protocol.cmd をダブルクリックしてください（または node tools/home-worker/worker.js --register-protocol）。その後は、このブラウザで「高品質変換（自分のPC）」を押すとすぐに始まります。ワーカーがある PC でのみオンにしてください。",
     "High-quality conversion runs on your own PC. This button asks this PC to start at once; a song takes a few minutes. If nothing starts, run the desktop shortcut.": "高品質変換は自分の PC で動きます。このボタンはこの PC にすぐ開始するよう依頼します。1 曲に数分かかります。始まらない場合は、デスクトップのショートカットを実行してください。",
     "Asked this PC to start. If nothing happens, run the desktop shortcut.": "この PC に開始を依頼しました。何も起きない場合は、デスクトップのショートカットを実行してください。",
-    "Start now": "今すぐ開始"
+    "Start now": "今すぐ開始",
+    "Checking your PC…": "PCを確認しています…",
+    "Your PC has not connected yet: it will take the job when it does": "PCはまだ接続していません。接続されると、この作業を受け取ります。",
+    "Could not check your PC right now. You can still send the job.": "今はPCを確認できません。それでも作業は送れます。",
+    "This device holds a PC link that the site does not recognise right now.": "この端末にはPCリンクがありますが、サイトが今はそれを認識できません。",
+    "Remove it": "削除する",
+    "The PC link was removed from this device.": "この端末からPCリンクを削除しました。",
+    "High-quality conversion uses your own PC. This device is not connected to it yet. The quickest way:": "高品質変換は自分のPCで動きます。この端末はまだPCにつながっていません。いちばん早い方法はこちらです。",
+    "On your PC double-click the desktop shortcut “PPP connect my devices (pair)”: it opens PPP already connected.": "PCで、デスクトップの「PPP connect my devices (pair)」ショートカットをダブルクリックしてください。PPPが接続済みの状態で開きます。",
+    "From another device: open the link you copied with “Connect another device: copy link”.": "別の端末からは、「別の端末をつなぐ：リンクをコピー」でコピーしたリンクを開いてください。",
+    "More in Settings": "設定でさらに見る"
   }
 }

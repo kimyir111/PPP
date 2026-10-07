@@ -528,3 +528,39 @@ A real browser, with a stub in place of Windows: the launch is caught at the doc
 4. The switch is offered in any desktop browser (also macOS/Linux, where the registration does not exist); its note says "Windows".
 5. `Disconnect` lives in the banner only (60 s). A later undo is "Forget on this device" and a new link.
 6. The tag is 6 hex (24 bits). Longer would be harder to compare by eye.
+
+## 16. G10b-5: the PC button is always findable, and a link is never forgotten on one 401 (the user, 2026-10-08)
+
+**What the user hit.** A screenshot of the Add screen with a YouTube link typed and only "Make sheet music" beside it: *"where on earth is the high-quality conversion?"* Earlier the "High-quality (my PC)" button had been there. Nothing on screen said what to do.
+
+**The causes** (all in the page, `Piano Coach App.dc.html`):
+
+1. `showHomePc` was `linked && W && W.everSeen && transcriptionMode !== 'arrange'`: the button was shown only when this browser held a PC link **and** the worker status had loaded **and** the PC had been seen. A device with no link, a status that had not come yet, and a PC that had never connected all looked the same: no button, no word.
+2. The single status call (`GET /api/jobs`) answered `401 bad-code` **once** and the page ran `PcLink.clear()` - it forgot the only copy of the code. A restart or redeploy of the server, a cold start, a database hiccup, or a pairing banner left unanswered can each make the site not know a good code for a moment. After that the device had no link, so the button never came back.
+3. The pairing banner (G10b-3/4) was `position: fixed; top: 16px` and sat over the page header at 400 px until it was closed.
+
+**What a device shows now** (`homeView`, Add screen, the YouTube card; "typed or not", the card is always there):
+
+| This device | The site / the PC | Add screen |
+|---|---|---|
+| no link | queue on | a **secondary button "High-quality (my PC)"** that opens a sheet (below) |
+| no link | queue OFF (`homeOff`, learned by one `GET /api/worker/status` with no code when the Add or Settings screen opens) | nothing, as before |
+| no link, storage blocked (a private window) | - | nothing, as before (no card either) |
+| link | status loading | the button, enabled, "Checking your PC…" |
+| link | status failed (the site did not answer) | the button, enabled, "Could not check your PC right now. You can still send the job." |
+| link | the PC has **never** connected | the button, enabled, "Your PC has not connected yet: it will take the job when it does" (pressing it queues the job) |
+| link | the PC has connected | the button as before, with its honest note and the "Sends to PC link …" caption |
+| link | the site does not recognise the code (401 `bad-code`) | the button **disabled**, "This device holds a PC link that the site does not recognise right now." and **Check again**; Settings says the same with **Check again** and **Remove it** |
+| any | recording type "Full song" (`arrange`) | nothing (the PC makes faithful transcriptions only), as before |
+
+**The sheet** (no link; `[data-home-sheet]`, a dialog; Close, Escape and a tap outside close it) says: *High-quality conversion uses your own PC. This device is not connected to it yet. The quickest way:* - "On your PC double-click the desktop shortcut “PPP connect my devices (pair)”: it opens PPP already connected." - "From another device: open the link you copied with “Connect another device: copy link”." - and a link **More in Settings**. It explains and nothing more: it makes no link (`openHomeSheet` only sets a flag), shows no code, token or pairing link and has no field. It is the one-tap path of G10b-3/4; Settings is where the link is made.
+
+**A link is not forgotten on one 401.** `homeNotRecognized` (called by `homeRefresh`, `afterLinkError`, and a conversion that is asked for or opened and hears `bad-code`) keeps the code and sets the state "unrecognised". The site is asked again **now, +5 s and +30 s after the first answer** (timers; the numbers are `PC_UNREC.retryAtMs`), then on every opening of the Add or Settings screen and whenever the tab is seen again (`visibilitychange`). The code is let go of **only** when (a) the person presses **Remove it** (or Remove link / Forget on this device), or (b) the site has said "not valid" **three times, each at least 4 s after the one before, the first at least 60 s ago** - and then Settings says "Your PC link is no longer valid…" as it always did. The count lives in the page's memory: a reload starts it again, which can only keep a code longer. Looks that fail for another reason (503, no network) use up their place in the schedule but are not answers. A look that succeeds ends the doubt.
+
+Not changed: pairing from a link (`pairFromLink`) still replaces a stored code that the site answers `bad-code` to (the person opened a pairing link on purpose; `pairing.test.js` pins it), and Remove link still clears the code even if the site says it is gone (that is what was asked).
+
+**The banner** is now the first child of `<main>`, in the flow, `position: sticky; top: env(safe-area-inset-top, 0px)` (z-index 95, above the sign-in gate's 80): it pushes the header down instead of covering it, it stays in view when the page is scrolled, and its buttons (Close, or Connect / Keep, or Disconnect) are reachable at 400 px.
+
+**One deliberate change to an older check.** `page.test.js` compared the Add card of a device with no link, tag for tag, with the card of `b7f9fb5` ("identical for everybody with no link"). It now differs by exactly one element for everybody with no link: the secondary button "High-quality (my PC)" (`data-home-pc-help`); the test removes that one element and demands equality for the rest, and checks it is in the row of "Make sheet music". The same test used to say that a device with no link asks the site nothing while the Add screen is open: it now asks ONE probe (`GET /api/worker/status`, no PC code, nothing about jobs) - needed to hide the button where the queue is off.
+
+**Verification.** `tests/home-worker/findable.test.js` (new, in `npm run test:home-worker-page`; real page, real server, `HOME_MODULES_DIR` and `HOME_FAIL_FAST` like `pairing.test.js`): every state of the table, the sheet (its text, that it contains no 64-hex, `ppw_`, `#pc=` or field, that opening it creates nothing), the unrecognised state recovering after one 401 (a fake clock that freezes `Date.now` and catches the page's timers: 5000 ms, then 24800 ms, then none), nothing cleared at 0 / 5 / 30 s, cleared only at the check after 60 s, answers closer than 4 s counted once, the tab and the screens looking again, Remove it, `afterLinkError` and a refused conversion keeping the code, the banner above the header at 400 px (ko and en) with every button hit-testable, 400 px layouts of every state (ko and en), and ko / ja / zh from the catalogs. The Add card of a visitor who is offered nothing (queue off; storage blocked) is still the card of `b7f9fb5`, tag for tag. **24 new mutants** (F1-F24, in `mutants.js`: forget on the first 401 in `homeNotRecognized` and in `afterLinkError`, a refused conversion not marking the link, the button hidden while W is null or until the PC is seen, no secondary button, the sheet making a link or showing a secret or staying over another screen, the banner fixed over the header again, no 60 s span, no spacing of answers, no retry timers, a button not disabled, `homeOff` / `arrange` / unsupported storage ignored, no probe on the Add screen, Remove it doing nothing, no look when the tab is seen, 'Checking' for ever, no Escape, no reason line, the pairing link on an unrecognised link) and the two older page mutants (R19, R26) that this change moved: **27 of 27 killed** (`node tests/home-worker/mutants.js F1 … F24 R19 R26`).
