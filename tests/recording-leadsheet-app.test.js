@@ -408,6 +408,28 @@ const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i])
       const a2 = await apply(pr, 'beginner');
       ok('Apply arrangement again: the reduction, no mark', a2.arrangement.engine === 'ppp.g9-single' && a2.arrangement.recordingArrange === undefined && a2.arrangement.leadsheet === undefined, JSON.stringify(a2.arrangement));
       ok('and it is another copy than the lead sheet\'s', (await rhash(pr)) !== leadHash);
+      /* the review screen's Rewrite (the rhythm controls) re-applies the stored arrangement as the plan of a new request: the copy that was made from the lead sheet must not decide it, the chip does */
+      const redHash = await rhash(pr);
+      const chipRow = '[data-recording-arrange-row="review"] [data-recording-arrange-option]';
+      const rewrite = async () => {
+        await says(pr);
+        const n0 = await pr.evaluate(() => window.__says.length);
+        await pr.evaluate(() => document.querySelector('[data-lock-rewrite]').click());
+        await pr.waitForFunction(n => !window.PPP.app.state.arrangementBusy && window.__says.length > n, { timeout: 240000 }, n0);
+        await sleep(600);
+        return pr.evaluate(() => { const S = window.PPP.app.state; return { arrangement: S.importSource.arrangement, notes: S.score.notes.filter(n => !n.rest).length }; });
+      };
+      await pr.click(chipRow); await sleep(300);
+      const a2b = await apply(pr, 'beginner');
+      ok('the chip on again and Apply arrangement: the lead sheet copy again, the first copy note for note', a2b.arrangement.recordingArrange === 'leadsheet' && (await rhash(pr)) === leadHash, JSON.stringify(a2b.arrangement));
+      await pr.click(chipRow); await sleep(300);
+      ok('the chip turned off after that copy', (await pr.evaluate(() => window.PPP.recordingArrange)) === 'reduce');
+      const w1 = await rewrite();
+      ok('Rewrite with the chip off, on a lead sheet copy: the reduction copy (no lead sheet record in its source), the very copy Apply arrangement makes with the chip off - not the lead sheet again', w1.arrangement.engine === 'ppp.g9-single' && w1.arrangement.recordingArrange === undefined && w1.arrangement.leadsheet === undefined && w1.arrangement.leadsheetRefusal === undefined && (await rhash(pr)) === redHash && (await rhash(pr)) !== leadHash, JSON.stringify(w1.arrangement));
+      await pr.click(chipRow); await sleep(300);
+      const w2 = await rewrite();
+      ok('and Rewrite with the chip on, on that reduction copy: the lead sheet copy (the old copy decides nothing either way)', w2.arrangement.recordingArrange === 'leadsheet' && (await rhash(pr)) === leadHash, JSON.stringify(w2.arrangement));
+      await pr.click(chipRow); await sleep(300);   /* off again for what follows (the original level, the Korean chip) */
       /* "Original transcription" has no chip */
       await pr.select('[data-arrangement-level]', 'original'); await sleep(300);
       ok('at "Original transcription" the chip is not shown (the lead sheet is for the easier levels)', await pr.evaluate(() => !document.querySelector('[data-recording-arrange-row="review"]')));

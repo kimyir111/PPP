@@ -267,6 +267,26 @@ test('leadsheetMark: the copy\'s source says the path and, small, what the lead 
   assert.deepEqual(leadsheetMark({ recordingArrange: 'leadsheet' }), { recordingArrange: 'leadsheet', leadsheet: {} });
 });
 
+test('a stored arrangement reused as a plan (the review screen\'s Rewrite) keeps its level and style and loses the record of the path that made it: the chip decides, not the old copy', async () => {
+  const { arrangementAsPlan } = new Function(fnSource('arrangementAsPlan') + 'return { arrangementAsPlan };')();
+  const stored = { engine: 'ppp.g9-single', level: 'beginner', style: 'balanced', source: 'local', levelNote: 'relaxed-plan', handsFallback: 'legacy', recordingArrange: 'leadsheet', leadsheet: LEADY.leadsheet, leadsheetRefusal: 'LEADSHEET_METRE' };
+  const plan = arrangementAsPlan(stored);
+  assert.deepEqual(Object.keys(plan).sort(), ['engine', 'handsFallback', 'level', 'levelNote', 'source', 'style'], 'the three keys of the lead sheet\'s record are gone, the plan is what it was');
+  assert.equal(plan.level, 'beginner'); assert.equal(plan.style, 'balanced');
+  assert.equal(stored.recordingArrange, 'leadsheet', 'the stored record is not touched (it is the copy\'s own source)');
+  [null, undefined, '', 'x', 0, false].forEach(v => assert.equal(arrangementAsPlan(v), null, String(v)));
+  /* why it matters: the plan's own statement beats the page's mode. A stored 'leadsheet' as the plan makes a lead sheet whatever the chip says; stripped, the chip (the page's mode) decides */
+  const h = harness({ lead: [LEADY], reduce: [ARRANGED] }, { mode: 'reduce' });
+  assert.equal((await h.arrangeSingleNoteWithLeadsheet(recGraph(), stored, 'T')).recordingArrange, 'leadsheet', 'unstripped: the old copy wins over the chip');
+  const h2 = harness({ lead: [LEADY], reduce: [ARRANGED] }, { mode: 'reduce' });
+  assert.equal(await h2.arrangeSingleNoteWithLeadsheet(recGraph(), arrangementAsPlan(stored), 'T'), ARRANGED, 'stripped, with the chip off: the reduction, the very object');
+  assert.equal(h2.log.leadLoads, 0);
+  const h3 = harness({ lead: [LEADY], reduce: [ARRANGED] }, { mode: 'leadsheet' });
+  assert.equal((await h3.arrangeSingleNoteWithLeadsheet(recGraph(), arrangementAsPlan(Object.assign({}, stored, { recordingArrange: 'reduce' })), 'T')).recordingArrange, 'leadsheet', 'stripped, with the chip on: the lead sheet, whatever the old copy was');
+  assert.match(html, /const arrangement = arrangementAsPlan\(S\.importSource && S\.importSource\.arrangement\);/, 'rewriteRhythm reuses the stored arrangement through it');
+  assert.equal((html.match(/arrangementAsPlan\(/g) || []).length, 2, 'its definition and rewriteRhythm');
+});
+
 test('the page: rec/leadsheet.js is in no up-front list, not in RECORDING_SCRIPTS or SINGLE_SCRIPTS; one loader asks for it after v2\'s files; the two screens call the one entry and it alone calls the reduction', () => {
   const L = E.scriptListOfPage();
   assert.equal(L.lead, 'rec/leadsheet.js');

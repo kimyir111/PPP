@@ -5303,6 +5303,15 @@ function leadsheetMark(sn) {
   return sn && sn.recordingArrange === 'leadsheet' ? { recordingArrange: 'leadsheet', leadsheet: r ? { version: r.version, notes: r.notes, melodyNotes: r.melodyNotes, shifted: r.shifted } : {} }
     : sn && sn.leadsheetRefusal ? { recordingArrange: 'reduce', leadsheetRefusal: sn.leadsheetRefusal } : {};
 }
+/* A stored arrangement (source.arrangement) is a RECORD of how a copy was made: its level, its style, its engine and, from G10c-1b, which path made it (recordingArrange, the lead sheet's counts, the refusal).
+   When the review screen reuses it as the PLAN of a new request (rewriteRhythm) the path it records must not decide the new copy - a stored 'leadsheet' would win over the chip (leadsheetWanted reads
+   plan.recordingArrange first) and a person who has turned the chip off would get the lead sheet again. The new request is what the chip says now: those three keys are not part of a plan. */
+function arrangementAsPlan(a) {
+  if (!a || typeof a !== 'object') return null;
+  const p = Object.assign({}, a);
+  delete p.recordingArrange; delete p.leadsheet; delete p.leadsheetRefusal;
+  return p;
+}
 /* the song's source after a conversion: v2 writes recordingPipeline and version 8; anything else drops a v2 mark that a previous conversion left and is otherwise as it was */
 function applyRecordingMark(source, built) {
   if (writtenByV2(built)) { source.recordingPipeline = 'v2'; source.transcriptionVersion = TRANSCRIPTION_VERSION_V2; }
@@ -15280,7 +15289,7 @@ class Component extends DCLogic {
       bpm: +S.lockBpm || S.score.tempo || 80,
       firstDownbeat: S.lockDownbeat == null ? 0 : +S.lockDownbeat
     };
-    const arrangement = (S.importSource && S.importSource.arrangement) || null;
+    const arrangement = arrangementAsPlan(S.importSource && S.importSource.arrangement); /* G10c-1b: the plan, not the record of the path that made the copy (the chip decides that now) */
     if (arrangement && ((ScoreArranger.styles.indexOf(arrangement.style) > -1 && arrangement.style !== 'balanced') || singleRoute(arrangement)))
       return this.applyRichReviewArrangement(arrangement, S.arrangementStatus || '');
     let built;
