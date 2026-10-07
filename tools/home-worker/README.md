@@ -82,3 +82,5 @@ Setup in 4 steps: (1) the transcription environment from the root README (`tools
 - Waiting is the **site's** call (`nextPollSeconds`: 15 s while something is queued, claimed or just finished, otherwise **an hour** by default, and the site will not go below 15 minutes); `idlePollSeconds` in the settings can only lengthen it. The shorter the idle interval, the longer the free server stays awake (15 minutes or less: all month; 20 minutes: about 77%; an hour: about 26%). Free-tier arithmetic: `docs/GOALS/G10B_HOME_WORKER.md`.
 - Limits: the PC must be on with the worker running; latency up to the check interval; only your own link's jobs; YouTube links only; the helper's beats and pedal are not used; at most 15 minutes of audio; results are kept 3 days.
 - Optional `ytdlpPath` downloads the audio with yt-dlp on this PC (the site is the fallback); `audioBase` names another place for `/api/youtube-audio`.
+
+<!-- throwaway tooling change -->
