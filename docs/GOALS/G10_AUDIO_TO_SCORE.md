@@ -3434,9 +3434,176 @@ The first version of this PR had the gate red (`make_rec_suites.py --check` DIFF
 
 ### 33.9 What G10c-1b (the app) needs
 
+*Items 1 to 4 and the tooling of item 5 are done in section 34 (G10c-1b); the default is the user's decision of 2026-10-07 (`'leadsheet'`, not `'reduce'` as item 2 says below); the blind review page and the flip's verdict are not.*
+
 1. The page loads `rec/leadsheet.js` after `rec/grid.js` and `rec/writer.js` (already in the v2 list; `PPPRecGrid`, `PPPRecWriter`) and after `scoregraph/gaps.js`, `songgraph/harmony.js` and `songgraph/index.js`; a saved v2 song opened in a fresh page must have them before the first lead sheet (the glue returns `LEADSHEET_NOT_LOADED` otherwise). Add it to the extractor's `browserWindow` list (`tests/realize/app-single-extract.js`) and to the bare-vm test of its own.
 2. `PPP.recordingArrange` (`'reduce'` default; remembered like `PPP.recording`), a control on the Song Arranger and the review screen, the same on the page's three calls of `arrangeSingleNote` (the hands fallback chain stays for the reduction: the lead sheet does not depend on the hand split, so a `ALL_CANDIDATES_HAVE_HARD_VIOLATIONS` of a lead sheet is not retried with the classic hands).
 3. A refusal of the lead sheet (`LEADSHEET_*`, `UNREACHABLE` is not expected, hanon-like cases) should fall back to the reduction, not to the standard arrangement.
 4. The words for `levelNote: 'relaxed-plan'` on a recording (the key signature and the melody's own busyness, not the left hand), in all catalogs, Korean first.
 5. The review: section 9's H-10 part (3 recordings x 2 levels, lead against reduce, blind, Korean, the teacher's flow reproduced in a production-like page before "done"). `review/lib/appcode.js` `arranger().arrange(graph, level, title)` passes `{level}` only: it needs the option. The default flip is the user's.
 6. Decisions that are the user's: transposition to an easier key (a feature, not a repair: the sounding pitch changes), simplifying the melody at the easy levels, the Alberti sixteenths at intermediate.
+
+
+## 34. G10c-1b: the lead sheet of a recording in the app (2026-10-07; implementer on Opus; PPP.recordingArrange, default `'leadsheet'`, one line to flip; not deployed, not merged)
+
+Worktree `D:/PPP-g10c1b`, branch `g10-c1b` from `origin/main` `2b1aa44` (PR #182, G10c-1a). Section 33 built and measured the lead sheet in Node; this phase wires it into the page: the Song Arranger and the review screen's Apply arrangement. **The user decided on 2026-10-07 to switch recordings to the lead sheet if the notes are accurate, so the default is `'leadsheet'`** (one constant, `RECORDING_ARRANGE_DEFAULT`, 34.2). The Lead deploys only after a human check; the flip back is that one line. **No person has looked at a lead-sheet copy** (33's statement stands: what is measured here is made / refused, the checker, the identity, and what the page does), and the same limits as section 33.8 apply (the melody is not simplified, a cover's key is not changed, the levels collapse for some covers: 34.9).
+
+### 34.1 What was built
+
+| File | What |
+| --- | --- |
+| `Piano Coach App.dc.html` | `RECORDING_ARRANGE_DEFAULT` / `PPP.recordingArrange` (34.2); `loadLeadsheetModule` (34.4); `leadsheetWanted`, `arrangeSingleNoteWithLeadsheet`, `leadsheetMark` (34.3), the page's one entry for the one-note-per-hand arranger, called by the Song Arranger (`saveSongArrangement`) and by the review screen (`applyRichReviewArrangement`); the chip on both screens; `isLeadsheetSong`; `warmLeadsheetModule`; `levelNoteText(lead)`; the composer line "(lead sheet)"; 176 lines changed against main, none inside `arrangeSingleNote` or `arrangeSingleNoteWithHandsFallback` |
+| `i18n/{ko-KR,ja-JP,zh-CN}.json` | five strings each (34.5); `en-US.json` is empty by design (the English text is the key) |
+| `tests/realize/app-single-extract.js` | `scriptListOfPage()` reads `LEADSHEET_SCRIPT`, `LEADSHEET_NEEDS`, `LEADSHEET_MODEL` from the page; `browserWindow()` loads the grid model, `rec/grid.js`, `rec/writer.js`, `rec/leadsheet.js` after the page's own scripts, in the page's order |
+| `tests/rec/leadsheet-app.test.js` (new, 13), `leadsheet.test.js`, `hands-fallback.test.js` | the page's own functions run against stubs and against the real arranger; the bare-vm load equals Node byte for byte; the page's call sites and lists |
+| `tests/recording-leadsheet-app.test.js` (new) | the real page, synthetic covers (34.8); `npm run test:recording-leadsheet-app` |
+| `tests/recording-v2-lib.js`, `recording-v2-app.test.js`, `single-note-app.test.js` | the sections that count the reduction's runs and conversions, or its note count, ask for `'reduce'` the way a person gets it (`openPage({reduce: true})`; `PPP.recordingArrange = 'reduce'`) |
+| `review/lib/appcode.js`, `review/lib/h10-item.js` | `arranger().arrange(graph, level, title, {recordingArrange})` and `job.arrange` (34.7a); nothing is built or published |
+| `tests/bench/tools/arrange-identity.js` | `--page reduce|leadsheet`: the requests through the page's own entry (34.6) |
+
+### 34.2 The switch, and the one line that flips it
+
+`PPP.recordingArrange` is `'leadsheet'` or `'reduce'`, with `PPP.recording`'s rules (31.3): a choice is one of the two strings, anything else is no choice and no choice is the default; the first layer that holds a choice wins: `?recordingArrange=reduce|leadsheet` in the address (that visit only, never stored), the device's remembered choice (`localStorage` `ppp.recordingArrange.v1`, written by the chip and by `PPP.recordingArrange = ...`), `RECORDING_ARRANGE_DEFAULT`. A value that is no choice (`'typo'`, `null`, `true`, `'Reduce'`) puts the default back and forgets the remembered choice; an unknown value in the address has no say. Loading the page writes nothing.
+
+**The flip is one line of the page: `const RECORDING_ARRANGE_DEFAULT = 'leadsheet';` -> `'reduce'`.** That is what every device that never touched the chip gets. A device that pressed the chip has its choice stored (`'leadsheet'` or `'reduce'`, as `PPP.recording` does) and keeps it; to reset those too, change the key's suffix (`ppp.recordingArrange.v2`). The tests are written for either value: the only checks that name the default are two pins, `tests/rec/leadsheet-app.test.js` ("THE PIN of the user's decision") and the first check of the `defaults` section of `tests/recording-leadsheet-app.test.js`, which must change with the line. For the human check, `?recordingArrange=reduce` and `?recordingArrange=leadsheet` give the two arrangements of the same song on the same page, and the copy says which it is (34.3).
+
+### 34.3 Who the lead sheet is for, the path, and what a refusal does
+
+`arrangeSingleNoteWithLeadsheet(graph, plan, title, allow)` is the page's one entry (the Song Arranger and the review screen call it; it calls `arrangeSingleNote` for the lead sheet and `arrangeSingleNoteWithHandsFallback`, the reduction with its two retries, for everything else; so **every `arrangeSingleNote` call of the page is inside those two functions**, which `tests/rec/leadsheet-app.test.js` counts: the reduction's first run and its retry, the lead sheet's one run).
+
+| request | path |
+| --- | --- |
+| a recording (a graph with an `audio-score` source: the v2 conversion's and the classic conversion's alike) at beginner, intermediate or advanced, mode `'leadsheet'`, the song a transcription and no "Full song" import | **the lead sheet**, one run, at the level asked; no retry with the classic hands (the hands do not matter to it) |
+| the lead sheet refuses, whatever the reason (`LEADSHEET_*`, `UNREACHABLE`, `ALL_CANDIDATES_HAVE_HARD_VIOLATIONS`, a crash, the module not loading) | **the reduction**, with its own chain exactly as before: the arranger, then for a v2 graph refused for hard violations the classic hands, then the classic conversion of the same heard notes |
+| the reduction refuses too | the reduction's refusal, as today: the Song Arranger's notice (nothing saved, "Save the standard arrangement" is the person's click), the review screen's standard arrangement with its notice |
+| mode `'reduce'`, "Original transcription", a printed score, a MIDI file, a catalogue piece, a "Full song" import (`taskMode 'piano-arrangement'`), `allow` false | **the reduction's own answer**: the very object, the very plan, nothing of the lead sheet is loaded and no mark is written |
+
+**The copy says which path made it** (`source.arrangement`, carried by the library card): `recordingArrange: 'leadsheet'` with `leadsheet: {version, notes, melodyNotes, shifted}` (the lead sheet's own counts), or `recordingArrange: 'reduce'` with `leadsheetRefusal: '<reason>'` when the lead sheet refused and the reduction made the copy (with the existing `handsFallback` / `classicFallback` marks if the reduction needed them). A lead-sheet copy's composer line reads "PPP one-note-per-hand arrangement (lead sheet)" (the classic-reading copy keeps "(classic reading)", the reduction's copy the plain line). A copy made with the chip off, or by main, has none of these keys.
+
+The classic conversion's graphs are recordings too. The lead sheet on the six covers' classic-written graphs (Node, `tools` of 33, aggregates): made 12 of 12 (beginner and advanced), checker classes 0 except one finding on p5; the reduction of the same graphs: p3 and p4 `UNREACHABLE`, p5 534 and p6 173 checker findings. So a page that holds `'legacy'` is no worse off for it.
+
+### 34.4 Loading: four requests, 87 KB, shared with v2's loader
+
+`rec/leadsheet.js` is in no up-front list, not in `RECORDING_SCRIPTS` (the Add screen still asks for v2's 17 files) and not in `SINGLE_SCRIPTS` (the arranger's 14). `loadLeadsheetModule()` asks for what the module reads when it loads and nothing else of v2: the grid model (`rec/weights/ai5b-grid-v1.json`, a window global `rec/grid.js` reads), `rec/grid.js`, `rec/writer.js`, then itself (3,812 + 33,769 + 22,770 + 26,497 = 86,848 bytes; the first version of this phase went through `loadRecordingModules()`: 18 requests, 299,739 bytes, found unnecessary by looking at what `leadsheet.js` reads). They are the very files and the very global v2's loader makes, **shared with it** (`_recLoaded`, `_recGlobals`, `_recInflight`; the model is shape-checked like v2's own), with neither loader running while the other is on its way (`if (_recPromise) await _recPromise` / `if (_leadPromise) await _leadPromise`), bounded at 15 s like the others: a page that opens the Song Arranger first and converts later asks for the other 14 files only, 18 distinct requests in the session and none twice, and converts note for note as a page that never arranged does (tested). When the files cannot be had the lead sheet refuses `LEADSHEET_NOT_LOADED` and the reduction is made (tested with the file blocked: the copy is main's, marked `leadsheetRefusal`).
+
+**Nothing new loads at page load, on the Add screen or on the review screen**: a fresh page asks for no file of `rec/` however long it idles, and its script requests are the page's own (tested). The Song Arranger, opened on a recording while the lead sheet is the mode, asks for the four files in the background (`warmLeadsheetModule`, as it warms the arranger's own scripts), so Create does not wait for them; a saved v2 song opened in a fresh page makes exactly those four requests and is arranged (tested; also by the exact flow below). A page that holds `'legacy'` and arranges a recording fetches the same four files (the lead sheet is about the arrangement, not the conversion).
+
+### 34.5 The words (Korean first)
+
+| | en | ko |
+| --- | --- | --- |
+| the chip (the same label in both states; `aria-pressed` carries the state) | Arrange from a lead sheet | 리드 시트로 편곡 |
+| its line, on (the default) | On (the default): a recording is arranged from its melody and chords. The melody stays one line and an easy accompaniment is written under it. Turn it off to thin out the recording's own notes instead. | 켜짐(기본): 녹음된 곡은 멜로디와 코드를 뽑아서 편곡해요. 멜로디는 한 줄로 그대로 두고, 그 아래에 쉬운 반주를 새로 만들어요. 끄면 녹음된 음을 덜어내는 방식으로 만들어요. |
+| its line, off | Off: a recording's own notes are thinned out to fit the level. Turn it on to arrange from its melody and chords instead. | 꺼짐: 녹음된 음을 난이도에 맞게 덜어내서 만들어요. 켜면 멜로디와 코드를 뽑아 쉬운 반주를 새로 만들어요. |
+| the composer line of a lead-sheet copy | PPP one-note-per-hand arrangement (lead sheet) | PPP 한 손 단음 편곡 (리드 시트) |
+| **levelNote 'relaxed-plan' on a lead-sheet copy** | This arrangement keeps the recording's own key signature and melody as they are, so it may be harder than the level you chose. The difficulty comes from the key signature and the melody itself, not from the left hand. | 녹음된 연주의 조표와 멜로디를 그대로 살린 편곡이라 고른 난이도보다 어려울 수 있어요. 어려운 이유는 왼손이 아니라 조표와 멜로디 자체예요. |
+
+The chip is on the Song Arranger (for a song that is a recording and no Full song, while one note per hand is on and the level is not "Original transcription") and on the review screen's arrangement panel (the same conditions); it is one setting for the whole page. Japanese and Chinese are in the catalogs (`リードシートで編曲`, `按旋律和弦谱编配`); in 400 px the chip and its lines are inside the viewport, no sideways scroll (tested in Korean; screenshots looked at). The relaxed note names the cause the lead sheet has (section 33.5: the key signature and the right hand's own density are the ceilings it drops), not "many notes"; a reduction's copy keeps the old line. It is said for every relaxed-plan copy of a lead sheet, whichever tier of the relaxed search made it (the planner reports a tier, not a cause).
+
+### 34.6 Identity: the reduction is main, byte for byte
+
+All against a clean `git archive` of `2b1aa44` (`$S/main`), the committed tools of section 33.6, sharded four ways (`--shard`, `--merge`, `--compare`):
+
+| set | requests | identical | results / refusals | different |
+| --- | --- | --- | --- | --- |
+| catalogue, `arrangeSingleNote` (325 pieces x 3 levels, `arrange-identity.js`) | 975 | 975 | 933 / 42 | **0** |
+| 'reduce' on recording graphs, `arrangeSingleNote` (the 168 jobs of `rec-arrange-core` via `arrange_jobs.py`, and the six private covers by hash only) | 522 | 522 | 507 / 15 | **0** |
+| the same 522 through the page's own entry (`--page reduce`: `arrangeSingleNoteWithLeadsheet` with the chip off, the reduction with its hands retry, against main's `arrangeSingleNoteWithHandsFallback`) | 522 | 522 | 510 / 12 | **0** |
+| the catalogue through the page's own entry in the DEFAULT mode (`--page leadsheet`: a printed score is no lead sheet's) | 975 | 975 | 933 / 42 | **0** |
+
+`arrangeSingleNote` itself is not a line different from main's (176 lines of the page changed, outside it and outside `arrangeSingleNoteWithHandsFallback`). **In the browser, on the user's own piece** (34.7), the page with the chip off made at beginner, intermediate and advanced the very copy a clean `git archive` of main makes (note hash `c19359e96b3ecb69`, the classic-reading fallback copy, 90 bars, 1,951 notes, the left hand 16 attacks a bar, checker classes 0), and `tests/recording-leadsheet-app.test.js` compares a reduce-mode copy with what the page's own `arrangeSingleNote` makes of the same recording (a copy of the graph with another title, so that the page's memory of arrangements does not answer for it), note for note.
+
+### 34.7 The user's exact flow, reproduced locally, and the six covers through the page
+
+#### 34.7a The flow (`scratchpad` driver, not committed; the heard notes are private and stay outside the repository)
+
+A production-like page (`NODE_ENV=production` server of this tree on a free port; the build's `server.js` with `PPP_YTDLP` pointing at the yt-dlp of the main checkout), a fresh browser context, **nothing substituted**: the link `https://www.youtube.com/watch?v=vgnliVjJUOo` is pasted on the Add screen, the server fetches the audio from YouTube with yt-dlp, the real in-browser Onsets & Frames model hears it (395 s, 1,222 notes; the model is not deterministic: the earlier runs heard 1,199 to 1,214), the review screen shows 89 bars in v2 with the new chip pressed, Accept, **a reload** (a fresh page holding the saved v2 song: v2's modules not ready, `PPPRecLeadsheet` not there), the Song Arranger, Create at beginner, intermediate, advanced (page default: nothing remembered, nothing touched).
+
+| | beginner | intermediate | advanced |
+| --- | --- | --- | --- |
+| made / refused | made | made | made |
+| path that made it (`source.arrangement`) | `recordingArrange: 'leadsheet'` | `'leadsheet'` | `'leadsheet'` |
+| composer line | PPP one-note-per-hand arrangement (lead sheet) | same | same |
+| bars / notes / rests | 89 / 844 / 54 | 89 / 844 / 54 | 89 / 844 / 54 |
+| attacks, right hand / left hand (a bar) | 453 / 356 (4) | 453 / 356 (4) | 453 / 356 (4) |
+| checker classes 1-7, Score and graph | 0 0 0 0 0 0 0 and 0 0 0 0 0 0 0 | same | same |
+| one note per hand | yes (at most 1) | yes | yes |
+| `levelNote` | relaxed-plan (the lead-sheet words are said) | same | same |
+| note hash | `060940cc99a3b4b2` | `060940cc99a3b4b2` | `1918ed83df6b232a` |
+| time to make | 3.3 s | 4.3 s | 5.9 s |
+
+The lead sheet reported 1,222 heard notes, 453 melody notes, 284 moved by octaves. Requests of `rec/` over the whole session after the reload: 4 (the grid model, `rec/grid.js`, `rec/writer.js`, `rec/leadsheet.js`), 0 at page load. No page or console error. **The same notes with the chip off** (the model replaced by the saved notes of that very run, everything else the same; this tree, `'reduce'` remembered) and **a clean main** (the same stub): both made the same three copies, `c19359e96b3ecb69`: made through the classic-reading fallback (the v2 graph is refused twice, the classic conversion is arranged: 90 bars, 1,951 notes, the left hand 16 attacks a bar, 21 to 23 s a level). So on this piece the default switches the copy from the reduction (16 left-hand attacks a bar, the classic reading's bars) to the lead sheet (4 a bar, the v2 notation's 89 bars, 4-6 s). What a person who plays it thinks of either is not measured here.
+
+#### 34.7b The review tooling (item 5, prepared, not run for a person)
+
+`review/lib/appcode.js` `arranger().arrange(graph, level, title, options)` runs the page's own `arrangeSingleNoteWithLeadsheet` (with the reduction behind it) and takes `options.recordingArrange` `'leadsheet' | 'reduce'`; without it the copy is the reduction as before (the tool's mode is `'reduce'`; nothing built before changes). The result says which path made the copy and, if the lead sheet refused, why; `review/lib/h10-item.js` passes `job.arrange` through and writes the path into the key only (never into what a reviewer sees). Tested on a synthetic cover (the option, the default, the refusal, equality with `arrangeSingleNote`). The next step builds the blind Korean page (3 recordings x 2 levels, lead against reduce) on this.
+
+#### 34.7c The six covers through the page's own code (a fresh page, the stubbed model answering with each cover's saved notes, the real import, review, Accept, reload, Song Arranger; aggregates only)
+
+| cover | lead sheet: made | path | checker 1-7 (Score / graph) | left hand a bar (b / i / a) | relaxed note | reduction (chip off, the page's whole chain): made | path | checker 1-7 | left hand a bar |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| p1 (1,214 heard, 89 bars) | 3 of 3 | lead sheet | 0 / 0 | 4 / 4 / 4 | 3 | 3 of 3 | reduction | 0 / 0 | 16 / 16 / 16 |
+| p2 (1,393, 76) | 3 of 3 | lead sheet | 0 / 0 | 4 / 4 / 16 | 2 | 3 of 3 | reduction | 0 / 0 | 4 / 4 / 4 |
+| p3 (2,589, 122) | 3 of 3 | lead sheet | 0 / 0 | 4 / 16 / 16 | 3 | **0 of 3 (`UNREACHABLE`)** | - | - | - |
+| p4 (1,514, 86) | 3 of 3 | lead sheet | 0 / 0 | 4 / 16 / 16 | 3 | **0 of 3 (`UNREACHABLE`)** | - | - | - |
+| p5 (2,273, 136) | 3 of 3 | lead sheet | 0 / 0 | 4 / 4 / 4 | 3 | 3 of 3 | reduction | 0 / 0 | 16 / 16 / 16 |
+| p6 (1,302, 77) | 3 of 3 | lead sheet | 0 / 0 | 4 / 4 / 4 | 2 | 3 of 3 | reduction through the classic-reading fallback (103 bars) | **176 / 173** | 6 / 6 / 6 |
+| | **18 of 18** | | **0** | | 16 of 18 | **12 of 18** | | | |
+
+The lead sheet's numbers are section 33.4's (18 of 18, checker 0, the same left hand a bar for every cover and level, 16 of 18 with the relaxed note): what the page makes is what Node made. The reduction through the page's whole chain makes 12 of 18 where Node's bare `arrangeSingleNote` made 9 (33.4): the page also retries p6 with the classic hands and then the classic conversion (section 31.12), which arranges it from the classic reading's 103 bars, with checker findings (176 in the Score, 173 in the graph: the classic reading's own, 33.4 table of 31.8). p3 and p4 are refused at every level, as before. No page or console error in any of the 36 runs. For p1, p2, p5 and p6 the beginner and the intermediate lead copy are one copy by hash and the advanced differs in the left hand (33.4).
+
+### 34.8 Tests, and what each planted defect was caught by
+
+| Suite | Result |
+| --- | --- |
+| `tests/rec/leadsheet-app.test.js` (new) | 13 pass: the pin of the default and the mode's layers (a fake store and address, the default read from the page); the lead-sheet path (one run, the plan says so, no retry, nothing converted, the module asked for once); every refusal reason falls back to the reduction with the reason; the reduction's chain after a refusal (the classic hands, the classic conversion; the lead sheet itself once, bounded at four runs); the module not loading and a throwing lead sheet; reduce and every request the lead sheet is not asked for are the reduction's very object and plan; "Full song" and `allow` false, `isLeadsheetSong`; `leadsheetMark`; the page's lists and call sites; the catalogs; the review tooling; the page's own functions with the real arranger (a recording in both modes, a hymn the same in both, the module missing) |
+| `npm run test:rec` | 207 (205 pass, 2 todo); `leadsheet.test.js` (the bare-vm load of the extractor's set equals Node byte for byte) and `hands-fallback.test.js` updated |
+| `node tests/recording-leadsheet-app.test.js` (new, `npm run test:recording-leadsheet-app`) | **94 checks pass**: sections `defaults`, `fresh` (a saved v2 song in a fresh page, three levels), `interplay`, `reduce`, `refuse`, `relaxed`, `review`, `others`, `korean` (`LS_ONLY=...` runs some) |
+| `node tests/recording-v2-app.test.js` | 249 pass (the same count as 31.9; its `fallback` sections ask for `'reduce'`) |
+| `node tests/single-note-app.test.js` | 170 pass (the G9f section asks for `'reduce'`: it counts the reduction's notes) |
+| `recording-v2-play` 13, `recording-v2-ottava` 34 | pass |
+| the other browser suites of `npm test`, a server of the tree on a free port (`with-port.js`) | library 27, interactions 52 (**1 console 401 on main and on the branch alike: not this phase's**), import-and-persistence 8, i18n-and-auth 44, engraving 38, follow 32, falling-notes 26, import 40, layout 45, alignment 11, pdf-layer 52, coach 47, fingering 86, score-search 11, musicxml 42, lessons 130, course 49, memory 36, learning 33, midi 74, video 26 pass; transcription 84 pass, **2 fail identically on main** (the local venv `transkun` path) |
+| `python -m unittest discover -s tests/bench/unit -t tests/bench` | 439 OK |
+
+**Planted defects** (one expression of the page each, in a copy of the committed tree; **14 of 14 caught**, by the unit file, the browser test, or both):
+
+| Planted defect | Caught by |
+| --- | --- |
+| `RECORDING_ARRANGE_DEFAULT` back to `'reduce'` | the pin of each file (2 unit, 1 browser check) |
+| the audio-score gate of `leadsheetWanted` removed | 4 unit checks (a printed score, a MIDI file, no provenance go to the lead sheet) |
+| no fallback (the lead sheet's refusal returned as the answer) | 12 unit checks, 11 browser checks |
+| rec/leadsheet.js asked for by `warmSingleModules` (at the first arranging screen) | 2 unit checks (the loader's askers, the lists) |
+| 'reduce' still makes the lead sheet | 6 unit, 4 browser (a reduce copy is main's) |
+| `allow === false` ignored (a Full song is arranged from its lead sheet) | 2 unit, 1 browser |
+| the loader asks for v2's 17 files first (`loadRecordingModules`) | 2 unit, 2 browser (four requests; v2 not loaded) |
+| the relaxed note without the lead-sheet words | 2 browser (English, Korean) |
+| the composer line without "(lead sheet)" | 2 unit, 3 browser |
+| the Song Arranger's warm-up removed | 1 browser (the four files are there before Create) |
+| the chip shown for every song | 1 browser (a hymn has none) |
+| the lead plan kept in the reduction's plan | 4 unit |
+| the copy's source without the mark | 2 unit, 3 browser |
+| "original" no longer excluded | 2 unit |
+
+### 34.9 The gate, run locally (every step of all five shards of `.github/workflows/bench.yml`, in the order of each shard, the five in parallel on one machine together with the browser runs)
+
+60 steps, **all pass**: 58 first time, and the two that failed are timing tests that the load of five shards and six browsers broke and that pass alone: `test:scoregraph` (A30, "export grows with the score, not its square": 3.5x against 3x, passes 229 of 229 alone) and `test:realize` (the 200 ms budget of `realizeWithG8`: 218 ms, passes 181 of 181 alone). Shard a (`rec-core`), b (`test:rec` 207, the key check, the engrave generator checks, `layout-hashes`, `robust`, `rec-arrange-smoke`, `rec-grid`), c (`test:scoregraph`, `test:difficulty` 34, the two trainers' checks, `core`, `smoke-app`, `core-app`, `rec-smoke`), d (the unit tests 439, `test:playability` 57, `test:songgraph` 45, `test:realize` 181, the hands and rests checks, the midi fixtures, `golden` 17 of 17 identical, `lint-corpus`, `make_provenance.py --check`, `correctness`, `smoke`, the five replays, `test:transcription-core` and `test:arranger`), e (`test:home-worker`, `test:engrave` 201, `test:arrangement-planner` 20, the grid trainer, `sg-roundtrip`, `robust-app`, `make_rec_suites.py --check`, `rec-robust`): every `check` PASS, the committed baselines and suites untouched (`git status` clean after the run).
+
+### 34.10 Limits (stated, not hidden)
+
+- **No person has looked at a lead-sheet copy**, and the default is the user's decision, not a finding. What the numbers say (section 33.3a) still holds: a beginner lead copy of a real cover is not a beginner piece (16 of the 18 copies of the six covers carry the relaxed note, which now says why); for p1, p2, p5 and p6 the beginner and the intermediate copy are one copy by hash and the advanced differs in the left hand (the exact flow's piece too: `060940cc99a3b4b2` twice); the melody is not simplified and no key is changed (the user's decisions, 33.9 item 6).
+- Where the lead sheet is worse than the reduction (33.3): `arr.harmony.agreement` 0.719 against 0.757 on the benchmark, p2 reads harder (3.39 against 3.11). The reduction on p1 and p5 is a left hand of 16 attacks a bar; the lead sheet's is 4.
+- The fallback chain is only as good as its last step: a recording the lead sheet refuses and the reduction makes is the reduction's copy (for p6 the classic reading's 103 bars with 176 checker findings, 31.12). None of the six refuses the lead sheet.
+- The chip is one setting for the whole page and the device (not per song); a copy already saved is never re-made when it changes.
+- A page that holds `'legacy'` (the chip of the conversion off) and arranges a recording asks for the four files too (87 KB); the conversion's seventeen it still never asks for. The first Song Arranger open on a recording makes the four requests in the background; a slow link makes the first Create wait for them, bounded at 15 s, then the reduction is made.
+- "Full song" imports are never lead sheets (an arrangement is not a performance); a recording whose graph has no `audio-score` source (an old song rebuilt from its Score) shows the chip and is arranged by the reduction.
+- The relaxed words are said for every relaxed-plan copy of a lead sheet, whichever tier made it (the planner reports a tier, not a cause).
+- `rec-arrange-core` and `-full`: gating `opts:` as a prefix (33.6, "left to G10c-1b") is **not done**: it is a re-lock and a new baseline of two suites, not something the page needs.
+- Not run: a deployed page, a phone, a slow-network measurement of the four files, the blind review. The exact flow's model heard 1,222 notes (its earlier runs 1,199 to 1,214): one piece, one reviewer's choice.
+
+### 34.11 For the Lead: the check before the deploy, and the way back
+
+1. Merge on a green `gate` check (read it with `gh run view`); deploy by the manual route. Nothing to configure: `server.js` serves `rec/leadsheet.js` like any file; no `?v=` of an existing script changed (the new file is `?v=1`, `REC_FILE_V`).
+2. On the live page: `PPP.recordingArrange` is `'leadsheet'` on a fresh profile; no request for `rec/` at load; a saved v2 song's Song Arranger makes the four requests and a copy whose composer line says "(lead sheet)"; `?recordingArrange=reduce` makes the copy main makes (its composer line has no "(lead sheet)"); `PPP.recordingArrange = 'reduce'` and back. `node tests/recording-leadsheet-app.test.js` (and `PPP_URL=<the page> node ...` against it) is the check; the exact-flow driver is in the scratch folder, not the repository.
+3. The human check: the user's six covers, the Song Arranger once with `?recordingArrange=leadsheet` and once with `?recordingArrange=reduce`, the copy's title and composer line saying which is which (and `build <sha>`), or the blind page the tooling of 34.7b is for.
+4. **The way back**: `const RECORDING_ARRANGE_DEFAULT = 'reduce';` (and the two pins, 34.2); every device that never pressed the chip is the reduction again; `ppp.recordingArrange.v2` resets the ones that did. The copies already saved keep what they were made from (`source.arrangement.recordingArrange`).
+5. For the roadmap: G10c-1b **DONE (this PR; not merged, not deployed)**. Next: the human check, then (user) the flip's verdict; the blind review of lead against reduce on new pieces (section 9's H-10 part); the decisions of 33.9 item 6.
