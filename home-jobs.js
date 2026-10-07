@@ -173,6 +173,9 @@ const LINK_PREFIX = 'pc_';
 /* the hash is domain-separated: a guest-link key (also 64 hex in the page) or any other secret can never be the same bytes */
 const codeHash = code => sha256('ppp-pc-link-v1:' + code);
 const linkIdOf = hash => LINK_PREFIX + hash.toString('hex').slice(0, 22);
+/* G10b-4: a short, NON-SECRET name of a link, so its owner can recognise it in the page, in --pair's output and in the confirmation before a pairing link replaces a link:
+   the last 6 hex of the link's id ('pc_' + 22 hex), which is itself a one-way hash of the client code. No character of the code is in it. null for an id that is not a link's. */
+const linkTagOf = id => (/^pc_[0-9a-f]{22}$/.test(String(id)) ? String(id).slice(-6) : null);
 function newLink() {
   const code = crypto.randomBytes(32).toString('hex');
   const hash = codeHash(code);
@@ -406,7 +409,7 @@ function create(deps) {
     });
     /* alive: heard of within twice the wait it announced (a --once worker announces none: a couple of minutes) */
     const alive = seen > 0 && t - seen <= Math.max(2 * pollS, 120) * 1000 + 30000;
-    return { hasToken: has, everSeen: seen > 0, alive: alive, lastSeenAt: iso(seen), idlePollSeconds: C.idlePollS, activePollSeconds: C.activePollS };
+    return { hasToken: has, everSeen: seen > 0, alive: alive, lastSeenAt: iso(seen), idlePollSeconds: C.idlePollS, activePollSeconds: C.activePollS, linkTag: linkTagOf(ownerId) };
   }
 
   /* ----- changes that need the store: memory first (one turn of the event loop), then the database; a failed write is undone ----- */
@@ -1030,4 +1033,4 @@ function create(deps) {
   };
 }
 
-module.exports = { create, LIMITS, configFrom, newToken, parseToken, newLink, codeHash, linkIdOf, addrKey, CODE_RE, PC_HEADER };
+module.exports = { create, LIMITS, configFrom, newToken, parseToken, newLink, codeHash, linkIdOf, linkTagOf, addrKey, CODE_RE, PC_HEADER };
