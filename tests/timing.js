@@ -15,6 +15,13 @@
    (tests/engrave/plan.test.js B1 and tests/scoregraph/g3-perf.test.js already take the fastest of five / of three for the same
    reason; tests/arrangement/perf.test.js also runs alone, see its header.) */
 const SAMPLES = 5;
+/* A budget is written for a normal machine, and the CI runner is not one: the analyze + fingering of sonatina/020 that takes 24-35 ms on
+   the development machine took a median of 105 ms on the runner (all five samples 91-117 ms, 4 CPUs, 2026-10-07), against a 150 ms budget,
+   and 155 and 171 ms in the two runs that failed on it; over 23 runs the slowest test took 1.4x as long as the median one. So where a test holds a
+   budget that has under 2x of room on the runner, it writes budget(ms): under CI (GitHub Actions sets CI=true) the budget is CI_FACTOR times
+   as much, so that a code path that became 3x slower still fails there, and on a machine without CI it is the number written. */
+const CI_FACTOR = 2;
+const budget = ms => (process.env.CI ? ms * CI_FACTOR : ms);
 const now = () => process.hrtime.bigint();
 const msSince = t0 => Number(process.hrtime.bigint() - t0) / 1e6;
 
@@ -24,14 +31,6 @@ function samples(fn, n) {
   fn();
   const out = [];
   for (let i = 0; i < n; i++) { const t0 = now(); fn(); out.push(msSince(t0)); }
-  return out;
-}
-/* the same for a function that returns a promise */
-async function samplesAsync(fn, n) {
-  n = n || SAMPLES;
-  await fn();
-  const out = [];
-  for (let i = 0; i < n; i++) { const t0 = now(); await fn(); out.push(msSince(t0)); }
   return out;
 }
 function median(xs) {
@@ -53,4 +52,4 @@ function bestOfPair(fa, fb, n) {
   return [a, b];
 }
 
-module.exports = { SAMPLES, samples, samplesAsync, median, describe, bestOfPair };
+module.exports = { SAMPLES, CI_FACTOR, budget, samples, median, describe, bestOfPair };
