@@ -89,21 +89,39 @@ function nodeWindow() {
 }
 
 /* The page's own scripts, in the page's own order, in a bare vm context: no require, no module, no document. The list is read from the
-   app's <script src> tags (the G8 modules it loads up front) followed by the app's own SINGLE_SCRIPTS (what it loads on first use). */
+   app's <script src> tags (the G8 modules it loads up front) followed by the app's own SINGLE_SCRIPTS (what it loads on first use).
+   G10c-1b: and what a lead sheet of a recording needs on the page, in the order loadLeadsheetModule asks for it and nothing more: LEADSHEET_MODEL (the grid weights, a window global rec/grid.js reads when
+   it loads), LEADSHEET_NEEDS (rec/grid.js, rec/writer.js) and LEADSHEET_SCRIPT (rec/leadsheet.js), all read from the app's own source; none of them is in the up-front list or in SINGLE_SCRIPTS (rec/grid.js and
+   rec/writer.js are two of RECORDING_SCRIPTS' thirteen as well, shared with that loader): a bare vm context that holds exactly this set gives the lead sheet Node gives (tests/rec/leadsheet.test.js). */
 function scriptListOfPage() {
   const html = appHtml();
   const head = [...html.matchAll(/<script src="\.\/([^"?]+)(?:\?v=\d+)?"><\/script>/g)].map(m => m[1]);
   const single = [...extractSource().scripts.matchAll(/'([^']+\.js)'/g)].map(m => m[1]);
-  return { head: head, single: single };
+  const recArr = /const RECORDING_SCRIPTS = \[([\s\S]*?)\];/.exec(html);
+  const lead = /^const LEADSHEET_SCRIPT = '([^']+)';/m.exec(html);
+  const needs = /^const LEADSHEET_NEEDS = \[([^\]]*)\];/m.exec(html);
+  const model = /^const LEADSHEET_MODEL = \['(\w+)', '([^']+)'\];/m.exec(html);
+  if (!recArr || !lead || !needs || !model) throw new Error('app-single extraction: RECORDING_SCRIPTS, LEADSHEET_SCRIPT, LEADSHEET_NEEDS or LEADSHEET_MODEL not found');
+  return {
+    head: head, single: single,
+    rec: [...recArr[1].matchAll(/'([^']+\.js)'/g)].map(m => m[1]),
+    leadNeeds: [...needs[1].matchAll(/'([^']+\.js)'/g)].map(m => m[1]),
+    leadModel: [model[1], model[2]],
+    lead: lead[1]
+  };
 }
 function browserWindow() {
-  const { head, single } = scriptListOfPage();
+  const { head, single, leadNeeds, leadModel, lead } = scriptListOfPage();
   const ctx = vm.createContext({ console });
   ctx.window = ctx; ctx.globalThis = ctx;
-  head.filter(p => /^(scoregraph|playability|difficulty|songgraph|arrangement|realize)\//.test(p)).concat(single).forEach(p => {
+  const run = p => {
     try { vm.runInContext(fs.readFileSync(path.join(REPO, p), 'utf8'), ctx, { filename: p }); }
     catch (e) { throw new Error('bare vm load of ' + p + ' failed: ' + e.message); }
-  });
+  };
+  head.filter(p => /^(scoregraph|playability|difficulty|songgraph|arrangement|realize)\//.test(p)).concat(single).forEach(run);
+  /* the model as a window global first (the page sets it from its fetch), then the files the lead sheet reads, then the lead sheet */
+  ctx[leadModel[0]] = JSON.parse(fs.readFileSync(path.join(REPO, leadModel[1]), 'utf8'));
+  leadNeeds.concat([lead]).forEach(run);
   return ctx;
 }
 

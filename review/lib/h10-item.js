@@ -9,7 +9,8 @@
      key facts the reviewer must never see: whether the page threw the v2 result away (rejected), whether the hands fallback was used,
          the arranger's level note and rescued notes, bars and notes of each
 
-   job: { id, title, heard, excerpt?: { bars, seconds, start }, level? }
+   job: { id, title, heard, excerpt?: { bars, seconds, start }, level?, arrange?: { recordingArrange: 'leadsheet' | 'reduce' } }
+   (G10c-1b: job.arrange is the option the page's Song Arranger passes on in its plan; absent, the copy is the reduction, as before. The key then says which path made it.)
    Which arm is X and which is Y is not decided here (review/h10/build-h10.js does it, after this): the drawings carry no arm name and one
    glyph-id prefix, so the result of an item is the same whatever the seed. Deterministic (the only clock in the result is `key.arrange.ms`,
    which is not part of the packet's id).
@@ -40,10 +41,13 @@ async function drawArms(names, conv, excerpt, job, arranger, title) {
     let A = null;
     const t0 = Date.now();
     let res;
-    try { res = await arranger.arrange(c.built.graph, job.level || DEFAULT_LEVEL, title); }
+    try { res = await arranger.arrange(c.built.graph, job.level || DEFAULT_LEVEL, title, job.arrange); }
     catch (e) { res = { ok: false, reason: 'THROWN', message: String(e && e.message || e) }; }
     key.arrange = { ok: !!res.ok, reason: res.ok ? null : res.reason, message: res.ok ? null : (res.message || null), handsFallback: res.ok ? (res.handsFallback || null) : null,
       levelNote: res.ok ? (res.levelNote || null) : null, rescued: res.ok && res.rescued ? res.rescued.length : 0, degraded: res.ok ? !!res.degraded : null, ms: Date.now() - t0 };
+    /* G10c-1b: only when the lead sheet was asked for: the path that made the copy, and why the lead sheet did not (the reviewer never sees either) */
+    if (res.recordingArrange) key.arrange.recordingArrange = res.recordingArrange;
+    if (res.leadsheetRefusal) key.arrange.leadsheetRefusal = res.leadsheetRefusal;
     if (res.ok) {
       const n = res.graph.timeline.measures.length;
       key.arrange.measures = n;
