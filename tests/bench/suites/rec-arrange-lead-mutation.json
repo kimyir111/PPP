@@ -2,7 +2,7 @@
  "align": {
   "window_s": 0.3
  },
- "description": "G10c-0 gate: the small and middle-sized core references (every micro piece, the catalogue, hymns, method books; hanon in full) x cover (beats none, the app's options and v2), plus the 20 real-AMT fixtures of replay-of (the production browser model's heard notes on rendered audio), arranged at the three levels and measured against the true score; G10c-1a adds the row v2-lead: the same performances as v2, arranged from the lead sheet of the recording (plan.recordingArrange leadsheet, docs/GOALS/G10 section 33)",
+ "description": "Gate sensitivity of the lead sheet of a recording (mutation-check --rec-arrange-lead, G10c-1a): the 24 micro pieces and two hanon exercises x cover, v2, arranged from the lead sheet (plan.recordingArrange leadsheet)",
  "gate": {
   "case_fail_drop": 10.0,
   "case_flip_max": 1,
@@ -115,31 +115,6 @@
  "matrix": [
   {
    "beats": "none",
-   "opt_name": "app",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true
-   },
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
-   "opt_name": "v2",
-   "opts": {
-    "closeGaps": true,
-    "exactBars": true,
-    "recording": "v2"
-   },
-   "profile": "cover",
-   "seeds": [
-    1
-   ]
-  },
-  {
-   "beats": "none",
    "opt_name": "v2-lead",
    "opts": {
     "closeGaps": true,
@@ -147,55 +122,15 @@
     "recording": "v2",
     "recordingArrange": "leadsheet"
    },
-   "perform_as": "v2",
    "profile": "cover",
    "seeds": [
     1
    ]
   }
  ],
- "name": "rec-arrange-core",
+ "name": "rec-arrange-lead-mutation",
  "rec_arrange": true,
  "references": [
-  "catalog/fur-elise",
-  "catalog/gymnopedie-1",
-  "catalog/happy-birthday",
-  "hymns/go-to-dark-gethsemane",
-  "hymns/god-will-take-care",
-  "hymns/hark-the-voice",
-  "hymns/holy-holy-holy",
-  "hymns/midnight-clear",
-  "hymns/no-not-one",
-  "hymns/rescue-the-perishing",
-  "hymns/silent-night",
-  "hymns/take-my-life",
-  "hymns/the-churchs-one-foundation",
-  "method/beyer/016",
-  "method/beyer/028",
-  "method/beyer/029",
-  "method/beyer/059",
-  "method/beyer/067",
-  "method/burgmuller25/005",
-  "method/burgmuller25/013",
-  "method/burgmuller25/016",
-  "method/burgmuller25/021",
-  "method/czerny599/023",
-  "method/czerny599/034",
-  "method/czerny599/035",
-  "method/czerny599/036",
-  "method/czerny599/037",
-  "method/czerny849/019",
-  "method/czerny849/020",
-  "method/hanon/001",
-  "method/hanon/002",
-  "method/hanon/004",
-  "method/hanon/005",
-  "method/hanon/007",
-  "method/hanon/008",
-  "method/hanon/009",
-  "method/hanon/020",
-  "method/sonatina/002",
-  "method/sonatina/021",
   "micro/M01-waltz-3-4",
   "micro/M02-alberti-4-4",
   "micro/M03-jig-6-8",
@@ -220,10 +155,8 @@
   "micro/M22-tempo-change",
   "micro/M23-repeated-notes",
   "micro/M24-block-chords",
-  "samples/prelude-fragment"
- ],
- "replay_dirs": [
-  "replay-of"
+  "method/hanon/005",
+  "method/hanon/007"
  ],
  "schema": "ppp.bench-suite/1",
  "stage": {

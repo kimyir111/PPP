@@ -2,7 +2,7 @@
  "align": {
   "window_s": 0.3
  },
- "description": "Nightly: every core reference x cover with the app's options and v2, arranged and measured (aggregates only)",
+ "description": "Nightly: every core reference x cover with the app's options and v2, arranged and measured (aggregates only); G10c-1a adds the row v2-lead: the same performances as v2, arranged from the lead sheet of the recording (plan.recordingArrange leadsheet, docs/GOALS/G10 section 33)",
  "gate": {
   "case_fail_drop": 10.0,
   "case_flip_max": 1,
@@ -64,6 +64,10 @@
     "dir": "down",
     "tol": 0.002
    },
+   "arr.melody.f1pc": {
+    "dir": "up",
+    "tol": -0.01
+   },
    "arr.melody.gap_rate": {
     "dir": "down",
     "tol": 0.002
@@ -79,6 +83,14 @@
    "arr.rh.above_c6": {
     "dir": "down",
     "tol": 0.003
+   },
+   "ls.melody.f1": {
+    "dir": "up",
+    "tol": -0.01
+   },
+   "ls.melody.f1pc": {
+    "dir": "up",
+    "tol": -0.01
    }
   },
   "subgroups": {
@@ -121,6 +133,21 @@
     "exactBars": true,
     "recording": "v2"
    },
+   "profile": "cover",
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "beats": "none",
+   "opt_name": "v2-lead",
+   "opts": {
+    "closeGaps": true,
+    "exactBars": true,
+    "recording": "v2",
+    "recordingArrange": "leadsheet"
+   },
+   "perform_as": "v2",
    "profile": "cover",
    "seeds": [
     1

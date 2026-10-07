@@ -517,6 +517,14 @@ the arrangements (`node/rec-arrange.js`, the pure part in `node/rec-arrange-metr
 | `arr.check.1` .. `7` | the notation checker's acceptance classes per 100 bars |
 | `src.*`, `clean.*` | information: the recording graph before arranging (`src.melody.in_lh` is the hand split's error); the same measures on the true score's own arrangement |
 
+The `v2-lead` row (G10c-1a, `rec-arrange-core` and `-full`; opts carry `recordingArrange: 'leadsheet'`, the same performances as `v2` through `perform_as`)
+arranges the recording from its lead sheet (`rec/leadsheet.js`, the app glue's `plan.recordingArrange`) instead of reducing it. Only a case of that row has, beside
+the metrics above: `ls.melody.precision` / `.recall` / `.f1` (the lead sheet's melody line, before the arranger touches it, against the heard true melody notes: same
+pitch, onset within 0.15 quarter) and `.f1pc` (pitch classes: octave-free), `arr.melody.precision` / `.f1` / `.f1pc` (the same for the arrangement's right-hand attacks) and
+`arr.relaxed` (share of the levels made with the relaxed plan's note). `PPP_RECARR_DETAIL=<file>` (environment, any suite) writes one JSON line per case with each level's
+metrics on its own (the tables of docs/GOALS/G10 section 33); it is not part of the results. `tests/bench/tools/real-covers.js` runs the six private covers (aggregates only),
+`tests/bench/tools/arrange-identity.js` the identity of the reduction (catalogue: 975 requests; `--recordings`: the recording graphs of a suite's jobs and the covers).
+
 The true melody is SongGraph's melody voice of the true score (the top head of each event), matched to the heard notes by pitch and
 time (one to one, 0.2 s), so a note the transcription never heard is an upstream error and is not charged to the arranger
 (`src.melody.heard`). The system under test is `audio-score.js` and the arranger's modules (`pppbench/sut.py` `SUT_TREES`); the
@@ -529,6 +537,7 @@ python tests/bench/run.py run --suite rec-arrange-core     # 64 small and middle
 python tests/bench/run.py run --suite rec-arrange-full     # every core reference x cover x app, v2 (aggregates only): nightly
 python tests/bench/run.py run --suite rec-arrange-play     # rec-arrange-core's references as piano covers (texture octaves) x v2, v2-handslegacy: nightly (G10a-2b)
 python tests/bench/run.py mutation-check --rec-arrange     # one planted defect per metric in the arranger (rec-arrange-mutation); nightly
+python tests/bench/run.py mutation-check --rec-arrange-lead   # one planted defect per decision of the lead sheet (rec-arrange-lead-mutation: micro pieces and two hanon exercises, v2-lead); nightly (G10c-1a)
 ```
 
 ## Known production failures (measured, not fixed)

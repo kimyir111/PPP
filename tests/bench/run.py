@@ -166,6 +166,8 @@ def cmd_mutation(args) -> int:
         return max(a, b, c, d, e)
     if getattr(args, "rec_arrange", False):  # G10c-0: the rec-arrange metrics' planted defects, on the rec-arrange-mutation suite
         return mutation.run_mutation_check(mutation.REC_ARRANGE_MUTATIONS, "rec-arrange-mutation", out_name="mutation-arrange")
+    if getattr(args, "rec_arrange_lead", False):  # G10c-1a: the lead sheet of a recording's planted defects, on the rec-arrange-lead-mutation suite
+        return mutation.run_mutation_check(mutation.REC_ARRANGE_LEAD_MUTATIONS, "rec-arrange-lead-mutation", out_name="mutation-arrange-lead")
     return mutation.run_mutation_check()
 
 
@@ -266,6 +268,8 @@ def main(argv=None) -> int:
                    "the v2 time skeleton's (G10a-1), on rec-mutation-v2")
     p.add_argument("--rec-arrange", dest="rec_arrange", action="store_true",
                    help="the rec-arrange metrics' mutations (G10c-0), on the rec-arrange-mutation suite")
+    p.add_argument("--rec-arrange-lead", dest="rec_arrange_lead", action="store_true",
+                   help="the lead sheet of a recording's mutations (G10c-1a), on the rec-arrange-lead-mutation suite")
     p.set_defaults(fn=cmd_mutation)
     p = sub.add_parser("human-set", help="the G3 human review set (G03 §21, A36)")
     p.add_argument("--build", action="store_true")

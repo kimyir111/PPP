@@ -59,3 +59,24 @@ test('matching true melody to heard notes is one to one, by pitch, nearest in ti
   const m = M.matchHeard(truth, heard, 0.2);
   assert.deepEqual(m.map(x => [x.truth.q, x.heard.ref]), [[0, 'a']]);       /* the second 60 finds the one heard 60 used; the 62 is 3 s away */
 });
+
+test('G10c-1a: a melody line against the true melody: precision, recall, f1; exact pitch and pitch classes; each true note is hit once', () => {
+  const truth = [{ q: 0, midi: 72 }, { q: 1, midi: 74 }, { q: 2, midi: 76 }, { q: 3, midi: 77 }];
+  assert.deepEqual(M.lineScores(truth, truth, false), { precision: 1, recall: 1, f1: 1 });
+  /* one note missed, one extra note: precision 3/4, recall 3/4 */
+  const line = [{ q: 0, midi: 72 }, { q: 1, midi: 74 }, { q: 1.5, midi: 70 }, { q: 3, midi: 77 }];
+  const s = M.lineScores(line, truth, false);
+  assert.equal(s.precision, 0.75); assert.equal(s.recall, 0.75); assert.equal(s.f1, 0.75);
+  /* an octave off is a miss by pitch and a hit by pitch class */
+  const low = truth.map(t => ({ q: t.q, midi: t.midi - 12 }));
+  assert.equal(M.lineScores(low, truth, false).f1, 0);
+  assert.equal(M.lineScores(low, truth, true).f1, 1);
+  /* onset slack: 0.15 quarter */
+  assert.equal(M.lineScores([{ q: 0.1, midi: 72 }], [{ q: 0, midi: 72 }], false).f1, 1);
+  assert.equal(M.lineScores([{ q: 0.3, midi: 72 }], [{ q: 0, midi: 72 }], false).f1, 0);
+  /* one true note is hit once: two line notes on it are one hit */
+  const twice = M.lineScores([{ q: 0, midi: 72 }, { q: 0.05, midi: 72 }], [{ q: 0, midi: 72 }], false);
+  assert.equal(twice.precision, 0.5); assert.equal(twice.recall, 1);
+  assert.deepEqual(M.lineScores([], truth, false), { precision: null, recall: null, f1: null });
+  assert.deepEqual(M.lineScores(truth, [], false), { precision: null, recall: null, f1: null });
+});

@@ -49,6 +49,25 @@ function handStats(ix, bars) {
   return { lh_notes_per_bar: bars ? lh / bars : null, rh_above_c6: rh.length ? rh.filter(n => n.midi > C6).length / rh.length : null };
 }
 
+/* G10c-1a: a melody line against the true melody notes at the same positions. line, truth: [{q, midi}]. A line note is a hit when a true melody note has its pitch (its pitch
+   class, with `pc`) and an onset within TOL_Q; each true note is hit at most once. precision = hits / line notes, recall = hits / true notes, f1 their harmonic mean; nulls with
+   no line or no truth. */
+function lineScores(line, truth, pc) {
+  if (!line.length || !truth.length) return { precision: null, recall: null, f1: null };
+  const key = m => (pc ? ((m % 12) + 12) % 12 : m);
+  const byKey = new Map();
+  truth.forEach((t, i) => { const k = key(t.midi); if (!byKey.has(k)) byKey.set(k, []); byKey.get(k).push(i); });
+  const used = new Set();
+  let hit = 0;
+  line.forEach(n => {
+    let best = -1, bd = TOL_Q + EPS;
+    (byKey.get(key(n.midi)) || []).forEach(i => { if (used.has(i)) return; const d = Math.abs(truth[i].q - n.q); if (d < bd) { bd = d; best = i; } });
+    if (best >= 0) { used.add(best); hit++; }
+  });
+  const p = hit / line.length, r = hit / truth.length;
+  return { precision: p, recall: r, f1: p + r > 0 ? (2 * p * r) / (p + r) : 0 };
+}
+
 /* the set of a level's attacks, for the level spread */
 const keysOf = ix => new Set(ix.onsets.map(n => Math.round(n.q0 * 96) + '|' + n.midi + '|' + n.staff));
 
@@ -85,4 +104,4 @@ function matchHeard(truth, heard, windowS) {
   return out;
 }
 
-module.exports = { TOL_Q, C6, indexNotes, hasOnset, sounds, melodyStats, chordAgreement, handStats, keysOf, levelSpread, matchHeard };
+module.exports = { TOL_Q, C6, indexNotes, hasOnset, sounds, melodyStats, lineScores, chordAgreement, handStats, keysOf, levelSpread, matchHeard };

@@ -326,6 +326,8 @@ jobs:
       - run: python tests/bench/run.py mutation-check --rec
       # G10c-0: the rec-arrange metrics' gate sensitivity (one planted defect per metric in the arranger) and the full suite (aggregates)
       - run: python tests/bench/run.py mutation-check --rec-arrange
+      # G10c-1a: the lead sheet of a recording (rec/leadsheet.js, the arranger glue's recordingArrange, the planner's relax 3): one planted defect per decision (about 3 minutes)
+      - run: python tests/bench/run.py mutation-check --rec-arrange-lead
       - run: python tests/bench/run.py run --suite rec-arrange-core    # the core's small references and the 20 real-AMT fixtures of replay-of (about 5 minutes: not in the gate, which is near its time limit)
       - run: python tests/bench/run.py check --suite rec-arrange-core
       - run: python tests/bench/run.py run --suite rec-arrange-full
