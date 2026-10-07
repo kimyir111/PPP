@@ -534,7 +534,7 @@ async function main() {
       await S.as('P').get('/api/jobs');
       S.advance(15 * DAY);
       const r = await queue(S, 'P', 'purgeinreq1');
-      ok('a link made 15 days ago whose PC never connected, asking for a conversion: the purge it triggers removes it, and the request is 401 "bad-code" - not a 201 for a row nobody owns', r.status === 401 && r.body.code === 'bad-code' && (await S.inner.loadAll()).jobs.length === 0 && S.svc._state.jobs.size === 0, r.status + ' ' + r.text);
+      ok('a link made 15 days ago whose PC never connected, asking for a conversion: the purge it triggers removes it, and the request is 401 "bad-code" - not a 201 for a row nobody owns, and not even a write for it', r.status === 401 && r.body.code === 'bad-code' && (await S.inner.loadAll()).jobs.length === 0 && S.svc._state.jobs.size === 0 && !S.store.calls.insertJob, r.status + ' ' + r.text);
       ok('and the hourly budgets it took were given back', (await S.makeLink('P2')) && (await queue(S, 'P2', 'purgeinreq2')).status === 201);
     } finally { await S.close(); }
   }
@@ -569,6 +569,78 @@ async function main() {
       ok('the second replacement is 201 and its token works; the first one failed (503); the token the first one had replaced (and the second one replaced again) is NOT alive again', r2.status === 201 && r1r.status === 503 && (await S.worker(r2.body.workerToken).get('/api/worker/ping')).status === 200 && (await S.worker(a).get('/api/worker/ping')).status === 401
         && Array.from(S.svc._state.tokens.values()).filter(k => k.ownerId === S.linkId('Y')).length === 1, r1r.status + ' ' + r2.status);
     } finally { await S.close(); }
+  }
+
+  heading('the queue is read again while a request waits: its link is looked up again, and does not look dead (the review: one 401 "bad-code" after a lost claim)');
+  {
+    /* a request whose body arrives in two parts: the first part is sent, the queue is read again (another request after forgetAll(): every record is a new object), then the rest comes */
+    const slowPost = (S, code, p, bodyText, delayMs) => new Promise((resolve, reject) => {
+      const r = L.http.request({ host: '127.0.0.1', port: S.port, method: 'POST', path: p, agent: false,
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(bodyText), 'X-PPP-PC': code } }, res => {
+        const chunks = [];
+        res.on('data', c => chunks.push(c));
+        res.on('end', () => { const text = Buffer.concat(chunks).toString('utf8'); let body = null; try { body = JSON.parse(text); } catch (e) { body = null; } resolve({ status: res.statusCode, body: body, text: text }); });
+      });
+      r.on('error', reject);
+      r.write(bodyText.slice(0, 8));
+      setTimeout(() => r.end(bodyText.slice(8)), delayMs);
+    });
+    const S = await L.startService({ users: ['rr'] });
+    try {
+      const waiting = slowPost(S, S.code('rr'), '/api/jobs', JSON.stringify({ url: WATCH('rereadjob01'), title: 'A piece' }), 300);
+      await L.sleep(100);
+      S.svc._state.forgetAll();
+      const other = await S.as('rr').get('/api/worker/status');                 /* reads the database again: the link is a new object now */
+      const r = await waiting;
+      ok('a conversion asked for while the queue was read again is 201 (it was 401 "bad-code" for a link that is perfectly valid), and it is in the queue and in the store', other.status === 200 && r.status === 201 && !!r.body.job && S.svc._state.jobs.size === 1 && (await S.inner.loadAll()).jobs.length === 1, r.status + ' ' + r.text.slice(0, 100));
+      ok('and the link goes on working', (await S.as('rr').get('/api/jobs')).status === 200 && (await queue(S, 'rr', 'rereadjob02')).status === 201);
+    } finally { await S.close(); }
+
+    /* the same, in the write of the link's last use that a request waits for: removing the link must remove the record that is in the queue now */
+    const T = await L.startService({ users: ['rv', 'oth'] });
+    try {
+      T.advance(7 * 3600 * 1000);                                                /* the last use is due to be written (every 6 hours) */
+      const real = T.store.touchLink;
+      T.store.touchLink = async function () { await L.sleep(250); return real.apply(this, arguments); };
+      const removing = T.as('rv').del('/api/pc-links/me');
+      await L.sleep(80);
+      T.svc._state.forgetAll();
+      await T.as('oth').get('/api/worker/status');
+      const rv = await removing;
+      T.store.touchLink = real;
+      ok('a link removed while the queue was read again is removed in the queue as it is now: 200, its code is dead (401), not alive until the next restart', rv.status === 200 && (await T.as('rv').get('/api/jobs')).status === 401 && T.svc._state.links.get(T.linkId('rv')).revokedAt > 0
+        && (await T.as('oth').get('/api/jobs')).status === 200, rv.status + '');
+    } finally { await T.close(); }
+
+    /* a conversion being written when the queue is read again and the link is then removed: the removal is seen, and nothing is left */
+    const U = await L.startService({ users: ['wr'] });
+    try {
+      const real = U.store.insertJob;
+      U.store.insertJob = async function () { await L.sleep(250); return real.apply(this, arguments); };
+      const asking = queue(U, 'wr', 'rereadjob03');
+      await L.sleep(70);
+      U.svc._state.forgetAll();
+      await U.as('wr').get('/api/worker/status');
+      const rv = await U.as('wr').del('/api/pc-links/me');
+      const r = await asking;
+      U.store.insertJob = real;
+      ok('a link removed after the queue was read again, while a conversion is being written for it: the removal is 200, the conversion is told the link is gone (401), and no row is left in the store', rv.status === 200 && r.status === 401 && r.body.code === 'bad-code' && (await U.inner.loadAll()).jobs.length === 0, rv.status + ' ' + r.status + ' ' + (await U.inner.loadAll()).jobs.length);
+    } finally { await U.close(); }
+
+    /* a link that runs out (is purged) while a conversion is being written for it */
+    const V = await L.startService({ users: ['pw'] });
+    try {
+      const real = V.store.insertJob;
+      V.store.insertJob = async function () { await L.sleep(250); return real.apply(this, arguments); };
+      const asking = queue(V, 'pw', 'rereadjob04');
+      await L.sleep(70);
+      V.advance(61 * DAY);
+      await V.svc._state.purge(V.clock.t);                                   /* unused for 61 days: purged, with whatever it holds */
+      const r = await asking;
+      V.store.insertJob = real;
+      const left = await V.inner.loadAll();
+      ok('a link purged while a conversion is being written for it: the conversion is told the link is gone (401), and the row that was just written is not left in the store', r.status === 401 && r.body.code === 'bad-code' && left.jobs.length === 0 && left.links.length === 0, r.status + ' ' + left.jobs.length + ' ' + left.links.length);
+    } finally { await V.close(); }
   }
 
   heading('the hourly enqueue limit counts an IPv6 network as one address (its /48), not each of its billions');

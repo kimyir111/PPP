@@ -321,6 +321,13 @@ function create(deps) {
     const same = want.length === got.length && crypto.timingSafeEqual(want, got);
     return same && rec && !rec.revokedAt && !rec.writing ? rec : null;
   }
+  /* The record of a link NOW. fill() (the queue read again from the database, after a claim that found the memory behind) replaces every record by a new object, so a request that
+     waited (a body that arrives slowly, a write, a purge) must not go on with the record it was handed, nor compare it to the one in the map by identity - that made a valid link
+     look dead for the one request that was in flight. It looks the link up again, by id and by hash. null when the link is gone, revoked, or another link has its id. */
+  function currentLink(link) {
+    const cur = links.get(link.id);
+    return cur && !cur.revokedAt && cur.hash.equals(link.hash) ? cur : null;
+  }
   /* the PC link a browser request names with X-PPP-PC, or an error: no header = 401 "no-link" (nothing was guessed, so nothing is counted); a header that is not a
      64-hex code, or not a live link's code = a failure (counted, 401 "bad-code", 429 past the budget). The page is only ever told "not valid". */
   async function requireLink(req) {
@@ -334,7 +341,11 @@ function create(deps) {
     const t = now();
     link.lastUsedAt = t;
     await persistLink(link, t);
-    return link;
+    /* the queue may have been read again while the write was awaited: hand on the record that is in it now (and the use that was just noted), or say the link is gone */
+    const cur = currentLink(link);
+    if (!cur) throw httpError(401, 'That PC link is not valid.', 'bad-code');
+    if (cur.lastUsedAt < t) cur.lastUsedAt = t;
+    return cur;
   }
 
   /* ----- views ----- */
@@ -525,7 +536,7 @@ function create(deps) {
   }
 
   async function enqueue(req, res) {
-    const link = await requireLink(req);
+    let link = await requireLink(req);
     const ip = addrKey(deps.clientIp(req) || 'unknown');
     /* the two hourly budgets are taken now and given back when the request turns out to make nothing (a body that is refused, a link that is not
        YouTube, a duplicate, a full queue): a refused request is free, and so cannot be used to use up someone else's budget */
@@ -542,8 +553,11 @@ function create(deps) {
     const t = now();
     await sweep(t);
     await purgeIfDue(t);
-    /* the link itself may have run out in that purge (made more than 14 days ago, its PC never connected, nothing queued): it is not valid any more, and nothing is written for it */
-    if (links.get(link.id) !== link || link.revokedAt) { release(); throw httpError(401, 'That PC link is not valid.', 'bad-code'); }
+    /* the link itself may have run out in that purge (not used for 14 days, its PC never connected, nothing queued), or been removed meanwhile: it is not valid any more, and nothing is
+       written for it. The queue may also have been read again while the body arrived (every record is a new object then): the link is looked up again, by id and hash, not by identity. */
+    const cur = currentLink(link);
+    if (!cur) { release(); throw httpError(401, 'That PC link is not valid.', 'bad-code'); }
+    link = cur;
     /* From here to jobs.set below nothing is awaited: the checks and the taking of the slot are one turn of the event loop, so two requests at once cannot
        both pass the cap of waiting jobs or both add the same link, whatever the store is doing meanwhile (clearing room is a database call). */
     const mine = ownJobs(link.id);
@@ -573,8 +587,8 @@ function create(deps) {
     /* the rows of all the links made from one address (this one's reserved row included) are bounded too */
     if (link.ipTag && addressRows(link.ipTag) > L.ROWS_PER_ADDRESS) giveUp(httpError(503, 'The queue is full right now. Try again later.', 'busy'));
     try { await store.insertJob(job); } catch (e) { giveUp(e); }
-    /* the link was removed while the row was being written: the row is not anybody's now - sweep it (removing a link deletes what it owns) and say the link is gone */
-    if (link.revokedAt) { try { await store.revokeLink(link.id, link.revokedAt); } catch (e) { logError(e); } giveUp(httpError(401, 'That PC link is not valid.', 'bad-code')); }
+    /* the link was removed (or ran out) while the row was being written: the row is not anybody's now - sweep it (removing a link deletes what it owns) and say the link is gone */
+    if (!currentLink(link)) { const gone = links.get(link.id); try { await store.revokeLink(link.id, (gone && gone.revokedAt) || now()); } catch (e) { logError(e); } giveUp(httpError(401, 'That PC link is not valid.', 'bad-code')); }
     job.writing = false;
     job.settle(true);
     wake(link.id);
