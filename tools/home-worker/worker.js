@@ -1070,7 +1070,7 @@ async function protocolStatus(deps) {
   return 0;
 }
 
-/* ---------------- G10b-6: --serve, the localhost bridge (docs/GOALS/G10B_HOME_WORKER.md section 16) ---------------- */
+/* ---------------- G10b-6: --serve, the localhost bridge (docs/GOALS/G10B_HOME_WORKER.md section 17) ---------------- */
 /* Write the PC link's token and code into the settings file (the file the settings were read from; a new worker.config.json in ~/.ppp-home-worker when there was none). Only these two keys are
    touched; everything else in the file stays as it is. Written to a temporary file next to it and moved over it, so a power cut cannot leave half a file; a file that cannot be read as JSON is NOT
    overwritten (it throws). The path is the settings' own, never anything a request said. */

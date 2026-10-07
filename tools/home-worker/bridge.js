@@ -1,4 +1,4 @@
-/* PPP home worker: the localhost bridge (G10b-6, docs/GOALS/G10B_HOME_WORKER.md section 16).
+/* PPP home worker: the localhost bridge (G10b-6, docs/GOALS/G10B_HOME_WORKER.md section 17).
 
    `worker.js --serve` keeps the worker running on this PC and listens on 127.0.0.1 (never any other address) so that the PPP page, open in a browser on THIS PC, can
    see at once whether the program is there, connect to it with one press, start it, and show its progress. Nothing here talks to the site faster than the worker
@@ -8,7 +8,7 @@
    The routes (JSON, all need an allowed Origin and a loopback Host):
 
      GET  /v1/status    what the program is doing - version, link (its NAME only), busy, the job's title and percent, last check, setup check - never a secret
-     GET  /v1/link      the PC link's client code, for a second browser on this PC (the one place a secret leaves; see section 16 for the risk and why there is no extra secret)
+     GET  /v1/link      the PC link's client code, for a second browser on this PC (the one place a secret leaves; see section 17 for the risk and why there is no extra secret)
      POST /v1/connect   { clientCode }  the worker gets its OWN worker token from the site with that code and saves both; no worker token ever passes through the page
      POST /v1/run       check the site now and convert what is waiting (the same as --once, in this process, under the same run lock)
 
