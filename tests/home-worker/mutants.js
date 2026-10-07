@@ -15,7 +15,7 @@ const REPO = path.resolve(__dirname, '..', '..');
 /* (catalog/shared-seeds.json: the server.js copy is run for real by the Postgres test, and its seed library is read from beside it) */
 const PAGE = 'Piano Coach App.dc.html';
 const FILES = [PAGE, 'home-jobs.js', 'home-result.js', 'home-jobs-store.js', 'server.js', 'share-guest.js', 'tools/home-worker/worker.js', 'review/h10/helper-heard.js', 'catalog/shared-seeds.json'];
-const JOBS = 'jobs.test.js', WORKER = 'worker.test.js', PG = 'jobs-pg.test.js', LINKS = 'links.test.js', SERVER = 'server.test.js', PAIRW = 'pair.test.js', PAIRPAGE = 'pairing.test.js';
+const JOBS = 'jobs.test.js', WORKER = 'worker.test.js', PG = 'jobs-pg.test.js', LINKS = 'links.test.js', SERVER = 'server.test.js', PAIRW = 'pair.test.js', PAIRPAGE = 'pairing.test.js', PROTO = 'protocol.test.js';
 
 /* id, file, what the mutant breaks, [from, to] (strings, replaced once), the test that must fail */
 const M = [
@@ -214,16 +214,16 @@ const M = [
   ['P2', PAGE, 'the fragment is never taken off the address bar', ["try { history.replaceState(history.state, '', location.href.replace(/#.*$/, '')); } catch (e) { /* the address stays as it is; the pairing goes on */ }", ''], PAIRPAGE],
   ['P3', PAGE, 'the fragment is "removed" with location.hash = \'\' (a history entry, and a # left in the address)', ["try { history.replaceState(history.state, '', location.href.replace(/#.*$/, '')); } catch (e) { /* the address stays as it is; the pairing goes on */ }", "try { location.hash = ''; } catch (e) { /* x */ }"], PAIRPAGE],
   ['P4', PAGE, 'the query string is lost when the fragment goes', ["location.href.replace(/#.*$/, '')); } catch (e) { /* the address stays", "location.pathname); } catch (e) { /* the address stays"], PAIRPAGE],
-  ['P5', PAGE, 'anything after "#pc=" is taken for a code (the 64-hex shape is not checked)', ["pending = /^[0-9a-f]{64}$/.test(c) ? { code: c } : { bad: true };", "pending = c ? { code: c } : { bad: true };"], PAIRPAGE],
+  ['P5', PAGE, 'anything after "#pc=" is taken for a code (the 64-hex shape is not checked)', ["pending = /^[0-9a-f]{64}$/.test(c) ? { code: c, local: local, live: started } : { bad: true, live: started };", "pending = c ? { code: c, local: local, live: started } : { bad: true, live: started };"], PAIRPAGE],
   ['P6', PAGE, 'any fragment is taken, not only "#pc="', ["if (h.slice(0, 4) !== '#pc=') return;", "if (!h) return;"], PAIRPAGE],
   ['P7', PAGE, 'capitals, spaces and dashes in the link are not forgiven', ["c = c.replace(/[\\s-]+/g, '').toLowerCase();\n    try { history", "try { history"], PAIRPAGE],
   ['P8', PAGE, 'a %20 in the link is not decoded', ["try { c = decodeURIComponent(c); } catch (e) { /* as it is */ }", ""], PAIRPAGE],
   ['P9', PAGE, 'a link typed into the address bar of an open tab (hashchange) is not looked at', ["window.addEventListener('hashchange', look);", ""], PAIRPAGE],
-  ['P10', PAGE, 'the code is not checked with the site before it is kept (the check is skipped)', ["try { await this.homeApi('/api/worker/status', { code: code }); }", "try { await Promise.resolve(); }"], PAIRPAGE],
+  ['P10', PAGE, 'the code is not checked with the site before it is kept (the check is skipped)', ["try { r = await this.homeApi('/api/worker/status', { code: code }); }", "try { r = { worker: { linkTag: 'aaaaaa' } }; }"], PAIRPAGE],
   ['P11', PAGE, 'the code is kept BEFORE the site has said it is a link', ["const seq = this._pairSeq = (this._pairSeq || 0) + 1;", "const seq = this._pairSeq = (this._pairSeq || 0) + 1; PcLink.set(code);"], PAIRPAGE],
   ['P12', PAGE, 'the code is written to the console', ["const code = p.code, old = PcLink.get();", "const code = p.code, old = PcLink.get(); console.log('pairing with ' + code);"], PAIRPAGE],
-  ['P13', PAGE, 'the code is put in the URL of the check (a query string)', ["try { await this.homeApi('/api/worker/status', { code: code }); }", "try { await this.homeApi('/api/worker/status?pc=' + code, { code: code }); }"], PAIRPAGE],
-  ['P14', PAGE, 'a device that is switched to another link is not told that the old one was replaced', ["this.pairNote(old && old !== code ? tx(", "this.pairNote(false ? tx("], PAIRPAGE],
+  ['P13', PAGE, 'the code is put in the URL of the check (a query string)', ["try { r = await this.homeApi('/api/worker/status', { code: code }); }", "try { r = await this.homeApi('/api/worker/status?pc=' + code, { code: code }); }"], PAIRPAGE],
+  ['P14', PAGE, 'a question that would replace a link does not say which link it replaces (the old link\'s name and the "would replace" sentence are gone)', ["? (ask.old ? tx('Connect this device to PC link", "? (false ? tx('Connect this device to PC link"], PAIRPAGE],
   ['P15', PAGE, 'a browser that cannot keep the connection is not noticed before the site is asked (the code is sent although there is nothing to keep it in)', ["if (!PcLink.supported()) return this.pairNote(", "if (false) return this.pairNote("], PAIRPAGE],
   ['P16', PAGE, 'a fragment that is "#pc=" followed by something that is not a code is dropped with no word', ["if (!p.code) return this.pairNote(", "if (!p.code) return void ("], PAIRPAGE],
   ['P17', PAGE, 'the link the card copies is not the pairing link', ["+ '/#pc=' + c : ''; }", "+ '/#code=' + c : ''; }"], PAIRPAGE],
@@ -232,25 +232,92 @@ const M = [
   ['P20', PAGE, '"More" is open from the start (the card shows every button again)', ["homeMoreOpen: !!S.homeMore", "homeMoreOpen: true"], PAIRPAGE],
   ['P21', PAGE, 'a whole pairing link pasted into the paste form is not understood', ["const i = t.indexOf('#pc='); if (i >= 0) { t = t.slice(i + 4);", "const i = -1; if (i >= 0) { t = t.slice(i + 4);"], PAIRPAGE],
   ['P22', PAGE, 'the sign-in gate stands in the way of a pairing link', ["|| !!(window.PPP_PAIR && window.PPP_PAIR.has()); } catch", "; } catch"], PAIRPAGE],
-  ['P23', PAGE, 'the same link again says "replaced" (a new link and the old one are not told apart)', ["this.pairNote(old && old !== code ? tx(", "this.pairNote(old ? tx("], PAIRPAGE],
+  ['P23', PAGE, 'the same link again is asked about as if it replaced something (a new link and the stored one are not told apart)', ["    if (old === code) {\n", "    if (false) {\n"], PAIRPAGE],
   ['P24', PAGE, 'a site that cannot be reached is reported as "the code does not match"', ["return this.pairNote(e.status === 401 ? tx(", "return this.pairNote(true ? tx("], PAIRPAGE],
   ['Q1', 'tools/home-worker/worker.js', 'the log shows the client code (a bare code in a line)', ["if (cfg && cfg.clientCode) t = t.split(cfg.clientCode).join('***');", ''], PAIRW],
   ['Q2', 'tools/home-worker/worker.js', 'the log shows a pairing link it was not told about', [".replace(/#pc=[0-9a-fA-F]{64}/g, '#pc=***')", ''], PAIRW],
   ['Q3', 'tools/home-worker/worker.js', 'the link goes to the clipboard tool on its command line, not on its standard input', ["await runPiped(spawnFn, tools.copy[0], tools.copy[1], link);", "await runPiped(spawnFn, tools.copy[0], tools.copy[1].concat([link]), null);"], PAIRW],
-  ['Q4', 'tools/home-worker/worker.js', 'the tools are started through a shell', ["shell: false,", "shell: true,"], PAIRW],
-  ['Q5', 'tools/home-worker/worker.js', 'the link is printed on the console without --show', ["\n  if (deps.show) out(link);\n  if (copied.ok && opened.ok)", "\n  out(link);\n  if (copied.ok && opened.ok)"], PAIRW],
-  ['Q6', 'tools/home-worker/worker.js', 'the success line carries the link (and the log\'s two guards are gone)', [["if (cfg && cfg.clientCode) t = t.split(cfg.clientCode).join('***');", ''], [".replace(/#pc=[0-9a-fA-F]{64}/g, '#pc=***')", ''], ["The link for your phone is copied: paste it in a message to yourself and open it on the phone.'); return 0; }", "The link for your phone is copied: ' + link); return 0; }"]], PAIRW],
+  ['Q4', 'tools/home-worker/worker.js', 'the tools are started through a shell', ["windowsHide: true, shell: false, stdio: [input == null ? 'ignore' : 'pipe', 'ignore', 'ignore']", "windowsHide: true, shell: true, stdio: [input == null ? 'ignore' : 'pipe', 'ignore', 'ignore']"], PAIRW],
+  ['Q5', 'tools/home-worker/worker.js', 'the link is printed on the console without --show', ["\n  if (deps.show) out(link);\n  const name", "\n  out(link);\n  const name"], PAIRW],
+  ['Q6', 'tools/home-worker/worker.js', 'the success line carries the link (and the log\'s two guards are gone)', [["if (cfg && cfg.clientCode) t = t.split(cfg.clientCode).join('***');", ''], [".replace(/#pc=[0-9a-fA-F]{64}/g, '#pc=***')", ''], ["Paste the copied link in a message to yourself and open it on the phone.');", "Paste the copied link in a message to yourself and open it on the phone. ' + link);"]], PAIRW],
   ['Q7', 'tools/home-worker/worker.js', 'a pc-code.txt that holds something that is not a code is taken as the code', ["return code ? { code: code, from: file } : { code: '', problem: 'bad-file', file: file };", "return { code: code || text.trim(), from: file };"], PAIRW],
-  ['Q8', 'tools/home-worker/worker.js', 'the link is not checked before it is given to a program (a site address with shell characters reaches the tools)', ["if (!/^https?:\\/\\/[A-Za-z0-9.\\-_:[\\]]+(\\/[A-Za-z0-9._~\\-/]*)?\\/#pc=[0-9a-f]{64}$/.test(link)) {", "if (false) {"], PAIRW],
+  ['Q8', 'tools/home-worker/worker.js', 'the links are not checked before they are given to a program (a site address with shell characters reaches the tools)', ["if (!LINK_RE.test(link) || !LINK_RE.test(pcLink)) {", "if (false) {"], PAIRW],
   ['Q9', 'tools/home-worker/worker.js', 'the site address of the settings is not checked by --pair', ["const bad = siteProblems(cfg);\n  if (bad.length) { bad.forEach(", "const bad = [];\n  if (bad.length) { bad.forEach("], PAIRW],
-  ['Q10', 'tools/home-worker/worker.js', 'the browser gets the handler and the link joined in ONE string', ["opened = await runPiped(spawnFn, tools.open[0], tools.open[1].concat([link]), null);", "opened = await runPiped(spawnFn, tools.open[0], [tools.open[1].concat([link]).join(' ')], null);"], PAIRW],
+  ['Q10', 'tools/home-worker/worker.js', 'the browser gets the handler and the link joined in ONE string', ["const opened = await runPiped(spawnFn, tools.open[0], tools.open[1].concat([pcLink]), null);", "const opened = await runPiped(spawnFn, tools.open[0], [tools.open[1].concat([pcLink]).join(' ')], null);"], PAIRW],
   ['Q11', 'tools/home-worker/worker.js', 'pc-code.txt is looked for in the current folder, not next to the settings', ["path.join(cfg._file ? path.dirname(cfg._file) :", "path.join(cfg._file ? process.cwd() :"], PAIRW],
   ['Q12', 'tools/home-worker/worker.js', 'a failed copy is reported as a success', ["if (copied.ok && opened.ok) {", "if (true) {"], PAIRW],
   ['Q13', 'tools/home-worker/worker.js', 'a clientCode of the settings is kept as it was written (a pairing link is not cut down to the code)', ["cfg.clientCode = codeFrom(cfg.clientCode);", "cfg.clientCode = String(cfg.clientCode || '').trim();"], PAIRW],
+  /* G10b-4: the pairing question, the PC flag and the launch (the page), the protocol / lock / log (the worker), the link's name (the site) */
+  ['R1', PAGE, 'a DIFFERENT link than the stored one is taken without asking (a link or a hashchange replaces the PC link at once)', ["if (oldLive || p.live) {", "if (false) {"], PAIRPAGE],
+  ['R2', PAGE, 'a link that arrives while the page is open is taken at once on a device with no link (the opener / hashchange case)', ["if (oldLive || p.live) {", "if (oldLive) {"], PAIRPAGE],
+  ['R3', PAGE, '"&local=1" is applied BEFORE the tap', ["this.setState({ pairNote: null, pairAsk: { code: code, tag: tag,", "if (p.local) PcLocal.set(true); this.setState({ pairNote: null, pairAsk: { code: code, tag: tag,"], PAIRPAGE],
+  ['R4', PAGE, 'the code is stored BEFORE the tap (the question is only decoration)', ["this.setState({ pairNote: null, pairAsk: { code: code, tag: tag,", "PcLink.set(code); this.setState({ pairNote: null, pairAsk: { code: code, tag: tag,"], PAIRPAGE],
+  ['R5', PAGE, 'the "this is the PC" flag is set on a phone too (accepting a pairing: no desktop check)', ["if (local && PcLocal.desktop()) PcLocal.set(true);", "if (local) PcLocal.set(true);"], PAIRPAGE],
+  ['R5b', PAGE, 'the flag is set on a phone too (the same link again: no desktop check)', ["if (p.local && PcLocal.desktop()) PcLocal.set(true);", "if (p.local) PcLocal.set(true);"], PAIRPAGE],
+  ['R6', PAGE, 'a link that arrives after the page started is not marked live (it is taken like one in the address when the page opened)', ["{ code: c, local: local, live: started }", "{ code: c, local: local, live: false }"], PAIRPAGE],
+  ['R7', PAGE, 'PPP_PAIR.take() does not give the pending link up (it can be taken again)', ["take: function () { var p = pending; pending = null; return p; }", "take: function () { return pending; }"], PAIRPAGE],
+  ['R8', PAGE, 'the replaced link is not kept (Disconnect cannot bring it back)', ["PcLink.setPrev(prevCode || null);", ""], PAIRPAGE],
+  ['R9', PAGE, 'Disconnect does not put the "this is the PC" flag back', ["if (u) PcLocal.set(!!u.wasLocal);", ""], PAIRPAGE],
+  ['R10', PAGE, 'in-app browsers get no hint', [".test((typeof navigator !== 'undefined' && navigator.userAgent) || '');", ".test('');"], PAIRPAGE],
+  ['R11', PAGE, 'what follows an "&" is taken for part of the code (a link with &local=1 or &utm= is "incomplete")', ["var c = amp < 0 ? rest : rest.slice(0, amp);", "var c = rest;"], PAIRPAGE],
+  ['R12', PAGE, '"local=10" (or any text with local=1 in it) counts as the flag', ["('&' + rest.slice(amp + 1) + '&').indexOf('&local=1&') >= 0", "rest.indexOf('local=1') >= 0"], PAIRPAGE],
+  ['R13', PAGE, 'the PC is asked to start BEFORE the job is queued (a run that starts first finds nothing)', ["      const r = await this.homeApi('/api/jobs', { method: 'POST', body: { url: url, title: title } });\n      const launched", "      if (local) this.launchPcWorker();\n      const r = await this.homeApi('/api/jobs', { method: 'POST', body: { url: url, title: title } });\n      const launched"], PAIRPAGE],
+  ['R14', PAGE, 'every desktop browser launches pppworker:// (not only the PC\'s own)', ["const local = PcLocal.get();", "const local = true;"], PAIRPAGE],
+  ['R15', PAGE, 'the launch is made twice', ["r.job.status === 'queued' && this.launchPcWorker());", "r.job.status === 'queued' && (this.launchPcWorker(), this.launchPcWorker()));"], PAIRPAGE],
+  ['R16', PAGE, 'the launch carries data (the link being converted rides on pppworker://)', ["a.href = 'pppworker://run';", "a.href = 'pppworker://run?u=' + encodeURIComponent(this._yt || document.title);"], PAIRPAGE],
+  ['R17', PAGE, 'the question times out after 5 seconds (it must wait for the person)', ["this.setState({ pairNote: null, pairAsk: { code: code, tag: tag,", "setTimeout(() => this.setState({ pairAsk: null }), 5000); this.setState({ pairNote: null, pairAsk: { code: code, tag: tag,"], PAIRPAGE],
+  ['R18', PAGE, 'the link in its read-only field and the shown code stay when Settings is left', ["if (this.state.screen !== 'settings' && (this.state.homePairManual || this.state.homeCodeShown)) this.setState({ homePairManual: false, homeCodeShown: false });", ""], PAIRPAGE],
+  ['R19', PAGE, 'no caption under the Add button ("Sends to PC link ...")', ["hasHomeTag: !!(linked && W && W.everSeen", "hasHomeTag: !!(false && W && W.everSeen"], PAIRPAGE],
+  ['R20', PAGE, 'the name shown is made of the code (its last 6 characters), not the site\'s linkTag', ["const W = r.worker || {}, tag = this.pairTagOf(W);", "const W = r.worker || {}, tag = code.slice(-6);"], PAIRPAGE],
+  ['R21', PAGE, 'a phone counts as a desktop browser (the flag and the switch work there)', ["const desktop = () => {\n    try {", "const desktop = () => {\n    return true;\n    try {"], PAIRPAGE],
+  ['R22', PAGE, 'Forget on this device leaves the "this is the PC" flag', ["forgetPcLink() {\n    PcLink.clear(); PcLink.clearPrev(); PcLocal.set(false);", "forgetPcLink() {\n    PcLink.clear(); PcLink.clearPrev();"], PAIRPAGE],
+  ['R23', PAGE, 'a link that the site no longer knows still counts as a link to protect (a dead stored link makes the new one a question)', ["catch (e) { oldLive = !(e.status === 401 && e.code === 'bad-code'); oldTag = '------'; }", "catch (e) { oldLive = true; oldTag = '------'; }"], PAIRPAGE],
+  ['R24', PAGE, 'Disconnect leaves the previous-link slot full', ["    PcLink.clearPrev();\n    if (u) PcLocal.set(!!u.wasLocal);", "    if (u) PcLocal.set(!!u.wasLocal);"], PAIRPAGE],
+  ['R25', PAGE, 'using the link (queueing a conversion) does not clear the previous-link slot', ["      PcLink.clearPrev();         /* using the link is the person saying it is theirs: nothing to go back to */\n", ""], PAIRPAGE],
+  ['R26', PAGE, 'Remove link leaves the previous-link slot and the flag', ["    PcLink.clear(); PcLink.clearPrev(); PcLocal.set(false);\n    clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};\n    this.setState({ homeBusy: false, homeWorker: null", "    PcLink.clear();\n    clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};\n    this.setState({ homeBusy: false, homeWorker: null"], PAIRPAGE],
+  ['R27', PAGE, 'the banner after a pairing says nothing of what the PC is doing (the second line is gone)', ["pairNote(tx('This device now uses PC link …{{tag}}. If you did not make that link, press Disconnect.', { tag: tag }), false, { state: this.homeStateText(W),", "pairNote(tx('This device now uses PC link …{{tag}}. If you did not make that link, press Disconnect.', { tag: tag }), false, { state: '',"], PAIRPAGE],
+  ['S1', 'tools/home-worker/worker.js', 'the registered command passes the address on (%1 after the script)', ["const protocolCommand = vbs => 'wscript.exe //B //Nologo \"' + vbs + '\"';", "const protocolCommand = vbs => 'wscript.exe //B //Nologo \"' + vbs + '\" %1';"], PROTO],
+  ['S2', 'tools/home-worker/worker.js', 'reg.exe is started through a shell', ["windowsHide: true, shell: false, stdio: ['ignore', 'pipe', 'pipe']", "windowsHide: true, shell: true, stdio: ['ignore', 'pipe', 'pipe']"], PROTO],
+  ['S3', 'tools/home-worker/worker.js', 'the registration is machine-wide (HKLM, which would need an administrator) instead of the current user\'s', ["const REG_HIVE = 'HKCU';", "const REG_HIVE = 'HKLM';"], PROTO],
+  ['S4', 'tools/home-worker/worker.js', 'the run lock is not released when the run ends', ["try { return await w.runOnce(); } finally { releaseRunLock(lock); process.removeListener('exit', onExit); }", "try { return await w.runOnce(); } finally { process.removeListener('exit', onExit); }"], PROTO],
+  ['S5', 'tools/home-worker/worker.js', 'the run lock is ignored (a second run goes on)', ["  if (!lock.ok) {\n    log('", "  if (false) {\n    log('"], PROTO],
+  ['S6', 'tools/home-worker/worker.js', 'a lock is never too old (a hung run blocks every later one)', ["age > -60000 && age < LOCK_STALE_MS && alive(cur.pid)", "age > -60000 && age < 1e15 && alive(cur.pid)"], PROTO],
+  ['S7', 'tools/home-worker/worker.js', 'a lock whose process is gone is still respected (a crash blocks every later run)', ["age > -60000 && age < LOCK_STALE_MS && alive(cur.pid)", "age > -60000 && age < LOCK_STALE_MS && true"], PROTO],
+  ['S8', 'tools/home-worker/worker.js', 'no exit hook: a run that ends by process.exit leaves its lock', ["  process.on('exit', onExit);\n", ""], PROTO],
+  ['S9', 'tools/home-worker/worker.js', 'a run removes a lock that is no longer its own', ["if (cur && cur.pid === lock.pid && cur.startedAt === lock.startedAt) fs.unlinkSync(lock.file);", "if (cur) fs.unlinkSync(lock.file);"], PROTO],
+  ['S10', 'tools/home-worker/worker.js', 'a percent sign in the path of run-hidden.vbs is accepted (Windows would replace a %1 in it)', ["if (/[\"%\\u0000-\\u001f\\u007f-\\u009f\\u2028\\u2029]/.test(vbs))", "if (/[\"\\u0000-\\u001f\\u007f-\\u009f\\u2028\\u2029]/.test(vbs))"], PROTO],
+  ['S11', 'tools/home-worker/worker.js', 'unregister removes a pppworker key that someone else made', ["  if (!st.ours) { o.warn('pppworker 항목이 이 도구가 만든 것 같지 않아서 지우지 않았어요.'", "  if (false) { o.warn('pppworker 항목이 이 도구가 만든 것 같지 않아서 지우지 않았어요.'"], PROTO],
+  ['S12', 'tools/home-worker/worker.js', 'the PHONE link carries &local=1 too (the clipboard gets the PC\'s link)', ["const copied = await runPiped(spawnFn, tools.copy[0], tools.copy[1], link);", "const copied = await runPiped(spawnFn, tools.copy[0], tools.copy[1], pcLink);"], PAIRW],
+  ['S13', 'tools/home-worker/worker.js', 'the PC\'s own browser is given the phone link (without &local=1)', ["tools.open[1].concat([pcLink])", "tools.open[1].concat([link])"], PAIRW],
+  ['S14', 'tools/home-worker/worker.js', 'the link\'s name is the FIRST 6 characters of its id hash (not the last 6 of the id the site gives)', [".digest('hex').slice(0, 22).slice(-6);", ".digest('hex').slice(0, 6);"], PAIRW],
+  ['S15', 'tools/home-worker/worker.js', '--pair says the PC is connected before the page has paired', ["'브라우저에서 링크를 열었고, 휴대폰용 링크를 복사했어요. 브라우저에 보이는", "'이 PC가 연결됐어요. 브라우저에 보이는"], PAIRW],
+  ['S16', 'tools/home-worker/worker.js', '--log-file with no name writes worker.log in the current folder, not next to the settings', ["path.join(settingsDirOf(cfg, deps && deps.lock), 'worker.log')", "path.join(process.cwd(), 'worker.log')"], PROTO],
+  ['S17', 'tools/home-worker/worker.js', 'the log file never rotates', ["if (fs.statSync(file).size > 512 * 1024)", "if (fs.statSync(file).size > 1e15)"], PROTO],
+  ['S18', 'tools/home-worker/worker.js', 'what follows an & after the code is part of the code (a link with &local=1 is no link to the worker)', ["const a = t.indexOf('&'); if (a >= 0) t = t.slice(0, a);", ""], PAIRW],
+  ['S19', 'tools/home-worker/worker.js', 'the run lock is not taken by --once at all', ["const lock = acquireRunLock(cfg, Object.assign({}, deps && deps.lock));", "const lock = { ok: true, file: '', pid: process.pid };"], PROTO],
+  ['T1', 'home-jobs.js', 'the link\'s name is the whole id (more of the hash than 6 characters)', ["String(id).slice(-6) : null);", "String(id) : null);"], LINKS],
+  ['T2', 'home-jobs.js', 'the status answer has no linkTag', [", activePollSeconds: C.activePollS, linkTag: linkTagOf(ownerId) };", ", activePollSeconds: C.activePollS };"], LINKS],
+  ['T3', 'home-jobs.js', 'the link\'s name is the first 6 hex of the id (the same bytes as the hash start, a different name than the last 6)', ["String(id).slice(-6) : null);", "String(id).slice(3, 9) : null);"], LINKS],
 ];
 
 const only = process.argv.slice(2);
 const runPg = !!process.env.PPP_TEST_PG_URL;
+
+/* MUT_CHECK=1: only check that every mutant's pattern is found, once, in its file (a rule that was moved or reworded makes a mutant "BAD" - this finds them without running a test) */
+if (process.env.MUT_CHECK) {
+  let bad = 0;
+  M.filter(m => !only.length || only.indexOf(m[0]) >= 0).forEach(m => {
+    const pairs = Array.isArray(m[3][0]) ? m[3] : [m[3]];
+    pairs.forEach(pr => {
+      const file = pr.length === 3 ? pr[0] : m[1], from = pr[pr.length - 2];
+      const src = fs.readFileSync(path.join(REPO, file), 'utf8').split('\r\n').join('\n');
+      const at = src.indexOf(from);
+      if (at < 0 || src.indexOf(from, at + 1) >= 0) { bad++; console.log('BAD ' + m[0] + ' (' + (at < 0 ? 'not found' : 'not unique') + '): ' + from.slice(0, 70).split('\n').join(' ')); }
+    });
+  });
+  console.log(bad ? bad + ' bad pattern(s)' : 'every pattern is found once');
+  process.exit(bad ? 1 : 0);
+}
 
 function copyTree(dst) {
   FILES.forEach(f => {
@@ -267,8 +334,10 @@ function run(dir, test, pgUrl) {
     const child = spawn(process.execPath, [path.join(REPO, 'tests', 'home-worker', test)], { cwd: REPO, env: env });
     let out = '';
     child.stdout.on('data', d => { out += d; }); child.stderr.on('data', d => { out += d; });
-    const t = setTimeout(() => child.kill(), 240000);
-    child.on('close', code => { clearTimeout(t); resolve({ code: code, out: out }); });
+    /* the page suite is long (it waits 21 s for a question that must not time out, and drives a browser through 270 checks): 25 minutes for it, 4 for the others; the unmutated copies are checked against the same limits first */
+    let timedOut = false;
+    const t = setTimeout(() => { timedOut = true; child.kill(); }, test === PAIRPAGE ? 1500000 : 240000);
+    child.on('close', code => { clearTimeout(t); resolve({ code: code, out: out, timedOut: timedOut }); });
   });
 }
 const firstFail = out => {
@@ -283,10 +352,10 @@ const firstFail = out => {
     /* the unmutated copy must pass, or a "killed" means nothing */
     const clean = path.join(base, 'clean'); copyTree(clean);
     const wantPage = M.some(m => (!only.length || only.indexOf(m[0]) >= 0) && m[4] === PAIRPAGE);
-    const tests = [JOBS, LINKS, SERVER, WORKER, PAIRW].concat(wantPage ? [PAIRPAGE] : []).concat(runPg ? [PG] : []);
+    const tests = [JOBS, LINKS, SERVER, WORKER, PAIRW, PROTO].concat(wantPage ? [PAIRPAGE] : []).concat(runPg ? [PG] : []);
     for (const t of tests) {
       const r = await run(clean, t);
-      if (r.code !== 0) { console.error('The unmutated copy fails ' + t + ':\n' + r.out.slice(-1500)); process.exit(2); }
+      if (r.code !== 0 || r.timedOut) { console.error('The unmutated copy ' + (r.timedOut ? 'was cut off (too slow) in ' : 'fails ') + t + ':\n' + r.out.slice(-1500)); process.exit(2); }
       console.log('clean copy passes ' + t);
     }
     const todo = M.filter(m => (!only.length || only.indexOf(m[0]) >= 0) && (m[4] !== PG || runPg));
@@ -306,13 +375,15 @@ const firstFail = out => {
       });
       if (bad) { results.push({ id: m[0], what: m[2], status: bad }); return; }
       const r = await run(dir, m[4], m[4] === PG ? (m.pgUrl || process.env.PPP_TEST_PG_URL) : null);
-      results.push({ id: m[0], what: m[2], test: m[4], status: r.code !== 0 ? 'killed' : 'SURVIVED', by: r.code !== 0 ? firstFail(r.out) : '' });
+      /* a run that is cut off is a mutant that HANGS (a loop that never ends, a wait that never returns) - the unmutated copy was shown to finish inside the same limit, so it cannot be a pass */
+      results.push({ id: m[0], what: m[2], test: m[4], status: r.code !== 0 || r.timedOut ? 'killed' : 'SURVIVED', by: r.timedOut ? 'hangs: cut off by the runner' : r.code !== 0 ? firstFail(r.out) : '' });
     };
     /* the Postgres ones share a database: one at a time; the others in fours */
     const par = todo.filter(m => m[4] !== PG && m[4] !== PAIRPAGE), seq = todo.filter(m => m[4] === PG), pages = todo.filter(m => m[4] === PAIRPAGE);
     for (let i = 0; i < par.length; i += 4) await Promise.all(par.slice(i, i + 4).map(work));
-    /* the page's ones are browser runs (a Chrome and a server each): two at a time */
-    for (let i = 0; i < pages.length; i += 2) await Promise.all(pages.slice(i, i + 2).map(work));
+    /* the page's ones are browser runs (a Chrome and a server each): three at a time (MUT_PAGE_PAR) */
+    const pagePar = Math.max(1, +process.env.MUT_PAGE_PAR || 3);
+    for (let i = 0; i < pages.length; i += pagePar) await Promise.all(pages.slice(i, i + pagePar).map(work));
     /* the Postgres ones: three at a time, each on its own database (the test drops and makes tables, so they cannot share one) */
     if (seq.length) {
       const { Pool } = require('pg');
