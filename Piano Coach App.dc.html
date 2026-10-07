@@ -4909,7 +4909,9 @@ async function arrangeSingleNote(builtGraph, plan) {
   if (!reference) return { ok: false, reason: 'REFERENCE_UNAVAILABLE' };
   /* G10c-1a (docs/GOALS/G10 section 33): plan.recordingArrange 'leadsheet' arranges a RECORDING (a graph with an 'audio-score' source: the same gate as the closing of gaps in repair/) from its lead sheet (rec/leadsheet.js:
      the melody as one line, the harmony of every heard note) instead of reducing it; 'reduce' (the default, and any other value) is the reduction, byte for byte. A graph that is no recording is never changed by it. */
-  const lead = !!plan && plan.recordingArrange === 'leadsheet' && !!(builtGraph && builtGraph.provenance && (builtGraph.provenance.sources || []).some(x => x && x.kind === 'audio-score'));
+  /* this pre-check is outside the try below and arrangeSingleNote never throws: a graph whose provenance.sources is not an array (a malformed or hand-made graph) is no recording, it must not make `.some` throw */
+  const leadSources = !!builtGraph && !!builtGraph.provenance && builtGraph.provenance.sources;
+  const lead = !!plan && plan.recordingArrange === 'leadsheet' && Array.isArray(leadSources) && leadSources.some(x => !!x && x.kind === 'audio-score');
   let key = null;
   try { key = SER.fingerprint(builtGraph) + '|' + (plan && plan.level) + (lead ? '|leadsheet' : ''); } catch (e) { key = null; }
   if (key && SINGLE_CACHE.has(key)) return Object.assign({ cached: true, ms: Date.now() - t0 }, SINGLE_CACHE.get(key));

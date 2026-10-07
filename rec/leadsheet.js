@@ -87,7 +87,7 @@
   const tickOf = r => { const x = R.toNumber(r) * TPW, k = Math.round(x); return Math.abs(x - k) < 1e-6 ? k : null; };
   const wholeOf = ticks => R.format(R.make(ticks, TPW));
 
-  function isRecording(g) { return !!(g && g.provenance && (g.provenance.sources || []).some(x => x && x.kind === 'audio-score')); }
+  function isRecording(g) { return !!(g && g.provenance && Array.isArray(g.provenance.sources) && g.provenance.sources.some(x => x && x.kind === 'audio-score')); }
 
   /* ---------------------------------------------------------------- collect: every onset of the recording graph, both staves, every voice */
   function collect(g) {

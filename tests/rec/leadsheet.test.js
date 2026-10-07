@@ -222,6 +222,26 @@ test('deterministic: the same recording gives the same lead sheet, byte for byte
 const REF = E.reference();
 const glue = () => E.make({ window: E.nodeWindow(), Score: {}, loadArrangerReference: () => Promise.resolve(REF) });
 
+test('the glue never throws on a malformed provenance: a graph whose sources are not an array is no recording (review of #182: the pre-check was outside the try)', async () => {
+  const g = convert(cover(16, tune));
+  const app = glue();
+  for (const bad of [{}, 'audio-score', 7, { some: () => { throw new Error('boom'); } }]) {
+    const h = JSON.parse(JSON.stringify(g));
+    h.provenance.sources = bad;
+    assert.equal(LS.isRecording(h), false);
+    let a, err = null;
+    try { a = await app.arrangeSingleNote(h, { level: 'beginner', recordingArrange: 'leadsheet' }); } catch (e) { err = e; }
+    assert.equal(err, null, 'arrangeSingleNote threw: ' + (err && err.message));
+    assert.equal(typeof a.ok, 'boolean');
+    assert.equal('leadsheet' in a, false, 'no lead sheet for a graph that is not a recording');
+  }
+  /* no provenance at all: also no throw */
+  const h2 = JSON.parse(JSON.stringify(g));
+  delete h2.provenance;
+  const b = await app.arrangeSingleNote(h2, { level: 'beginner', recordingArrange: 'leadsheet' }).catch(e => ({ threw: e }));
+  assert.equal(b.threw, undefined, 'a graph with no provenance made arrangeSingleNote throw');
+});
+
 test('the app\'s arrangeSingleNote with recordingArrange leadsheet: made at every level, the melody kept in the right hand, no hard violation, checker classes 0', async () => {
   const g = convert(cover(16, tune));
   const app = glue();
