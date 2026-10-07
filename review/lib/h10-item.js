@@ -17,7 +17,12 @@
 
    G10b-0: buildEngineItem(job) is the same item for the other comparison - the SAME recording read two ways, both written by the page's v2
    conversion: arm `browser` from the heard notes of the in-browser model (job.heard, what production serves) and arm `helper` from the notes
-   of the helper ensemble (job.heardB; notes only: no pedal, no beats). One window of seconds is chosen from the BROWSER notes and shown for both. */
+   of the helper ensemble (job.heardB; notes only: no pedal, no beats). One window of seconds is chosen from the BROWSER notes and shown for both.
+
+   H-10c: buildArrangeItem(job) is the third: ONE recording read once (the page's v2 conversion of the heard notes) and the Song Arranger's one-note-per-hand copy of it made
+   four ways, at beginner and at intermediate, each once with recordingArrange 'leadsheet' and once with 'reduce' (the page's own function, every fallback included). One
+   window of bars (chosen from the conversion) is drawn for every copy. A copy the lead sheet was asked for counts as made only when the lead sheet made it; when it refused and
+   the page fell back to the reduction, that is a refusal of the lead sheet (the reason is in the key) and the reduction's own copy is the other method's. */
 'use strict';
 const APP = require('./appcode.js');
 const EX = require('./h10-excerpt.js');
@@ -25,6 +30,9 @@ const DRAW = require('./h10-draw.js');
 
 const ARMS = ['classic', 'v2'];
 const ENGINE_ARMS = ['browser', 'helper'];
+/* H-10c (--compare arrange): the two ways the Song Arranger makes a copy of a recording (the page's PPP.recordingArrange), at these levels */
+const ARRANGE_METHODS = ['leadsheet', 'reduce'];
+const ARRANGE_LEVELS = ['beginner', 'intermediate'];
 const DEFAULT_LEVEL = 'intermediate';
 const GLYPH_PREFIX = 'g-';
 
@@ -158,4 +166,51 @@ async function buildEngineItem(job, ctx) {
   return { id: job.id, title: title, excerpt: excerpt, arms: arms, agreement: agreement, heardIn: heardIn };
 }
 
-module.exports = { buildItem, buildEngineItem, barAgreement, ARMS, ENGINE_ARMS, DEFAULT_LEVEL, GLYPH_PREFIX };
+/* ---- H-10c: the lead sheet against the reduction ---- */
+/* job: { id, title, heard, excerpt?: { bars, seconds, start }, levels? } -> { id, title, excerpt, conversion, levels: { <level>: { leadsheet: { made, part, key }, reduce: { made, part, key } } } }
+   part: the copy drawn for the window (h10-draw.js drawPart), null when the method made no copy or the copy has other bars than the conversion; key: what the reviewer never sees */
+async function buildArrangeItem(job, ctx) {
+  ctx = ctx || {};
+  const arranger = ctx.arranger || APP.arranger();
+  const title = job.title || 'Recording';
+  const heard = job.heard;
+  const conv = APP.convertHeard(heard, title, true);
+  const graph = conv.built.graph, bars = graph.timeline.measures.length;
+  const ex = job.excerpt || {};
+  const excerpt = EX.pickExcerpt({ heard: heard.notes, barStarts: { conversion: conv.built.stats.barStarts }, bars: ex.bars, seconds: ex.seconds, start: ex.start });
+  const win = excerpt.arms.conversion.bars;
+  const levels = {};
+  for (const level of job.levels || ARRANGE_LEVELS) {
+    levels[level] = {};
+    for (const method of ARRANGE_METHODS) {
+      const t0 = Date.now();
+      let res;
+      try { res = await arranger.arrange(graph, level, title, { recordingArrange: method }); }
+      catch (e) { res = { ok: false, reason: 'THROWN', message: String(e && e.message || e) }; }
+      /* asked for the lead sheet and given the reduction (the page's fallback): the lead sheet made nothing */
+      const made = !!res.ok && (method === 'reduce' || res.recordingArrange === 'leadsheet');
+      const key = {
+        asked: method, answered: !!res.ok, madeBy: res.ok ? (res.recordingArrange || 'reduce') : null, made: made,
+        reason: res.ok ? null : (res.reason || null), message: res.ok ? null : (res.message || null),
+        leadsheetRefusal: res.leadsheetRefusal || null, handsFallback: res.ok ? (res.handsFallback || null) : null, classicFallback: res.ok ? !!res.classicFallback : null,
+        levelNote: res.ok ? (res.levelNote || null) : null, rescued: res.ok && res.rescued ? res.rescued.length : 0, degraded: res.ok ? !!res.degraded : null,
+        leadsheet: res.ok && res.leadsheet ? { version: res.leadsheet.version, notes: res.leadsheet.notes, melodyNotes: res.leadsheet.melodyNotes, shifted: res.leadsheet.shifted } : null,
+        ms: Date.now() - t0
+      };
+      let part = null;
+      if (made) {
+        const n = res.graph.timeline.measures.length;
+        key.measures = n;
+        if (n !== bars) key.problem = 'the copy has ' + n + ' bars, the conversion ' + bars + ' (not drawn)';
+        else part = DRAW.drawPart(res.graph, win, GLYPH_PREFIX);
+      }
+      levels[level][method] = { made: made && !!part, part: part, key: key };
+    }
+  }
+  const st = conv.built.stats;
+  return { id: job.id, title: title, excerpt: excerpt, levels: levels,
+    conversion: { wroteV2: conv.v2, v2Rejected: conv.rejected, measures: bars, tempo: st.tempo, metre: st.beatsPerBar + '/' + (st.beatType || 4), keyFifths: st.key && st.key.fifths != null ? st.key.fifths : null,
+      window: win, barsShown: win[1] - win[0] + 1, covers: excerpt.arms.conversion.covers, heardNotesInWindow: heard.notes.filter(n => n.on >= excerpt.start - 1e-9 && n.on < excerpt.end - 1e-9).length } };
+}
+
+module.exports = { buildItem, buildEngineItem, buildArrangeItem, barAgreement, ARMS, ENGINE_ARMS, ARRANGE_METHODS, ARRANGE_LEVELS, DEFAULT_LEVEL, GLYPH_PREFIX };

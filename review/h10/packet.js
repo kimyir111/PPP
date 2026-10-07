@@ -26,7 +26,14 @@
    (the H-10 rule), one window of seconds chosen from the BROWSER notes and shown for both. X or Y per piece by HMAC(seed, id). The page says only that the two scores are two
    readings of the same audio; the builder refuses to write a packet whose page, manifest or drawings carry the vocabulary of the sources (review/lib/h10-leak.js). The key
    records, per piece, how far the two readings agree on tempo, metre and where the bars begin (`agreement`), so a known bar or tempo-octave disagreement is visible before the
-   teacher spends her eyes on it. */
+   teacher spends her eyes on it.
+
+   H-10c - the lead sheet against the reduction (review/h10/packet-arrange.js):
+
+     node review/build.js --mode h10 --compare arrange --heard <dir of heard notes + items.json> --out <packet-dir> --key-out <key-dir> [--seed <secret>] [--jobs 3] [--excerpt-bars 12] [--excerpt-seconds N] [--no-titles]
+
+   One note set per piece, read once by the page's v2 conversion; the Song Arranger's one-note-per-hand copy of it at beginner and at intermediate, each made with recordingArrange
+   'leadsheet' and with 'reduce'. Pair (X and Y) where both made a copy, a single where only one did. Questions about the NOTES; the pass rule is written into the key. */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -106,7 +113,7 @@ async function buildItems(jobs, opts) {
     const ctx = { arranger: require(path.join(REPO, 'review/lib/appcode.js')).arranger() };
     for (const j of jobs) {
       const t0 = Date.now();
-      try { out[j.id] = { ok: true, result: await (j.compare === 'engine' ? ITEM.buildEngineItem(j, ctx) : ITEM.buildItem(j, ctx)) }; } catch (e) { out[j.id] = { ok: false, error: String(e && e.stack || e) }; }
+      try { out[j.id] = { ok: true, result: await (j.compare === 'engine' ? ITEM.buildEngineItem(j, ctx) : j.compare === 'arrange' ? ITEM.buildArrangeItem(j, ctx) : ITEM.buildItem(j, ctx)) }; } catch (e) { out[j.id] = { ok: false, error: String(e && e.stack || e) }; }
       log('  ' + j.id + ': ' + (out[j.id].ok ? 'built' : 'FAILED') + ' in ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s');
     }
     return out;
@@ -183,7 +190,8 @@ const COMPARES = {
 async function buildH10(opts, dirs, helpers) {
   const log = opts.log || (() => {});
   const compare = opts.compare || 'version';
-  if (!COMPARES[compare]) throw new Error("--compare must be 'engine' (omit it for the classic-against-v2 comparison)");
+  if (compare === 'arrange') return require('./packet-arrange.js').buildArrange(opts, dirs, helpers);   /* H-10c: the lead sheet against the reduction */
+  if (!COMPARES[compare]) throw new Error("--compare must be 'engine' or 'arrange' (omit it for the classic-against-v2 comparison)");
   const C = COMPARES[compare], engine = compare === 'engine';
   if (!opts.heard) throw new Error('--heard <dir> is required for --mode h10 (the folder review/h10/collect.js wrote: items.json and one <id>.json of heard notes per item)');
   if (engine && !opts.heardB) throw new Error('--heard-b <dir> is required with --compare engine (the helper notes of the same pieces, in the same format: review/h10/helper-heard.js makes them)');
@@ -309,4 +317,4 @@ async function buildH10(opts, dirs, helpers) {
   };
   return { outDir: dirs.outDir, keyDir: dirs.keyDir, files: files, packetId: packetId, count: pageItems.length, manifest: manifest, key: key, buildMs: timeMs, skipped: skipped, warnings: warnings };
 }
-module.exports = { buildH10, readHeardDir, readHelperDir, buildItems, PASS_RULE, FORMAT, KEY_FORMAT, ID_RE, DURATION_TOLERANCE };
+module.exports = { buildH10, sha, sideSig, drawnProblems, readHeardDir, readHelperDir, buildItems, PASS_RULE, FORMAT, KEY_FORMAT, ID_RE, DURATION_TOLERANCE };
