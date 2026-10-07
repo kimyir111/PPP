@@ -49,4 +49,17 @@ const f1 = (got, truth) => {
   return { p: p, r: r, f1: p + r ? 2 * p * r / (p + r) : 0 };
 };
 
-module.exports = { OPTS, cover, SCALE, tune, headsOf, convert, f1 };
+/* The tune of `cover` with one note held across a barline (review of #182): the note on beat HK + 1 of bar HB (0-based; here the third beat of the sixth bar) sounds for four beats, to
+   the tune's next note, and the tune has no other note in between. Returns the cover and { bar: HB, beat: HK } */
+const HELD = { bar: 5, beat: 2 };
+function heldTune(bars) {
+  const spq = 0.6, start = 1, h = HELD.bar * 4 + HELD.beat;
+  const holey = (b, k) => { const n = b * 4 + k; return n > h && n < h + 4 ? null : tune(b, k); };
+  const c = cover(bars || 12, holey);
+  const held = c.melody.find(n => Math.abs(n.on - (start + h * spq)) < 0.05);
+  if (!held) throw new Error('the held note is not in the fixture');
+  held.off = Math.round((held.on + spq * 4 * 0.97) * 1000) / 1000;
+  return c;
+}
+
+module.exports = { OPTS, cover, SCALE, tune, headsOf, convert, f1, HELD, heldTune };

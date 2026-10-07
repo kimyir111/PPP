@@ -297,7 +297,7 @@
       });
       kept = out;
     }
-    const w = WR.write(kept.concat(ghosts), { bar: info.bar, bars: info.bars, beatType: info.beatType, beatsPerBar: info.beatsPerBar, compound: info.compound, restMin: info.compound ? 36 : params.restMin, allowBarTies: false });
+    const w = WR.write(kept.concat(ghosts), { bar: info.bar, bars: info.bars, beatType: info.beatType, beatsPerBar: info.beatsPerBar, compound: info.compound, restMin: info.compound ? 36 : params.restMin, allowBarTies: true });
     const track = w.tracks.find(t => t.staff === 1 && t.voice === 1);
     if (!track) throw new Error('the writer made no first voice');
 

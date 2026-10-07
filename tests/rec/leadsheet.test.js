@@ -17,7 +17,7 @@ const SER = require(path.join(REPO, 'scoregraph', 'serialize.js'));
 const P = require(path.join(REPO, 'scoregraph', 'pitch.js'));
 const E = require(path.join(REPO, 'tests', 'realize', 'app-single-extract.js'));
 
-const { OPTS, cover, SCALE, tune, headsOf, convert, f1 } = require('./leadsheet-fixtures.js');
+const { OPTS, cover, SCALE, tune, headsOf, convert, f1, HELD, heldTune } = require('./leadsheet-fixtures.js');
 
 test('isRecording: a transcription is, a printed score is not; a printed score is refused with its reason', () => {
   const g = convert(cover(8, tune));
@@ -111,6 +111,30 @@ test('a staccato tune is written legato (silences under a quarter are not rests)
   const rests = q.graph.parts[0].events.filter(e => e.kind === 'rest');
   assert.ok(rests.length >= 1 && rests.some(e => e.display && e.display.measureRest), 'a bar of rest is written as a measure rest');
   assert.equal(NC.checkGraph(q.graph).total, 0);
+});
+
+test('a tune note held across a barline is tied over it, and no rest is written where the tune still sounds (review of #182: allowBarTies was false)', () => {
+  /* the tune of the other tests, but the note on beat 3 of the sixth bar is held for four beats: the rest of its bar and the first two beats of the next, to the tune's next note */
+  const g = convert(heldTune());
+  const r = LS.prepare(g, { songgraph: SGG });
+  assert.equal(r.ok, true, r.reason);
+  const part = r.graph.parts[0], ids = r.graph.timeline.measures.map(m => m.id);
+  const where = e => (e.kind === 'rest' ? 'rest' : 'note') + ' in bar ' + ids.indexOf(e.m) + ' at ' + e.at + ' for ' + e.dur;
+  assert.equal(part.events.filter(e => e.kind === 'rest').length, 0, 'a rest was written where the tune sounds: ' + part.events.filter(e => e.kind === 'rest').map(where));
+  /* the held note is two notes of the same pitch, in the bar of its onset and the next one, joined by a tie */
+  const byHead = new Map();
+  part.events.forEach(e => { if (e.kind === 'note') byHead.set(e.heads[0].id, e); });
+  const ties = (part.spanners || []).filter(sp => sp.type === 'tie');
+  assert.ok(ties.length >= 1, 'no tie');
+  const across = ties.filter(sp => ids.indexOf(byHead.get(sp.to).m) === ids.indexOf(byHead.get(sp.from).m) + 1);
+  assert.ok(across.length >= 1, 'the tie does not cross a barline');
+  const from = byHead.get(across[0].from), to = byHead.get(across[0].to);
+  assert.equal(ids.indexOf(from.m), HELD.bar);
+  assert.deepEqual(from.heads[0].pitch, to.heads[0].pitch);
+  /* the tune sounds from its onset to the tune's next note: the two tied pieces are the four beats */
+  const toWhole = x => { const [a, b] = String(x).split('/'); return b ? Number(a) / Number(b) : Number(a); };
+  assert.equal(toWhole(from.dur) + toWhole(to.dur), 1, 'two halves: the four beats the tune note was held for');
+  assert.equal(NC.checkGraph(r.graph).total, 0);
 });
 
 test('the key signatures are those of the recording: a cover in D major', () => {

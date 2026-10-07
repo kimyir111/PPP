@@ -13,7 +13,7 @@ const SGG = require(path.join(REPO, 'songgraph', 'index.js'));
 const HARM = require(path.join(REPO, 'songgraph', 'harmony.js'));
 const NC = require(path.join(REPO, 'scoregraph', 'tools', 'notation-check.js'));
 const P = require(path.join(REPO, 'scoregraph', 'pitch.js'));
-const { cover, tune, headsOf, convert, f1 } = require('./leadsheet-fixtures.js');
+const { cover, tune, headsOf, convert, f1, heldTune } = require('./leadsheet-fixtures.js');
 
 const SRC = fs.readFileSync(path.join(REPO, 'rec', 'leadsheet.js'), 'utf8').replace(/\r\n/g, '\n');
 
@@ -81,6 +81,9 @@ function checks(LS) {
   const gk = convert(cover(16, tune, { shift: 2 })), rk = LS.prepare(gk, { songgraph: SGG });
   add('the key signatures are those of the recording', rk.ok && gk.timeline.keys[0].fifths !== 0 && JSON.stringify(rk.graph.timeline.keys.map(k => [k.m, k.fifths, k.mode])) === JSON.stringify(gk.timeline.keys.map(k => [k.m, k.fifths, k.mode])));
   add('one note at a time', r.graph.parts[0].events.filter(e => e.kind === 'note').every(e => e.heads.length === 1));
+  /* a tune note held across a barline is tied over it: no rest where the tune still sounds (review of #182) */
+  const gh2 = convert(heldTune()), rh2 = LS.prepare(gh2, { songgraph: SGG });
+  add('a held tune note is tied over the barline, no rest where it sounds', rh2.ok && rh2.graph.parts[0].events.every(e => e.kind !== 'rest') && (rh2.graph.parts[0].spanners || []).some(sp => sp.type === 'tie'));
   void g;
   return out;
 }
@@ -92,6 +95,7 @@ const MUTATIONS = [
   { id: 'HARMONY-OF-THE-LINE', why: 'the arranger is given the harmony the melody line alone gives', find: 'const harmony = harmonyOf(g);', replace: 'const harmony = analyzer.analyze(L).harmony;' },
   { id: 'UPPER-STAFF-ONLY', why: 'only the notes of the upper staff are candidates (the hand split is read)', find: 'if (!h.pitch || tieTo.has(h.id)) continue;', replace: 'if (!h.pitch || tieTo.has(h.id) || staffIx.get(e.staff) === 1) continue;' },
   { id: 'NO-LEGATO', why: 'every silence between two melody notes is a rest, however short', find: 'restMin: info.compound ? 36 : params.restMin', replace: 'restMin: 0' },
+  { id: 'NO-BAR-TIES', why: 'the writer cuts a note at the barline (allowBarTies false): a rest is written where the tune still sounds', find: 'params.restMin, allowBarTies: true });', replace: 'params.restMin, allowBarTies: false });' },
   { id: 'KEYS-LOST', why: 'the recording\'s key signatures are not written to the lead sheet', find: 'g.timeline.keys.forEach(x => b.key(JSON.parse(JSON.stringify(x))));', replace: "b.key({ m: g.timeline.measures[0].id, at: '0', fifths: 0, mode: 'major' });" },
   { id: 'PROVENANCE-DROPPED', why: 'the lead sheet is no longer marked as a transcription', find: "if (!s || s.kind !== 'audio-score') return;", replace: 'return;' },
   { id: 'TWO-NOTES', why: 'the melody voice holds the two highest notes of an instant', find: 'if (p.kind === \'note\') ev.heads = [{ pitch: p.notes[0].pitch }];', replace: "if (p.kind === 'note') ev.heads = [{ pitch: p.notes[0].pitch }, { pitch: { step: p.notes[0].pitch.step, alter: p.notes[0].pitch.alter, oct: p.notes[0].pitch.oct - 1 } }];" }
