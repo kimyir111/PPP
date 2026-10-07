@@ -288,7 +288,8 @@ test('the page: rec/leadsheet.js is in no up-front list, not in RECORDING_SCRIPT
   assert.ok(loader.indexOf('recFetchWeights(LEADSHEET_MODEL[1])') > -1 && loader.indexOf('recFetchWeights(LEADSHEET_MODEL[1])') < loader.indexOf('recScriptTag(s)'), 'the model first, then the scripts');
   assert.ok(loader.indexOf('LEADSHEET_NEEDS.concat([LEADSHEET_SCRIPT])') > -1 && loader.indexOf('!_recLoaded.has(s)') > -1, 'the two files it reads, then itself, and only what is not on the page already (nothing that loaded runs twice)');
   assert.equal(loader.indexOf('loadRecordingModules'), -1, 'it does not ask for the conversion\'s seventeen files');
-  assert.ok(loader.indexOf('await _recPromise') > -1 && html.indexOf('if (_leadPromise) await _leadPromise;') > -1, 'neither loader runs while the other is on its way');
+  assert.equal(loader.indexOf('_recPromise'), -1, 'the lead sheet loader does not wait for the v2 loader: a wait each way was a deadlock (tests/rec/leadsheet-loader.test.js runs both)');
+  assert.equal(fnSource('loadRecordingModules').indexOf('_leadPromise'), -1, 'and the v2 loader does not wait for the lead sheet loader');
   const wantsWeightsShape = html.indexOf('recWeightsShapeOk(LEADSHEET_MODEL[0], j)');
   assert.ok(wantsWeightsShape > -1, 'the model is checked for its shape like v2\'s own');
   const askers = (html.match(/loadLeadsheetModule\(\)/g) || []).length;

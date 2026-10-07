@@ -9,6 +9,8 @@
      - a saved v2 song opened in a FRESH page (nothing of v2 loaded) is arranged from its lead sheet at beginner, intermediate and advanced: the Song Arranger's chip is there and pressed, rec/leadsheet.js
        (and v2's files, which it reads) are asked for once each when the Arranger opens, the copy's source says recordingArrange 'leadsheet', its composer line says "(lead sheet)", its right hand is the tune,
        its bars add up (checker classes 1-7 are 0), one note per hand
+     - the two loaders (v2's conversion, the lead sheet) started together in either order both say yes at once, each file asked for once; a file the lead sheet reads that failed once leaves no half-loaded
+       lead sheet: the next Create asks for it again and the copy is the lead sheet, equal to the one a page that never failed makes
      - the chip pressed (reduce): the copy is EXACTLY the copy the page's arrangeSingleNote (main's function) makes, with no mark and the old composer line; pressed again, the lead sheet
      - a refusal falls back: the lead sheet refused (any reason; the module blocked) -> the reduction's copy, marked reduce with the reason, equal to main's; refused by both -> the existing refusal notice and
        nothing saved (the standard arrangement is the person's click)
@@ -17,7 +19,7 @@
      - Korean first: the chip, its two lines, the composer line, in 400 px with no sideways scroll
      - no page error and no console error throughout
    Runs against its own server on a free port (tests/serve-free.js); PPP_URL=... runs it against another build. node tests/recording-leadsheet-app.test.js
-   LS_ONLY=defaults|fresh|interplay|reduce|refuse|relaxed|review|others|korean (a regular expression) runs only those sections.
+   LS_ONLY=defaults|fresh|interplay|loaders|reduce|refuse|relaxed|review|others|korean (a regular expression) runs only those sections.
    ========================================================================== */
 'use strict';
 const puppeteer = require('puppeteer');
@@ -57,6 +59,7 @@ const toSongs = async page => { await page.evaluate(() => window.PPP.app.go('son
 async function savedSong(browser, cover, o) {
   o = Object.assign({}, o, { store: Object.assign({}, LEAD, o && o.store) });
   const p = await openPage(browser, o);
+  if (o.failOff) p.__rec.failOn = false;   /* the requests that fail are not what the import is about: they fail from the moment the caller sets failOn */
   await addChecker(p);
   await importHeard(p, cover);
   const s = await stateOf(p);
@@ -225,6 +228,50 @@ const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i])
       ok('and the conversion is the one a page that never opened the Song Arranger makes: v2, the same notation note for note (hash, measures, notes, rests, brackets)', st.pipeline === 'v2' && st.hash === base.state.hash && st.measures === base.state.measures && st.notes === base.state.notes && st.rests === base.state.rests && st.brackets === base.state.brackets, JSON.stringify([st.hash, base.state.hash]));
       ok('no page or console error', clean(pb) && clean(base.page), errs(pb) + errs(base.page));
       await pb.close(); await base.page.close();
+    }
+
+    /* ------------------------------------------------------------------ the two loaders at once; a file that failed once */
+    if (want('loaders')) {
+      console.log('\n── both loaders at once, in either order; a file the lead sheet reads failed once ──');
+      for (const order of ['rec-then-lead', 'lead-then-rec']) {
+        const p = await openPage(browser, { store: LEAD });
+        p.__mark = p.__rec.requests.length;
+        const r = await p.evaluate(async order => {
+          const t0 = performance.now(), P = window.PPP;
+          const tag = (n, pr) => pr.then(v => [n, v, Math.round(performance.now() - t0)]);
+          const calls = order === 'rec-then-lead' ? [() => tag('rec', P.loadRecordingModules()), () => tag('lead', P.loadLeadsheetModule())] : [() => tag('lead', P.loadLeadsheetModule()), () => tag('rec', P.loadRecordingModules())];
+          return Promise.all(calls.map(c => c()));
+        }, order);
+        ok(order + ': started in the same moment, both loaders say yes, each long before the 15 s of a stall (it was 15 s and no, both, when each waited for the other)', r.every(x => x[1] === true && x[2] < 10000), JSON.stringify(r));
+        const files = recSince(p);
+        ok(order + ': v2 is ready, the lead sheet is on the page, and each of the 18 files of rec/ (the 17 of v2 and rec/leadsheet.js) was asked for once',
+          (await p.evaluate(() => window.PPP.recordingModulesReady() && !!window.PPPRecLeadsheet)) && files.length === 18 && new Set(files).size === 18, files.length + ' ' + new Set(files).size);
+        ok(order + ': no page or console error', clean(p), errs(p));
+        await p.close();
+      }
+      /* a file the lead sheet reads fails once (a bad network) while it is being loaded: the next Create asks for it again; no lead sheet that holds no writer (or no grid) is left on the page */
+      const ref = await savedSong(browser, COVERS.sc0);
+      const refCopy = await arrangeCopy(ref.page, ref.id, 'beginner');
+      const refHash = refCopy.newKeys[0] ? await copyHash(ref.page, refCopy.newKeys[0]) : null;
+      await ref.page.close();
+      ok('(reference) a page that never failed makes the lead sheet copy', !!refHash && !!refCopy.arrangement && refCopy.arrangement.recordingArrange === 'leadsheet');
+      for (const file of ['writer', 'grid']) {
+        const sv = await savedSong(browser, COVERS.sc0, { failWhile: new RegExp('/rec/' + file + '[.]js'), failOff: true });
+        const p = sv.page, asked = name => p.__rec.requests.filter(u => u.split('?')[0] === '/rec/' + name + '.js').length;
+        p.__rec.failOn = true;
+        const c1 = await arrangeCopy(p, sv.id, 'beginner');
+        ok('rec/' + file + '.js fails: the first Create makes the reduction copy (main\'s), marked reduce with LEADSHEET_NOT_LOADED, nothing thrown', c1.refusal === null && c1.newKeys.length === 1 && !!c1.arrangement && c1.arrangement.recordingArrange === 'reduce' && c1.arrangement.leadsheetRefusal === 'LEADSHEET_NOT_LOADED', JSON.stringify(c1.arrangement));
+        ok('and no lead sheet is left on the page (it would hold no ' + file + '): PPPRecLeadsheet is gone', await p.evaluate(() => typeof window.PPPRecLeadsheet === 'undefined'));
+        p.__rec.failOn = false;
+        const before = [asked(file), asked('leadsheet')];
+        const c2 = await arrangeCopy(p, sv.id, 'beginner');
+        ok('rec/' + file + '.js reachable again: the Song Arranger asks for it and for the lead sheet again (once each), and for nothing else of v2, and the second Create makes the lead sheet copy',
+          c2.refusal === null && c2.newKeys.length === 1 && !!c2.arrangement && c2.arrangement.recordingArrange === 'leadsheet' && !c2.arrangement.leadsheetRefusal && asked(file) - before[0] === 1 && asked('leadsheet') - before[1] === 1
+          && !['hands', 'index', 'metre', 'voices'].some(n => recSince(p).indexOf('/rec/' + n + '.js') > -1), JSON.stringify([c2.arrangement, before, asked(file), asked('leadsheet')]));
+        ok('and that copy is the lead sheet a page that never failed makes, note for note (the lead sheet holds its ' + file + ')', !!c2.newKeys[0] && (await copyHash(p, c2.newKeys[0])) === refHash);
+        ok('no page error (the failed file is a failed request, not a script error)', p.__rec.pageErrors.length === 0, JSON.stringify(p.__rec.pageErrors));
+        await p.close();
+      }
     }
 
     /* ------------------------------------------------------------------ the chip: reduce is main's copy */
