@@ -34,7 +34,16 @@
      arr.check.1 .. 7          notation-check classes per 100 bars (the acceptance classes)
      arr.notes                 notes written (information)
      src.melody.heard / src.melody.in_lh / src.harmony.agreement   about the recording graph before any arranging (information)
-     clean.<name>              the same, for the true score's own arrangement (information: the ceiling the recording is measured against) */
+     clean.<name>              the same, for the true score's own arrangement (information: the ceiling the recording is measured against)
+
+   G10c-1a (docs/GOALS/G10 section 33): a job whose opts carry `recordingArrange: 'leadsheet'` (a matrix row's opts; the key is not passed to audio-score.js) is arranged from its lead
+   sheet (rec/leadsheet.js, through the app glue's plan.recordingArrange) instead of reduced. Such a job also has, and only such a job (the other rows' results are exactly what they
+   were):
+     ls.melody.precision / recall / f1   the lead sheet's melody line (before any octave move) against the heard true melody notes: same pitch, onset within 0.15 quarter
+     ls.melody.f1pc                      the same on pitch classes (octave-free)
+     arr.melody.precision / f1 / f1pc    the same for the arrangement's right-hand attacks (what is written, after the octave move; f1pc ignores the octave)
+     arr.relaxed                         share of the levels made whose plan was the relaxed one (the copy can read harder than the level asked for)
+   PPP_RECARR_DETAIL=<file> (environment; any job): one JSON line per job with the metrics of every level on its own, for the tables of section 33. Not part of the results. */
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -86,10 +95,12 @@ function sutWindow() {
     PPPCriticsModules: { metrics: SR('critics/metrics.js') },
     PPPArrangementModules: { reference: SR('arrangement/reference.js') },
     PPPRealizeModules: { ottava: SR('realize/ottava.js'), clefs: SR('realize/clefs.js') },
-    PPPScoreGraphModules: { serialize: SR('scoregraph/serialize.js'), legacyScore: SR('scoregraph/legacy-score.js'), pitch: SR('scoregraph/pitch.js') }
+    PPPScoreGraphModules: { serialize: SR('scoregraph/serialize.js'), legacyScore: SR('scoregraph/legacy-score.js'), pitch: SR('scoregraph/pitch.js') },
+    PPPRecLeadsheet: SR('rec/leadsheet.js')
   };
 }
 const reference = E.reference();
+const DETAIL = process.env.PPP_RECARR_DETAIL || null;
 const app = E.make({ window: sutWindow(), Score: {}, loadArrangerReference: () => Promise.resolve(reference) });
 const SGSER = SR('scoregraph/index.js');
 
@@ -100,6 +111,7 @@ const EPS = 1e-6;
 const num = r => RAT.toNumber(r);
 
 function jsonl(file) { return fs.readFileSync(file, 'utf8').split('\n').filter(l => l.trim()).map(l => JSON.parse(l)); }
+const F1_KEYS = ['arr.melody.precision', 'arr.melody.f1', 'arr.melody.f1pc'];      /* the metrics only a lead sheet row carries */
 const mean = xs => { const v = xs.filter(x => x !== null && x !== undefined && !Number.isNaN(x)); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
 
 /* ---- graph reading (positions in quarter notes) ---- */
@@ -158,11 +170,16 @@ function chordWindows(g) {
   return HARM.harmonyOf(g).filter(w => w.root !== null && w.root !== undefined).map(w => ({ q0: num(w.w0) * 4, q1: num(w.w1) * 4, chord: w.root + ':' + w.quality }));
 }
 
-function measureLevel(arr, melodyAt, truthChordsAt) {
+function measureLevel(arr, melodyAt, truthChordsAt, withF1) {
   const g = arr.graph, ix = M.indexNotes(notesOf(g)), tab = measureTable(g);
   const out = {};
   const ms = M.melodyStats(ix, melodyAt);
   if (ms) { out['arr.melody.kept'] = ms.kept; out['arr.melody.cross'] = ms.cross; out['arr.melody.lost'] = ms.lost; out['arr.melody.gap_rate'] = ms.gap_rate; }
+  if (withF1 && melodyAt.length) {
+    const rh = ix.onsets.filter(n => n.staff === 0).map(n => ({ q: n.q0, midi: n.midi }));
+    const exact = M.lineScores(rh, melodyAt, false), pc = M.lineScores(rh, melodyAt, true);
+    out['arr.melody.precision'] = exact.precision; out['arr.melody.f1'] = exact.f1; out['arr.melody.f1pc'] = pc.f1;
+  }
   out['arr.harmony.agreement'] = truthChordsAt.length ? M.chordAgreement(chordWindows(g), truthChordsAt) : null;
   const hs = M.handStats(ix, tab.bars);
   out['arr.lh.notes_per_bar'] = hs.lh_notes_per_bar; out['arr.rh.above_c6'] = hs.rh_above_c6;
@@ -179,25 +196,36 @@ function measureLevel(arr, melodyAt, truthChordsAt) {
   return out;
 }
 
-async function arrangeAll(g) {
+async function arrangeAll(g, mode) {
   const res = [];
   for (const level of LEVELS) {
     let a;
-    try { a = await app.arrangeSingleNote(g, { level }); } catch (e) { a = { ok: false, reason: 'THROW', message: String(e && e.message || e) }; }
+    try { a = await app.arrangeSingleNote(g, mode === 'leadsheet' ? { level, recordingArrange: 'leadsheet' } : { level }); } catch (e) { a = { ok: false, reason: 'THROW', message: String(e && e.message || e) }; }
     res.push(a);
   }
   return res;
 }
 
 /* the metrics of the levels that were made, averaged, plus the level spread; `prefix` is 'arr.' (the recording) or 'clean.' */
-function summarise(arrs, melodyAt, chordsAt) {
+function summarise(arrs, melodyAt, chordsAt, withF1, detail) {
   const made = arrs.filter(a => a && a.ok);
   const m = { 'arr.made': made.length / LEVELS.length };
-  if (!made.length) return m;
-  const per = made.map(a => measureLevel(a, melodyAt, chordsAt));
-  Object.keys(per[0]).filter(k => k[0] !== '_').forEach(k => { m[k] = mean(per.map(p => p[k])); });
+  if (!made.length) { if (detail) detail.levels = arrs.map((a, i) => ({ level: LEVELS[i], made: false, reason: (a && a.reason) || null })); return m; }
+  /* PPP_RECARR_DETAIL asks for the F1s of every arm (a table of a reduce row's right hand), but it must not change a result: they are measured when the detail wants them and enter
+     the metrics only for the rows that carry them (the lead sheet's: README, "the v2-lead row") */
+  const per = made.map(a => measureLevel(a, melodyAt, chordsAt, withF1 || !!detail));
+  Object.keys(per[0]).filter(k => k[0] !== '_' && (withF1 || F1_KEYS.indexOf(k) < 0)).forEach(k => { m[k] = mean(per.map(p => p[k])); });
   const sp = M.levelSpread(per.map(p => ({ keys: p._keys, fp: p._fp })));
   if (sp) { m['arr.level.distinct'] = sp.distinct; m['arr.level.distance'] = sp.distance; }
+  if (withF1) m['arr.relaxed'] = made.filter(a => a.levelNote).length / made.length;
+  if (detail) {
+    detail.levels = arrs.map((a, i) => {
+      if (!(a && a.ok)) return { level: LEVELS[i], made: false, reason: (a && a.reason) || null };
+      const o = Object.assign({}, per[made.indexOf(a)]);
+      delete o._keys; delete o._fp;
+      return Object.assign({ level: LEVELS[i], made: true, relaxed: !!a.levelNote }, o);
+    });
+  }
   return m;
 }
 const rename = (m, prefix) => { const o = {}; Object.keys(m).forEach(k => { o[k.replace(/^arr\./, prefix)] = m[k]; }); return o; };
@@ -207,7 +235,7 @@ async function cleanOf(t) {
   if (t.clean) return t.clean;
   const melodyAt = t.melody.map(x => ({ q: x.q, midi: x.midi }));
   const chordsAt = t.windows.map(w => ({ q: (w.q0 + w.q1) / 2, chord: w.chord }));
-  const arrs = await arrangeAll(t.T);
+  const arrs = await arrangeAll(t.T, 'reduce');
   t.clean = rename(summarise(arrs, melodyAt, chordsAt), 'clean.');
   return t.clean;
 }
@@ -225,7 +253,10 @@ async function runJob(job, refs) {
   if (!ref) throw Object.assign(new Error('no reference ' + job.ref), { code: 'NO_REF' });
   const t = analyseTruth(ref);
   const secOf = secOfFor(t, job.bar_sec);
-  const built = A.toMusicXml(job.input, job.opts || {});
+  const jobOpts = Object.assign({}, job.opts || {});
+  const mode = jobOpts.recordingArrange === 'leadsheet' ? 'leadsheet' : 'reduce';
+  delete jobOpts.recordingArrange;                        /* an option of the arranger, not of audio-score.js */
+  const built = A.toMusicXml(job.input, jobOpts);
   const g = built.graph;
   const perf = g && g.performances && g.performances[0];
   if (!g || !perf) throw Object.assign(new Error('the recording graph has no performance layer'), { code: 'NO_PERF' });
@@ -239,13 +270,32 @@ async function runJob(job, refs) {
     try { const pp = ptm.fromUs(Math.round(us)); q = num(TIME.scorePos(g, { m: pp.m, at: pp.at })) * 4; } catch (e) { q = null; }
     if (q !== null && q >= 0 && q < endQ) chordsAt.push({ q, chord: w.chord });
   });
-  const arrs = await arrangeAll(g);
-  const metrics = summarise(arrs, matched.map(m => ({ q: m.q, midi: m.midi })), chordsAt);
+  const arrs = await arrangeAll(g, mode);
+  const lead = mode === 'leadsheet';
+  const detail = DETAIL ? { id: job.id, mode: mode } : null;
+  const metrics = summarise(arrs, matched.map(m => ({ q: m.q, midi: m.midi })), chordsAt, lead, detail);
+  if (lead) {
+    /* the lead sheet's own melody line, before the arranger touches it (and before any octave move) */
+    const win = sutWindow();
+    const prep = win.PPPRecLeadsheet.prepare(g, { songgraph: win.PPPSongGraph });
+    if (prep.ok) {
+      const line = prep.melody.map(n => ({ q: n.q, midi: n.midi }));
+      const truthAt = matched.map(m => ({ q: m.q, midi: m.midi }));
+      const ex = M.lineScores(line, truthAt, false), pc = M.lineScores(line, truthAt, true);
+      metrics['ls.melody.precision'] = ex.precision; metrics['ls.melody.recall'] = ex.recall; metrics['ls.melody.f1'] = ex.f1; metrics['ls.melody.f1pc'] = pc.f1;
+      if (detail) detail.lead = prep.report;
+    }
+  }
   metrics['src.melody.heard'] = t.melody.length ? matched.length / t.melody.length : null;
   metrics['src.melody.in_lh'] = matched.length ? matched.filter(m => m.srcStaff === 1).length / matched.length : null;
   metrics['src.harmony.agreement'] = chordsAt.length ? M.chordAgreement(chordWindows(g), chordsAt) : null;
   Object.assign(metrics, await cleanOf(t));
   const reasons = {}; arrs.forEach(a => { if (!a.ok) reasons[a.reason || 'NOT_OK'] = (reasons[a.reason || 'NOT_OK'] || 0) + 1; });
+  if (detail) {
+    detail.refused = reasons;
+    detail.src = { heard_input: job.input.notes.length, melody_truth: t.melody.length, melody_heard: matched.length, bars: tabG.bars };
+    fs.appendFileSync(DETAIL, JSON.stringify(detail) + '\n');
+  }
   return { metrics, counts: { heard_input: job.input.notes.length, melody_truth: t.melody.length, melody_heard: matched.length, bars: tabG.bars, refused: reasons } };
 }
 

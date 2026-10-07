@@ -400,6 +400,7 @@ put a melody note in the left hand the melody has a gap (15 of 118 right-hand re
 | **G10a-4** | App integration: `PPP.recording` switch, S4 (Score from graph), beat anchors, "Play as recorded", uncertain-bar flags, `TRANSCRIPTION_VERSION` 8, "Write the notation again" | **yes** — full review cycle | Sonnet | 2 + review | a3 | off-path byte identity; browser suites; `single-note-app`; **the teacher's exact flow reproduced** (YouTube link → review → Accept → Song Arranger) in a production-like page before "done" | `PPP.recording='legacy'` (default) |
 | **G10a-5** | **H-10** + flip | yes (default) | – | user ~60 min | a4 | pass rule below; user approval | default back to legacy; kept one release |
 | **G10c-1** | Lead-sheet arrangement for easier levels | yes (behind switch) | Sonnet (+Opus if a melody model is needed) | 3-4 | a3, c0 | §9 gate; part of H-10 | `PPP.recordingArrange='reduce'` |
+| **G10c-1a** (done, Node only, PR g10-c1) / **G10c-1b** (the app) | The lead sheet of a recording and the glue's `recordingArrange` (section 33), then the page, the words, the review | no / yes | Opus (1a) / Sonnet | - | c0, a5b | section 33.3-33.6 / H-10 part | the option off (default `'reduce'`) |
 | **G10b** | Song audio → lead sheet + SongGraph | server | Opus/Sonnet | later | D-4, U3 | SongGraph accuracy on a licensed set | `PPP.songAudio` off |
 
 **H-10** (A36 rules, the PPP renderer, Korean Artifact with the db capability, phone-friendly): about 10
@@ -3255,3 +3256,187 @@ Both reviews: the user (a piano teacher) on a phone, Korean, blind X/Y, the app'
 **Decisions of the user.** v2 becomes the default (done: PR #177, live `b7f9fb5`); the stronger model should run on THEIR PC even if slow, as a feature of the site (G10b-1: `docs/GOALS/G10B_HOME_WORKER.md`; PRs #178, #179, live in `b7f9fb5`). Not claimed: that v2 is better for every piece, or that the helper's notes are better on every piece (five pieces, one reviewer).
 
 **What is next.** Connect the user's PC and run the worker (their token; a scheduled task needs their approval); re-run the blind review on helper-written scores of NEW pieces; bar phase and off-beat notes (TD25); the arranger on dense covers (TD24, G10c-1).
+
+
+## 33. G10c-1a: the lead sheet of a recording, for the easier levels (2026-10-07; implementer on Opus; Node only, nothing in the page switches it on)
+
+Worktree `D:/PPP-g10c1`, branch `g10-c1` from `origin/main` `94350c5`. The method of section 9, option G (generate), built and measured; **not deployed, not on by default, no human has looked at a copy**. The app glue has the switch (`plan.recordingArrange: 'reduce' | 'leadsheet'`, default and every other value `'reduce'`); no screen, no `PPP.recordingArrange`, no script of the page's list asks for it: that is G10c-1b (33.9).
+
+### 33.1 What was built
+
+| File | What |
+| --- | --- |
+| `rec/leadsheet.js` (new) | `prepare(g, opts)`: the lead sheet of a recording graph: the melody as one line (skyline over every heard note with a continuity cost, octave moves), the recording's bars, metre, keys and tempo, and the SongGraph whose harmony is G7a over ALL heard notes. UMD; page global `PPPRecLeadsheet`. Reuses `rec/writer.js` (the exact-bars writer), `rec/grid.js` (`writable`), `songgraph/` and `scoregraph/build.js`. |
+| `Piano Coach App.dc.html`, `arrangeSingleNote` | `plan.recordingArrange === 'leadsheet'` on a graph with an `audio-score` source (the gate of `repair/`'s closing of gaps; a MusicXML, MIDI or catalogue graph is never touched): the lead sheet and its SongGraph go where the recording graph went (`ARR.plan`, `CAND.runAsync`, `REPAIR.repairSelection`); for a lead sheet the candidates are the patterns auto, block, broken, ballad at the asked level or an easier one (`levelOffsets` 0 and -1, never +1), and the planner is asked with `relax: 3`. The result carries `leadsheet` (the lead sheet's report). The cache key gains `|leadsheet`. Nothing else of the function changed (its tries, in the reduction, are in the same order as before). |
+| `arrangement/plan.js` | one more tier of the relaxed search, `relax: 3` (33.5). Only a caller that asks for it reaches it. |
+| `tests/bench/node/rec-arrange.js`, `rec-arrange-metrics.js`, suites `rec-arrange-core` / `-full` | the row `v2-lead` (same performances as `v2`, `recordingArrange: 'leadsheet'` in its opts) and its metrics (33.3); `PPP_RECARR_DETAIL` for per-level tables |
+| `tests/bench/suites/rec-arrange-lead-mutation.json`, `mutation.py`, `run.py`, `bench.yml` | `mutation-check --rec-arrange-lead`: six planted defects and the no-op, in `nightly-rec` |
+| `tests/bench/tools/real-covers.js`, `arrange-identity.js` | the six private covers (aggregates only); the identity of the reduction (catalogue: 975 requests; `--recordings`: the recording graphs of a suite's jobs and the covers) |
+| tests | `tests/rec/leadsheet.test.js` (18), `leadsheet-mutation.test.js` (11: 10 planted defects), `leadsheet-fixtures.js`, `tests/arrangement/relax3.test.js` (3), one more in `rec-arrange.test.js`; `g9e-refusals.test.js` says `relax` 3 is a value now; `tests/bench/unit/test_rec_arrange.py` (the committed suites are the generator's, the lead row and its gate, the identity jobs, the detail file changes no result) |
+| `tests/bench/tools/make_rec_suites.py`, `arrange_jobs.py`, `level-table.js` | the generator writes (and `--check` checks) the `v2-lead` row, its three gate metrics and `rec-arrange-lead-mutation`; `arrange_jobs.py` writes the identity's `jobs.jsonl` (33.6); `level-table.js` the difficulty tables of 33.3a |
+
+### 33.2 The method
+
+1. **Melody (`selectMelody`).** Every onset of the recording graph (both staves, every voice; a tie's continuation is no onset) is an instant. At each instant the candidates are the three highest notes that start there, or nothing. A beam search (width 12) over the whole piece picks the line of least cost. A candidate costs 0.5 a rank below the highest note that starts with it, 1.5 an octave (at most one) of distance to a note that still sounds above it (a held voice), 0.4 per 30 velocity steps below the loudest note of the instant and, in a second pass after a first one has found the middle of the line, 1.2 per octave beyond one octave from that middle. The step from the last note costs 0 up to a whole tone, then 0.125 a semitone, at most 3, halved after two beats of silence. Leaving out an instant whose highest sounding note starts there costs 1.8; leaving one out whose highest note is a held one costs nothing. The staff is never read: a melody note the hand split put in the left staff is in the line (test: the same line whichever staff holds the tune), and an accompaniment note that rises above the tune for a beat is not. A note lasts until its heard release (its written end when it was not heard) or the next melody note. `rec/writer.js` writes it: exact bars, ties (a note held across a barline is tied over it: the first version passed `allowBarTies: false`, which cut it at the barline and wrote a rest where the tune still sounded, found in the review of #182), tuplets, rests only of a quarter or longer (a shorter silence is legato).
+2. **Octaves (`shiftOctaves`).** Whole-octave moves towards C4..C6 by dynamic programming over the line's notes: a note above the window costs 1.5 a semitone, one below it 6 (the accompaniment the arranger writes lives under C4, and a melody there crosses it), a move 1 a note and octave, a change of the move 0.5 an octave at a silence of a quarter or more and 40 inside a phrase. A phrase moves as one and keeps its contour; a single note a semitone over stays. Pitch classes never change. On the six covers 0%, 0%, 26%, 28%, 63% and 69% of the melody notes move (33.4); the melody line is 31-37% of the heard notes.
+3. **Harmony.** `songgraph/harmony.js` over the recording graph, every note of every staff and voice; the SongGraph of the lead sheet is `analyze(L)` with that harmony in place of its own. The recording's measure ids are kept, so the windows need no mapping.
+4. **Bars, metre, key, tempo** are the recording graph's (the v2 conversion's), and its `audio-score` provenance is kept, so the arranger's closing of gaps, rests and triplet brackets runs on the copy as on a reduced one. Refusals (reason): `LEADSHEET_NOT_A_RECORDING`, `LEADSHEET_IRREGULAR_BARS` (a pickup written as a short bar), `LEADSHEET_METRE` (a meter change or an additive one), `LEADSHEET_OFF_GRID`, `LEADSHEET_NO_MELODY`, `LEADSHEET_WRITE_FAILED`; the glue returns the reason as the arranger's refusal.
+5. **The existing pipeline, at the requested level.** G7b plan, G8 realizer, G9 candidates, critics, repair, clefs, 8va: unchanged, with the one-note-per-hand default (`singleNoteHands`). What differs from a hymn: one voice (so the `hymn` pattern, a copy of the melody alone, is not a candidate), the asked level or an easier one only, `relax: 3`.
+
+Two defects found on the helper ensemble's notes and fixed (the browser model's notes did not show them): (a) the writer reads a beat's grid kind (straight, triplet eighths, triplet 16ths) from the onsets it is given, and a melody alone can show another kind than the whole texture, so the onsets of every heard note go to the writer as ghosts (staff 0, no event); (b) a melody onset that is still not a point of its beat's grid (a beat read as triplet eighths with an onset a straight eighth in) moves to the nearest point, or the note is left out if that is another melody note's onset: the arranger's copy brackets triplets by rule and left such a beat as an unbracketed 'dotted eighth' of an eighth's length (checker classes 5 and 6). Neither has a synthetic unit test (three attempts to build the beat from a synthetic cover failed: the grid stage resolves it); the six covers' run guards both.
+
+What was and was not fitted. The constants are in `PARAMS` of the module. Chosen from the structure of the problem before any measurement: the beam, the three candidates, the leap law, the skip cost and the prior. Looked at on `rec-arrange-core` (it is the development set; `rec-arrange-full`'s other 77 references and the six covers were not used for choosing): the octave pass (a window for the melody that fits two octaves; the first version, with a change of octave costing 8 inside a phrase and notes outside the window 3 a semitone, kept every level of the 84 pieces made but let a continuous run change octave in the middle; 40 inside a phrase and 6 below C4 keep a run's contour and make 1 level of 252 refused, hanon/007 at beginner); `restMin` (a quarter); `levelOffsets [0, -1]` and no `hymn` pattern (33.5). No learned model was needed or used.
+
+### 33.3 Measurements on the benchmark (`rec-arrange-core`: 84 cases per row, 64 references x cover and the 20 real-AMT fixtures of `replay-of`; `rec-arrange-full`: 141 references x cover)
+
+`v2` = the reduction (today), `v2-lead` = the lead sheet, same performances, same recording graphs. The metric is the mean over the cases of the mean over the levels made (`arr.*`); `ls.*` is the lead sheet's melody line before any octave move. Seeds, humanizer and ruler as in section 21. **Numbers re-measured with the final code after the review of #182** (the tie over the barline, 33.2). Of the 84 lead cases of `rec-arrange-core`, 11 moved and the 168 reduce cases did not (`check` PASS, the baseline's old entries untouched): `gap_rate` fell to 0 in three cases (a rest had been written where the tune sounded: the hymn `holy-holy-holy` and the real-AMT fixtures of `all-hail-the-power` and `holy-holy-holy`), and the arrangement's harmony agreement moved in 11 cases, up in three (+0.004 to +0.02) and down in eight (the largest on two micro pieces of a few windows: `M05-32nds-120` 0.917 -> 0.750, `M09-syncopation-ties` 0.865 -> 0.771). The table's changes: core `arr.harmony.agreement` 0.722 -> 0.719 and `gap_rate` 0.004 -> 0.003; full 0.728 -> 0.725, the left hand 6.81 -> 6.78 a bar, `distance` 0.459 -> 0.458 and `arr.relaxed` 0.446 -> 0.448; nothing else moved at the printed digits (`ls.*` not at all: the melody line is not touched).
+
+| metric | `rec-arrange-core` reduce | lead | `rec-arrange-full` reduce | lead | target |
+| --- | --- | --- | --- | --- | --- |
+| `ls.melody.f1` (precision / recall) | - | **0.967** (0.968 / 0.971) | - | **0.973** (0.971 / 0.978) | >= 0.9 |
+| `ls.melody.f1pc` (octave-free) | - | 0.968 | - | 0.973 | |
+| `arr.melody.f1` (right hand written, exact pitch) | 0.971 | 0.907 | 0.979 | 0.912 | |
+| `arr.melody.f1pc` | 0.972 | 0.968 | 0.980 | 0.973 | |
+| `arr.melody.kept` / `lost` / `cross` / `gap_rate` | 0.968 / 0.024 / 0.008 / 0.007 | 0.911 / 0.085 / 0.003 / 0.003 | 0.980 / 0.015 / 0.005 / 0.003 | 0.917 / 0.081 / 0.002 / 0.002 | |
+| `src.harmony.agreement` (G7a over all heard notes: the recording as heard, the lead sheet's input; **the same number for the reduction, so it is no gain of the lead sheet**: it measures the transcription and G7a) | 0.871 | 0.871 | 0.882 | 0.882 | within 5 of 89.2 = 84.2 |
+| `arr.harmony.agreement` (the arrangement read by G7a) | 0.757 | **0.719** | 0.770 | **0.725** | |
+| `arr.made` | 0.988 | **0.996** | 0.979 | **0.998** | up |
+| `arr.level.distinct` / `distance` | 0.247 / 0.242 | **0.601 / 0.469** | 0.210 / 0.199 | **0.592 / 0.458** | up |
+| `arr.lh.notes_per_bar` (all levels) | 6.55 | 6.82 | 7.04 | 6.78 | lower at easy levels |
+| `arr.rh.above_c6` | 0.018 | 0.012 | 0.035 | 0.020 | |
+| `arr.hard.violations` | 0 | 0 | 0 | 0 | 0 |
+| `arr.check.1..7` per 100 bars | 0 | 0 | 0 | 0 | 0 |
+| `arr.relaxed` (levels made with the relaxed plan's note) | 0.337 | 0.371 | 0.333 | 0.448 | |
+
+Per level (`rec-arrange-full`, 141 cases; core in brackets): left-hand attacks per bar, reduce -> lead: beginner 6.00 -> **3.53** (5.26 -> 3.55), intermediate 5.96 -> **5.03** (5.19 -> 4.80), advanced 9.14 -> **11.7** (9.21 -> 12.0); harmony of the arrangement: beginner 0.748 -> 0.688, intermediate 0.750 -> 0.712, advanced 0.811 -> 0.777; levels made: reduce 0.979 at all three, lead 0.993 / 1.000 / 1.000. The relaxed note: lead beginner 0.64, intermediate 0.61, advanced 0.10 of the levels made.
+
+By set (`rec-arrange-full`, reduce -> lead): hymns made 0.950 -> 1.000, `arr.harmony.agreement` 0.747 -> 0.765, `ls.melody.f1` 0.994; methods made 1.000 -> 0.995 (hanon/007, beginner: the generated bass is above the melody at 4 of 222 moments, 1.8%; the G9e limit for a relaxed plan is 1%), harmony 0.766 -> 0.691, `ls.melody.f1` 0.961; micro pieces made 0.958 -> 1.000 (M12-flats-db, which the reduction refuses at every level), harmony 0.812 -> 0.752, `ls.melody.f1` 0.986; the 20 real-AMT fixtures (core) made 1.000 both ways, harmony 0.787 -> 0.774, `ls.melody.f1` 0.960. The 77 references of `-full` that are not in `-core` (not used for choosing anything): made 0.974 -> 1.000, `ls.melody.f1` 0.976, `arr.level.distinct` 0.227 -> 0.565, harmony 0.788 -> 0.745. **The suites have no hold-out cases** (the corpus's hold-out tag is not in these suites); that 77-reference set is the nearest thing, and it moves the way the development set does.
+
+Not met, and why. (1) **`arr.harmony.agreement` is lower than the reduction's on every level (0.719 against 0.757)**, and is not within 5 points of 89.2 either way. The harmony the lead sheet is built from is (`src.harmony.agreement` 0.871, within the 5 points; but that number is `src.*`, the harmony of the heard notes by G7a, and is the same 0.871 for the reduction: it is a property of the input, not something the lead sheet adds); what falls is the arrangement written from it. With one note per hand the left hand at the easiest levels is a bass note per beat, and G7a reading melody plus a root cannot tell the quality of a chord: the arrangement's agreement is 0.69 at beginner and 0.78 at advanced, where the left hand arpeggiates (the clean score's own arrangement by the same pipeline: 0.864). It is the price of the single-note default (user decision: single-note is the EASY tier), not of the lead sheet's input; the reduction keeps the cover's own notes and so reads better, on this metric, where it is made at all. (2) **The left hand is lower at beginner and intermediate and higher at advanced** (11.8 attacks a bar against 9.1): the realizer's stage-3 pattern is Alberti sixteenths (16 a bar), and the candidate selection picks it at advanced. (3) `arr.melody.kept` (exact pitch) is lower because of the octave moves; the pitch-class F1 is not (0.968 against 0.972).
+
+### 33.3a How hard the copies are, by level (G6a `level.position`; added in the review of #182)
+
+The levels are asked as stages 1, 2 and 3 (the page's `ARRANGER_LEVEL_TO_STAGE`). Section 33.3 counts what was made and how the melody and the left hand fared; it does not say how hard the copies are. This table does, by the G6a model the levels were designed against (`difficulty/`, `level.position`: a place on the course, a stage and a fraction; the fit's top anchor is 3.84, so everything harder reads 3.84; lower is easier). Mean over the cases made; "both made" is the cases the two modes both made, the fair comparison. `node tests/bench/tools/level-table.js` (aggregates only; the commands are in its header) with the jobs of `arrange_jobs.py`, the six covers' notes and the catalogue.
+
+| | beginner: reduce / lead | intermediate: reduce / lead | advanced: reduce / lead |
+| --- | --- | --- | --- |
+| `rec-arrange-core`'s 84 `v2` cases, all made (levels made: 83 / 83, 83 / 84, 83 / 84) | 2.45 / 2.44 | 2.47 / 2.45 | 2.70 / 2.78 |
+| the same, the cases both modes made (82, 83, 83) | 2.45 / 2.44 | 2.47 / 2.45 | 2.70 / 2.77 |
+| hymns (10) | 2.43 / 2.38 | 2.43 / 2.38 | 2.75 / 2.74 |
+| method books (26) | 2.70 / 2.59 | 2.73 / 2.59 | 2.82 / 2.83 |
+| micro pieces (24) | 2.45 / 2.41 | 2.45 / 2.43 | 2.57 / 2.71 |
+| catalogue and samples (4) | 2.34 / 2.38 | 2.34 / 2.38 | 2.48 / 2.67 |
+| the 20 real-AMT fixtures | 2.16 / 2.34 | 2.20 / 2.35 | 2.72 / 2.81 |
+| the recording as heard (84 cases) | 2.64 | | |
+| for reference: the 100 printed hymns by the same arranger (the reduction of a printed score; 96 made) | 2.41 (1.89-3.10) | 2.42 (1.92-3.10) | 2.66 (1.92-3.10) |
+
+The six covers (the position of each copy; the recording as heard reads 3.84, the top of the scale, for all six):
+
+| cover | reduce: beginner / intermediate / advanced | lead sheet: beginner / intermediate / advanced |
+| --- | --- | --- |
+| p1 | 3.84 / 3.84 / 3.84 | 2.96 / 2.96 / 2.87 |
+| p2 | 3.11 / 3.11 / 3.11 | 3.39 / 3.39 / 3.70 |
+| p3 | refused (UNREACHABLE) | 3.84 / 3.84 / 3.84 |
+| p4 | refused (UNREACHABLE) | 3.43 / 3.51 / 3.66 |
+| p5 | 3.84 / 3.84 / 3.84 | 3.46 / 3.46 / 3.46 |
+| p6 | refused (ALL_CANDIDATES_HAVE_HARD_VIOLATIONS) | 2.79 / 2.79 / 2.76 |
+
+What it says, plainly.
+
+1. **The lead sheet's gain is the made-rate and the melody (33.3), not easier music.** On the benchmark the copy reads as hard as the reduction's: beginner 2.44 against 2.45 and intermediate 2.45 against 2.47 (inside 0.02), and the advanced copy reads harder, 2.78 against 2.70. The 20 real-AMT fixtures, the nearest the benchmark has to real playing, read harder at every level (2.34 / 2.35 / 2.81 against 2.16 / 2.20 / 2.72). The lead sheet does spread the levels a little more (advanced minus beginner 0.33 against 0.25, with the higher `arr.level.distinct` of 33.3), but beginner and intermediate read alike on the mean (a difference of 0.01 for the lead sheet, 0.02 for the reduction).
+2. **A beginner lead copy of a real cover is not a beginner piece.** The six lead copies at beginner read 2.79-3.84 while stage 1 was asked; the arranger's own beginner copies of the 100 printed hymns read 2.41 on average (1.89-3.10; the two probed in the review, 2.24 and 2.87). The melody is the cover's own and is not simplified at any level (33.8), a cover's key signature is not changed (33.4), so a busy cover stays busy; 16 of the 18 lead copies carry the relaxed plan's note, and the benchmark's lead copies carry it in 44, 41 and 8 of the 83 / 84 / 84 levels made (reduce: 28 each). For four of the six covers the three levels differ by less than 0.1 (p1's advanced copy reads easier than its beginner copy, 2.87 against 2.96).
+3. What the lead sheet does for the covers: three of them (p3, p4, p6) have a copy at all where the reduction has none; p1 and p5 have one that reads easier than the reduction's (2.96 and 3.46 against 3.84: the reduction's copy of those two is as hard as the heard cover, with a left hand of 16 attacks a bar); p2's reads harder (3.39 against 3.11).
+4. So what would make a beginner copy of a cover read as a beginner piece is not in this PR: simplifying the melody and an easier key (33.8, both decisions of the user). `arr.level.distinct` is a measure of the three levels not being one copy, not of their being ordered by difficulty; this table is the check of that.
+
+### 33.4 The six real covers (the browser model's notes, private; aggregates only)
+
+The heard notes of the six covers of H-10, through the page's own v2 conversion, arranged at beginner, intermediate and advanced by the app's `arrangeSingleNote` (`tests/bench/tools/real-covers.js`). Checker classes are the sum of `scoregraph/tools/notation-check.js` 1-7.
+
+| | reduce: made | classes | left hand a bar (b / i / a) | right hand above C6 | lead sheet: made | classes | left hand a bar (b / i / a) | right hand above C6 | levels with the relaxed note |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| p1 (89 bars, key -3) | 3 of 3 | 0 | 16 / 16 / 16 | 0.443 | 3 of 3 | 0 | 4 / 4 / 4 | 0.106 | 3 |
+| p2 (76, 2 / -3) | 3 of 3 | 0 | 4 / 4 / 4 | 0.030 | 3 of 3 | 0 | 4 / 4 / 16 | 0.022 | 2 |
+| p3 (122, -6 / 1 / -4) | **0 of 3 (UNREACHABLE)** | - | - | - | 3 of 3 | 0 | 4 / 16 / 16 | 0.046 | 3 |
+| p4 (86, 5) | **0 of 3 (UNREACHABLE)** | - | - | - | 3 of 3 | 0 | 4 / 16 / 16 | 0.062 | 3 |
+| p5 (136, -4 / 1) | 3 of 3 | 0 | 16 / 16 / 16 | 0.202 | 3 of 3 | 0 | 4 / 4 / 4 | 0.057 | 3 |
+| p6 (77, 0) | **0 of 3 (ALL_CANDIDATES_HAVE_HARD_VIOLATIONS)** | - | - | - | 3 of 3 | 0 | 4 / 4 / 4 | 0.076 | 2 |
+| | **9 of 18** | | | | **18 of 18** | **0** | | | 16 of 18 |
+
+Re-measured with the final code after the review of #182 (the tie over the barline): the table above is unchanged to its printed digits (18 of 18 made, checker classes 0, hard violations 0, the left hand a bar and the share of the right hand above C6 of every cover, 16 of 18 with the relaxed note; the reduction's 9 of 18 not touched). What changed is the copies themselves (every lead copy of p1, p3, p4, p5, p6 is a different graph by hash; p2's not) and, in 33.3a, the G6a position of some: p1 2.90 -> 2.96 (beginner and intermediate), p4 3.32 -> 3.43 (beginner) and 3.55 -> 3.66 (advanced).
+
+Hard violations 0 in every arrangement. **Checked by hash and by bars (review of #182), not by the left hand's attack count**: for p1, p2, p5 and p6 the beginner and the intermediate copy are one copy (equal by hash; the right hand is the heard melody, the left hand a bass note a beat); the advanced copy differs from them in the left hand only (a different bass pattern at the same 4 attacks a bar in 87 of p1's 89 bars, 132 of p5's 136, 69 of p6's 77; p2's advanced copy is the 16-a-bar Alberti left hand, in all 76 bars) and in not a single bar of the right hand, so the advanced copy is not a harder melody but another accompaniment. p3 and p4 have three different copies (left hand 4 / 16 / 16 a bar: Alberti sixteenths at intermediate and advanced). Arrangement time in Node per level: lead 1.5-17 s (median 3.9), reduce 0.3-19.5 s (median 5.4); the lead sheet itself 30-90 ms.
+
+On the helper ensemble's notes of the same six pieces (TransKun + Kong, 1.6 times the notes, notes only; a scratch folder outside the repository): reduce **9 of 18** made (p3 and p4 UNREACHABLE, p5 ALL_CANDIDATES_HAVE_HARD_VIOLATIONS; p1's copy has 3 checker class-5/6 findings), lead sheet **18 of 18**, checker classes 0, hard violations 0, right hand above C6 0.02-0.12 (0.03-0.43 reduced), left hand 4 a bar at beginner everywhere, 16 at intermediate and advanced in p2 (advanced) and p3 only.
+
+Why `UNREACHABLE` for p3 and p4, and what it means for the plan. The planner's `keyLoad` ceiling (the number of accidentals of the key signature) is 1, 2, 4, 4 at stages 1 to 4, and p3 is in 6 flats (G flat major) and p4 in 5 sharps (B major): no level can plan them, in the reduction or the lead sheet; p1 (3 flats), p5 (4 flats) and p2 (2 sharps, then 3 flats) are over the beginner and intermediate ceilings. The reduction answered by planning at a harder stage (silently: the three levels were one copy); the lead sheet asks for `relax 3` (33.5) and says so: 16 of the 18 copies carry the relaxed plan's note ("this copy can read harder than the level asked for"). **No transposition is done**: a B major piece stays in B major at beginner. That is a decision for the user (easier key as a feature), not made here.
+
+### 33.5 The planner's `relax: 3`, the level search and the patterns (the only change outside the new module and the glue)
+
+`arrangement/plan.js` `planSection`: tier 3, only for a caller that passes `relax: 3`, on the FLOOR rung of the texture ladder only (nothing left to drop: the melody alone, or melody and bass), drops the two ceilings the arranger cannot act on: the key signature (it does not transpose) and the right hand's density (the melody is copied verbatim; no level can thin it); the left hand's density and the chord load stay checked. A section that fits the strict search is planned as before (`plan` with `relax: 3` is byte for byte the strict plan on 4 hymns at stages 1-4, and equals the `relax: 2` plan wherever that succeeds; `tests/arrangement/relax3.test.js`). `candidates/` is given the same through `planOpts` (every plan of the enumeration is strict section by section and relaxed only where it must be), not through `opts.relax`, so its "relax only when no spec has a strict plan" rule is not in play. In the glue a lead sheet tries the asked level first and only then the others (the reduction's order is unchanged: every level at tier 0, then at tier 2), and the first time round, with the lead sheet as first written, the planner placed p1 at stage 3 for "beginner" for lack of a key tier: the levels collapsed. `levelOffsets [0, -1]`: with +1 the realizer's busier left hand won the selection on harmony agreement alone (a beginner copy with sixteenth arpeggios).
+
+### 33.6 Identity, and the gate run locally (re-run with the final code after the review of #182)
+
+All with the final code, against a clean `git archive` of `94350c5`:
+
+| set | requests | identical | results / refusals | different |
+| --- | --- | --- | --- | --- |
+| catalogue (325 pieces x 3 levels through the app's `arrangeSingleNote`, `arrange-identity.js`) | 975 | 975 | 933 / 42 | **0** |
+| 'reduce' on recording graphs (the 168 jobs of `rec-arrange-core`: app and v2 rows, 20 real-AMT fixtures included, x 3 levels, and the six private covers x 3, by hash only) | 522 | 522 | 507 / 15 | **0** |
+
+Reproduction: every step is a committed command (the review of #182 found the second one had no committed step that wrote its `jobs.jsonl`; `arrange_jobs.py` is that step, and its 168 jobs are byte for byte what the base commit's generator wrote):
+
+```text
+git archive 94350c5 | tar -x -C /tmp/main                                    # a clean extract of the base (any tree to compare with)
+node tests/bench/tools/arrange-identity.js --root /tmp/main --out main-cat.json   # --shard I/N splits it; --merge out.json a.json b.json ... joins the shards
+node tests/bench/tools/arrange-identity.js --root .         --out pr-cat.json
+node tests/bench/tools/arrange-identity.js --compare main-cat.json pr-cat.json    # 975 requests, exit 1 unless all identical
+python tests/bench/tools/arrange_jobs.py --suite rec-arrange-core --opts app,v2 --out jobs.jsonl      # 168 jobs
+node tests/bench/tools/arrange-identity.js --root /tmp/main --recordings jobs.jsonl --heard DIR --out main-rec.json    # DIR: the six private covers
+node tests/bench/tools/arrange-identity.js --root .         --recordings jobs.jsonl --heard DIR --out pr-rec.json
+node tests/bench/tools/arrange-identity.js --compare main-rec.json pr-rec.json    # 522 requests (the jobs and the covers are run apart and merged)
+```
+
+`recordingArrange` set on a printed score, a MIDI file (`midi-file` source) or any value but `'leadsheet'` returns what it returned (`tests/rec/leadsheet.test.js`; a malformed `provenance.sources` is no recording and does not throw). `tests/realize/g9e-refusals.test.js`'s strict-panel fixture (24 pieces hashed from origin/main) and `tests/single-note-app.test.js` (the page, on its own free port, 170 checks, legacy identity fixture included) pass.
+
+**The gate, every step of all five shards of `.github/workflows/bench.yml`, run locally in the order of each shard** (Windows, Node 24.17, Python 3.13, the five shards in parallel on one machine; 60 steps, all exit 0, every `check` `verdict: PASS`):
+
+| shard | steps (all passed) |
+| --- | --- |
+| a | `rec-core` run, check |
+| b | `npm run test:rec` (195: 193 pass, 2 todo); the key check (`key_data.py`, `key-eval.js --check`); the engrave generator checks (`make-e-fixtures`, `make-corpus`, `make-metrics`, `make-outlines`, `make-text-metrics`, `layout-hashes`) and `bench.js check` of the `r`, `e`, `x` suites; `robust`, `rec-arrange-smoke` (its baseline untouched), `rec-grid`: run, check |
+| c | `test:scoregraph` (229), `test:difficulty` (34), `difficulty/tools/train.js --check`, `rec/tools/train.js --check`; `core`, `smoke-app`, `core-app`, `rec-smoke`: run, check |
+| d | `python -m unittest discover -s tests/bench/unit` (439); `test:playability` (57), `test:songgraph` (45), `test:realize` (181); `hands_data.py` and `train_hands.js --check`; `train_rests.js --check`; `make-midi-fixtures.js --check`; `golden` (17 of 17 identical), `lint-corpus`, `make_provenance.py --check`, `correctness` (13 of 13); `smoke` run, check; `replay-public`, `replay-of`, `replay-of-app`, `replay-of-v2`, `replay-public-v2`; `test:transcription-core` and `test:arranger` |
+| e | `test:home-worker`, `test:engrave` (201), `test:arrangement-planner` (20), `train_grid.js --check`, `sg-roundtrip`, `robust-app` run, check; `make_rec_suites.py --check` (all 20 suites `same`, `rec-arrange-core`, `-full` and `rec-arrange-lead-mutation` included); `rec-robust` run, check |
+
+Beyond the gate (the nightly steps this PR adds or changes): `rec-arrange-core` and `rec-arrange-full` run and check PASS; `mutation-check --rec-arrange-lead` PASS (six defects, each a REGRESSION naming its metric, the no-op byte identical).
+
+The first version of this PR had the gate red (`make_rec_suites.py --check` DIFFERS for `rec-arrange-core` and `-full`, two unit tests, `test_rec_arrange.py`, comparing a hard-coded 40); the generator now builds the `v2-lead` row, the three lead gate metrics (`ls.melody.f1`, `ls.melody.f1pc`, `arr.melody.f1pc`, only in the suites that have the row) and `rec-arrange-lead-mutation`, and the committed suites, locks and the old baseline entries are byte for byte what they were.
+
+**The baselines.** `rec-arrange-core` and `-full` were re-recorded once more after the tie fix: `check` had passed against the old ones, but 11 of the lead row's 84 cases (and the aggregates that contain them) no longer matched what the code writes, and a baseline is the recorded truth. Checked after the update, by script: the 168 `app` and `v2` case entries of `rec-arrange-core` are byte for byte what they were, the `opts:app` and `opts:v2` aggregates of both baselines too, the suite and lock hashes, the versions and the known failures; the `history` of each has one new entry (with the reason); `check` of both is PASS with no change.
+
+**What the gate of these two suites does not see.** Their `all`, `profile:cover` and `set:*` aggregates now average three rows (`app`, `v2`, `v2-lead`), and they have no diagnostic score, so the case-level drop rule does not apply (`compare.py` skips a case without `sqi`): the aggregate tolerances are all the gate there is. **A regression confined to the old rows is diluted:** one row of three moves `all` by a third of its size, both old rows by two thirds, so a drop the two-row suites would have failed on can pass. The `opts:app`, `opts:v2` and `opts:v2-lead` aggregates are in the baseline and in `summary.md` but are not gated (the subgroup prefixes are `set:` and `profile:`). Gating `opts:` as a prefix is a change of the suite (a re-lock and a new baseline): left to G10c-1b.
+
+### 33.7 Tests and mutants
+
+`tests/rec/leadsheet.test.js` (18: the 16 of the first version and the two of the review of #182, below): isRecording; the top line over a bass and a chord (F1 1.0); a tune planted in the left staff for six bars gives the same line; a stray figure note above the tune is left out; the lead sheet graph (one voice, the recording's bars, metre, keys, ids, provenance, no performance layer, checker 0); staccato legato and a rest bar; the key signatures of a D major cover; the harmony is G7a over all notes; octaves (a tune two octaves up comes down as one phrase, one in the window is not moved, switched off they stay); `shiftOctaves`; the refusals; determinism; the app's `arrangeSingleNote` (made at all levels, melody in the right hand, one note per hand, checker 0); reduce, no option, a junk value, a printed score and a MIDI file identical; refusal reasons and a page without the module; the bare-vm page load equals Node byte for byte. The review of #182 added: a tune note held across a barline is tied over it and no rest is written where the tune sounds (a four-beat note from the third beat of a bar; fails on the first version with "rest in bar 6"), and the glue never throws on a malformed `provenance.sources` (an object, a string, a number, an object whose `some` throws, no provenance: no lead sheet, no throw; fails on the first version). `tests/rec/leadsheet-mutation.test.js`: ten planted defects in a copy of the module (lowest note, no skip cost, no octave pass, harmony of the line, upper staff only, no legato, keys lost, provenance dropped, two notes, and `allowBarTies` false again: NO-BAR-TIES), each caught by a synthetic-cover check. `tests/bench/unit/test_rec_arrange.py` (review of #182): the committed `rec-arrange-*` suites, the lead mutation suite included, are the generator's output (`make_rec_suites.py --check` agrees); the replay case count is derived (fixtures x the matrix's rows), not 40; the lead suites carry the lead gate metrics and the others do not; the lead mutations' anchors occur once and name the metrics; `arrange_jobs.py` gives the jobs of the old rows and the lead row's are v2's with only the option added; `PPP_RECARR_DETAIL` changes no result. The suite-level mutants (`rec-arrange-lead-mutation`): LEAD-LOWEST-NOTE (`ls.melody.f1` 0.986 -> 0.800), LEAD-HARMONY-OF-THE-LINE (`arr.harmony.agreement` 0.746 -> 0.367; 0.756 -> 0.365 before the review of #182 moved the baseline's micro pieces), LEAD-NO-OCTAVE-PASS (`arr.made` 0.987 -> 0.974), LEAD-NO-RUN-RULE (`arr.check.5` 0 -> 1.92), LEAD-NO-LEGATO (`arr.check.1` 0 -> 0.32), LEAD-NO-RELAX-3 (`arr.made` 0.987 -> 0.962). Not covered by a synthetic test: the two notation fixes of 33.2 (the six covers' run), and `NO-SKIP-COST` is the one unit-level defect the suite-level benchmark cannot see (its pieces have no stray notes).
+
+### 33.8 Limits (stated, not hidden)
+
+- The skyline is the melody wherever the tune is the top line. A melody under an upper figure (a counter-line or an ornament run above it, the left hand carrying the tune) is not found: the line follows the figure. Recall 0.97 on the catalogue is a clean-cover number; on the six covers there is no truth, so no melody F1 is claimed for them. One reviewer has not looked at any melody line of a real cover.
+- Harmony agreement of the written arrangement is lower than the reduction's (33.3). Chord quality is read from the beat windows of the heard notes; a chromatic cover will read worse than a diatonic one.
+- The levels still collapse for some covers: for p1, p2, p5 and p6 the beginner and the intermediate copy are one copy by hash, and the advanced copy differs only in the left hand (33.4); the single-note default leaves the realizer's stage policies two left hands (a bass note a beat, Alberti sixteenths). The melody is not simplified at any level: a beginner copy of a busy cover has a busy right hand (`relaxed-plan` says so); 16 of the 18 copies carry it.
+- No transposition, so p3 and p4 are in 6 flats and 5 sharps at beginner.
+- Bars: one meter, bars of one length (a pickup written as a short bar is refused); simple time and compound, not additive.
+- The `levelNote` is the only place the page can say "harder than asked": its wording is the page's, not decided here.
+- hanon/007's beginner level is refused (the right hand crosses the left at 1.8% of the moments, the limit 1%); the glue returns the refusal.
+- The six covers are the browser model's notes, one reviewer's pieces; the helper's notes were run too (33.4), nothing more.
+- Timing in Node only; no browser measurement of the lead sheet (the page does not load it).
+
+### 33.9 What G10c-1b (the app) needs
+
+1. The page loads `rec/leadsheet.js` after `rec/grid.js` and `rec/writer.js` (already in the v2 list; `PPPRecGrid`, `PPPRecWriter`) and after `scoregraph/gaps.js`, `songgraph/harmony.js` and `songgraph/index.js`; a saved v2 song opened in a fresh page must have them before the first lead sheet (the glue returns `LEADSHEET_NOT_LOADED` otherwise). Add it to the extractor's `browserWindow` list (`tests/realize/app-single-extract.js`) and to the bare-vm test of its own.
+2. `PPP.recordingArrange` (`'reduce'` default; remembered like `PPP.recording`), a control on the Song Arranger and the review screen, the same on the page's three calls of `arrangeSingleNote` (the hands fallback chain stays for the reduction: the lead sheet does not depend on the hand split, so a `ALL_CANDIDATES_HAVE_HARD_VIOLATIONS` of a lead sheet is not retried with the classic hands).
+3. A refusal of the lead sheet (`LEADSHEET_*`, `UNREACHABLE` is not expected, hanon-like cases) should fall back to the reduction, not to the standard arrangement.
+4. The words for `levelNote: 'relaxed-plan'` on a recording (the key signature and the melody's own busyness, not the left hand), in all catalogs, Korean first.
+5. The review: section 9's H-10 part (3 recordings x 2 levels, lead against reduce, blind, Korean, the teacher's flow reproduced in a production-like page before "done"). `review/lib/appcode.js` `arranger().arrange(graph, level, title)` passes `{level}` only: it needs the option. The default flip is the user's.
+6. Decisions that are the user's: transposition to an easier key (a feature, not a repair: the sounding pitch changes), simplifying the melody at the easy levels, the Alberti sixteenths at intermediate.

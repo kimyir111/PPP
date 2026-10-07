@@ -498,6 +498,47 @@ REC_ARRANGE_MUTATIONS: List[Dict[str, Any]] = [
      "expect": "PASS", "metrics": []},
 ]
 
+# G10c-1a (docs/GOALS/G10 section 33): one planted defect per decision of the lead sheet of a recording (rec/leadsheet.js, the arranger glue's
+# plan.recordingArrange 'leadsheet' and the planner's relax 3), run on the `rec-arrange-lead-mutation` suite (the 24 micro pieces and two hanon
+# exercises, v2, arranged from the lead sheet). As above, the ruler is never mutated; each must be a REGRESSION that names every metric listed.
+LEAD = "rec/leadsheet.js"
+REC_ARRANGE_LEAD_MUTATIONS: List[Dict[str, Any]] = [
+    {"id": "LEAD-LOWEST-NOTE",           # the candidates of an instant are its lowest notes: the line follows the bass
+     "file": LEAD,
+     "find": "b.midi - a.midi || b.vel - a.vel || a.i - b.i",
+     "replace": "a.midi - b.midi || b.vel - a.vel || a.i - b.i",
+     "all": True, "expect": "REGRESSION", "metrics": ["ls.melody.f1", "ls.melody.f1pc", "arr.melody.f1pc"]},
+    {"id": "LEAD-HARMONY-OF-THE-LINE",   # the arranger is given the harmony the melody line alone gives, not that of every heard note
+     "file": LEAD,
+     "find": "const harmony = harmonyOf(g);",
+     "replace": "const harmony = analyzer.analyze(L).harmony;",
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.harmony.agreement"]},
+    {"id": "LEAD-NO-OCTAVE-PASS",        # the melody keeps the octaves it was heard in: a hanon exercise's runs cross the accompaniment and are refused
+     "file": LEAD,
+     "find": "if (!params.octave || !melody.length) return shifts;",
+     "replace": "return shifts;",
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.made"]},
+    {"id": "LEAD-NO-RUN-RULE",           # an onset on an odd 32nd is not moved to the 16th beside it: a rest shorter than a 16th is written before it
+     "file": LEAD,
+     "find": "if (RG && RG.writable) RG.writable(wnotes);",
+     "replace": "",
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.check.5"]},
+    {"id": "LEAD-NO-LEGATO",             # every silence between two melody notes is a rest, however short
+     "file": LEAD,
+     "find": "restMin: info.compound ? 36 : params.restMin",
+     "replace": "restMin: 0",
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.check.1"]},
+    {"id": "LEAD-NO-RELAX-3",            # the planner's last tier plans nothing: a piece in many accidentals or with a busy melody is refused at its level
+     "file": "arrangement/plan.js",
+     "find": "const densityOk = !band || (tier >= 3 && rung.extraKept === 0 ? (",
+     "replace": "const densityOk = !band || (false ? (",
+     "all": True, "expect": "REGRESSION", "metrics": ["arr.made"]},
+    {"id": "MUT-NOOP",
+     "find": "  const api = {",
+     "replace": "  /* noop mutation */\n  const api = {",
+     "expect": "PASS", "metrics": []},
+]
+
 # G10a-1: the recording conversion v2 (rec/), one planted defect per decision of its time skeleton (the metre model's
 # accents, the bar lines, the tempo octave, issue 1's compound tempo, the helper's beats, the on-beat quantiser fix), on
 # the rec-mutation-v2 suite (the rec-mutation references and rows with the v2 options only: a v2 defect is not diluted by
@@ -782,6 +823,8 @@ def run_mutation_check(mutations=None, suite_name: str = "mutation", out_name: s
         mutations = REC_MUTATIONS
     if suite_name == "rec-arrange-mutation" and mutations is None:
         mutations = REC_ARRANGE_MUTATIONS
+    if suite_name == "rec-arrange-lead-mutation" and mutations is None:
+        mutations = REC_ARRANGE_LEAD_MUTATIONS
     suite = suite_mod.load_suite(suite_name)
     gate = suite.get("gate") or {}
     sut = stages.default_audio_score()

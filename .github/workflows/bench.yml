@@ -314,7 +314,14 @@ jobs:
     # The 2026-10-04 nightly-rec went red at its first step (a stale mutation row) and skipped everything after it, so it never
     # showed that the whole job is this long. 85 of 90 minutes is one slow runner from red; 120 leaves 35 minutes. A failing step
     # still ends the job at once, so a red run is not slower for it.
-    timeout-minutes: 120
+    # G10c-1a (2026-10-07) adds the row v2-lead to rec-arrange-core and -full (a third row: 50% more cases in each; a lead sheet
+    # arrangement costs about what a reduction does, measured locally: core 252 cases in 174 s, 84 of them the new row) and
+    # mutation-check --rec-arrange-lead (26 references, six defects and the no-op: 5 minutes locally on a loaded machine, about 3 on
+    # an idle one). Estimated from the times above, not yet measured on a runner: core +160 s, full +415 s, lead mutation +180 s =
+    # about 12-13 minutes, so 85 + 13 = 98 minutes, which would leave 22 of 120, less than the 35 this limit was set to keep. So the
+    # limit is 135 (again 37 minutes of room; the job is not sharded: the new steps are 13% of it). Replace this estimate with the
+    # first dispatch's measure.
+    timeout-minutes: 135
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -326,6 +333,8 @@ jobs:
       - run: python tests/bench/run.py mutation-check --rec
       # G10c-0: the rec-arrange metrics' gate sensitivity (one planted defect per metric in the arranger) and the full suite (aggregates)
       - run: python tests/bench/run.py mutation-check --rec-arrange
+      # G10c-1a: the lead sheet of a recording (rec/leadsheet.js, the arranger glue's recordingArrange, the planner's relax 3): one planted defect per decision (about 3 minutes)
+      - run: python tests/bench/run.py mutation-check --rec-arrange-lead
       - run: python tests/bench/run.py run --suite rec-arrange-core    # the core's small references and the 20 real-AMT fixtures of replay-of (about 5 minutes: not in the gate, which is near its time limit)
       - run: python tests/bench/run.py check --suite rec-arrange-core
       - run: python tests/bench/run.py run --suite rec-arrange-full
@@ -345,6 +354,7 @@ jobs:
             tests/bench/out/mutation-v2/mutation-report.json
             tests/bench/out/mutation-play/mutation-report.json
             tests/bench/out/mutation-arrange/mutation-report.json
+            tests/bench/out/mutation-arrange-lead/mutation-report.json
             tests/bench/out/rec-arrange-core/summary.md
             tests/bench/out/rec-arrange-full/summary.md
             tests/bench/out/rec-arrange-full/run.json

@@ -1,5 +1,6 @@
 """The rec-arrange suites (G10c-0, pppbench/recarrange.py, tests/bench/node/rec-arrange.js): what the one-note arranger does to recordings."""
 
+import glob
 import json
 import os
 import subprocess
@@ -11,7 +12,8 @@ from pppbench.sg_roundtrip import xml_text
 from pppbench import musicxml
 
 NODE_DIR = os.path.join(util.bench_root(), "node")
-ARRANGE_SUITES = ("rec-arrange-smoke", "rec-arrange-core", "rec-arrange-mutation", "rec-arrange-full")
+ARRANGE_SUITES = ("rec-arrange-smoke", "rec-arrange-core", "rec-arrange-mutation", "rec-arrange-lead-mutation", "rec-arrange-full")
+LEAD_GATED = ("rec-arrange-core", "rec-arrange-lead-mutation", "rec-arrange-full")     # the suites that have the v2-lead row (G10c-1a)
 
 
 def gate_keys():
@@ -35,13 +37,57 @@ class Suites(unittest.TestCase):
             for k, kind in s["gate"]["subgroups"]["metrics"].items():
                 self.assertEqual(s["gate"]["metrics"][k]["dir"], "up", f"{name}: a subgroup drop is a regression, so only metrics better higher: {k}")
 
+    def test_the_suites_with_the_lead_row_gate_its_metrics_and_only_they(self):
+        from tools import make_rec_suites
+        for name in ARRANGE_SUITES:
+            s = suite_mod.load_suite(name)
+            rows = {row["opt_name"] for row in s["matrix"]}
+            for k in make_rec_suites.ARRANGE_LEAD_GATE:
+                if name in LEAD_GATED:
+                    self.assertIn("v2-lead", rows, name)
+                    self.assertEqual(s["gate"]["metrics"][k], make_rec_suites.ARRANGE_LEAD_GATE[k], (name, k))
+                else:
+                    self.assertNotIn(k, s["gate"]["metrics"], (name, k))
+                    self.assertNotIn("v2-lead", rows, name)
+        # the lead row plays v2's very performances where v2 is also a row; the mutation suite has the lead row alone
+        for name in ("rec-arrange-core", "rec-arrange-full"):
+            lead = next(r for r in suite_mod.load_suite(name)["matrix"] if r["opt_name"] == "v2-lead")
+            self.assertEqual(lead["perform_as"], "v2")
+            self.assertEqual(lead["opts"]["recordingArrange"], "leadsheet")
+        self.assertEqual([r["opt_name"] for r in suite_mod.load_suite("rec-arrange-lead-mutation")["matrix"]], ["v2-lead"])
+
+    def test_the_identity_jobs_are_the_suites_cases_without_the_lead_row(self):
+        """tests/bench/tools/arrange_jobs.py writes the jobs.jsonl of arrange-identity.js --recordings (docs/GOALS/G10 section 33.6)"""
+        from tools import arrange_jobs
+        everything = arrange_jobs.jobs_of("rec-arrange-core")
+        rows = {}
+        for j in everything:
+            rows.setdefault(arrange_jobs.opt_of(j["id"]), []).append(j)
+        self.assertEqual(set(rows), {"app", "v2", "v2-lead"})
+        self.assertEqual(len(rows["v2"]), len(rows["app"]))
+        self.assertEqual(len(rows["v2-lead"]), len(rows["v2"]))
+        reduce_jobs = arrange_jobs.jobs_of("rec-arrange-core", {"app", "v2"})
+        self.assertEqual([j["id"] for j in reduce_jobs], sorted(j["id"] for j in rows["app"] + rows["v2"]))
+        # the lead row plays v2's very performances: same input, and the lead sheet is asked for by its options alone
+        lead = {j["id"].replace("|opt:v2-lead", ""): j for j in rows["v2-lead"]}
+        for j in rows["v2"]:
+            twin = lead[j["id"].replace("|opt:v2", "")]
+            self.assertEqual(twin["input"], j["input"], j["id"])
+            self.assertEqual({k: v for k, v in twin["opts"].items() if k != "recordingArrange"}, j["opts"], j["id"])
+            self.assertEqual(twin["opts"]["recordingArrange"], "leadsheet")
+
     def test_the_core_suite_holds_the_real_amt_fixtures(self):
         s = suite_mod.load_suite("rec-arrange-core")
         self.assertEqual(s["replay_dirs"], ["replay-of"])
         refs = corpus.by_id(corpus.load_corpus())
         cases = recarrange.replay_cases(s, refs)
-        self.assertEqual(len(cases), 40)          # 20 fixtures x the matrix's two stage-option rows
-        self.assertEqual({c["id"].rsplit("|opt:", 1)[1] for c in cases}, {"app", "v2"})
+        # one case per fixture and per distinct stage-option row of the matrix (G10c-1a added the row v2-lead: the count is derived, not a number to edit)
+        rows = {row["opt_name"] for row in s["matrix"]}
+        fixtures = glob.glob(os.path.join(util.bench_root(), "replay-of", "*.json"))
+        self.assertTrue(fixtures)                 # the real-AMT fixtures of replay-of (20 on 2026-10-07)
+        self.assertEqual(len(cases), len(fixtures) * len(rows))
+        self.assertEqual({c["id"].rsplit("|opt:", 1)[1] for c in cases}, rows)
+        self.assertEqual(rows, {"app", "v2", "v2-lead"})
         # the replay fixtures and the new key change this suite's hash, and only the suites that have them: no other suite's moved
         plain = dict(s)
         del plain["replay_dirs"]
@@ -84,6 +130,31 @@ class Mutations(unittest.TestCase):
         self.assertEqual(mutation.REC_ARRANGE_MUTATIONS[-1]["expect"], "PASS")
 
 
+class LeadMutations(unittest.TestCase):
+    """The lead sheet's planted defects (mutation-check --rec-arrange-lead, G10c-1a): anchors, names, the no-op last."""
+
+    def test_every_anchor_occurs_exactly_once(self):
+        root = os.path.dirname(stages.default_audio_score())
+        for m in mutation.REC_ARRANGE_LEAD_MUTATIONS:
+            with open(os.path.join(root, *mutation.target(m).split("/")), "rb") as handle:
+                src = util.normalise_eol(handle.read()).decode("utf-8")
+            for find, _ in mutation.edits(m):
+                self.assertEqual(src.count(find), 1, m["id"])
+            self.assertNotEqual(mutation.apply_mutation(src, m), src)
+
+    def test_every_lead_metric_is_named_by_a_mutation(self):
+        from tools import make_rec_suites
+        named = {x for m in mutation.REC_ARRANGE_LEAD_MUTATIONS for x in m["metrics"]}
+        for metric in make_rec_suites.ARRANGE_LEAD_GATE:
+            self.assertIn(metric, named, metric)
+
+    def test_ids_are_unique_and_the_noop_is_last(self):
+        ids = [m["id"] for m in mutation.REC_ARRANGE_LEAD_MUTATIONS]
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertEqual(mutation.REC_ARRANGE_LEAD_MUTATIONS[-1]["id"], "MUT-NOOP")
+        self.assertEqual(mutation.REC_ARRANGE_LEAD_MUTATIONS[-1]["expect"], "PASS")
+
+
 class NodeMetrics(unittest.TestCase):
     def test_the_pure_metrics(self):
         proc = subprocess.run([stages.node_binary(), "--test", os.path.join(NODE_DIR, "rec-arrange.test.js")], capture_output=True)
@@ -102,6 +173,31 @@ class OneCase(unittest.TestCase):
 
     def run_once(self):
         return recarrange.run_node(self.jobs, self.by, stages.default_audio_score())
+
+    def test_the_detail_file_does_not_change_a_result(self):
+        """PPP_RECARR_DETAIL (the tables of docs/GOALS/G10 section 33) writes one line per case and is not part of the results: a reduce row has the same metrics with it set."""
+        plain = self.run_once()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "detail.jsonl")
+            old = os.environ.get("PPP_RECARR_DETAIL")
+            os.environ["PPP_RECARR_DETAIL"] = path
+            try:
+                with_detail = self.run_once()
+            finally:
+                if old is None:
+                    del os.environ["PPP_RECARR_DETAIL"]
+                else:
+                    os.environ["PPP_RECARR_DETAIL"] = old
+            with open(path, encoding="utf-8") as h:
+                lines = [json.loads(line) for line in h if line.strip()]
+        self.assertEqual(json.dumps(plain["results"], sort_keys=True), json.dumps(with_detail["results"], sort_keys=True))
+        row = plain["results"][self.jobs[0]["id"]]["metrics"]
+        for k in ("arr.melody.f1", "arr.melody.f1pc", "arr.melody.precision", "arr.relaxed"):
+            self.assertNotIn(k, row, "a reduce row does not carry the lead sheet's metrics: " + k)
+        # the detail has them (one line, every level on its own)
+        self.assertEqual(len(lines), 1)
+        made = [lv for lv in lines[0]["levels"] if lv.get("made")]
+        self.assertTrue(made and all("arr.melody.f1" in lv for lv in made))
 
     def test_a_case_is_measured_and_deterministic(self):
         self.assertEqual(len(self.jobs), 1)
