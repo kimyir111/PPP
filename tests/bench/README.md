@@ -811,3 +811,5 @@ The original record (2026-09-22, gate/1) is in G00 §16. After the independent r
 benchmark was fixed and re-verified; that record, with every measurement, is G00 §18. The final
 independent review (§19) found what the app draws or plays that the gate still did not read; the
 fixes and their measurements (metrics/4, reader/3, gate/3) are G00 §20.
+
+<!-- throwaway -->
