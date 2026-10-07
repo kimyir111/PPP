@@ -1070,3 +1070,5 @@ it does not produce them and cannot overrule them. Nor is it a chat assistant: i
 question, which is what to practise next. Before you have played a passage there is nothing to
 measure, so PPP falls back to a notation-only difficulty guess (note density, leaps, chord
 thickness, off-beat placement) and says that is where the guess came from.
+
+<!-- throwaway root md change -->
