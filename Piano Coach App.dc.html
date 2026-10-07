@@ -5269,14 +5269,20 @@ function loadLeadsheetModule() {
   })()).then(ok => { _leadPromise = null; return ok; });
   return _leadPromise;
 }
+/* is this graph a recording's? It has an 'audio-score' source (scoregraph/gaps.js isTranscription: the gate repair/ closes gaps on). The lead sheet is made from those and from no other graph: a printed score, a
+   MIDI file, a catalogue piece and the graph of an arrangement (what a copy made by the arranger, or by Apply arrangement on the review screen, keeps) have none. leadsheetWanted asks it, and so does the chip
+   (checkLeadsheetGraph): the chip is shown only where Create would make a lead sheet. */
+function isRecordingGraph(graph) {
+  const sources = !!graph && !!graph.provenance && graph.provenance.sources;
+  return Array.isArray(sources) && sources.some(x => !!x && x.kind === 'audio-score');
+}
 /* is this request one the lead sheet may make? The mode is the caller's (plan.recordingArrange, when it states one: the review tooling and the tests do) or the page's (PPP.recordingArrange); the level is one
    of the arranger's (never "Original transcription"); the graph is a recording (an 'audio-score' source: scoregraph/gaps.js isTranscription, the gate repair/ closes gaps on). A printed score, a MIDI
    file and a catalogue piece are never touched. */
 function leadsheetWanted(graph, plan) {
   const mode = (plan && recordingArrangeChoice(plan.recordingArrange)) || RECORDING_ARRANGE_MODE;
   if (mode !== 'leadsheet' || !plan || plan.level === 'original') return false;
-  const sources = !!graph && !!graph.provenance && graph.provenance.sources;
-  return Array.isArray(sources) && sources.some(x => !!x && x.kind === 'audio-score');
+  return isRecordingGraph(graph);
 }
 /* The Song Arranger's and the review screen's one entry for the one-note-per-hand arranger (G10c-1b). A request the lead sheet may make (leadsheetWanted) is made from the lead sheet first; when it refuses - any
    reason: LEADSHEET_* (an irregular bar, a meter change, no melody, the module not loaded), UNREACHABLE, a hard violation, a crash - the reduction is made as it always was, with its own chain
@@ -16030,11 +16036,25 @@ class Component extends DCLogic {
     /* G10c-1b: is the song a recording (a transcription: the lead-sheet chip is for those and no others)? The open song's own source, or the slot of another one */
     let src = null;
     try { src = id === (this.state.songId || 'demo') ? this.state.importSource : (this.readSong(id) || {}).importSource; } catch (e) { src = null; }
-    const d = { songId: id, songTitle: title, level: 'intermediate', style: style, autoTitle: true, busy: false, status: '', recording: isLeadsheetSong(src) };
+    const d = { songId: id, songTitle: title, level: 'intermediate', style: style, autoTitle: true, busy: false, status: '', recording: isLeadsheetSong(src), leadGraph: null };
     d.copyTitle = this.songArrangeAutoTitle(d);
     this.setState({ songArrange: d, armedRemove: null });
     this.warmSingleModules(); /* the arranging screen is open: its scripts come now, so Create does not wait for them */
-    if (d.recording) this.warmLeadsheetModule();
+    if (d.recording) this.checkLeadsheetGraph(id);
+  }
+  /* G10c-1b: the chip is for the songs that CAN become lead sheets, and that is a fact about the song's GRAPH (isRecordingGraph, the very test leadsheetWanted makes), not about its importSource: a recording whose
+     arrangement was applied on the review screen and accepted is kept as that arrangement's graph, which has no 'audio-score' source, so Create would never make a lead sheet for it and a chip that says "on" would
+     promise what it does not do. The graph is resolved as Create resolves it (PPPEngrave.app.resolve: the kept one, or one rebuilt from the Score). Until it is known (songArrange.leadGraph null) and when it is no
+     recording's (false) the chip is not shown; when it is (true) the chip is shown and the lead sheet's files are asked for ahead of Create. Never throws. */
+  async checkLeadsheetGraph(id) {
+    let yes = false;
+    try {
+      const sc = this.scoreForArrangement(id);
+      const r = sc && window.PPPEngrave ? await window.PPPEngrave.app.resolve(sc, { key: id }) : null;
+      yes = !!(r && r.graph && isRecordingGraph(r.graph));
+    } catch (e) { yes = false; }
+    this.setState(st => st.songArrange && st.songArrange.songId === id ? { songArrange: Object.assign({}, st.songArrange, { leadGraph: yes }) } : null);
+    if (yes) this.warmLeadsheetModule();
   }
   closeSongArranger() {
     if (this.state.songArrange && this.state.songArrange.busy) return;
@@ -18631,8 +18651,8 @@ class Component extends DCLogic {
           ? tx('On (the default): a newer way of reading the beat, the hands and the rests. Turn it off to use the classic method.')
           : tx('Off: the classic method writes the notation. Turn it on to use the newer way of reading the beat, the hands and the rests.'),
       /* G10c-1b: the switch for the lead-sheet arrangement of a recording (PPP.recordingArrange), on the Song Arranger and on the review screen's arrangement panel. Like the chip above, the label is the same in both
-         states (aria-pressed carries the state) and the line under it says what pressing does; shown only where it can matter: a recording (a transcription, not a printed score or a hymn), one note per hand on,
-         a level other than "Original transcription". Remembered on this device. */
+         states (aria-pressed carries the state) and the line under it says what pressing does; shown only where it can matter: a recording (a transcription, not a printed score or a hymn) whose graph is a recording's
+         (the Song Arranger looks: checkLeadsheetGraph), one note per hand on, a level other than "Original transcription". Remembered on this device. */
       recordingArrangeLabel: tx('Arrange from a lead sheet'),
       recordingArrangeHint: RECORDING_ARRANGE_MODE === 'leadsheet'
         ? tx('On (the default): a recording is arranged from its melody and chords. The melody stays one line and an easy accompaniment is written under it. Turn it off to thin out the recording\'s own notes instead.')
@@ -18640,7 +18660,7 @@ class Component extends DCLogic {
       recordingArrangePressed: RECORDING_ARRANGE_MODE === 'leadsheet' ? 'true' : 'false',
       recordingArrangeStyle: this.chip(RECORDING_ARRANGE_MODE === 'leadsheet') + ';align-self:flex-start;',
       showReviewRecordingArrange: isLeadsheetSong(S.importSource) && singleRoute({ level: S.arrangementLevel || 'intermediate' }),
-      showSongRecordingArrange: !!songArrange.recording && singleRoute({ level: songArrange.level || 'intermediate' }),
+      showSongRecordingArrange: !!songArrange.recording && songArrange.leadGraph === true && singleRoute({ level: songArrange.level || 'intermediate' }), /* a recording whose graph is a recording's (checkLeadsheetGraph), not only a song whose source says so */
       toggleRecordingArrange: () => {
         setRecordingArrangeMode(RECORDING_ARRANGE_MODE === 'leadsheet' ? 'reduce' : 'leadsheet');
         /* turning it on starts the download of its one file (and v2's, which it reads) now, so Create does not wait for it */

@@ -15,11 +15,13 @@
      - a refusal falls back: the lead sheet refused (any reason; the module blocked) -> the reduction's copy, marked reduce with the reason, equal to main's; refused by both -> the existing refusal notice and
        nothing saved (the standard arrangement is the person's click)
      - the relaxed note: a cover in six sharps, which the reduction refuses (UNREACHABLE), is a lead-sheet copy with the lead-sheet words (key signature and melody, not the left hand), in English and Korean
+     - a recording whose arrangement was applied on the review screen and accepted is kept as that arrangement's graph (no audio-score source): its Song Arranger shows NO chip, Create there is the reduction's
+       copy with no claim of the lead sheet; a song accepted as heard keeps its chip (the chip is shown where Create would make a lead sheet)
      - the review screen's Apply arrangement has the chip and the same two ways; "Original transcription" has no chip and no lead sheet; a catalogue piece has no chip and the same copy either way
      - Korean first: the chip, its two lines, the composer line, in 400 px with no sideways scroll
      - no page error and no console error throughout
    Runs against its own server on a free port (tests/serve-free.js); PPP_URL=... runs it against another build. node tests/recording-leadsheet-app.test.js
-   LS_ONLY=defaults|fresh|interplay|loaders|reduce|refuse|relaxed|review|others|korean (a regular expression) runs only those sections.
+   LS_ONLY=defaults|fresh|interplay|loaders|reduce|refuse|relaxed|review|applied|others|korean (a regular expression) runs only those sections.
    ========================================================================== */
 'use strict';
 const puppeteer = require('puppeteer');
@@ -506,6 +508,52 @@ const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i])
       ok('and Apply arrangement there is made without the lead sheet: nothing of rec/leadsheet.js is asked for, no mark in the copy\'s source', !pf.__rec.requests.some(u => /leadsheet/.test(u)) && (await pf.evaluate(() => { const a = window.PPP.app.state.importSource.arrangement; return a.recordingArrange === undefined && a.leadsheet === undefined && a.leadsheetRefusal === undefined; })));
       ok('no page or console error', clean(pf), errs(pf));
       await pf.close();
+    }
+
+    /* ------------------------------------------------------------------ a recording whose arrangement was applied on the review screen: no chip */
+    if (want('applied')) {
+      console.log('\n── Apply arrangement on the review screen, Accept, reload: the song is no lead sheet song, so the Song Arranger shows no chip ──');
+      const p = await openPage(browser, { store: LEAD });
+      await addChecker(p);
+      await importHeard(p, COVERS.sc0);
+      const s1 = await stateOf(p);
+      await p.waitForFunction(() => !!document.querySelector('[data-arrangement] [data-single-note-option]'), { timeout: 30000 });
+      await p.select('[data-arrangement-level]', 'beginner');
+      await p.click('[data-apply-arrangement]');
+      await p.waitForFunction(() => { const st = window.PPP.app.state; return !st.arrangementBusy && st.importSource && st.importSource.arrangement && st.importSource.arrangement.level; }, { timeout: 240000 });
+      await sleep(600);
+      ok('the arrangement applied on the review screen is a lead sheet copy (what the song is kept as when it is accepted)', await p.evaluate(() => window.PPP.app.state.importSource.arrangement.recordingArrange === 'leadsheet'));
+      await acceptAny(p); await sleep(2000);
+      const s2 = await (async () => { await importHeard(p, COVERS.sc0); const st = await stateOf(p); await acceptAny(p); await sleep(2000); return st; })();   /* a second song of the same recording, accepted as it is */
+      ok('two songs, one applied and one as heard', s1.songId !== s2.songId);
+      await p.reload({ waitUntil: 'networkidle2' });
+      await p.waitForFunction(() => !!(window.PPP && window.PPP.app));
+      await sleep(800);
+      p.__mark = p.__rec.requests.length;
+      await addChecker(p);
+      const open = async id => {
+        await p.evaluate(() => { try { window.PPP.app.closeSongArranger(); } catch (e) { /* none open */ } });
+        await toSongs(p);
+        await p.waitForSelector('[data-arrange-song="' + id + '"]', { timeout: 30000 });
+        await p.evaluate(i => document.querySelector('[data-arrange-song="' + i + '"]').click(), id);
+        await p.waitForFunction(() => { const d = window.PPP.app.state.songArrange; return !!d && d.leadGraph !== null; }, { timeout: 30000 });   /* the page has looked at the song's graph */
+        await sleep(300);
+        return p.evaluate(() => ({ graph: window.PPP.app.state.songArrange.leadGraph, chip: !!document.querySelector('[data-song-arranger] [data-recording-arrange-option]') }));
+      };
+      const applied = await open(s1.songId);
+      const graphOf = id => p.evaluate(async i => { const r = await window.PPPEngrave.app.resolve(window.PPP.app.scoreForArrangement(i), { key: i }); return ((r.graph.provenance || {}).sources || []).map(x => x.kind); }, id);
+      ok('the applied song\'s kept graph is the arrangement\'s: no audio-score source (the reason the lead sheet cannot be made for it)', !(await graphOf(s1.songId)).includes('audio-score'));
+      ok('its Song Arranger has no lead-sheet chip (the default mode is the lead sheet; the chip would say on and Create would not make one)', applied.graph === false && applied.chip === false, JSON.stringify(applied));
+      ok('and nothing of the lead sheet was asked for: no rec/leadsheet.js request opening it', !recSince(p).some(u => /leadsheet/.test(u)), recSince(p).join(' '));
+      const ra = await arrangeCopy(p, s1.songId, 'beginner');
+      const wantA = await mainHash(p, s1.songId, 'beginner');
+      ok('Create there makes the reduction\'s copy as ever (main\'s, note for note) and claims nothing of the lead sheet: no recordingArrange, no leadsheet, no refusal in its source, no notice', ra.newKeys.length === 1 && wantA.ok && (await copyHash(p, ra.newKeys[0])) === wantA.hash
+        && !!ra.arrangement && ra.arrangement.recordingArrange === undefined && ra.arrangement.leadsheet === undefined && ra.arrangement.leadsheetRefusal === undefined && told(ra.says) === 0, JSON.stringify(ra.arrangement));
+      const plain = await open(s2.songId);
+      ok('the song accepted as heard keeps its chip: its graph is the recording\'s', plain.graph === true && plain.chip === true, JSON.stringify(plain));
+      ok('and its lead sheet files are asked for when the Arranger opens it (not before)', await p.waitForFunction(() => !!window.PPPRecLeadsheet, { timeout: 60000 }).then(() => true).catch(() => false));
+      ok('no page or console error', clean(p), errs(p));
+      await p.close();
     }
 
     /* ------------------------------------------------------------------ Korean first, 400 px */

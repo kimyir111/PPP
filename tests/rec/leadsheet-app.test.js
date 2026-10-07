@@ -36,9 +36,9 @@ function fnSource(name, isAsync) {
   return html.slice(i + 1, end + 2);
 }
 const constLine = name => { const m = new RegExp('^const ' + name + ' = .*$', 'm').exec(html); assert.ok(m, name); return m[0] + '\n'; };
-const SRC = constLine('SINGLE_HANDS_FALLBACK_CODE') + fnSource('recordingArrangeChoice') + fnSource('leadsheetWanted') + fnSource('graphFromV2Recording') + fnSource('writtenByV2')
+const SRC = constLine('SINGLE_HANDS_FALLBACK_CODE') + fnSource('recordingArrangeChoice') + fnSource('isRecordingGraph') + fnSource('leadsheetWanted') + fnSource('graphFromV2Recording') + fnSource('writtenByV2')
   + fnSource('arrangeSingleNoteWithHandsFallback', true) + fnSource('arrangeSingleNoteWithLeadsheet', true) + fnSource('leadsheetMark')
-  + 'return { arrangeSingleNoteWithLeadsheet, arrangeSingleNoteWithHandsFallback, leadsheetWanted, leadsheetMark, recordingArrangeChoice };';
+  + 'return { arrangeSingleNoteWithLeadsheet, arrangeSingleNoteWithHandsFallback, leadsheetWanted, leadsheetMark, recordingArrangeChoice, isRecordingGraph };';
 const make = deps => new Function('arrangeSingleNote', 'loadRecordingModules', 'loadLeadsheetModule', 'RECORDING_ARRANGE_MODE', 'window', SRC)(
   deps.arrangeSingleNote, deps.loadRecordingModules || (() => Promise.resolve(true)), deps.loadLeadsheetModule || (() => Promise.resolve(true)), deps.mode === undefined ? 'leadsheet' : deps.mode, deps.window || {});
 
@@ -285,6 +285,23 @@ test('a stored arrangement reused as a plan (the review screen\'s Rewrite) keeps
   assert.equal((await h3.arrangeSingleNoteWithLeadsheet(recGraph(), arrangementAsPlan(Object.assign({}, stored, { recordingArrange: 'reduce' })), 'T')).recordingArrange, 'leadsheet', 'stripped, with the chip on: the lead sheet, whatever the old copy was');
   assert.match(html, /const arrangement = arrangementAsPlan\(S\.importSource && S\.importSource\.arrangement\);/, 'rewriteRhythm reuses the stored arrangement through it');
   assert.equal((html.match(/arrangementAsPlan\(/g) || []).length, 2, 'its definition and rewriteRhythm');
+});
+
+test('isRecordingGraph is the one question the lead sheet and its chip ask of a graph: an audio-score source; the chip is shown only where it is true', () => {
+  const { isRecordingGraph, leadsheetWanted } = make({ arrangeSingleNote: async () => ARRANGED });
+  const arrangedGraph = { provenance: { sources: [{ kind: 'generator', tool: 'ppp.g9-single' }] } };   /* what a copy made by the arranger (or Apply arrangement on the review screen) keeps */
+  const cases = [['a v2 recording', recGraph(), true], ['a classic recording', classicRecGraph(), true], ['a printed score', printedGraph(), false], ['a MIDI file', midiGraph(), false],
+    ['an arrangement\'s graph', arrangedGraph, false], ['an empty graph', {}, false], ['null', null, false], ['undefined', undefined, false],
+    ['sources that are no list', { provenance: { sources: 'audio-score' } }, false], ['a null source', { provenance: { sources: [null] } }, false],
+    ['a recording among other sources', { provenance: { sources: [{ kind: 'musicxml-import' }, { kind: 'audio-score' }] } }, true]];
+  for (const [name, g, want] of cases) {
+    assert.equal(isRecordingGraph(g), want, name);
+    assert.equal(leadsheetWanted(g, { level: 'beginner' }), want, name + ': the arranger glue asks the very same question');
+  }
+  assert.match(html, /showSongRecordingArrange: !!songArrange\.recording && songArrange\.leadGraph === true && singleRoute\(/, 'the Song Arranger\'s chip: a recording whose graph is one, known to be');
+  assert.match(html, /yes = !!\(r && r\.graph && isRecordingGraph\(r\.graph\)\);/, 'the graph is looked at with the same function');
+  assert.equal((html.match(/isRecordingGraph\(/g) || []).length, 3, 'its definition, leadsheetWanted and the chip\'s check');
+  assert.match(html, /leadGraph: null \};/, 'the Song Arranger starts with the graph not known: no chip until it is');
 });
 
 test('the page: rec/leadsheet.js is in no up-front list, not in RECORDING_SCRIPTS or SINGLE_SCRIPTS; one loader asks for it after v2\'s files; the two screens call the one entry and it alone calls the reduction', () => {

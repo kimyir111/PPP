@@ -106,7 +106,7 @@ function arranger(opts) {
   opts = opts || {};
   const ref = opts.reference || SINGLE.reference();
   const app = SINGLE.make({ window: SINGLE.nodeWindow(), loadArrangerReference: () => Promise.resolve(ref) });
-  const SRC = constLine('SINGLE_HANDS_FALLBACK_CODE') + fnSource('recordingArrangeChoice') + fnSource('leadsheetWanted') + fnSource('graphFromV2Recording') + fnSource('writtenByV2') +
+  const SRC = constLine('SINGLE_HANDS_FALLBACK_CODE') + fnSource('recordingArrangeChoice') + fnSource('isRecordingGraph') + fnSource('leadsheetWanted') + fnSource('graphFromV2Recording') + fnSource('writtenByV2') +
     fnSource('arrangeSingleNoteWithHandsFallback', true) + fnSource('arrangeSingleNoteWithLeadsheet', true) +
     'return { arrangeSingleNoteWithLeadsheet, arrangeSingleNoteWithHandsFallback };';
   /* the page's recording modules are Node requires here (audio-score.js, rec/app.js and rec/leadsheet.js find rec/ themselves), so "loading" them is a given; the page's mode is the tool's: 'reduce' */
