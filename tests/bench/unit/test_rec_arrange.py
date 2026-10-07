@@ -56,6 +56,26 @@ class Suites(unittest.TestCase):
             self.assertEqual(lead["opts"]["recordingArrange"], "leadsheet")
         self.assertEqual([r["opt_name"] for r in suite_mod.load_suite("rec-arrange-lead-mutation")["matrix"]], ["v2-lead"])
 
+    def test_the_identity_jobs_are_the_suites_cases_without_the_lead_row(self):
+        """tests/bench/tools/arrange_jobs.py writes the jobs.jsonl of arrange-identity.js --recordings (docs/GOALS/G10 section 33.6)"""
+        from tools import arrange_jobs
+        everything = arrange_jobs.jobs_of("rec-arrange-core")
+        rows = {}
+        for j in everything:
+            rows.setdefault(arrange_jobs.opt_of(j["id"]), []).append(j)
+        self.assertEqual(set(rows), {"app", "v2", "v2-lead"})
+        self.assertEqual(len(rows["v2"]), len(rows["app"]))
+        self.assertEqual(len(rows["v2-lead"]), len(rows["v2"]))
+        reduce_jobs = arrange_jobs.jobs_of("rec-arrange-core", {"app", "v2"})
+        self.assertEqual([j["id"] for j in reduce_jobs], sorted(j["id"] for j in rows["app"] + rows["v2"]))
+        # the lead row plays v2's very performances: same input, and the lead sheet is asked for by its options alone
+        lead = {j["id"].replace("|opt:v2-lead", ""): j for j in rows["v2-lead"]}
+        for j in rows["v2"]:
+            twin = lead[j["id"].replace("|opt:v2", "")]
+            self.assertEqual(twin["input"], j["input"], j["id"])
+            self.assertEqual({k: v for k, v in twin["opts"].items() if k != "recordingArrange"}, j["opts"], j["id"])
+            self.assertEqual(twin["opts"]["recordingArrange"], "leadsheet")
+
     def test_the_core_suite_holds_the_real_amt_fixtures(self):
         s = suite_mod.load_suite("rec-arrange-core")
         self.assertEqual(s["replay_dirs"], ["replay-of"])

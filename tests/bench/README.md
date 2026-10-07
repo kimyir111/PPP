@@ -524,7 +524,8 @@ pitch, onset within 0.15 quarter) and `.f1pc` (pitch classes: octave-free), `arr
 `arr.relaxed` (share of the levels made with the relaxed plan's note). `PPP_RECARR_DETAIL=<file>` (environment, any suite) writes one JSON line per case with each level's
 metrics on its own, the right-hand F1s of a reduce row included (the tables of docs/GOALS/G10 section 33); it is not part of the results: a case's metrics are the same with it set
 (`test_the_detail_file_does_not_change_a_result`). `tests/bench/tools/real-covers.js` runs the six private covers (aggregates only),
-`tests/bench/tools/arrange-identity.js` the identity of the reduction (catalogue: 975 requests; `--recordings`: the recording graphs of a suite's jobs and the covers).
+`tests/bench/tools/arrange-identity.js` the identity of the reduction (catalogue: 975 requests; `--recordings jobs.jsonl`: the recording graphs of a suite's jobs and, with `--heard DIR`, the covers).
+`tests/bench/tools/arrange_jobs.py --suite rec-arrange-core --opts app,v2 --out jobs.jsonl` writes that `jobs.jsonl` (168 jobs: the identity's 522 requests with the six covers).
 
 The true melody is SongGraph's melody voice of the true score (the top head of each event), matched to the heard notes by pitch and
 time (one to one, 0.2 s), so a note the transcription never heard is an upstream error and is not charged to the arranger

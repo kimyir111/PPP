@@ -12,10 +12,16 @@
    `--shard I/N` runs every N-th file starting at I (the shards' results merge by concatenating their `requests`).
 
    --recordings (G10c-1a, docs/GOALS/G10 section 33): instead of the catalogue, the recording graphs of the arranger jobs of a rec-arrange suite (`jobs.jsonl`: {id, input, opts};
-   tests/bench/node/rec-arrange.js's own input; written by the Python side of the bench) are made by the ROOT's audio-score.js (a `recordingArrange` key in a job's opts is dropped) and
+   tests/bench/node/rec-arrange.js's own input, written by `python tests/bench/tools/arrange_jobs.py --suite rec-arrange-core --opts app,v2 --out jobs.jsonl`: 168 jobs) are made by the ROOT's audio-score.js (a `recordingArrange` key in a job's opts is dropped) and
    arranged with the app's glue at the three levels with NO recordingArrange option: the reduction every recording gets today. `--heard DIR` adds the private covers of `DIR/<id>.json`
    ({notes: [{on, off, midi, vel}]}) through the app's own conversion options (review/lib/appcode.js of this tree, v2): their requests are named rec:heard/<id>; only the sha-256 of
-   each result is written, never a note. The same file run on a clean extract of main and on the branch is the identity of 'reduce' on recordings. */
+   each result is written, never a note. The same file run on a clean extract of main and on the branch is the identity of 'reduce' on recordings (168 jobs x 3 levels + the six covers x 3 = 522 requests):
+     git archive 94350c5 | tar -x -C /tmp/main       # the base of G10c-1a (any clean extract of the tree to compare with)
+     python tests/bench/tools/arrange_jobs.py --suite rec-arrange-core --opts app,v2 --out jobs.jsonl
+     node tests/bench/tools/arrange-identity.js --root /tmp/main --recordings jobs.jsonl --heard DIR --out main.json
+     node tests/bench/tools/arrange-identity.js --root .         --recordings jobs.jsonl --heard DIR --out branch.json
+     node tests/bench/tools/arrange-identity.js --compare main.json branch.json      # exit 1 unless every request is identical
+   (the tool of THIS tree is run in both: --root names the tree whose audio-score.js, app file and modules are used; --shard I/N splits a long run). */
 'use strict';
 const fs = require('fs');
 const path = require('path');
