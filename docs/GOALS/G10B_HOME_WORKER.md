@@ -528,3 +528,127 @@ A real browser, with a stub in place of Windows: the launch is caught at the doc
 4. The switch is offered in any desktop browser (also macOS/Linux, where the registration does not exist); its note says "Windows".
 5. `Disconnect` lives in the banner only (60 s). A later undo is "Forget on this device" and a new link.
 6. The tag is 6 hex (24 bits). Longer would be harder to compare by eye.
+
+## 16. G10b-6: one-button PC connection and live status (the localhost bridge)
+
+The user, 2026-10-08: *"This is too complicated. Inside the site I should see right away whether it's connected, and connect with ONE button press. Why do you keep finding strange ways?"* Until now a person made a link, copied a token into a settings file, ran `pair.cmd` or a desktop shortcut, answered a banner and a confirm, and could only learn the PC's state from the site (the worker "last seen" up to an hour ago). Nothing changes on the server (no route, no table, no limit): the change is a small program on the PC that the PPP page of the SAME PC can talk to.
+
+### 16.1 What a person does now
+
+| Once | Every day |
+| --- | --- |
+| 1. Settings file with `siteUrl` and the paths (no token, no code). 2. Double-click `tools\home-worker\install-startup.cmd` (one shortcut in the user's own Startup folder; starts the program now) | Open PPP. **Settings > Connect my PC** shows the state at once; **Connect this PC** (one press) does the rest. After that, **High-quality (my PC)** starts the run at once and the page shows its progress |
+
+The page shows, in a desktop browser on that PC, every ~5 s while Settings or the Add screen is open and the tab is visible: `My PC is connected ✓ · Idle` (ko: `내 PC 연결됨 ✓ · 대기 중`), `Converting 45% · <title>` (`변환 중 45% · <제목>`), `The PC program is not running` (`PC 프로그램이 꺼져 있어요`), `Not connected yet` (`아직 연결되지 않았어요`). A phone or tablet: **Connect a phone or tablet** shows a QR code of the existing `#pc=` link (with **Copy link**), and the phone's own confirmation (section 15.3) applies as before.
+
+### 16.2 The parts
+
+| Part | What it is |
+| --- | --- |
+| `tools/home-worker/bridge.js` (new) | the HTTP layer (`createBridge`: every security rule) and the controller behind its four routes (`createController`) |
+| `worker.js --serve` | the polling loop of before (the site's `nextPollSeconds`, an hour when idle - **never faster**), plus the bridge in the same process. `saveSettings`, `envProbe`, `runNow`, `state` (what the status shows) are new; `runForever` was split into a `stretch` so that the same body serves the old and the new mode |
+| `start-hidden.vbs` / `start-hidden.cmd` | start `--serve --log-file` hidden; read no argument (same shape as `run-hidden.vbs`) |
+| `install-startup.cmd` / `uninstall-startup.cmd` / `startup-shortcut.ps1` | put / take away ONE shortcut `PPP home worker (bridge).lnk` in the Startup folder of the current Windows user (`wscript.exe //B //Nologo "<folder>\start-hidden.vbs"`); uninstall also stops the program that listens on the bridge's port when it is `worker.js --serve`. No administrator rights, no registry, no scheduled task |
+| the page (`Piano Coach App.dc.html`) | `PcBridge` (the only code that talks to the program), `qrMatrix` (a small QR encoder, no library, no network), and the methods `bridgeConnect`, `bridgeLook`, `bridgeWatch`, `bridgeView`... in one block; five existing lines changed (the render spread, a call after every draw, the launch after a job is queued, "Start now") |
+
+**Routes** (JSON; every one needs an allowed Origin and a loopback Host):
+
+| | |
+| --- | --- |
+| `GET /v1/status` | `{ app, api, version, link: { has, tag (6 hex, the link's NAME), rejected, shareable }, busy, checking, job: { title, stage, percent } or null, lastCheckAt, lastCheckOk, nextCheckAt, env: { checked, ok, device } }`. Answered from memory: **it never touches the site**. No secret in it. `percent`: download 0, decode 5, transcribe 10-95, upload 97 |
+| `GET /v1/link` | `{ clientCode, linkTag }` or 404. For a second browser on the same PC (see 16.6) |
+| `POST /v1/connect {clientCode}` | the program asks the site about the code (`GET /api/worker/status`, `X-PPP-PC`); if it is the link it already has and its token still works (`GET /api/worker/ping`) nothing changes (so a second press does not spend one of the ten new tokens an hour that the site allows); otherwise it asks for a token of its OWN (`POST /api/pc-links/me/worker-token`, the code in `X-PPP-PC`), keeps token and code in memory, writes them to the settings file, pings the site with the new token (the PC then counts as "seen") and wakes its loop. Answer: `{ ok, rotated, saved, linkTag }` and nothing else. 409 `busy` while a conversion runs for another link; 422 `code-rejected`; 429 `site-busy`; 502 `site-unreachable` / `site-unavailable` |
+| `POST /v1/run` | the same work as `--once`, in this process, under the same run lock (`worker.lock`), started and left running (answered at once, `{ ok, started, queued?, reason? }`; `reason`: `no-link`, `rejected`, `other-run`, `too-soon`, `stopping`). A call while a run is going asks for one more look at the queue when it ends |
+
+### 16.3 What one press does (the page, `bridgeConnect`)
+
+| The program | This browser | What happens |
+| --- | --- | --- |
+| not reachable | - | one sentence: the PPP program is not running on this PC, run `install-startup.cmd` once, then press again (and, smaller: "if your browser asked to allow access to this device, choose Allow"). Nothing is stored, no link is made |
+| has a live link | none | `GET /v1/link`, the code is checked with the site, then kept as this browser's link. No new link, no connect |
+| has the same link | the same | nothing to change; remembered as connected |
+| has a DIFFERENT live link | has one | asked **once**: "This PC is connected to PC link …X. Use this device's link …Y instead?" **Use …Y** / **Keep as it is**; Use hands this device's code over, Keep changes nothing |
+| has a link it cannot give (an install from before this one: no code on the PC) | none | a new link is made and handed over (that is the only choice left) |
+| has none, or the site rejected its token | has one | this browser's code is handed over |
+| any | one the site no longer knows | the dead link is forgotten first; then as "none" |
+| none | none | a PC link is made (the usual `POST /api/pc-links`; the worker token in its answer is **thrown away**), kept here, handed over |
+
+After a success: `ppp.pclocal.v1` ("this browser is on the PC") and `ppp.bridge.v1` ("this browser has met the program") are set, the site's list is read, and the watching starts. A failed press remembers nothing. **Nothing talks to the program before the first press**, and nothing ever does in a browser that is not a desktop one (`PcLocal.desktop()`: no mobile user agent, not an iPad-as-Mac, not a touch-first screen) - tested with both markers in a phone's storage.
+
+**After the press.** `ppp.bridge.v1` + the flag + a link make the Add screen's **High-quality (my PC)** ask the program to run (`POST /v1/run`) right after the job is queued ("Started on your PC."); only when the program is not there (or says it did not start) does the page fall back to the `pppworker://` launch of G10b-4, with its old wording.
+
+### 16.4 The worker side
+
+- **The loop.** `--serve` needs only `siteUrl` in the settings (no token): without a PC link it makes **no request to the site** and waits (a day at a time) until a connect wakes it. A token the site rejects does not end the process (the page could not reconnect an exited program): the link is marked rejected, the bridge says so, and the loop waits for a new one. The idle wait is the site's word (`nextPollSeconds`), lengthened but never shortened by the settings, exactly as before; a status look (every ~5 s from the page) is answered from memory and costs the free server nothing (tested: sixty looks, zero site requests).
+- **The lock.** Each stretch of work (a check, and the conversion it finds) is held under the run lock of G10b-4, as `--once` holds it for its whole run: a scheduled `--once` or the desktop shortcut can never convert at the same time (the loser says so and, in the loop, looks again in a minute without asking the site). The in-process flag keeps `/v1/run` and the loop from overlapping each other.
+- **A 401 for the old token.** A check that was on its way when the bridge gave the worker a new token comes back 401 for the OLD one: it is read as "look again in 5 s", not as "the new link is rejected" (tested).
+- **The settings file.** `saveSettings` changes only `token` and `clientCode` (everything else stays), writes a temporary file beside it and moves it over (a power cut cannot leave half a file), and **never overwrites a file it cannot read as JSON**. When the settings were only the environment it makes `~/.ppp-home-worker/worker.config.json` with `siteUrl`, token and code. When the disk refuses, the new link is used until the program stops and the answer says `saved:false`; the next press (the same code) saves it without a new token. `PPP_WORKER_TOKEN` in the environment still wins at the next start.
+- **The setup check.** At start (and, if it failed, again at most every 10 minutes, on a status look) `envProbe` checks Python (torch, soundfile, transkun; cuda or cpu), `transcribe.py` and ffmpeg and reports `env: { checked, ok, device }` - the page says "Connected, but this PC cannot convert yet. Run `--check`" when it failed.
+- **One instance.** The port itself: a second `--serve` finds `EADDRINUSE`, asks the port (`GET /v1/status` with the site's origin) whether it is this program, says "already running" and exits 0; a port held by something else is said in Korean and English (set `bridgePort`) and exits 1.
+- **Shutdown.** SIGINT/SIGTERM stop the loop (after the conversion in hand, as always) and close the bridge; the run lock is released at exit.
+
+### 16.5 Security analysis
+
+The bridge sits on a PC that holds the user's PC link (the master secret of section 12) and a worker token, and it starts the models. Who can reach `127.0.0.1:47613`, and what each can do:
+
+| Threat | How it is closed | Tested by |
+| --- | --- | --- |
+| **Another machine on the network** | bound to `127.0.0.1` only (the literal in the source; `listen` takes no host option); the same port on the PC's network address is closed | `bridge.test.js` "listens on 127.0.0.1" (socket address, source, the network address refused); U8 |
+| **DNS rebinding** (a hostile page whose name is made to resolve to 127.0.0.1) | strict `Host` check: exactly `127.0.0.1:<the open port>` or `localhost:<the open port>`; anything else (another name, no port, another port, an empty or missing Host) is 403 with no CORS header, connection closed | "Host: only this machine's own name"; U1, U21 |
+| **A page of another site** that calls the program (CSRF, reading the answer) | an **Origin allow-list of one**: the origin of `siteUrl`. No wildcard; a missing Origin, `null`, another scheme, a trailing slash, a prefix of the right name are all 403 **without any `Access-Control-*` header** (so the browser cannot read even the refusal). CORS headers only for the allowed origin | "Origin: the site's origin only"; U2, U3, U4 |
+| **A "simple" POST that needs no preflight** (`text/plain`, a form) | every POST must be `application/json` (415 otherwise), which a browser cannot send cross-origin without a preflight, which only the allowed origin passes - and the Origin check refuses it anyway | "bodies"; U7 |
+| **Chrome's Private Network / Local Network Access** | the preflight answers `Access-Control-Allow-Private-Network: true` (and the page is a public one reaching a loopback address: Chrome asks the person's leave, on the press, once). Tested in a real Chrome that treats the page as public (`--ip-address-space-overrides`): with the permission granted it works; without it the page ends in the plain sentence | "the preflight"; `bridge-page.test.js` (granted / not granted contexts); U5 |
+| **A test origin left open** | a loopback origin is accepted only in an explicit test mode (`PPP_WORKER_TEST_MODE=1` **and** `PPP_WORKER_TEST_ORIGIN=http://127.0.0.1:<port>`; a shape check drops anything else: https, another host, a path, localhost) | "test mode"; U12, U28 |
+| **Reading a secret from an answer or the log** | `/v1/status` and the answer of `/v1/connect` hold no token and no code (only the link's 6-hex NAME); the worker token never reaches the page at all (the program gets its own from the site); the log redacts the token and the code, and the bridge's own lines never contain them (tested with a log that does NOT redact) | "no secret in any answer or log"; U10, U11 |
+| **Injection into a command or a path** | the only request data used is a code that matches `^[0-9a-f]{64}$` (strict: not 63, not 65, no capitals, no other key in the body), put into one header of one request to the site and into the settings file at its fixed place. `bridge.js` has no `child_process` at all; the file path is the settings' own | "bodies" (shell command / path / link as a "code"), "bridge.js starts no program"; U19, U20 |
+| **Oversized or endless bodies, slow clients** | at most 2 KB (declared or counted; 413 and the connection closed), `headersTimeout` 10 s, `requestTimeout` 15 s, 64 connections, 40 headers | "bodies"; U6 |
+| **Hammering the mutating routes** | connect 6 a minute, run 12 a minute (429 with `Retry-After`, readable by the page), link 30, status 600; refusals of strangers are made **before** the limiter so they cannot use up the page's budget. `/v1/run` also has a floor of 2 s between starts and cannot overlap a run | "rate limited"; U9, U23 |
+| **Making the free site work harder** | status looks never reach it; `/v1/run` is one check; `/v1/connect` is two or three requests and idempotent for the same link; the loop's idle wait is the site's; no link means no request | "--serve loop"; U13, U25, U26 |
+| **Two programs on one GPU** | the run lock (file) across processes, a flag inside; the port for a second `--serve` | "/v1/run", "real processes"; U15, U27 |
+| **The settings file destroyed or leaked** | atomic write, never over an unreadable file, mode 0600 on creation; the log never shows the contents | "when the settings file cannot be written"; U17 |
+
+**What stays open (said plainly).** (1) *Another local user or program on the same PC* can reach the port and forge `Origin`/`Host` (a script can send any header). It can read `GET /v1/status` (nothing secret), call `/v1/run` (one check of YOUR link: CPU/GPU time and a request to the site), `/v1/connect` with a code it knows (switch the program to a link it controls - while no conversion is running) and - **the one that matters - `GET /v1/link` returns the PC code**, the master secret of the link (queue conversions, read results, replace the worker token, remove the link). (2) *A program that binds the port before ours* (another Windows user starting first) can pretend to be the bridge and receive the code when the person presses **Connect this PC**; ours then says the port is taken. Both need code running on the PC that the user did not start; a user who could run code AS the same user could read the settings file (token and code) anyway. They matter only on a PC with several Windows users, or one with untrusted software. (3) A browser extension with access to all sites sees what the page sees. (4) Firefox and Safari: see 16.7.
+
+### 16.6 `/v1/link` and the per-install secret: decided, and why
+
+`GET /v1/link` exists so that a **second browser on the same PC** (or a cleared profile) connects with one press: the program already holds the code, the page takes it. The question was whether to add a **per-install random secret that the page cannot know**, so that a local stranger forging `Origin` could not use the route.
+
+**Decision: no per-install secret; one switch instead.**
+- A secret the page is to use without the person typing it must reach the page from somewhere, and the only places are the program itself (then a forging local script gets it from the same route, by the same forged headers) or a file the page cannot read. So it cannot separate the page from a local script; it can only separate *the page* from *a person who types it*, which is exactly the UX the user asked us to remove ("ONE button press").
+- What actually keeps strangers out is already there: only the one allowed origin, the Host check, and that the secret leaves only on a user's own press. The remaining party is a local process, and a local process running as the same Windows user can read `worker.config.json` (token and code in plain text, as since G10b-1). Only a *different Windows user* gains something from the bridge - the one real residual risk, and it needs a shared PC.
+- So a switch: `"bridgeLink": false` in the settings makes `/v1/link` answer 404 and the status say `shareable:false` (the page then offers to make a new link instead of taking the PC's). The second browser connects with the QR code / `pair.cmd` / the pasted code as before. Default **true** (the one-press UX the user wants; the PC is the user's own).
+- Not done, noted as a hardening option: checking that the connecting process belongs to the same Windows user (`netstat -ano` + the owner of the pid); and a `Sec-Fetch-Site` check (a script can forge it too).
+
+### 16.7 Browsers
+
+Chrome and Edge (Chromium): a page on `https://` may fetch `http://127.0.0.1` (a loopback address is a secure context, so it is not blocked as mixed content); since Chrome 142 the first fetch asks the person's leave (Local Network Access: "access other apps and services on this device"), which is why the first contact is made on a press. If the person says no, the page cannot tell it from "not running" and says both (the second, smaller sentence). Firefox allows the fetch without a prompt; Safari blocks http from an https page (not a target: the worker is Windows). On a phone nothing is attempted. The page sends `targetAddressSpace: 'loopback'` (ignored by browsers that do not know it).
+
+### 16.8 Install, undo, what the Lead runs
+
+```
+cd D:\PPP-worker                                     (the folder the worker runs from, at the new commit)
+tools\home-worker\install-startup.cmd                (or: powershell -NoProfile -ExecutionPolicy Bypass -File tools\home-worker\startup-shortcut.ps1 install)
+```
+It writes ONE file: `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\PPP home worker (bridge).lnk`, and starts the program hidden now (`-NoStart` to leave that to the next sign-in). Check: `...startup-shortcut.ps1 status` (installed? running on the port?), `worker.log` next to the settings. **Undo:** `tools\home-worker\uninstall-startup.cmd` (removes only that shortcut and stops `worker.js --serve` on the bridge's port). The old scheduled task ("PPP home worker", every 3 h) and the `pppworker://` registration can stay: they use the same lock and never overlap with the program; when the program runs, the task's `--once` finds the lock or an empty queue and ends.
+
+### 16.9 Verification
+
+`npm run test:home-worker` now also runs `bridge.test.js` (Node: the HTTP layer against a stub - Host, Origin, preflight, bodies, methods, paths, rate limits on a clock the test moves; connect/run/serve against **the real site code** (`home-jobs.js` on a local server): rotation, the saved file, idempotence, busy, wrong code, site down, a disk that fails, the run lock, the loop; real `worker.js --serve` processes for single instance, the port held by something else, test mode), `bridge-startup.test.js` (the files, and the Startup shortcut made in a **temporary folder** - the real Startup folder is listed before and after - install/again/foreign file/uninstall/stop of a real `--serve` on a port of its own, and the two `.cmd` files run for real with the hooks) and `qr.test.js` (the encoder cut out of the page: versions, structure, golden hashes of pictures that were decoded with OpenCV; every length 1-213 decoded twice when the encoder was written). `npm run test:home-worker-page` also runs `bridge-page.test.js` (real Chrome, the real page and server, the real HTTP layer of the bridge with a scripted program behind it, and one end-to-end scenario with the **real** `worker.js --serve` process and the real site; Chrome treats the page as public and the permission is granted by DevTools per context). The mutation runner has **RESULT_MUTANTS** (U1-U29, X1-X7, V1-V18; the three old mutants W2, R13, R15 were moved to the new code).
+
+### 16.10 What could not be tested
+
+- The real **sign-in start** from the Startup folder (Windows runs the shortcut at logon; the test makes the shortcut and starts the program itself) and a real **hidden** window (`wscript //B`): the files are checked for what they do and do not read, the shortcut's target and arguments are read back through COM.
+- **Chrome's real permission prompt** (answered through DevTools: granted / not granted) and the wording a person sees in it; Edge, Firefox, Safari.
+- A **real conversion through the bridge** (the models, the GPU): the end-to-end scenario shows the job leave the queue after the press (the real worker claims it); the conversion itself is `worker-real.test.js` and section 11.
+- A **phone scanning the QR code** (decoded by OpenCV, drawn in the page and compared with the encoder, not scanned by a camera).
+- Production (nothing deployed or contacted).
+
+### 16.11 Choices the Lead may want to change
+
+1. **`/v1/link` on by default** (16.6). `"bridgeLink": false` turns it off.
+2. **The default port 47613**, `bridgePort` in the settings; the page tries only the default (a different port needs the page to be told - not offered: it would be one more thing to explain).
+3. **Origin = the site in `siteUrl`, exactly.** A site opened under another name is refused (the page sees "not running"). One entry; an alias would be a second line of code and a second thing to trust.
+4. **A failed or refused press remembers nothing; a success remembers `ppp.pclocal.v1` too** (it was only a switch before): the desktop browser that pressed the button is "the PC", which turns the pppworker-less instant start on. Turning the switch off in Settings stops the status watching as well.
+5. **Two "other device" buttons on a desktop** until the card is simplified: "Connect a phone or tablet" (QR) and the old "Connect another device: copy link" do the same job; the old "Create my PC link" also stays for now (the other session's PR is changing that card; hiding them is a small follow-up).
+6. **The status is read every ~5 s** only while Settings or the Add screen is open and the tab visible.
+7. **The program starts at sign-in**, not at boot, and idles at an hour between checks: the free-tier arithmetic of section 3 is unchanged (the 26% at an hour).
