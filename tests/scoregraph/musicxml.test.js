@@ -8,6 +8,7 @@ const assert = require('node:assert/strict');
 const path = require('path');
 const { REPO, SG, FIX, read, json, sidecar, xml, corpus, importXml, codes, pitchName } = require('./helpers.js');
 const R = SG.rational, P = SG.pitch;
+const T = require('../timing.js');
 
 const correctness = id => {
   const all = json(path.join(REPO, 'tests', 'bench', 'corpus', 'correctness', 'expected.json')).fixtures;
@@ -296,19 +297,19 @@ function synthetic(bars) {
   return b.finish().graph;
 }
 
+/* The fastest of five of each size, taken in turns after a warm call of each (tests/timing.js bestOfPair): a single pair of calls
+   also timed the test files running beside this one, and failed once on the runner (36,000 heads took 3.1x the time of 16,000,
+   261 -> 818 ms, on 2026-10-06; it passed on the rerun). Noise only adds to a time, so the fastest sample is the least disturbed. */
 test('export grows with the score, not with its square (A30)', () => {
   const small = synthetic(1600), large = synthetic(3600);   /* 16,000 and 36,000 heads */
   const heads = g => g.parts[0].events.reduce((s, e) => s + e.heads.length, 0);
   assert.equal(heads(small), 16000);
   assert.equal(heads(large), 36000);
-  const ms = g => {
-    const t0 = process.hrtime.bigint();
+  const write = g => () => {
     const x = SG.musicxml.export(g);
     assert.equal(x.ok, true, x.message);
-    return Number(process.hrtime.bigint() - t0) / 1e6;
   };
-  ms(small);                                                 /* warm up, so the first call is not the slow one */
-  const a = ms(small), b = ms(large);
+  const [a, b] = T.bestOfPair(write(small), write(large));
   assert.ok(b < 1500, 'writing 36,000 heads took ' + b.toFixed(0) + ' ms');
   /* 2.25x the heads: quadratic would be about 5x the time, linear about 2.25x */
   assert.ok(b / a < 3.0, '36,000 heads took ' + (b / a).toFixed(1) + 'x the time of 16,000 (' + a.toFixed(0) + ' -> ' + b.toFixed(0) + ' ms)');

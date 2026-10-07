@@ -412,7 +412,7 @@ jobs:
           retention-days: 1                # an input of the merge job, not a result
           overwrite: true
       - run: npm run test:home-worker                              # G10b-1: the home-PC queue, its worker and server.js with it (Node only, ~40 s; the Postgres part skips without PPP_TEST_PG_URL)
-      - run: npm run test:arrangement-planner                      # G7b: texture ladder, deterministic search, real-corpus coverage, mutation suite (G07B)
+      - run: npm run test:arrangement-planner                      # G7b: texture ladder, deterministic search, real-corpus coverage, mutation suite (G07B); one test file at a time (--test-concurrency=1), so its 200 ms plan() budget is measured beside no other file (tests/timing.js)
 
   # shard-m: rec-grid 2/2, the key check
   #   (steps ~147 s on a fast runner, ~232 s on a slow one)

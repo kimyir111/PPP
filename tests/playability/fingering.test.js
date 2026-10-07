@@ -17,6 +17,7 @@ const path = require('path');
 const { REPO, PL, mk, SG, graphOf } = require('./helpers.js');
 const { withPositions } = require('../engrave/helpers.js');
 const { appFingering } = require('./legacy-fingering-extract.js');
+const T = require('../timing.js');
 
 /* ------------------------------------------------------- book fingering (tests/fingering.test.js's 17) */
 /* A representative slice of the same 17 cases (not all 17: several need multi-voice/chord DSL the mk()
@@ -145,15 +146,15 @@ test('invariant at scale (sonatina/020): every shared pitch within an attack get
 });
 
 /* --------------------------------------------------------------------- performance (G05 §7) */
-test('performance: analyzer + fingering over sonatina/020 (1,776 heads) stays inside the 150ms combined budget', async () => {
+/* One warm call and the median of five timed ones (tests/timing.js): a single call also timed the test files running beside this
+   one, and failed twice on the runner (171.0 ms on 2026-10-07, 155.2 ms on 2026-10-06; both passed on the rerun). */
+test('performance: analyzer + fingering over sonatina/020 (1,776 heads) stays inside the 150ms combined budget', async (t) => {
   const g = await graphOf('catalog/method/sonatina/020.mxl');
   assert.ok(g);
-  PL.analyzeGraph(g, { profile: 'medium' }); PL.fingering.solveGraph(g); /* warm up */
-  const t0 = process.hrtime.bigint();
-  PL.analyzeGraph(g, { profile: 'medium' });
-  PL.fingering.solveGraph(g);
-  const ms = Number(process.hrtime.bigint() - t0) / 1e6;
-  assert.ok(ms <= 150, 'combined analyze+fingering took ' + ms.toFixed(1) + 'ms, over the 150ms budget');
+  const ms = T.samples(() => { PL.analyzeGraph(g, { profile: 'medium' }); PL.fingering.solveGraph(g); });
+  const detail = 'combined analyze+fingering: ' + T.describe(ms);
+  t.diagnostic(detail + ' (budget 150 ms)');
+  assert.ok(T.median(ms) <= 150, detail + ', over the 150ms budget');
 });
 
 test('performance: re-solving one passage alone (not the whole piece) is well inside the 20ms budget (G9)', async () => {
@@ -164,11 +165,8 @@ test('performance: re-solving one passage alone (not the whole piece) is well in
   const evs = PL.fingering.eventsForHand(rh);
   const mid = Math.floor(evs.length / 2);
   const passage = evs.slice(mid, mid + 24); /* a phrase-sized slice, not the whole piece */
-  PL.fingering.solve(passage, 'r'); /* warm up */
-  const t0 = process.hrtime.bigint();
-  PL.fingering.solve(passage, 'r');
-  const ms = Number(process.hrtime.bigint() - t0) / 1e6;
-  assert.ok(ms <= 20, 're-solving a 24-event passage took ' + ms.toFixed(2) + 'ms, over the 20ms budget');
+  const ms = T.samples(() => PL.fingering.solve(passage, 'r')); /* a warm call, then the median of five */
+  assert.ok(T.median(ms) <= 20, 're-solving a 24-event passage took ' + T.describe(ms) + ', over the 20ms budget');
 });
 
 /* -------------------------------- printed-fingering ground truth + legacy comparison (G05 §3(d), §5) */
