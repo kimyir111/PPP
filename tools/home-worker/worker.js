@@ -8,6 +8,7 @@
      node tools/home-worker/worker.js              keep checking (about once an hour when idle, every ~15 s while something is going on)
      node tools/home-worker/worker.js --once       check once, do everything that is waiting, exit (the desktop-shortcut mode)
      node tools/home-worker/worker.js --check      test the settings and the token, change nothing
+     node tools/home-worker/worker.js --pair       (G10b-3) make the pairing link of this PC's link, copy it to the clipboard and open it in the browser; --show also prints it
      node tools/home-worker/worker.js --config <file>
 
    One job: claim -> download the audio (the site's /api/youtube-audio, as the page does) -> ffmpeg to a 44.1 kHz stereo WAV and a
@@ -43,10 +44,22 @@ const pad = n => String(n).padStart(2, '0');
 const clock = d => { d = d || new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); };
 const humanWait = s => (s >= 3600 ? Math.round(s / 360) / 10 + ' h' : s >= 90 ? Math.round(s / 60) + ' min' : s + ' s');
 
+/* a PC link's client code (64 hex) from what a person pastes: the code itself, or the pairing link https://site/#pc=<code>; spaces, dashes and capitals are forgiven
+   (the page's PcLink.normalize does the same). '' when it is not one. */
+const CODE_RE = /^[0-9a-f]{64}$/;
+function codeFrom(text) {
+  let t = String(text == null ? '' : text);
+  const i = t.indexOf('#pc=');
+  if (i >= 0) { t = t.slice(i + 4); try { t = decodeURIComponent(t); } catch (e) { /* as it is */ } }
+  t = t.replace(/[\s-]+/g, '').toLowerCase();
+  return CODE_RE.test(t) ? t : '';
+}
+
 /* ---------------- settings ---------------- */
 const DEFAULTS = {
   siteUrl: '',
   token: '',
+  clientCode: '',
   pythonPath: '',
   transcribePy: path.join(REPO, 'transcribe.py'),
   kongCheckpoint: '',
@@ -92,6 +105,9 @@ function loadConfig(file, env) {
   if (env.PPP_WORKER_SITE) cfg.siteUrl = env.PPP_WORKER_SITE.trim();
   cfg.siteUrl = String(cfg.siteUrl || '').trim().replace(/\/+$/, '');
   cfg.token = String(cfg.token || '').trim();
+  /* clientCode (optional, G10b-3): the PC link's client code, or the whole pairing link, for --pair; cleaned here, never used by the worker's loop and never logged */
+  cfg._clientCodeGiven = !!String(cfg.clientCode || '').trim();
+  cfg.clientCode = codeFrom(cfg.clientCode);
   cfg.audioBase = String(cfg.audioBase || cfg.siteUrl || '').trim().replace(/\/+$/, '');
   cfg._file = where || '';
   if (!cfg.pythonPath) {
@@ -104,8 +120,8 @@ function loadConfig(file, env) {
   return cfg;
 }
 
-/* what is wrong with the settings, as sentences (empty list: usable) */
-function configProblems(cfg) {
+/* what is wrong with the site address, as sentences */
+function siteProblems(cfg) {
   const out = [];
   if (!cfg.siteUrl) out.push('siteUrl is empty (the address of the PPP site, e.g. https://ppp-web-2o99.onrender.com).');
   else {
@@ -114,6 +130,12 @@ function configProblems(cfg) {
     if (u && !/^https?:$/.test(u.protocol)) out.push('siteUrl must start with https://');
     if (u && u.protocol === 'http:' && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(u.hostname) && !cfg.allowInsecure) out.push('siteUrl is http://, which would send the token in the clear. Use https:// (or set allowInsecure for a test on your own network).');
   }
+  return out;
+}
+
+/* what is wrong with the settings, as sentences (empty list: usable) */
+function configProblems(cfg) {
+  const out = siteProblems(cfg);
   if (!/^ppw_[A-Za-z0-9_-]{12}_[A-Za-z0-9_-]{43}$/.test(cfg.token)) out.push('token is missing or is not a PPP worker token (it starts with ppw_; it is shown once when the PC link is made: Settings > Connect my PC > Create my PC link).');
   if (!cfg.pythonPath || !fs.existsSync(cfg.pythonPath)) out.push('pythonPath does not exist: ' + (cfg.pythonPath || '(empty)') + ' (the Python of the transcription environment, e.g. D:/PPP/tools/transcribe-venv/Scripts/python.exe).');
   if (!cfg.transcribePy || !fs.existsSync(cfg.transcribePy)) out.push('transcribePy does not exist: ' + cfg.transcribePy);
@@ -127,7 +149,9 @@ function makeLog(cfg, out, err) {
   const redact = s => {
     let t = String(s);
     if (cfg && cfg.token) t = t.split(cfg.token).join('ppw_***');
-    return t.replace(/ppw_[A-Za-z0-9_-]{12}_[A-Za-z0-9_-]{43}/g, 'ppw_***').replace(/Bearer\s+[^\s]+/gi, 'Bearer ***');
+    /* the PC link's client code is the master secret of the link (G10b-3): neither the code nor a pairing link made of it is ever shown by the log */
+    if (cfg && cfg.clientCode) t = t.split(cfg.clientCode).join('***');
+    return t.replace(/ppw_[A-Za-z0-9_-]{12}_[A-Za-z0-9_-]{43}/g, 'ppw_***').replace(/Bearer\s+[^\s]+/gi, 'Bearer ***').replace(/#pc=[0-9a-fA-F]{64}/g, '#pc=***');
   };
   /* text that came from the site or from a video's title must not move the cursor, recolour or reorder the person's terminal: no ESC sequences (a whole one:
      CSI "ESC [ ... final", OSC "ESC ] ... BEL", and the two-character ones, ESC and one of @-Z \ ] ^ _), no other control characters (a newline and a tab
@@ -681,7 +705,88 @@ async function checkSetup(cfg, log, deps) {
   return bad ? 1 : 0;
 }
 
-async function main(argv) {
+/* ---------------- --pair: connect the person's other devices with ONE link (G10b-3) ----------------
+   The pairing link is  <siteUrl>/#pc=<the PC link's client code>  (a URL fragment: browsers never send it to a server). Opened on any device it pairs that device with this PC's link
+   (the page does the rest). This puts it in the Windows clipboard, so it can be pasted into a message to oneself, and opens it in this PC's own browser, which pairs this PC too.
+   The code is the MASTER secret of the link (it can queue conversions, read results, replace the worker token, remove the link), so: it is read from the settings (clientCode: the code or the whole
+   link) or from pc-code.txt next to them; it goes to the clipboard through the standard input of the tool, to the browser as ONE argument (no shell is ever involved, nothing is put in a command
+   line string); and it is never printed - not by the log (which hides it) and not on the console, unless --show is given. Nothing is sent to the site by this command. */
+const PAIR_TOOLS = {
+  win32: { copy: ['clip', []], open: ['rundll32', ['url.dll,FileProtocolHandler']] },
+  darwin: { copy: ['pbcopy', []], open: ['open', []] },
+  linux: { copy: ['xclip', ['-selection', 'clipboard']], open: ['xdg-open', []] }
+};
+
+/* where the code is: the settings' clientCode, else pc-code.txt next to the settings file (or in ~/.ppp-home-worker when the settings are only the environment).
+   { code, from } | { code: '', problem, file } - the content of a file is never put in a message. */
+function findPcCode(cfg, deps) {
+  deps = deps || {};
+  const read = deps.readFile || (f => fs.readFileSync(f, 'utf8'));
+  if (cfg.clientCode) return { code: cfg.clientCode, from: 'settings' };
+  const file = path.join(cfg._file ? path.dirname(cfg._file) : path.join((deps.homedir || os.homedir)(), '.ppp-home-worker'), 'pc-code.txt');
+  let text = null;
+  try { text = read(file).replace(/^﻿/, ''); } catch (e) { text = null; }
+  if (text === null) return { code: '', problem: cfg._clientCodeGiven ? 'bad-setting' : 'none', file: file };
+  const code = codeFrom(text);
+  return code ? { code: code, from: file } : { code: '', problem: 'bad-file', file: file };
+}
+
+/* run a tool with no shell: argv, and (copy) the text on its standard input. Resolves { ok, why } - never rejects. */
+function runPiped(spawnFn, cmd, args, input) {
+  return new Promise(resolve => {
+    let child;
+    try { child = spawnFn(cmd, args, { windowsHide: true, shell: false, stdio: [input == null ? 'ignore' : 'pipe', 'ignore', 'ignore'] }); }
+    catch (e) { return resolve({ ok: false, why: String((e && e.code) || (e && e.message) || e) }); }
+    let done = false;
+    const fin = r => { if (!done) { done = true; clearTimeout(timer); resolve(r); } };
+    const timer = setTimeout(() => { try { child.kill(); } catch (e) { /* gone */ } fin({ ok: false, why: 'timeout' }); }, 15000);
+    child.on('error', e => fin({ ok: false, why: String((e && e.code) || (e && e.message) || e) }));
+    child.on('close', code => fin({ ok: code === 0, why: 'exit ' + code }));
+    if (input != null && child.stdin) { child.stdin.on('error', () => { /* the tool went away: close says so */ }); child.stdin.end(input); }
+  });
+}
+
+/* deps (tests): spawn, platform, tools ({ copy: [cmd, args], open: [cmd, args] }), out (the console, for --show), stdout and stderr (what the log writes to), log, readFile, homedir, show */
+async function pairThisPc(cfg, deps) {
+  deps = deps || {};
+  const found = findPcCode(cfg, deps);
+  const secretCfg = Object.assign({}, cfg, { clientCode: found.code || cfg.clientCode });
+  const log = deps.log || makeLog(secretCfg, deps.stdout, deps.stderr);
+  const out = deps.out || (s => process.stdout.write(s + '\n'));
+  const say = (ko, en) => { log(ko); log(en); };
+  const warn = (ko, en) => { log.warn(ko); log.warn(en); };
+  const bad = siteProblems(cfg);
+  if (bad.length) { bad.forEach(b => log.warn('Settings: ' + b)); warn('사이트 주소(siteUrl)를 설정 파일에 적어 주세요.', 'Put the site address (siteUrl) in the settings file.'); return 1; }
+  if (!found.code) {
+    if (found.problem === 'bad-file') warn('pc-code.txt 안의 내용이 PC 코드(또는 링크)가 아니에요. ' + found.file + ' 를 열어 PPP에서 복사한 링크를 다시 붙여 넣어 주세요.', 'The text in pc-code.txt is not a PC code or a pairing link. Paste the link copied from PPP again: ' + found.file);
+    else if (found.problem === 'bad-setting') warn('설정의 clientCode가 PC 코드(64자리 영문·숫자)나 링크가 아니에요.', 'clientCode in the settings is not a PC code (64 letters and digits) or a pairing link.');
+    else warn('이 PC가 아직 PC 링크의 코드를 몰라요. PPP > 설정 > 내 PC 연결 > "다른 기기 연결: 링크 복사"로 링크를 복사한 뒤, 이 파일에 붙여 넣고 다시 실행하세요: ' + found.file, 'This PC does not know the PC link code yet. In PPP: Settings > Connect my PC > "Connect another device: copy link", then paste the link into this file and run this again: ' + found.file + ' (or put "clientCode" in the settings).');
+    return 1;
+  }
+  const link = cfg.siteUrl.replace(/\/+$/, '') + '/#pc=' + found.code;
+  /* the link goes to a program as one argument: it must be exactly what it should be, an http(s) address with no space, quote or shell character in it */
+  if (!/^https?:\/\/[A-Za-z0-9.\-_:[\]]+(\/[A-Za-z0-9._~\-/]*)?\/#pc=[0-9a-f]{64}$/.test(link)) { warn('사이트 주소(siteUrl)에 쓸 수 없는 글자가 있어요.', 'siteUrl has characters that cannot be used in a link.'); return 1; }
+  const tools = deps.tools || PAIR_TOOLS[deps.platform || process.platform];
+  if (!tools) {
+    warn('이 운영체제에서는 링크를 자동으로 복사하거나 열 수 없어요. --show 로 실행해 링크를 직접 복사하세요.', 'Copying and opening the link is not supported on this system. Run with --show and copy the link yourself.');
+    if (deps.show) out(link);
+    return 1;
+  }
+  const spawnFn = deps.spawn || spawn;
+  const copied = await runPiped(spawnFn, tools.copy[0], tools.copy[1], link);
+  const opened = await runPiped(spawnFn, tools.open[0], tools.open[1].concat([link]), null);
+  if (deps.show) out(link);
+  if (copied.ok && opened.ok) { say('이 PC가 연결됐어요. 휴대폰용 링크를 복사했어요. 나에게 보내는 메시지에 붙여 넣고 휴대폰에서 열어 주세요.', 'This PC is connected. The link for your phone is copied: paste it in a message to yourself and open it on the phone.'); return 0; }
+  if (copied.ok) {
+    say('휴대폰용 링크를 복사했어요. 나에게 보내는 메시지에 붙여 넣고 휴대폰에서 열어 주세요.', 'The link for your phone is copied: paste it in a message to yourself and open it on the phone.');
+    warn('이 PC의 브라우저는 열지 못했어요. 이 PC에서도 쓰려면 복사한 링크를 브라우저 주소창에 붙여 넣으세요.', 'This PC\'s browser could not be opened: paste the copied link into its address bar to connect this PC too.');
+    return 0;
+  }
+  warn('링크를 복사하지 못했어요. --show 로 다시 실행해 링크를 직접 복사하세요.', 'The link could not be copied. Run again with --show and copy it yourself.');
+  return 1;
+}
+
+async function main(argv, deps) {
   const args = argv.slice(2);
   if (args.includes('--help') || args.includes('-h')) {
     console.log(fs.readFileSync(__filename, 'utf8').split('*/')[0].replace(/^#!.*\n\/\*/, '').trim());
@@ -690,6 +795,7 @@ async function main(argv) {
   const opt = n => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
   let cfg;
   try { cfg = loadConfig(opt('--config')); } catch (e) { console.error(e.message); return 1; }
+  if (args.includes('--pair')) return pairThisPc(cfg, Object.assign({ show: args.includes('--show') }, deps && deps.pair));
   const log = makeLog(cfg);
   if (args.includes('--check')) return checkSetup(cfg, log);
   const problems = configProblems(cfg);
@@ -716,7 +822,7 @@ async function main(argv) {
   return args.includes('--once') ? w.runOnce() : w.runForever();
 }
 
-module.exports = { loadConfig, configProblems, createWorker, checkSetup, makeLog, request, downloadTo, runTool, looksLikeAudioFile, DEFAULTS, VERSION };
+module.exports = { main, loadConfig, configProblems, siteProblems, codeFrom, findPcCode, pairThisPc, createWorker, checkSetup, makeLog, request, downloadTo, runTool, looksLikeAudioFile, DEFAULTS, VERSION };
 
 if (require.main === module) {
   main(process.argv).then(code => process.exit(code), e => { console.error('The worker stopped: ' + (e && e.message || e)); process.exit(1); });

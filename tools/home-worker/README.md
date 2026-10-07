@@ -13,14 +13,27 @@ PPP 사이트(무료 서버)는 강력한 피아노 모델(TransKun + Kong)을 �
 
 > 한계: PC가 켜져 있고 워커가 돌고 있어야 합니다. 요청한 뒤 PC가 확인하러 올 때까지(기본 약 한 시간) 기다릴 수 있어요. 바로 시작하려면 아래 바로가기(`run-once.cmd`)를 여세요. 유튜브 링크만 됩니다(파일 업로드는 아직 아님). 도우미의 박자/페달 정보는 쓰지 않아요.
 
+## 내 기기 연결하기 — 제일 쉬운 길 (G10b-3)
+
+**이미 이 PC에 워커가 있다면, 1단계: `tools\home-worker\pair.cmd` 를 더블클릭하세요.**
+
+1. `pair.cmd` 를 더블클릭합니다. 연결 링크가 **클립보드에 복사**되고, 이 PC의 브라우저가 그 링크로 열려 **이 PC도 연결**돼요. 화면에는 "이 PC가 연결됐어요. 휴대폰용 링크를 복사했어요. 나에게 보내는 메시지에 붙여 넣고 휴대폰에서 열어 주세요." 라고 나와요.
+2. 복사된 링크를 **나에게 보내는 메시지**(카카오톡 "나와의 채팅" 등)에 붙여 넣고, 휴대폰에서 그 링크를 누르세요. 휴대폰이 바로 연결되고 "PC가 연결됐어요" 알림이 떠요. 끝. (다른 기기도 같은 링크를 열기만 하면 돼요. 링크는 몇 번이고 다시 쓸 수 있어요.)
+
+- **처음 한 번만** PC가 PC 코드를 알아야 해요. PPP → 설정 → 내 PC 연결 → **다른 기기 연결: 링크 복사**로 링크를 복사한 뒤, 설정 파일 **옆에** `pc-code.txt` 파일을 만들어 그대로 붙여 넣으세요. (설정 파일이 `%USERPROFILE%\.ppp-home-worker\worker.config.json` 이면 `%USERPROFILE%\.ppp-home-worker\pc-code.txt`.) 링크 대신 코드만 넣어도 되고, 설정 파일에 `"clientCode": "<링크 또는 코드>"` 로 적어도 돼요(없어도 워커는 그대로 일해요: `clientCode`는 `--pair` 에만 쓰여요). `pc-code.txt` 는 git에 올라가지 않아요.
+- **링크는 비밀번호와 같아요.** 링크(또는 코드)를 가진 사람은 누구나 내 PC로 변환을 보내고 결과를 볼 수 있어요. **나에게만** 보내세요. 새어 나갔다면 설정 → 내 PC 연결 → 더 보기 → **링크 지우기**로 지우고 새 링크를 만드세요(이전 링크는 바로 멈춰요).
+- `pair.cmd` 화면에는 링크가 나오지 않아요(로그에도 남지 않아요). 직접 보려면 `node tools/home-worker/worker.js --pair --show`.
+- 링크가 안 열리는 기기(앱 안의 브라우저 등)는 설정 → 내 PC 연결 → 더 보기 → **다른 기기의 PC 링크 쓰기**에 링크를 붙여 넣으세요.
+- **새 PC** 라면 아래 4단계 설정을 먼저 하세요(바뀐 것 없음).
+
 ## 4단계 설정 (로그인 필요 없음)
 
 1. **변환 환경 준비** (한 번만). 저장소 루트 `README.md`의 "Making a score from a recording" > Setup을 따라 `tools/transcribe-venv`, Kong 체크포인트(`tools/piano-transcription/*.pth`), `pip install transkun`, ffmpeg를 준비하세요. NVIDIA GPU용 PyTorch(CUDA)가 있으면 훨씬 빨라요(곡 1분에 약 10초). 이 PC에서 이미 `npm run omr`로 변환이 되면 준비 끝입니다.
-2. **PC 링크 만들기.** PPP → **설정 → 내 PC 연결 → 내 PC 링크 만들기**. (로그인하지 않아도 돼요.) 화면에 **PC 토큰**과 **PC 코드**가 **한 번만** 나옵니다. 둘 다 복사해 두세요. 화면에는 PC에 넣을 줄(`"siteUrl"`, `"token"`)과 명령도 그대로 나와요. 토큰을 잃어버렸다면 **새 PC 토큰**을 만드세요(이전 토큰은 바로 멈춥니다).
+2. **PC 링크 만들기.** PPP → **설정 → 내 PC 연결 → 내 PC 링크 만들기**. (로그인하지 않아도 돼요.) 화면에 순서대로 나옵니다: **① 연결 링크**(복사해서 다른 기기에서 여세요) 그리고 **② PC에 워커가 아직 없을 때만**: **PC 토큰**(한 번만 보여요)과 PC에 넣을 줄(`"siteUrl"`, `"token"`)과 명령. 토큰을 잃어버렸다면 **더 보기 → 새 PC 토큰**을 만드세요(이전 토큰은 바로 멈춥니다).
 3. **설정 파일.** `tools/home-worker/worker.config.example.json`을 같은 폴더의 `worker.config.json`으로 복사하고 `siteUrl`(사이트 주소)과 `token`(PC 토큰)을 채우세요. 파일 경로가 다르면 `pythonPath`, `transcribePy`, `kongCheckpoint`도 고치세요. (`worker.config.json`은 git에 올라가지 않아요.)
 4. **점검, 그리고 실행.** `node tools/home-worker/worker.js --check` — 사이트, 토큰, ffmpeg, Python(torch/transkun), 체크포인트를 확인하고 고칠 것을 알려 줘요. 문제가 없으면 `node tools/home-worker/worker.js --once`(아래 표). 워커가 한 번이라도 사이트에 접속하면 PPP의 악보 추가 화면에 **고품질 변환 (내 PC)** 버튼이 나타나요.
 
-**다른 기기에서도 쓰려면:** 링크를 만든 기기에서 설정 → 내 PC 연결 → **내 PC 코드 보기**로 코드를 보고, 다른 기기의 설정 → 내 PC 연결 → **다른 기기의 PC 링크 쓰기**에 붙여 넣으세요. 두 기기가 같은 변환 목록을 봅니다. 코드를 가진 사람은 누구나 내 PC로 변환을 요청하고 그 결과를 볼 수 있으니 **비밀로 간직하세요.** 새어 나갔다면 **링크 지우기**로 지우고 새로 만드세요.
+**다른 기기에서도 쓰려면:** 위의 "제일 쉬운 길"처럼 연결 링크를 그 기기에서 열기만 하면 돼요(링크는 설정 → 내 PC 연결 → **다른 기기 연결: 링크 복사**, 폰에서는 **공유**). 두 기기가 같은 변환 목록을 봅니다. 링크(코드)를 가진 사람은 누구나 내 PC로 변환을 요청하고 그 결과를 볼 수 있으니 **비밀로 간직하세요.** 새어 나갔다면 **더 보기 → 링크 지우기**로 지우고 새로 만드세요. (코드만 보고 싶다면 더 보기 → 내 PC 코드 보기.)
 
 ## 실행하는 방법
 
@@ -64,6 +77,7 @@ The free PPP server cannot run the strong piano models (TransKun + Kong). This w
 Setup in 4 steps: (1) the transcription environment from the root README (`tools/transcribe-venv`, Kong checkpoint, `transkun`, ffmpeg); (2) Settings > Connect my PC > **Create my PC link**, copy the PC token (the page shows the exact lines to put on the PC; keep the settings file in your own user folder, e.g. `%USERPROFILE%\.ppp-home-worker\worker.config.json`, not in a synced or shared project folder - or give the token only through the `PPP_WORKER_TOKEN` environment variable); (3) copy `worker.config.example.json` to `worker.config.json` and fill in `siteUrl` and `token`; (4) `node tools/home-worker/worker.js --check`, then `node tools/home-worker/worker.js --once` (or leave `node tools/home-worker/worker.js` running).
 
 - **Keep the code and the token secret.** Anyone with the PC code can queue conversions for your PC and read the results; anyone with the token can take your PC's work. If either leaks: **New PC token** (the old one stops at once) or **Remove link** (the link and its conversions are deleted), then make a new link. A link nobody uses for 60 days, or whose PC never connects and that nobody has used for 14 days, is purged by the site. Tokens from the earlier version of this feature (which needed an account) no longer work: make a new link.
+- **Connecting your devices is one tap (G10b-3).** A *pairing link* is `https://<site>/#pc=<the 64-hex PC code>`; opening it on any device pairs that device (the part after `#` is a URL fragment: browsers never send it to a server, and the page removes it from the address bar before doing anything else). **On a PC that already has the worker: double-click `pair.cmd`** (`node tools/home-worker/worker.js --pair`): it copies the link to the clipboard (the `clip` tool, the link on its standard input) and opens it in the PC's browser (`rundll32 url.dll,FileProtocolHandler <link>`, one argument, no shell), then says in Korean that the PC is connected and the link for the phone is copied: paste it in a message to yourself and open it on the phone. It needs the PC code once: put the link (or just the code) in `pc-code.txt` next to the settings file, or give `"clientCode"` in the settings (optional; only `--pair` reads it; never logged, never sent to the site). The link is printed only with `--show`. **The link is a master secret like the code**: send it only to yourself; if it leaks, Settings > Connect my PC > More > **Remove link**, then make a new one. In the page: Settings > Connect my PC > **Connect another device: copy link** (and **Share** on a phone); the old buttons are under **More**.
 - `--once`: one check, process everything waiting, exit (exit codes: 0 ok, 1 a failure or the site unreachable, 2 token rejected). Use `run-once.cmd` or the desktop shortcut made by `create-desktop-shortcut.ps1` (run it yourself; nothing is installed for you).
 - Waiting is the **site's** call (`nextPollSeconds`: 15 s while something is queued, claimed or just finished, otherwise **an hour** by default, and the site will not go below 15 minutes); `idlePollSeconds` in the settings can only lengthen it. The shorter the idle interval, the longer the free server stays awake (15 minutes or less: all month; 20 minutes: about 77%; an hour: about 26%). Free-tier arithmetic: `docs/GOALS/G10B_HOME_WORKER.md`.
 - Limits: the PC must be on with the worker running; latency up to the check interval; only your own link's jobs; YouTube links only; the helper's beats and pedal are not used; at most 15 minutes of audio; results are kept 3 days.
