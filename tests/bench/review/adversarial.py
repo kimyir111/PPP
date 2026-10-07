@@ -143,11 +143,15 @@ def check_mutations() -> None:
 def _ideal_prediction(xml: str, qpm: float, has_tempo: bool) -> str:
     """The reference as PPP should write it for the benchmark's performance of it (fixer, §18).
 
-    Two references in core are not that as committed, and the difference is real, not a benchmark
-    artefact: a file with no tempo cannot tell PPP to play at the qpm it was performed at (missing
-    output scores 0, §17 B1), and PPP's player reads <octave-shift> an octave off (the app_ottava
-    known failure, §17 M9). The ideal output states the performed tempo and writes the same sounding
-    pitches without octave-shift, which every reader, PPP's included, plays right."""
+    One kind of reference in core is not that as committed, and the difference is real, not a
+    benchmark artefact: a file with no tempo cannot tell PPP to play at the qpm it was performed at
+    (missing output scores 0, §17 B1). The ideal output states the performed tempo and writes the
+    same sounding pitches without octave-shift, which every reader plays right. (The octave-shift
+    references were the second kind until MX-1: the app then read <pitch> as the written note and
+    played an octave line an octave off, §17 M9. Since MX-1 the app, and since G10a-6 the benchmark's
+    reading of a prediction (musicxml.PREDICTION_OTTAVA), take <pitch> as the sounding pitch, so the
+    raw file is ideal for them too; stripping the line stays harmless and is kept so that the ideal
+    is the same pitches for every reader, see the octave check in check_oracle.)"""
     xml = re.sub(r"<octave-shift\b[^>]*/>|<octave-shift\b[^>]*>.*?</octave-shift>", "", xml, flags=re.S)
     if not has_tempo:
         mark = ('<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit>'
@@ -155,6 +159,17 @@ def _ideal_prediction(xml: str, qpm: float, has_tempo: bool) -> str:
         first = re.search(r"<measure\b[^>]*>", xml)
         xml = xml[:first.end()] + mark + xml[first.end():]
     return xml
+
+
+@contextlib.contextmanager
+def _prediction_ottava(mode: str):
+    """Read predictions' octave lines in ``mode`` for a moment (evaluate.evaluate_timed reads the module attribute per call)."""
+    old = musicxml.PREDICTION_OTTAVA
+    musicxml.PREDICTION_OTTAVA = mode
+    try:
+        yield
+    finally:
+        musicxml.PREDICTION_OTTAVA = old
 
 
 def check_oracle() -> None:
@@ -165,7 +180,8 @@ def check_oracle() -> None:
             "notation.ioi.accuracy", "struct.time_sig.exact", "struct.key.fifths_exact", "struct.tempo.ok_effective"]
     below = Counter()
     examples = {}
-    raw_ottava, raw_ottava_caught, raw_notempo, raw_notempo_caught = [], [], [], []
+    raw_ottava, raw_ottava_right, raw_ottava_caught, raw_notempo, raw_notempo_caught = [], [], [], [], []
+    ident_old_sum = 0.0
     for rid in s["references"]:
         e = refs[rid]
         ref = corpus.read_reference(e)
@@ -191,7 +207,15 @@ def check_oracle() -> None:
             mr = score(raw)
             if shifted and ref.diagnostics.get("ottava_shifted_notes"):
                 raw_ottava.append(rid)
-                if (mr.get("notes.identity.f1") or 0) < 1 - 1e-9:
+                ident = mr.get("notes.identity.f1")   # read the MusicXML way (PREDICTION_OTTAVA, the app's since MX-1)
+                if ident is not None and ident >= 1 - 1e-9:
+                    raw_ottava_right.append(rid)
+                # the same file read the way the app read it before MX-1 (G10a-6 moved the benchmark off it)
+                with _prediction_ottava("app"):
+                    ma = score(raw)
+                ident_old = ma.get("notes.identity.f1") or 0
+                ident_old_sum += ident_old
+                if ident_old < 1 - 1e-9:
                     raw_ottava_caught.append(rid)
             if not has_tempo:
                 raw_notempo.append(rid)
@@ -201,10 +225,20 @@ def check_oracle() -> None:
     detail = f"{len(s['references'])} core references ({pick} with a pickup bar); below perfect: " + (
         ", ".join(f"{k} {n} (e.g. {examples[k]})" for k, n in below.items()) or "none")
     report("the ideal prediction of a reference's performance scores perfectly", not below, detail)
-    # the committed file is not ideal for these, and scoring it perfect would hide a real PPP failure
-    report("a reference PPP would play an octave off is not scored perfect",
-           bool(raw_ottava) and raw_ottava_caught == raw_ottava,
-           f"{len(raw_ottava_caught)}/{len(raw_ottava)} octave-shift references lose pitch identity in PPP's reading")
+    # Octave lines. Before MX-1 the app played <pitch> under an octave line an octave off, the raw file
+    # was not ideal for PPP, and this check demanded that it score below perfect (8/8 lost pitch
+    # identity). The app reads <pitch> as the sounding pitch since MX-1, and the benchmark's reading of
+    # a prediction followed in G10a-6 (musicxml.PREDICTION_OTTAVA = "standard"): the raw file now scores
+    # perfectly, and that is the true state. What must stay true is that the benchmark would still see a
+    # reader that gets the octave wrong, so the same files are read the pre-MX-1 way ("app") and each
+    # must lose pitch identity there. Without that half, a metric blind to octaves would pass the row.
+    n_ot = len(raw_ottava)
+    report("an octave-shift reference scores perfectly read the MusicXML way, and an octave-off reading is caught",
+           bool(raw_ottava) and raw_ottava_right == raw_ottava and raw_ottava_caught == raw_ottava,
+           f"{len(raw_ottava_right)}/{n_ot} octave-shift references keep notes.identity.f1 = 1 read the MusicXML way "
+           f"(PREDICTION_OTTAVA={musicxml.PREDICTION_OTTAVA}); read the pre-MX-1 way (ottava=app) "
+           f"{len(raw_ottava_caught)}/{n_ot} lose pitch identity (mean notes.identity.f1 "
+           f"{ident_old_sum / n_ot if n_ot else float('nan'):.3f})")
     report("a reference with no tempo, performed at a benchmark tempo, is not usable as written",
            bool(raw_notempo) and raw_notempo_caught == raw_notempo,
            f"{len(raw_notempo_caught)}/{len(raw_notempo)} tempo-less references fail playback_tempo")

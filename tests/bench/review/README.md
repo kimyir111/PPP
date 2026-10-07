@@ -58,6 +58,11 @@ weaker than the finding it came from:
   pitches without octave-shift, the performed tempo written in) and still demands a perfect score
   on every metric for all 141 core references. Two new checks require the raw files to score below
   perfect for exactly those reasons (8/8 and 8/8), so the benchmark cannot hide either failure.
+  Since MX-1 the app plays an octave line right and since G10a-6 the benchmark reads a prediction's
+  `<pitch>` as the sounding pitch (`musicxml.PREDICTION_OTTAVA`), so the octave-shift half changed
+  on 2026-10-08: the raw file now scores perfectly (8/8 keep `notes.identity.f1` = 1), and the row
+  instead reads the same files the pre-MX-1 way (`ottava="app"`) and demands that every one loses
+  pitch identity (8/8, mean 0.900), so a metric blind to an octave error still fails the check.
 - **octave-shift**: no octave-shift score may be left out silently; each is a reference read the
   MusicXML way or excluded for another stated reason (licence, broken bars), the app's reading is a
   counted KNOWN_FAILURE, and the correctness fixtures record the departure.
