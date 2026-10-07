@@ -868,7 +868,7 @@ const NEW_KEYS = [
         return { refusal: S.songArrange && S.songArrange.singleRefusal ? S.songArrange.singleRefusal.reason : null, notice: !!document.querySelector('[data-single-refusal]'), newKeys: keys, runs: window.__runs.length, conv: window.__conv.slice() };
       }, before);
     };
-    const pk2 = await openPage(browser);
+    const pk2 = await openPage(browser, { reduce: true });   /* G10c-1b: this section is the reduction's: its runs and conversions are what it counts */
     await addChecker(pk2);
     const impK = await importHeard(pk2, heardFor.sextuplets);
     const sK = await stateOf(pk2);
@@ -921,7 +921,7 @@ const NEW_KEYS = [
     await pk2.close();
     /* G10a-5b: the review screen's "Apply arrangement" has the same two retries as the Song Arranger (it used to arrange once, and was refused where the Song Arranger arranged) */
     const reviewApply = async mode => {
-      const pg = await openPage(browser);
+      const pg = await openPage(browser, { reduce: true });
       await addChecker(pg);
       await importHeard(pg, heardFor.sextuplets);
       await pg.waitForFunction(() => !!(window.PPPCandidates && window.PPPCandidates.runAsync), { timeout: 60000 });
@@ -942,7 +942,7 @@ const NEW_KEYS = [
     ok('refused twice: the classic conversion of the same heard notes is arranged (three runs, the last conversion is the classic one), the copy says classicFallback', vC.engine === 'ppp.g9-single' && vC.runs === 3 && vC.classic === true && !vC.hands && !vC.single && vC.conv.length >= 2 && vC.conv[vC.conv.length - 1].recording === null && vC.clean, JSON.stringify(vC));
     ok('refused every time: the standard arrangement with the refusal named, three runs (the notice as before)', vD.engine !== 'ppp.g9-single' && vD.single === 'ALL_CANDIDATES_HAVE_HARD_VIOLATIONS' && vD.runs === 3 && vD.clean, JSON.stringify(vD));
     /* a classic song: the same refusal is not retried */
-    const pk3 = await openPage(browser, { legacy: true });
+    const pk3 = await openPage(browser, { legacy: true, reduce: true });
     await addChecker(pk3);
     await importHeard(pk3, heardFor.sextuplets);
     const sK3 = await stateOf(pk3);
