@@ -12,6 +12,7 @@
      node tools/home-worker/worker.js --register-protocol     (G10b-4) Windows, this user only (HKCU, no admin): let the PPP page start --once at once from this PC's browser (the pppworker:// link; it takes no argument)
      node tools/home-worker/worker.js --unregister-protocol   take that registration away again;  --protocol-status says whether it is there and where it points
      node tools/home-worker/worker.js --log-file [file]       also append every line (the token is hidden as ever) to a file; by itself: worker.log next to the settings file (used by run-once-hidden.cmd)
+     node tools/home-worker/worker.js --serve      (G10b-6) stay running and answer the PPP page of this PC on 127.0.0.1 (the localhost bridge: one-press connect, live status, instant start); install-startup.cmd starts it at every sign-in
      node tools/home-worker/worker.js --config <file>
 
    One job: claim -> download the audio (the site's /api/youtube-audio, as the page does) -> ffmpeg to a 44.1 kHz stereo WAV and a
@@ -32,6 +33,7 @@ const https = require('https');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 const { URL } = require('url');
+const Bridge = require('./bridge');
 
 const REPO = path.resolve(__dirname, '..', '..');
 const VERSION = '1.0';
@@ -83,7 +85,9 @@ const DEFAULTS = {
   maxSeconds: Result.LIMITS.MAX_SECONDS,
   maxAudioMB: 120,
   allowInsecure: false,
-  keepScratch: false
+  keepScratch: false,
+  bridgePort: 0,          /* G10b-6: the port of the localhost bridge (0: the default, 47613) */
+  bridgeLink: true        /* G10b-6: false = GET /v1/link never gives the client code to a second browser of this PC */
 };
 
 function firstExisting(list) {
@@ -99,15 +103,16 @@ function findKongCheckpoint(dir) {
 }
 
 /* the settings file (JSON), the environment, and what can be found next to transcribe.py */
-function loadConfig(file, env) {
+function loadConfig(file, env, opt) {
   env = env || process.env;
+  opt = opt || {};
   let raw = {};
   /* next to worker.js, or under the person's own profile (a folder nobody else, and no cloud sync of the project, can see) */
   const where = file || env.PPP_WORKER_CONFIG || firstExisting([path.join(__dirname, 'worker.config.json'), path.join(os.homedir(), '.ppp-home-worker', 'worker.config.json')]);
   if (where) {
     try { raw = JSON.parse(fs.readFileSync(where, 'utf8').replace(/^\uFEFF/, '')); }
     catch (e) { throw new Error('The settings file ' + where + ' could not be read as JSON: ' + e.message); }
-  } else if (!env.PPP_WORKER_TOKEN) {
+  } else if (!env.PPP_WORKER_TOKEN && !(opt.serve && env.PPP_WORKER_SITE)) {
     throw new Error('There is no settings file. Copy worker.config.example.json to worker.config.json (next to worker.js, or in ' + path.join(os.homedir(), '.ppp-home-worker') + ') and fill it in; or set PPP_WORKER_TOKEN and PPP_WORKER_SITE.');
   }
   const cfg = Object.assign({}, DEFAULTS, raw);
@@ -197,7 +202,9 @@ function request(cfg, method, p, o) {
     try { u = new URL(cfg.siteUrl + p); } catch (e) { return reject(new NetError('bad address')); }
     const lib = u.protocol === 'http:' ? http : https;
     const body = o.json == null ? null : Buffer.from(JSON.stringify(o.json));
-    const headers = { 'Authorization': 'Bearer ' + cfg.token, 'Accept': 'application/json', 'User-Agent': 'ppp-home-worker/' + VERSION };
+    const headers = { 'Accept': 'application/json', 'User-Agent': 'ppp-home-worker/' + VERSION };
+    /* G10b-6: o.pcCode = a call made WITH THE PC LINK'S CODE (the site's browser routes: status of a link, a new worker token); no token is sent with it */
+    if (o.pcCode) headers['X-PPP-PC'] = o.pcCode; else headers['Authorization'] = 'Bearer ' + cfg.token;
     if (body) { headers['Content-Type'] = 'application/json'; headers['Content-Length'] = body.length; }
     const req = lib.request({ protocol: u.protocol, hostname: u.hostname, port: u.port || undefined, path: u.pathname + u.search, method: method, headers: headers, agent: false }, res => {
       const chunks = [];
@@ -367,17 +374,25 @@ function createWorker(cfg, deps) {
   const run = deps.runTool || runTool;
   const callSite = deps.request || request;
   const download = deps.download || downloadTo;
+  /* G10b-6: the loop and a "run now" from the bridge can both be asleep (a retry wait): wake() wakes every sleeper, not only the last one */
+  const sleepers = new Set();
+  const wakeAll = () => { Array.from(sleepers).forEach(f => f()); };
   const ctl = {
     stop: false, stopNow: false, cancelled: false, child: null, wake: null,
     sleep(ms) {
       return new Promise(resolve => {
         ms = Number.isFinite(ms) && ms >= 0 ? Math.min(ms, DAY_S * 1000) : 3600 * 1000;   /* the last line of defence: never longer than a day, never NaN */
         const t = setTimeout(done, ms * (deps.waitScale == null ? 1 : deps.waitScale));   /* waitScale: tests only */
-        function done() { clearTimeout(t); ctl.wake = null; resolve(); }
-        ctl.wake = done;
+        function done() { clearTimeout(t); sleepers.delete(done); ctl.wake = sleepers.size ? wakeAll : null; resolve(); }
+        sleepers.add(done);
+        ctl.wake = wakeAll;
       });
     }
   };
+  /* G10b-6: what the localhost bridge shows (bridge.js reads it; nothing here is secret): the running state, the job in hand, the last look at the site */
+  const state = { running: false, job: null, rerun: 0, lastRunAt: 0, lastCheckAt: 0, lastCheckOk: null, nextCheckAt: 0, rejected: false, unsaved: false };
+  /* the run lock around one stretch of work (--serve and the bridge's "run now"); the default takes none (--once takes its own in main) */
+  const lockApi = deps.lockApi || { take: () => ({ ok: true }), release: () => {} };
   const scratchRoot = cfg.scratchDir;
   const stats = { done: 0, failed: 0, checks: 0 };
 
@@ -525,6 +540,7 @@ function createWorker(cfg, deps) {
       return false;
     }
     const label = job.title ? '"' + job.title + '"' : job.url;
+    state.job = { title: String(job.title || ''), stage: 'download', pct: 0 };
     log('A conversion is waiting: ' + label + (job.attempt > 1 ? ' (attempt ' + job.attempt + ' of ' + (job.maxAttempts || 3) + ')' : ''));
     fs.mkdirSync(scratchRoot, { recursive: true });
     const dir = fs.mkdtempSync(path.join(scratchRoot, 'job-'));
@@ -537,19 +553,19 @@ function createWorker(cfg, deps) {
       check();
       const audio = await getAudio(job, dir);
       log('Audio ready: ' + (audio.bytes / 1048576).toFixed(1) + ' MB (' + audio.how + '). Decoding...');
-      stage = 'decode'; pct = 0; await beat(job, stage, 0);
+      stage = 'decode'; pct = 0; state.job.stage = stage; state.job.pct = 0; await beat(job, stage, 0);
       const wavs = await decode(audio.file, dir);
       log('Decoded ' + Math.round(wavs.seconds) + ' s of audio. Starting the piano models' + (cfg.kongCheckpoint ? '' : ' (no Kong checkpoint found: TransKun alone)') + '.');
-      stage = 'transcribe'; pct = 0;
+      stage = 'transcribe'; pct = 0; state.job.stage = stage; state.job.pct = 0;
       let lastShown = -1;
       const raw = await transcribe(job, dir, wavs, p => {
-        pct = p;
+        pct = p; if (state.job) state.job.pct = p;
         const s = Math.floor(p * 10) * 10;
         if (s > lastShown) { lastShown = s; log('  listening: ' + Math.round(p * 100) + '%'); }
       });
       const r = toResult(raw);
       log('Heard ' + r.result.notes.length + ' notes (' + r.result.ensemble.uncertain + ' more were kept apart: the models did not agree), ' + Math.round(r.result.duration) + ' s of music, ' + Math.round((Date.now() - t0) / 1000) + ' s here. Sending them to the site...');
-      stage = 'upload'; pct = 1;
+      stage = 'upload'; pct = 1; state.job.stage = stage; state.job.pct = 1;
       check();
       const sent = await postResult(job, r.result);
       if (sent === 'ok') { stats.done++; log('Done: the notes are on the site (' + (r.bytes / 1024).toFixed(0) + ' KB). Open PPP to see the score.'); }
@@ -566,6 +582,7 @@ function createWorker(cfg, deps) {
       return false;
     } finally {
       clearInterval(hbTimer);
+      state.job = null;
       ctl.child = null;
       if (!cfg.keepScratch) { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { /* the temp folder is cleaned by the OS in the end */ } }
     }
@@ -573,10 +590,19 @@ function createWorker(cfg, deps) {
 
   /* one poll: { job, nextPollSeconds } or { error } */
   async function poll(once) {
-    const r = await callSite(cfg, 'POST', '/api/worker/claim', { json: { once: !!once, waitSeconds: cfg.idlePollSeconds || 0 }, timeoutMs: 60000 });
+    const used = cfg.token;
+    let r;
+    try { r = await callSite(cfg, 'POST', '/api/worker/claim', { json: { once: !!once, waitSeconds: cfg.idlePollSeconds || 0 }, timeoutMs: 60000 }); }
+    catch (e) { state.lastCheckAt = Date.now(); state.lastCheckOk = false; throw e; }
+    state.lastCheckAt = Date.now(); state.lastCheckOk = r.status === 200;
     stats.checks++;
-    if (r.status === 401) throw Object.assign(new Error('token'), { fatalToken: true });
-    if (r.status === 200 && r.body) return { job: r.body.job || null, next: secs(r.body.nextPollSeconds, 0) };
+    if (r.status === 401) {
+      /* G10b-6: the bridge may have given this worker another token while the question was on its way: the answer was about the old one - look again soon, with the new */
+      if (cfg.token !== used) return { job: null, next: 5 };
+      state.rejected = true;
+      throw Object.assign(new Error('token'), { fatalToken: true });
+    }
+    if (r.status === 200 && r.body) { state.rejected = false; return { job: r.body.job || null, next: secs(r.body.nextPollSeconds, 0) }; }
     return { failed: true, status: r.status, retryAfter: secs(r.headers && r.headers['retry-after'], 0), message: r.body && r.body.error };
   }
   /* --once: a poll that is tried again (3 times, growing waits) when the network or the site is down */
@@ -606,7 +632,7 @@ function createWorker(cfg, deps) {
     return Math.min(DAY_S, Math.max(5, w));
   }
 
-  const tokenRejected = () => log('The site does not accept this token (the PC link was removed, a newer token replaced it, or it is mistyped). Stopping. Get a new token: Settings > Connect my PC > New PC token (or Create my PC link).');
+  const tokenRejected = () => log('The site does not accept this token (the PC link was removed, a newer token replaced it, or it is mistyped).' + (state.serving ? ' Open PPP in a browser on this PC and press "Connect this PC".' : ' Stopping. Get a new token: Settings > Connect my PC > New PC token (or Create my PC link).'));
 
   /* --once: check, do everything waiting, leave. Returns the exit code. */
   async function runOnce() {
@@ -646,17 +672,25 @@ function createWorker(cfg, deps) {
   }
   const jitter = deps.jitter || (() => Math.floor(Math.random() * 10));
 
-  /* the loop: poll, work, wait as told. Resolves when stopped; returns the exit code. */
-  async function runForever() {
-    log('PPP home worker ' + VERSION + ' is watching ' + cfg.siteUrl + '. Ctrl-C stops it' + (cfg.idlePollSeconds ? '; idle checks are at least ' + humanWait(cfg.idlePollSeconds) + ' apart.' : '.'));
+  /* the loop: poll, work, wait as told. Resolves when stopped; returns the exit code.
+     o.serve (G10b-6, --serve): the loop is the bridge's partner and never ends on its own. It needs a PC link first (it waits, a day at a time, until the bridge hands it one: connect wakes it), a
+     rejected token is not the end (it waits for a new one the same way), and each stretch of work (a check, and the conversion it finds) is held under the run lock so that a --once run (the scheduled task, the
+     desktop shortcut) can never convert at the same time. How long it waits between idle checks is exactly what it was: the site's word (an hour when idle), never shorter. */
+  async function runForever(o) {
+    o = o || {};
+    const serve = !!o.serve;
+    state.serving = serve;
+    log(serve ? 'PPP home worker ' + VERSION + ' is ready for the PPP page of this PC and is watching ' + cfg.siteUrl + '. Ctrl-C stops it' + (cfg.idlePollSeconds ? '; idle checks are at least ' + humanWait(cfg.idlePollSeconds) + ' apart.' : '.')
+      : 'PPP home worker ' + VERSION + ' is watching ' + cfg.siteUrl + '. Ctrl-C stops it' + (cfg.idlePollSeconds ? '; idle checks are at least ' + humanWait(cfg.idlePollSeconds) + ' apart.' : '.'));
     sweepScratch();
     let failures = 0;
     let idleKnown = cfg.idlePollSeconds || 3600;
-    while (!ctl.stop) {
+    /* one stretch: poll, and work if there is a job. { exit } ends the loop, { sleep } is the wait that follows (0: none). */
+    async function stretch() {
       let p, why = null, status = 0, retryAfter = 0, kind = 'net';
       try { p = await poll(false); }
       catch (e) {
-        if (e.fatalToken) { tokenRejected(); return 2; }
+        if (e.fatalToken) { tokenRejected(); return serve ? { sleep: 0 } : { exit: 2 }; }
         why = 'Could not reach the site (' + e.message + ')';
       }
       if (p && p.failed) {
@@ -667,24 +701,69 @@ function createWorker(cfg, deps) {
         failures++;
         const w = failureWait(kind, status, retryAfter, failures, idleKnown) + (status === 404 || status === 405 || status === 410 ? 0 : jitter());
         log(why + '. Trying again in ' + humanWait(w) + '.' + (status === 404 || status === 405 || status === 410 ? ' (This site does not have the conversion queue now.)' : ''));
-        await ctl.sleep(w * 1000);
-        continue;
+        state.nextCheckAt = Date.now() + w * 1000;
+        return { sleep: w };
       }
       failures = 0;
       if (p.next >= 300) idleKnown = Math.max(p.next, cfg.idlePollSeconds || 0);
       if (p.job) {
-        try { await processJob(p.job); } catch (e) { if (e.fatalToken) { tokenRejected(); return 2; } }
-        continue;
+        try { await processJob(p.job); } catch (e) { if (e.fatalToken) { tokenRejected(); return serve ? { sleep: 0 } : { exit: 2 }; } }
+        return { sleep: 0 };
       }
       const w = waitFor(p.next);
+      state.nextCheckAt = Date.now() + w * 1000;
       log('Nothing is waiting. Next check in ' + humanWait(w) + ' (' + clock(new Date(Date.now() + w * 1000)) + ').');
-      await ctl.sleep(w * 1000);
+      return { sleep: w };
+    }
+    while (!ctl.stop) {
+      if (serve && (!cfg.token || state.rejected)) {
+        state.nextCheckAt = 0;
+        if (!state.waitingLogged) { state.waitingLogged = true; log(cfg.token ? 'The PC link is not accepted by the site any more. Open PPP in a browser on this PC and press "Connect this PC".' : 'This PC has no PC link yet. Open PPP in a browser on this PC and press "Connect this PC".'); }
+        await ctl.sleep(DAY_S * 1000);
+        continue;
+      }
+      state.waitingLogged = false;
+      let lock = null, out;
+      if (serve) {
+        lock = lockApi.take();
+        if (!lock.ok) { log('Another run of this worker is going (pid ' + (lock.pid || '?') + '): looking again in a minute.'); await ctl.sleep(60000); continue; }
+        state.running = true;
+      }
+      try { out = await stretch(); }
+      finally { if (serve) { state.running = false; lockApi.release(lock); } }
+      if (out.exit !== undefined) return out.exit;
+      if (out.sleep > 0) await ctl.sleep(out.sleep * 1000);
     }
     log('Stopped.');
     return 0;
   }
 
-  return { runOnce: runOnce, runForever: runForever, processJob: processJob, poll: poll, waitFor: waitFor, toResult: toResult, ctl: ctl, stats: stats, failureWait: failureWait, sweepScratch: sweepScratch, getAudio: getAudio, decode: decode, transcribe: transcribe, log: log };
+  /* G10b-6: "check the site now and convert what is waiting" for the bridge (POST /v1/run): the same work as --once, in this process, under the same run lock, started and left running (the page
+     watches the progress through /v1/status). One at a time: a call that comes while a run is going asks for one more look at the queue when it ends (a link queued a moment after the run's last look is not lost). */
+  function runNow() {
+    if (!cfg.token) return { started: false, reason: 'no-link' };
+    if (state.rejected) return { started: false, reason: 'rejected' };
+    if (ctl.stop) return { started: false, reason: 'stopping' };
+    if (state.running) { state.rerun = Math.min(2, state.rerun + 1); return { started: true, queued: true }; }
+    if (Date.now() - state.lastRunAt < 2000) return { started: false, reason: 'too-soon' };
+    const lock = lockApi.take();
+    if (!lock.ok) return { started: false, reason: 'other-run' };
+    state.running = true; state.lastRunAt = Date.now(); state.rerun = 0;
+    (async () => {
+      try {
+        for (let n = 0; n < 3 && !ctl.stop; n++) {
+          const code = await runOnce();
+          if (code === 2) state.rejected = true;
+          if (!state.rerun) break;
+          state.rerun = 0;
+        }
+      } catch (e) { log.warn('Unexpected: ' + (e && e.stack || e)); }
+      finally { state.running = false; lockApi.release(lock); }
+    })();
+    return { started: true };
+  }
+
+  return { runOnce: runOnce, runForever: runForever, runNow: runNow, state: state, processJob: processJob, poll: poll, waitFor: waitFor, toResult: toResult, ctl: ctl, stats: stats, failureWait: failureWait, sweepScratch: sweepScratch, getAudio: getAudio, decode: decode, transcribe: transcribe, log: log };
 }
 
 /* --check: say what is set up and what is not, without claiming a job */
@@ -991,6 +1070,92 @@ async function protocolStatus(deps) {
   return 0;
 }
 
+/* ---------------- G10b-6: --serve, the localhost bridge (docs/GOALS/G10B_HOME_WORKER.md section 16) ---------------- */
+/* Write the PC link's token and code into the settings file (the file the settings were read from; a new worker.config.json in ~/.ppp-home-worker when there was none). Only these two keys are
+   touched; everything else in the file stays as it is. Written to a temporary file next to it and moved over it, so a power cut cannot leave half a file; a file that cannot be read as JSON is NOT
+   overwritten (it throws). The path is the settings' own, never anything a request said. */
+function saveSettings(cfg, patch, deps) {
+  deps = deps || {};
+  const file = cfg._file || path.join(settingsDirOf(cfg, deps), 'worker.config.json');
+  let raw = {}, existed = true;
+  try { raw = JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '')); }
+  catch (e) {
+    if (e && e.code === 'ENOENT') { existed = false; raw = {}; }
+    else throw Object.assign(new Error('the settings file cannot be read as JSON'), { code: 'EBADSETTINGS' });
+  }
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) throw Object.assign(new Error('the settings file is not a JSON object'), { code: 'EBADSETTINGS' });
+  if (!existed) raw.siteUrl = cfg.siteUrl;
+  if (patch.token !== undefined) raw.token = patch.token;
+  if (patch.clientCode !== undefined) raw.clientCode = patch.clientCode;
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = file + '.' + process.pid + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(raw, null, 2) + '\n', { mode: 0o600 });
+  try { fs.renameSync(tmp, file); }
+  catch (e) { try { fs.writeFileSync(file, fs.readFileSync(tmp)); } finally { try { fs.unlinkSync(tmp); } catch (x) { /* gone */ } } }
+  cfg._file = file;
+}
+
+/* the setup check that the bridge reports (the same things --check looks at, minus the site): is there a Python with torch/soundfile/transkun, transcribe.py and ffmpeg, and does it run on a GPU.
+   Never throws. { checked, ok, device ('cuda' | 'cpu' | null), problems [codes], at } */
+async function envProbe(cfg, deps) {
+  deps = deps || {};
+  const run = deps.runTool || runTool;
+  const out = { checked: true, ok: false, device: null, problems: [], at: Date.now() };
+  try {
+    if (!cfg.pythonPath || !fs.existsSync(cfg.pythonPath)) out.problems.push('python');
+    if (!cfg.transcribePy || !fs.existsSync(cfg.transcribePy)) out.problems.push('transcribe');
+    const f = await run(cfg.ffmpegPath, ['-version'], { timeoutMs: 15000 });
+    if (f.code !== 0) out.problems.push('ffmpeg');
+    if (out.problems.indexOf('python') < 0) {
+      const py = await run(cfg.pythonPath, ['-c', 'import torch, soundfile, transkun; print("cuda" if torch.cuda.is_available() else "cpu")'], { timeoutMs: 90000 });
+      const word = String(py.tail || '').trim().split(/\s+/).pop();
+      if (py.code === 0 && (word === 'cuda' || word === 'cpu')) out.device = word; else out.problems.push('packages');
+    }
+  } catch (e) { out.problems.push('error'); }
+  out.ok = out.problems.length === 0;
+  return out;
+}
+
+const bridgePortOf = (cfg, env) => {
+  const n = +((env && env.PPP_WORKER_BRIDGE_PORT) || cfg.bridgePort || 0);
+  return Number.isInteger(n) && n >= 1024 && n <= 65535 ? n : Bridge.DEFAULT_PORT;
+};
+
+/* --serve: the worker's loop and the bridge, in one process. Single instance by the port itself (a second start finds the port taken, asks whether it is this program, says so and stops). */
+async function serveRun(cfg, w, log, deps) {
+  deps = deps || {};
+  const env = deps.env || process.env;
+  const port = deps.port !== undefined ? deps.port : bridgePortOf(cfg, env);
+  /* test mode is an explicit switch (two variables, or deps from a test): the page of a test is served from a loopback address of its own */
+  const testOrigins = deps.testOrigins || (env.PPP_WORKER_TEST_MODE === '1' && env.PPP_WORKER_TEST_ORIGIN ? [env.PPP_WORKER_TEST_ORIGIN] : []);
+  const envHolder = { checked: false };
+  const startProbe = () => { envProbe(cfg, deps).then(r => { Object.assign(envHolder, r); log('Setup check: ' + (r.ok ? 'ok (' + r.device + ')' : 'needs a fix (' + r.problems.join(', ') + '); run: node tools/home-worker/worker.js --check')); }); };
+  const controller = Bridge.createController({ cfg: cfg, worker: w, request: deps.request || request, findPcCode: c => findPcCode(c, deps.pair), linkTagOf: linkTagOf, saveSettings: (c, p) => saveSettings(c, p, deps.settings),
+    env: envHolder, allowLink: cfg.bridgeLink !== false, log: log, version: VERSION });
+  const bridge = Bridge.createBridge({ ctl: controller, port: port, siteUrl: cfg.siteUrl, testOrigins: testOrigins, log: log });
+  let listening;
+  try { listening = await bridge.listen(); }
+  catch (e) {
+    if (e && e.code === 'EADDRINUSE') {
+      const site = Bridge.originOf(cfg.siteUrl);
+      if (await Bridge.probe(port, site)) { log('이미 실행 중이에요(포트 ' + port + '): 이번 실행은 끝냅니다. / The PPP program is already running (port ' + port + '): this one stops.'); return 0; }
+      log.warn('포트 ' + port + ' 를 다른 프로그램이 쓰고 있어요. 설정 파일의 bridgePort 를 바꾸세요. / Port ' + port + ' is used by another program. Set bridgePort in the settings file.');
+      return 1;
+    }
+    throw e;
+  }
+  log('Bridge: listening on 127.0.0.1:' + listening + ' for ' + bridge.allowedOrigins().join(', ') + '.');
+  /* the recheck of a setup that did not pass: a status look (not more than every 10 minutes) starts it again, so a fixed Python is noticed without a restart */
+  const origStatus = controller.status;
+  controller.status = () => { if (envHolder.checked && !envHolder.ok && Date.now() - envHolder.at > 600000 && !envHolder.again) { envHolder.again = true; envProbe(cfg, deps).then(r => { Object.assign(envHolder, r, { again: false }); }); } return origStatus(); };
+  startProbe();
+  const stopBridge = () => { bridge.close(); };
+  process.on('SIGINT', stopBridge); process.on('SIGTERM', stopBridge);
+  const code = await w.runForever({ serve: true });
+  await bridge.close();
+  return code;
+}
+
 async function main(argv, deps) {
   const args = argv.slice(2);
   if (args.includes('--help') || args.includes('-h')) {
@@ -1003,7 +1168,8 @@ async function main(argv, deps) {
   if (args.includes('--unregister-protocol')) return unregisterProtocol(Object.assign({}, deps && deps.protocol));
   if (args.includes('--protocol-status')) return protocolStatus(Object.assign({}, deps && deps.protocol));
   let cfg;
-  try { cfg = loadConfig(opt('--config')); } catch (e) { console.error(e.message); return 1; }
+  const serve = args.includes('--serve');
+  try { cfg = loadConfig(opt('--config'), undefined, { serve: serve }); } catch (e) { console.error(e.message); return 1; }
   if (args.includes('--pair')) return pairThisPc(cfg, Object.assign({ show: args.includes('--show') }, deps && deps.pair));
   /* --log-file [file]: every line the worker prints also goes to a file (default: worker.log next to the settings file) */
   const li = args.indexOf('--log-file');
@@ -1013,9 +1179,17 @@ async function main(argv, deps) {
   lastLog = log;
   if (logFile) appendLog(logFile, '---- ' + new Date().toISOString() + ' ' + args.filter(a => /^--(once|check|log-file)$/.test(a)).join(' ') + ' ----');
   if (args.includes('--check')) return checkSetup(cfg, log);
-  const problems = configProblems(cfg);
+  /* --serve starts without a token (the bridge's "Connect this PC" brings one); it does need the site's address */
+  const problems = serve ? siteProblems(cfg) : configProblems(cfg);
   if (problems.length) { problems.forEach(p => log.warn('Settings: ' + p)); log.warn('Run with --check for more.'); return 1; }
-  const w = createWorker(cfg, { log: log });
+  /* --serve: the work (a check and the conversion it finds) is held under the run lock, as --once does for its whole run; released at every exit */
+  let heldLock = null;
+  const lockApi = serve ? {
+    take: () => { const l = acquireRunLock(cfg, Object.assign({}, deps && deps.lock)); if (l.ok) heldLock = l; return l; },
+    release: l => { releaseRunLock(l); if (heldLock === l) heldLock = null; }
+  } : null;
+  if (serve) process.on('exit', () => releaseRunLock(heldLock));
+  const w = createWorker(cfg, Object.assign({ log: log }, lockApi ? { lockApi: lockApi } : {}, deps && deps.worker));
   let signals = 0;
   const onSignal = sig => {
     signals++;
@@ -1034,6 +1208,7 @@ async function main(argv, deps) {
   process.on('SIGINT', () => onSignal('Ctrl-C'));
   process.on('SIGTERM', () => onSignal('terminate'));
   process.on('unhandledRejection', e => log.warn('Unexpected: ' + (e && e.stack || e)));
+  if (serve) return serveRun(cfg, w, log, Object.assign({}, deps && deps.serve));
   if (!args.includes('--once')) return w.runForever();
   /* --once takes the run lock first (see acquireRunLock): the scheduled task, the desktop shortcut and the pppworker:// launch can never run the models twice at once */
   const lock = acquireRunLock(cfg, Object.assign({}, deps && deps.lock));
@@ -1047,7 +1222,7 @@ async function main(argv, deps) {
 }
 
 module.exports = { main, loadConfig, configProblems, siteProblems, codeFrom, linkTagOf, findPcCode, pairThisPc, createWorker, checkSetup, makeLog, request, downloadTo, runTool, looksLikeAudioFile,
-  acquireRunLock, releaseRunLock, LOCK_STALE_MS, appendLog, registerProtocol, unregisterProtocol, protocolStatus, vbsProblem, protocolCommand, PROTO_ROOT, PROTO_CMD_KEY, DEFAULTS, VERSION };
+  acquireRunLock, releaseRunLock, LOCK_STALE_MS, appendLog, saveSettings, envProbe, bridgePortOf, serveRun, registerProtocol, unregisterProtocol, protocolStatus, vbsProblem, protocolCommand, PROTO_ROOT, PROTO_CMD_KEY, DEFAULTS, VERSION };
 
 if (require.main === module) {
   main(process.argv).then(code => process.exit(code), e => { const m = 'The worker stopped: ' + (e && e.message || e); if (lastLog) lastLog.warn(m); else console.error(m); process.exit(1); });
