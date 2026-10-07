@@ -526,6 +526,13 @@ metrics on its own, the right-hand F1s of a reduce row included (the tables of d
 (`test_the_detail_file_does_not_change_a_result`). `tests/bench/tools/real-covers.js` runs the six private covers (aggregates only),
 `tests/bench/tools/arrange-identity.js` the identity of the reduction (catalogue: 975 requests; `--recordings jobs.jsonl`: the recording graphs of a suite's jobs and, with `--heard DIR`, the covers).
 `tests/bench/tools/arrange_jobs.py --suite rec-arrange-core --opts app,v2 --out jobs.jsonl` writes that `jobs.jsonl` (168 jobs: the identity's 522 requests with the six covers).
+`tests/bench/tools/level-table.js` measures how hard the copies are by G6a (`level.position`), reduce against lead sheet, on the benchmark's jobs, the covers and the printed hymns (docs/GOALS/G10 section 33.3a).
+
+**The `all`, `profile:cover` and `set:*` aggregates of `rec-arrange-core` and `-full` now mix three rows** (`app`, `v2`, `v2-lead`: 252 and 423 cases), and these suites have no diagnostic
+score, so no case-level drop rule applies (`compare.py` skips a case without `sqi`): the aggregate tolerances are the whole gate. A regression confined to the old rows shows in them at
+one third of its size (one row) or two thirds (both), so a drop the old two-row suites would have failed on can pass. The `opts:app`, `opts:v2` and `opts:v2-lead` aggregates are in the
+baseline but are not gated (the subgroup prefixes are `set:` and `profile:`); read them in `summary.md` when a change touches one arm only. Gating `opts:` as a prefix is a change of the
+suite (a re-lock and a new baseline), left to G10c-1b (docs/GOALS/G10 section 33.6).
 
 The true melody is SongGraph's melody voice of the true score (the top head of each event), matched to the heard notes by pitch and
 time (one to one, 0.2 s), so a note the transcription never heard is an upstream error and is not charged to the arranger
