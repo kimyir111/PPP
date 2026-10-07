@@ -155,6 +155,7 @@ function harness() {
 
   /* --- 10. a fresh score asks for a reading rather than inventing weakness --- */
   R.emptyRec = L.recommend(score, L.empty());
+  R.scoreTempo = score.tempo;
   R.emptyRanges = L.weakRanges(score, L.empty()).length;
 
   /* --- 11. the drill sequence adapts to the failure --- */
@@ -240,6 +241,9 @@ function harness() {
   ok('an unplayed passage starts with a read-through', /Read it through/.test(R.seqFresh[0] || ''), R.seqFresh.join(' → '));
   ok('no practice data asks for a reading, not a guess',
     R.emptyRec.kind === 'assess' && R.emptyRanges === 0, R.emptyRec.action);
+  ok('a piece never played opens at the score tempo, not slowed down',
+    R.emptyRec.tempoPct === 100 && R.emptyRec.tempo === R.scoreTempo,
+    R.emptyRec.tempoPct + '% = ' + R.emptyRec.tempo + ' BPM, score says ' + R.scoreTempo);
   ok('run history is capped', R.runsCapped <= 40, R.runsCapped + ' runs kept of 60');
   ok('per-measure recents are capped', R.recentCapped <= 10, R.recentCapped + ' kept');
   ok('raw MIDI is not retained', R.noRawMidi === true);

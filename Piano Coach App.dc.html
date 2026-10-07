@@ -6323,14 +6323,16 @@ const Learning = {
       kind: o.kind
     });
 
-    /* Nothing played yet: take a reading before claiming to know anything. */
+    /* Nothing played yet: take a reading before claiming to know anything.
+       The reading is at the score tempo, so a piece the player just transcribed
+       opens at the speed they heard; slowing down is for passages found weak. */
     if (!played.length) {
       const first = score.sections[0] || { from: nums[0], to: nums[Math.min(3, nums.length - 1)] };
       return mk({
         from: first.from, to: Math.min(first.to, Score.step(score, first.from, 7)),
-        hands: 'both', tempoPct: 75, kind: 'assess',
+        hands: 'both', tempoPct: 100, kind: 'assess',
         headline: tx('No practice data yet'),
-        action: tx('Play it once at 75% so PPP can find your weak spots'),
+        action: tx('Play it once at full tempo so PPP can find your weak spots'),
         reasons: [tx('PPP has not heard you play this yet.')]
       });
     }
@@ -8973,7 +8975,7 @@ const Coach = {
       const from = ctx.song.firstMeasure;
       const to = Math.min(ctx.song.lastMeasure, from + 7);
       tasks.push({
-        range: { start: from, end: to }, hand: 'both', tempoPercent: 75, mode: 'practice',
+        range: { start: from, end: to }, hand: 'both', tempoPercent: 100, mode: 'practice',
         repetitions: 2, reason: tx('Nothing has been practised yet — play it through so PPP can see where you stand.')
       });
     }

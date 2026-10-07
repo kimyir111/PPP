@@ -457,7 +457,7 @@
     "{{name}} added.": "{{name}}を追加しました。",
     "{{title}} — demo library entry. Import its MusicXML to practise it.": "{{title}} — サンプル曲です。MusicXMLを入れると練習できます。",
     "No practice data yet": "まだ練習データがありません",
-    "Play it once at 75% so PPP can find your weak spots": "75%で一度弾いて、PPPに苦手を見つけさせてください",
+    "Play it once at full tempo so PPP can find your weak spots": "元の速さで一度弾いて、PPPに苦手を見つけさせてください",
     "PPP has not heard you play this yet.": "PPPはまだこの演奏を聞いていません。",
     "Everything you have played is solid": "弾いたところはどれも安定しています",
     "Learn the next passage at 75% tempo": "次の区間を75%の速さで学ぶ",
