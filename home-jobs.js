@@ -88,8 +88,8 @@ const LIMITS = {
   CLAIMS_PER_HOUR: 600,
   /* wrong secrets (a client code or a worker token that is not a live one) per address; only FAILURES are counted, a valid secret is never refused for it */
   BAD_TOKENS_PER_HOUR: 20,
-  /* PC links: made by anybody, so bounded. Per creating address (an IPv6 address counts as its /64) and for the whole site; counted from the links themselves
-     (not from a timer in memory), so a restart does not forget them */
+  /* PC links: made by anybody, so bounded. Per creating address (an IPv6 address counts as its /48: see addrKey) and for the whole site; counted from the links
+     themselves (not from a timer in memory), so a restart does not forget them */
   LINKS_PER_IP_PER_HOUR: 5,
   LINKS_PER_IP_PER_DAY: 20,
   MAX_LINKS: 500,
@@ -167,8 +167,9 @@ function newLink() {
   const hash = codeHash(code);
   return { code: code, hash: hash, id: linkIdOf(hash) };
 }
-/* an address as the per-address limits see it: an IPv6 address is its /56 (what a home connection is given is a /56 or a /64, and one network has billions of addresses
-   in it), an IPv4-mapped one is the IPv4 */
+/* an address as the per-address limits see it (making links, enqueueing, new tokens, wrong secrets): an IPv6 address is its /48 (the biggest block one site is given;
+   a home connection gets a /56 or a /64 of it, and a /48 holds 256 /56s and 65,536 /64s, so counting a smaller block would let one network make as many "addresses" as it
+   likes), an IPv4-mapped one is the IPv4 */
 function addrKey(ip) {
   const s = String(ip || 'unknown').toLowerCase();
   const m = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(s);
@@ -180,7 +181,7 @@ function addrKey(ip) {
   const tail = halves.length > 1 && halves[1] ? halves[1].split(':') : [];
   const groups = head.concat(new Array(Math.max(0, 8 - head.length - tail.length)).fill('0'), tail);
   const g = groups.map(x => x.padStart(4, '0'));
-  return g[0] + ':' + g[1] + ':' + g[2] + ':' + g[3].slice(0, 2) + '00::/56';
+  return g[0] + ':' + g[1] + ':' + g[2] + '::/48';
 }
 
 const iso = t => (t ? new Date(t).toISOString() : null);
@@ -283,7 +284,8 @@ function create(deps) {
      the answer to a failure is 429. A request with a VALID secret is never refused for that: other people's wrong secrets from the same address
      (a shared PC, a network) must not lock a working page or worker out. */
   function badSecret(req, what) {
-    const ip = deps.clientIp(req) || 'unknown';
+    /* by the same address key as the limits of making links (an IPv6 network is one address, not each of its billions) */
+    const ip = addrKey(deps.clientIp(req) || 'unknown');
     if (!limiters.badTokens.take(ip)) return httpError(429, what === 'code' ? 'Too many wrong codes from here. Try again later.' : 'Too many wrong tokens from here. Try again later.', 'too-many', { retryAfter: 600 });
     return what === 'code' ? httpError(401, 'That PC link is not valid.', 'bad-code') : httpError(401, 'That token is not valid.', 'bad-token');
   }

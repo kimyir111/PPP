@@ -2,7 +2,7 @@
    (POST /api/pc-links): a client code (X-PPP-PC; the page keeps it) and a worker token (the PC keeps it). The site keeps only their hashes.
 
    What it pins, over real HTTP on the file store (tests/home-worker/jobs-pg.test.js runs the SQL on Postgres):
-     - making a link: the answer, what is stored (hashes only, no address), the per-address limits (5 an hour, 20 a day, IPv6 as a /64, counted from the
+     - making a link: the answer, what is stored (hashes only, no address), the per-address limits (5 an hour, 20 a day, IPv6 as a /48, counted from the
        links so a restart does not forget them, a refused request costs nothing, requests at the same moment cannot pass them together), the site's cap
      - cross-link isolation: link B's code and token can never read, cancel, remove, claim, finish or rotate anything of link A
      - revoke (a link and everything of it is gone at once), rotate (the old token is dead at once, the PC stays "heard of")
@@ -79,8 +79,13 @@ async function main() {
     try {
       const out = [];
       for (let i = 0; i < 6; i++) out.push((await mk(S, ['2001:db8:5:6::1', '2001:db8:5:6:aaaa:bbbb:cccc:dddd', '2001:DB8:5:6:0:0:0:7'][i % 3])).status);
-      ok('an IPv6 address counts as its /56: three spellings in one network are one address (5, then 429); so is another /64 of the same /56', out.join() === '201,201,201,201,201,429' && (await mk(S, '2001:db8:5:7::1')).status === 429, out.join());
-      ok('another /56 is another address; so is an IPv4', (await mk(S, '2001:db8:5:107::1')).status === 201 && (await mk(S, '1.2.3.4')).status === 201);
+      ok('an IPv6 address counts as its /48: three spellings in one network are one address (5, then 429); so is another /64 of the same /56, and another /56 of the same /48', out.join() === '201,201,201,201,201,429' && (await mk(S, '2001:db8:5:7::1')).status === 429
+        && (await mk(S, '2001:db8:5:107::1')).status === 429 && (await mk(S, '2001:db8:5:ffff::1')).status === 429, out.join());
+      ok('another /48 is another address; so is an IPv4', (await mk(S, '2001:db8:6::1')).status === 201 && (await mk(S, '1.2.3.4')).status === 201);
+      /* the review: distinct /56 keys of one /48 (256 of them) would have made 500 links in an hour */
+      const spread = [];
+      for (let i = 0; i < 40; i++) spread.push((await mk(S, '2001:db8:77:' + (i * 256 + 1).toString(16) + '::1')).status);
+      ok('40 different /56s of one /48 (what one IPv6 allocation can send): five links, not forty', spread.filter(x => x === 201).length === 5 && spread.filter(x => x === 429).length === 35, spread.join());
       ok('an IPv4-mapped IPv6 address is the IPv4 (the same budget)', await (async () => { const o = []; for (let i = 0; i < 5; i++) o.push((await mk(S, i % 2 ? '::ffff:9.9.9.9' : '9.9.9.9')).status); o.push((await mk(S, '9.9.9.9')).status); return o.join() === '201,201,201,201,201,429'; })());
     } finally { await S.close(); }
   }
@@ -400,17 +405,30 @@ async function main() {
     } finally { await S.close(); }
   }
 
-  heading('the hourly enqueue limit counts an IPv6 network as one address (its /56), not each of its billions');
+  heading('the hourly enqueue limit counts an IPv6 network as one address (its /48), not each of its billions');
   {
     const was = J.LIMITS.ENQUEUE_PER_IP_PER_HOUR;
     J.LIMITS.ENQUEUE_PER_IP_PER_HOUR = 4;
     const S = await L.startService({ users: ['v6a', 'v6b'] });
     try {
       const out = [];
-      for (let i = 0; i < 6; i++) { const ip = '2001:db8:9:' + (1 + i) + '::' + (i + 1); const r = await req(S.port, 'POST', '/api/jobs', { user: i % 2 ? 'v6a' : 'v6b', ip: ip, body: { url: WATCH('ipvsixrow' + String(i).padStart(2, '0')) } }); out.push(r.status); if (r.status === 201) await req(S.port, 'POST', '/api/jobs/' + r.body.job.id + '/cancel', { user: i % 2 ? 'v6a' : 'v6b', ip: ip, body: {} }); }
-      ok('four enqueues an hour (here; 60 by default) from six different /64s of one /56: the 5th and 6th are 429', out.join() === '201,201,201,201,429,429', out.join());
-      ok('another /56 is not touched', (await req(S.port, 'POST', '/api/jobs', { user: 'v6a', ip: '2001:db8:9:101::1', body: { url: WATCH('ipvsixother') } })).status === 201);
+      for (let i = 0; i < 6; i++) { const ip = '2001:db8:9:' + ((1 + i) * 256).toString(16) + '::' + (i + 1); const r = await req(S.port, 'POST', '/api/jobs', { user: i % 2 ? 'v6a' : 'v6b', ip: ip, body: { url: WATCH('ipvsixrow' + String(i).padStart(2, '0')) } }); out.push(r.status); if (r.status === 201) await req(S.port, 'POST', '/api/jobs/' + r.body.job.id + '/cancel', { user: i % 2 ? 'v6a' : 'v6b', ip: ip, body: {} }); }
+      ok('four enqueues an hour (here; 60 by default) from six different /56s of one /48: the 5th and 6th are 429', out.join() === '201,201,201,201,429,429', out.join());
+      ok('another /48 is not touched', (await req(S.port, 'POST', '/api/jobs', { user: 'v6a', ip: '2001:db8:a::1', body: { url: WATCH('ipvsixother') } })).status === 201);
     } finally { J.LIMITS.ENQUEUE_PER_IP_PER_HOUR = was; await S.close(); }
+  }
+
+  heading('wrong secrets from one IPv6 network are counted together (its /48, the key of every per-address limit)');
+  {
+    const S = await L.startService({ users: ['w6'] });
+    try {
+      const out = [];
+      /* 24 wrong codes, each from another /56 (and /64) of 2001:db8:70::/48 */
+      for (let i = 0; i < 24; i++) out.push((await req(S.port, 'GET', '/api/worker/status', { code: String(i).padStart(64, 'a'), ip: '2001:db8:70:' + (i * 256 + i).toString(16) + '::' + (i + 1) })).status);
+      ok('20 wrong codes an hour from one /48, then 429, however the sender varies its address inside it (the budget is that of the network, not of each address)', out.slice(0, 20).every(x => x === 401) && out.slice(20).every(x => x === 429), out.join());
+      ok('a wrong worker token from yet another /64 of that /48 shares the same spent budget (429); a valid code from there is still never refused; another /48 is not affected', (await S.worker('ppw_' + 'A'.repeat(12) + '_' + 'B'.repeat(43)).get('/api/worker/ping', { ip: '2001:db8:70:9999::7' })).status === 429
+        && (await req(S.port, 'GET', '/api/worker/status', { user: 'w6', ip: '2001:db8:70:9999::7' })).status === 200 && (await req(S.port, 'GET', '/api/worker/status', { code: 'd'.repeat(64), ip: '2001:db8:71::1' })).status === 401);
+    } finally { await S.close(); }
   }
 
   heading('a record found by the id alone is not enough: the whole hash of the code is compared');
