@@ -20,6 +20,13 @@ const ENGINE_WORDS = ['browser', 'helper', 'engine', 'transkun', 'kong', 'ensemb
 const ENGINE_WHOLE = ['local', 'model', 'frames', 'server', 'cloud'];
 const QUOTED_LOCAL = /'local'/g;
 
+/* H-10c, the lead sheet against the reduction: the two ways the Song Arranger makes a copy of a recording. Nothing the page, the manifest or a drawing says may name either (or hint at it
+   with the app's own words for it: the chip, its lines, the composer line's "(lead sheet)", the relaxed-plan note that only one of the two copies may carry). Substrings, case-insensitive;
+   the page's own script must not use Array.prototype.reduce (the scan reads the script too: it is written with loops). The two Korean words are the app's (i18n/ko-KR.json: the chip
+   "리드 시트로 편곡", its line "녹음된 음을 난이도에 맞게 덜어내서 만들어요", the relaxed note "고른 난이도보다 어려울 수 있어요"). */
+const ARRANGE_WORDS = ['lead sheet', 'leadsheet', 'lead-sheet', 'lead_sheet', '리드 시트', '리드시트', 'reduce', 'reduction', '덜어내', '덜어 내', 'recordingarrange', 'relaxed', 'thinned out', 'thin out',
+  '난이도보다 어려울', '난이도에 맞게', 'harder than the level', '코드를 뽑', 'melody and chords', 'standard arrangement'];
+
 function scanText(label, text, extra, whole) {
   const bad = [];
   const low = text.toLowerCase();
@@ -47,7 +54,10 @@ const DRAWINGS_BLOCK = /(<script id="svg-data" type="application\/json">)[\s\S]*
 
 /* the engine comparison's scan of a finished page: `html`, the manifest's text and the unpacked drawings (page-h10 drawingsOf). `titles` are left out of the
    text (a piece's own title may say "Hong Kong"; the Lead is told about those separately, see titleWarnings). Returns a list of problems. */
-function scanEngine(html, manifest, drawings, o) {
+function scanEngine(html, manifest, drawings, o) { return scanWith(ENGINE_WORDS, ENGINE_WHOLE, html, manifest, drawings, o); }
+/* H-10c: the same scan with the vocabulary of the two arrangement methods (and the engine words that name the note sources, as substrings only: the page's own script says 'local'). */
+function scanArrange(html, manifest, drawings, o) { return scanWith(ARRANGE_WORDS.concat(ENGINE_WORDS), [], html, manifest, drawings, o); }
+function scanWith(words, whole, html, manifest, drawings, o) {
   o = o || {};
   /* the piano credit is fixed text (the recordings' own name carries "V3"); the tests check it byte for byte */
   if (o.credit) html = html.split(o.credit).join('<footer class="credit">[credit]</footer>');
@@ -56,13 +66,13 @@ function scanEngine(html, manifest, drawings, o) {
   const bad = [];
   const page = withoutPathData(blank(html.replace(AUDIO_BLOCK, '<script id="piano-samples">[audio block]</script>').replace(DRAWINGS_BLOCK, '$1[drawings]$2')));
   bad.push.apply(bad, page.bad);
-  const extra = ENGINE_WORDS.concat(seedWords);
-  bad.push.apply(bad, scanText('the page', page.rest, extra, ENGINE_WHOLE));
-  bad.push.apply(bad, scanText('the manifest', blank(manifest), extra, ENGINE_WHOLE));
+  const extra = words.concat(seedWords);
+  bad.push.apply(bad, scanText('the page', page.rest, extra, whole));
+  bad.push.apply(bad, scanText('the manifest', blank(manifest), extra, whole));
   Object.keys(drawings).forEach(k => drawings[k].forEach((svg, i) => {
     const d = withoutPathData(svg);
     bad.push.apply(bad, d.bad);
-    bad.push.apply(bad, scanText('drawing ' + k + (i ? ' narrow' : ' wide'), d.rest, extra, ENGINE_WHOLE));
+    bad.push.apply(bad, scanText('drawing ' + k + (i ? ' narrow' : ' wide'), d.rest, extra, whole));
   }));
   return bad;
 }
@@ -81,4 +91,4 @@ function titleWarnings(titles) {
   return out;
 }
 
-module.exports = { WORDS, STAMPS, PATHDATA, ENGINE_WORDS, ENGINE_WHOLE, scanText, withoutPathData, scanEngine, titleWarnings, AUDIO_BLOCK, DRAWINGS_BLOCK };
+module.exports = { WORDS, STAMPS, PATHDATA, ENGINE_WORDS, ENGINE_WHOLE, ARRANGE_WORDS, scanText, withoutPathData, scanEngine, scanArrange, titleWarnings, AUDIO_BLOCK, DRAWINGS_BLOCK };
