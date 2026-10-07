@@ -308,7 +308,9 @@ test('the browser: the module loads in a bare vm after the page\'s own scripts a
      and its 13 files (rec/grid.js and rec/writer.js among them) and then LEADSHEET_SCRIPT; nothing here loads a file by hand any more */
   const L = E.scriptListOfPage();
   assert.equal(L.lead, 'rec/leadsheet.js');
-  assert.ok(L.rec.indexOf('rec/grid.js') >= 0 && L.rec.indexOf('rec/writer.js') >= 0 && L.head.some(p => p === 'scoregraph/gaps.js'), 'what the module reads when it loads is in the page\'s lists, before it');
+  assert.deepEqual(L.leadNeeds, ['rec/grid.js', 'rec/writer.js'], 'what the page loads before it: the two files it reads when it loads, and the grid model rec/grid.js reads, nothing more of v2');
+  assert.deepEqual(L.leadModel, ['PPPRecGridModel', 'rec/weights/ai5b-grid-v1.json']);
+  assert.ok(L.leadNeeds.every(f => L.rec.indexOf(f) >= 0) && L.head.some(p => p === 'scoregraph/gaps.js'), 'the two are files of v2\'s own list (shared with its loader); scoregraph/gaps.js is in the page already');
   const win = E.browserWindow();
   assert.equal(typeof win.require, 'undefined'); assert.equal(typeof win.module, 'undefined');
   assert.equal(typeof win.PPPRecLeadsheet, 'object');

@@ -267,14 +267,23 @@ test('the page: rec/leadsheet.js is in no up-front list, not in RECORDING_SCRIPT
   assert.equal(L.rec.includes(L.lead), false, 'not one of v2\'s 13 files (the Add screen still asks for 17)');
   assert.equal(L.single.includes(L.lead), false, 'not one of the arranger\'s 14');
   assert.equal(L.rec.length, 13);
-  assert.ok(L.rec.indexOf('rec/grid.js') >= 0 && L.rec.indexOf('rec/writer.js') >= 0, 'the files the lead sheet reads when it loads are in v2\'s list');
+  assert.deepEqual(L.leadNeeds, ['rec/grid.js', 'rec/writer.js']);
+  assert.ok(L.leadNeeds.every(f => L.rec.indexOf(f) >= 0) && L.rec.indexOf(L.leadNeeds[0]) < L.rec.indexOf(L.leadNeeds[1]), 'the files the lead sheet reads when it loads are two of v2\'s own, in v2\'s own order');
+  assert.deepEqual(L.leadModel, ['PPPRecGridModel', 'rec/weights/ai5b-grid-v1.json']);
+  const weights = html.match(/const RECORDING_WEIGHTS = \[[\s\S]*?\n\];/)[0];
+  assert.ok(weights.indexOf("'PPPRecGridModel', 'rec/weights/ai5b-grid-v1.json'") > -1, 'the model is one of v2\'s four, the very file and global its loader sets');
   /* where the file name occurs as a string: its constant and its global's entry in the loader's table, nowhere else */
   assert.equal((html.match(/'rec\/leadsheet\.js'/g) || []).length, 2);
   assert.match(html, /^const LEADSHEET_SCRIPT = 'rec\/leadsheet\.js';$/m);
   assert.match(html, /'rec\/leadsheet\.js': \['PPPRecLeadsheet'\]/);
   /* the loader: v2's modules first, then the one file; the only asker of loadLeadsheetModule's promise besides the arranger entry and the warm */
   const loader = fnSource('loadLeadsheetModule');
-  assert.ok(loader.indexOf('loadRecordingModules()') < loader.indexOf('recScriptTag(LEADSHEET_SCRIPT)'), 'v2\'s files come first');
+  assert.ok(loader.indexOf('recFetchWeights(LEADSHEET_MODEL[1])') > -1 && loader.indexOf('recFetchWeights(LEADSHEET_MODEL[1])') < loader.indexOf('recScriptTag(s)'), 'the model first, then the scripts');
+  assert.ok(loader.indexOf('LEADSHEET_NEEDS.concat([LEADSHEET_SCRIPT])') > -1 && loader.indexOf('!_recLoaded.has(s)') > -1, 'the two files it reads, then itself, and only what is not on the page already (nothing that loaded runs twice)');
+  assert.equal(loader.indexOf('loadRecordingModules'), -1, 'it does not ask for the conversion\'s seventeen files');
+  assert.ok(loader.indexOf('await _recPromise') > -1 && html.indexOf('if (_leadPromise) await _leadPromise;') > -1, 'neither loader runs while the other is on its way');
+  const wantsWeightsShape = html.indexOf('recWeightsShapeOk(LEADSHEET_MODEL[0], j)');
+  assert.ok(wantsWeightsShape > -1, 'the model is checked for its shape like v2\'s own');
   const askers = (html.match(/loadLeadsheetModule\(\)/g) || []).length;
   assert.equal(askers, 3, 'the loader itself, the entry (arrangeSingleNoteWithLeadsheet) and warmLeadsheetModule: ' + askers);
   assert.match(html, /warmLeadsheetModule\(\) \{\s*\n\s*if \(RECORDING_ARRANGE_MODE === 'leadsheet' && ARRANGER_MODE === 'single'\) loadLeadsheetModule\(\);/, 'the warm is a no-op unless a lead sheet would be made');

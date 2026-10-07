@@ -5164,6 +5164,7 @@ function loadRecordingModules() {
       const bad = todoW.find(w => !_recGlobals.has(w[0]));   /* a file that came with the right shape stays: the next attempt asks only for the others */
       if (bad) { RECORDING_LOAD_ERROR = bad[1]; return false; }
       if (_recAppPromise) await _recAppPromise; /* rec/app.js alone may be on its way (loadRecApp): not asked for twice */
+      if (_leadPromise) await _leadPromise; /* G10c-1b: the lead sheet's files (rec/grid.js, rec/writer.js and their model) may be on their way (loadLeadsheetModule): not asked for twice, not run twice */
       /* requested at once, executed in list order (async = false) */
       const todo = recordingScriptsToLoad();
       todo.forEach(forgetRecScript);
@@ -5230,18 +5231,30 @@ async function arrangeSingleNoteWithHandsFallback(graph, plan, title) {
   } catch (e) { return first; }
 }
 /* G10c-1b (docs/GOALS/G10 section 34): rec/leadsheet.js is asked for when a lead sheet is about to be made, and only then: nothing of it loads with the page, the Add screen or the review screen (it is in
-   neither RECORDING_SCRIPTS nor SINGLE_SCRIPTS). It reads rec/writer.js and rec/grid.js (with the grid weights) when it loads, so those come first: loadRecordingModules() (shared, bounded, a failed file asked for
-   again), then the one file. A saved v2 song opened in a fresh page has none of it: its first lead sheet fetches v2's 17 files and this one. Resolves true when PPPRecLeadsheet is on the page and false when it
-   could not be had (the lead sheet then refuses with LEADSHEET_NOT_LOADED and the reduction is made); never rejects. */
+   neither RECORDING_SCRIPTS nor SINGLE_SCRIPTS). It reads two of v2's files when it loads - rec/grid.js (PPPRecGrid.writable) and rec/writer.js (the exact-bars writer) - and rec/grid.js reads its model
+   (PPPRecGridModel, one of v2's four weights files) when it loads, so those come first, in that order, and nothing else of v2: a saved v2 song opened in a fresh page makes four requests (87 KB) for its first lead
+   sheet, not the conversion's seventeen. They are the very files and the very global loadRecordingModules makes, shared with it (_recLoaded, _recGlobals, _recInflight): a page that later converts a recording
+   asks only for the rest, the model is the one a page that never arranged would have, and neither loader runs while the other is on its way. Resolves true when PPPRecLeadsheet is on the page and false when it
+   could not be had (the lead sheet then refuses with LEADSHEET_NOT_LOADED and the reduction is made); bounded like the others; never rejects. */
 const LEADSHEET_SCRIPT = 'rec/leadsheet.js';
+const LEADSHEET_NEEDS = ['rec/grid.js', 'rec/writer.js'];
+const LEADSHEET_MODEL = ['PPPRecGridModel', 'rec/weights/ai5b-grid-v1.json'];
 let _leadPromise = null;
 function loadLeadsheetModule() {
   if (typeof window !== 'undefined' && window.PPPRecLeadsheet) return Promise.resolve(true);
   if (_leadPromise) return _leadPromise;
   _leadPromise = recRaceTimeout((async () => {
     try {
-      if (!(await loadRecordingModules())) return false;
-      return (await recScriptTag(LEADSHEET_SCRIPT)) && !!window.PPPRecLeadsheet;
+      if (_recPromise) await _recPromise;   /* v2's own load may be on its way: not both at once */
+      if (!_recGlobals.has(LEADSHEET_MODEL[0])) {
+        const j = await recFetchWeights(LEADSHEET_MODEL[1]);
+        if (!recWeightsShapeOk(LEADSHEET_MODEL[0], j)) return false;
+        if (!_recGlobals.has(LEADSHEET_MODEL[0])) { window[LEADSHEET_MODEL[0]] = j; _recGlobals.add(LEADSHEET_MODEL[0]); }
+      }
+      /* requested at once, executed in this order (async = false); what is on the page already is not asked for again, and so not run again */
+      const todo = LEADSHEET_NEEDS.concat([LEADSHEET_SCRIPT]).filter(s => !_recLoaded.has(s));
+      const results = await Promise.all(todo.map(s => recScriptTag(s)));
+      return results.every(Boolean) && !!window.PPPRecLeadsheet;
     } catch (e) { return false; }
   })()).then(ok => { _leadPromise = null; return ok; });
   return _leadPromise;

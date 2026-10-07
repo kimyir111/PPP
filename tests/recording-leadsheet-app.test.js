@@ -17,7 +17,7 @@
      - Korean first: the chip, its two lines, the composer line, in 400 px with no sideways scroll
      - no page error and no console error throughout
    Runs against its own server on a free port (tests/serve-free.js); PPP_URL=... runs it against another build. node tests/recording-leadsheet-app.test.js
-   LS_ONLY=defaults|fresh|reduce|refuse|relaxed|review|others|korean (a regular expression) runs only those sections.
+   LS_ONLY=defaults|fresh|interplay|reduce|refuse|relaxed|review|others|korean (a regular expression) runs only those sections.
    ========================================================================== */
 'use strict';
 const puppeteer = require('puppeteer');
@@ -116,7 +116,8 @@ const copyFacts = (page, key) => page.evaluate((k, tuneSrc) => {
 const chip = page => page.evaluate(() => { const b = document.querySelector('[data-song-arranger] [data-recording-arrange-option]'); if (!b) return null; const p = b.parentElement.querySelector('p'); const r = b.getBoundingClientRect();
   return { text: b.innerText.trim(), pressed: b.getAttribute('aria-pressed'), hint: p && p.innerText.trim(), inView: r.right <= window.innerWidth && r.left >= 0, noSideScroll: document.documentElement.scrollWidth <= window.innerWidth + 1 }; });
 const recSince = p => p.__rec.requests.slice(p.__mark || 0).filter(u => /^\/rec\//.test(u)).map(u => u.split('?')[0]);
-const tuneOf = n => { const o = []; for (let b = 0; b < n; b++) for (let k = 0; k < 4; k++) o.push(tune(b, k)); return o; };
+const LEAD_FILES = ['/rec/weights/ai5b-grid-v1.json', '/rec/grid.js', '/rec/writer.js', '/rec/leadsheet.js'];
+const tuneOf =n => { const o = []; for (let b = 0; b < n; b++) for (let k = 0; k < 4; k++) o.push(tune(b, k)); return o; };
 const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i]);
 
 (async () => {
@@ -179,9 +180,9 @@ const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i])
           if (level === 'beginner') {
             const c = await chip(p);
             ok('the Song Arranger has the chip, pressed (the default), labelled "' + LABEL + '", with the ON line', !!c && c.text === LABEL && c.pressed === 'true' && c.hint === ON_LINE, JSON.stringify(c));
-            ok('opening the Song Arranger on a recording asks for rec/leadsheet.js (and v2\'s 17 files, which it reads), once each, before Create is pressed',
+            ok('opening the Song Arranger on a recording asks for what the lead sheet reads and for rec/leadsheet.js, nothing else of v2: the grid model, rec/grid.js, rec/writer.js, rec/leadsheet.js, once each in that order (87 KB), before Create is pressed',
               await p.waitForFunction(() => !!window.PPPRecLeadsheet, { timeout: 60000 }).then(() => true).catch(() => false)
-              && recSince(p).filter(u => u === '/rec/leadsheet.js').length === 1 && recSince(p).length === 18 && new Set(recSince(p)).size === 18, JSON.stringify(recSince(p).length));
+              && JSON.stringify(recSince(p)) === JSON.stringify(LEAD_FILES) && !(await p.evaluate(() => window.PPP.recordingModulesReady())), JSON.stringify(recSince(p)));
           }
         } });
         const a = r.arrangement;
@@ -196,8 +197,28 @@ const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i])
         if (level === 'beginner') ok('the lead sheet copy is not the reduction\'s copy', (await copyHash(p, r.newKeys[0])) !== (await mainHash(p, id, level)).hash, same);
       }
       const reqs = recSince(p);
-      ok('over the whole session each file of rec/ was asked for once (17 and rec/leadsheet.js, in that order: v2\'s files first)', reqs.length === 18 && new Set(reqs).size === 18 && reqs[reqs.length - 1] === '/rec/leadsheet.js', reqs.join(' ').slice(0, 400));
+      ok('over the whole session of three Creates each of those four files was asked for once, and not one other file of rec/ (v2\'s conversion is not what a lead sheet needs)', JSON.stringify(reqs) === JSON.stringify(LEAD_FILES), reqs.join(' ').slice(0, 400));
       ok('no page or console error', clean(p), errs(p));
+    }
+
+    /* ------------------------------------------------------------------ the two loaders share their files */
+    if (want('interplay')) {
+      console.log('\n── the lead sheet\'s files and v2\'s conversion share the page: asked for once, and the conversion is the same ──');
+      const base = await savedSong(browser, COVERS.sc0);   /* v2 came by the Add screen, as ever */
+      const sb = await savedSong(browser, COVERS.sc0);
+      const pb = sb.page;
+      await toSongs(pb);
+      await pb.evaluate(i => document.querySelector('[data-arrange-song="' + i + '"]').click(), sb.id);
+      await pb.waitForFunction(() => !!window.PPPRecLeadsheet, { timeout: 60000 });
+      ok('a fresh page with a saved v2 song, the Song Arranger opened first: the lead sheet is there with four requests and v2\'s conversion is not loaded', JSON.stringify(recSince(pb)) === JSON.stringify(LEAD_FILES) && !(await pb.evaluate(() => window.PPP.recordingModulesReady())), JSON.stringify(recSince(pb)));
+      await pb.evaluate(() => window.PPP.app.closeSongArranger());
+      const imp = await importHeard(pb, COVERS.sc0);   /* the Add screen asks for v2's conversion now */
+      const st = await stateOf(pb);
+      const all = recSince(pb);
+      ok('then the Add screen and an import: v2 asks for the rest only (the 14 files that were not there), and every file of rec/ was asked for once in the whole session (v2\'s 17 and rec/leadsheet.js: 18, none twice)', imp.screen === 'review' && all.length === 18 && new Set(all).size === 18 && all.slice(0, 4).join() === LEAD_FILES.join(), String(all.length) + ' ' + all.slice(4).join(' ').slice(0, 300));
+      ok('and the conversion is the one a page that never opened the Song Arranger makes: v2, the same notation note for note (hash, measures, notes, rests, brackets)', st.pipeline === 'v2' && st.hash === base.state.hash && st.measures === base.state.measures && st.notes === base.state.notes && st.rests === base.state.rests && st.brackets === base.state.brackets, JSON.stringify([st.hash, base.state.hash]));
+      ok('no page or console error', clean(pb) && clean(base.page), errs(pb) + errs(base.page));
+      await pb.close(); await base.page.close();
     }
 
     /* ------------------------------------------------------------------ the chip: reduce is main's copy */
