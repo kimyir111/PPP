@@ -4907,36 +4907,53 @@ async function arrangeSingleNote(builtGraph, plan) {
   if (!SGG || !ARR || !CAND || !REPAIR || !SER) return { ok: false, reason: 'SINGLE_NOT_LOADED' };
   const reference = await loadArrangerReference();
   if (!reference) return { ok: false, reason: 'REFERENCE_UNAVAILABLE' };
+  /* G10c-1a (docs/GOALS/G10 section 33): plan.recordingArrange 'leadsheet' arranges a RECORDING (a graph with an 'audio-score' source: the same gate as the closing of gaps in repair/) from its lead sheet (rec/leadsheet.js:
+     the melody as one line, the harmony of every heard note) instead of reducing it; 'reduce' (the default, and any other value) is the reduction, byte for byte. A graph that is no recording is never changed by it. */
+  const lead = !!plan && plan.recordingArrange === 'leadsheet' && !!(builtGraph && builtGraph.provenance && (builtGraph.provenance.sources || []).some(x => x && x.kind === 'audio-score'));
   let key = null;
-  try { key = SER.fingerprint(builtGraph) + '|' + (plan && plan.level); } catch (e) { key = null; }
+  try { key = SER.fingerprint(builtGraph) + '|' + (plan && plan.level) + (lead ? '|leadsheet' : ''); } catch (e) { key = null; }
   if (key && SINGLE_CACHE.has(key)) return Object.assign({ cached: true, ms: Date.now() - t0 }, SINGLE_CACHE.get(key));
   await singleTick();
   try {
     window.PPPCriticsModules.metrics.setWeights(reference.weights); /* the G6a weights the page already fetched (critics/metrics.js has no file to read) */
-    const sg = SGG.analyze(builtGraph);
+    let src = builtGraph, sg = null, leadsheet = null;
+    if (lead) {
+      const LSM = window.PPPRecLeadsheet;
+      if (!LSM) return { ok: false, reason: 'LEADSHEET_NOT_LOADED' };
+      const prep = LSM.prepare(builtGraph, { songgraph: SGG });
+      if (!prep.ok) return { ok: false, reason: prep.reason, message: prep.message };
+      src = prep.graph; sg = prep.sg; leadsheet = prep.report; /* the lead sheet and its SongGraph (the harmony of every heard note) go where the recording graph went */
+    } else sg = SGG.analyze(builtGraph);
     const baseStage = ARRANGER_LEVEL_TO_STAGE[plan && plan.level] || 2;
     let request = null, relax = 0;
     /* G9e refusals: the strict search first, over every level and hand profile, exactly as before. Only when it finds no plan at all is it run again with
        relax 2 (arrangement/plan.js: reach and chord load on the one-note-per-hand view, then the stage's maximum density and no range ceiling, section by
        section and only for a section the strict search cannot fit), which is why a piece that was arranged before is arranged the same way now. */
+    /* the order the (tier, level) pairs are tried in. A reduction: every level at tier 0, then every level at tier 2 (a piece that was arranged before is arranged the same way). A lead sheet: the
+       asked level first, at tier 3 (arrangement/plan.js relax 3: each section strict where it fits, relaxed where it does not, and on the floor rung the key signature and the melody's own
+       density no longer refuse it - the melody is copied verbatim and the arranger does not transpose), so a cover in a key of three or more accidentals or with a busy melody is arranged at the
+       level asked for, with the relaxed plan's note, and not at a harder one. */
+    const tries = [];
+    if (lead) [baseStage, baseStage + 1, baseStage - 1, baseStage + 2].forEach(tl => tries.push([3, tl]));
+    else [0, 2].forEach(tier => [baseStage, baseStage + 1, baseStage - 1, baseStage + 2].forEach(tl => tries.push([tier, tl])));
     outer:
-    for (const tier of [0, 2]) {
-      for (const targetLevel of [baseStage, baseStage + 1, baseStage - 1, baseStage + 2]) {
-        for (const handProfile of ARRANGER_HAND_PROFILES) {
-          let r;
-          try { r = ARR.plan(builtGraph, sg, { targetLevel: targetLevel, handProfile: handProfile, sections: 'all' }, tier ? { reference: reference, relax: tier } : { reference: reference }); }
-          catch (e) { continue; }
-          if (r && r.ok) { request = { targetLevel: targetLevel, handProfile: handProfile, sections: 'all' }; relax = tier; break outer; }
-        }
+    for (const [tier, targetLevel] of tries) {
+      for (const handProfile of ARRANGER_HAND_PROFILES) {
+        let r;
+        try { r = ARR.plan(src, sg, { targetLevel: targetLevel, handProfile: handProfile, sections: 'all' }, tier ? { reference: reference, relax: tier } : { reference: reference }); }
+        catch (e) { continue; }
+        if (r && r.ok) { request = { targetLevel: targetLevel, handProfile: handProfile, sections: 'all' }; relax = tier; break outer; }
       }
     }
     if (!request) return { ok: false, reason: 'UNREACHABLE' };
     await singleTick();
     /* runAsync: the same pipeline and result as run(), with the thread handed back after every candidate (a hymn is about 10 of them) */
-    const sel = await CAND.runAsync(builtGraph, sg, request, Object.assign({ singleNoteHands: true, skipEngrave: true, reference: reference, yield: singleTick }, relax ? { relax: relax } : {}));
+    /* a lead sheet has one voice: the 'hymn' pattern (a verbatim copy of every kept voice) would be the melody alone, so it is not a candidate; and it is arranged at the level asked for or an easier one
+       (levelOffsets 0 and -1, never +1: a busier left hand than asked for must not win on harmony agreement alone, section 33.4) */
+    const sel = await CAND.runAsync(src, sg, request, Object.assign({ singleNoteHands: true, skipEngrave: true, reference: reference, yield: singleTick }, relax && !lead ? { relax: relax } : {}, lead ? { patterns: ['auto', 'block', 'broken', 'ballad'], levelOffsets: [0, -1], planOpts: { reference: reference, relax: 3 } } : {}));
     if (!sel.ok) return { ok: false, reason: sel.reason || 'NO_SELECTION' };
     await singleTick();
-    const rr = REPAIR.repairSelection(sel, builtGraph, sg, request, { REF: (window.PPPArrangementModules || {}).reference, reference: reference });
+    const rr = REPAIR.repairSelection(sel, src, sg, request, { REF: (window.PPPArrangementModules || {}).reference, reference: reference });
     if (!rr.ok || !rr.graph) return { ok: false, reason: 'REPAIR_FAILED' };
     let graph = rr.graph;
     /* the lower staff's clef per measure (treble where the left hand lies in the treble register), BEFORE the 8va/8vb pass, which reads the clef that is drawn */
@@ -4951,6 +4968,7 @@ async function arrangeSingleNote(builtGraph, plan) {
     /* rescued: the notes the stray-note rescue left out (candidates/index.js strayRescue: a note that no hand could reach in the time between its neighbours, which would otherwise have refused the whole piece); null when none */
     const rescued = sel.selected.rescued && sel.selected.rescued.length ? sel.selected.rescued : null;
     const out = { ok: true, graph: graph, degraded: !!(sel.selected.plan && sel.selected.plan.degraded), levelNote: levelNote, rescued: rescued, report: Object.assign({ spec: sel.selected.spec, repaired: !!rr.changed, request: request }, levelNote ? { relaxed: sel.selected.plan.relaxed } : {}, rescued ? { rescued: rescued } : {}) };
+    if (leadsheet) out.leadsheet = leadsheet;
     if (key) { SINGLE_CACHE.set(key, out); while (SINGLE_CACHE.size > SINGLE_CACHE_MAX) SINGLE_CACHE.delete(SINGLE_CACHE.keys().next().value); }
     return Object.assign({ ms: Date.now() - t0 }, out);
   } catch (e) {

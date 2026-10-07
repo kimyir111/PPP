@@ -83,7 +83,8 @@ function nodeWindow() {
     PPPCriticsModules: { metrics: R('critics/metrics.js') },
     PPPArrangementModules: { reference: R('arrangement/reference.js') },
     PPPRealizeModules: { ottava: R('realize/ottava.js'), clefs: R('realize/clefs.js') },
-    PPPScoreGraphModules: { serialize: R('scoregraph/serialize.js'), legacyScore: R('scoregraph/legacy-score.js'), pitch: R('scoregraph/pitch.js') }
+    PPPScoreGraphModules: { serialize: R('scoregraph/serialize.js'), legacyScore: R('scoregraph/legacy-score.js'), pitch: R('scoregraph/pitch.js') },
+    PPPRecLeadsheet: R('rec/leadsheet.js') /* G10c-1a: the lead sheet of a recording (plan.recordingArrange 'leadsheet'); the page loads it from G10c-1b on */
   };
 }
 
