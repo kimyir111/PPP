@@ -187,7 +187,7 @@ jobs:
         with: { python-version: '3.13' }
       - run: npm run test:home-worker                # G10b-1: the home-PC queue, its worker and server.js with it (Node only, ~40 s; the Postgres part skips without PPP_TEST_PG_URL)
       - run: npm run test:engrave                    # G4a-G4d-1a: render source, NotationPlan and ledger, layout, notation, SVG, curves and marks (G04)
-      - run: npm run test:arrangement-planner         # G7b: texture ladder, deterministic search, real-corpus coverage, mutation suite (G07B)
+      - run: npm run test:arrangement-planner         # G7b: texture ladder, deterministic search, real-corpus coverage, mutation suite (G07B); one test file at a time (--test-concurrency=1), so its 200 ms plan() budget is measured beside no other file (tests/timing.js)
       - run: node tests/bench/tools/train_grid.js --check   # G10a-2 (AI-5b): the grid stage's committed weights are what the training makes (G10 section 20)
       - run: python tests/bench/run.py sg-roundtrip  # every committed MusicXML through ScoreGraph and back (G01)
       - run: python tests/bench/run.py run --suite robust-app
