@@ -25,7 +25,9 @@ const puppeteer = require('puppeteer');
 const http = require('http');
 const net = require('net');
 const L = require('./lib');
-const { ok, sleep, heading, req } = L;
+const { sleep, heading, req } = L;
+/* HOME_FAIL_FAST (the mutation runner): stop at the first failed check - a mutant is killed by it, and the rest of the run would only cost time */
+const ok = (name, cond, detail) => { L.ok(name, cond, detail); if (!cond && process.env.HOME_FAIL_FAST) throw new Error('stopped at the first failed check: ' + name); };
 const path = require('path');
 const fs = require('fs');
 const { startServer } = require('../serve-free');
@@ -121,6 +123,7 @@ async function openPage(browser, srv, hash, o) {
     const u = r.url();
     rec.requests.push({ method: r.method(), url: u, headers: r.headers(), post: r.postData() || '', type: r.resourceType() });
     if (/:8788\/|\/helper(\/|$|\?)/.test(u)) return r.abort();
+    if (o.failStatus && /\/api\/worker\/status/.test(u)) return r.respond({ status: o.failStatus, contentType: 'application/json', body: JSON.stringify({ error: 'The queue is not available right now. Try again in a minute.', code: 'store' }) });
     /* every page its own address for the site's per-address limits (making a link: 5 an hour) */
     if (r.method() === 'POST' && /\/api\/pc-links$/.test(u)) return r.continue({ headers: Object.assign({}, r.headers(), { 'x-forwarded-for': '10.99.' + (pageNo >> 8) + '.' + (pageNo & 255) }) });
     if (o.baseHtml && r.resourceType() === 'document' && r.method() === 'GET' && /^\/(Piano%20Coach%20App\.dc\.html)?$/.test(new URL(u).pathname)) {
@@ -276,13 +279,11 @@ async function leaks(p, codes, opt) {
     }
     {
       /* the query string and other parameters of the address stay when the fragment goes */
-      const ctx = await browser.createBrowserContext();
-      const pg = await ctx.newPage();
-      await pg.evaluateOnNewDocument(() => { try { localStorage.setItem('ppp-locale', 'en-US'); localStorage.setItem('ppp-guest', '1'); } catch (e) { /* nothing */ } });
-      await pg.goto(srv.origin + '/?utm=1&x=%20y#pc=' + B.code, { waitUntil: 'networkidle2', timeout: 60000 });
-      await pg.waitForFunction(() => !!(window.PPP && window.PPP.app) && !!document.querySelector('[data-pair-note]'), { timeout: 20000 });
+      const pg = await open('?utm=1&x=%20y#pc=' + B.code);
+      await waitNote(pg);
       ok('the query string is untouched, only the fragment is gone: /?utm=1&x=%20y', await pg.evaluate(() => location.pathname === '/' && location.search === '?utm=1&x=%20y' && location.hash === '' && location.href === location.origin + '/?utm=1&x=%20y'), await pg.evaluate(() => location.href));
-      await ctx.close();
+      ok('and it paired', (await storedCode(pg)) === B.code && (await note(pg)) === EN.connected);
+      await pg.close();
     }
 
     heading('fragments that are not a code: no request, nothing stored');
@@ -329,15 +330,10 @@ async function leaks(p, codes, opt) {
 
     heading('the site cannot be reached: a notice, nothing stored');
     {
-      const ctx = await browser.createBrowserContext();
-      const pg = await ctx.newPage();
-      await pg.evaluateOnNewDocument(() => { try { localStorage.setItem('ppp-locale', 'en-US'); localStorage.setItem('ppp-guest', '1'); } catch (e) { /* nothing */ } });
-      await pg.setRequestInterception(true);
-      pg.on('request', r => { if (/\/api\/worker\/status/.test(r.url())) return r.respond({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'The queue is not available right now. Try again in a minute.', code: 'store' }) }); r.continue(); });
-      await pg.goto(srv.origin + '/#pc=' + A.code, { waitUntil: 'networkidle2', timeout: 60000 });
-      await pg.waitForSelector('[data-pair-note]', { timeout: 20000 });
-      ok('a 503 from the site: the notice says it could not be checked; the code is NOT stored (it was not verified)', (await pg.evaluate(() => document.querySelector('[data-pair-note]').firstElementChild.innerText.trim())) === EN.unreachable && (await pg.evaluate(k => localStorage.getItem(k), KEY)) === null);
-      await ctx.close();
+      const pg = await open('#pc=' + A.code, { failStatus: 503 });
+      await waitNote(pg);
+      ok('a 503 from the site: the notice says it could not be checked (not "the code does not match"); the code is NOT stored (it was not verified)', (await note(pg)) === EN.unreachable && (await stored(pg)) === null, String(await note(pg)));
+      await pg.close();
     }
 
     heading('a device that already has a link: switched, and it says so; the same link again is not "switched"');
@@ -618,7 +614,7 @@ async function leaks(p, codes, opt) {
       ok('and on the wire, over everything the browsers sent (' + Math.round(srv.wire.text.length / 1024) + ' KB, ' + srv.wire.conns + ' connections): no "#", no "pc=", no code outside the X-PPP-PC lines', wireLeaks(srv.wire, codes).length === 0, wireLeaks(srv.wire, codes).join(' | '));
     }
   } catch (e) {
-    ok('the suite ran to the end', false, e && e.stack || String(e));
+    L.ok('the suite ran to the end', false, e && e.stack || String(e));
   } finally {
     await browser.close();
     proxy.close();
