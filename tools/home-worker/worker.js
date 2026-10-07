@@ -8,7 +8,10 @@
      node tools/home-worker/worker.js              keep checking (about once an hour when idle, every ~15 s while something is going on)
      node tools/home-worker/worker.js --once       check once, do everything that is waiting, exit (the desktop-shortcut mode)
      node tools/home-worker/worker.js --check      test the settings and the token, change nothing
-     node tools/home-worker/worker.js --pair       (G10b-3) make the pairing link of this PC's link, copy it to the clipboard and open it in the browser; --show also prints it
+     node tools/home-worker/worker.js --pair       (G10b-3) make the pairing link of this PC's link, copy the phone link to the clipboard and open the PC's own link (with &local=1) in the browser; --show also prints the phone link
+     node tools/home-worker/worker.js --register-protocol     (G10b-4) Windows, this user only (HKCU, no admin): let the PPP page start --once at once from this PC's browser (the pppworker:// link; it takes no argument)
+     node tools/home-worker/worker.js --unregister-protocol   take that registration away again;  --protocol-status says whether it is there and where it points
+     node tools/home-worker/worker.js --log-file [file]       also append every line (the token is hidden as ever) to a file; by itself: worker.log next to the settings file (used by run-once-hidden.cmd)
      node tools/home-worker/worker.js --config <file>
 
    One job: claim -> download the audio (the site's /api/youtube-audio, as the page does) -> ffmpeg to a 44.1 kHz stereo WAV and a
@@ -32,6 +35,7 @@ const { URL } = require('url');
 
 const REPO = path.resolve(__dirname, '..', '..');
 const VERSION = '1.0';
+let lastLog = null;      /* the log of this run (main sets it), so that even the last words of a crash reach the log file */
 const Result = require(path.join(REPO, 'home-result.js'));
 const { convertHelperNotes } = require(path.join(REPO, 'review', 'h10', 'helper-heard.js'));
 
@@ -44,15 +48,21 @@ const pad = n => String(n).padStart(2, '0');
 const clock = d => { d = d || new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); };
 const humanWait = s => (s >= 3600 ? Math.round(s / 360) / 10 + ' h' : s >= 90 ? Math.round(s / 60) + ' min' : s + ' s');
 
-/* a PC link's client code (64 hex) from what a person pastes: the code itself, or the pairing link https://site/#pc=<code>; spaces, dashes and capitals are forgiven
-   (the page's PcLink.normalize does the same). '' when it is not one. */
+/* a PC link's client code (64 hex) from what a person pastes: the code itself, or the pairing link https://site/#pc=<code>[&anything] (G10b-4: what follows an & is not part of the code, as in the page);
+   spaces, dashes and capitals are forgiven (the page's PcLink.normalize does the same). '' when it is not one. */
 const CODE_RE = /^[0-9a-f]{64}$/;
 function codeFrom(text) {
   let t = String(text == null ? '' : text);
   const i = t.indexOf('#pc=');
-  if (i >= 0) { t = t.slice(i + 4); try { t = decodeURIComponent(t); } catch (e) { /* as it is */ } }
+  if (i >= 0) { t = t.slice(i + 4); const a = t.indexOf('&'); if (a >= 0) t = t.slice(0, a); try { t = decodeURIComponent(t); } catch (e) { /* as it is */ } }
   t = t.replace(/[\s-]+/g, '').toLowerCase();
   return CODE_RE.test(t) ? t : '';
+}
+/* G10b-4: the NON-SECRET name of a PC link (the last 6 hex of its id 'pc_' + 22 hex of sha256('ppp-pc-link-v1:' + code)), the same 6 characters that the site gives as linkTag, that the page shows in its
+   banner, its Settings card and under the Add button, and that --pair prints: the owner can tell their own link from somebody else's. No character of the code is in it. '' for what is not a code. */
+function linkTagOf(code) {
+  if (!CODE_RE.test(String(code))) return '';
+  return crypto.createHash('sha256').update('ppp-pc-link-v1:' + code, 'utf8').digest('hex').slice(0, 22).slice(-6);
 }
 
 /* ---------------- settings ---------------- */
@@ -710,7 +720,11 @@ async function checkSetup(cfg, log, deps) {
    (the page does the rest). This puts it in the Windows clipboard, so it can be pasted into a message to oneself, and opens it in this PC's own browser, which pairs this PC too.
    The code is the MASTER secret of the link (it can queue conversions, read results, replace the worker token, remove the link), so: it is read from the settings (clientCode: the code or the whole
    link) or from pc-code.txt next to them; it goes to the clipboard through the standard input of the tool, to the browser as ONE argument (no shell is ever involved, nothing is put in a command
-   line string); and it is never printed - not by the log (which hides it) and not on the console, unless --show is given. Nothing is sent to the site by this command. */
+   line string); and it is never printed - not by the log (which hides it) and not on the console, unless --show is given. Nothing is sent to the site by this command.
+   G10b-4: TWO links come out of it. The PHONE link (<siteUrl>/#pc=<code>) is what goes to the clipboard (and is the one --show prints); the link that is OPENED in this PC's browser is the same with
+   "&local=1" added, which tells the page that this browser is on the PC that runs the worker (so "High-quality (my PC)" starts the conversion at once). The phone link never carries it. What is printed
+   is the link's NAME (linkTagOf: 6 characters that are not secret), so the owner sees the same characters here, in the page's confirmation and in its Settings card. This command does not know whether
+   the page accepted the link (the page asks first when this browser already has another link), so it never says the PC is connected. */
 const PAIR_TOOLS = {
   win32: { copy: ['clip', []], open: ['rundll32', ['url.dll,FileProtocolHandler']] },
   darwin: { copy: ['pbcopy', []], open: ['open', []] },
@@ -763,9 +777,12 @@ async function pairThisPc(cfg, deps) {
     else warn('이 PC가 아직 PC 링크의 코드를 몰라요. PPP > 설정 > 내 PC 연결 > "다른 기기 연결: 링크 복사"로 링크를 복사한 뒤, 이 파일에 붙여 넣고 다시 실행하세요: ' + found.file, 'This PC does not know the PC link code yet. In PPP: Settings > Connect my PC > "Connect another device: copy link", then paste the link into this file and run this again: ' + found.file + ' (or put "clientCode" in the settings).');
     return 1;
   }
-  const link = cfg.siteUrl.replace(/\/+$/, '') + '/#pc=' + found.code;
-  /* the link goes to a program as one argument: it must be exactly what it should be, an http(s) address with no space, quote or shell character in it */
-  if (!/^https?:\/\/[A-Za-z0-9.\-_:[\]]+(\/[A-Za-z0-9._~\-/]*)?\/#pc=[0-9a-f]{64}$/.test(link)) { warn('사이트 주소(siteUrl)에 쓸 수 없는 글자가 있어요.', 'siteUrl has characters that cannot be used in a link.'); return 1; }
+  const link = cfg.siteUrl.replace(/\/+$/, '') + '/#pc=' + found.code;        /* the phone link */
+  const pcLink = link + '&local=1';                                              /* the link of this PC's own browser */
+  const tag = linkTagOf(found.code);
+  /* the links go to a program as one argument: each must be exactly what it should be, an http(s) address with no space, quote or shell character in it */
+  const LINK_RE = /^https?:\/\/[A-Za-z0-9.\-_:[\]]+(\/[A-Za-z0-9._~\-/]*)?\/#pc=[0-9a-f]{64}(&local=1)?$/;
+  if (!LINK_RE.test(link) || !LINK_RE.test(pcLink)) { warn('사이트 주소(siteUrl)에 쓸 수 없는 글자가 있어요.', 'siteUrl has characters that cannot be used in a link.'); return 1; }
   const tools = deps.tools || PAIR_TOOLS[deps.platform || process.platform];
   if (!tools) {
     warn('이 운영체제에서는 링크를 자동으로 복사하거나 열 수 없어요. --show 로 실행해 링크를 직접 복사하세요.', 'Copying and opening the link is not supported on this system. Run with --show and copy the link yourself.');
@@ -774,16 +791,204 @@ async function pairThisPc(cfg, deps) {
   }
   const spawnFn = deps.spawn || spawn;
   const copied = await runPiped(spawnFn, tools.copy[0], tools.copy[1], link);
-  const opened = await runPiped(spawnFn, tools.open[0], tools.open[1].concat([link]), null);
+  const opened = await runPiped(spawnFn, tools.open[0], tools.open[1].concat([pcLink]), null);
   if (deps.show) out(link);
-  if (copied.ok && opened.ok) { say('이 PC가 연결됐어요. 휴대폰용 링크를 복사했어요. 나에게 보내는 메시지에 붙여 넣고 휴대폰에서 열어 주세요.', 'This PC is connected. The link for your phone is copied: paste it in a message to yourself and open it on the phone.'); return 0; }
+  const name = '…' + tag;
+  if (copied.ok && opened.ok) {
+    say('브라우저에서 링크를 열었고, 휴대폰용 링크를 복사했어요. 브라우저에 보이는 PC 링크 이름이 ' + name + ' 인지 확인하세요(다른 링크가 이미 연결돼 있으면 브라우저가 먼저 물어봐요). 복사한 링크는 나에게 보내는 메시지에 붙여 넣고 휴대폰에서 열어 주세요.',
+      'Opened the link in your browser and copied the phone link. Check that the PC link name on the screen is ' + name + ' (the browser asks first if another link is already connected). Paste the copied link in a message to yourself and open it on the phone.');
+    return 0;
+  }
   if (copied.ok) {
-    say('휴대폰용 링크를 복사했어요. 나에게 보내는 메시지에 붙여 넣고 휴대폰에서 열어 주세요.', 'The link for your phone is copied: paste it in a message to yourself and open it on the phone.');
-    warn('이 PC의 브라우저는 열지 못했어요. 이 PC에서도 쓰려면 복사한 링크를 브라우저 주소창에 붙여 넣으세요.', 'This PC\'s browser could not be opened: paste the copied link into its address bar to connect this PC too.');
+    say('휴대폰용 링크를 복사했어요(PC 링크 이름 ' + name + '). 나에게 보내는 메시지에 붙여 넣고 휴대폰에서 열어 주세요.', 'The link for your phone is copied (PC link name ' + name + '): paste it in a message to yourself and open it on the phone.');
+    warn('이 PC의 브라우저는 열지 못했어요. 이 PC에서도 쓰려면 복사한 링크를 브라우저 주소창에 붙여 넣으세요.', 'This PC\'s browser could not be opened: paste the copied link into its address bar to use this PC too.');
     return 0;
   }
   warn('링크를 복사하지 못했어요. --show 로 다시 실행해 링크를 직접 복사하세요.', 'The link could not be copied. Run again with --show and copy it yourself.');
   return 1;
+}
+
+/* ---------------- G10b-4: one run at a time ----------------
+   The scheduled task, the desktop shortcut (run-once.cmd) and the pppworker:// launch from the page all start `--once`. Two of them at the same moment would run the piano models twice on one GPU. So a
+   `--once` takes a LOCK first: the file worker.lock in the settings folder (next to the settings file; ~/.ppp-home-worker when the settings are only the environment), made with the "create, fail if it
+   exists" flag so that two starters cannot both win, holding { pid, startedAt }. A second `--once` that finds a lock whose process is alive and that is younger than 45 minutes stops at once with
+   ONE line and exit code 0. A lock whose process is gone, that is 45 minutes old or older (a conversion is at most 15 minutes of audio; a machine that slept), or that cannot be read (and is more than
+   a few seconds old, so its maker is not still writing it) is taken over. It is removed when the run ends - normally, by an error, by Ctrl-C (process 'exit') - and only if it is still OURS. */
+const LOCK_STALE_MS = 45 * 60 * 1000;
+const settingsDirOf = (cfg, deps) => (cfg && cfg._file ? path.dirname(cfg._file) : path.join(((deps && deps.homedir) || os.homedir)(), '.ppp-home-worker'));
+function pidAlive(pid) {
+  try { process.kill(pid, 0); return true; } catch (e) { return !!e && e.code === 'EPERM'; }
+}
+/* { ok: true, file, pid, startedAt } when this run holds the lock (or none could be made: a settings folder that cannot be written does not stop the work, ok with skipped);
+   { ok: false, pid, startedAt, file } when a live run holds it */
+function acquireRunLock(cfg, deps) {
+  deps = deps || {};
+  const file = path.join(settingsDirOf(cfg, deps), 'worker.lock');
+  const now = (deps.now || Date.now)();
+  const alive = deps.pidAlive || pidAlive;
+  const pid = deps.pid || process.pid;
+  try { fs.mkdirSync(path.dirname(file), { recursive: true }); } catch (e) { return { ok: true, file: '', pid: pid, skipped: String((e && e.code) || e) }; }
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const fd = fs.openSync(file, 'wx');
+      try { fs.writeSync(fd, JSON.stringify({ pid: pid, startedAt: now })); } finally { fs.closeSync(fd); }
+      return { ok: true, file: file, pid: pid, startedAt: now };
+    } catch (e) {
+      if (!e || e.code !== 'EEXIST') return { ok: true, file: '', pid: pid, skipped: String((e && e.code) || e) };
+    }
+    let cur = null, young = false;
+    try { cur = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { cur = null; }
+    if (!cur) { try { young = now - fs.statSync(file).mtimeMs < 5000; } catch (e) { young = false; } }
+    const valid = !!cur && Number.isInteger(cur.pid) && cur.pid > 0 && Number.isFinite(cur.startedAt);
+    const age = valid ? now - cur.startedAt : 0;
+    if (young || (valid && age > -60000 && age < LOCK_STALE_MS && alive(cur.pid))) return { ok: false, pid: valid ? cur.pid : 0, startedAt: valid ? cur.startedAt : 0, file: file };
+    try { fs.unlinkSync(file); } catch (e) { /* somebody else took it over first: the next round sees theirs */ }
+  }
+  return { ok: false, pid: 0, startedAt: 0, file: file };
+}
+/* only our own lock is removed (a lock taken over after 45 minutes now belongs to the new run) */
+function releaseRunLock(lock) {
+  if (!lock || !lock.file || lock.released) return;
+  lock.released = true;
+  try {
+    const cur = JSON.parse(fs.readFileSync(lock.file, 'utf8'));
+    if (cur && cur.pid === lock.pid && cur.startedAt === lock.startedAt) fs.unlinkSync(lock.file);
+  } catch (e) { /* already gone */ }
+}
+
+/* a log file that also gets every line (the lines are already clean: makeLog hides the token and the client code before it calls its output). Kept small: past 512 KB the old file is set aside as <file>.old. */
+function appendLog(file, line) {
+  if (!file) return;
+  try {
+    try { if (fs.statSync(file).size > 512 * 1024) fs.renameSync(file, file + '.old'); } catch (e) { /* no file yet */ }
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.appendFileSync(file, line + '\n');
+  } catch (e) { /* a log that cannot be written must not stop the work */ }
+}
+
+/* ---------------- G10b-4: the pppworker:// link (Windows, this user only) ----------------
+   A web page can ask the browser to open a link whose scheme is registered with Windows. Registering "pppworker" (under HKCU\Software\Classes: the current user's own part of the registry, no administrator needed) lets the
+   PPP page start THIS worker at once when the person presses "High-quality (my PC)" in the PC's own browser, instead of waiting for the next scheduled check.
+   What registering does: three values, nothing else -
+     HKCU\Software\Classes\pppworker                     (Default) = "URL:PPP worker"     and     "URL Protocol" = ""
+     HKCU\Software\Classes\pppworker\shell\open\command  (Default) = wscript.exe //B //Nologo "<this folder>\run-hidden.vbs"
+   The command has NO %1 and run-hidden.vbs never reads its arguments: whatever follows pppworker:// is thrown away, so no page can pass this PC anything - a page that fires pppworker://anything only makes the browser ask
+   "Open PPP worker?" and, if the person agrees, starts one bounded `--once` run, which asks the PPP site for the jobs of the user's OWN link (and does nothing if there are none). The run lock keeps those runs from piling up.
+   reg.exe is started with an argument VECTOR and no shell (never a command line built as a string); the one text that is built - the command value - is made of the fixed wscript words and this folder's
+   run-hidden.vbs path, which must be absolute, exist, end in run-hidden.vbs and hold no quote, percent sign, control character or line break (a %1 or %L in the path would be replaced by Windows). */
+const REG_HIVE = 'HKCU';
+const PROTO_ROOT = REG_HIVE + '\\Software\\Classes\\pppworker';
+const PROTO_CMD_KEY = PROTO_ROOT + '\\shell\\open\\command';
+const PROTO_TITLE = 'URL:PPP worker';
+const regExeOf = deps => (deps && deps.regExe) || path.join(process.env.SystemRoot || process.env.windir || 'C:\\Windows', 'System32', 'reg.exe');
+
+/* what is wrong with the path of run-hidden.vbs, as a sentence ('' when it can be used) */
+function vbsProblem(vbs, exists) {
+  if (typeof vbs !== 'string' || !vbs) return 'no path';
+  if (/["%\u0000-\u001f\u007f-\u009f\u2028\u2029]/.test(vbs)) return 'the path has a quote, a percent sign or a control character';
+  if (!/^(?:[A-Za-z]:[\\/]|\\\\)/.test(vbs)) return 'the path is not absolute';
+  if (!/[\\/]run-hidden\.vbs$/.test(vbs)) return 'the file is not run-hidden.vbs';
+  if (!exists(vbs)) return 'run-hidden.vbs is not there';
+  return '';
+}
+const protocolCommand = vbs => 'wscript.exe //B //Nologo "' + vbs + '"';
+
+/* run reg.exe with an argument vector, no shell; resolves { ok, code, out } and never rejects */
+function runReg(spawnFn, regExe, args) {
+  return new Promise(resolve => {
+    let child, out = '', done = false;
+    const fin = r => { if (!done) { done = true; clearTimeout(timer); resolve(r); } };
+    try { child = spawnFn(regExe, args, { windowsHide: true, shell: false, stdio: ['ignore', 'pipe', 'pipe'] }); }
+    catch (e) { return resolve({ ok: false, code: -1, out: '', why: String((e && e.code) || (e && e.message) || e) }); }
+    const timer = setTimeout(() => { try { child.kill(); } catch (e) { /* gone */ } fin({ ok: false, code: -1, out: out, why: 'timeout' }); }, 20000);
+    if (child.stdout) child.stdout.on('data', d => { out += d.toString('utf8'); });
+    if (child.stderr) child.stderr.on('data', () => {});
+    child.on('error', e => fin({ ok: false, code: -1, out: out, why: String((e && e.code) || (e && e.message) || e) }));
+    child.on('close', code => fin({ ok: code === 0, code: code, out: out }));
+  });
+}
+/* the REG_SZ value of a key, or null: `reg query <key> /ve` (or /v <name>) prints   (Default)    REG_SZ    <value>   in the console's language */
+async function regValue(spawnFn, regExe, key, name) {
+  const r = await runReg(spawnFn, regExe, name ? ['query', key, '/v', name] : ['query', key, '/ve']);
+  if (!r.ok) return null;
+  const m = String(r.out).match(/REG_SZ[ \t]*(.*)$/m);
+  return m ? m[1].replace(/\r$/, '') : '';
+}
+/* paths printed by reg.exe come back in the console's code page: compare only what is ASCII in both (a Korean user name is the same on both sides, but not the same bytes) */
+const asciiOnly = s => String(s).replace(/[^\x20-\x7e]/g, '').toLowerCase();
+
+async function protocolState(deps) {
+  deps = deps || {};
+  const spawnFn = deps.spawn || spawn, regExe = regExeOf(deps);
+  const title = await regValue(spawnFn, regExe, PROTO_ROOT);
+  const command = await regValue(spawnFn, regExe, PROTO_CMD_KEY);
+  const vbs = deps.vbsPath || path.join(__dirname, 'run-hidden.vbs');
+  const exists = deps.exists || (f => fs.existsSync(f));
+  const registered = title !== null || command !== null;
+  const ours = title === PROTO_TITLE && command !== null && /run-hidden\.vbs"?$/i.test(command) && /^wscript\.exe\s+\/\/B\s+\/\/Nologo\s+"/i.test(command);
+  const here = command !== null && asciiOnly(command) === asciiOnly(protocolCommand(vbs));
+  return { registered: registered, ours: ours, here: here, title: title, command: command, vbs: vbs, vbsExists: exists(vbs) };
+}
+
+function protocolSay(deps) {
+  const log = (deps && deps.log) || makeLog({}, deps && deps.stdout, deps && deps.stderr);
+  return { log: log, say: (ko, en) => { log(ko); log(en); }, warn: (ko, en) => { log.warn(ko); log.warn(en); } };
+}
+const notWindows = (deps, o) => {
+  if ((deps.platform || process.platform) === 'win32') return false;
+  o.warn('이 기능은 Windows 전용이에요.', 'The pppworker:// link is for Windows only.');
+  return true;
+};
+const UNDO_HELP = ['되돌리려면: tools\\home-worker\\unregister-protocol.cmd 를 더블클릭하거나 node tools/home-worker/worker.js --unregister-protocol', 'To undo it: double-click tools\\home-worker\\unregister-protocol.cmd or run node tools/home-worker/worker.js --unregister-protocol'];
+
+async function registerProtocol(deps) {
+  deps = deps || {};
+  const o = protocolSay(deps);
+  if (notWindows(deps, o)) return 1;
+  const spawnFn = deps.spawn || spawn, regExe = regExeOf(deps);
+  const vbs = deps.vbsPath !== undefined ? deps.vbsPath : path.join(__dirname, 'run-hidden.vbs');
+  const exists = deps.exists || (f => fs.existsSync(f));
+  const problem = vbsProblem(vbs, exists) || (exists(path.join(path.dirname(vbs), 'run-once-hidden.cmd')) ? '' : 'run-once-hidden.cmd is not next to it');
+  if (problem) { o.warn('등록하지 않았어요: ' + problem + '.', 'Not registered: ' + problem + '.'); return 1; }
+  const steps = [
+    ['add', PROTO_ROOT, '/ve', '/t', 'REG_SZ', '/d', PROTO_TITLE, '/f'],
+    ['add', PROTO_ROOT, '/v', 'URL Protocol', '/t', 'REG_SZ', '/d', '', '/f'],
+    ['add', PROTO_CMD_KEY, '/ve', '/t', 'REG_SZ', '/d', protocolCommand(vbs), '/f']
+  ];
+  for (const args of steps) {
+    const r = await runReg(spawnFn, regExe, args);
+    if (!r.ok) { o.warn('등록하지 못했어요(reg.exe가 실패했어요: ' + (r.why || 'exit ' + r.code) + '). 아무것도 바뀌지 않았거나 일부만 바뀌었을 수 있어요: 다시 실행하거나 등록 해제를 실행하세요.', 'Could not register (reg.exe failed: ' + (r.why || 'exit ' + r.code) + '). Nothing, or only part, was written: run it again, or run the unregister command.'); return 1; }
+  }
+  o.say('등록했어요. 이제 이 PC의 브라우저에서 PPP의 「고품질 변환(내 PC)」을 누르면 바로 시작해요(처음 한 번 브라우저가 「PPP worker를 열까요?」 하고 물어요). 현재 사용자 계정에만 적용돼요(관리자 권한 없음).', 'Registered. Now "High-quality (my PC)" in PPP, pressed in this PC\'s browser, starts the conversion at once (the first time, the browser asks "Open PPP worker?"). It applies to your Windows user only (no administrator rights).');
+  o.say('쓰인 곳: ' + PROTO_ROOT + ' (3개 값). 실행되는 것: ' + protocolCommand(vbs) + ' — 주소 뒤의 내용은 받지 않아요.', 'Written under ' + PROTO_ROOT + ' (three values). What runs: ' + protocolCommand(vbs) + ' - anything after pppworker:// is ignored.');
+  o.say(UNDO_HELP[0], UNDO_HELP[1]);
+  return 0;
+}
+
+async function unregisterProtocol(deps) {
+  deps = deps || {};
+  const o = protocolSay(deps);
+  if (notWindows(deps, o)) return 1;
+  const st = await protocolState(deps);
+  if (!st.registered) { o.say('등록된 게 없어요. 할 일이 없어요.', 'Nothing is registered. Nothing to do.'); return 0; }
+  if (!st.ours) { o.warn('pppworker 항목이 이 도구가 만든 것 같지 않아서 지우지 않았어요.', 'The pppworker entry does not look like the one this tool makes, so it was not removed.'); return 1; }
+  const r = await runReg(deps.spawn || spawn, regExeOf(deps), ['delete', PROTO_ROOT, '/f']);
+  if (!r.ok) { o.warn('지우지 못했어요(reg.exe가 실패했어요: ' + (r.why || 'exit ' + r.code) + ').', 'Could not remove it (reg.exe failed: ' + (r.why || 'exit ' + r.code) + ').'); return 1; }
+  o.say('등록을 지웠어요(' + PROTO_ROOT + ' 와 그 아래 항목만). 이제 PPP 페이지는 이 PC를 바로 시작하지 못하고, 다음 확인 때 처리돼요.', 'Removed the registration (' + PROTO_ROOT + ' and what is under it, nothing else). The PPP page can no longer start this PC at once; jobs wait for the next check.');
+  return 0;
+}
+
+async function protocolStatus(deps) {
+  deps = deps || {};
+  const o = protocolSay(deps);
+  if (notWindows(deps, o)) return 1;
+  const st = await protocolState(deps);
+  if (!st.registered) { o.say('등록되어 있지 않아요(register-protocol.cmd 를 더블클릭하면 등록해요).', 'Not registered (double-click register-protocol.cmd to register it).'); return 1; }
+  if (!st.ours) { o.warn('pppworker 항목이 있지만 이 도구가 만든 것 같지 않아요.', 'A pppworker entry exists but it does not look like the one this tool makes.'); return 1; }
+  if (!st.here) { o.warn('등록되어 있지만 다른 폴더를 가리켜요: ' + st.command + ' (이 폴더에서 다시 등록하세요).', 'Registered, but it points to another folder: ' + st.command + ' (register it again from this folder).'); return 1; }
+  if (!st.vbsExists) { o.warn('등록되어 있지만 run-hidden.vbs 파일이 없어요.', 'Registered, but run-hidden.vbs is missing.'); return 1; }
+  o.say('등록되어 있고 이 폴더를 가리켜요.', 'Registered, and it points to this folder.');
+  return 0;
 }
 
 async function main(argv, deps) {
@@ -793,14 +998,24 @@ async function main(argv, deps) {
     return 0;
   }
   const opt = n => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
+  /* G10b-4: the pppworker:// registration needs no settings (a PC that is only being set up can have it) */
+  if (args.includes('--register-protocol')) return registerProtocol(Object.assign({}, deps && deps.protocol));
+  if (args.includes('--unregister-protocol')) return unregisterProtocol(Object.assign({}, deps && deps.protocol));
+  if (args.includes('--protocol-status')) return protocolStatus(Object.assign({}, deps && deps.protocol));
   let cfg;
   try { cfg = loadConfig(opt('--config')); } catch (e) { console.error(e.message); return 1; }
   if (args.includes('--pair')) return pairThisPc(cfg, Object.assign({ show: args.includes('--show') }, deps && deps.pair));
-  const log = makeLog(cfg);
+  /* --log-file [file]: every line the worker prints also goes to a file (default: worker.log next to the settings file) */
+  const li = args.indexOf('--log-file');
+  const logFile = li < 0 ? '' : (args[li + 1] && !/^--/.test(args[li + 1]) ? path.resolve(args[li + 1]) : path.join(settingsDirOf(cfg, deps && deps.lock), 'worker.log'));
+  const tee = to => line => { to(line); appendLog(logFile, line); };
+  const log = logFile ? makeLog(cfg, tee(s => process.stdout.write(s + '\n')), tee(s => process.stderr.write(s + '\n'))) : makeLog(cfg);
+  lastLog = log;
+  if (logFile) appendLog(logFile, '---- ' + new Date().toISOString() + ' ' + args.filter(a => /^--(once|check|log-file)$/.test(a)).join(' ') + ' ----');
   if (args.includes('--check')) return checkSetup(cfg, log);
   const problems = configProblems(cfg);
   if (problems.length) { problems.forEach(p => log.warn('Settings: ' + p)); log.warn('Run with --check for more.'); return 1; }
-  const w = createWorker(cfg);
+  const w = createWorker(cfg, { log: log });
   let signals = 0;
   const onSignal = sig => {
     signals++;
@@ -819,11 +1034,21 @@ async function main(argv, deps) {
   process.on('SIGINT', () => onSignal('Ctrl-C'));
   process.on('SIGTERM', () => onSignal('terminate'));
   process.on('unhandledRejection', e => log.warn('Unexpected: ' + (e && e.stack || e)));
-  return args.includes('--once') ? w.runOnce() : w.runForever();
+  if (!args.includes('--once')) return w.runForever();
+  /* --once takes the run lock first (see acquireRunLock): the scheduled task, the desktop shortcut and the pppworker:// launch can never run the models twice at once */
+  const lock = acquireRunLock(cfg, Object.assign({}, deps && deps.lock));
+  if (!lock.ok) {
+    log('이미 다른 실행이 진행 중이에요(시작 ' + (lock.startedAt ? clock(new Date(lock.startedAt)) : '?') + ', pid ' + lock.pid + '): 이번 실행은 끝냅니다. / Another run is already going (started ' + (lock.startedAt ? clock(new Date(lock.startedAt)) : '?') + ', pid ' + lock.pid + '): this one stops.');
+    return 0;
+  }
+  const onExit = () => releaseRunLock(lock);
+  process.on('exit', onExit);
+  try { return await w.runOnce(); } finally { releaseRunLock(lock); process.removeListener('exit', onExit); }
 }
 
-module.exports = { main, loadConfig, configProblems, siteProblems, codeFrom, findPcCode, pairThisPc, createWorker, checkSetup, makeLog, request, downloadTo, runTool, looksLikeAudioFile, DEFAULTS, VERSION };
+module.exports = { main, loadConfig, configProblems, siteProblems, codeFrom, linkTagOf, findPcCode, pairThisPc, createWorker, checkSetup, makeLog, request, downloadTo, runTool, looksLikeAudioFile,
+  acquireRunLock, releaseRunLock, LOCK_STALE_MS, appendLog, registerProtocol, unregisterProtocol, protocolStatus, vbsProblem, protocolCommand, PROTO_ROOT, PROTO_CMD_KEY, DEFAULTS, VERSION };
 
 if (require.main === module) {
-  main(process.argv).then(code => process.exit(code), e => { console.error('The worker stopped: ' + (e && e.message || e)); process.exit(1); });
+  main(process.argv).then(code => process.exit(code), e => { const m = 'The worker stopped: ' + (e && e.message || e); if (lastLog) lastLog.warn(m); else console.error(m); process.exit(1); });
 }

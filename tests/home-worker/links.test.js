@@ -67,6 +67,37 @@ async function main() {
     } finally { await S.close(); }
   }
 
+  heading('the link\'s name (G10b-4): GET /api/worker/status gives linkTag - 6 hex, the last 6 of the link id, not secret; every other field of the answer is as it was');
+  {
+    const S = await L.startService({ users: [] });
+    try {
+      const a = await mk(S, '21.0.0.1'), b = await mk(S, '21.0.0.2');
+      const st = await req(S.port, 'GET', '/api/worker/status', { code: a.body.clientCode });
+      const w = st.body && st.body.worker;
+      ok('the answer is { worker: {...} } and the worker object has the six fields it always had - with the same meaning - plus linkTag', st.status === 200 && Object.keys(st.body).join() === 'worker'
+        && Object.keys(w).sort().join() === 'activePollSeconds,alive,everSeen,hasToken,idlePollSeconds,lastSeenAt,linkTag' && w.hasToken === true && w.everSeen === false && w.alive === false && w.lastSeenAt === null
+        && Number.isFinite(w.idlePollSeconds) && w.idlePollSeconds >= 900 && w.activePollSeconds === 15, st.text);
+      ok('linkTag is 6 lowercase hex characters: the last 6 of the link\'s id (pc_ + 22 hex), i.e. of a hash of the code', /^[0-9a-f]{6}$/.test(w.linkTag) && w.linkTag === a.body.id.slice(-6) && w.linkTag === J.linkTagOf(J.linkIdOf(J.codeHash(a.body.clientCode))) && J.codeHash(a.body.clientCode).toString('hex').slice(0, 22).endsWith(w.linkTag), w.linkTag);
+      ok('it is not made of the code: it is neither the first nor the last 6 characters of it, and another link has another name', w.linkTag !== a.body.clientCode.slice(0, 6) && w.linkTag !== a.body.clientCode.slice(-6) && (await req(S.port, 'GET', '/api/worker/status', { code: b.body.clientCode })).body.worker.linkTag !== w.linkTag);
+      ok('the answer holds no other secret: not the code, not its hash, not the link\'s whole id, no 64-hex string at all', !st.text.includes(a.body.clientCode) && !st.text.includes(J.codeHash(a.body.clientCode).toString('hex')) && !st.text.includes(a.body.id) && !/[0-9a-f]{64}/.test(st.text) && !/pc_[0-9a-f]{7,}/.test(st.text));
+      const list = await req(S.port, 'GET', '/api/jobs', { code: a.body.clientCode });
+      const qr = await req(S.port, 'POST', '/api/jobs', { code: a.body.clientCode, body: { url: WATCH('bbbbbbbbbbb'), title: 'A piece' } });
+      ok('the list and the answer to a queued job carry the same summary, with the same name - and still no other secret', list.body.worker.linkTag === w.linkTag && qr.status === 201 && qr.body.worker.linkTag === w.linkTag && !/[0-9a-f]{64}/.test(list.text + qr.text) && !(list.text + qr.text).includes(a.body.id));
+      ok('rotating the PC token or the PC being seen does not change it (it names the link)', await (async () => {
+        await req(S.port, 'GET', '/api/worker/ping', { token: a.body.workerToken });
+        const rot = await req(S.port, 'POST', '/api/pc-links/me/worker-token', { code: a.body.clientCode, body: {} });
+        const after = (await req(S.port, 'GET', '/api/worker/status', { code: a.body.clientCode })).body.worker;
+        return rot.status === 201 && after.linkTag === w.linkTag && after.everSeen === true;
+      })());
+      ok('the PC\'s own routes (ping, claim) know nothing of it: the name is for the person\'s side', await (async () => {
+        const ping = await req(S.port, 'GET', '/api/worker/ping', { token: (await req(S.port, 'POST', '/api/pc-links/me/worker-token', { code: a.body.clientCode, body: {} })).body.workerToken });
+        return ping.status === 200 && !/linkTag/.test(ping.text);
+      })());
+      ok('without a valid code the route says 401 and no name; an unknown code gets none either', (await req(S.port, 'GET', '/api/worker/status')).status === 401 && !/linkTag/.test((await req(S.port, 'GET', '/api/worker/status')).text) && !/linkTag/.test((await req(S.port, 'GET', '/api/worker/status', { code: 'ab'.repeat(32) })).text));
+      ok('linkTagOf is for a link id only: null for anything else (an account\'s row, a short id, a longer one, upper case)', J.linkTagOf('pc_' + 'ab'.repeat(11)) === 'ababab' && [null, undefined, '', 'u_12', 'pc_abc', 'pc_' + 'ab'.repeat(12), 'pc_' + 'AB'.repeat(11), 'xx_' + 'ab'.repeat(11)].every(x => J.linkTagOf(x) === null));
+    } finally { await S.close(); }
+  }
+
   heading('making links is limited per address: 5 an hour, 20 a day, from the links themselves');
   {
     const S = await L.startService({ users: [] });
