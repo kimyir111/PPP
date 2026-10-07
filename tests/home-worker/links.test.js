@@ -20,6 +20,8 @@ const HOUR = 3600 * 1000, DAY = 24 * HOUR;
 const mk = (S, ip, extra) => req(S.port, 'POST', '/api/pc-links', Object.assign({ body: {}, ip: ip }, extra));
 const jobOfLink = (S, name) => Array.from(S.svc._state.jobs.values()).filter(j => j.ownerId === S.linkId(name));
 const queue = (S, name, id) => S.as(name).post('/api/jobs', { url: WATCH(id || 'aaaaaaaaaaa'), title: 'A piece' });
+/* a conversion of the link that the PC has finished (40 notes): queued, claimed by the link's worker token, result posted */
+const finished = async (S, name, id, n) => { const q = (await queue(S, name, id)).body.job; const g = (await S.worker(S.token(name)).post('/api/worker/claim', { once: true })).body.job; await S.worker(S.token(name)).post('/api/worker/jobs/' + g.id + '/result', goodResult(n || 40)); return q; };
 
 async function main() {
   heading('making a link, with no sign-in');
@@ -736,6 +738,71 @@ async function main() {
       ok('the share is counted by the keyed address tag kept on each link, which only the maker\'s address has', S.svc._state.links.get(S.linkId('a1')).ipTag === S.svc._state.links.get(S.linkId('a3')).ipTag && S.svc._state.links.get(S.linkId('a1')).ipTag !== S.svc._state.links.get(S.linkId('other')).ipTag);
     } finally { await S.close(); }
   }
+  heading('opening a finished conversion reads its notes from the database: bounded per link and per address (the review: 300 reads were 261 MB and no 429)');
+  {
+    const was = [J.LIMITS.RESULT_READS_PER_HOUR, J.LIMITS.RESULT_READS_PER_IP_PER_HOUR];
+    J.LIMITS.RESULT_READS_PER_HOUR = 5;
+    J.LIMITS.RESULT_READS_PER_IP_PER_HOUR = 1000;
+    const S = await L.startService({ users: ['rd', 'other'] });
+    try {
+      const j = await finished(S, 'rd', 'readlimit01'), jo = await finished(S, 'other', 'readlimit02');
+      const waiting = (await queue(S, 'rd', 'readlimit03')).body.job;
+      S.store.reset();
+      const out = [];
+      let last;
+      for (let i = 0; i < 8; i++) { last = await S.as('rd').get('/api/jobs/' + j.id, { ip: '51.0.0.1' }); out.push(last.status); }
+      ok('a link may open its finished conversions 5 times an hour (here; 60 by default): the 6th to 8th are 429 "too-many", with a Retry-After and a sentence of their own', out.join() === '200,200,200,200,200,429,429,429' && last.body.code === 'too-many' && Number(last.headers['retry-after']) > 0 && /opened just now/.test(last.body.error), out.join());
+      ok('and a refused read costs the database nothing: the notes were read from the store exactly 5 times, not 8', S.store.calls.getResult === 5, S.store.calls.getResult + '');
+      ok('what is not a read of notes is never limited: the list (30 times), the status of a waiting conversion (10 times), the worker status, a cancel', await (async () => {
+        for (let i = 0; i < 30; i++) if ((await S.as('rd').get('/api/jobs', { ip: '51.0.0.1' })).status !== 200) return false;
+        for (let i = 0; i < 10; i++) if ((await S.as('rd').get('/api/jobs/' + waiting.id, { ip: '51.0.0.1' })).status !== 200) return false;
+        return (await S.as('rd').get('/api/worker/status', { ip: '51.0.0.1' })).status === 200 && (await S.as('rd').post('/api/jobs/' + waiting.id + '/cancel', {}, { ip: '51.0.0.1' })).status === 200;
+      })());
+      ok('another link, from the same address, still reads (the link\'s own budget); the first link is still refused from a fresh address (the budget is the link\'s, not the address\'s)', (await S.as('other').get('/api/jobs/' + jo.id, { ip: '51.0.0.1' })).status === 200
+        && (await S.as('rd').get('/api/jobs/' + j.id, { ip: '51.0.0.2' })).status === 429);
+      S.advance(61 * 60 * 1000);
+      const again = await S.as('rd').get('/api/jobs/' + j.id, { ip: '51.0.0.1' });
+      ok('an hour later it can read again, and the notes are all there', again.status === 200 && again.body.result.notes.length === 40);
+    } finally { J.LIMITS.RESULT_READS_PER_HOUR = was[0]; J.LIMITS.RESULT_READS_PER_IP_PER_HOUR = was[1]; await S.close(); }
+  }
+  {
+    /* per address: links are free to make, so a stranger's links each have a budget of their own; the address has one for all of them */
+    const was = [J.LIMITS.RESULT_READS_PER_HOUR, J.LIMITS.RESULT_READS_PER_IP_PER_HOUR];
+    J.LIMITS.RESULT_READS_PER_HOUR = 3;
+    J.LIMITS.RESULT_READS_PER_IP_PER_HOUR = 2;
+    const S = await L.startService({ users: ['a1', 'a2'] });
+    try {
+      const j1 = await finished(S, 'a1', 'readip00001'), j2 = await finished(S, 'a2', 'readip00002');
+      const rd = (n, j, ip) => S.as(n).get('/api/jobs/' + j.id, { ip: ip }).then(r => r.status);
+      const seq = [await rd('a1', j1, '52.0.0.1'), await rd('a2', j2, '52.0.0.1'), await rd('a1', j1, '52.0.0.1'), await rd('a1', j1, '52.0.0.2'), await rd('a1', j1, '52.0.0.2'), await rd('a1', j1, '52.0.0.3')];
+      ok('two links from one address share its budget (here 2 an hour; 240 by default): the third read from it is 429 whichever link asks; a read the address refused gives the link\'s own budget back (a1 then reads twice more from another address, 3 in all), and the next one is the link\'s 429', seq.join() === '200,200,429,200,200,429', seq.join());
+    } finally { J.LIMITS.RESULT_READS_PER_HOUR = was[0]; J.LIMITS.RESULT_READS_PER_IP_PER_HOUR = was[1]; await S.close(); }
+  }
+  {
+    /* an IPv6 network is one address here as everywhere (its /48) */
+    const was = [J.LIMITS.RESULT_READS_PER_HOUR, J.LIMITS.RESULT_READS_PER_IP_PER_HOUR];
+    J.LIMITS.RESULT_READS_PER_HOUR = 1000;
+    J.LIMITS.RESULT_READS_PER_IP_PER_HOUR = 4;
+    const S = await L.startService({ users: ['v6'] });
+    try {
+      const j = await finished(S, 'v6', 'readip00006');
+      const out = [];
+      for (let i = 0; i < 6; i++) out.push((await S.as('v6').get('/api/jobs/' + j.id, { ip: '2001:db8:53:' + ((i + 1) * 256).toString(16) + '::' + (i + 1) })).status);
+      ok('six reads from six different /56s of one /48: four are served, then 429', out.join() === '200,200,200,200,429,429', out.join());
+      ok('another /48 is not touched', (await S.as('v6').get('/api/jobs/' + j.id, { ip: '2001:db8:54::1' })).status === 200);
+    } finally { J.LIMITS.RESULT_READS_PER_HOUR = was[0]; J.LIMITS.RESULT_READS_PER_IP_PER_HOUR = was[1]; await S.close(); }
+  }
+  {
+    const lim = J.LIMITS;
+    const S = await L.startService({ users: ['norm'] });
+    try {
+      const j = await finished(S, 'norm', 'readnormal1');
+      const out = [];
+      for (let i = 0; i < 40; i++) out.push((await S.as('norm').get('/api/jobs/' + j.id, { ip: '55.0.0.1' })).status);
+      ok('by the defaults (60 an hour per link, 240 per address) a person who presses Open forty times in an hour is never refused: the page does not meet the limit in normal use', lim.RESULT_READS_PER_HOUR === 60 && lim.RESULT_READS_PER_IP_PER_HOUR === 240 && out.every(x => x === 200), out.filter(x => x !== 200).length + ' refused');
+    } finally { await S.close(); }
+  }
+
   {
     /* one stranger, no account, one address: the most it can ever hold on the site, by the defaults */
     const lim = J.LIMITS;

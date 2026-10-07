@@ -86,6 +86,10 @@ const LIMITS = {
   TOKENS_PER_HOUR: 10,
   TOKENS_PER_IP_PER_HOUR: 20,
   CLAIMS_PER_HOUR: 600,
+  /* opening a finished conversion reads its notes from the database (up to 2 MB, a typical one 100-400 KB) and sends them: Neon's free plan has a small egress, so these reads are
+     bounded per link and per address (the page opens one when a person presses Open, a few an hour at most) */
+  RESULT_READS_PER_HOUR: 60,
+  RESULT_READS_PER_IP_PER_HOUR: 240,
   /* wrong secrets (a client code or a worker token that is not a live one) per address; only FAILURES are counted, a valid secret is never refused for it */
   BAD_TOKENS_PER_HOUR: 20,
   /* PC links: made by anybody, so bounded. Per creating address (an IPv6 address counts as its /48: see addrKey) and for the whole site; counted from the links
@@ -221,7 +225,10 @@ function create(deps) {
     tokens: guestShare.slidingWindow(L.TOKENS_PER_HOUR, HOUR),
     tokensIp: guestShare.slidingWindow(L.TOKENS_PER_IP_PER_HOUR, HOUR),
     claims: guestShare.slidingWindow(L.CLAIMS_PER_HOUR, HOUR),
-    badTokens: guestShare.slidingWindow(L.BAD_TOKENS_PER_HOUR, HOUR)
+    badTokens: guestShare.slidingWindow(L.BAD_TOKENS_PER_HOUR, HOUR),
+    /* (these two run on the service's clock, like the keeping times; every limiter here keeps at most 10,000 keys, the least recently used one is dropped) */
+    reads: guestShare.slidingWindow(L.RESULT_READS_PER_HOUR, HOUR, now),
+    readsIp: guestShare.slidingWindow(L.RESULT_READS_PER_IP_PER_HOUR, HOUR, now)
   };
 
   function fill(data) {
@@ -587,6 +594,10 @@ function create(deps) {
     await sweep(now());
     const out = { job: publicJob(job) };
     if (job.status === 'done') {
+      /* the notes come from the database: the budget is taken BEFORE the read (a refused request costs the database nothing) and given back if the address's own budget refuses */
+      const ip = addrKey(deps.clientIp(req) || 'unknown');
+      if (!limiters.reads.take(link.id)) throw httpError(429, 'Too many conversions were opened just now. Try again later.', 'too-many', { retryAfter: 600 });
+      if (!limiters.readsIp.take(ip)) { limiters.reads.release(link.id); throw httpError(429, 'Too many conversions were opened just now. Try again later.', 'too-many', { retryAfter: 600 }); }
       const result = await store.getResult(job.id, link.id);
       if (!result) throw httpError(410, 'The notes of that conversion are no longer kept.', 'gone');
       out.result = result;
