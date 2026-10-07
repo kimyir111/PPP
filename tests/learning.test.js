@@ -238,7 +238,7 @@ function harness() {
   ok('a left-hand problem drills the left hand first', /^Left hand alone/.test(R.seqLeft[0] || ''), R.seqLeft.join(' → '));
   ok('a timing problem drills slowly, not hands-apart',
     R.seqTiming.every(s => !/alone/.test(s)), R.seqTiming.join(' → '));
-  ok('an unplayed passage starts with a read-through', /Read it through/.test(R.seqFresh[0] || ''), R.seqFresh.join(' → '));
+  ok('an unplayed passage starts with a read-through at the score tempo', /^Read it through@100$/.test(R.seqFresh[0] || ''), R.seqFresh.join(' → '));
   ok('no practice data asks for a reading, not a guess',
     R.emptyRec.kind === 'assess' && R.emptyRanges === 0, R.emptyRec.action);
   ok('a piece never played opens at the score tempo, not slowed down',

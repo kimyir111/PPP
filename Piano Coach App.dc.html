@@ -6412,8 +6412,10 @@ const Learning = {
     const steps = [];
     const push = (label, hands, tempoPct, reps) => steps.push({ label: label, hands: hands, tempoPct: tempoPct, reps: reps });
 
+    /* Never played: the read-through is at the score tempo, like the first
+       recommendation, so the Loop panel matches the tempo the player opened at. */
     if (overall == null) {
-      push(tx('Read it through'), 'both', 75, 1);
+      push(tx('Read it through'), 'both', 100, 1);
       push(tx('Hands together'), 'both', 75, 2);
       push(tx('Full tempo'), 'both', 100, 1);
       return steps;
