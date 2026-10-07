@@ -111,6 +111,7 @@ const EPS = 1e-6;
 const num = r => RAT.toNumber(r);
 
 function jsonl(file) { return fs.readFileSync(file, 'utf8').split('\n').filter(l => l.trim()).map(l => JSON.parse(l)); }
+const F1_KEYS = ['arr.melody.precision', 'arr.melody.f1', 'arr.melody.f1pc'];      /* the metrics only a lead sheet row carries */
 const mean = xs => { const v = xs.filter(x => x !== null && x !== undefined && !Number.isNaN(x)); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
 
 /* ---- graph reading (positions in quarter notes) ---- */
@@ -210,8 +211,10 @@ function summarise(arrs, melodyAt, chordsAt, withF1, detail) {
   const made = arrs.filter(a => a && a.ok);
   const m = { 'arr.made': made.length / LEVELS.length };
   if (!made.length) { if (detail) detail.levels = arrs.map((a, i) => ({ level: LEVELS[i], made: false, reason: (a && a.reason) || null })); return m; }
-  const per = made.map(a => measureLevel(a, melodyAt, chordsAt, withF1));
-  Object.keys(per[0]).filter(k => k[0] !== '_').forEach(k => { m[k] = mean(per.map(p => p[k])); });
+  /* PPP_RECARR_DETAIL asks for the F1s of every arm (a table of a reduce row's right hand), but it must not change a result: they are measured when the detail wants them and enter
+     the metrics only for the rows that carry them (the lead sheet's: README, "the v2-lead row") */
+  const per = made.map(a => measureLevel(a, melodyAt, chordsAt, withF1 || !!detail));
+  Object.keys(per[0]).filter(k => k[0] !== '_' && (withF1 || F1_KEYS.indexOf(k) < 0)).forEach(k => { m[k] = mean(per.map(p => p[k])); });
   const sp = M.levelSpread(per.map(p => ({ keys: p._keys, fp: p._fp })));
   if (sp) { m['arr.level.distinct'] = sp.distinct; m['arr.level.distance'] = sp.distance; }
   if (withF1) m['arr.relaxed'] = made.filter(a => a.levelNote).length / made.length;
@@ -270,7 +273,7 @@ async function runJob(job, refs) {
   const arrs = await arrangeAll(g, mode);
   const lead = mode === 'leadsheet';
   const detail = DETAIL ? { id: job.id, mode: mode } : null;
-  const metrics = summarise(arrs, matched.map(m => ({ q: m.q, midi: m.midi })), chordsAt, lead || !!DETAIL, detail);
+  const metrics = summarise(arrs, matched.map(m => ({ q: m.q, midi: m.midi })), chordsAt, lead, detail);
   if (lead) {
     /* the lead sheet's own melody line, before the arranger touches it (and before any octave move) */
     const win = sutWindow();

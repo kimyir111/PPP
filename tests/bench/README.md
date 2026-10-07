@@ -522,7 +522,8 @@ arranges the recording from its lead sheet (`rec/leadsheet.js`, the app glue's `
 the metrics above: `ls.melody.precision` / `.recall` / `.f1` (the lead sheet's melody line, before the arranger touches it, against the heard true melody notes: same
 pitch, onset within 0.15 quarter) and `.f1pc` (pitch classes: octave-free), `arr.melody.precision` / `.f1` / `.f1pc` (the same for the arrangement's right-hand attacks) and
 `arr.relaxed` (share of the levels made with the relaxed plan's note). `PPP_RECARR_DETAIL=<file>` (environment, any suite) writes one JSON line per case with each level's
-metrics on its own (the tables of docs/GOALS/G10 section 33); it is not part of the results. `tests/bench/tools/real-covers.js` runs the six private covers (aggregates only),
+metrics on its own, the right-hand F1s of a reduce row included (the tables of docs/GOALS/G10 section 33); it is not part of the results: a case's metrics are the same with it set
+(`test_the_detail_file_does_not_change_a_result`). `tests/bench/tools/real-covers.js` runs the six private covers (aggregates only),
 `tests/bench/tools/arrange-identity.js` the identity of the reduction (catalogue: 975 requests; `--recordings`: the recording graphs of a suite's jobs and the covers).
 
 The true melody is SongGraph's melody voice of the true score (the top head of each event), matched to the heard notes by pitch and

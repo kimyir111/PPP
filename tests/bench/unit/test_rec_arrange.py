@@ -154,6 +154,31 @@ class OneCase(unittest.TestCase):
     def run_once(self):
         return recarrange.run_node(self.jobs, self.by, stages.default_audio_score())
 
+    def test_the_detail_file_does_not_change_a_result(self):
+        """PPP_RECARR_DETAIL (the tables of docs/GOALS/G10 section 33) writes one line per case and is not part of the results: a reduce row has the same metrics with it set."""
+        plain = self.run_once()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "detail.jsonl")
+            old = os.environ.get("PPP_RECARR_DETAIL")
+            os.environ["PPP_RECARR_DETAIL"] = path
+            try:
+                with_detail = self.run_once()
+            finally:
+                if old is None:
+                    del os.environ["PPP_RECARR_DETAIL"]
+                else:
+                    os.environ["PPP_RECARR_DETAIL"] = old
+            with open(path, encoding="utf-8") as h:
+                lines = [json.loads(line) for line in h if line.strip()]
+        self.assertEqual(json.dumps(plain["results"], sort_keys=True), json.dumps(with_detail["results"], sort_keys=True))
+        row = plain["results"][self.jobs[0]["id"]]["metrics"]
+        for k in ("arr.melody.f1", "arr.melody.f1pc", "arr.melody.precision", "arr.relaxed"):
+            self.assertNotIn(k, row, "a reduce row does not carry the lead sheet's metrics: " + k)
+        # the detail has them (one line, every level on its own)
+        self.assertEqual(len(lines), 1)
+        made = [lv for lv in lines[0]["levels"] if lv.get("made")]
+        self.assertTrue(made and all("arr.melody.f1" in lv for lv in made))
+
     def test_a_case_is_measured_and_deterministic(self):
         self.assertEqual(len(self.jobs), 1)
         a, b = self.run_once(), self.run_once()
