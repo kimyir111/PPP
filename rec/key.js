@@ -360,3 +360,5 @@
 
   return Object.freeze({ VERSION, W, analyse, chooseKey, keyScores, spellingTable, pitchOf, keyAlters, accidentals, barKeys, regionsOf, evidence });
 });
+
+// throwaway
