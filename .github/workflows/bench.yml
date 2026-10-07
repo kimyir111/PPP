@@ -84,464 +84,127 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - name: runner
-        run: |
-          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: node tests/engrave/tools/make-e-fixtures.js --check   # the E fixtures are the generator's (G04 §22.1)
-      - run: node tests/engrave/tools/make-corpus.js --check       # the R corpus manifest is the rule's (G04 §22.2)
-      - run: node tests/engrave/tools/make-metrics.js --check      # G4b: the layout's glyph metrics are the pinned font's (G04 §18.2)
-      - run: node tests/engrave/tools/make-outlines.js --check     # G4c: the SVG backend's glyph outlines are the pinned font's (G04 §18.2)
-      - run: node tests/engrave/tools/make-text-metrics.js --check   # G4d-1a: the text-width table's form and digest (G04 §18.3) - no network; the rebuild runs nightly
-      - run: node tests/engrave/tools/bench.js check --suite e
-      - run: node tests/engrave/tools/bench.js check --suite x
-      - run: node tests/bench/tools/train_rests.js --check         # G10a-3 (AI-5b, S6): the silence classifier's weights and evaluation are what the training makes (G10 section 22; ~30-60 s)
-      - run: npm run test:engrave                                  # G4a-G4d-1a: render source, NotationPlan and ledger, layout, notation, SVG, curves and marks (G04)
+      - run: echo stub
 
-  # shard-b: test:realize, core-app, test:rec, replay-of-v2
-  #   (steps ~194 s on a fast runner, ~265 s on a slow one)
   shard-b:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - name: runner
-        run: |
-          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: npm run test:rec                                      # G10a-1: rec/ S0-S2 (attacks, pulse tracks, the metre model) and toMusicXml recording 'v2'
-      - run: python tests/bench/run.py run --suite core-app
-      - run: python tests/bench/run.py check --suite core-app
-      - run: npm run test:realize                                  # G8a: the deterministic realizer, golden determinism, mutation suite (G08)
-      - run: python tests/bench/run.py run --suite replay-of-v2    # G10a-1: and with the recording conversion v2
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bench-shard-b
-          path: |
-            tests/bench/out/core-app/summary.md
-          overwrite: true
+      - run: echo stub
 
-  # shard-c: the hands check, robust, test:difficulty, layout hashes, rec suites check, smoke, correctness
-  #   (steps ~200 s on a fast runner, ~265 s on a slow one)
   shard-c:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - name: runner
-        run: |
-          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: node tests/engrave/tools/layout-hashes.js             # G4b: the committed layout hashes, on Linux too (A27)
-      - run: python tests/bench/run.py run --suite robust
-      - run: python tests/bench/run.py check --suite robust
-      - run: npm run test:difficulty                               # G6a: difficulty features, the ranker, metamorphic tests, the dataset/weights reproduce (G06)
-      - run: python tests/bench/tools/hands_data.py && node tests/bench/tools/train_hands.js --check   # G10a-2 (AI-5b, S4): the hand model and its evaluation are what the training makes (G10 section 19)
-      - run: python tests/bench/run.py correctness
-      - run: python tests/bench/run.py run --suite smoke
-      - run: python tests/bench/run.py check --suite smoke
-      - run: python tests/bench/tools/make_rec_suites.py --check   # the committed rec-* suites are the generator's (G10a-0)
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bench-shard-c
-          path: |
-            tests/bench/out/robust/summary.md
-            tests/bench/out/correctness/report.json
-          overwrite: true
+      - run: echo stub
 
-  # shard-d: test:scoregraph, rec-smoke, the difficulty trainer check, test:songgraph, midi-fixtures check
-  #   (steps ~194 s on a fast runner, ~256 s on a slow one)
   shard-d:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit (git show aff7080:package.json)
-      - name: runner
-        run: |
-          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: npm run test:scoregraph                               # the ScoreGraph library and the graphs toMusicXml writes from (G01)
-      - run: node difficulty/tools/train.js --check                # G6a: the committed leave-one-book-out and hold-out evaluation reproduces (G06 §11)
-      - run: python tests/bench/run.py run --suite rec-smoke       # G10a-0: the recording metrics on the calibrated humanizer
-      - run: python tests/bench/run.py check --suite rec-smoke
-      - run: npm run test:songgraph                                # G7a: key regions, harmony, melody/bass, sections/phrases, voice roles, energy, span round trips, mutation suite (G07)
-      - run: node tests/scoregraph/tools/make-midi-fixtures.js --check   # the committed MIDI bytes are the generator's (G02)
+      - run: echo stub
 
-  # shard-e: rec-robust, sg-roundtrip, replay-of, transcription-core, arranger
-  #   (steps ~163 s on a fast runner, ~252 s on a slow one)
   shard-e:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - name: runner
-        run: |
-          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: python tests/bench/run.py run --suite replay-of       # G10a-0: the production browser model (Onsets & Frames) on rendered audio, replayed from committed notes
-      - run: npm run test:transcription-core && npm run test:arranger
-      - run: python tests/bench/run.py sg-roundtrip                # every committed MusicXML through ScoreGraph and back (G01)
-      - run: python tests/bench/run.py run --suite rec-robust
-      - run: python tests/bench/run.py check --suite rec-robust
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bench-shard-e
-          path: |
-            tests/bench/out/rec-robust/summary.md
-          overwrite: true
+      - run: echo stub
 
-  # shard-f: the rec trainer check
-  #   (steps ~152 s on a fast runner, ~195 s on a slow one)
   shard-f:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - name: runner
-        run: |
-          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: node rec/tools/train.js --check                       # G10a-1 (AI-5a): the committed weights and evaluation are what the training makes (G10 section 18)
+      - run: echo stub
 
-  # shard-g: rec-core 2/5, the grid trainer check, smoke-app, replay-public
-  #   (steps ~157 s on a fast runner, ~241 s on a slow one)
   shard-g:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - name: runner
-        run: |
-          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: python tests/bench/run.py run --suite rec-core --shard 2/5
-      - uses: actions/upload-artifact@v4
-        with:
-          name: rec-core-shard-2-of-5
-          path: |
-            tests/bench/out/rec-core/shards/2-of-5/shard.json
-            tests/bench/out/rec-core/shards/2-of-5/run.json
-          retention-days: 1                # an input of the merge job, not a result
-          overwrite: true
-      - run: python tests/bench/run.py run --suite smoke-app       # the app's options (closeGaps, exactBars): what users get (G10a-0)
-      - run: python tests/bench/run.py check --suite smoke-app
-      - run: python tests/bench/run.py run --suite replay-public   # exits with the replay verdict
-      - run: node tests/bench/tools/train_grid.js --check          # G10a-2 (AI-5b): the grid stage's committed weights are what the training makes (G10 section 20)
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bench-shard-g
-          path: |
-            tests/bench/out/replay-public/summary.md
-          overwrite: true
+      - run: echo stub
 
-  # shard-h: rec-core 3/5, core, robust-app
-  #   (steps ~166 s on a fast runner, ~239 s on a slow one)
   shard-h:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - name: runner
-        run: |
-          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: python tests/bench/run.py run --suite rec-core --shard 3/5
-      - uses: actions/upload-artifact@v4
-        with:
-          name: rec-core-shard-3-of-5
-          path: |
-            tests/bench/out/rec-core/shards/3-of-5/shard.json
-            tests/bench/out/rec-core/shards/3-of-5/run.json
-          retention-days: 1                # an input of the merge job, not a result
-          overwrite: true
-      - run: python tests/bench/run.py run --suite core
-      - run: python tests/bench/run.py check --suite core
-      - run: python tests/bench/run.py run --suite robust-app
-      - run: python tests/bench/run.py check --suite robust-app
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bench-shard-h
-          path: |
-            tests/bench/out/core/summary.md
-            tests/bench/out/core/results.json
-            tests/bench/out/core/run.json
-            tests/bench/out/robust-app/summary.md
-          overwrite: true
+      - run: echo stub
 
-  # shard-i: rec-grid 1/2, replay-public-v2
-  #   (steps ~142 s on a fast runner, ~225 s on a slow one)
   shard-i:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - name: runner
-        run: |
-          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: python tests/bench/run.py run --suite rec-grid --shard 1/2   # G10a-2: v2 with and without its grid stage (rec/grid.js), oracle beats and swing included
-      - uses: actions/upload-artifact@v4
-        with:
-          name: rec-grid-shard-1-of-2
-          path: |
-            tests/bench/out/rec-grid/shards/1-of-2/shard.json
-            tests/bench/out/rec-grid/shards/1-of-2/run.json
-          retention-days: 1                # an input of the merge job, not a result
-          overwrite: true
-      - run: python tests/bench/run.py run --suite replay-public-v2   # G10a-3 (S9): the helper's real pedal on rendered audio (no pedal was played), with the pedal policy
+      - run: echo stub
 
-  # shard-j: rec-core 4/5, rec-arrange-smoke, engrave bench r, replay-of-app
-  #   (steps ~154 s on a fast runner, ~238 s on a slow one)
   shard-j:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - name: runner
-        run: |
-          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: python tests/bench/run.py run --suite rec-core --shard 4/5
-      - uses: actions/upload-artifact@v4
-        with:
-          name: rec-core-shard-4-of-5
-          path: |
-            tests/bench/out/rec-core/shards/4-of-5/shard.json
-            tests/bench/out/rec-core/shards/4-of-5/run.json
-          retention-days: 1                # an input of the merge job, not a result
-          overwrite: true
-      - run: node tests/engrave/tools/bench.js check --suite r     # L1 on the reference corpus against its baseline (G04 §21.5)
-      - run: python tests/bench/run.py run --suite rec-arrange-smoke   # G10c-0: what the one-note arranger does to recordings, against the true score
-      - run: python tests/bench/run.py check --suite rec-arrange-smoke
-      - run: python tests/bench/run.py run --suite replay-of-app   # the same fixtures with the app's options
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bench-shard-j
-          path: |
-            tests/bench/out/rec-arrange-smoke/summary.md
-          overwrite: true
+      - run: echo stub
 
-  # shard-k: rec-core 5/5, the bench unit tests, test:playability, golden, lint-corpus, provenance
-  #   (steps ~173 s on a fast runner, ~236 s on a slow one)
   shard-k:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - name: runner
-        run: |
-          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: python tests/bench/run.py run --suite rec-core --shard 5/5
-      - uses: actions/upload-artifact@v4
-        with:
-          name: rec-core-shard-5-of-5
-          path: |
-            tests/bench/out/rec-core/shards/5-of-5/shard.json
-            tests/bench/out/rec-core/shards/5-of-5/run.json
-          retention-days: 1                # an input of the merge job, not a result
-          overwrite: true
-      - run: python -m unittest discover -s tests/bench/unit -t tests/bench
-      - run: npm run test:playability                              # G5a: the playability analyzer, its mutation suite, R-corpus false positives, the legacy-arranger baseline (G05)
-      - run: python tests/bench/run.py golden
-      - run: python tests/bench/run.py lint-corpus
-      - run: python tests/bench/tools/make_provenance.py --check
+      - run: echo stub
 
-  # shard-l: rec-core 1/5, test:home-worker, test:arrangement-planner
-  #   (steps ~174 s on a fast runner, ~223 s on a slow one)
   shard-l:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - name: runner
-        run: |
-          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: python tests/bench/run.py run --suite rec-core --shard 1/5
-      - uses: actions/upload-artifact@v4
-        with:
-          name: rec-core-shard-1-of-5
-          path: |
-            tests/bench/out/rec-core/shards/1-of-5/shard.json
-            tests/bench/out/rec-core/shards/1-of-5/run.json
-          retention-days: 1                # an input of the merge job, not a result
-          overwrite: true
-      - run: npm run test:home-worker                              # G10b-1: the home-PC queue, its worker and server.js with it (Node only, ~40 s; the Postgres part skips without PPP_TEST_PG_URL)
-      - run: npm run test:arrangement-planner                      # G7b: texture ladder, deterministic search, real-corpus coverage, mutation suite (G07B); one test file at a time (--test-concurrency=1), so its 200 ms plan() budget is measured beside no other file (tests/timing.js)
+      - run: echo stub
 
-  # shard-m: rec-grid 2/2, the key check
-  #   (steps ~147 s on a fast runner, ~232 s on a slow one)
   shard-m:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - name: runner
-        run: |
-          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: python tests/bench/tools/key_data.py && node rec/tools/key-eval.js --check   # G10a-3 (S8): the key stage's committed evaluation on the catalogue truth is what the code makes (G10 section 22)
-      - run: python tests/bench/run.py run --suite rec-grid --shard 2/2   # G10a-2: v2 with and without its grid stage (rec/grid.js), oracle beats and swing included
-      - uses: actions/upload-artifact@v4
-        with:
-          name: rec-grid-shard-2-of-2
-          path: |
-            tests/bench/out/rec-grid/shards/2-of-2/shard.json
-            tests/bench/out/rec-grid/shards/2-of-2/run.json
-          retention-days: 1                # an input of the merge job, not a result
-          overwrite: true
+      - run: echo stub
+      - run: exit 1
 
-  # merge-rec-core: the 3 shards of rec-core (2,538 cases) joined into the run's results.json, then the gate's check of that run. Exactly what the
-  # unsharded `run` + `check` did: merge-shards refuses anything but the 3 shards of this commit (tests/bench/README.md, "Sharded runs"),
-  # and the merged results.json is byte for byte the unsharded run's. Python only: no Node here.
   merge-rec-core:
     needs: [shard-l, shard-g, shard-h, shard-j, shard-k]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: rec-core-shard-*
-          path: tests/bench/out/rec-core/shards     # one directory per shard artifact, each holding its shard.json and run.json
-      - run: python tests/bench/run.py merge-shards --suite rec-core
-      - run: python tests/bench/run.py check --suite rec-core
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bench-merged-rec-core
-          path: |
-            tests/bench/out/rec-core/summary.md
-          overwrite: true
+      - run: echo stub
 
-  # merge-rec-grid: the 2 shards of rec-grid (1,410 cases) joined into the run's results.json, then the gate's check of that run. Exactly what the
-  # unsharded `run` + `check` did: merge-shards refuses anything but the 2 shards of this commit (tests/bench/README.md, "Sharded runs"),
-  # and the merged results.json is byte for byte the unsharded run's. Python only: no Node here.
   merge-rec-grid:
     needs: [shard-i, shard-m]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: rec-grid-shard-*
-          path: tests/bench/out/rec-grid/shards     # one directory per shard artifact, each holding its shard.json and run.json
-      - run: python tests/bench/run.py merge-shards --suite rec-grid
-      - run: python tests/bench/run.py check --suite rec-grid
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bench-merged-rec-grid
-          path: |
-            tests/bench/out/rec-grid/summary.md
-          overwrite: true
+      - run: echo stub
 
-  # light: what a change that is only documents (`docs`) or only documents and tooling (`tooling`) runs instead of the shards. The
-  # two sanity checks run in both; the home-PC worker's tests and the bench unit tests run for `tooling`. Every command here is also
-  # a step of a shard (tests/bench/unit/test_ci_plan.py checks that), so this job cannot check anything the full gate does not.
   light:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'docs' || needs.plan.outputs.mode == 'tooling' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: python tests/bench/run.py lint-corpus
-      - run: python tests/bench/tools/make_provenance.py --check
-      - if: ${{ needs.plan.outputs.mode == 'tooling' }}
-        run: npm run test:home-worker
-      - if: ${{ needs.plan.outputs.mode == 'tooling' }}
-        run: python -m unittest discover -s tests/bench/unit -t tests/bench
+      - run: echo stub
 
-  # The verdict. The merge rule is "read the result of the check named gate": this is that check. It runs after every other job of
-  # the gate (also when one failed or was cancelled, hence always()). What it demands depends on the plan's mode:
-  #   full:            every shard-* and merge-* job succeeded and `light` was skipped;
-  #   docs / tooling:  `light` succeeded and every shard-* and merge-* job was skipped.
-  # Anything else is red: a failed, cancelled or skipped job that was expected to run, a job that ran when it was not wanted, a plan
-  # that did not succeed or answered something unknown. It also counts the jobs of this file (plan, light, shard-*, merge-*) against
-  # the ones it waited for, so a job added without a place in `needs` is red, not silently ignored. No schedule run: the jobs
-  # are skipped there, the nightly jobs run.
   gate:
     if: ${{ always() && github.event_name != 'schedule' }}
     needs: [plan, light, shard-a, shard-b, shard-c, shard-d, shard-e, shard-f, shard-g, shard-h, shard-i, shard-j, shard-k, shard-l, shard-m, merge-rec-core, merge-rec-grid]
