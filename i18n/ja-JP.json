@@ -2106,6 +2106,27 @@
     "Needs a one-time Windows setup: double-click tools/home-worker/register-protocol.cmd (or run node tools/home-worker/worker.js --register-protocol). After that, \"High-quality (my PC)\" pressed in this browser starts the conversion right away. Turn this on only on the PC that runs the worker.": "最初に一度だけ Windows の設定が必要です：tools/home-worker/register-protocol.cmd をダブルクリックしてください（または node tools/home-worker/worker.js --register-protocol）。その後は、このブラウザで「高品質変換（自分のPC）」を押すとすぐに始まります。ワーカーがある PC でのみオンにしてください。",
     "High-quality conversion runs on your own PC. This button asks this PC to start at once; a song takes a few minutes. If nothing starts, run the desktop shortcut.": "高品質変換は自分の PC で動きます。このボタンはこの PC にすぐ開始するよう依頼します。1 曲に数分かかります。始まらない場合は、デスクトップのショートカットを実行してください。",
     "Asked this PC to start. If nothing happens, run the desktop shortcut.": "この PC に開始を依頼しました。何も起きない場合は、デスクトップのショートカットを実行してください。",
-    "Start now": "今すぐ開始"
+    "Start now": "今すぐ開始",
+    "Connect this PC": "このPCを接続",
+    "Not connected yet": "まだ接続されていません",
+    "My PC is connected ✓ · Idle": "マイPC接続済み ✓ · 待機中",
+    "Converting {{pct}}%": "変換中 {{pct}}%",
+    "The PC program is not running": "PCのプログラムが起動していません",
+    "This PC uses another PC link": "このPCは別のPCリンクを使っています",
+    "Connected, but this PC cannot convert yet. Run node tools/home-worker/worker.js --check on it.": "接続はできましたが、このPCはまだ変換できません。このPCで node tools/home-worker/worker.js --check を実行してください。",
+    "The PPP program is not running on this PC. Run tools/home-worker/install-startup.cmd once, then press the button again.": "このPCでPPPのプログラムが動いていません。tools/home-worker/install-startup.cmd を一度実行してから、もう一度ボタンを押してください。",
+    "If your browser asked to allow access to this device, choose Allow.": "ブラウザがこのデバイスへのアクセスを確認してきたら「許可」を選んでください。",
+    "This PC is connected to PC link …{{old}}. Use this device's link …{{id}} instead?": "このPCはPCリンク …{{old}} に接続されています。この端末のリンク …{{id}} に切り替えますか？",
+    "This PC is connected to another PC link. Use this device's link …{{id}} instead?": "このPCは別のPCリンクに接続されています。この端末のリンク …{{id}} に切り替えますか？",
+    "Use …{{id}}": "…{{id}} を使う",
+    "Keep as it is": "そのままにする",
+    "Left as it was.": "そのままにしました。",
+    "This PC is connected now.": "このPCを接続しました。",
+    "A conversion is running on this PC. Connect after it finishes.": "このPCで変換が進行中です。終わってから接続してください。",
+    "Could not connect. Try again in a moment.": "接続できませんでした。少し待ってからもう一度押してください。",
+    "Started on your PC.": "マイPCで開始しました。",
+    "Connect a phone or tablet": "スマホ・タブレットを接続",
+    "Scan this with the phone camera. The phone asks before it connects.": "スマホのカメラで読み取ってください。接続する前にスマホが確認します。",
+    "QR code of the PC link": "PCリンクのQRコード"
   }
 }

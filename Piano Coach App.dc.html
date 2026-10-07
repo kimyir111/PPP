@@ -1028,6 +1028,9 @@
               <sc-if value="{{ showHomePc }}" hint-placeholder-val="{{ false }}">
                 <div data-home-note style="font-size: 11.5px; line-height: 1.5; color: var(--ink3); margin-top: 6px;">{{ homePcNote }}</div>
               </sc-if>
+              <sc-if value="{{ hasBridgeAdd }}" hint-placeholder-val="{{ false }}">
+                <div data-bridge-add data-bridge-kind="{{ bridgeKind }}" data-no-i18n="1" aria-live="polite" style="{{ bridgeLineStyle }}; margin-top: 8px;">{{ bridgeLine }}</div>
+              </sc-if>
               <sc-if value="{{ hasHomeJobs }}" hint-placeholder-val="{{ false }}">
                 <div data-home-jobs style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px;">
                   <div style="font-size: 12px; font-weight: 600; color: var(--ink2);">{{ homeJobsTitle }}</div>
@@ -2326,6 +2329,55 @@
                   <button onClick="{{ makePcLink }}" data-home-link-make style="margin-left: auto; padding: 10px 16px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ homeMakeLabel }}</button>
                 </sc-if>
               </div>
+              <sc-if value="{{ bridgeShow }}" hint-placeholder-val="{{ false }}">
+                <div data-bridge-box style="display: flex; flex-direction: column; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line);">
+                  <sc-if value="{{ hasBridgeLine }}" hint-placeholder-val="{{ false }}">
+                    <div data-bridge-status data-bridge-kind="{{ bridgeKind }}" data-no-i18n="1" aria-live="polite" style="{{ bridgeLineStyle }}">{{ bridgeLine }}</div>
+                  </sc-if>
+                  <sc-if value="{{ hasBridgeHelp }}" hint-placeholder-val="{{ false }}">
+                    <div data-bridge-help style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 1.5; color: var(--ink3);">
+                      <div>{{ bridgeHelp }}</div>
+                      <div>{{ bridgeHelp2 }}</div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ hasBridgeMsg }}" hint-placeholder-val="{{ false }}">
+                    <div data-bridge-msg style="{{ bridgeMsgStyle }}">{{ bridgeMsgText }}</div>
+                  </sc-if>
+                  <sc-if value="{{ hasBridgeAsk }}" hint-placeholder-val="{{ false }}">
+                    <div data-bridge-ask style="display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--accent); background: var(--bg);">
+                      <div data-bridge-ask-text data-no-i18n="1" style="font-size: 12.5px; line-height: 1.5;">{{ bridgeAskText }}</div>
+                      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button type="button" onClick="{{ bridgeAskYes }}" data-bridge-ask-yes data-no-i18n="1" style="padding: 8px 14px; border-radius: 9px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;">{{ bridgeAskYesLabel }}</button>
+                        <button type="button" onClick="{{ bridgeAskNo }}" data-bridge-ask-no style="{{ btnStyle }}">{{ bridgeAskNoLabel }}</button>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ bridgeButtonOn }}" hint-placeholder-val="{{ false }}">
+                    <div>
+                      <button type="button" onClick="{{ bridgeConnectBtn }}" data-bridge-connect style="padding: 10px 16px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">{{ bridgeButtonLabel }}</button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ bridgePhoneOn }}" hint-placeholder-val="{{ false }}">
+                    <div data-bridge-phone-box style="display: flex; flex-direction: column; gap: 8px;">
+                      <div>
+                        <button type="button" onClick="{{ bridgePhoneToggle }}" data-bridge-phone aria-expanded="{{ bridgePhoneExpanded }}" style="{{ btnStyle }}">{{ bridgePhoneLabel }}</button>
+                      </div>
+                      <sc-if value="{{ bridgeQrOn }}" hint-placeholder-val="{{ false }}">
+                        <div data-bridge-qr-box style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start;">
+                          <sc-if value="{{ bridgeQrDraw }}" hint-placeholder-val="{{ false }}">
+                            <canvas data-bridge-qr width="232" height="232" role="img" aria-label="{{ bridgeQrAlt }}" style="width: min(232px, 100%); height: auto; aspect-ratio: 1 / 1; border-radius: 10px; border: 1px solid var(--line); background: #fff; image-rendering: pixelated;"></canvas>
+                          </sc-if>
+                          <div style="font-size: 12px; line-height: 1.5; color: var(--ink3);">{{ bridgeQrNote }}</div>
+                          <div>
+                            <button type="button" onClick="{{ copyPairLink }}" data-bridge-copy style="{{ btnStyle }}">{{ bridgeCopyLabel }}</button>
+                          </div>
+                          <div data-bridge-qr-warning style="font-size: 12px; line-height: 1.5; color: var(--bad);">{{ homePairWarning }}</div>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
               <sc-if value="{{ hasHomeGone }}" hint-placeholder-val="{{ false }}">
                 <div data-home-gone style="font-size: 12.5px; color: var(--bad);">{{ homeGoneNote }}</div>
               </sc-if>
@@ -12363,6 +12415,159 @@ const PcLocal = (() => {
 })();
 
 
+/* G10b-6: the localhost bridge of the home-PC worker (tools/home-worker/bridge.js, docs/GOALS/G10B_HOME_WORKER.md section 16). `worker.js --serve` runs on the PC (started at every sign-in by the shortcut of
+   install-startup.cmd) and listens on 127.0.0.1 only. In a DESKTOP browser on that PC this page can ask it, on a press of "Connect this PC", whether it is there and what link it has, hand it this device's PC link
+   (the program then gets its OWN worker token from the site: no worker token ever passes through this page), and later start it and watch it. The first contact is made on a click, because Chrome asks the person's
+   leave for a page to reach a program on this device. Nothing here runs on a phone or in a browser that is not a desktop one (PcLocal.desktop()), nothing runs before that first press, and what the program
+   answers is shown, never trusted: only the fields named below are read, and nothing it says reaches a URL, a script or the HTML. The PC code is never logged and never shown (only its 6-character name).
+   ppp.bridge.v1 = '1' says "this browser has talked to the program": from then on the status is looked at every ~5 s while Settings or the Add screen is open and the tab is visible. */
+const PcBridge = (() => {
+  const LS = 'ppp.bridge.v1';
+  const DEFAULT_PORT = 47613;
+  /* the port is fixed; only a test sets window.PPP_BRIDGE_PORT (before the page's scripts) to reach its own program */
+  const port = () => { const p = typeof window !== 'undefined' ? window.PPP_BRIDGE_PORT : 0; return Number.isInteger(p) && p >= 1024 && p <= 65535 ? p : DEFAULT_PORT; };
+  return {
+    port: port,
+    marked() { try { return localStorage.getItem(LS) === '1'; } catch (e) { return false; } },
+    mark(on) { try { if (on) localStorage.setItem(LS, '1'); else localStorage.removeItem(LS); } catch (e) { return false; } return true; },
+    /* this device talks to the program: a desktop browser that has done it before, and has a link */
+    on() { return PcLocal.get() && this.marked() && !!PcLink.get(); },
+    /* one request: { reached, ok, status, body }. reached is false when nothing answered (the program is off, the browser did not allow it, or another site is configured). */
+    async call(method, path, body, ms) {
+      const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timer = ctl ? setTimeout(() => ctl.abort(), ms || 4000) : 0;
+      try {
+        const o = { method: method, credentials: 'omit', cache: 'no-store', mode: 'cors', referrerPolicy: 'no-referrer', signal: ctl ? ctl.signal : undefined, targetAddressSpace: 'loopback' };
+        if (body !== undefined) { o.headers = { 'Content-Type': 'application/json' }; o.body = JSON.stringify(body); }
+        const r = await fetch('http://127.0.0.1:' + port() + path, o);
+        const j = await r.json().catch(() => null);
+        return { reached: true, ok: r.ok, status: r.status, body: j && typeof j === 'object' ? j : null };
+      } catch (e) { return { reached: false, ok: false, status: 0, body: null }; }
+      finally { clearTimeout(timer); }
+    }
+  };
+})();
+
+/* G10b-6: a small QR encoder (byte mode, error correction level M, versions 1-10: up to 213 bytes), so that the phone link can be drawn without a library and without a network request.
+   qrMatrix(text) -> an array of rows of 0/1 (1 = dark), or null when the text does not fit; the quiet zone is the caller's. Checked against an independent decoder for every length from 1 to 213
+   (tests/home-worker/qr.test.js keeps the matrices of fixed texts, which it also draws in the page). */
+/* QR-BEGIN */
+function qrMatrix(text) {
+  const bytes = Array.from(new TextEncoder().encode(String(text)));
+  /* per version: [error-correction codewords per block, [blocks, data codewords per block], ...] (level M) and the alignment pattern centres */
+  const EC = [null, [10, [1, 16]], [16, [1, 28]], [26, [1, 44]], [18, [2, 32]], [24, [2, 43]], [16, [4, 27]], [18, [4, 31]], [22, [2, 38], [2, 39]], [22, [3, 36], [2, 37]], [26, [4, 43], [1, 44]]];
+  const ALIGN = [null, [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50]];
+  let ver = 0, dataCw = 0;
+  for (let v = 1; v <= 10 && !ver; v++) {
+    const dc = EC[v].slice(1).reduce((a, g) => a + g[0] * g[1], 0);
+    if (bytes.length <= Math.floor((dc * 8 - 4 - (v < 10 ? 8 : 16)) / 8)) { ver = v; dataCw = dc; }
+  }
+  if (!ver) return null;
+  /* the data: mode (byte), length, the bytes, a terminator and padding */
+  const bits = [];
+  const put = (val, n) => { for (let i = n - 1; i >= 0; i--) bits.push((val >>> i) & 1); };
+  put(4, 4); put(bytes.length, ver < 10 ? 8 : 16); bytes.forEach(b => put(b, 8));
+  put(0, Math.min(4, dataCw * 8 - bits.length));
+  while (bits.length % 8) bits.push(0);
+  for (let pad = 0xEC; bits.length < dataCw * 8; pad ^= 0xEC ^ 0x11) put(pad, 8);
+  const data = [];
+  for (let i = 0; i < bits.length; i += 8) { let b = 0; for (let j = 0; j < 8; j++) b = (b << 1) | bits[i + j]; data.push(b); }
+  /* Reed-Solomon over GF(256) (x^8 + x^4 + x^3 + x^2 + 1) */
+  const exp = new Array(512), log = new Array(256);
+  for (let i = 0, x = 1; i < 255; i++) { exp[i] = x; log[x] = i; x <<= 1; if (x & 256) x ^= 0x11D; }
+  for (let i = 255; i < 512; i++) exp[i] = exp[i - 255];
+  const mul = (a, b) => (a && b ? exp[log[a] + log[b]] : 0);
+  const ecLen = EC[ver][0];
+  let gen = [1];
+  for (let i = 0; i < ecLen; i++) { const nx = new Array(gen.length + 1).fill(0); gen.forEach((c, j) => { nx[j] ^= c; nx[j + 1] ^= mul(c, exp[i]); }); gen = nx; }
+  const remainder = d => { const r = new Array(ecLen).fill(0); d.forEach(b => { const f = b ^ r.shift(); r.push(0); if (f) for (let i = 0; i < ecLen; i++) r[i] ^= mul(gen[i + 1], f); }); return r; };
+  const blocks = [];
+  let at = 0;
+  EC[ver].slice(1).forEach(g => { for (let k = 0; k < g[0]; k++) { const d = data.slice(at, at + g[1]); at += g[1]; blocks.push({ d: d, e: remainder(d) }); } });
+  const cw = [];
+  const maxD = Math.max.apply(null, blocks.map(b => b.d.length));
+  for (let i = 0; i < maxD; i++) blocks.forEach(b => { if (i < b.d.length) cw.push(b.d[i]); });
+  for (let i = 0; i < ecLen; i++) blocks.forEach(b => cw.push(b.e[i]));
+  /* the picture: finder, timing and alignment patterns, the format and version areas, then the codewords in the zigzag */
+  const n = 17 + 4 * ver;
+  const base = [], fn = [];
+  for (let i = 0; i < n; i++) { base.push(new Array(n).fill(0)); fn.push(new Array(n).fill(false)); }
+  const set = (r, c, v) => { base[r][c] = v ? 1 : 0; fn[r][c] = true; };
+  const finder = (r0, c0) => {
+    for (let dr = -1; dr <= 7; dr++) for (let dc = -1; dc <= 7; dc++) {
+      const r = r0 + dr, c = c0 + dc;
+      if (r < 0 || r >= n || c < 0 || c >= n) continue;
+      const inside = dr >= 0 && dr <= 6 && dc >= 0 && dc <= 6;
+      set(r, c, inside && (dr === 0 || dr === 6 || dc === 0 || dc === 6 || (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4)));
+    }
+  };
+  finder(0, 0); finder(0, n - 7); finder(n - 7, 0);
+  for (let i = 8; i < n - 8; i++) { set(6, i, i % 2 === 0); set(i, 6, i % 2 === 0); }
+  const al = ALIGN[ver], last = al[al.length - 1];
+  al.forEach(r => al.forEach(c => {
+    if ((r === 6 && c === 6) || (r === 6 && c === last) || (r === last && c === 6)) return;
+    for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) set(r + dr, c + dc, Math.max(Math.abs(dr), Math.abs(dc)) !== 1);
+  }));
+  const bit = (v, i) => ((v >>> i) & 1) === 1;
+  const drawFormat = (m, mask) => {
+    const f = (0 << 3) | mask;                         /* level M is 00 */
+    let rem = f;
+    for (let i = 0; i < 10; i++) rem = (rem << 1) ^ ((rem >>> 9) * 0x537);
+    const fb = ((f << 10) | rem) ^ 0x5412;
+    const s = (r, c, v) => { m[r][c] = v ? 1 : 0; };
+    for (let i = 0; i <= 5; i++) s(i, 8, bit(fb, i));
+    s(7, 8, bit(fb, 6)); s(8, 8, bit(fb, 7)); s(8, 7, bit(fb, 8));
+    for (let i = 9; i < 15; i++) s(8, 14 - i, bit(fb, i));
+    for (let i = 0; i < 8; i++) s(8, n - 1 - i, bit(fb, i));
+    for (let i = 8; i < 15; i++) s(n - 15 + i, 8, bit(fb, i));
+    s(n - 8, 8, true);
+  };
+  drawFormat(base, 0);
+  for (let i = 0; i < 9; i++) { fn[8][i] = true; fn[i][8] = true; }
+  for (let i = 0; i < 8; i++) { fn[8][n - 1 - i] = true; fn[n - 1 - i][8] = true; }
+  fn[n - 8][8] = true;
+  if (ver >= 7) {
+    let rem = ver;
+    for (let i = 0; i < 12; i++) rem = (rem << 1) ^ ((rem >>> 11) * 0x1F25);
+    const vb = (ver << 12) | rem;
+    for (let i = 0; i < 18; i++) { const a = n - 11 + (i % 3), b = Math.floor(i / 3); set(b, a, bit(vb, i)); set(a, b, bit(vb, i)); }
+  }
+  let k = 0;
+  const total = cw.length * 8;
+  for (let right = n - 1; right >= 1; right -= 2) {
+    if (right === 6) right = 5;
+    for (let vert = 0; vert < n; vert++) for (let j = 0; j < 2; j++) {
+      const c = right - j, r = ((right + 1) & 2) === 0 ? n - 1 - vert : vert;
+      if (!fn[r][c] && k < total) { base[r][c] = (cw[k >> 3] >>> (7 - (k & 7))) & 1; k++; }
+    }
+  }
+  const MASKS = [(r, c) => (r + c) % 2 === 0, (r, c) => r % 2 === 0, (r, c) => c % 3 === 0, (r, c) => (r + c) % 3 === 0, (r, c) => (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0,
+    (r, c) => ((r * c) % 2) + ((r * c) % 3) === 0, (r, c) => (((r * c) % 2) + ((r * c) % 3)) % 2 === 0, (r, c) => ((((r + c) % 2) + ((r * c) % 3)) % 2) === 0];
+  const penalty = m => {
+    let p = 0;
+    const lines = [];
+    for (let i = 0; i < n; i++) { lines.push(m[i].join('')); lines.push(m.map(row => row[i]).join('')); }
+    lines.forEach(s => {
+      (s.match(/0+|1+/g) || []).forEach(x => { if (x.length >= 5) p += 3 + (x.length - 5); });
+      p += 40 * ((s.match(/(?=10111010000)/g) || []).length + (s.match(/(?=00001011101)/g) || []).length);
+    });
+    for (let r = 0; r < n - 1; r++) for (let c = 0; c < n - 1; c++) { const v = m[r][c]; if (v === m[r][c + 1] && v === m[r + 1][c] && v === m[r + 1][c + 1]) p += 3; }
+    let dark = 0;
+    m.forEach(row => row.forEach(v => { dark += v; }));
+    return p + (Math.ceil(Math.abs(dark * 20 - n * n * 10) / (n * n)) - 1) * 10;
+  };
+  let best = null, bestP = Infinity;
+  for (let mask = 0; mask < 8; mask++) {
+    const m = base.map(row => row.slice());
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (!fn[r][c] && MASKS[mask](r, c)) m[r][c] ^= 1;
+    drawFormat(m, mask);
+    const p = penalty(m);
+    if (p < bestP) { bestP = p; best = m; }
+  }
+  return best;
+}
+/* QR-END */
+
 class Component extends DCLogic {
   state = (() => {
     const score = buildDemoScore();
@@ -12589,6 +12794,7 @@ class Component extends DCLogic {
     this.maybeReplan();
     this.followKeyboard();
     this.followStaff();
+    this.bridgeUpdate();   /* G10b-6 */
     if (this._i18nRaf) cancelAnimationFrame(this._i18nRaf);
     this._i18nRaf = requestAnimationFrame(() => { this._i18nRaf = 0; this.applyI18n(); });
     const alias = this.state.screen;
@@ -12634,6 +12840,215 @@ class Component extends DCLogic {
     clearTimeout(this._pianoLoad);
     (this._unlockOn || []).forEach(t => window.removeEventListener(t, this._unlock, true));
     if (this._piano) this._piano.close();
+  }
+  /* ============================ G10b-6: the localhost bridge - "Connect this PC", live status, instant start ============================
+     See PcBridge (above) and docs/GOALS/G10B_HOME_WORKER.md section 16. One press of the button in Settings > Connect my PC does whatever is needed, in this order:
+       - the program (worker.js --serve) is not reachable      -> one plain sentence: it is not running, and how to start it (install-startup.cmd, once)
+       - it has a live link and this device has none           -> take the link (GET /v1/link), check it with the site, keep it here
+       - it has the same link as this device                   -> nothing to change
+       - it has a DIFFERENT live link than this device         -> ask once, then hand it this device's link (POST /v1/connect)
+       - it has none (or a dead one), this device has a link    -> hand it this device's link
+       - neither has one                                       -> make a PC link (the usual POST /api/pc-links; the worker token in its answer is thrown away) and hand it over
+     and then remembers (ppp.pclocal.v1, ppp.bridge.v1) that this browser is on the PC with the program. Whatever the program answers is read as data only. ---- */
+  /* the name of a link as the site gives it (6 hex), or { dead } when the site no longer knows the code, or { error } when the site could not be asked */
+  async bridgeTagOf(code) {
+    try { const r = await this.homeApi('/api/worker/status', { code: code }); return { tag: this.pairTagOf(r.worker) }; }
+    catch (e) { return e.status === 401 && e.code === 'bad-code' ? { dead: true } : { error: true }; }
+  }
+  bridgeFail(patch) { if (!this._dead) this.setState(Object.assign({ bridgeBusy: false }, patch)); }
+  bridgeError(text) { this.bridgeFail({ bridgeMsg: { kind: 'err', text: text || tx('Could not connect. Try again in a moment.') } }); }
+  async bridgeConnect(replaceOk) {
+    if (!PcLocal.desktop() || this.state.bridgeBusy) return;
+    this.setState({ bridgeBusy: true, bridgeMsg: null, bridgeAsk: null });
+    try {
+      /* the first contact may sit behind Chrome's question ("access other apps and services on this device?"): it is given a minute to be answered */
+      const s = await PcBridge.call('GET', '/v1/status', undefined, 60000);
+      if (this._dead) return;
+      if (!s.reached || !s.ok || !s.body || s.body.app !== 'ppp-home-worker') return this.bridgeFail({ bridge: { reach: false, st: null }, bridgeMsg: { kind: 'off' } });
+      const st = s.body, wl = st.link || {};
+      const wTag = typeof wl.tag === 'string' && /^[0-9a-f]{6}$/.test(wl.tag) ? wl.tag : '';        /* a name is 6 hex or nothing */
+      const workerLive = !!(wl.has && !wl.rejected);
+      let mine = PcLink.get(), mineTag = '';
+      if (mine) {
+        const t = await this.bridgeTagOf(mine);
+        if (this._dead) return;
+        if (t.error) return this.bridgeError(tx('Could not reach the server.'));
+        if (t.dead) { PcLink.clear(); mine = null; } else mineTag = t.tag;       /* a link the site no longer knows is no link */
+      }
+      if (workerLive && mine && wTag && wTag === mineTag) return this.bridgeDone(st, mine);
+      if (workerLive && !mine) {
+        if (wl.shareable) {
+          const l = await PcBridge.call('GET', '/v1/link');
+          if (this._dead) return;
+          const code = l.reached && l.ok && l.body && l.body.ok ? l.body.clientCode : '';
+          if (PcLink.valid(code)) {
+            const t = await this.bridgeTagOf(code);
+            if (this._dead) return;
+            if (t.error) return this.bridgeError(tx('Could not reach the server.'));
+            if (!t.dead) {
+              if (!PcLink.set(code)) return this.bridgeError(tx('This browser could not keep the PC link.'));
+              PcLink.clearPrev();
+              return this.bridgeDone(st, code);
+            }
+          }
+        }
+        return this.bridgeMake();            /* its link cannot be taken over (no code to give, or the site has dropped it): a new one, given to the program */
+      }
+      if (workerLive && mine && !replaceOk) return this.bridgeFail({ bridge: { reach: true, st: st }, bridgeAsk: { tag: mineTag, old: wTag } });
+      if (mine) return this.bridgePush(mine);
+      return this.bridgeMake();
+    } catch (e) { this.bridgeError(); }
+  }
+  /* neither side has a (usable) link: make one the way "Create my PC link" does, keep its code here, throw its worker token away (the program gets its own), and hand the code over */
+  async bridgeMake() {
+    if (!PcLink.supported()) return this.bridgeError(tx('This browser could not keep the PC link.'));
+    let r;
+    try { r = await this.homeApi('/api/pc-links', { method: 'POST', body: {}, code: null }); }
+    catch (e) { return this.bridgeError(e.message); }
+    if (this._dead) return;
+    if (!PcLink.set(r.clientCode)) return this.bridgeError(tx('This browser could not keep the PC link.'));
+    PcLink.clearPrev();
+    return this.bridgePush(r.clientCode, true);
+  }
+  /* hand a code to the program: it asks the site for its own worker token with it */
+  async bridgePush(code, fresh) {
+    const r = await PcBridge.call('POST', '/v1/connect', { clientCode: code }, 30000);
+    if (this._dead) return;
+    if (!r.reached) return this.bridgeFail({ bridge: { reach: false, st: null }, bridgeMsg: { kind: 'off' } });
+    if (r.ok && r.body && r.body.ok) return this.bridgeDone(null, code);
+    const why = r.body && r.body.error;
+    if (why === 'code-rejected' && !fresh) { PcLink.clear(); return this.bridgeMake(); }       /* the site has dropped this link meanwhile: a new one */
+    return this.bridgeError(why === 'busy' ? tx('A conversion is running on this PC. Connect after it finishes.') : why === 'site-busy' ? tx('Too many tokens were made just now. Try again later.') : null);
+  }
+  /* connected: this browser is on the PC that runs the program */
+  async bridgeDone(st, code) {
+    PcLocal.set(true); PcBridge.mark(true); PcLink.clearPrev();
+    clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};
+    this.setState({ bridgeBusy: false, bridgeMsg: null, bridgeAsk: null, bridge: st ? { reach: true, st: st } : this.state.bridge, homeGone: false, homeError: '', homeNew: null, homeOff: false, homeLocalTick: (this.state.homeLocalTick || 0) + 1 });
+    this.say(tx('This PC is connected now.'));
+    await this.bridgeLook(true);
+    this.homeRefresh();
+    this.bridgeWatch();
+  }
+  /* one look at the program's status; a conversion that has just ended makes the site's list be read once (it then shows Open) */
+  async bridgeLook(force) {
+    if (this._bridgeLooking) return;
+    this._bridgeLooking = true;
+    try {
+      const r = await PcBridge.call('GET', '/v1/status');
+      if (this._dead) return;
+      const was = this.state.bridge;
+      if (!r.reached || !r.ok || !r.body || r.body.app !== 'ppp-home-worker') { if (force || !was || was.reach !== false) this.setState({ bridge: { reach: false, st: null } }); return; }
+      const st = r.body;
+      if (force || !was || was.reach !== true || JSON.stringify(was.st) !== JSON.stringify(st)) this.setState({ bridge: { reach: true, st: st } });
+      if (was && was.st && was.st.busy && !st.busy) this.homeRefresh();
+    } finally { this._bridgeLooking = false; }
+  }
+  /* look every ~5 s while Settings or the Add screen is open and the tab is visible; nothing otherwise (and nothing at all until the first successful press) */
+  bridgeWatch() {
+    clearTimeout(this._bridgeTimer); this._bridgeTimer = 0;
+    if (typeof document !== 'undefined' && !this._bridgeVis) {
+      this._bridgeVis = () => { if (this._dead) { document.removeEventListener('visibilitychange', this._bridgeVis); return; } this.bridgeWatch(); };
+      document.addEventListener('visibilitychange', this._bridgeVis);
+    }
+    const s = this.state.screen;
+    if (this._dead || !PcBridge.on() || (s !== 'settings' && s !== 'upload') || document.visibilityState === 'hidden') return;
+    const tick = async () => {
+      this._bridgeTimer = 0;
+      const sc = this.state.screen;
+      if (this._dead || !PcBridge.on() || (sc !== 'settings' && sc !== 'upload') || document.visibilityState === 'hidden') return;
+      await this.bridgeLook();
+      if (!this._dead && !this._bridgeTimer && PcBridge.on() && document.visibilityState !== 'hidden') this._bridgeTimer = setTimeout(tick, 5000);
+    };
+    tick();
+  }
+  /* called after every draw: the screen changed -> start or stop the watching; the QR code is drawn on its canvas */
+  bridgeUpdate() {
+    const s = this.state.screen;
+    if (this._bridgeScreen !== s) {
+      this._bridgeScreen = s;
+      this.bridgeWatch();
+      if (s !== 'settings' && this.state.bridgeQrOn) this.bridgeQrHide();
+    }
+    if (!this.state.bridgeQrOn || !this._bridgeQr) return;
+    const el = typeof document !== 'undefined' ? document.querySelector('[data-bridge-qr]') : null;
+    if (!el || el.__qr === this._bridgeQr) return;
+    const m = this._bridgeQr, n = m.length, scale = Math.max(1, Math.floor(el.width / (n + 8))), off = Math.floor((el.width - n * scale) / 2);
+    const g = el.getContext('2d');
+    if (!g) return;
+    g.fillStyle = '#fff'; g.fillRect(0, 0, el.width, el.height);
+    g.fillStyle = '#000';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (m[r][c]) g.fillRect(off + c * scale, off + r * scale, scale, scale);
+    el.__qr = this._bridgeQr;
+  }
+  /* the QR code of this device's pairing link (the existing #pc= link and its confirmation on the phone); kept out of the state, put away after two minutes or when Settings is left */
+  bridgeQrToggle() {
+    if (this.state.bridgeQrOn) return this.bridgeQrHide();
+    const link = this.pairLink();
+    if (!link) return;
+    this._bridgeQr = qrMatrix(link);
+    clearTimeout(this._bridgeQrTimer);
+    this._bridgeQrTimer = setTimeout(() => this.bridgeQrHide(), 120000);
+    this.setState({ bridgeQrOn: true });
+  }
+  bridgeQrHide() { clearTimeout(this._bridgeQrTimer); this._bridgeQr = null; if (!this._dead) this.setState({ bridgeQrOn: false }); }
+  /* start the PC's worker for the job that was just queued: through the program on this PC when this browser has been connected to it (its answer says whether it started), otherwise by the
+     pppworker:// link as before (G10b-4). Resolves '' (nothing asked), 'bridge' or 'protocol'. */
+  async startPcNow() {
+    if (PcBridge.on()) {
+      const r = await PcBridge.call('POST', '/v1/run', {}, 6000);
+      if (r.reached && r.ok && r.body && r.body.ok && r.body.started === true) { this.bridgeWatch(); setTimeout(() => { if (!this._dead) this.bridgeLook(); }, 1500); return 'bridge'; }
+    }
+    return this.launchPcWorker() ? 'protocol' : '';
+  }
+  /* the view: the status line (Settings and the Add screen), the one button, the question, the phone code */
+  bridgeView(S) {
+    const desktop = PcLocal.desktop();
+    const linked = !!PcLink.get();
+    const on = PcBridge.on();
+    const B = S.bridge || null, st = B && B.st;
+    const W = S.homeWorker;
+    const myTag = linked && W && typeof W.linkTag === 'string' && /^[0-9a-f]{6}$/.test(W.linkTag) ? W.linkTag : '';
+    const msg = S.bridgeMsg || null;
+    let kind = 'none', line = tx('Not connected yet');
+    if (S.bridgeBusy) { kind = 'busy'; line = tx('Connecting…'); }
+    else if (B && B.reach === false && (on || (msg && msg.kind === 'off'))) { kind = 'off'; line = tx('The PC program is not running'); }
+    else if (on && B && B.reach === true && st) {
+      const wl = st.link || {};
+      const live = !!(wl.has && !wl.rejected);
+      const same = live && (!myTag || !/^[0-9a-f]{6}$/.test(String(wl.tag)) || wl.tag === myTag);
+      if (!same) { kind = 'none'; line = live ? tx('This PC uses another PC link') : tx('Not connected yet'); }
+      else if (st.job) { kind = 'busy'; line = tx('Converting {{pct}}%', { pct: Math.max(0, Math.min(100, R0(+st.job.percent || 0))) }) + (st.job.title ? ' · ' + String(st.job.title).slice(0, 100) : ''); }
+      else if (st.env && st.env.ok === false) { kind = 'warn'; line = tx('Connected, but this PC cannot convert yet. Run node tools/home-worker/worker.js --check on it.'); }
+      else { kind = 'ok'; line = tx('My PC is connected ✓ · Idle'); }
+    } else if (linked) { kind = 'site'; line = ''; }                  /* a linked device that has not met the program: the card's own status line (from the site) speaks */
+    const color = kind === 'ok' ? 'var(--good)' : kind === 'off' || kind === 'warn' ? 'var(--bad)' : kind === 'busy' ? 'var(--accent)' : 'var(--ink2)';
+    const lineStyle = 'font-size:13px;font-weight:600;line-height:1.45;overflow-wrap:anywhere;color:' + color + ';';
+    const ask = S.bridgeAsk;
+    return {
+      bridgeShow: desktop,
+      bridgeKind: kind, bridgeLine: line, hasBridgeLine: !!line, bridgeLineStyle: lineStyle,
+      hasBridgeHelp: desktop && kind === 'off',
+      bridgeHelp: tx('The PPP program is not running on this PC. Run tools/home-worker/install-startup.cmd once, then press the button again.'),
+      bridgeHelp2: tx('If your browser asked to allow access to this device, choose Allow.'),
+      hasBridgeMsg: !!(msg && msg.text), bridgeMsgText: msg && msg.text ? msg.text : '', bridgeMsgStyle: 'font-size:12.5px;line-height:1.5;color:' + (msg && msg.kind === 'err' ? 'var(--bad)' : 'var(--ink3)') + ';',
+      bridgeButtonOn: desktop && !S.bridgeBusy && !ask && (kind === 'none' || kind === 'off' || kind === 'site'),
+      bridgeButtonLabel: tx('Connect this PC'),
+      bridgeConnectBtn: () => this.bridgeConnect(),
+      hasBridgeAsk: !!ask,
+      bridgeAskText: ask ? (ask.old ? tx('This PC is connected to PC link …{{old}}. Use this device\'s link …{{id}} instead?', { old: ask.old, id: ask.tag }) : tx('This PC is connected to another PC link. Use this device\'s link …{{id}} instead?', { id: ask.tag })) : '',
+      bridgeAskYesLabel: ask ? tx('Use …{{id}}', { id: ask.tag }) : '', bridgeAskNoLabel: tx('Keep as it is'),
+      bridgeAskYes: () => { if (this.state.bridgeAsk) { this.setState({ bridgeAsk: null }); this.bridgeConnect(true); } },
+      bridgeAskNo: () => this.setState({ bridgeAsk: null, bridgeMsg: { kind: 'note', text: tx('Left as it was.') } }),
+      /* the Add screen shows the same line, for a device that is connected to the program (or has just found it off) */
+      hasBridgeAdd: desktop && !!line && (on || kind === 'off'),
+      /* a phone or tablet: the QR code of the pairing link */
+      bridgePhoneOn: desktop && linked,
+      bridgePhoneLabel: S.bridgeQrOn ? tx('Hide') : tx('Connect a phone or tablet'), bridgePhoneToggle: () => this.bridgeQrToggle(), bridgePhoneExpanded: S.bridgeQrOn ? 'true' : 'false',
+      bridgeQrOn: !!(S.bridgeQrOn && linked), bridgeQrDraw: !!(S.bridgeQrOn && linked && this._bridgeQr), bridgeQrAlt: tx('QR code of the PC link'),
+      bridgeQrNote: tx('Scan this with the phone camera. The phone asks before it connects.'),
+      bridgeCopyLabel: S.homeCopied === 'pair' ? tx('Copied') : tx('Copy link')
+    };
   }
   applyTheme() {
     const el = this._root.current;
@@ -14753,9 +15168,11 @@ class Component extends DCLogic {
       const titleP = Import.youtubeTitle(url).catch(() => null);
       const title = (local ? await Promise.race([titleP, new Promise(res => setTimeout(() => res(null), 2500))]) : await titleP) || '';
       const r = await this.homeApi('/api/jobs', { method: 'POST', body: { url: url, title: title } });
-      const launched = !!(local && r.job && r.job.status === 'queued' && this.launchPcWorker());
+      /* G10b-6: through the program on this PC when this browser is connected to it (it says whether it started), otherwise the pppworker:// link */
+      const via = local && r.job && r.job.status === 'queued' ? await this.startPcNow() : '';
+      const launched = via === 'protocol';
       PcLink.clearPrev();         /* using the link is the person saying it is theirs: nothing to go back to */
-      this.say(launched ? tx('Asked this PC to start. If nothing happens, run the desktop shortcut.') : r.existing ? tx('That link is already waiting for your PC.') : tx('Sent to your PC. It will be converted when your PC checks in.'));
+      this.say(via === 'bridge' ? tx('Started on your PC.') : launched ? tx('Asked this PC to start. If nothing happens, run the desktop shortcut.') : r.existing ? tx('That link is already waiting for your PC.') : tx('Sent to your PC. It will be converted when your PC checks in.'));
       this.setState({ homeBusy: false, homeAsked: launched ? Date.now() : 0 });
       await this.homeRefresh();
       if (launched) this.watchSoon();
@@ -14978,6 +15395,10 @@ class Component extends DCLogic {
   /* "Start now": the same launch again, from its own click (a conversion that is still waiting) */
   startHomeNow() {
     if (!PcLocal.get() || !(this.state.homeJobs || []).some(j => j.status === 'queued')) return;
+    if (PcBridge.on()) {        /* G10b-6 */
+      this.startPcNow().then(v => { if (this._dead) return; if (v === 'bridge') this.say(tx('Started on your PC.')); else if (v === 'protocol') { this.setState({ homeAsked: Date.now() }); this.say(tx('Asked this PC to start. If nothing happens, run the desktop shortcut.')); this.watchSoon(); } });
+      return;
+    }
     const launched = this.launchPcWorker();
     this.setState({ homeAsked: launched ? Date.now() : 0 });
     if (launched) { this.say(tx('Asked this PC to start. If nothing happens, run the desktop shortcut.')); this.watchSoon(); }
@@ -18813,6 +19234,7 @@ class Component extends DCLogic {
       addYoutube: () => this.addYoutube(),
       hasYtError: !!S.ytError, ytError: S.ytError || '',
       ...this.homeView(S),   /* G10b-1 */
+      ...this.bridgeView(S),   /* G10b-6 */
       helperNote: (() => {
         const hp = S.helper;
         const hosted = typeof location !== 'undefined' && !/^(localhost|127\.0\.0\.1)$/i.test(location.hostname || '');

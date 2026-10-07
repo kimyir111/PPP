@@ -2108,6 +2108,27 @@
     "Needs a one-time Windows setup: double-click tools/home-worker/register-protocol.cmd (or run node tools/home-worker/worker.js --register-protocol). After that, \"High-quality (my PC)\" pressed in this browser starts the conversion right away. Turn this on only on the PC that runs the worker.": "한 번만 Windows 설정이 필요해요: tools/home-worker/register-protocol.cmd 를 더블클릭하세요(또는 node tools/home-worker/worker.js --register-protocol). 그 뒤에는 이 브라우저에서 「고품질 변환 (내 PC)」을 누르면 바로 시작해요. 워커가 있는 PC에서만 켜세요.",
     "High-quality conversion runs on your own PC. This button asks this PC to start at once; a song takes a few minutes. If nothing starts, run the desktop shortcut.": "고품질 변환은 내 PC에서 돌아가요. 이 버튼은 이 PC에 바로 시작하라고 요청해요. 한 곡에 몇 분 걸려요. 시작되지 않으면 바탕화면 바로가기를 실행하세요.",
     "Asked this PC to start. If nothing happens, run the desktop shortcut.": "이 PC에 시작하라고 요청했어요. 아무 일도 일어나지 않으면 바탕화면 바로가기를 실행하세요.",
-    "Start now": "지금 시작"
+    "Start now": "지금 시작",
+    "Connect this PC": "이 PC 연결",
+    "Not connected yet": "아직 연결되지 않았어요",
+    "My PC is connected ✓ · Idle": "내 PC 연결됨 ✓ · 대기 중",
+    "Converting {{pct}}%": "변환 중 {{pct}}%",
+    "The PC program is not running": "PC 프로그램이 꺼져 있어요",
+    "This PC uses another PC link": "이 PC는 다른 PC 링크를 쓰고 있어요",
+    "Connected, but this PC cannot convert yet. Run node tools/home-worker/worker.js --check on it.": "연결은 됐지만 이 PC가 아직 변환할 수 없어요. 이 PC에서 node tools/home-worker/worker.js --check 를 실행해 보세요.",
+    "The PPP program is not running on this PC. Run tools/home-worker/install-startup.cmd once, then press the button again.": "이 PC에서 PPP 프로그램이 실행 중이 아니에요. tools/home-worker/install-startup.cmd를 한 번 실행한 뒤 버튼을 다시 눌러 주세요.",
+    "If your browser asked to allow access to this device, choose Allow.": "브라우저가 이 기기에 접근해도 되는지 물으면 \"허용\"을 누르세요.",
+    "This PC is connected to PC link …{{old}}. Use this device's link …{{id}} instead?": "이 PC는 PC 링크 …{{old}}에 연결돼 있어요. 이 기기의 링크 …{{id}}로 바꿀까요?",
+    "This PC is connected to another PC link. Use this device's link …{{id}} instead?": "이 PC는 다른 PC 링크에 연결돼 있어요. 이 기기의 링크 …{{id}}로 바꿀까요?",
+    "Use …{{id}}": "…{{id}} 쓰기",
+    "Keep as it is": "그대로 두기",
+    "Left as it was.": "그대로 두었어요.",
+    "This PC is connected now.": "이 PC를 연결했어요.",
+    "A conversion is running on this PC. Connect after it finishes.": "이 PC에서 변환이 진행 중이에요. 끝난 뒤에 연결해 주세요.",
+    "Could not connect. Try again in a moment.": "연결하지 못했어요. 잠시 뒤에 다시 눌러 주세요.",
+    "Started on your PC.": "내 PC에서 바로 시작했어요.",
+    "Connect a phone or tablet": "휴대폰·태블릿 연결",
+    "Scan this with the phone camera. The phone asks before it connects.": "휴대폰 카메라로 스캔하세요. 연결하기 전에 휴대폰이 먼저 물어봐요.",
+    "QR code of the PC link": "PC 링크 QR 코드"
   }
 }

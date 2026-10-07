@@ -2106,6 +2106,27 @@
     "Needs a one-time Windows setup: double-click tools/home-worker/register-protocol.cmd (or run node tools/home-worker/worker.js --register-protocol). After that, \"High-quality (my PC)\" pressed in this browser starts the conversion right away. Turn this on only on the PC that runs the worker.": "需要一次性的 Windows 设置：双击 tools/home-worker/register-protocol.cmd（或运行 node tools/home-worker/worker.js --register-protocol）。之后在此浏览器中点击“高质量转换（我的电脑）”即可立即开始。只在运行工作程序的电脑上开启。",
     "High-quality conversion runs on your own PC. This button asks this PC to start at once; a song takes a few minutes. If nothing starts, run the desktop shortcut.": "高质量转换在你自己的电脑上运行。此按钮会请求这台电脑立即开始；一首曲子需要几分钟。如果没有开始，请运行桌面快捷方式。",
     "Asked this PC to start. If nothing happens, run the desktop shortcut.": "已请求这台电脑开始。如果没有反应，请运行桌面快捷方式。",
-    "Start now": "立即开始"
+    "Start now": "立即开始",
+    "Connect this PC": "连接这台电脑",
+    "Not connected yet": "尚未连接",
+    "My PC is connected ✓ · Idle": "我的电脑已连接 ✓ · 空闲",
+    "Converting {{pct}}%": "转换中 {{pct}}%",
+    "The PC program is not running": "电脑上的程序没有运行",
+    "This PC uses another PC link": "这台电脑使用的是另一个电脑链接",
+    "Connected, but this PC cannot convert yet. Run node tools/home-worker/worker.js --check on it.": "已连接，但这台电脑还不能转换。请在这台电脑上运行 node tools/home-worker/worker.js --check。",
+    "The PPP program is not running on this PC. Run tools/home-worker/install-startup.cmd once, then press the button again.": "这台电脑上的 PPP 程序没有运行。请先运行一次 tools/home-worker/install-startup.cmd，然后再按一次按钮。",
+    "If your browser asked to allow access to this device, choose Allow.": "如果浏览器询问是否允许访问此设备，请选择“允许”。",
+    "This PC is connected to PC link …{{old}}. Use this device's link …{{id}} instead?": "这台电脑已连接到电脑链接 …{{old}}。要改用这台设备的链接 …{{id}} 吗？",
+    "This PC is connected to another PC link. Use this device's link …{{id}} instead?": "这台电脑已连接到另一个电脑链接。要改用这台设备的链接 …{{id}} 吗？",
+    "Use …{{id}}": "使用 …{{id}}",
+    "Keep as it is": "保持不变",
+    "Left as it was.": "已保持不变。",
+    "This PC is connected now.": "已连接这台电脑。",
+    "A conversion is running on this PC. Connect after it finishes.": "这台电脑正在转换。请在转换结束后再连接。",
+    "Could not connect. Try again in a moment.": "无法连接。请稍后再试。",
+    "Started on your PC.": "已在我的电脑上开始。",
+    "Connect a phone or tablet": "连接手机或平板",
+    "Scan this with the phone camera. The phone asks before it connects.": "用手机相机扫描。连接之前，手机会先询问。",
+    "QR code of the PC link": "电脑链接的二维码"
   }
 }
