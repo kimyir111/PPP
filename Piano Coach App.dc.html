@@ -15360,7 +15360,7 @@ class Component extends DCLogic {
       bpm: +S.lockBpm || S.score.tempo || 80,
       firstDownbeat: S.lockDownbeat == null ? 0 : +S.lockDownbeat
     };
-    let built, base, arranged, g8Degraded = false, singleFailure = null, standardInstead = false, levelNote = null, rescued = null, leadCopy = false;
+    let built, base, arranged, g8Degraded = false, singleFailure = null, standardInstead = false, levelNote = null, rescued = null, leadCopy = false, leadFell = false;
     try {
       built = A.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
@@ -15382,6 +15382,7 @@ class Component extends DCLogic {
           levelNote = sn.levelNote || null;
           rescued = sn.rescued || null;
           leadCopy = sn.recordingArrange === 'leadsheet';
+          leadFell = sn.recordingArrange === 'reduce' && !!sn.leadsheetRefusal;   /* the lead sheet could not be used: the status line and the message say so (the reason is in the copy's source) */
         } else {
           singleFailure = sn.reason || 'unknown';
           /* what the option-off request would have done: a balanced/melody/accompaniment texture is written by the rhythm rewriter (rewriteFromHeard),
@@ -15458,13 +15459,13 @@ class Component extends DCLogic {
     this.setState({
       importReport: report, importSource: source,
       arrangementLevel: plan.level, arrangementStyle: plan.style,
-      arrangementBusy: false, arrangementStatus: singleNotice || this.singleNoticeText(levelNote, rescued, leadCopy) || (source.arrangement.engine === 'ppp.g9-single' ? '' : arrangementStatus) || '', /* an AI line about a texture says nothing true of a one-note-per-hand result; the harder-than-chosen note stays on the screen like the fallback notice */
+      arrangementBusy: false, arrangementStatus: singleNotice || this.singleNoticeText(levelNote, rescued, leadCopy, { fell: leadFell }) || (source.arrangement.engine === 'ppp.g9-single' ? '' : arrangementStatus) || '', /* an AI line about a texture says nothing true of a one-note-per-hand result; the harder-than-chosen note stays on the screen like the fallback notice */
       reviewFrom: Score.first(arranged)
     }, () => this.saveNow());
     if (singleNotice) this.say(singleNotice);
     else if (source.arrangement.engine === 'ppp.g9-single') this.say((g8Degraded
       ? tx('Created a {{level}} arrangement. Some passages had low melody/bass confidence, so PPP kept them simple rather than guess.', { level: tx(plan.level) })
-      : tx('Created a {{level}} one-note-per-hand arrangement.', { level: tx(plan.level) })) + (levelNote || rescued ? ' ' + this.singleNoticeText(levelNote, rescued, leadCopy) : ''));
+      : tx('Created a {{level}} one-note-per-hand arrangement.', { level: tx(plan.level) })) + (levelNote || rescued || leadFell ? ' ' + this.singleNoticeText(levelNote, rescued, leadCopy, { fell: leadFell }) : ''));
     else this.say(g8Degraded
       ? tx('Created a {{level}} arrangement. Some passages had low melody/bass confidence, so PPP kept them simple rather than guess.', { level: tx(plan.level) })
       : tx('Created a {{level}} {{style}} arrangement.', { level: tx(plan.level), style: this.arrangementStyleName(plan.style) }));
@@ -16047,11 +16048,15 @@ class Component extends DCLogic {
       ? tx('This arrangement keeps the recording\'s own key signature and melody as they are, so it may be harder than the level you chose. The difficulty comes from the key signature and the melody itself, not from the left hand.')
       : tx('This piece has many notes, so the arrangement may be a little harder than the level you chose.');
   }
+  /* G10c-1b: the lead sheet was asked for (the chip is on) and could not be used - whatever the reason: the file did not load, the recording has an irregular bar, no melody could be found... - so the copy is the
+     reduction's, as the chip off makes it. It is said once, with the copy (the Song Arranger's message, the review screen's message and its status line); the reason itself is in the copy's source (leadsheetRefusal). */
+  leadFallbackText() { return tx('The lead sheet could not be used, so the recording\'s own notes were thinned out instead.'); }
   /* G9e stray-note rescue: notes the arranger left out because no hand could play them in the time between their neighbours (candidates/index.js strayRescue) */
   rescuedText(n) { return tx(n === 1 ? '{{n}} note was left out because it could not be played smoothly.' : '{{n}} notes were left out because they could not be played smoothly.', { n: n }); }
   /* the one line a one-note-per-hand result can carry: the level note and/or the left-out notes ('' when neither); remembered, so that choosing another level can take exactly it off the screen */
-  singleNoticeText(levelNote, rescued, lead) {
-    const text = [levelNote ? this.levelNoteText(lead) : '', rescued && rescued.length ? this.rescuedText(rescued.length) : ''].filter(Boolean).join(' ');
+  singleNoticeText(levelNote, rescued, lead, info) {
+    info = info || {};
+    const text = [info.fell ? this.leadFallbackText() : '', levelNote ? this.levelNoteText(lead) : '', rescued && rescued.length ? this.rescuedText(rescued.length) : ''].filter(Boolean).join(' ');
     this._singleNoticeText = text || null;
     return text;
   }
@@ -16113,7 +16118,7 @@ class Component extends DCLogic {
     plan = ScoreArranger.norm(Object.assign({}, plan || {}, { source: provider ? 'ai' : (plan && plan.source) }));
     let title = (d.autoTitle ? this.arrangementCopyTitle(d.songTitle, plan.style, singleRoute(plan)) : String(d.copyTitle || '').trim())
       || this.arrangementCopyTitle(d.songTitle, plan.style, singleRoute(plan));
-    let arranged, usedFallback = false, usedSingle = false, singleFailure = null, levelNote = null, rescued = null, classicRead = false, leadCopy = false;
+    let arranged, usedFallback = false, usedSingle = false, singleFailure = null, levelNote = null, rescued = null, classicRead = false, leadCopy = false, leadFell = false;
     if (saveOpts && saveOpts.standardAfter) {
       /* the person pressed "Save the standard arrangement" after a refusal: no second try of the one-note-per-hand arranger */
       singleFailure = saveOpts.standardAfter.reason || 'unknown';
@@ -16139,6 +16144,7 @@ class Component extends DCLogic {
         rescued = sn.rescued || null;
         classicRead = !!sn.classicFallback;
         leadCopy = sn.recordingArrange === 'leadsheet';
+        leadFell = sn.recordingArrange === 'reduce' && !!sn.leadsheetRefusal;   /* the lead sheet was asked for and could not be used (the reason is in the copy's source): say so */
         arranged = graphToReviewScore(sn.graph, title);
         /* legacy-score.js takes the title of the graph's own meta over the name it is given: the copy is named what the person typed */
         arranged.title = title;
@@ -16195,7 +16201,7 @@ class Component extends DCLogic {
     if (this._thumbs) delete this._thumbs[id];
     this.setState({ songArrange: null });
     const saved = tx('Saved {{title}} as a new song. The original was not changed.', { title: arranged.title });
-    this.say(singleFailure ? tx('This piece could not be made in one-note-per-hand mode, so the standard arrangement was saved.') + ' ' + saved : saved + (levelNote || rescued ? ' ' + this.singleNoticeText(levelNote, rescued, leadCopy) : ''));
+    this.say(singleFailure ? tx('This piece could not be made in one-note-per-hand mode, so the standard arrangement was saved.') + ' ' + saved : saved + (levelNote || rescued || leadFell ? ' ' + this.singleNoticeText(levelNote, rescued, leadCopy, { fell: leadFell }) : ''));
     return true;
   }
   async createSongArrangement() {

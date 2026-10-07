@@ -41,6 +41,8 @@ const ON_LINE = 'On (the default): a recording is arranged from its melody and c
 const OFF_LINE = 'Off: a recording\'s own notes are thinned out to fit the level. Turn it on to arrange from its melody and chords instead.';
 const RELAXED_EN = 'This arrangement keeps the recording\'s own key signature and melody as they are, so it may be harder than the level you chose. The difficulty comes from the key signature and the melody itself, not from the left hand.';
 const RELAXED_OLD = 'This piece has many notes, so the arrangement may be a little harder than the level you chose.';
+const FELL_EN = 'The lead sheet could not be used, so the recording\'s own notes were thinned out instead.';
+const told = says => (says || []).filter(s => s.indexOf(FELL_EN) > -1).length;   /* how many of the page's messages carry the fallback notice */
 const CODE = 'ALL_CANDIDATES_HAVE_HARD_VIOLATIONS';
 const heard = c => ({ notes: c.notes.map(n => ({ on: n.on, off: n.off, midi: n.midi, vel: n.vel })) });
 const COVERS = { sc0: heard(cover(24, tune)), sc6: heard(cover(24, tune, { shift: 6 })) };
@@ -335,10 +337,12 @@ const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i])
         const want0 = await mainHash(p, id, level);
         ok(reason + ': the copy is the reduction\'s, exactly main\'s copy, saved (the Song Arranger shows no refusal)', r.refusal === null && r.newKeys.length === 1 && want0.ok && (await copyHash(p, r.newKeys[0])) === want0.hash, JSON.stringify({ r: r.refusal, k: r.newKeys.length }));
         ok(reason + ': it says which path made it - recordingArrange "reduce", leadsheetRefusal "' + reason + '" - and the composer line is the plain one', !!r.arrangement && r.arrangement.recordingArrange === 'reduce' && r.arrangement.leadsheetRefusal === reason && !r.arrangement.leadsheet && !/lead sheet/.test(JSON.stringify(r.slot)), JSON.stringify(r.arrangement));
+        ok(reason + ': and the person is told, once, with the message that says the copy was saved: the lead sheet could not be used, the recording\'s own notes were thinned out instead', told(r.says) === 1 && r.says.length === 1, JSON.stringify(r.says));
         ok(reason + ': the lead sheet was asked once and the candidates stage ran once (the reduction), not for the lead sheet: no hands retry, nothing converted again', used.prepared === 1 && used.runs === 1, JSON.stringify(used));
       }
       const rc = await arrangeCopy(p, id, 'beginner', { beforeCreate: plant(null, 'none') });
       ok('and with the lead sheet allowed again the copy is a lead sheet copy (the refusal notice of before is gone)', rc.refusal === null && !rc.notice && !!rc.arrangement && rc.arrangement.recordingArrange === 'leadsheet');
+      ok('and a lead sheet copy says nothing of the kind', told(rc.says) === 0, JSON.stringify(rc.says));
       ok('no page or console error', clean(p), errs(p));
       await p.close();
       /* the module cannot be had: blocked at the server */
@@ -348,6 +352,7 @@ const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i])
       const wantB = await mainHash(pb.page, pb.id, 'beginner');
       ok('rec/leadsheet.js blocked: no module, no error - the copy is the reduction\'s, main\'s, marked reduce with LEADSHEET_NOT_LOADED', rb2.refusal === null && rb2.newKeys.length === 1 && wantB.ok && (await copyHash(pb.page, rb2.newKeys[0])) === wantB.hash
         && !!rb2.arrangement && rb2.arrangement.recordingArrange === 'reduce' && rb2.arrangement.leadsheetRefusal === 'LEADSHEET_NOT_LOADED', JSON.stringify(rb2.arrangement));
+      ok('and it says so, once: the lead sheet could not be used, the recording\'s own notes were thinned out instead (the copy was saved silently before)', told(rb2.says) === 1 && rb2.says.length === 1, JSON.stringify(rb2.says));
       ok('no page error (the blocked file is a failed request, not a script error)', pb.page.__rec.pageErrors.length === 0, JSON.stringify(pb.page.__rec.pageErrors));
       await pb.page.close();
     }
@@ -443,6 +448,21 @@ const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i])
       ok('six sharps, Apply arrangement at beginner: made from the lead sheet, and the status line under the panel is the lead-sheet words', a3.arrangement.recordingArrange === 'leadsheet' && a3.arrangement.levelNote === 'relaxed-plan' && a3.status === RELAXED_EN, JSON.stringify({ a: a3.arrangement, s: a3.status }));
       ok('no page or console error', clean(ps), errs(ps));
       await ps.close();
+      /* the lead sheet cannot be used on the review screen either: the copy is the reduction's, marked, and the status line under the panel and the message say so (once) */
+      const pf2 = await openPage(browser, { store: LEAD });
+      await importHeard(pf2, COVERS.sc0);
+      await pf2.waitForFunction(() => !!document.querySelector('[data-arrangement] [data-single-note-option]'), { timeout: 30000 });
+      await pf2.evaluate(() => window.PPP.loadLeadsheetModule());
+      await pf2.evaluate(() => { const real = window.PPPRecLeadsheet; window.PPPRecLeadsheet = Object.assign({}, real, { prepare: () => ({ ok: false, reason: 'LEADSHEET_METRE', message: 'planted' }) }); });
+      await says(pf2);
+      const a5 = await apply(pf2, 'beginner');
+      const said5 = await pf2.evaluate(() => window.__says.slice());
+      ok('the lead sheet refuses on the review screen: Apply arrangement makes the reduction copy, marked reduce with the reason', a5.arrangement.engine === 'ppp.g9-single' && a5.arrangement.recordingArrange === 'reduce' && a5.arrangement.leadsheetRefusal === 'LEADSHEET_METRE' && !a5.arrangement.leadsheet, JSON.stringify(a5.arrangement));
+      ok('and the status line under the panel begins with the notice (it stays until the level is changed), and the message carries it once', a5.status.indexOf(FELL_EN) === 0 && told(said5) === 1, JSON.stringify({ s: a5.status, m: said5 }));
+      await pf2.select('[data-arrangement-level]', 'intermediate'); await sleep(300);
+      ok('choosing another level takes the notice off the screen, as it does the other notes', await pf2.evaluate(() => window.PPP.app.state.arrangementStatus === ''));
+      ok('no page or console error', clean(pf2), errs(pf2));
+      await pf2.close();
     }
 
     /* ------------------------------------------------------------------ what the lead sheet does not touch */

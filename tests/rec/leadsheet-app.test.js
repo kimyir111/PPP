@@ -331,7 +331,10 @@ test('the words: every string of the lead-sheet chip and the relaxed note is in 
   const strings = ['Arrange from a lead sheet', 'PPP one-note-per-hand arrangement (lead sheet)'];
   [/tx\('(On \(the default\): a recording is arranged from its melody and chords\.[^']*(?:\\'[^']*)*)'\)/, /tx\('(Off: a recording\\'s own notes are thinned out[^']*(?:\\'[^']*)*)'\)/, /tx\('(This arrangement keeps the recording\\'s own key signature[^']*(?:\\'[^']*)*)'\)/]
     .forEach(re => { const m = re.exec(html); assert.ok(m, String(re)); strings.push(m[1].replace(/\\'/g, '\'')); });
-  assert.equal(strings.length, 5);
+  const fell = /tx\('(The lead sheet could not be used, so the recording\\'s own notes were thinned out instead\.)'\)/.exec(html);
+  assert.ok(fell, 'the page says the lead sheet could not be used');
+  strings.push(fell[1].replace(/\\'/g, '\''));
+  assert.equal(strings.length, 6);
   for (const loc of ['ko-KR', 'ja-JP', 'zh-CN']) {
     const cat = JSON.parse(fs.readFileSync(path.join(REPO, 'i18n', loc + '.json'), 'utf8')).content;
     strings.forEach(s => { assert.ok(typeof cat[s] === 'string' && cat[s].length > 3, loc + ' lacks: ' + s.slice(0, 60)); assert.notEqual(cat[s], s, loc + ' is not translated: ' + s.slice(0, 60)); });
@@ -343,6 +346,12 @@ test('the words: every string of the lead-sheet chip and the relaxed note is in 
   assert.match(note, /왼손이 아니라/, 'and says it is not the left hand');
   assert.match(ko[strings[1]], /리드 시트/);
   assert.equal(strings[4].includes('many notes'), false);
+  const koFell = ko[strings[5]];
+  assert.match(koFell, /리드 시트/, 'the Korean fallback notice names the lead sheet');
+  assert.match(koFell, /덜어내/, 'and says the recording\'s own notes were thinned out');
+  assert.match(html, /leadFallbackText\(\) \{ return tx\(/, 'one place says it');
+  assert.equal((html.match(/this\.leadFallbackText\(\)/g) || []).length, 1, 'once, in singleNoticeText: the Song Arranger and the review screen both say it through that');
+  assert.equal((html.match(/leadFell = sn\.recordingArrange === 'reduce' && !!sn\.leadsheetRefusal;/g) || []).length, 2, 'both screens: a copy made by the reduction after the lead sheet refused');
 });
 
 test('the review tooling: arranger().arrange takes the option; without it the copy is the reduction as before; with it the copy is the lead sheet and says so', async () => {
