@@ -2108,6 +2108,16 @@
     "Needs a one-time Windows setup: double-click tools/home-worker/register-protocol.cmd (or run node tools/home-worker/worker.js --register-protocol). After that, \"High-quality (my PC)\" pressed in this browser starts the conversion right away. Turn this on only on the PC that runs the worker.": "한 번만 Windows 설정이 필요해요: tools/home-worker/register-protocol.cmd 를 더블클릭하세요(또는 node tools/home-worker/worker.js --register-protocol). 그 뒤에는 이 브라우저에서 「고품질 변환 (내 PC)」을 누르면 바로 시작해요. 워커가 있는 PC에서만 켜세요.",
     "High-quality conversion runs on your own PC. This button asks this PC to start at once; a song takes a few minutes. If nothing starts, run the desktop shortcut.": "고품질 변환은 내 PC에서 돌아가요. 이 버튼은 이 PC에 바로 시작하라고 요청해요. 한 곡에 몇 분 걸려요. 시작되지 않으면 바탕화면 바로가기를 실행하세요.",
     "Asked this PC to start. If nothing happens, run the desktop shortcut.": "이 PC에 시작하라고 요청했어요. 아무 일도 일어나지 않으면 바탕화면 바로가기를 실행하세요.",
-    "Start now": "지금 시작"
+    "Start now": "지금 시작",
+    "Checking your PC…": "PC를 확인하는 중…",
+    "Your PC has not connected yet: it will take the job when it does": "PC가 아직 연결되지 않았어요. 연결되면 이 작업을 가져가요.",
+    "Could not check your PC right now. You can still send the job.": "지금은 PC를 확인할 수 없어요. 작업은 그래도 보낼 수 있어요.",
+    "This device holds a PC link that the site does not recognise right now.": "이 기기에는 PC 링크가 있지만, 사이트가 지금은 그 링크를 알아보지 못해요.",
+    "Remove it": "지우기",
+    "The PC link was removed from this device.": "이 기기에서 PC 링크를 지웠어요.",
+    "High-quality conversion uses your own PC. This device is not connected to it yet. The quickest way:": "고품질 변환은 내 PC에서 실행돼요. 이 기기는 아직 내 PC와 연결되지 않았어요. 가장 빠른 방법은 다음과 같아요.",
+    "On your PC double-click the desktop shortcut “PPP connect my devices (pair)”: it opens PPP already connected.": "내 PC에서 바탕화면의 “PPP connect my devices (pair)” 바로가기를 두 번 클릭하세요. 이미 연결된 상태로 PPP가 열려요.",
+    "From another device: open the link you copied with “Connect another device: copy link”.": "다른 기기에서는 “다른 기기 연결: 링크 복사”로 복사해 둔 링크를 여세요.",
+    "More in Settings": "설정에서 더 보기"
   }
 }

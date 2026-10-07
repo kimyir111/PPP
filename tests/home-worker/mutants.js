@@ -15,7 +15,7 @@ const REPO = path.resolve(__dirname, '..', '..');
 /* (catalog/shared-seeds.json: the server.js copy is run for real by the Postgres test, and its seed library is read from beside it) */
 const PAGE = 'Piano Coach App.dc.html';
 const FILES = [PAGE, 'home-jobs.js', 'home-result.js', 'home-jobs-store.js', 'server.js', 'share-guest.js', 'tools/home-worker/worker.js', 'review/h10/helper-heard.js', 'catalog/shared-seeds.json'];
-const JOBS = 'jobs.test.js', WORKER = 'worker.test.js', PG = 'jobs-pg.test.js', LINKS = 'links.test.js', SERVER = 'server.test.js', PAIRW = 'pair.test.js', PAIRPAGE = 'pairing.test.js', PROTO = 'protocol.test.js';
+const JOBS = 'jobs.test.js', WORKER = 'worker.test.js', PG = 'jobs-pg.test.js', LINKS = 'links.test.js', SERVER = 'server.test.js', PAIRW = 'pair.test.js', PAIRPAGE = 'pairing.test.js', PROTO = 'protocol.test.js', FINDABLE = 'findable.test.js';
 
 /* id, file, what the mutant breaks, [from, to] (strings, replaced once), the test that must fail */
 const M = [
@@ -267,14 +267,14 @@ const M = [
   ['R16', PAGE, 'the launch carries data (the link being converted rides on pppworker://)', ["a.href = 'pppworker://run';", "a.href = 'pppworker://run?u=' + encodeURIComponent(this._yt || document.title);"], PAIRPAGE],
   ['R17', PAGE, 'the question times out after 5 seconds (it must wait for the person)', ["this.setState({ pairNote: null, pairAsk: { code: code, tag: tag,", "setTimeout(() => this.setState({ pairAsk: null }), 5000); this.setState({ pairNote: null, pairAsk: { code: code, tag: tag,"], PAIRPAGE],
   ['R18', PAGE, 'the link in its read-only field and the shown code stay when Settings is left', ["if (this.state.screen !== 'settings' && (this.state.homePairManual || this.state.homeCodeShown)) this.setState({ homePairManual: false, homeCodeShown: false });", ""], PAIRPAGE],
-  ['R19', PAGE, 'no caption under the Add button ("Sends to PC link ...")', ["hasHomeTag: !!(linked && W && W.everSeen", "hasHomeTag: !!(false && W && W.everSeen"], PAIRPAGE],
+  ['R19', PAGE, 'no caption under the Add button ("Sends to PC link ...")', ["hasHomeTag: !!(addOn && seen && myTag)", "hasHomeTag: !!(false && seen && myTag)"], PAIRPAGE],
   ['R20', PAGE, 'the name shown is made of the code (its last 6 characters), not the site\'s linkTag', ["const W = r.worker || {}, tag = this.pairTagOf(W);", "const W = r.worker || {}, tag = code.slice(-6);"], PAIRPAGE],
   ['R21', PAGE, 'a phone counts as a desktop browser (the flag and the switch work there)', ["const desktop = () => {\n    try {", "const desktop = () => {\n    return true;\n    try {"], PAIRPAGE],
   ['R22', PAGE, 'Forget on this device leaves the "this is the PC" flag', ["forgetPcLink() {\n    PcLink.clear(); PcLink.clearPrev(); PcLocal.set(false);", "forgetPcLink() {\n    PcLink.clear(); PcLink.clearPrev();"], PAIRPAGE],
   ['R23', PAGE, 'a link that the site no longer knows still counts as a link to protect (a dead stored link makes the new one a question)', ["catch (e) { oldLive = !(e.status === 401 && e.code === 'bad-code'); oldTag = '------'; }", "catch (e) { oldLive = true; oldTag = '------'; }"], PAIRPAGE],
   ['R24', PAGE, 'Disconnect leaves the previous-link slot full', ["    PcLink.clearPrev();\n    if (u) PcLocal.set(!!u.wasLocal);", "    if (u) PcLocal.set(!!u.wasLocal);"], PAIRPAGE],
   ['R25', PAGE, 'using the link (queueing a conversion) does not clear the previous-link slot', ["      PcLink.clearPrev();         /* using the link is the person saying it is theirs: nothing to go back to */\n", ""], PAIRPAGE],
-  ['R26', PAGE, 'Remove link leaves the previous-link slot and the flag', ["    PcLink.clear(); PcLink.clearPrev(); PcLocal.set(false);\n    clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};\n    this.setState({ homeBusy: false, homeWorker: null", "    PcLink.clear();\n    clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};\n    this.setState({ homeBusy: false, homeWorker: null"], PAIRPAGE],
+  ['R26', PAGE, 'Remove link leaves the previous-link slot and the flag', ["    PcLink.clear(); PcLink.clearPrev(); PcLocal.set(false);\n    clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};\n    this.homeClearUnrec();\n    this.setState({ homeBusy: false, homeWorker: null", "    PcLink.clear();\n    clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};\n    this.setState({ homeBusy: false, homeWorker: null"], PAIRPAGE],
   ['R27', PAGE, 'the banner after a pairing says nothing of what the PC is doing (the second line is gone)', ["pairNote(tx('This device now uses PC link …{{tag}}. If you did not make that link, press Disconnect.', { tag: tag }), false, { state: this.homeStateText(W),", "pairNote(tx('This device now uses PC link …{{tag}}. If you did not make that link, press Disconnect.', { tag: tag }), false, { state: '',"], PAIRPAGE],
   ['S1', 'tools/home-worker/worker.js', 'the registered command passes the address on (%1 after the script)', ["const protocolCommand = vbs => 'wscript.exe //B //Nologo \"' + vbs + '\"';", "const protocolCommand = vbs => 'wscript.exe //B //Nologo \"' + vbs + '\" %1';"], PROTO],
   ['S2', 'tools/home-worker/worker.js', 'reg.exe is started through a shell', ["windowsHide: true, shell: false, stdio: ['ignore', 'pipe', 'pipe']", "windowsHide: true, shell: true, stdio: ['ignore', 'pipe', 'pipe']"], PROTO],
@@ -298,6 +298,31 @@ const M = [
   ['T1', 'home-jobs.js', 'the link\'s name is the whole id (more of the hash than 6 characters)', ["String(id).slice(-6) : null);", "String(id) : null);"], LINKS],
   ['T2', 'home-jobs.js', 'the status answer has no linkTag', [", activePollSeconds: C.activePollS, linkTag: linkTagOf(ownerId) };", ", activePollSeconds: C.activePollS };"], LINKS],
   ['T3', 'home-jobs.js', 'the link\'s name is the first 6 hex of the id (the same bytes as the hash start, a different name than the last 6)', ["String(id).slice(-6) : null);", "String(id).slice(3, 9) : null);"], LINKS],
+  /* G10b-5: the PC button is always findable; a link is never forgotten on one 401 (tests/home-worker/findable.test.js) */
+  ['F1', PAGE, 'a PC link is forgotten on the FIRST answer of "not valid" (the code is cleared at once)', ["    if (this._dead || PcLink.get() !== code) return;\n    const t = Date.now();\n    let u = this._unrec;", "    if (this._dead || PcLink.get() !== code) return;\n    PcLink.clear();\n    const t = Date.now();\n    let u = this._unrec;"], FINDABLE],
+  ['F2', PAGE, 'a "not valid" from the token / removal calls (afterLinkError) forgets the code', ["if (PcLink.get()) this.homeNotRecognized(PcLink.get()); return; }", "PcLink.clear(); return; }"], FINDABLE],
+  ['F3', PAGE, 'asking for a conversion and hearing "not valid" says so but does not put the link in the unrecognised state', ["ytError: tx('This device holds a PC link that the site does not recognise right now.') }); this.homeNotRecognized(PcLink.get()); return; }\n      this.setState({ homeBusy: false, ytError: e.message });", "ytError: tx('This device holds a PC link that the site does not recognise right now.') }); return; }\n      this.setState({ homeBusy: false, ytError: e.message });"], FINDABLE],
+  ['F4', PAGE, 'the button is hidden while the status has not loaded (W is null)', ["showHomePc: !!(addOn && linked),", "showHomePc: !!(addOn && linked && W),"], FINDABLE],
+  ['F5', PAGE, 'the button is hidden until the PC has been seen (the old rule)', ["showHomePc: !!(addOn && linked),", "showHomePc: !!(addOn && linked && W && W.everSeen),"], FINDABLE],
+  ['F6', PAGE, 'a device with no link gets no secondary button', ["showHomeHelp: !!(addOn && !linked),", "showHomeHelp: false,"], FINDABLE],
+  ['F7', PAGE, 'opening the sheet makes a PC link by itself', ["openHomeSheet: () => this.setState({ homeSheet: true }),", "openHomeSheet: () => { this.makePcLink(); this.setState({ homeSheet: true }); },"], FINDABLE],
+  ['F8', PAGE, 'the sheet shows a pairing link (a secret)', ["homeSheetStep2: tx('From another device: open the link you copied with “Connect another device: copy link”.'),", "homeSheetStep2: tx('From another device: open the link you copied with “Connect another device: copy link”.') + ' ' + this.pairLink('ab'.repeat(32)),"], FINDABLE],
+  ['F9', PAGE, 'the pairing banner floats over the header again (fixed, top 16 px)', ["pairNoteStyle: 'position:sticky;top:env(safe-area-inset-top,0px);z-index:95;box-sizing:border-box;width:min(560px,calc(100% - 32px));margin:12px auto 0;display:flex;", "pairNoteStyle: 'position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:90;box-sizing:border-box;width:min(560px,calc(100vw - 32px));display:flex;"], FINDABLE],
+  ['F10', PAGE, 'the code is let go of after three answers, whatever the time between the first and the last (no minute)', ["if (u.answers.length >= PC_UNREC.answers && t - u.answers[0] >= PC_UNREC.spanMs) {", "if (u.answers.length >= PC_UNREC.answers) {"], FINDABLE],
+  ['F11', PAGE, 'answers that come too fast each count (Check again pressed again and again uses the code up)', ["if (last === undefined || t - last >= PC_UNREC.spacingMs) u.answers.push(t);", "u.answers.push(t);"], FINDABLE],
+  ['F12', PAGE, 'the site is not asked again after the first answer (no timer for +5 s and +30 s)', ["if (at !== undefined) {", "if (false) {"], FINDABLE],
+  ['F13', PAGE, 'a link the site does not recognise leaves the button enabled', ["homePcDisabled: unrec,", "homePcDisabled: false,"], FINDABLE],
+  ['F14', PAGE, 'a site whose queue is off still gets the button (the Add screen ignores homeOff)', ["const queueOn = !S.homeOff, arrangeMode", "const queueOn = true, arrangeMode"], FINDABLE],
+  ['F15', PAGE, 'the "Full song" recording type does not hide the button', ["arrangeMode = S.transcriptionMode === 'arrange';", "arrangeMode = false;"], FINDABLE],
+  ['F16', PAGE, 'a browser that cannot keep a link is offered the button', ["const addOn = queueOn && !arrangeMode && !!(linked || PcLink.supported());", "const addOn = queueOn && !arrangeMode && true;"], FINDABLE],
+  ['F17', PAGE, 'the Add screen does not ask whether the site has the queue (only Settings does), so a site with the queue off shows the secondary button', ["if (this.state.screen === 'upload' || this.state.screen === 'settings') this.homeRefresh(true);", "if (this.state.screen === 'upload' || this.state.screen === 'settings') this.homeRefresh(this.state.screen === 'settings');"], FINDABLE],
+  ['F18', PAGE, '"Remove it" does nothing', ["removeHomeUnrec: () => this.removeUnrecognizedLink(),", "removeHomeUnrec: () => {},"], FINDABLE],
+  ['F19', PAGE, 'a tab that is seen again does not look at a link the site did not recognise', ["(this.state.homeUnrec || (this.state.homeJobs || []).some(", "((this.state.homeJobs || []).some("], FINDABLE],
+  ['F20', PAGE, 'a status check that failed says "Checking your PC…" for ever', [": !W ? (S.homeCheck === 'failed' ? tx(", ": !W ? (false ? tx("], FINDABLE],
+  ['F21', PAGE, 'Escape does not close the sheet', ["    if (e.key === 'Escape' && this.state.homeSheet) { this.setState({ homeSheet: false }); return; }\n", ""], FINDABLE],
+  ['F22', PAGE, 'a link whose PC has not connected shows no reason under the button', ["hasHomePcState: !!(addOn && pcState),", "hasHomePcState: false,"], FINDABLE],
+  ['F23', PAGE, 'the pairing link of a link the site does not recognise is still offered on Settings', ["homePairBlock: !!(linked && !N && !unrec),", "homePairBlock: !!(linked && !N),"], FINDABLE],
+  ['F24', PAGE, 'the sheet that explains the button stays open over another screen', ["      if (this.state.homeSheet) this.setState({ homeSheet: false });       /* the sheet that explains the PC button belongs to the Add screen */\n", ""], FINDABLE],
 ];
 
 const only = process.argv.slice(2);
@@ -336,7 +361,7 @@ function run(dir, test, pgUrl) {
     child.stdout.on('data', d => { out += d; }); child.stderr.on('data', d => { out += d; });
     /* the page suite is long (it waits 21 s for a question that must not time out, and drives a browser through 270 checks): 25 minutes for it, 4 for the others; the unmutated copies are checked against the same limits first */
     let timedOut = false;
-    const t = setTimeout(() => { timedOut = true; child.kill(); }, test === PAIRPAGE ? 1500000 : 240000);
+    const t = setTimeout(() => { timedOut = true; child.kill(); }, test === PAIRPAGE ? 1500000 : test === FINDABLE ? 900000 : 240000);
     child.on('close', code => { clearTimeout(t); resolve({ code: code, out: out, timedOut: timedOut }); });
   });
 }
@@ -352,7 +377,8 @@ const firstFail = out => {
     /* the unmutated copy must pass, or a "killed" means nothing */
     const clean = path.join(base, 'clean'); copyTree(clean);
     const wantPage = M.some(m => (!only.length || only.indexOf(m[0]) >= 0) && m[4] === PAIRPAGE);
-    const tests = [JOBS, LINKS, SERVER, WORKER, PAIRW, PROTO].concat(wantPage ? [PAIRPAGE] : []).concat(runPg ? [PG] : []);
+    const wantFind = M.some(m => (!only.length || only.indexOf(m[0]) >= 0) && m[4] === FINDABLE);
+    const tests = [JOBS, LINKS, SERVER, WORKER, PAIRW, PROTO].concat(wantPage ? [PAIRPAGE] : []).concat(wantFind ? [FINDABLE] : []).concat(runPg ? [PG] : []);
     for (const t of tests) {
       const r = await run(clean, t);
       if (r.code !== 0 || r.timedOut) { console.error('The unmutated copy ' + (r.timedOut ? 'was cut off (too slow) in ' : 'fails ') + t + ':\n' + r.out.slice(-1500)); process.exit(2); }
@@ -379,7 +405,7 @@ const firstFail = out => {
       results.push({ id: m[0], what: m[2], test: m[4], status: r.code !== 0 || r.timedOut ? 'killed' : 'SURVIVED', by: r.timedOut ? 'hangs: cut off by the runner' : r.code !== 0 ? firstFail(r.out) : '' });
     };
     /* the Postgres ones share a database: one at a time; the others in fours */
-    const par = todo.filter(m => m[4] !== PG && m[4] !== PAIRPAGE), seq = todo.filter(m => m[4] === PG), pages = todo.filter(m => m[4] === PAIRPAGE);
+    const par = todo.filter(m => m[4] !== PG && m[4] !== PAIRPAGE && m[4] !== FINDABLE), seq = todo.filter(m => m[4] === PG), pages = todo.filter(m => m[4] === PAIRPAGE || m[4] === FINDABLE);
     for (let i = 0; i < par.length; i += 4) await Promise.all(par.slice(i, i + 4).map(work));
     /* the page's ones are browser runs (a Chrome and a server each): three at a time (MUT_PAGE_PAR) */
     const pagePar = Math.max(1, +process.env.MUT_PAGE_PAR || 3);

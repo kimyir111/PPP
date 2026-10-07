@@ -686,9 +686,13 @@ async function leaks(p, codes, opt) {
         const a = norm(await old.evaluate(() => document.querySelector('[data-add-sheet]').outerHTML));
         const now = await open('', {});
         await goAdd(now);
-        const b = norm(await now.evaluate(() => document.querySelector('[data-add-sheet]').outerHTML));
-        ok('the Add-sheet-music card of a device with no link is identical, tag for tag, to the one of main before this change (2b1aa44; ' + a.length + ' characters)', a === b && a.length > 3000, a === b ? '' : 'differs near ' + [...a].findIndex((c, i) => c !== b[i]));
-        ok('and it asks the site nothing about links or jobs', now.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-links)/.test(r.url)).length === 0);
+        const bRaw = await now.evaluate(() => document.querySelector('[data-add-sheet]').outerHTML);
+        /* G10b-5 (deliberate): the card of a device with no link differs from the old one by EXACTLY one element, the secondary button "High-quality (my PC)" (data-home-pc-help) that opens the sheet saying
+           how to connect; everything else is the same, tag for tag */
+        const helpRe = /<button\b[^>]*data-home-pc-help[^>]*>.*?<\/button>/;
+        const b = norm(bRaw.replace(helpRe, ''));
+        ok('the Add-sheet-music card of a device with no link is identical, tag for tag, to the one of main before this change (2b1aa44; ' + a.length + ' characters) except for ONE added element: the secondary button "High-quality (my PC)" (G10b-5)', a === b && a.length > 3000 && (bRaw.match(/data-home-pc-help/g) || []).length === 1 && norm(bRaw) !== a, a === b ? '' : 'differs near ' + [...a].findIndex((c, i) => c !== b[i]));
+        ok('and it asks the site nothing about links or jobs: only the one probe that learns whether the site has the queue (GET /api/worker/status, no PC code)', now.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-links)/.test(r.url)).map(r => r.method + ' ' + new URL(r.url).pathname + (r.headers['x-ppp-pc'] ? ' WITH CODE' : '')).join() === 'GET /api/worker/status');
         await old.close(); await now.close();
       } else console.log('  - git history of 2b1aa44 not available: the Add-card check is skipped');
     }
