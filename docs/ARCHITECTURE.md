@@ -139,3 +139,5 @@ G4는 **S5의 렌더러 부분**이다: 렌더러가 legacy `Score` 대신 Score
 - SUT는 `audio-score.js` 한 파일에서 `audio-score.js`와 `scoregraph/`로 넓어졌다 (G01 §15.4, G1 Step 7의 첫 커밋).
 - G0 golden의 MusicXML 바이트는 G1 flip에서 `SERIALIZATION_ONLY`로 bless했다 (MusicXML 4.0, 최소 divisions, XSD 순서). 의미·stats·마디 시각은 17개 모두 같다.
 - ScoreGraph 자체는 `tests/scoregraph/`(node --test, SG golden)와 `sg-roundtrip`이 잰다.
+
+<!-- throwaway -->
