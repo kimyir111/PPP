@@ -89,21 +89,36 @@ function nodeWindow() {
 }
 
 /* The page's own scripts, in the page's own order, in a bare vm context: no require, no module, no document. The list is read from the
-   app's <script src> tags (the G8 modules it loads up front) followed by the app's own SINGLE_SCRIPTS (what it loads on first use). */
+   app's <script src> tags (the G8 modules it loads up front) followed by the app's own SINGLE_SCRIPTS (what it loads on first use).
+   G10c-1b: and what a lead sheet of a recording needs on the page: v2's weights and RECORDING_SCRIPTS (rec/, in the order of the page's own list: the lead sheet reads rec/writer.js and rec/grid.js when it
+   loads) and then LEADSHEET_SCRIPT (rec/leadsheet.js), all read from the app's own source; none of them is in the up-front list. */
 function scriptListOfPage() {
   const html = appHtml();
   const head = [...html.matchAll(/<script src="\.\/([^"?]+)(?:\?v=\d+)?"><\/script>/g)].map(m => m[1]);
   const single = [...extractSource().scripts.matchAll(/'([^']+\.js)'/g)].map(m => m[1]);
-  return { head: head, single: single };
+  const recArr = /const RECORDING_SCRIPTS = \[([\s\S]*?)\];/.exec(html);
+  const wArr = /const RECORDING_WEIGHTS = \[([\s\S]*?)\n\];/.exec(html);
+  const lead = /^const LEADSHEET_SCRIPT = '([^']+)';/m.exec(html);
+  if (!recArr || !wArr || !lead) throw new Error('app-single extraction: RECORDING_SCRIPTS, RECORDING_WEIGHTS or LEADSHEET_SCRIPT not found');
+  return {
+    head: head, single: single,
+    rec: [...recArr[1].matchAll(/'([^']+\.js)'/g)].map(m => m[1]),
+    recWeights: [...wArr[1].matchAll(/\['(\w+)', '([^']+)'\]/g)].map(m => [m[1], m[2]]),
+    lead: lead[1]
+  };
 }
 function browserWindow() {
-  const { head, single } = scriptListOfPage();
+  const { head, single, rec, recWeights, lead } = scriptListOfPage();
   const ctx = vm.createContext({ console });
   ctx.window = ctx; ctx.globalThis = ctx;
-  head.filter(p => /^(scoregraph|playability|difficulty|songgraph|arrangement|realize)\//.test(p)).concat(single).forEach(p => {
+  const run = p => {
     try { vm.runInContext(fs.readFileSync(path.join(REPO, p), 'utf8'), ctx, { filename: p }); }
     catch (e) { throw new Error('bare vm load of ' + p + ' failed: ' + e.message); }
-  });
+  };
+  head.filter(p => /^(scoregraph|playability|difficulty|songgraph|arrangement|realize)\//.test(p)).concat(single).forEach(run);
+  /* the weights as window globals first (the page sets them from its fetch), then the stages in the page's order, then the lead sheet */
+  recWeights.forEach(([global, file]) => { ctx[global] = JSON.parse(fs.readFileSync(path.join(REPO, file), 'utf8')); });
+  rec.concat([lead]).forEach(run);
   return ctx;
 }
 

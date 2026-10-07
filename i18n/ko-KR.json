@@ -2070,6 +2070,11 @@
     "Too many PC links were made from here just now. Try again later.": "방금 여기서 PC 링크를 너무 많이 만들었어요. 나중에 다시 시도하세요.",
     "PC links are full right now. Try again later.": "지금은 PC 링크가 가득 찼어요. 나중에 다시 시도하세요.",
     "Too many PC links were made on this site just now. Try again later.": "방금 이 사이트에서 PC 링크를 너무 많이 만들었어요. 나중에 다시 시도하세요.",
-    "Too many conversions were opened just now. Try again later.": "방금 변환을 너무 많이 열었어요. 나중에 다시 시도하세요."
+    "Too many conversions were opened just now. Try again later.": "방금 변환을 너무 많이 열었어요. 나중에 다시 시도하세요.",
+    "Arrange from a lead sheet": "리드 시트로 편곡",
+    "On (the default): a recording is arranged from its melody and chords. The melody stays one line and an easy accompaniment is written under it. Turn it off to thin out the recording's own notes instead.": "켜짐(기본): 녹음된 곡은 멜로디와 코드를 뽑아서 편곡해요. 멜로디는 한 줄로 그대로 두고, 그 아래에 쉬운 반주를 새로 만들어요. 끄면 녹음된 음을 덜어내는 방식으로 만들어요.",
+    "Off: a recording's own notes are thinned out to fit the level. Turn it on to arrange from its melody and chords instead.": "꺼짐: 녹음된 음을 난이도에 맞게 덜어내서 만들어요. 켜면 멜로디와 코드를 뽑아 쉬운 반주를 새로 만들어요.",
+    "PPP one-note-per-hand arrangement (lead sheet)": "PPP 한 손 단음 편곡 (리드 시트)",
+    "This arrangement keeps the recording's own key signature and melody as they are, so it may be harder than the level you chose. The difficulty comes from the key signature and the melody itself, not from the left hand.": "녹음된 연주의 조표와 멜로디를 그대로 살린 편곡이라 고른 난이도보다 어려울 수 있어요. 어려운 이유는 왼손이 아니라 조표와 멜로디 자체예요."
   }
 }

@@ -195,12 +195,13 @@ test('the refusal stands when the retry cannot be made: no heard notes kept, v2 
   }
 });
 
-test('the page uses it where it arranges one note per hand, from a graph the page converted itself: the Song Arranger AND (G10a-5b) the review screen\'s Apply arrangement; the copies are marked', () => {
+test('the page uses it where it arranges one note per hand, from a graph the page converted itself: the Song Arranger AND (G10a-5b) the review screen\'s Apply arrangement, both through the one entry arrangeSingleNoteWithLeadsheet (G10c-1b) whose reduction it is; the copies are marked', () => {
+  /* G10c-1b: the screens call arrangeSingleNoteWithLeadsheet (tests/rec/leadsheet-app.test.js); the reduction it falls back to, and calls for every request that is no lead sheet's, is this function: its definition and its two returns */
   const uses = html.match(/arrangeSingleNoteWithHandsFallback\(/g) || [];
-  assert.equal(uses.length, 3, 'its definition, the Song Arranger and the review screen');
-  assert.match(html, /sn = await arrangeSingleNoteWithHandsFallback\(src\.graph, plan, sourceScore\.title\)/, 'the Song Arranger');
-  assert.match(html, /const sn = await arrangeSingleNoteWithHandsFallback\(built\.graph, plan, S\.score\.title\)/, 'the review screen: it was one arrangeSingleNote run, and p6 was refused there');
+  assert.equal(uses.length, 3, 'its definition and the two returns of arrangeSingleNoteWithLeadsheet');
+  assert.match(html, /sn = await arrangeSingleNoteWithLeadsheet\(src\.graph, plan, sourceScore\.title, !!d\.recording\)/, 'the Song Arranger');
+  assert.match(html, /const sn = await arrangeSingleNoteWithLeadsheet\(built\.graph, plan, S\.score\.title, isLeadsheetSong\(S\.importSource\)\)/, 'the review screen: it was one arrangeSingleNote run, and p6 was refused there');
   assert.match(html, /sn\.handsFallback \? \{ handsFallback: sn\.handsFallback \} : \{\}, sn\.classicFallback \? \{ classicFallback: true \} : \{\}/, 'the Song Arranger copy\'s source.arrangement names the fallback');
-  assert.match(html, /Object\.assign\(\{ engine: 'ppp\.g9-single' \}, sn\.handsFallback \? \{ handsFallback: sn\.handsFallback \} : \{\}, sn\.classicFallback \? \{ classicFallback: true \} : \{\}\)/, 'and so does the review screen\'s');
-  assert.equal((html.match(/await arrangeSingleNote\(/g) || []).length, 2, 'arrangeSingleNote: the fallback\'s first run and its retry loop; nowhere else');
+  assert.match(html, /Object\.assign\(\{ engine: 'ppp\.g9-single' \}, sn\.handsFallback \? \{ handsFallback: sn\.handsFallback \} : \{\}, sn\.classicFallback \? \{ classicFallback: true \} : \{\}, leadsheetMark\(sn\)\)/, 'and so does the review screen\'s');
+  assert.equal((html.match(/await arrangeSingleNote\(/g) || []).length, 3, 'arrangeSingleNote: the fallback\'s first run and its retry loop, and the lead sheet\'s one run (G10c-1b); nowhere else');
 });
