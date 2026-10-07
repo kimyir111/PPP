@@ -3,7 +3,8 @@
 rec-mutation (the sensitivity check of the recording metrics), rec-mutation-v2 (G10a-1: of the v2 time skeleton and, from
 G10a-2, of its grid stage) and rec-grid (G10a-2: v2 with and without its grid stage, rec/grid.js), rec-hands and rec-keys (measurement suites of S4 and S8 on the app's path), and G10c-0's rec-arrange-smoke,
 rec-arrange-core, rec-arrange-mutation and rec-arrange-full (what the one-note arranger does to recordings: docs/GOALS/G10
-section 9; tests/bench/pppbench/recarrange.py).
+section 9; tests/bench/pppbench/recarrange.py); G10c-1a adds the row v2-lead (the lead sheet of a recording) to rec-arrange-core and
+-full, and the suite rec-arrange-lead-mutation (docs/GOALS/G10 section 33).
 
     python tests/bench/tools/make_rec_suites.py            # writes tests/bench/suites/rec-*.json
     python tests/bench/tools/make_rec_suites.py --check    # the committed files are this tool's output (exit 1 if not)
@@ -266,11 +267,23 @@ ARRANGE_SUB = {"arr.made": "mean", "arr.melody.kept": "mean", "arr.harmony.agree
 # The arranger is measured on what the app writes (closeGaps + exactBars: `app`) and on the recording conversion v2 it will write after G10a-4 (`v2`);
 # the library default (`legacy`) is not what any app path passes, so the gate suites leave it out (the one-off three-way table is in the G10 doc, section 17)
 ARRANGE_ROWS = ("app", "v2")
+# G10c-1a (docs/GOALS/G10 section 33): the row `v2-lead` arranges the recording from its lead sheet (rec/leadsheet.js, opts.recordingArrange 'leadsheet')
+# on v2's very performances (perform_as "v2"). Only a suite that has the row carries the lead sheet's gate metrics: the melody F1 against the true
+# melody of the lead sheet's own line (ls.*) and of the arrangement's right hand, exact pitch and pitch class; the old rows never have them (a rate that
+# does not exist is not a regression), so the gate of the smoke, mutation and play suites is exactly what it was
+ARRANGE_LEAD_OPTS = {"v2-lead": {"closeGaps": True, "exactBars": True, "recording": "v2", "recordingArrange": "leadsheet"}}
+ARRANGE_LEAD_AS = {"v2-lead": "v2"}
+ARRANGE_LEAD_GATE = {
+    "ls.melody.f1": {"dir": "up", "tol": -0.01},
+    "ls.melody.f1pc": {"dir": "up", "tol": -0.01},
+    "arr.melody.f1pc": {"dir": "up", "tol": -0.01},
+}
 
 
-def arrange_gate(scale: float = 1.0) -> dict:
+def arrange_gate(scale: float = 1.0, lead: bool = False) -> dict:
+    table = dict(ARRANGE_GATE, **ARRANGE_LEAD_GATE) if lead else ARRANGE_GATE
     return {
-        "metrics": {k: {"dir": v["dir"], "tol": round(v["tol"] * scale, 6)} for k, v in ARRANGE_GATE.items()},
+        "metrics": {k: {"dir": v["dir"], "tol": round(v["tol"] * scale, 6)} for k, v in table.items()},
         "subgroups": {"prefixes": ["set:", "profile:"], "min_cases": 8, "metrics": dict(ARRANGE_SUB),
                       "rate_abs": 0.02, "mean_abs": 0.01, "mean_per_case": 0.25},
         "case_fail_drop": 10.0, "case_warn_drop": 2.0, "case_flip_max": 1,
@@ -327,18 +340,27 @@ def build_arrange() -> dict:
                                               "options and with the recording conversion v2, arranged the way the app does at the three levels and measured against the true score (melody, harmony, "
                                               "levels, left hand, register, hard violations, checker classes)",
                                   gate=arrange_gate(4.0)),
-        "rec-arrange-core": dict(base, name="rec-arrange-core", references=core_refs, matrix=arrange_rows(ARRANGE_CORE, [1]),
+        "rec-arrange-core": dict(base, name="rec-arrange-core", references=core_refs,
+                                 matrix=arrange_rows(ARRANGE_CORE, [1]) + arrange_rows(ARRANGE_CORE, [1], tuple(ARRANGE_LEAD_OPTS), ARRANGE_LEAD_OPTS, ARRANGE_LEAD_AS),
                                  replay_dirs=["replay-of"],
                                  description="G10c-0 gate: the small and middle-sized core references (every micro piece, the catalogue, hymns, method books; hanon "
                                              "in full) x cover (beats none, the app's options and v2), plus the 20 real-AMT fixtures of replay-of (the production browser "
-                                             "model's heard notes on rendered audio), arranged at the three levels and measured against the true score",
-                                 gate=arrange_gate(1.0)),
+                                             "model's heard notes on rendered audio), arranged at the three levels and measured against the true score; "
+                                             "G10c-1a adds the row v2-lead: the same performances as v2, arranged from the lead sheet of the recording "
+                                             "(plan.recordingArrange leadsheet, docs/GOALS/G10 section 33)",
+                                 gate=arrange_gate(1.0, lead=True)),
         "rec-arrange-mutation": dict(base, name="rec-arrange-mutation",
                                      references=sorted(r for r in core["references"] if r.startswith("micro/")) + ["method/hanon/005", "method/hanon/007"],
                                      matrix=arrange_rows([("cover", "none")], [1], ("app",)),
                                      description="Gate sensitivity of the rec-arrange metrics (mutation-check --rec-arrange): the 24 micro pieces and two hanon "
                                                  "exercises x cover, with the app's options",
                                      gate=arrange_gate(1.0)),
+        "rec-arrange-lead-mutation": dict(base, name="rec-arrange-lead-mutation",
+                                          references=sorted(r for r in core["references"] if r.startswith("micro/")) + ["method/hanon/005", "method/hanon/007"],
+                                          matrix=arrange_rows([("cover", "none")], [1], tuple(ARRANGE_LEAD_OPTS), ARRANGE_LEAD_OPTS),
+                                          description="Gate sensitivity of the lead sheet of a recording (mutation-check --rec-arrange-lead, G10c-1a): the 24 micro pieces and two hanon "
+                                                      "exercises x cover, v2, arranged from the lead sheet (plan.recordingArrange leadsheet)",
+                                          gate=arrange_gate(1.0, lead=True)),
         "rec-arrange-play": dict(base, name="rec-arrange-play", references=core_refs,
                                  matrix=arrange_rows(ARRANGE_CORE, [1], ("v2", "v2-handslegacy"), PLAY_OPTS, PLAY_AS, "octaves"),
                                  description="G10a-2b: is a recording of a piano cover arrangeable without the Song Arranger's hands fallback? rec-arrange-core's "
@@ -347,9 +369,12 @@ def build_arrange() -> dict:
                                              "(arr.made: the levels made without a refusal). The truth the melody and harmony are measured against is the "
                                              "reference as written (its octaves are not doubled): read arr.made and arr.hard.violations here (nightly)",
                                  gate=arrange_gate(1.0)),
-        "rec-arrange-full": dict(base, name="rec-arrange-full", references=core["references"], matrix=arrange_rows(ARRANGE_FULL, [1]),
-                                 description="Nightly: every core reference x cover with the app's options and v2, arranged and measured (aggregates only)",
-                                 gate=arrange_gate(1.0)),
+        "rec-arrange-full": dict(base, name="rec-arrange-full", references=core["references"],
+                                 matrix=arrange_rows(ARRANGE_FULL, [1]) + arrange_rows(ARRANGE_FULL, [1], tuple(ARRANGE_LEAD_OPTS), ARRANGE_LEAD_OPTS, ARRANGE_LEAD_AS),
+                                 description="Nightly: every core reference x cover with the app's options and v2, arranged and measured (aggregates only); "
+                                             "G10c-1a adds the row v2-lead: the same performances as v2, arranged from the lead sheet of the recording "
+                                             "(plan.recordingArrange leadsheet, docs/GOALS/G10 section 33)",
+                                 gate=arrange_gate(1.0, lead=True)),
     }
 
 
