@@ -196,7 +196,7 @@ const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i])
         const r = await arrangeCopy(p, id, level, { beforeCreate: async () => {
           if (level === 'beginner') {
             const c = await chip(p);
-            ok('the Song Arranger has the chip, pressed (the default), labelled "' + LABEL + '", with the ON line', !!c && c.text === LABEL && c.pressed === 'true' && c.hint === ON_LINE, JSON.stringify(c));
+            ok('the Song Arranger has the chip, pressed (the suite asks for the lead sheet), labelled "' + LABEL + '", with the ON line', !!c && c.text === LABEL && c.pressed === 'true' && c.hint === ON_LINE, JSON.stringify(c));
             ok('opening the Song Arranger on a recording asks for what the lead sheet reads and for rec/leadsheet.js, nothing else of v2: the grid model, rec/grid.js, rec/writer.js, rec/leadsheet.js, once each in that order (87 KB), before Create is pressed',
               await p.waitForFunction(() => !!window.PPPRecLeadsheet, { timeout: 60000 }).then(() => true).catch(() => false)
               && JSON.stringify(recSince(p)) === JSON.stringify(LEAD_FILES) && !(await p.evaluate(() => window.PPP.recordingModulesReady())), JSON.stringify(recSince(p)));
