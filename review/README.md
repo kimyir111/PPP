@@ -340,3 +340,5 @@ node review/decode.js --mode h10 --compare engine --key <key-dir>/key.json --rat
   Tests: `tests/review/h10-*.test.js` (excerpt, pack and the page's own code, packets and decode, the page in a browser, the collector).
 - H-10b (G10b-0): `h10/helper-heard.js` (the helper's notes -> heard notes), `h10/decode-engine.js`, `lib/h10-leak.js` (the vocabulary scan); `buildEngineItem` in `lib/h10-item.js`.
   Tests: `tests/review/h10-engine.test.js` (Node only), `tests/review/h10-engine-page.test.js` (the page in a browser).
+
+<!-- throwaway -->
