@@ -457,7 +457,7 @@
     "{{name}} added.": "{{name}}を追加しました。",
     "{{title}} — demo library entry. Import its MusicXML to practise it.": "{{title}} — サンプル曲です。MusicXMLを入れると練習できます。",
     "No practice data yet": "まだ練習データがありません",
-    "Play it once at 75% so PPP can find your weak spots": "75%で一度弾いて、PPPに苦手を見つけさせてください",
+    "Play it once at full tempo so PPP can find your weak spots": "元の速さで一度弾いて、PPPに苦手を見つけさせてください",
     "PPP has not heard you play this yet.": "PPPはまだこの演奏を聞いていません。",
     "Everything you have played is solid": "弾いたところはどれも安定しています",
     "Learn the next passage at 75% tempo": "次の区間を75%の速さで学ぶ",
@@ -2077,6 +2077,23 @@
     "The lead sheet could not be used, so the recording's own notes were thinned out instead.": "リードシートを使えなかったため、代わりに録音された音を間引いて作りました。",
     "On: a recording is arranged from its melody and chords. The melody stays one line and an easy accompaniment is written under it. Turn it off to thin out the recording's own notes instead.": "オン：録音は、メロディとコードを取り出して編曲します。メロディは1本の線のまま残し、その下にやさしい伴奏を新しく書きます。オフにすると、録音された音を間引く方法になります。",
     "Off (the default): a recording's own notes are thinned out to fit the level. Turn it on to arrange from its melody and chords instead.": "オフ（標準）：録音された音をレベルに合わせて間引きます。オンにすると、メロディとコードを取り出してやさしい伴奏を新しく書きます。",
-    "This arrangement may be harder than the level you chose.": "この編曲は、選んだレベルより難しくなることがあります。"
+    "This arrangement may be harder than the level you chose.": "この編曲は、選んだレベルより難しくなることがあります。",
+    "Your PC is connected. Now paste a YouTube link and the \"High-quality (my PC)\" button will show.": "PCにつながりました。YouTubeのリンクを入れると「高品質変換（自分のPC）」ボタンが表示されます。",
+    "Your PC is connected. This device used another PC link before; it now uses this new one.": "PCにつながりました。この端末が以前使っていた別のPCリンクは、この新しいリンクに置き換わりました。",
+    "That connection code does not match. Copy a new link from the device that made the connection.": "接続コードが合っていません。接続を作った端末から新しいリンクをコピーしてください。",
+    "This link is incomplete. Copy it again from the device that made the connection.": "リンクが最後までコピーされていません。接続を作った端末からもう一度コピーしてください。",
+    "This browser cannot keep the connection (a private window, or blocked storage). Open the link in a normal window.": "このブラウザは接続を保存できません（プライベートウィンドウか、保存領域がブロックされています）。通常のウィンドウでリンクを開いてください。",
+    "The connection could not be checked right now. Open the link again in a minute.": "今は接続を確認できません。しばらくしてからもう一度リンクを開いてください。",
+    "Connect another device: copy link": "別の端末をつなぐ：リンクをコピー",
+    "Anyone with this link can send conversions to your PC: send it only to yourself.": "このリンクを持つ人は誰でも、あなたのPCに変換を送れます。自分だけに送ってください。",
+    "More": "その他",
+    "PC connected": "PC接続済み",
+    "last seen {{ago}}": "最終確認 {{ago}}",
+    "Could not copy by itself. The link is selected: copy it by hand.": "自動でコピーできませんでした。リンクが選択されているので、手動でコピーしてください。",
+    "Your PC link is ready.": "PCリンクができました。",
+    "1. Copy this link and open it on your other devices.": "1. このリンクをコピーして、他の端末で開いてください。",
+    "2. Only if your PC has no worker yet:": "2. PCにワーカーがまだない場合のみ：",
+    "This browser could not keep the PC link. Copy the link now: without it this device cannot use the connection.": "このブラウザはPCリンクを保存できませんでした。今すぐリンクをコピーしてください。リンクがないと、この端末は接続を使えません。",
+    "Paste the link or the PC code from the device that made the connection.": "接続を作った端末のリンクまたはPCコードを貼り付けてください。"
   }
 }

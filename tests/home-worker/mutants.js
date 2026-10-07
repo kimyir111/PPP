@@ -13,8 +13,9 @@ const { spawn } = require('child_process');
 
 const REPO = path.resolve(__dirname, '..', '..');
 /* (catalog/shared-seeds.json: the server.js copy is run for real by the Postgres test, and its seed library is read from beside it) */
-const FILES = ['home-jobs.js', 'home-result.js', 'home-jobs-store.js', 'server.js', 'share-guest.js', 'tools/home-worker/worker.js', 'review/h10/helper-heard.js', 'catalog/shared-seeds.json'];
-const JOBS = 'jobs.test.js', WORKER = 'worker.test.js', PG = 'jobs-pg.test.js', LINKS = 'links.test.js', SERVER = 'server.test.js';
+const PAGE = 'Piano Coach App.dc.html';
+const FILES = [PAGE, 'home-jobs.js', 'home-result.js', 'home-jobs-store.js', 'server.js', 'share-guest.js', 'tools/home-worker/worker.js', 'review/h10/helper-heard.js', 'catalog/shared-seeds.json'];
+const JOBS = 'jobs.test.js', WORKER = 'worker.test.js', PG = 'jobs-pg.test.js', LINKS = 'links.test.js', SERVER = 'server.test.js', PAIRW = 'pair.test.js', PAIRPAGE = 'pairing.test.js';
 
 /* id, file, what the mutant breaks, [from, to] (strings, replaced once), the test that must fail */
 const M = [
@@ -207,7 +208,45 @@ const M = [
   ['C9', 'home-jobs-store.js', 'a fresh database is made WITH the foreign key to ppp_users (the new code keeps the account dependency)', ["    id TEXT PRIMARY KEY,\n    owner_id TEXT NOT NULL,\n    kind TEXT NOT NULL DEFAULT 'youtube',", "    id TEXT PRIMARY KEY,\n    owner_id TEXT NOT NULL REFERENCES ppp_users(id) ON DELETE CASCADE,\n    kind TEXT NOT NULL DEFAULT 'youtube',"], PG],
   ['C10', 'home-jobs-store.js', 'Postgres: touching a link writes to a revoked one too', ["UPDATE ppp_pc_links SET last_used_at = $2, last_worker_at = $3 WHERE id = $1 AND revoked_at IS NULL", "UPDATE ppp_pc_links SET last_used_at = $2, last_worker_at = $3 WHERE id = $1"], PG],
   ['C11', 'home-jobs-store.js', 'Postgres: the boot read leaves revoked links out (they would not count for the per-address limits after a restart)', ["'SELECT ' + LINK_COLS + ' FROM ppp_pc_links;'", "'SELECT ' + LINK_COLS + ' FROM ppp_pc_links WHERE revoked_at IS NULL;'"], PG],
-  ['C12', 'home-jobs-store.js', 'Postgres: a link and its first token are made in two statements (a link can exist without its token)', ["'WITH l AS (INSERT INTO ppp_pc_links (id, client_hash, created_at, last_used_at, created_ip_hash) VALUES ($1, $2, $3, $3, $4))'\n        + ' INSERT INTO ppp_worker_tokens (id, owner_id, token_hash, label, created_at, poll_s) VALUES ($5, $1, $6, $7, $3, 0)',", "'INSERT INTO ppp_worker_tokens (id, owner_id, token_hash, label, created_at, poll_s) VALUES ($5, $1, $6, $7, $3, 0); INSERT INTO ppp_pc_links (id, client_hash, created_at, last_used_at, created_ip_hash) VALUES ($1, $2, $3, $3, $4)',"], PG]
+  ['C12', 'home-jobs-store.js', 'Postgres: a link and its first token are made in two statements (a link can exist without its token)', ["'WITH l AS (INSERT INTO ppp_pc_links (id, client_hash, created_at, last_used_at, created_ip_hash) VALUES ($1, $2, $3, $3, $4))'\n        + ' INSERT INTO ppp_worker_tokens (id, owner_id, token_hash, label, created_at, poll_s) VALUES ($5, $1, $6, $7, $3, 0)',", "'INSERT INTO ppp_worker_tokens (id, owner_id, token_hash, label, created_at, poll_s) VALUES ($5, $1, $6, $7, $3, 0); INSERT INTO ppp_pc_links (id, client_hash, created_at, last_used_at, created_ip_hash) VALUES ($1, $2, $3, $3, $4)',"], PG],
+  /* G10b-3: the pairing link. P* break the page (tests/home-worker/pairing.test.js, served from the copy of "Piano Coach App.dc.html"), Q* the worker's --pair (pair.test.js) */
+  ['P1', PAGE, 'the fragment is taken off the address bar only when the page has loaded, not before its first script and request', ["try { history.replaceState(history.state, '', location.href.replace(/#.*$/, '')); } catch (e) { /* the address stays as it is; the pairing goes on */ }", "window.addEventListener('load', function () { try { history.replaceState(history.state, '', location.href.replace(/#.*$/, '')); } catch (e) { /* later */ } });"], PAIRPAGE],
+  ['P2', PAGE, 'the fragment is never taken off the address bar', ["try { history.replaceState(history.state, '', location.href.replace(/#.*$/, '')); } catch (e) { /* the address stays as it is; the pairing goes on */ }", ''], PAIRPAGE],
+  ['P3', PAGE, 'the fragment is "removed" with location.hash = \'\' (a history entry, and a # left in the address)', ["try { history.replaceState(history.state, '', location.href.replace(/#.*$/, '')); } catch (e) { /* the address stays as it is; the pairing goes on */ }", "try { location.hash = ''; } catch (e) { /* x */ }"], PAIRPAGE],
+  ['P4', PAGE, 'the query string is lost when the fragment goes', ["location.href.replace(/#.*$/, '')); } catch (e) { /* the address stays", "location.pathname); } catch (e) { /* the address stays"], PAIRPAGE],
+  ['P5', PAGE, 'anything after "#pc=" is taken for a code (the 64-hex shape is not checked)', ["pending = /^[0-9a-f]{64}$/.test(c) ? { code: c } : { bad: true };", "pending = c ? { code: c } : { bad: true };"], PAIRPAGE],
+  ['P6', PAGE, 'any fragment is taken, not only "#pc="', ["if (h.slice(0, 4) !== '#pc=') return;", "if (!h) return;"], PAIRPAGE],
+  ['P7', PAGE, 'capitals, spaces and dashes in the link are not forgiven', ["c = c.replace(/[\\s-]+/g, '').toLowerCase();\n    try { history", "try { history"], PAIRPAGE],
+  ['P8', PAGE, 'a %20 in the link is not decoded', ["try { c = decodeURIComponent(c); } catch (e) { /* as it is */ }", ""], PAIRPAGE],
+  ['P9', PAGE, 'a link typed into the address bar of an open tab (hashchange) is not looked at', ["window.addEventListener('hashchange', look);", ""], PAIRPAGE],
+  ['P10', PAGE, 'the code is not checked with the site before it is kept (the check is skipped)', ["try { await this.homeApi('/api/worker/status', { code: code }); }", "try { await Promise.resolve(); }"], PAIRPAGE],
+  ['P11', PAGE, 'the code is kept BEFORE the site has said it is a link', ["const seq = this._pairSeq = (this._pairSeq || 0) + 1;", "const seq = this._pairSeq = (this._pairSeq || 0) + 1; PcLink.set(code);"], PAIRPAGE],
+  ['P12', PAGE, 'the code is written to the console', ["const code = p.code, old = PcLink.get();", "const code = p.code, old = PcLink.get(); console.log('pairing with ' + code);"], PAIRPAGE],
+  ['P13', PAGE, 'the code is put in the URL of the check (a query string)', ["try { await this.homeApi('/api/worker/status', { code: code }); }", "try { await this.homeApi('/api/worker/status?pc=' + code, { code: code }); }"], PAIRPAGE],
+  ['P14', PAGE, 'a device that is switched to another link is not told that the old one was replaced', ["this.pairNote(old && old !== code ? tx(", "this.pairNote(false ? tx("], PAIRPAGE],
+  ['P15', PAGE, 'a browser that cannot keep the connection is not noticed before the site is asked (the code is sent although there is nothing to keep it in)', ["if (!PcLink.supported()) return this.pairNote(", "if (false) return this.pairNote("], PAIRPAGE],
+  ['P16', PAGE, 'a fragment that is "#pc=" followed by something that is not a code is dropped with no word', ["if (!p.code) return this.pairNote(", "if (!p.code) return void ("], PAIRPAGE],
+  ['P17', PAGE, 'the link the card copies is not the pairing link', ["+ '/#pc=' + c : ''; }", "+ '/#code=' + c : ''; }"], PAIRPAGE],
+  ['P18', PAGE, 'a clipboard that refuses is not followed by the select-and-copy fallback', ["try { navigator.clipboard.writeText(text).then(done, byHand); } catch (e) { byHand(); }", "try { navigator.clipboard.writeText(text).then(done, () => {}); } catch (e) { /* nothing */ }"], PAIRPAGE],
+  ['P19', PAGE, 'the link is always shown on the card (a secret on the screen)', ["homePairManual: !!(linked && S.homePairManual)", "homePairManual: !!linked"], PAIRPAGE],
+  ['P20', PAGE, '"More" is open from the start (the card shows every button again)', ["homeMoreOpen: !!S.homeMore", "homeMoreOpen: true"], PAIRPAGE],
+  ['P21', PAGE, 'a whole pairing link pasted into the paste form is not understood', ["const i = t.indexOf('#pc='); if (i >= 0) { t = t.slice(i + 4);", "const i = -1; if (i >= 0) { t = t.slice(i + 4);"], PAIRPAGE],
+  ['P22', PAGE, 'the sign-in gate stands in the way of a pairing link', ["|| !!(window.PPP_PAIR && window.PPP_PAIR.has()); } catch", "; } catch"], PAIRPAGE],
+  ['P23', PAGE, 'the same link again says "replaced" (a new link and the old one are not told apart)', ["this.pairNote(old && old !== code ? tx(", "this.pairNote(old ? tx("], PAIRPAGE],
+  ['P24', PAGE, 'a site that cannot be reached is reported as "the code does not match"', ["return this.pairNote(e.status === 401 ? tx(", "return this.pairNote(true ? tx("], PAIRPAGE],
+  ['Q1', 'tools/home-worker/worker.js', 'the log shows the client code (a bare code in a line)', ["if (cfg && cfg.clientCode) t = t.split(cfg.clientCode).join('***');", ''], PAIRW],
+  ['Q2', 'tools/home-worker/worker.js', 'the log shows a pairing link it was not told about', [".replace(/#pc=[0-9a-fA-F]{64}/g, '#pc=***')", ''], PAIRW],
+  ['Q3', 'tools/home-worker/worker.js', 'the link goes to the clipboard tool on its command line, not on its standard input', ["await runPiped(spawnFn, tools.copy[0], tools.copy[1], link);", "await runPiped(spawnFn, tools.copy[0], tools.copy[1].concat([link]), null);"], PAIRW],
+  ['Q4', 'tools/home-worker/worker.js', 'the tools are started through a shell', ["shell: false,", "shell: true,"], PAIRW],
+  ['Q5', 'tools/home-worker/worker.js', 'the link is printed on the console without --show', ["\n  if (deps.show) out(link);\n  if (copied.ok && opened.ok)", "\n  out(link);\n  if (copied.ok && opened.ok)"], PAIRW],
+  ['Q6', 'tools/home-worker/worker.js', 'the success line carries the link (and the log\'s two guards are gone)', [["if (cfg && cfg.clientCode) t = t.split(cfg.clientCode).join('***');", ''], [".replace(/#pc=[0-9a-fA-F]{64}/g, '#pc=***')", ''], ["The link for your phone is copied: paste it in a message to yourself and open it on the phone.'); return 0; }", "The link for your phone is copied: ' + link); return 0; }"]], PAIRW],
+  ['Q7', 'tools/home-worker/worker.js', 'a pc-code.txt that holds something that is not a code is taken as the code', ["return code ? { code: code, from: file } : { code: '', problem: 'bad-file', file: file };", "return { code: code || text.trim(), from: file };"], PAIRW],
+  ['Q8', 'tools/home-worker/worker.js', 'the link is not checked before it is given to a program (a site address with shell characters reaches the tools)', ["if (!/^https?:\\/\\/[A-Za-z0-9.\\-_:[\\]]+(\\/[A-Za-z0-9._~\\-/]*)?\\/#pc=[0-9a-f]{64}$/.test(link)) {", "if (false) {"], PAIRW],
+  ['Q9', 'tools/home-worker/worker.js', 'the site address of the settings is not checked by --pair', ["const bad = siteProblems(cfg);\n  if (bad.length) { bad.forEach(", "const bad = [];\n  if (bad.length) { bad.forEach("], PAIRW],
+  ['Q10', 'tools/home-worker/worker.js', 'the browser gets the handler and the link joined in ONE string', ["opened = await runPiped(spawnFn, tools.open[0], tools.open[1].concat([link]), null);", "opened = await runPiped(spawnFn, tools.open[0], [tools.open[1].concat([link]).join(' ')], null);"], PAIRW],
+  ['Q11', 'tools/home-worker/worker.js', 'pc-code.txt is looked for in the current folder, not next to the settings', ["path.join(cfg._file ? path.dirname(cfg._file) :", "path.join(cfg._file ? process.cwd() :"], PAIRW],
+  ['Q12', 'tools/home-worker/worker.js', 'a failed copy is reported as a success', ["if (copied.ok && opened.ok) {", "if (true) {"], PAIRW],
+  ['Q13', 'tools/home-worker/worker.js', 'a clientCode of the settings is kept as it was written (a pairing link is not cut down to the code)', ["cfg.clientCode = codeFrom(cfg.clientCode);", "cfg.clientCode = String(cfg.clientCode || '').trim();"], PAIRW],
 ];
 
 const only = process.argv.slice(2);
@@ -222,7 +261,7 @@ function copyTree(dst) {
 }
 function run(dir, test, pgUrl) {
   return new Promise(resolve => {
-    const env = Object.assign({}, process.env, { HOME_MODULES_DIR: dir });
+    const env = Object.assign({}, process.env, { HOME_MODULES_DIR: dir, HOME_FAIL_FAST: '1' });
     /* the Postgres test of a mutant gets a database of its own (they run side by side), and no container log (the container's log is shared by all of them) */
     if (pgUrl) { env.PPP_TEST_PG_URL = pgUrl; delete env.PPP_TEST_PG_CONTAINER; }
     const child = spawn(process.execPath, [path.join(REPO, 'tests', 'home-worker', test)], { cwd: REPO, env: env });
@@ -243,7 +282,8 @@ const firstFail = out => {
   try {
     /* the unmutated copy must pass, or a "killed" means nothing */
     const clean = path.join(base, 'clean'); copyTree(clean);
-    const tests = [JOBS, LINKS, SERVER, WORKER].concat(runPg ? [PG] : []);
+    const wantPage = M.some(m => (!only.length || only.indexOf(m[0]) >= 0) && m[4] === PAIRPAGE);
+    const tests = [JOBS, LINKS, SERVER, WORKER, PAIRW].concat(wantPage ? [PAIRPAGE] : []).concat(runPg ? [PG] : []);
     for (const t of tests) {
       const r = await run(clean, t);
       if (r.code !== 0) { console.error('The unmutated copy fails ' + t + ':\n' + r.out.slice(-1500)); process.exit(2); }
@@ -269,8 +309,10 @@ const firstFail = out => {
       results.push({ id: m[0], what: m[2], test: m[4], status: r.code !== 0 ? 'killed' : 'SURVIVED', by: r.code !== 0 ? firstFail(r.out) : '' });
     };
     /* the Postgres ones share a database: one at a time; the others in fours */
-    const par = todo.filter(m => m[4] !== PG), seq = todo.filter(m => m[4] === PG);
+    const par = todo.filter(m => m[4] !== PG && m[4] !== PAIRPAGE), seq = todo.filter(m => m[4] === PG), pages = todo.filter(m => m[4] === PAIRPAGE);
     for (let i = 0; i < par.length; i += 4) await Promise.all(par.slice(i, i + 4).map(work));
+    /* the page's ones are browser runs (a Chrome and a server each): two at a time */
+    for (let i = 0; i < pages.length; i += 2) await Promise.all(pages.slice(i, i + 2).map(work));
     /* the Postgres ones: three at a time, each on its own database (the test drops and makes tables, so they cannot share one) */
     if (seq.length) {
       const { Pool } = require('pg');
