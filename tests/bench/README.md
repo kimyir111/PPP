@@ -58,12 +58,90 @@ python tests/bench/review/final_oracle.py             # correct outputs engraved
 
 Every command prints UTF-8 even on a cp949 console, with no `PYTHONIOENCODING` needed.
 
-In CI (`.github/workflows/bench.yml`) the gate's steps run as five parallel jobs, `shard-a` to `shard-e`, and the job named
-`gate` is green only when every shard is: that is the check to read (it appears in the list only once the shards have finished,
-so until then it is absent, not green). Each step is in exactly one shard; a `run --suite X` and
-its `check --suite X` (or a `*_data.py` and its trainer's `--check`) stay in the same shard, because the second reads what the
-first wrote; a step you add goes in the shard with time to spare (the workflow's comments list the times). The nightly jobs are
-separate and unchanged.
+In CI (`.github/workflows/bench.yml`) the gate is thirteen parallel shard jobs and a verdict, about five minutes in all; the job
+named `gate` is the check to read (see "The gate in CI" below). The nightly jobs are separate and unchanged.
+
+## The gate in CI
+
+`.github/workflows/bench.yml` runs the gate on every pull request, every push to main and every manual run (the nightly jobs are
+separate). It is **seventeen jobs**; the check to read is the one named `gate` (it appears in the list only once the others have
+finished, so until then it is absent, not green):
+
+| job | what it is |
+|---|---|
+| `plan` | ~7 s. Asks `tests/bench/tools/ci_plan.py` which checks the change needs (below). Its summary lists the changed files and the answer. |
+| `shard-a` .. `shard-m` | 13 jobs at once, each a list of the gate's steps (the comment above each one in the workflow lists them and their seconds on a fast and on a slow runner). |
+| `merge-rec-core`, `merge-rec-grid` | join the shards of the two suites that are cut across jobs, then check them (below). ~15 s. |
+| `light` | what runs instead of the shards for a change that is only documents or the home-PC worker's files (below). |
+| `gate` | green only if the plan succeeded and every job it asked for did, and the others were skipped; red for a failed, cancelled or *skipped* job that was wanted, a job that ran when it was not wanted, or a job of the file that `gate` does not wait for. It prints the mode it ran in (`gate passed: FULL mode, 13 shards and 2 merges succeeded`, or `LIGHT docs-only`). |
+
+**The steps.** Each of the gate's 60 steps is in exactly one shard job with its command unchanged, in the relative order the single
+job had (`tests/bench/unit/test_ci_plan.py` holds the invariants and fails if one is broken). A `run --suite X` and its `check --suite X`
+(or a `*_data.py` and its trainer's `--check`) stay in the same job, because the second reads what the first wrote. A step you add goes
+in the job with the most slack (the comments list the times; the slowest job decides the wall-clock). Nothing needs installing: the
+jobs have Node 24 and Python 3.13 set up (every Python tool starts Node and the other way round) and the checkout is one commit,
+except `shard-d`, which runs the ScoreGraph tests and `git show aff7080:package.json` and so fetches the history.
+
+**Two suites are cut across jobs.** `rec-core` (2,538 cases, 369 s alone) and `rec-grid` (1,410 cases, 434 s) run as
+`run --suite X --shard K/N` ("Sharded runs" below) in five and in two jobs; each shard job uploads its `shard.json` and `run.json` as a
+one-day artifact; `merge-rec-core` / `merge-rec-grid` download them, run `merge-shards` (which refuses anything but the N shards of this
+commit) and then the very `check` the unsharded run had. The merged `results.json` is byte for byte the unsharded run's (checked
+locally for the counts in use, `rec-core` in 5 and `rec-grid` in 2, and for 3 each: the whole run's file against the merge of the shards';
+`unit/test_shards.py` checks it on a small suite). **N is not free**: a shard is every
+N-th case of the id-sorted list and an id ends in `opt:app`, `opt:legacy`, `opt:v2`, so N=3 puts all the v2 cases (2.3 times the work)
+in one shard; N=5 and N=4 deal every family evenly. `rec-grid` alternates `v2` / `v2-s3legacy`, so N=2 gives one shard each (52% / 48%
+of the work). To change N: the `--shard K/N` steps, the artifact names and paths, and the merge job's `needs` (the unit test checks all).
+
+**Fixed cost per job**, measured over the last green runs of the old gate: starting the job and the runner 3-4 s, checkout 4 s (the
+whole history), Node and Python setup 1-2 s (they are on the image), upload 1 s: about 12 s. There is nothing to cache (the gate
+installs nothing). That is why more jobs pay: the 13th job cut the slowest job by about 20 s, a 14th by about 5 (the largest steps,
+`test:scoregraph` 203 s, `rec/tools/train.js --check` 195 s, `hands_data.py && train_hands.js --check` 192 s on a slow runner, are one
+step each).
+
+**Runner speed is the noise.** The same job takes 1.0x to 1.8x depending on the VM it draws (the runner step of each shard prints its
+CPU), so the wall-clock is the slowest of thirteen draws. GitHub allows 20 jobs to run at once for the account: two gates at once
+(13 + 13 jobs) leave the later jobs of the second waiting for a slot.
+
+### Light modes
+
+`plan` runs `ci_plan.py` on a **pull request** (every push to main, manual run and schedule is the full gate; so is a pull request whose
+changed-file list cannot be read or is empty). It is a **whitelist**: a path is light only if it is under a listed directory *and* of a
+listed file type; one other path makes the whole change `full`. The classifier that runs is the one of the pull request's *base*, so a
+change to the rules never applies to itself (it is under `tests/bench/`, so `full`, and the new rules start with the next change); a
+base without one (the change that adds it) is `full`.
+
+| mode | every changed path is | `light` runs | the 60 steps |
+|---|---|---|---|
+| `docs` | `docs/**/*.{md,txt,png,jpg,jpeg,gif,pdf}`, or a root `*.md` / `LICENSE*` / `COPYING*` / `NOTICE*` | `lint-corpus`, `make_provenance.py --check` (the two cheapest checks: they only prove the checkout and the committed registry are sound) | skipped |
+| `tooling` | the above, or `tests/review/**`, `tools/home-worker/**`, `tests/home-worker/**` with a type of `.js .json .md .txt .cmd .ps1` | the two above, the bench unit tests, `npm run test:home-worker` | skipped |
+| `full` | anything else: `review/**`, `.github/**`, `package.json`, `tests/bench/**`, the engine, the page, any file of a type not listed | - | all of them (the 13 shards and the 2 merges) |
+
+**Why it can never turn a failing check green: what each skipped step reads.** All 63 command runs of the gate (the 60 steps, with
+`rec-core` and `rec-grid` as their 7 shards) were run under `strace -f -e trace=%file,%process` on a runner
+(2026-10-07; a throwaway workflow on a throwaway branch), keeping every system call that names a path in `docs/`, `review/`,
+`tests/review/`, `tools/home-worker/`, `tests/home-worker/` or any `*.md` / `LICENSE` file, with the process that made it (`git status`,
+which the bench starts for the `git_dirty` flag of `run.json` and which `lstat`s every tracked file, is set apart: no check reads that
+flag). The steps that touch these paths:
+
+| path | steps that open or list it | so |
+|---|---|---|
+| `docs/**`, root `*.md` / `LICENSE` | **none** (only `git status`). `npm run test:engrave` lists the directories `docs/` and `docs/GOALS/` (below). | `docs` |
+| `tests/review/**` | **none** (the review's own tests, `npm run test:review`, are not a step of the gate). `test:engrave` lists the directory. | `tooling` |
+| `tools/home-worker/**` | `npm run test:home-worker` (`worker.js`, `worker.config.example.json`, `pair.cmd`). `test:engrave` lists the directory. | `tooling`: `light` runs it |
+| `tests/home-worker/**` | `npm run test:home-worker`. `test:engrave` lists the directory. | `tooling`: `light` runs it |
+| `review/**` | `npm run test:rec` (`review/lib/appcode.js`), `npm run test:realize` (`review/lib/neutral.js`), `npm run test:home-worker` (`review/h10/helper-heard.js`); `test:engrave` lists the directory | **not light** - `full` |
+
+The one step that walks the whole tree is the A48 test of `npm run test:engrave` (it imports every committed `.musicxml`, `.mxl`,
+`.mid` and score-named `.xml` file it finds, anywhere), and `tests/engrave/marks.test.js` fails on any tracked font; so a file of those
+types is an input of the gate wherever it lies, and the light lists do not name them (a `docs/example.musicxml` is `full`).
+`tests/scoregraph/tools/g3-corpus.js` takes score files only under `catalog/`, `samples/`, `tests/bench/corpus/`, `tests/fixtures/`.
+
+`unit/test_ci_plan.py` keeps this true as the code changes: a table of path classes, the same through a real merge commit, a check that
+every command of `light` is a step of a shard, that no command or npm script of the gate names a skipped path except
+`test:home-worker`, and a tripwire - the files that name `tests/review/`, `tools/home-worker/`, `tests/home-worker/` or a `docs`
+path segment as a path (comments stripped) are listed, and a new one fails the test and tells you to trace the gate again. To trace
+it again: push a throwaway branch with a workflow that runs each command under `strace -f -qq -e trace=%file,%process -o '|grep ...'`
+(`sudo apt-get install strace`) and read the paths per process; the 2026-10-07 one took 7 minutes.
 
 ## What a result says
 

@@ -237,7 +237,7 @@ jobs:
       - run: node rec/tools/train.js --check                       # G10a-1 (AI-5a): the committed weights and evaluation are what the training makes (G10 section 18)
 
   # shard-g: rec-core 2/5, the grid trainer check, smoke-app, replay-public
-  #   (steps ~157 s on a fast runner, ~241 s on a slow one)
+  #   (steps ~162 s on a fast runner, ~246 s on a slow one)
   shard-g:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
@@ -274,7 +274,7 @@ jobs:
           overwrite: true
 
   # shard-h: rec-core 3/5, core, robust-app
-  #   (steps ~166 s on a fast runner, ~239 s on a slow one)
+  #   (steps ~171 s on a fast runner, ~244 s on a slow one)
   shard-h:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
@@ -314,7 +314,7 @@ jobs:
           overwrite: true
 
   # shard-i: rec-grid 1/2, replay-public-v2
-  #   (steps ~142 s on a fast runner, ~225 s on a slow one)
+  #   (steps ~151 s on a fast runner, ~236 s on a slow one)
   shard-i:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
@@ -341,7 +341,7 @@ jobs:
       - run: python tests/bench/run.py run --suite replay-public-v2   # G10a-3 (S9): the helper's real pedal on rendered audio (no pedal was played), with the pedal policy
 
   # shard-j: rec-core 4/5, rec-arrange-smoke, engrave bench r, replay-of-app
-  #   (steps ~154 s on a fast runner, ~238 s on a slow one)
+  #   (steps ~159 s on a fast runner, ~243 s on a slow one)
   shard-j:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
@@ -378,7 +378,7 @@ jobs:
           overwrite: true
 
   # shard-k: rec-core 5/5, the bench unit tests, test:playability, golden, lint-corpus, provenance
-  #   (steps ~173 s on a fast runner, ~236 s on a slow one)
+  #   (steps ~178 s on a fast runner, ~241 s on a slow one)
   shard-k:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
@@ -409,7 +409,7 @@ jobs:
       - run: python tests/bench/tools/make_provenance.py --check
 
   # shard-l: rec-core 1/5, test:home-worker, test:arrangement-planner
-  #   (steps ~174 s on a fast runner, ~223 s on a slow one)
+  #   (steps ~179 s on a fast runner, ~228 s on a slow one)
   shard-l:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
@@ -437,7 +437,7 @@ jobs:
       - run: npm run test:arrangement-planner                      # G7b: texture ladder, deterministic search, real-corpus coverage, mutation suite (G07B); one test file at a time (--test-concurrency=1), so its 200 ms plan() budget is measured beside no other file (tests/timing.js)
 
   # shard-m: rec-grid 2/2, the key check
-  #   (steps ~147 s on a fast runner, ~232 s on a slow one)
+  #   (steps ~148 s on a fast runner, ~230 s on a slow one)
   shard-m:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
