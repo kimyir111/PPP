@@ -102,10 +102,12 @@ largest step is alone in its job: by the packing model of the measured step time
 242 with 15, 217 with 16 and 208 with 17; the five largest steps (`test:scoregraph` 203 s, `rec/tools/train.js --check` 195 s,
 `hands_data.py && train_hands.js --check` 192 s, `test:realize` 178 s, `test:engrave` 147 s on a slow runner) are one step each.
 
-**Runner speed is the noise.** The same job takes 1.0x to 1.8x depending on the VM it draws (the `runner` step of each shard prints its
-CPU), so the wall-clock is the slowest of sixteen draws. GitHub allows 20 jobs to run at once for the account: two gates started
-together (16 + 16 jobs) leave the later jobs of the second waiting for a slot (in two of the first four test runs, with other gates in
-flight, one job waited 40 s to start).
+**Runner speed is the noise.** The same job takes 1.0x to 1.8x depending on the VM it draws; the `runner` step of each shard prints
+its CPU: on 2026-10-07 `ubuntu-latest` was an AMD EPYC 7763 (the slow draw, most jobs), an AMD EPYC 9V45 or an Intel Xeon Platinum
+8573C (the three jobs on a 9V45 took 121-145 s in a run where the others took 205-232 s). The wall-clock is the slowest of sixteen
+draws, so a run is close to the slow-runner figures in the comments. GitHub allows 20 jobs to run at once for the account: two gates
+started together (16 + 16 jobs) leave the later jobs of the second waiting for a slot (in two of the first four test runs, with other
+gates in flight, one job waited 40 s to start; once a merge job's checkout took 24 s on GitHub's side).
 
 ### Light modes
 
