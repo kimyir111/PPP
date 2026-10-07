@@ -2074,6 +2074,8 @@
     "Off: a recording's own notes are thinned out to fit the level. Turn it on to arrange from its melody and chords instead.": "已关闭：按难度精简录音中原有的音符。开启后改为提取旋律和和弦，另写简单的伴奏。",
     "PPP one-note-per-hand arrangement (lead sheet)": "PPP 单手单音编配（旋律和弦谱）",
     "This arrangement keeps the recording's own key signature and melody as they are, so it may be harder than the level you chose. The difficulty comes from the key signature and the melody itself, not from the left hand.": "这份编配保留了录音原有的调号和旋律，所以可能比你选择的难度更难。难点来自调号和旋律本身，而不是左手。",
-    "The lead sheet could not be used, so the recording's own notes were thinned out instead.": "无法使用旋律和弦谱，因此改为精简了录音中原有的音符。"
+    "The lead sheet could not be used, so the recording's own notes were thinned out instead.": "无法使用旋律和弦谱，因此改为精简了录音中原有的音符。",
+    "On: a recording is arranged from its melody and chords. The melody stays one line and an easy accompaniment is written under it. Turn it off to thin out the recording's own notes instead.": "已开启：录音会先提取旋律和和弦再编配。旋律保持为单线，下方另写简单的伴奏。关闭后改为精简录音中原有的音符。",
+    "Off (the default): a recording's own notes are thinned out to fit the level. Turn it on to arrange from its melody and chords instead.": "已关闭（默认）：按难度精简录音中原有的音符。开启后改为提取旋律和和弦，另写简单的伴奏。"
   }
 }

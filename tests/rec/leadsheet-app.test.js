@@ -2,8 +2,9 @@
    (the technique of tests/rec/hands-fallback.test.js and tests/realize/app-single-extract.js), and then with the real arranger.
 
    What is pinned:
-     - PPP.recordingArrange: 'leadsheet' | 'reduce', the default one constant (RECORDING_ARRANGE_DEFAULT) that says 'leadsheet', PPP.recording's layers (address, remembered choice, default), a value that is no choice
-       puts the default back and forgets the remembered one
+     - PPP.recordingArrange: 'leadsheet' | 'reduce', the default one constant (RECORDING_ARRANGE_DEFAULT; the user's decision of 2026-10-07 is 'leadsheet'), PPP.recording's layers (address, remembered choice,
+       default), a value that is no choice puts the default back and forgets the remembered one. THE FLIP is that one line: this file and tests/recording-leadsheet-app.test.js read the constant and are written
+       for either value (nothing pins which); the chip's "(the default)" follows it too
      - arrangeSingleNoteWithLeadsheet: a recording at a level other than 'original' in 'leadsheet' mode is arranged from its lead sheet first and by no other path (no retry of the hands); a refusal of any
        reason (LEADSHEET_*, UNREACHABLE, a hard violation, a crash, the module not loading) falls back to the reduction, with ITS chain; only when that refuses is the answer the reduction's refusal; the path
        that made the copy is in the result. 'reduce' (the page's mode or the plan's) and every request the lead sheet is not asked for (a catalogue piece, a MIDI file, 'original') are the reduction's
@@ -74,11 +75,28 @@ function harness(answers, opt) {
 /* the page's own default, read from its one line: every other check of this file (and of tests/recording-leadsheet-app.test.js) is written for either value, so the flip is that line and the pin below */
 const D = /^const RECORDING_ARRANGE_DEFAULT = '(\w+)';$/m.exec(html)[1];
 
-test('THE PIN of the user\'s decision (2026-10-07): the default is leadsheet. To flip it back put \'reduce\' on the one line of RECORDING_ARRANGE_DEFAULT in the page and change this check; nothing else needs to change', () => {
+test('THE FLIP is one line: RECORDING_ARRANGE_DEFAULT is set on one line of the page to one of the two choices; no check here pins which (put \'reduce\' on that line and every one still passes)', () => {
   const lines = html.match(/^const RECORDING_ARRANGE_DEFAULT = .*$/gm) || [];
-  assert.deepEqual(lines, ["const RECORDING_ARRANGE_DEFAULT = 'leadsheet';"], 'one line, the whole flip');
-  assert.equal(D, 'leadsheet');
-  assert.equal((html.match(/RECORDING_ARRANGE_DEFAULT/g) || []).length >= 4, true, 'the constant is what the mode, the setter and the reset use');
+  assert.equal(lines.length, 1, 'one line, the whole flip');
+  assert.match(lines[0], /^const RECORDING_ARRANGE_DEFAULT = '(leadsheet|reduce)';$/, 'one of the two choices');
+  assert.equal((html.match(/RECORDING_ARRANGE_DEFAULT/g) || []).length >= 6, true, 'the constant is what the mode, the setter, the reset and the chip\'s "(the default)" use');
+  /* nothing else of the page decides between the two by a literal default: the mode is read through the constant */
+  assert.equal(html.indexOf("let m = 'leadsheet'"), -1);
+  assert.equal(html.indexOf("|| 'leadsheet';"), -1, 'no second default');
+});
+
+test('the chip\'s line says "(the default)" of the state that IS the default (RECORDING_ARRANGE_DEFAULT), whichever it is: exactly one of the on and off lines carries it, in every combination', () => {
+  const m = /recordingArrangeHint: ([\s\S]*?),\n      recordingArrangePressed:/.exec(html);
+  assert.ok(m, 'the chip\'s hint expression');
+  const hint = (mode, def) => new Function('RECORDING_ARRANGE_MODE', 'RECORDING_ARRANGE_DEFAULT', 'tx', 'return ' + m[1])(mode, def, s => s);
+  for (const def of ['leadsheet', 'reduce']) {
+    const on = hint('leadsheet', def), off = hint('reduce', def);
+    assert.match(on, /^On( \(the default\))?: a recording is arranged from its melody and chords\./, def + ': on');
+    assert.match(off, /^Off( \(the default\))?: a recording's own notes are thinned out/, def + ': off');
+    assert.equal(on.startsWith('On (the default): '), def === 'leadsheet', def + ': the on line is the default when the default is the lead sheet');
+    assert.equal(off.startsWith('Off (the default): '), def === 'reduce', def + ': the off line is the default when the default is the reduction');
+    assert.equal([on, off].filter(s => s.indexOf('(the default)') > -1).length, 1, def + ': one of the two says it, never both, never neither');
+  }
 });
 
 test('PPP.recordingArrange: the default is one constant; the choice, the address and the remembered value layer as PPP.recording\'s do (whichever the default is)', () => {
@@ -345,19 +363,31 @@ test('the page: rec/leadsheet.js is in no up-front list, not in RECORDING_SCRIPT
 });
 
 test('the words: every string of the lead-sheet chip and the relaxed note is in the Korean, Japanese and Chinese catalogs, and the relaxed note names the key signature and the melody, not the left hand', () => {
-  const strings = ['Arrange from a lead sheet', 'PPP one-note-per-hand arrangement (lead sheet)'];
-  [/tx\('(On \(the default\): a recording is arranged from its melody and chords\.[^']*(?:\\'[^']*)*)'\)/, /tx\('(Off: a recording\\'s own notes are thinned out[^']*(?:\\'[^']*)*)'\)/, /tx\('(This arrangement keeps the recording\\'s own key signature[^']*(?:\\'[^']*)*)'\)/]
-    .forEach(re => { const m = re.exec(html); assert.ok(m, String(re)); strings.push(m[1].replace(/\\'/g, '\'')); });
-  const fell = /tx\('(The lead sheet could not be used, so the recording\\'s own notes were thinned out instead\.)'\)/.exec(html);
-  assert.ok(fell, 'the page says the lead sheet could not be used');
-  strings.push(fell[1].replace(/\\'/g, '\''));
-  assert.equal(strings.length, 6);
+  /* the page's own strings: the literal of the tx('...') call that begins so (an escaped quote is one) */
+  const txString = start => {
+    const i = html.indexOf("tx('" + start);
+    assert.ok(i >= 0, 'the page says: ' + start);
+    let out = '';
+    for (let j = i + 4; j < html.length; j++) { const c = html[j]; if (c === '\\' && html[j + 1] === "'") { out += "'"; j++; continue; } if (c === "'") break; out += c; }
+    return out;
+  };
+  const strings = ['Arrange from a lead sheet', 'PPP one-note-per-hand arrangement (lead sheet)',
+    txString('On (the default): a recording is arranged'), txString('Off: a recording'), txString('This arrangement keeps the recording'), txString('The lead sheet could not be used'),
+    txString('On: a recording is arranged'), txString('Off (the default): a recording')];
+  assert.equal(new Set(strings).size, 8, 'eight different strings');
   for (const loc of ['ko-KR', 'ja-JP', 'zh-CN']) {
     const cat = JSON.parse(fs.readFileSync(path.join(REPO, 'i18n', loc + '.json'), 'utf8')).content;
     strings.forEach(s => { assert.ok(typeof cat[s] === 'string' && cat[s].length > 3, loc + ' lacks: ' + s.slice(0, 60)); assert.notEqual(cat[s], s, loc + ' is not translated: ' + s.slice(0, 60)); });
   }
   const ko = JSON.parse(fs.readFileSync(path.join(REPO, 'i18n', 'ko-KR.json'), 'utf8')).content;
   const note = ko[strings[4]];
+  const koLines = [strings[2], strings[3], strings[6], strings[7]].map(s => ko[s]);
+  assert.deepEqual(koLines.map(s => /\(기본\)/.test(s)), [true, false, false, true], 'the Korean lines say (기본) of the same two the English lines say (the default) of');
+  assert.ok(/^켜짐/.test(koLines[0]) && /^꺼짐/.test(koLines[1]) && /^켜짐/.test(koLines[2]) && /^꺼짐/.test(koLines[3]));
+  for (const loc of ['ja-JP', 'zh-CN']) {
+    const cat = JSON.parse(fs.readFileSync(path.join(REPO, 'i18n', loc + '.json'), 'utf8')).content, mark = loc === 'ja-JP' ? /標準/ : /默认/;
+    assert.deepEqual([strings[2], strings[3], strings[6], strings[7]].map(s => mark.test(cat[s])), [true, false, false, true], loc + ': the default is marked on the same two lines');
+  }
   assert.match(note, /조표/, 'the Korean note names the key signature');
   assert.match(note, /멜로디/, 'and the melody');
   assert.match(note, /왼손이 아니라/, 'and says it is not the left hand');

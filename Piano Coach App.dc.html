@@ -18654,9 +18654,14 @@ class Component extends DCLogic {
          states (aria-pressed carries the state) and the line under it says what pressing does; shown only where it can matter: a recording (a transcription, not a printed score or a hymn) whose graph is a recording's
          (the Song Arranger looks: checkLeadsheetGraph), one note per hand on, a level other than "Original transcription". Remembered on this device. */
       recordingArrangeLabel: tx('Arrange from a lead sheet'),
+      /* "(the default)" is said of the state that IS the default (RECORDING_ARRANGE_DEFAULT): flipping that one constant moves the label with it */
       recordingArrangeHint: RECORDING_ARRANGE_MODE === 'leadsheet'
-        ? tx('On (the default): a recording is arranged from its melody and chords. The melody stays one line and an easy accompaniment is written under it. Turn it off to thin out the recording\'s own notes instead.')
-        : tx('Off: a recording\'s own notes are thinned out to fit the level. Turn it on to arrange from its melody and chords instead.'),
+        ? (RECORDING_ARRANGE_DEFAULT === 'leadsheet'
+          ? tx('On (the default): a recording is arranged from its melody and chords. The melody stays one line and an easy accompaniment is written under it. Turn it off to thin out the recording\'s own notes instead.')
+          : tx('On: a recording is arranged from its melody and chords. The melody stays one line and an easy accompaniment is written under it. Turn it off to thin out the recording\'s own notes instead.'))
+        : (RECORDING_ARRANGE_DEFAULT === 'reduce'
+          ? tx('Off (the default): a recording\'s own notes are thinned out to fit the level. Turn it on to arrange from its melody and chords instead.')
+          : tx('Off: a recording\'s own notes are thinned out to fit the level. Turn it on to arrange from its melody and chords instead.')),
       recordingArrangePressed: RECORDING_ARRANGE_MODE === 'leadsheet' ? 'true' : 'false',
       recordingArrangeStyle: this.chip(RECORDING_ARRANGE_MODE === 'leadsheet') + ';align-self:flex-start;',
       showReviewRecordingArrange: isLeadsheetSong(S.importSource) && singleRoute({ level: S.arrangementLevel || 'intermediate' }),

@@ -34,13 +34,16 @@ const E = require('./realize/app-single-extract.js');
 const ONLY = process.env.LS_ONLY ? new RegExp(process.env.LS_ONLY) : null;
 const want = n => !ONLY || ONLY.test(n);
 const KEY = 'ppp.recordingArrange.v1';
-/* the page's own default (its one line, RECORDING_ARRANGE_DEFAULT): the sections that need the lead sheet ask for it as a person who pressed the chip would (the device remembers it), so that the flip of the default
-   changes this test in one place (the 'defaults' section's pin) and nowhere else; the 'defaults' section is the one that looks at the default itself */
+/* the page's own default (its one line, RECORDING_ARRANGE_DEFAULT): the sections that need the lead sheet ask for it as a person who pressed the chip would (the device remembers it), and the lines
+   of the chip say "(the default)" of the state that is the default; so the flip of the default changes nothing in this test (it is written for either value); the 'defaults' section is the one that looks at the
+   default itself */
 const DEFAULT = /^const RECORDING_ARRANGE_DEFAULT = '(\w+)';$/m.exec(fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8').replace(/\r\n/g, '\n'))[1];
 const LEAD = { [KEY]: 'leadsheet' };
 const LABEL = 'Arrange from a lead sheet';
-const ON_LINE = 'On (the default): a recording is arranged from its melody and chords. The melody stays one line and an easy accompaniment is written under it. Turn it off to thin out the recording\'s own notes instead.';
-const OFF_LINE = 'Off: a recording\'s own notes are thinned out to fit the level. Turn it on to arrange from its melody and chords instead.';
+const ON_BODY = 'a recording is arranged from its melody and chords. The melody stays one line and an easy accompaniment is written under it. Turn it off to thin out the recording\'s own notes instead.';
+const OFF_BODY = 'a recording\'s own notes are thinned out to fit the level. Turn it on to arrange from its melody and chords instead.';
+const ON_LINE = (DEFAULT === 'leadsheet' ? 'On (the default): ' : 'On: ') + ON_BODY;
+const OFF_LINE = (DEFAULT === 'reduce' ? 'Off (the default): ' : 'Off: ') + OFF_BODY;
 const RELAXED_EN = 'This arrangement keeps the recording\'s own key signature and melody as they are, so it may be harder than the level you chose. The difficulty comes from the key signature and the melody itself, not from the left hand.';
 const RELAXED_OLD = 'This piece has many notes, so the arrangement may be a little harder than the level you chose.';
 const FELL_EN = 'The lead sheet could not be used, so the recording\'s own notes were thinned out instead.';
@@ -143,7 +146,7 @@ const prefixOf = (a, b) => b.length >= a.length && a.every((x, i) => x === b[i])
       const p0 = await openPage(browser);
       const mode = p => p.evaluate(() => window.PPP.recordingArrange);
       const stored = p => p.evaluate(k => localStorage.getItem(k), KEY);
-      ok('THE PIN of the user\'s decision (2026-10-07): the page\'s default is leadsheet. To flip it back change the one line RECORDING_ARRANGE_DEFAULT and this check', DEFAULT === 'leadsheet');
+      ok('the page\'s default is one of the two choices (RECORDING_ARRANGE_DEFAULT, one line: the user\'s decision of 2026-10-07 is leadsheet; this suite reads it and is written for either)', DEFAULT === 'leadsheet' || DEFAULT === 'reduce', DEFAULT);
       ok('a fresh page holds the page\'s default (' + DEFAULT + '), nothing stored, loading writes nothing', (await mode(p0)) === DEFAULT && (await stored(p0)) === null);
       await sleep(3500);
       const idle = p0.__rec.requests.map(u => u.split('?')[0]);
