@@ -5099,7 +5099,7 @@ function setRecordingMode(v) {
    address (this visit only, never stored), the device's remembered choice (localStorage RECORDING_ARRANGE_KEY), the default. THE FLIP IS THE NEXT LINE: 'reduce' here puts every device that never touched the chip
    back on today's arrangement (a device that pressed the chip has a stored choice, which stays; to reset those too, change RECORDING_ARRANGE_KEY's suffix). */
 const RECORDING_ARRANGE_KEY = 'ppp.recordingArrange.v1';
-const RECORDING_ARRANGE_DEFAULT = 'leadsheet';
+const RECORDING_ARRANGE_DEFAULT = 'reduce'; /* 'reduce' until the user's blind check of lead-sheet copies of real covers (G10c-1, section 34): main is deployed by several sessions; 'leadsheet' is the flip */
 function recordingArrangeChoice(v) { return v === 'leadsheet' || v === 'reduce' ? v : null; }
 let RECORDING_ARRANGE_MODE = (() => {
   let m = RECORDING_ARRANGE_DEFAULT;
