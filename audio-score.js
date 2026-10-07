@@ -2401,3 +2401,5 @@
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (global) global.PPPAudioScore = api;
 })(typeof window !== 'undefined' ? window : typeof globalThis !== 'undefined' ? globalThis : this);
+
+// throwaway
