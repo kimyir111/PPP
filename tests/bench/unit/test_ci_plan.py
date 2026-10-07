@@ -33,7 +33,7 @@ class PathClasses(unittest.TestCase):
             self.assertEqual(ci_plan.path_class(p), "docs", p)
 
     def test_tooling_is_tooling(self):
-        for p in ("review/build.js", "review/lib/page.js", "tests/review/blind.test.js", "tools/home-worker/worker.js",
+        for p in ("tests/review/blind.test.js", "tests/review/h10-helpers.js", "tools/home-worker/worker.js",
                   "tools/home-worker/README.md", "tests/home-worker/jobs.test.js"):
             self.assertEqual(ci_plan.path_class(p), "tooling", p)
 
@@ -42,9 +42,26 @@ class PathClasses(unittest.TestCase):
                   "tests/bench/unit/test_ci_plan.py", "tests/bench/tools/ci_plan.py", "tests/engrave/layout.test.js",
                   "server.js", "audio-score.js", "rec/key.js", "scoregraph/README.md", "vendor/README.md", "catalog/hymns/README.md",
                   "audio/piano/README.md", "i18n/ko-KR.json", "Piano Coach App.dc.html", "home-jobs.js", "tools/other.js",
+                  "review/build.js", "review/lib/appcode.js", "review/lib/neutral.js", "review/h10/helper-heard.js", "review/README.md",
                   "tools/home-worker", "tools/home-workers/x.js", "docs", "review", "tests/review", "tests/reviewed/x.js",
                   "tests/home-worker-extra/x.js", "render.yaml", "Dockerfile", "requirements-arranger.txt"):
             self.assertEqual(ci_plan.path_class(p), "full", p)
+
+    def test_a_file_a_whole_tree_walk_would_ingest_is_never_light(self):
+        """The A48 test of `npm run test:engrave` imports every .musicxml/.mxl/.mid/.xml file it finds anywhere in the repository and
+        marks.test.js fails on any tracked font: so these are inputs of the gate wherever they lie, and a file of any type
+        the lists do not name is `full`."""
+        for d in ("docs", "review", "tests/review", "tools/home-worker", "tests/home-worker", "review/lib"):
+            for ext in (".musicxml", ".mxl", ".xml", ".mid", ".midi", ".ttf", ".otf", ".woff", ".woff2", ".svg", ".sh", ".py", ".html",
+                        ".yml", ".sql", ".wav", ".mp3", "", ".MD", ".JS", ".json.bak"):
+                self.assertEqual(ci_plan.path_class(f"{d}/x{ext}"), "full", f"{d}/x{ext}")
+        # the same file names are light where their type is allowed
+        for p in ("docs/x.md", "docs/x.pdf", "tests/review/x.js", "tests/home-worker/x.json", "tools/home-worker/x.cmd", "tools/home-worker/x.ps1"):
+            self.assertNotEqual(ci_plan.path_class(p), "full", p)
+        # a document type is not a tooling type and the reverse: scripts do not belong in docs/
+        self.assertEqual(ci_plan.path_class("docs/x.js"), "full")
+        self.assertEqual(ci_plan.path_class("docs/x.json"), "full")
+        self.assertEqual(ci_plan.path_class("review/x.png"), "full")
 
     def test_a_markdown_file_is_a_document_only_at_the_root(self):
         self.assertEqual(ci_plan.path_class("README.md"), "docs")
@@ -56,7 +73,7 @@ class PathClasses(unittest.TestCase):
             self.assertEqual(ci_plan.path_class(p), "full", p)
 
     def test_a_path_that_cannot_be_trusted_is_full(self):
-        for p in ("", "/docs/a.md", "docs/../server.js", "docs/./a.md", "docs\\a.md", "docs/a\nb.md", "docs/a\x00b.md", "docs/�.md",
+        for p in ("", "/docs/a.md", "docs/../server.js", "docs/./a.md", "docs\\a.md", "docs/a\nb.md", "docs/a\x00b.md", "docs/\ufffd.md",
                   "docs/a\tb.md", "./docs/a.md", "docs/"):
             self.assertEqual(ci_plan.path_class(p), "full", repr(p))
 
@@ -78,7 +95,8 @@ class WholeChange(unittest.TestCase):
 
     def test_docs_and_tooling_is_tooling(self):
         self.assertEqual(self.mode("docs/a.md", "tools/home-worker/worker.js"), "tooling")
-        self.assertEqual(self.mode("tests/review/x.test.js", "review/build.js"), "tooling")
+        self.assertEqual(self.mode("tests/review/x.test.js", "tools/home-worker/worker.js"), "tooling")
+        self.assertEqual(self.mode("tests/review/x.test.js", "review/build.js"), "full")
 
     def test_one_other_path_makes_the_whole_change_full(self):
         for extra in ("audio-score.js", "rec/key.js", "Piano Coach App.dc.html", ".github/workflows/bench.yml", "package.json",
@@ -247,6 +265,19 @@ def commands_of(body):
     return out
 
 
+def without_comments(text, rel):
+    """The code of a file without its comments and docstrings (approximately: enough that a path named in prose does not count)."""
+    if rel.endswith((".js", ".mjs", ".cjs", ".html")):
+        text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+        return re.sub(r"(?<!:)//[^\n]*", "", text)
+    if rel.endswith(".py"):
+        text = re.sub(r'""".*?"""|' + "'''.*?'''", "", text, flags=re.S)
+        return re.sub(r"#[^\n]*", "", text)
+    if rel.endswith((".yml", ".ps1")):
+        return re.sub(r"#[^\n]*", "", text)
+    return text
+
+
 GATE_JOB = re.compile(r"^(plan|light|shard-[a-z]+|merge-[a-z0-9-]+)$")
 
 
@@ -367,26 +398,59 @@ class GateShape(unittest.TestCase):
             self.assertIn(cmd, full, f"the light job runs {cmd!r}, which no shard does")
 
     def test_no_command_of_the_gate_reads_a_path_the_light_modes_skip_except_the_home_worker_tests(self):
-        """The light modes skip every shard. They are safe only if no shard step reads docs/, review/, tests/review/,
-        tools/home-worker/ or tests/home-worker/ (the README's table lists how each step was shown not to) - here, the part a
-        file can show: no command, and no npm script it runs, names those paths, except `npm run test:home-worker`."""
+        """The light modes skip every shard. They are safe only if no shard step reads docs/, tests/review/, tools/home-worker/ or
+        tests/home-worker/ (the README's table lists how each step was traced and which ones open what) - here, the part a file can
+        show: no command, and no npm script it runs, names those paths, except `npm run test:home-worker`; and the review's
+        own tests are not a step of the gate at all."""
         import json
         with open(os.path.join(util.repo_root(), "package.json"), encoding="utf-8") as handle:
             scripts = json.load(handle)["scripts"]
-        paths = re.compile(r"(^|[\s'\"/])(docs|review|tests/review|tools/home-worker|tests/home-worker)(/|\b)")
+        paths = re.compile(r"(^|[\s'\"/])(docs|tests/review|tools/home-worker|tests/home-worker)(/|)")
         for name, body in self.shards.items():
             for cmd in commands_of(body):
                 text = cmd
                 for m in re.finditer(r"npm run ([\w:-]+)", cmd):
                     text += " " + scripts[m.group(1)]
-                if "npm run test:home-worker" in cmd:
+                if re.search(r"npm run test:home-worker(?![\w-])", cmd):
                     self.assertIn("tests/home-worker", text)
-                    self.assertTrue(re.search(r"npm run test:home-worker(?!-)", cmd))
                     continue
                 self.assertFalse(paths.search(text), f"{name}: {cmd!r} names a path the light modes skip")
-        # and the review's own tests are not a step of the gate at all (so `tooling` skips nothing that tests review/)
         every = " ".join(c for body in self.shards.values() for c in commands_of(body))
         self.assertNotIn("test:review", every)
+
+    # Files outside the skipped directories that name them as a PATH (a quoted segment or a slash path), found when the light modes were
+    # made. A file that starts doing so is not necessarily a reader, but it might be one: this is the tripwire that makes someone look
+    # (trace the gate's steps as the README says), instead of letting a light mode skip a step that has begun to read the path.
+    NAMES_TESTS_REVIEW = {"package.json", "tests/bench/tools/ci_plan.py", "tests/bench/unit/test_ci_plan.py"}
+    NAMES_HOME_WORKER = {"Piano Coach App.dc.html", "package.json", "tests/bench/tools/ci_plan.py", "tests/bench/unit/test_ci_plan.py"}
+    NAMES_DOCS = {"review/h10/packet.js", "tests/bench/tools/ci_plan.py", "tests/bench/unit/test_ci_plan.py", "tests/engrave/corpus.json",
+                  "tests/engrave/tools/make-corpus.js", "tests/scoregraph/tools/make-fixtures.js"}
+
+    def test_nothing_new_names_the_paths_the_light_modes_skip(self):
+        listed = subprocess.run(["git", "ls-files", "-z"], cwd=util.repo_root(), capture_output=True, check=True).stdout.decode("utf-8")
+        skip = ("docs/", "tests/review/", "tools/home-worker/", "tests/home-worker/", "catalog/", "i18n/", "assets/", "vendor/",
+                "samples/", "audio/", "tests/bench/corpus/", "tests/bench/baselines/", "tests/bench/golden/", "tests/bench/replay",
+                "tests/fixtures/", "tests/scoregraph/fixtures/", "tests/engrave/fixtures/", "tests/golden/")
+        code = (".js", ".py", ".json", ".html", ".yml", ".cmd", ".ps1", ".mjs", ".cjs")
+        rx = {
+            "tests/review": (re.compile(r"""tests/review|['"]tests['"]\s*,\s*['"]review['"]"""), self.NAMES_TESTS_REVIEW),
+            "home-worker": (re.compile(r"""(tools|tests)/home-worker|['"]home-worker['"]"""), self.NAMES_HOME_WORKER),
+            "docs": (re.compile(r"""['"]docs['"]\s*[,)]|['"`]docs/"""), self.NAMES_DOCS),
+        }
+        found = {k: set() for k in rx}
+        for rel in listed.split("\0"):
+            if not rel or rel.startswith(skip) or not rel.endswith(code) or rel == ".github/workflows/bench.yml":
+                continue
+            with open(os.path.join(util.repo_root(), rel), encoding="utf-8", errors="replace") as handle:
+                text = without_comments(handle.read(), rel)
+            for key, (pattern, _) in rx.items():
+                if pattern.search(text):
+                    found[key].add(rel)
+        for key, (_, known) in rx.items():
+            self.assertEqual(sorted(found[key] - known), [],
+                             f"these files now name {key}: trace the gate (tests/bench/README.md, 'The gate in CI'), and if a step reads it "
+                             f"put that step in the light job and the README table; then add the file to NAMES_* in this test")
+            self.assertEqual(sorted(known - found[key]), [], f"no longer names {key}: take it off NAMES_* in this test")
 
     def test_the_nightly_jobs_are_not_gate_jobs(self):
         for name in ("nightly", "nightly-rec", "nightly-rec-shard", "nightly-rec-full"):

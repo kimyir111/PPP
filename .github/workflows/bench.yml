@@ -1,12 +1,34 @@
 # G0 score-quality benchmark (tests/bench/README.md).
 # The gate is the regression gate on every push/PR. It is a small job `plan` (which checks does this change need?), thirteen parallel
-# shard jobs (shard-a .. shard-m) that run its steps, two merge jobs (merge-rec-core, merge-rec-grid) that join the halves of the two
-# suites that are split across shards and check them, a job `light` (for a change that is only documents or tooling), and the job named
-# `gate`, which passes only when every job the plan asked for passed (TD22, TD22b). The nightly jobs (full suite, gate sensitivity, the
-# independent review's adversarial checks, the recording suites) run on a schedule or by hand and are unchanged.
+# shard jobs (shard-a .. shard-m) that run its 60 steps, two merge jobs (merge-rec-core, merge-rec-grid) that join the shards of the two
+# suites that are cut across several shard jobs and check them, a job `light` (for a change that is only documents or the home-PC
+# worker's files), and the job named `gate`, which passes only when every job the plan asked for passed (TD22, TD22b). The nightly jobs
+# (full suite, gate sensitivity, the independent review's adversarial checks, the recording suites) run on a schedule or by hand and
+# are unchanged.
 # No npm install: the benchmark needs only Node, the Python standard library and git. The two checks
 # that drive the real page - tests/scoregraph/tools/shadow-legacy.js --check and app-import-check.js
 # (G02 §14) - need puppeteer and `npm start`, so they run locally, like T1-C conformance.
+#
+# THE GATE (TD22 cut it from one job of 26-50 minutes into five of about 11; TD22b into thirteen of about 5). Rules for keeping it right:
+#  - every step of the old job is in exactly one shard job, with its command unchanged (tests/bench/unit/test_ci_plan.py holds the
+#    invariants: no step twice, a `run --suite X` with its `check`, a sharded suite complete, `gate` waiting for every job);
+#  - steps that depend on each other stay together: `run --suite X` then `check --suite X` (check reads what run wrote under
+#    tests/bench/out/X), `hands_data.py && train_hands.js --check` and `key_data.py && key-eval.js --check` (the data goes
+#    to tests/bench/.cache). Every other step reads committed files and writes only under a path of its own or a temp dir;
+#  - rec-core (2,538 cases), rec-grid (1,410) are the two suites that were longer than any shard could be: each runs as `run --suite X
+#    --shard K/N` in N different shard jobs, hands its shard.json to a merge job as a one-day artifact, and merge-rec-core /
+#    merge-rec-grid run `merge-shards` (which refuses anything but the N shards of this commit) and then the very `check` the unsharded
+#    run had. The merged results.json is byte for byte the unsharded run's (tests/bench/README.md, "Sharded runs"). The shards deal
+#    the id-sorted cases round-robin and an id ends in opt:app, opt:legacy, opt:v2, so N=3 would give one shard all the v2 cases (2.3x
+#    the work of another: measured): rec-core is cut in 5 (every shard 1/5 of every family), rec-grid in 2. rec-robust (217 s) stays whole;
+#  - the verdict is the job named exactly `gate`: green only if the plan succeeded and every job it asked for did (see the comment above
+#    it). The shards are deliberately not named gate-*, so nothing that looks for "gate" can take one of them for the verdict;
+#  - a new step goes in the shard job with the most slack. Step seconds per job, on the fast and on the slow runners of 2026-10-07 (the
+#    same VM type is 1.3-1.8x slower on some draws; a job adds about 12 s of checkout, setup and upload): see each job's comment. The
+#    wall-clock is the slowest job + the merge, about 5 minutes; a 14th job would save about 10 s, a 15th about 20;
+#  - the ScoreGraph tests compare package.json with the G1 base commit (`git show aff7080:package.json`): the one job that runs them
+#    (shard-d) fetches the whole history. No other step of the gate reads git history, so the other jobs take the default one commit
+#    (a step that skips quietly without history would hide a check; `npm run test:home-worker-page` and jobs-pg do, and neither is in the gate).
 name: bench
 on:
   push:
@@ -65,7 +87,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: runner
         run: |
-          echo "16 CPUs, AMD Ryzen 7 9800X3D 8-Core Processor, 61 GB"
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
       - uses: actions/setup-node@v4
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5
@@ -91,7 +113,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: runner
         run: |
-          echo "16 CPUs, AMD Ryzen 7 9800X3D 8-Core Processor, 61 GB"
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
       - uses: actions/setup-node@v4
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5
@@ -120,7 +142,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: runner
         run: |
-          echo "16 CPUs, AMD Ryzen 7 9800X3D 8-Core Processor, 61 GB"
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
       - uses: actions/setup-node@v4
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5
@@ -155,7 +177,7 @@ jobs:
         with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit (git show aff7080:package.json)
       - name: runner
         run: |
-          echo "16 CPUs, AMD Ryzen 7 9800X3D 8-Core Processor, 61 GB"
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
       - uses: actions/setup-node@v4
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5
@@ -178,7 +200,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: runner
         run: |
-          echo "16 CPUs, AMD Ryzen 7 9800X3D 8-Core Processor, 61 GB"
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
       - uses: actions/setup-node@v4
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5
@@ -207,7 +229,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: runner
         run: |
-          echo "16 CPUs, AMD Ryzen 7 9800X3D 8-Core Processor, 61 GB"
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
       - uses: actions/setup-node@v4
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5
@@ -225,7 +247,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: runner
         run: |
-          echo "16 CPUs, AMD Ryzen 7 9800X3D 8-Core Processor, 61 GB"
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
       - uses: actions/setup-node@v4
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5
@@ -262,7 +284,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: runner
         run: |
-          echo "16 CPUs, AMD Ryzen 7 9800X3D 8-Core Processor, 61 GB"
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
       - uses: actions/setup-node@v4
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5
@@ -302,7 +324,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: runner
         run: |
-          echo "16 CPUs, AMD Ryzen 7 9800X3D 8-Core Processor, 61 GB"
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
       - uses: actions/setup-node@v4
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5
@@ -329,7 +351,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: runner
         run: |
-          echo "16 CPUs, AMD Ryzen 7 9800X3D 8-Core Processor, 61 GB"
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
       - uses: actions/setup-node@v4
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5
@@ -366,7 +388,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: runner
         run: |
-          echo "16 CPUs, AMD Ryzen 7 9800X3D 8-Core Processor, 61 GB"
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
       - uses: actions/setup-node@v4
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5
@@ -397,7 +419,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: runner
         run: |
-          echo "16 CPUs, AMD Ryzen 7 9800X3D 8-Core Processor, 61 GB"
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
       - uses: actions/setup-node@v4
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5
@@ -425,7 +447,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: runner
         run: |
-          echo "16 CPUs, AMD Ryzen 7 9800X3D 8-Core Processor, 61 GB"
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
       - uses: actions/setup-node@v4
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5

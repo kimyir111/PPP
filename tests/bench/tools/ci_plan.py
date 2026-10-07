@@ -9,8 +9,9 @@ HEAD^1 is the base), and the other jobs read its answer `mode`:
     full     every check of the gate (the 60 steps of the shard jobs). The answer for anything that is not a pull request (a push
              to main, a manual run, the schedule), for a pull request whose file list cannot be read, for any file this tool
              does not know to be harmless, and for the workflow, `package.json` and `tests/bench/` themselves.
-    tooling  only files of tooling that no check of the gate reads except the home-PC worker's own tests (see the table in the
-             README): the `light` job runs those tests, the bench unit tests and the two cheapest sanity checks.
+    tooling  only documents and files of the home-PC worker (tools/home-worker/, tests/home-worker/) and of the review tests
+             (tests/review/): the only step of the gate that reads them is `npm run test:home-worker` (see the table in the README), so
+             the `light` job runs that, the bench unit tests and the two cheapest sanity checks.
     docs     only documents (`docs/`, a markdown or licence file at the repository root): the `light` job runs the two cheapest
              sanity checks. No step of the gate reads a document.
 
@@ -32,11 +33,19 @@ import re
 import subprocess
 import sys
 
-# path prefixes (with the slash) a DOCS change may touch; plus the root files of ROOT_DOC
+# A path is light only by directory AND by file type. The directory says which steps could read it (tests/bench/README.md, "The
+# gate in CI": the table of what each step was traced to open); the type says it cannot be ingested as input by the steps that walk
+# the whole tree: the A48 test of `npm run test:engrave` takes every .musicxml, .mxl, .mid and (named like a score) .xml file
+# anywhere in the repository for an import, and marks.test.js fails on a tracked font file anywhere. So a score or a font in
+# `docs/` is not a document, and the lists below name the types that are.
 DOCS_DIRS = ("docs/",)
+DOCS_EXT = (".md", ".txt", ".png", ".jpg", ".jpeg", ".gif", ".pdf")
 ROOT_DOC = re.compile(r"^(?:[^/]+\.md|(?:LICENSE|LICENCE|COPYING|NOTICE)(?:\.(?:md|txt))?)$")
-# further prefixes a TOOLING change may touch (it may touch the DOCS ones too)
-TOOLING_DIRS = ("review/", "tests/review/", "tools/home-worker/", "tests/home-worker/")
+# the tooling directories (docs/ may be touched with them) and the types of files that live there
+# (review/ is NOT here: three steps of the gate load code from it - test:rec review/lib/appcode.js, test:realize review/lib/neutral.js,
+# test:home-worker review/h10/helper-heard.js - and the A48 walk lists it; a change there is `full`)
+TOOLING_DIRS = ("tests/review/", "tools/home-worker/", "tests/home-worker/")
+TOOLING_EXT = (".js", ".json", ".md", ".txt", ".cmd", ".ps1")
 
 MODES = ("full", "tooling", "docs")
 MAX_LISTED = 40
@@ -52,7 +61,7 @@ def parse_nul(data):
 def _clean(path):
     """False for a path that must not be trusted to be what the whitelist reads: empty, absolute, a `.` or `..` component,
     a backslash, a control character or a replacement character (an undecodable byte)."""
-    if not path or path.startswith("/") or "\\" in path or "�" in path:
+    if not path or path.startswith("/") or "\\" in path or "\ufffd" in path:
         return False
     if any(ord(c) < 32 or ord(c) == 127 for c in path):
         return False
@@ -68,9 +77,9 @@ def path_class(path):
     """``"docs"``, ``"tooling"`` or ``"full"``: the lightest class the single path allows."""
     if not _clean(path):
         return "full"
-    if path.startswith(DOCS_DIRS) or ROOT_DOC.match(path):
+    if ROOT_DOC.match(path) or (path.startswith(DOCS_DIRS) and path.endswith(DOCS_EXT)):
         return "docs"
-    if path.startswith(TOOLING_DIRS):
+    if path.startswith(TOOLING_DIRS) and path.endswith(TOOLING_EXT):
         return "tooling"
     return "full"
 
