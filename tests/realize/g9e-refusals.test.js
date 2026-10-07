@@ -98,9 +98,9 @@ test('plan(): a piece the strict search plans is planned byte-for-byte as before
   }
 });
 
-test('plan(): relax is off by default and for any value but 1 or 2', () => {
+test('plan(): relax is off by default and for any value but 1, 2 or 3 (3: the lead sheet of a recording, tests/arrangement/relax3.test.js)', () => {
   const g = SYN.pieceA(), sg = SGG.analyze(g);
-  [undefined, 0, null, false, 3, 'yes'].forEach(v => {
+  [undefined, 0, null, false, 4, 'yes'].forEach(v => {
     const r = ARR.plan(g, sg, REQ(4, 'large'), { reference: ref, relax: v });
     assert.equal(r.ok, false, 'relax ' + String(v));
     assert.equal(r.reason, 'UNREACHABLE');

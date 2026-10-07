@@ -197,13 +197,17 @@
        relax 1  reach and chordLoad on the THINNED view: a hand's simultaneous count is min(count, 1) and its span 0, extra keys per beat 0; the density
                 ceilings (notes per beat, range, key signature) are the strict ones;
        relax 2  also the density ceiling at the stage's real MAXIMUM (band.notesPerBeatRH/LH.max instead of p90) and the range ceiling dropped (a one-note
-                hand over a wide range is played with 8va/8vb marks and a hand move, not a stretch).
+                hand over a wide range is played with 8va/8vb marks and a hand move, not a stretch);
+     relax 3  (G10c-1a, the lead sheet of a recording: docs/GOALS/G10 section 33.5; only a caller that asks for it) the ceilings the arranger cannot act on, on the FLOOR rung only
+                (nothing left to drop: the melody alone, or the melody and bass): the key signature ceiling (a piece heard in B major or G flat major has 5 or 6 accidentals at every
+                level and the arranger does not transpose) and the right hand's density ceiling (the melody is copied verbatim, so no level can thin it); the left hand's density and the
+                chord load stay checked. The section says so (`relaxed: 3`) and the output can read harder than the requested level, as at relax 2.
      A section planned with a relaxed search carries `relaxed: 1 | 2`, and so does the plan (the highest tier any section needed). A strict plan has
      neither field, so its object is what it always was. Nothing else changes: no voice is invented, the melody/bass identification is G7a's. */
   const THIN_SIM = sim => ({ span: 0, count: Math.min(1, sim.count) });
 
   function planSection(g, sg, section, partId, request, refBands, stage, relax) {
-    relax = relax === 1 || relax === 2 ? relax : 0;
+    relax = relax === 1 || relax === 2 || relax === 3 ? relax : 0;
     const mbAll = sg.melodyBass.parts.find(p => p.part === partId);
     const rolesAll = sg.voiceRoles.parts.find(p => p.part === partId);
     if (!mbAll || !rolesAll || !rolesAll.roles.length) return fail('NO_VOICES', { part: partId });
@@ -223,7 +227,7 @@
     const rungs = TEX.rungsFrom(ladder, maxExtra);
 
     const attempts = [];
-    const tiers = relax === 2 ? [0, 1, 2] : relax === 1 ? [0, 1] : [0]; /* strict first; a relaxed tier only when no rung fits the one before it */
+    const tiers = relax === 3 ? [0, 1, 2, 3] : relax === 2 ? [0, 1, 2] : relax === 1 ? [0, 1] : [0]; /* strict first; a relaxed tier only when no rung fits the one before it */
     for (const tier of tiers) for (const rung of rungs) {
       const voiceNotes = new Map(rung.voiceIds.map(v => [v, allNotes.filter(n => n.voiceId === v)]));
       /* Hand assignment is by each RETAINED voice's own real register in this section
@@ -277,7 +281,9 @@
          real, committed stage-1 piece). Using the real max instead keeps this a genuine
          "a real piece at this stage has done this" bound rather than a degenerate one. */
       const band = refBands;
-      const densityOk = !band || (tier >= 2 ? (
+      const densityOk = !band || (tier >= 3 && rung.extraKept === 0 ? (
+        npbLH <= band.notesPerBeatLH.max && chordLoad <= band.chordLoad.max
+      ) : tier >= 2 ? (
         npbRH <= band.notesPerBeatRH.max && npbLH <= band.notesPerBeatLH.max &&
         chordLoad <= band.chordLoad.max && keyLoad <= band.keyLoad.max
       ) : (
@@ -336,7 +342,7 @@
     }
     if (attempt.relaxed) {
       parts.push('RELAXED (relax ' + attempt.relaxed + '): no rung fit the strict search, so this section was planned for a caller that keeps one note per hand - reach and chord load on the thinned view' +
-        (attempt.relaxed >= 2 ? ', density ceiling at the stage maximum, range ceiling dropped' : '') + '; the output can read harder than the requested level.');
+        (attempt.relaxed >= 2 ? ', density ceiling at the stage maximum, range ceiling dropped' : '') + (attempt.relaxed >= 3 ? ', key signature and right-hand density ceilings dropped (floor rung)' : '') + '; the output can read harder than the requested level.');
     }
     if (degraded) {
       parts.push('DEGRADED: melody confidence ' + mb.melodyConf.toFixed(2) + (mb.bassVoice != null ? ', bass confidence ' + mb.bassConf.toFixed(2) : '') +
