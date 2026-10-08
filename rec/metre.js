@@ -29,16 +29,6 @@
   const RHOS = [1 / 4, 1 / 3, 1 / 2, 2 / 3, 1, 3 / 2, 2, 3, 4];
   const QPM_LO = 36, QPM_HI = 260;
   const F = model.FEATURES.length;
-  /* G10a-1d (opts.metricalRho, a model with `metricalRho`): a reading tracks a METRICAL level of its metre: a subdivision of the beat, the beat, or
-     a group of beats that divides the bar (in x/4 and 2/2 a 16th, a triplet eighth, an eighth, a quarter, the half bar, the bar; in x/8 a 16th, an
-     eighth, the dotted quarter and a whole number of them that divides the bar). A pulse of three quarters in 4/4 (or of two thirds of a quarter, or a
-     quarter in 6/8) is no level of that metre: a tempo that moves makes such a warp slip a beat at a time against the music (one real cover: its bar
-     lines drifted six beats against the helper's reading over four minutes, G10 section 36). */
-  function metricalRho(m, rho) {
-    const isInt = x => Math.abs(x - Math.round(x)) < 1e-9 && Math.round(x) >= 1;
-    if (m.compound) return rho === 1 / 4 || rho === 1 / 2 || (isInt(rho / 1.5) && isInt(m.barQ / rho));
-    return rho === 1 / 4 || rho === 1 / 3 || rho === 1 / 2 || (isInt(rho) && isInt(m.barQ / rho));
-  }
 
   /* opts.swing (G10a-1b, the weights' `swing`): the long-short points s of the swung frames; each (track, rho) of a simple metre
      is then also read swung at each s, its quarters starting on the frame's beat or half a beat later (a reading's bar phase
@@ -53,22 +43,18 @@
       RHOS.forEach(rho => {
         const fr = model.frame(att, cls, tr, rho, sigma, opts.downbeats);
         if (!(fr.qpm >= QPM_LO && fr.qpm <= QPM_HI)) return;
-        fr.downPhase = !!opts.downPhase;
         frames.push(fr);
         const f0 = frames.length - 1;
         model.METRES.forEach((m, mi) => {
           if (opts.metres && opts.metres.indexOf(m.key) < 0) return;
-          if (opts.metricalRho && !metricalRho(m, rho)) return;
           for (let phi = 0; phi < m.barQ - 1e-9; phi += model.PHASE_STEP_Q) list.push({ track: ti, rho: rho, mi: mi, phi: phi, qpm: fr.qpm, fr: f0 });
         });
         swings.forEach(s => [0, model.R / 2].forEach(o => {
           const fs = model.frame(att, cls, tr, rho, sigma, opts.downbeats, { s: s, o: o });
-          fs.downPhase = !!opts.downPhase;
           frames.push(fs);
           const fi = frames.length - 1;
           model.METRES.forEach((m, mi) => {
             if (m.compound || (opts.metres && opts.metres.indexOf(m.key) < 0)) return;
-            if (opts.metricalRho && !metricalRho(m, rho)) return;
             for (let phi = 0; phi < m.barQ - 1e-9; phi += model.PHASE_STEP_Q)
               if (Math.round(phi * model.R) % model.R === o) list.push({ track: ti, rho: rho, mi: mi, phi: phi, qpm: fr.qpm, fr: fi, swing: s });
           });
@@ -104,21 +90,34 @@
   /* weights: { tables, weights: [F numbers], alpha, sigma, beatCap?, swing?, conventionPrior? } (rec/weights/*.json; a model
      without beatCap, swing or conventionPrior - ai5a-v1 - reads as it was trained: no cap, no swung frames, no preference) */
   function choose(att, cls, tracks, W, opts) {
-    opts = Object.assign({ sigma: W.sigma, swing: W.swing || null, downPhase: !!W.downPhase, metricalRho: !!W.metricalRho }, opts || {});
+    opts = Object.assign({ sigma: W.sigma, swing: W.swing || null }, opts || {});
     const H = hypotheses(att, cls, tracks, W.tables, opts);
     if (!H.list.length) return null;
     const sc = new Float64Array(H.list.length), row = new Float64Array(F);
     const cap = W.beatCap || 0;
-    /* the convention preference per metre index, only when the caller has no downbeats - or always with a model whose downbeats
-       are phase evidence only (downPhase, G10a-1d): then the downbeats never decide the bar length, so they cannot decide 2/4
-       against 4/4 either */
-    const conv = (W.downPhase || !opts.downbeats) && W.conventionPrior ? model.METRES.map(m => W.conventionPrior[m.key] || 0) : null;
+    /* the convention preference per metre index, only when the caller has no downbeats */
+    const conv = !opts.downbeats && W.conventionPrior ? model.METRES.map(m => W.conventionPrior[m.key] || 0) : null;
     let bi = 0;
     for (let i = 0; i < H.list.length; i++) {
       scaledRow(H, i, W.alpha, row, cap);
       sc[i] = model.score(row, W.weights);
       if (conv) sc[i] += conv[H.list[i].mi];
       if (sc[i] > sc[bi]) bi = i;
+    }
+    /* G10a-1d: the phase step (a model with `phase`): the reading's metre, pulse and tempo stay; its bar phase is chosen again among the
+       phases of the same pulse frame and metre, with the harmonic rhythm and the helper's downbeats as evidence (G10 section 36) */
+    let phase = null;
+    if (W.phase && W.phase.weights && opts.phaseStep !== false) {
+      const g = phaseGroup(H, bi);
+      const rows = phaseFeatures(H, g, sc, bi, att, tracks, W, opts.phaseDownbeats || null);
+      const pw = W.phase.weights;
+      let best = -Infinity, nb = bi;
+      g.forEach((i, j) => {
+        const z = pw[0] * rows[j][0] + pw[1] * rows[j][1] + pw[2] * rows[j][2];
+        if (z > best + 1e-12 || (Math.abs(z - best) <= 1e-12 && i === bi)) { best = z; nb = i; }
+      });
+      phase = { from: H.list[bi].phi, to: H.list[nb].phi, readings: g.length, downbeats: !!(opts.phaseDownbeats && opts.phaseDownbeats.length) };
+      bi = nb;
     }
     const p = softmax(sc);
     const metrePost = {};
@@ -135,7 +134,27 @@
     });
     for (const k in metrePost) metrePost[k] = Math.round(metrePost[k] * 1e4) / 1e4;
     return { best: Object.assign({}, best, { features: Array.from(scaledRow(H, bi, W.alpha, row, cap)), score: sc[bi] }), posterior: p[bi],
-      confidence: agree, metrePosterior: metrePost, slots: slots, count: H.list.length };
+      confidence: agree, metrePosterior: metrePost, slots: slots, count: H.list.length, phase: phase };
+  }
+
+  /* G10a-1d: the readings that differ from reading bi only in their bar phase (the same pulse frame - track, rho, swing - and metre) */
+  function phaseGroup(H, bi) {
+    const b = H.list[bi], g = [];
+    H.list.forEach((h, i) => { if (h.fr === b.fr && h.mi === b.mi) g.push(i); });
+    return g;
+  }
+  /* per reading of the group: [its metre-model score minus reading bi's, the harmonic rhythm (model.harmonicContrast) times the square root of
+     its beats up to the beat cap, the downbeats' phase evidence (model.phaseDown; 0 without downbeats)] */
+  function phaseFeatures(H, g, sc, bi, att, tracks, W, downs) {
+    const b = H.list[bi], m = model.METRES[b.mi], fv = new Float64Array(F), cap = W.beatCap || 100;
+    const sh = downs && downs.length ? model.phaseShares(tracks[b.track], b.rho, m, downs) : null;
+    return g.map(i => {
+      const h = H.list[i];
+      const slots = model.features(H.frames[h.fr], h.mi, h.phi, W.tables, fv, true);
+      const hb = model.harmonicContrast(m, slots, att, att.length) * Math.sqrt(Math.min(Math.max(1, H.nBeats[i]), cap));
+      const dn = sh ? model.phaseDown(sh, Math.round(h.phi / model.PHASE_STEP_Q), m) : 0;
+      return [sc[i] - sc[bi], hb, dn];
+    });
   }
 
   /* two readings put their bar lines at the same times (checked at the first and the last attack) */
@@ -161,5 +180,5 @@
     return { beats: out, metre: m, qpm: best.qpm };
   }
 
-  return Object.freeze({ RHOS, metricalRho, QPM_LO, QPM_HI, hypotheses, scaledRow, choose, writtenBeats, softmax, sameBars });
+  return Object.freeze({ RHOS, QPM_LO, QPM_HI, hypotheses, scaledRow, choose, writtenBeats, softmax, sameBars, phaseGroup, phaseFeatures });
 });

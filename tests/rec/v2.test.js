@@ -96,12 +96,12 @@ test('v2 does not decide what the caller fixed: a lock or a stated metre writes 
   assert.equal(AS.toMusicXml({ notes: p.notes }, Object.assign({ beatsPerBar: 3 }, v2)).xml, AS.toMusicXml({ notes: p.notes }, Object.assign({ beatsPerBar: 3 }, app)).xml);
 });
 
-test('v2 with the helper\'s audio beats and downbeats reads them and keeps their bar lines (G10a-1d: the beat track is one more pulse track, no bonus)', () => {
+test('v2 with the helper\'s audio beats and downbeats reads them (beatSource audio-v2) and keeps their bar lines', () => {
   const p = march(16, 100, { jitter: 0.015, seed: 8 });
   const beats = [], downbeats = [];
   for (let k = 0; k <= 16 * 4; k++) { beats.push(1 + k * 0.6); if (k % 4 === 0) downbeats.push(1 + k * 0.6); }
   const r = AS.toMusicXml({ notes: p.notes, beats: beats, downbeats: downbeats }, v2);
-  assert.ok(['audio-v2', 'onset-v2'].indexOf(r.stats.beatSource) >= 0, r.stats.beatSource);
+  assert.equal(r.stats.beatSource, 'audio-v2');
   assert.deepEqual([r.stats.beatsPerBar, r.stats.beatType], [4, 4]);
   assert.ok(Math.abs(r.stats.barStarts[0] - 1) < 0.05);
 });

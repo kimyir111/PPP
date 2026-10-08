@@ -202,5 +202,18 @@
     return { period: med, beats: extend(out, attacks[0].t - 0.05, attacks[attacks.length - 1].t + 0.05), audio: true };
   }
 
-  return Object.freeze({ FPS, tracks, trackOne, salience, periodPeaks, candidatePeriods, position, timeAt, extend, audioTrack });
+  /* G10a-1d: the share of a list of times' intervals within 15 % of their median: how steadily a downbeat tracker keeps one bar (the
+     benchmark's helper-like downbeats: 0.95 at the median, 0.85 at the 10th percentile; Beat This on the six real covers of G10 section 36:
+     0.56-0.77, a mixture of bars, half bars and three-beat groups) */
+  function steadyShare(times) {
+    const t = (times || []).filter(Number.isFinite).slice().sort((a, b) => a - b);
+    if (t.length < 3) return 0;
+    const iv = [];
+    for (let i = 1; i < t.length; i++) iv.push(t[i] - t[i - 1]);
+    const med = iv.slice().sort((a, b) => a - b)[iv.length >> 1];
+    if (!(med > 0)) return 0;
+    return iv.filter(x => Math.abs(x / med - 1) < 0.15).length / iv.length;
+  }
+
+  return Object.freeze({ FPS, steadyShare, tracks, trackOne, salience, periodPeaks, candidatePeriods, position, timeAt, extend, audioTrack });
 });

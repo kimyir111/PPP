@@ -62,14 +62,19 @@
     const cls = attacks.classes(att);
     const tracks = beats.tracks(att, { tight: W.tight, maxTracks: W.maxTracks });
     /* the helper's audio beats, when the caller has them (Beat This on the helper; the browser path has none): one more
-       track, and its downbeats are evidence for the bar lines */
-    const audio = opts.beats ? beats.audioTrack(opts.beats, att, W.audioMaxIrregular != null ? { maxIrregular: W.audioMaxIrregular, maxExtra: W.audioMaxExtra } : null) : null;
+       track, and its downbeats are evidence for the bar lines.
+       G10a-1d (a model with `phase`, G10 section 36): only when they are steady - the beat track one pulse (helperGate.maxIrregular,
+       .maxExtra) and the downbeats one bar (helperGate.minSteady of their intervals within 15 % of the median). Otherwise the metre and
+       the tempo are read from the notes alone, exactly as without beats, and the downbeats are evidence of the bar phase only (the
+       phase step of metre.choose). */
+    const downs = opts.downbeats && opts.downbeats.length ? opts.downbeats : null;
+    const helper = helperUse(opts.beats, downs, att, W);
+    const audio = helper === 'used' ? beats.audioTrack(opts.beats, att) : null;
     if (audio) tracks.unshift(audio);
     if (!tracks.length) return null;
-    /* the downbeats: with a model whose downbeats are phase evidence only (downPhase, G10a-1d) they count even when the audio beat
-       track was not usable (they are read through the notes' own pulse tracks); before, only with that track */
-    const hasDown = opts.downbeats && opts.downbeats.length && (audio || (W.downPhase && opts.beats));
-    const ch = metre.choose(att, cls, tracks, W, { downbeats: hasDown ? opts.downbeats : null });
+    /* the phase step runs when the metre model heard no downbeats (they decide the phase there, as before) */
+    const ch = metre.choose(att, cls, tracks, W, { downbeats: audio && downs ? downs : null, phaseDownbeats: W.phase && downs && helper ? downs : null,
+      phaseStep: !(audio && downs) });
     if (!ch) return null;
     const wb = metre.writtenBeats(ch.best, tracks, ch.slots, att);
     if (wb.beats.length < 2) return null;
@@ -84,9 +89,21 @@
       model: { name: W.name, version: W.version, sha256: W.sha256 || null },
       report: { tracks: tracks.map(t => Math.round(t.period * 1e4) / 1e4), readings: ch.count,
         chosen: Object.assign({ track: ch.best.track, audio: !!tracks[ch.best.track].audio, rho: ch.best.rho, phi: ch.best.phi, metre: m.key },
-          ch.best.swing ? { swing: ch.best.swing } : {}) }
+          ch.best.swing ? { swing: ch.best.swing } : {}, ch.phase ? { phase: ch.phase } : {}, helper ? { helperBeats: helper } : {}) }
     };
   }
 
-  return Object.freeze({ VERSION, skeleton, loadWeights, attacks, beats, model, metre, hands });
+  /* G10a-1d: how the helper's beats are used: null (none given), 'used' (as before: one more track, and the downbeats in the metre model),
+     'phase' (a model with `phase` whose helperGate they fail: the downbeats are phase evidence only) */
+  function helperUse(beatTimes, downs, att, W) {
+    if (!beatTimes || !beatTimes.length) return null;
+    const g = W.phase && W.phase.helperGate;
+    if (!g) return 'used';
+    /* judged on a whole song only: a short performance has too few beats to tell a tracker's slip from its noise, and is used as before */
+    if (beatTimes.length >= g.minBeats && !beats.audioTrack(beatTimes, att, { maxIrregular: g.maxIrregular, maxExtra: g.maxExtra })) return 'phase';
+    if (downs && downs.length - 1 >= g.minDownbeats && beats.steadyShare(downs) < g.minSteady) return 'phase';
+    return 'used';
+  }
+
+  return Object.freeze({ VERSION, skeleton, loadWeights, helperUse, attacks, beats, model, metre, hands });
 });

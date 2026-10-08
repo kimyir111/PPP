@@ -1,4 +1,4 @@
-/* G10a-1d (docs/GOALS/G10_AUDIO_TO_SCORE.md section 36): the bar phase of the time skeleton, from the notes and from the helper's beats.
+/* G10a-1d (docs/GOALS/G10_AUDIO_TO_SCORE.md section 36): the phase step after the metre model, and the helper's beats.
    node --test tests/rec/skeleton-phase.test.js */
 'use strict';
 const { test } = require('node:test');
@@ -7,32 +7,18 @@ const fs = require('fs');
 const path = require('path');
 const REC = require('../../rec/index.js');
 const P = require('./phase-fixtures.js');
-const { REPO, skeletonInput } = require('./helpers.js');
+const { REPO } = require('./helpers.js');
 
-for (const [name, fn] of [['downMetreCheck', P.downMetreCheck], ['downPhaseCheck', P.downPhaseCheck], ['audioGateCheck', P.audioGateCheck], ['metricalCheck', P.metricalCheck],
-  ['harmonyCheck', P.harmonyCheck], ['configCheck', P.configCheck], ['laterCheck', P.laterCheck], ['audioBarCheck', P.audioBarCheck]]) {
+for (const [name, fn] of [['decoupledCheck', P.decoupledCheck], ['laterCheck', P.laterCheck], ['helperGateCheck', P.helperGateCheck], ['audioGateCheck', P.audioGateCheck],
+  ['downPhaseCheck', P.downPhaseCheck], ['harmonyCheck', P.harmonyCheck], ['configCheck', P.configCheck], ['groupCheck', P.groupCheck]]) {
   const x = fn(REC);
   test(x.name, () => assert.ok(x.ok, name + ': ' + x.got + ' (want ' + x.want + ')'));
 }
 
-test('a model without downPhase reads the downbeats as before (the plain share of them on the bar lines, which shorter bars raise)', () => {
-  const W = Object.assign({}, REC.loadWeights(), { downPhase: false });
-  const att = REC.attacks.attacksOf(skeletonInput(P.laterStart(8, 0, 4).notes)), cls = REC.attacks.classes(att);
-  const beats = []; for (let k = 0; k <= 32; k++) beats.push(1 + k * 0.5);
-  const tr = REC.beats.audioTrack(beats, att), M = REC.model, fv = new Float64Array(M.FEATURES.length), D = M.FEATURES.indexOf('down');
-  const fr = M.frame(att, cls, tr, 1, W.sigma, beats.filter((t, i) => i % 2 === 0));
-  const phi = Math.round(REC.beats.position(tr.beats, 1) * 2) / 2;          /* the phase whose bar line is at 1 s */
-  M.features(fr, M.BY_KEY['2/4'], phi, W.tables, fv, false);
-  const two = fv[D];
-  M.features(fr, M.BY_KEY['4/4'], phi, W.tables, fv, false);
-  assert.ok(two > 0.9 && fv[D] > 0.4 && fv[D] < 0.6, 'plain shares ' + two + ' / ' + fv[D]);
-});
-
-test('the evaluation keeps the trainer\'s hold-out performances that start inside a bar (holdoutLater, never fitted)', () => {
-  const T = require(path.join(REPO, 'rec', 'tools', 'train.js'));
+test('the evaluation keeps the phase step before and after on every set (the hold-out performances that start inside a bar included)', () => {
   const ev = JSON.parse(fs.readFileSync(path.join(REPO, 'rec', 'tools', 'ai5a-v1.evaluation.json'), 'utf8'));
-  assert.ok(ev.holdoutLater && ev.holdoutLater.n > 150, 'the evaluation keeps the later-start hold-out family');
-  assert.ok(T.CONFIG.startsLater && T.CONFIG.startsLater.every > 0);
+  assert.ok(ev.phase && ev.phase.holdoutLater && ev.phase.holdoutLater.n > 150, 'the evaluation keeps the later-start hold-out');
+  assert.ok(ev.phase.holdoutLater.rightAfter > ev.phase.holdoutLater.rightBefore, JSON.stringify(ev.phase.holdoutLater));
 });
 
 test('the trainer\'s startsLater: the notes, beats and bar lines before the cut are left out; the truth is otherwise the same', () => {
@@ -51,4 +37,11 @@ test('the trainer\'s startsLater: the notes, beats and bar lines before the cut 
   assert.deepEqual(r.truth.bar_starts, [3, 5, 7, 9]);
   assert.ok(r.input.downbeats.every(t => t >= cut) && r.input.beats.every(t => t >= cut));
   assert.equal(T.startsLater(Object.assign({}, row, { truth: Object.assign({}, row.truth, { time: [3, 8] }) })), null, 'a one-beat bar has no later start');
+});
+
+test('steadyShare: one bar is steady, a mixture of bars and half bars is not', () => {
+  const t = []; for (let k = 0; k < 40; k++) t.push(1 + k * 2);
+  assert.ok(REC.beats.steadyShare(t) > 0.99);
+  const mixed = []; let x = 1; for (let k = 0; k < 40; k++) { mixed.push(x); x += k % 3 === 2 ? 2 : 1; }
+  assert.ok(REC.beats.steadyShare(mixed) < 0.8, String(REC.beats.steadyShare(mixed)));
 });

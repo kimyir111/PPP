@@ -94,10 +94,8 @@
   const PHASE_STEP_Q = 0.5;
   /* the first PER_ATTACK features grow with the piece (scaled by n^alpha / n, see scaled()); the rest are one number a piece */
   const FEATURES = ['kern', 'fill', 'bass', 'ioi', 'size', 'coll', 'bdur', 'bbass', 'bharm', 'bsize', 'bjoint', 'first', 'last', 'tempo', 'rep', 'repPc',
-    'is2/4', 'is3/4', 'is2/2', 'is3/8', 'is6/8', 'is9/8', 'is12/8', 'down', 'audio', 'swing', 'hbar'];
+    'is2/4', 'is3/4', 'is2/2', 'is3/8', 'is6/8', 'is9/8', 'is12/8', 'down', 'audio', 'swing'];
   const PER_ATTACK = 6, PER_BEAT = 11;
-  /* G10a-1d: hbar (index 26) is per-beat evidence too (scaled as bdur ... bjoint are), appended so that an older model reads as before */
-  const HBAR = 26;
   const KERN_FLOOR = -8;                /* one attack's timing term is never below this (a ghost note, a tracking slip) */
 
   const log2 = x => Math.log(x) / Math.LN2;
@@ -469,70 +467,50 @@
     out[15] = same ? samePc / same : 0;
     /* one bias per metre against 4/4 (learned with the weights: how often each metre is the reading) */
     for (let j = 0, k = 16; j < METRES.length; j++) { if (METRES[j].key === '4/4') continue; out[k++] = j === mi ? 1 : 0; }
-    /* the helper's audio downbeats, when the caller has them, and whether the reading stands on the helper's own beat track.
-       G10a-1d (fr.downPhase, a model with `downPhase`): the downbeats are evidence of the bar PHASE only, never of the bar
-       length: the share of them on the reading's bar lines minus the best share any phase of the same pulse and metre gets.
-       Every metre's best phase scores 0, so the downbeats cannot choose a metre or a tempo; a downbeat pulse of half the bar
-       (Beat This on pop: every other downbeat is a half bar) scores the two half-bar phases alike and leaves them to the
-       notes. Before (no downPhase): the plain share, which every shorter bar raises (G10 section 36). */
+    /* the helper's audio downbeats, when the caller has them: the share that falls on a bar line of the reading (within
+       a quarter of a quarter); and whether the reading stands on the helper's own beat track */
     let down = 0;
     if (fr.downbeats && fr.downbeats.length) {
-      if (fr.downPhase) {
-        const sh = downShares(fr, mi);
-        const k = Math.round(phi / PHASE_STEP_Q) % sh.length;
-        let mx = 0;
-        for (let j = 0; j < sh.length; j++) if (sh[j] > mx) mx = sh[j];
-        /* times how far the best phase's share is above chance (u: one share per written beat of the bar), so downbeats that point
-           at no phase of this metre (a tracker whose downbeat period is not the bar's: three beats under a 4/4 reading) say nothing;
-           u is one share per beat of the accent evidence: a quarter in x/4, an eighth in 3/8, a dotted quarter in 6/8, 9/8, 12/8 */
-        const u = m.beatSlots / m.S, c = mx > u ? (mx - u) / (1 - u) : 0;
-        down = (sh[k] - mx) * c;
-      } else {
-        let hit = 0;
-        fr.downbeats.forEach(t => {
-          const q = fr.rho * beats.position(fr.track.beats, t) - phi, d = q / m.barQ;
-          if (Math.abs(d - Math.round(d)) * m.barQ < 0.25) hit++;
-        });
-        down = hit / fr.downbeats.length;
-      }
+      let hit = 0;
+      fr.downbeats.forEach(t => {
+        const q = fr.rho * beats.position(fr.track.beats, t) - phi, d = q / m.barQ;
+        if (Math.abs(d - Math.round(d)) * m.barQ < 0.25) hit++;
+      });
+      down = hit / fr.downbeats.length;
     }
     out[23] = down;
-    /* G10a-1d (downPhase): standing on the helper's beat track counts only for a reading whose bar holds at least two of its beats: a
-       tracker that marks one downbeat every two to four beats (Beat This on every real cover of G10 section 36) does not hear its beat as
-       the bar, so a reading that makes each of its beats a bar (3/8 at one and a half times the tempo) contradicts it */
-    out[24] = fr.track.audio && (!fr.downPhase || m.barQ / fr.rho >= 2 - 1e-9) ? 1 : 0;
+    out[24] = fr.track.audio ? 1 : 0;
     out[25] = fr.swing ? 1 : 0;
-    /* G10a-1d: the harmonic rhythm at the bar line (hbar): chords change at bar lines more than inside bars */
-    if (out.length > HBAR) out[HBAR] = harmonicContrast(m, slots, fr.att, fr.n) * acc.nb;
     return keepSlots ? slots : null;
   }
 
-  /* G10a-1d: the share of the helper's downbeats on the bar lines of every phase (PHASE_STEP_Q apart) of one pulse frame and
-     metre, within a quarter of a quarter (the tolerance the plain share always had); computed once per frame and metre */
-  function downShares(fr, mi) {
-    const cache = fr.downCache || (fr.downCache = []);
-    if (cache[mi]) return cache[mi];
-    const m = METRES[mi], np = Math.round(m.barQ / PHASE_STEP_Q);
-    const sh = new Float64Array(np);
-    const n = fr.downbeats.length;
-    fr.downbeats.forEach(t => {
-      const q = fr.rho * beats.position(fr.track.beats, t);
-      for (let j = 0; j < np; j++) {
-        const d = (q - j * PHASE_STEP_Q) / m.barQ;
-        if (Math.abs(d - Math.round(d)) * m.barQ < 0.25) sh[j] += 1 / n;
-      }
-    });
-    cache[mi] = sh;
-    return sh;
+  /* the per-attack features scaled to n^alpha (alpha 1: the plain log-likelihood; 0: the mean per attack): how fast the
+     evidence of the attacks grows with the length of the piece, against the per-piece priors (learned).
+     beatCap (G10a-1b): a reading's per-beat evidence grows with its beats only up to beatCap beats; past it, the mean per beat
+     times the square root of beatCap. The growth law was fitted on the catalogue, whose performances are short (the right
+     readings of the training performances count 31 / 61 / 123 / 334 beats: 10th percentile, median, 90th, max); a cover lasts
+     three to five minutes (300-1,000 beats) and repeats its sections, which is not new evidence. Without the cap the accents of
+     a long piece outgrow every per-piece prior (tempo, metre, first onset), and the more so the more beats a reading counts: a
+     3/8 reading counts an eighth as a beat, three times the beats of a 4/4 reading of the same music (a hold-out piece played
+     six times in a row: 4/4 -> 3/8 in 23 of 100 cases). The cap stops both. A cap in seconds (every reading counted as if the
+     performance lasted that long, which keeps 3/8's threefold count) tied with it on the training references and read the
+     teacher's piece 3/4 at half its tempo (G10 section 28).
+   */
+  function scaled(fv, n, alpha, out, nBeats, cap) {
+    const aA = Array.isArray(alpha) ? alpha[0] : alpha, aB = Array.isArray(alpha) ? alpha[1] : alpha;
+    const k = Math.pow(Math.max(1, n), aA) / Math.max(1, n);
+    const nb = Math.max(1, nBeats || 1), kb = Math.pow(cap > 0 && nb > cap ? cap : nb, aB) / nb;
+    for (let i = 0; i < FEATURES.length; i++) out[i] = i < PER_ATTACK ? fv[i] * k : i < PER_BEAT ? fv[i] * kb : fv[i];
+    return out;
   }
 
-  /* G10a-1d: the harmonic rhythm of a reading. The attacks' pitch classes (every note's class once, the lowest note's twice: the
-     bass names the chord) are summed per window - half a bar in 4/4, 2/2 and 12/8, a beat (the metre's beat unit) otherwise -
-     and the change between two windows is 1 - the cosine of their sums. Per bar: the change at its bar line minus the mean
-     change at its inner window boundaries; returned: the mean over the bars where both are defined (0 when none). A reading
-     whose bar lines are where the chords change scores high; the same reading half a bar off scores the negative. On the
-     catalogue's 4/4 hold-out performances the right phase beats the half-bar shift in 82 % of cases by this alone (G10 section
-     36); it is what tells beat 1 from beat 3 when the first onset is an intro and the accents are alike. */
+  /* ------------------------------------------------------------------ G10a-1d: the bar phase (G10 section 36) */
+  /* The harmonic rhythm of a reading: the attacks' pitch classes (every note's class once, the lowest note's twice: the bass names the
+     chord) summed per window - half a bar in 4/4, 2/2 and 12/8, the metre's beat unit otherwise - and the change between two windows is
+     1 - the cosine of their sums. Per bar: the change at its bar line minus the mean change at its inner window boundaries; returned:
+     the mean over the bars where both are defined (0 when none). A reading whose bar lines are where the chords change scores high; the
+     same reading half a bar off scores its negative. On the catalogue's 4/4 hold-out performances it prefers the right phase to the
+     half-bar shift in 82 % of cases by itself. Not a feature of the metre model: it only chooses the phase (metre.js phaseStep). */
   let hbBuf = new Float64Array(12 * 256), hbHas = new Uint8Array(256);
   function harmonicContrast(m, slots, att, n) {
     if (n < 2) return 0;
@@ -552,7 +530,6 @@
       C[base + (a.low % 12)] += 1;
       has[w] = 1;
     }
-    /* the change into window w (index from wlo), or -1 when either window is empty */
     const change = w => {
       if (w < 1 || w >= nw || !has[w] || !has[w - 1]) return -1;
       let ab = 0, aa = 0, bb = 0;
@@ -571,25 +548,27 @@
     }
     return cnt ? sum / cnt : 0;
   }
-
-  /* the per-attack features scaled to n^alpha (alpha 1: the plain log-likelihood; 0: the mean per attack): how fast the
-     evidence of the attacks grows with the length of the piece, against the per-piece priors (learned).
-     beatCap (G10a-1b): a reading's per-beat evidence grows with its beats only up to beatCap beats; past it, the mean per beat
-     times the square root of beatCap. The growth law was fitted on the catalogue, whose performances are short (the right
-     readings of the training performances count 31 / 61 / 123 / 334 beats: 10th percentile, median, 90th, max); a cover lasts
-     three to five minutes (300-1,000 beats) and repeats its sections, which is not new evidence. Without the cap the accents of
-     a long piece outgrow every per-piece prior (tempo, metre, first onset), and the more so the more beats a reading counts: a
-     3/8 reading counts an eighth as a beat, three times the beats of a 4/4 reading of the same music (a hold-out piece played
-     six times in a row: 4/4 -> 3/8 in 23 of 100 cases). The cap stops both. A cap in seconds (every reading counted as if the
-     performance lasted that long, which keeps 3/8's threefold count) tied with it on the training references and read the
-     teacher's piece 3/4 at half its tempo (G10 section 28).
-   */
-  function scaled(fv, n, alpha, out, nBeats, cap) {
-    const aA = Array.isArray(alpha) ? alpha[0] : alpha, aB = Array.isArray(alpha) ? alpha[1] : alpha;
-    const k = Math.pow(Math.max(1, n), aA) / Math.max(1, n);
-    const nb = Math.max(1, nBeats || 1), kb = Math.pow(cap > 0 && nb > cap ? cap : nb, aB) / nb;
-    for (let i = 0; i < FEATURES.length; i++) out[i] = i < PER_ATTACK ? fv[i] * k : i < PER_BEAT || i === HBAR ? fv[i] * kb : fv[i];
-    return out;
+  /* the share of the helper's downbeats on the bar lines of every phase (PHASE_STEP_Q apart) of one pulse (track, rho) and metre, within
+     a quarter of a quarter */
+  function phaseShares(track, rho, m, downbeats) {
+    const np = Math.round(m.barQ / PHASE_STEP_Q), sh = new Float64Array(np), n = downbeats.length;
+    downbeats.forEach(t => {
+      const q = rho * beats.position(track.beats, t);
+      for (let j = 0; j < np; j++) {
+        const d = (q - j * PHASE_STEP_Q) / m.barQ;
+        if (Math.abs(d - Math.round(d)) * m.barQ < 0.25) sh[j] += 1 / n;
+      }
+    });
+    return sh;
+  }
+  /* the downbeats' evidence for one phase index k: its share minus the best phase's share, times how far that best share is above chance
+     (one share per beat of the accent evidence: a quarter in x/4, an eighth in 3/8, a dotted quarter in 6/8, 9/8, 12/8), so downbeats that
+     point at no phase (a downbeat every three beats under 4/4) say nothing and downbeats every half bar leave the two half-bar phases alike */
+  function phaseDown(sh, k, m) {
+    let mx = 0;
+    for (let j = 0; j < sh.length; j++) if (sh[j] > mx) mx = sh[j];
+    const u = m.beatSlots / m.S, c = mx > u ? (mx - u) / (1 - u) : 0;
+    return (sh[k % sh.length] - mx) * c;
   }
 
   /* a model with fewer weights than FEATURES (one written before a feature existed) gives the features it has no weight for
@@ -601,7 +580,7 @@
     return s;
   }
 
-  return Object.freeze({ R, SCHEMA, METRES, BY_KEY, FAMILIES, FEATURES, PER_ATTACK, PER_BEAT, HBAR, NLEV, PHASE_STEP_Q, buildTables, prepared,
+  return Object.freeze({ R, SCHEMA, METRES, BY_KEY, FAMILIES, FEATURES, PER_ATTACK, PER_BEAT, NLEV, PHASE_STEP_Q, buildTables, prepared,
     frame, features, scaled, score, log2, lgamma, logBB, countSlots, fillCounts, beatEvidence, beatScan, swingHeard, swingWritten,
-    harmonicContrast, downShares });
+    harmonicContrast, phaseShares, phaseDown });
 });

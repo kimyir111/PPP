@@ -51,6 +51,7 @@ const MODEL = require('../model.js');
 const METRE = require('../metre.js');
 
 /* the file keeps its name (the page loads rec/weights/ai5a-v1.json); the model inside is v1.1 since G10a-1b (the evidence cap and the swung frames) */
+/* G10a-1d: v1.2 = v1.1's metre model unchanged (the same weights and tables) and a phase step after it (CONFIG.phase, G10 section 36) */
 const NAME = 'ai5a', VERSION = 'v1', MODEL_VERSION = 'v1.2';
 /* --out DIR (development: an experiment's files go there, not over the committed ones; refused with --check) */
 const OUT_DIR = process.argv.indexOf('--out') >= 0 ? path.resolve(process.argv[process.argv.indexOf('--out') + 1]) : null;
@@ -74,13 +75,14 @@ const BASE_CONFIG = {
   swing: [0.64],               /* G10a-1b: the long-short points of the swung frames of the simple metres ([]: none) */
   conventionPrior: { '2/4': -0.75 },   /* G10a-1b: nats added to every reading of a metre when no downbeats are heard, after the fit
                                   (2/4 and 4/4 at the same pulse differ only in the written bar length, which a performance
-                                  without downbeats cannot decide); the out-of-fold best of --cv's conventionSweep, G10 section 28.
-                                  With downPhase (G10a-1d) the downbeats never decide the bar length, so it applies to every reading */
-  downPhase: true,             /* G10a-1d: the helper's downbeats are evidence of the bar phase only (rec/model.js `down`), G10 section 36 */
-  startsLater: { row: 0, every: 4 },   /* G10a-1d: every 4th performance of the first row also starts k beats after a bar line (startsLater) */
-  metricalRho: true,           /* G10a-1d: a reading tracks a metrical level of its metre only (rec/metre.js metricalRho) */
-  audioMaxIrregular: 0.15,     /* G10a-1d: an audio beat track with more irregular (or filled-in) intervals than this share is not read (rec/beats.js audioTrack), */
-  audioMaxExtra: 0.03,         /* ... nor one with more intervals under 0.7 of the median than this share (each extra beat shifts every later beat by one) */
+                                  without downbeats cannot decide); the out-of-fold best of --cv's conventionSweep, G10 section 28 */
+  /* G10a-1d: the phase step. After the metre model has chosen its reading, the phases of the same pulse frame and metre are scored again by
+     three learned weights: the metre model's own score difference, the harmonic rhythm (rec/model.js harmonicContrast) and the helper's
+     downbeats as phase evidence (rec/model.js phaseDown). The metre model is fitted exactly as before (its weights stay v1.1's); the step
+     is fitted afterwards on the same training performances plus every 4th performance of the first row starting 1-3 beats after a bar line
+     (startsLater), which no metre fit sees. helperGate: when the helper's beats are used as before (one more track, downbeats in the metre
+     model) and when only as phase evidence (rec/index.js helperUse) */
+  phase: { startsLater: { row: 0, every: 4 }, l2: 1e-4, helperGate: { maxIrregular: 0.15, maxExtra: 0.03, minSteady: 0.8, minBeats: 64, minDownbeats: 24 } },
   l2: 1e-4,
   folds: 5,
   train: [{ profiles: 'cover,cover-pedal,human-real,cover+of', seeds: '101,102', beats: 'none' },
@@ -164,11 +166,78 @@ function swungAll(row) {
   return Object.assign({}, row, { id: row.id + '|swung', input: { notes: notes } });
 }
 
+/* ------------------------------------------------------------------ readings and labels */
+/* exactly what audio-score.js gives rec/ for a recording: its clean() and clusterNotes() */
+function skeletonInput(notes) { return AS._.clusterNotes(ATT.cleanNotes(notes)); }
+
+function rightReading(h, tracks, truth) {
+  const m = MODEL.METRES[h.mi];
+  if (m.key !== truth.time[0] + '/' + truth.time[1]) return 0;
+  if (Math.abs(Math.log(h.qpm / truth.qpm)) > Math.log(1.04)) return 0;
+  const bs = truth.bar_starts;
+  if (!bs.length) return 0;
+  let ok = 0;
+  bs.forEach(t => {
+    const q = h.rho * BEATS.position(tracks[h.track].beats, t) - h.phi, d = q / m.barQ;
+    if (Math.abs(d - Math.round(d)) * m.barQ < 0.25) ok++;
+  });
+  return ok >= 0.9 * bs.length ? 1 : 0;
+}
+
+const F = MODEL.FEATURES.length;
+/* one performance: its readings' scaled features (Float32), labels, and what evaluation needs; null when unreadable */
+function extract(row, tables) {
+  /* G10a-1d: row.phaseOnly - the helper's beats not given to the metre model (as rec/index.js does when they fail the helper gate); their
+     downbeats only as the phase step's evidence */
+  const phaseOnly = !!row.phaseOnly;
+  if (row.truth.multi_time) return null;
+  const att = ATT.attacksOf(skeletonInput(row.input.notes));
+  const key = row.truth.time[0] + '/' + row.truth.time[1];
+  const base = { id: row.id, ref: row.ref, metre: key, n: 0 };
+  if (att.length < 4) return base;
+  const cls = ATT.classes(att);
+  const tracks = BEATS.tracks(att, { tight: CONFIG.tight, maxTracks: CONFIG.maxTracks });
+  const audio = row.input.beats && !phaseOnly ? BEATS.audioTrack(row.input.beats, att) : null;
+  if (audio) tracks.unshift(audio);
+  if (!tracks.length) return base;
+  const down = audio && row.input.downbeats && row.input.downbeats.length ? 1 : 0;   /* the readings hear downbeats (no convention preference) */
+  const H = METRE.hypotheses(att, cls, tracks, tables, { sigma: CONFIG.sigma, swing: CONFIG.swing,
+    downbeats: down ? row.input.downbeats : null });
+  const n = H.list.length;
+  const X = new Float32Array(n * F), lab = new Uint8Array(n), mi = new Uint8Array(n), qpm = new Float32Array(n);
+  const sv = new Float64Array(F);
+  let any = 0;
+  for (let i = 0; i < n; i++) {
+    METRE.scaledRow(H, i, CONFIG.alpha, sv, CONFIG.beatCap);
+    for (let k = 0; k < F; k++) X[i * F + k] = sv[k];
+    lab[i] = rightReading(H.list[i], tracks, row.truth); any += lab[i];
+    mi[i] = H.list[i].mi; qpm[i] = H.list[i].qpm;
+  }
+  const out = Object.assign(base, { n: n, X: X, lab: lab, mi: mi, qpm: qpm, any: any, truthQpm: row.truth.qpm, down: down });
+  if (CONFIG.phase) {
+    /* G10a-1d: per reading, its pulse frame and the phase step's two pieces of evidence (as rec/metre.js phaseFeatures computes them) */
+    const fr = new Int32Array(n), hb = new Float32Array(n), dn = new Float32Array(n), fv = new Float64Array(F), shares = new Map();
+    const downs = row.input.beats && row.input.downbeats && row.input.downbeats.length ? row.input.downbeats : null;
+    for (let i = 0; i < n; i++) {
+      const h = H.list[i], m = MODEL.METRES[h.mi];
+      fr[i] = h.fr;
+      const slots = MODEL.features(H.frames[h.fr], h.mi, h.phi, tables, fv, true);
+      hb[i] = MODEL.harmonicContrast(m, slots, att, att.length) * Math.sqrt(Math.min(Math.max(1, H.nBeats[i]), CONFIG.beatCap || 100));
+      if (downs) {
+        const key = h.track + '|' + h.rho + '|' + h.mi;
+        if (!shares.has(key)) shares.set(key, MODEL.phaseShares(tracks[h.track], h.rho, m, downs));
+        dn[i] = MODEL.phaseDown(shares.get(key), Math.round(h.phi / MODEL.PHASE_STEP_Q), m);
+      }
+    }
+    Object.assign(out, { fr: fr, hb: hb, dn: dn });
+  }
+  return out;
+}
+
 /* G10a-1d: a performance that starts k beats after a bar line (k from the id, 1 .. beats a bar - 1): its notes before that beat, its bar lines and
    beats before it are left out, the truth is otherwise the same. A cover often starts with an intro, a pickup or in the middle of a phrase, so its
-   first onset says little about where beat 1 is; the catalogue's pieces nearly all start on a bar line or a short pickup, and a model fitted on them
-   alone gives the first onset more say than a long piece's harmony and accents (G10 section 36). null when the metre has one beat a bar or the
-   piece is too short */
+   first onset says little about where beat 1 is; the catalogue's pieces nearly all start on a bar line or a short pickup (G10 section 36). null
+   when the metre has one beat a bar or the piece is too short */
 function startsLater(row) {
   const t = row.truth;
   if (t.multi_time || !t.eighths || t.eighths.length < 8) return null;
@@ -189,54 +258,84 @@ function startsLater(row) {
   return Object.assign({}, row, { id: row.id + '|later' + k, input: input, truth: Object.assign({}, t, { bar_starts: bars }) });
 }
 
-/* ------------------------------------------------------------------ readings and labels */
-/* exactly what audio-score.js gives rec/ for a recording: its clean() and clusterNotes() */
-function skeletonInput(notes) { return AS._.clusterNotes(ATT.cleanNotes(notes)); }
-
-function rightReading(h, tracks, truth) {
-  const m = MODEL.METRES[h.mi];
-  if (m.key !== truth.time[0] + '/' + truth.time[1]) return 0;
-  if (Math.abs(Math.log(h.qpm / truth.qpm)) > Math.log(1.04)) return 0;
-  const bs = truth.bar_starts;
-  if (!bs.length) return 0;
-  let ok = 0;
-  bs.forEach(t => {
-    const q = h.rho * BEATS.position(tracks[h.track].beats, t) - h.phi, d = q / m.barQ;
-    if (Math.abs(d - Math.round(d)) * m.barQ < 0.25) ok++;
-  });
-  return ok >= 0.9 * bs.length ? 1 : 0;
-}
-
-const F = MODEL.FEATURES.length;
-/* development only (PPP_AI5A_DEV '{"dropFeatures": ["hbar"]}'): features held at 0, so their weight is 0 */
-const DROP = MODEL.FEATURES.map(f => (CONFIG.dropFeatures || []).indexOf(f) >= 0);
-/* one performance: its readings' scaled features (Float32), labels, and what evaluation needs; null when unreadable */
-function extract(row, tables) {
-  if (row.truth.multi_time) return null;
-  const att = ATT.attacksOf(skeletonInput(row.input.notes));
-  const key = row.truth.time[0] + '/' + row.truth.time[1];
-  const base = { id: row.id, ref: row.ref, metre: key, n: 0 };
-  if (att.length < 4) return base;
-  const cls = ATT.classes(att);
-  const tracks = BEATS.tracks(att, { tight: CONFIG.tight, maxTracks: CONFIG.maxTracks });
-  const audio = row.input.beats ? BEATS.audioTrack(row.input.beats, att, CONFIG.audioMaxIrregular != null ? { maxIrregular: CONFIG.audioMaxIrregular, maxExtra: CONFIG.audioMaxExtra } : null) : null;
-  if (audio) tracks.unshift(audio);
-  if (!tracks.length) return base;
-  /* the readings hear downbeats (as rec/index.js skeleton(): with downPhase also when the audio track was not usable) */
-  const down = row.input.downbeats && row.input.downbeats.length && (audio || (CONFIG.downPhase && row.input.beats)) ? 1 : 0;
-  const H = METRE.hypotheses(att, cls, tracks, tables, { sigma: CONFIG.sigma, swing: CONFIG.swing,
-    downbeats: down ? row.input.downbeats : null, downPhase: !!CONFIG.downPhase, metricalRho: !!CONFIG.metricalRho });
-  const n = H.list.length;
-  const X = new Float32Array(n * F), lab = new Uint8Array(n), mi = new Uint8Array(n), qpm = new Float32Array(n);
-  const sv = new Float64Array(F);
-  let any = 0;
-  for (let i = 0; i < n; i++) {
-    METRE.scaledRow(H, i, CONFIG.alpha, sv, CONFIG.beatCap);
-    for (let k = 0; k < F; k++) X[i * F + k] = DROP[k] ? 0 : sv[k];
-    lab[i] = rightReading(H.list[i], tracks, row.truth); any += lab[i];
-    mi[i] = H.list[i].mi; qpm[i] = H.list[i].qpm;
+/* G10a-1d: the phase step on one extracted performance with metre weights w: the metre model's choice bi (the convention preference added as
+   rec/metre.js choose adds it), the readings of its group (same frame, same metre) and their evidence rows */
+function phaseCase(c, w, pv) {
+  if (!c || !c.n || !c.fr) return null;
+  const sc = new Float64Array(c.n);
+  let bi = 0;
+  for (let i = 0; i < c.n; i++) {
+    let s = 0;
+    for (let k = 0; k < F; k++) s += c.X[i * F + k] * w[k];
+    if (!c.down) s += pv[c.mi[i]];
+    sc[i] = s;
+    if (s > sc[bi]) bi = i;
   }
-  return Object.assign(base, { n: n, X: X, lab: lab, mi: mi, qpm: qpm, any: any, truthQpm: row.truth.qpm, down: down });
+  /* downbeats heard by the metre model: no phase step (rec/index.js), the metre model's reading stands */
+  if (c.down) return { bi: bi, g: [bi], rows: [[0, 0, 0]], lab: [c.lab[bi]] };
+  const g = [];
+  for (let i = 0; i < c.n; i++) if (c.fr[i] === c.fr[bi] && c.mi[i] === c.mi[bi]) g.push(i);
+  return { bi: bi, g: g, rows: g.map(i => [sc[i] - sc[bi], c.hb[i], c.dn[i]]), lab: g.map(i => c.lab[i]) };
+}
+/* the phase step's choice in a case: index into g */
+function phasePick(pc, pw) {
+  let best = -Infinity, j = 0;
+  pc.g.forEach((i, x) => {
+    const r = pc.rows[x], z = pw[0] * r[0] + pw[1] * r[1] + pw[2] * r[2];
+    if (z > best + 1e-12 || (Math.abs(z - best) <= 1e-12 && i === pc.bi)) { best = z; j = x; }
+  });
+  return j;
+}
+/* the conditional logit of the right phase among the group's readings (cases whose group holds a right reading), 3 weights, Newton */
+function fitPhase(cases, l2) {
+  const use = cases.filter(pc => pc && pc.lab.some(Boolean) && pc.g.length > 1);
+  let w = [1, 0, 0];
+  const objGrad = w => {
+    let loss = 0; const g = [0, 0, 0], H = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    use.forEach(pc => {
+      const z = pc.rows.map(r => w[0] * r[0] + w[1] * r[1] + w[2] * r[2]), mx = Math.max.apply(null, z);
+      const e = z.map(v => Math.exp(v - mx)), zs = e.reduce((a, b) => a + b, 0), zr = e.reduce((a, v, x) => a + (pc.lab[x] ? v : 0), 0);
+      loss -= Math.log(zr / zs);
+      const ep = [0, 0, 0], eq = [0, 0, 0];
+      pc.rows.forEach((r, x) => { const p = e[x] / zs, q = pc.lab[x] ? e[x] / zr : 0; for (let k = 0; k < 3; k++) { ep[k] += p * r[k]; eq[k] += q * r[k]; } });
+      for (let k = 0; k < 3; k++) g[k] += ep[k] - eq[k];
+      pc.rows.forEach((r, x) => { const p = e[x] / zs; for (let k = 0; k < 3; k++) for (let l = 0; l < 3; l++) H[k * 3 + l] += p * (r[k] - ep[k]) * (r[l] - ep[l]); });
+    });
+    const N = Math.max(1, use.length);
+    return { loss: loss / N + 0.5 * l2 * w.reduce((a, x) => a + x * x, 0), g: g.map((x, k) => x / N + l2 * w[k]), H: H.map((x, k) => x / N + (k % 4 === 0 ? l2 : 0)) };
+  };
+  let cur = objGrad(w);
+  for (let it = 0; it < 50; it++) {
+    const d = solve(cur.H, cur.g.map(x => -x));
+    const slope = cur.g.reduce((a, x, k) => a + x * d[k], 0);
+    let step = 1, nw = w, next = cur;
+    for (let ls = 0; ls < 30; ls++) {
+      nw = w.map((x, k) => x + step * d[k]);
+      next = objGrad(nw);
+      if (next.loss <= cur.loss + 1e-4 * step * slope) break;
+      step *= 0.5;
+    }
+    const gain = cur.loss - next.loss;
+    w = nw; cur = next;
+    if (gain < 1e-10) break;
+  }
+  return { weights: w.map(round6), loss: round6(cur.loss), cases: use.length };
+}
+/* right (metre, tempo, bar lines) before and after the phase step; moved = cases whose phase the step changed */
+function evaluatePhase(cases, w, pw) {
+  const pv = priorVector(CONFIG.conventionPrior);
+  const r = { n: 0, rightBefore: 0, rightAfter: 0, moved: 0, groupRight: 0 };
+  cases.forEach(c => {
+    if (!c) return;
+    r.n++;
+    const pc = phaseCase(c, w, pv);
+    if (!pc) return;
+    const j = phasePick(pc, pw), b = pc.g.indexOf(pc.bi);
+    r.rightBefore += pc.lab[b]; r.rightAfter += pc.lab[j]; if (j !== b) r.moved++;
+    if (pc.lab.some(Boolean)) r.groupRight++;
+  });
+  return { n: r.n, rightBefore: round6(r.rightBefore / Math.max(1, r.n)), rightAfter: round6(r.rightAfter / Math.max(1, r.n)), moved: r.moved,
+    metreTempoRight: r.groupRight };
 }
 
 /* every row's extract(), spread over worker threads (--workers N, default the CPUs up to 8) and put back in row order: the
@@ -347,7 +446,7 @@ function evaluate(cases, w, prior) {
       for (let i = 0; i < c.n; i++) {
         let s = 0;
         for (let k = 0; k < F; k++) s += c.X[i * F + k] * w[k];
-        if (!c.down || CONFIG.downPhase) s += pv[c.mi[i]];
+        if (!c.down) s += pv[c.mi[i]];
         if (s > bs) { bs = s; bi = i; }
       }
       r.right = c.lab[bi];
@@ -396,11 +495,6 @@ async function main() {
     const ds = dataset(dir, !!given && !check, families), files = ds.files;
     const truth = readJsonl(files.truth);
     const trainRows = [].concat(...CONFIG.train.map((t, i) => readJsonl(files['train' + i]).map(r => Object.assign(r, { trainRow: i }))));
-    /* G10a-1d: CONFIG.startsLater {row, every}: every n-th performance of that training row also starts later (startsLater), as one more row */
-    if (CONFIG.startsLater) {
-      const sl = CONFIG.startsLater, base = trainRows.filter(r => r.trainRow === sl.row);
-      base.filter((r, j) => j % sl.every === 0).map(startsLater).filter(Boolean).forEach(r => trainRows.push(Object.assign(r, { trainRow: CONFIG.train.length })));
-    }
     const holdRows = [].concat(...CONFIG.holdout.map((t, i) => readJsonl(files['holdout' + i])));
     const dataSha = sha256(Object.keys(files).sort().map(k => k + ':' + sha256(fs.readFileSync(files[k]))).join('\n'));
     log('data: ' + truth.length + ' references, ' + trainRows.length + ' training and ' + holdRows.length + ' hold-out performances (' + ((Date.now() - t0) / 1000).toFixed(1) + ' s)');
@@ -408,12 +502,21 @@ async function main() {
     const train = await extractAll(trainRows, tables);
     log('readings extracted (' + ((Date.now() - t0) / 1000).toFixed(1) + ' s)');
     const f = fit(train, log);
+    /* G10a-1d: the phase step, fitted after the metre model on its choices (the training performances and the later-start ones) */
+    let phaseFit = null, laterTrain = null;
+    if (CONFIG.phase) {
+      const sl = CONFIG.phase.startsLater, row0 = trainRows.filter(r => r.trainRow === sl.row);
+      laterTrain = await extractAll(row0.filter((r, j) => j % sl.every === 0).map(startsLater).filter(Boolean)
+        .concat(trainRows.filter(r => r.input.downbeats && r.input.downbeats.length).map(r => Object.assign({}, r, { phaseOnly: true }))), tables);
+      const pv = priorVector(CONFIG.conventionPrior);
+      phaseFit = fitPhase(train.concat(laterTrain).map(c => phaseCase(c, f.weights, pv)), CONFIG.phase.l2);
+      log('phase step: ' + phaseFit.cases + ' cases, weights ' + phaseFit.weights.join(', ') + ' (' + ((Date.now() - t0) / 1000).toFixed(1) + ' s)');
+    }
     const body = Object.assign({ schema: MODEL.SCHEMA, name: NAME, version: MODEL_VERSION, features: MODEL.FEATURES, weights: f.weights,
       alpha: CONFIG.alpha, sigma: CONFIG.sigma, tight: CONFIG.tight, maxTracks: CONFIG.maxTracks },
       CONFIG.beatCap ? { beatCap: CONFIG.beatCap } : {}, CONFIG.swing && CONFIG.swing.length ? { swing: CONFIG.swing } : {},
       CONFIG.conventionPrior && Object.keys(CONFIG.conventionPrior).length ? { conventionPrior: CONFIG.conventionPrior } : {},
-      CONFIG.downPhase ? { downPhase: true } : {}, CONFIG.audioMaxIrregular != null ? { audioMaxIrregular: CONFIG.audioMaxIrregular, audioMaxExtra: CONFIG.audioMaxExtra } : {},
-      CONFIG.metricalRho ? { metricalRho: true } : {}, { tables: tables });
+      phaseFit ? { phase: { weights: phaseFit.weights, features: ['score', 'harmony', 'downbeats'], helperGate: CONFIG.phase.helperGate } } : {}, { tables: tables });
     const W = Object.assign({ sha256: sha256(JSON.stringify(body)) }, body, {
       training: { references: truth.length, holdout: 'excluded (fnv1a32(id) % 5 == 0)', performances: trainRows.length,
         sets: CONFIG.train, l2: CONFIG.l2, loss: f.loss, fitted: f.cases, data_sha256: dataSha,
@@ -423,10 +526,16 @@ async function main() {
       note: 'skeleton right = metre, quarter tempo within 4 % and >= 90 % of the bar lines; reachable = some reading of the pulse tracks is right',
       train: evaluate(train, f.weights), holdout: evaluate(hold, f.weights), cv: null, families: null };
     /* per training row (CONFIG.train): G10a-1b added a row, so the first rows alone are what ai5a-v1's numbers compare with */
-    const nRows = CONFIG.train.length + (CONFIG.startsLater ? 1 : 0);
-    if (nRows > 1) evaluation.trainByRow = Array.from({ length: nRows }, (x, i) => evaluate(train.filter((c, j) => trainRows[j].trainRow === i), f.weights));
-    /* G10a-1d: the hold-out performances without beats, starting later (never fitted) */
-    if (CONFIG.startsLater) evaluation.holdoutLater = evaluate(await extractAll(readJsonl(files.holdout0).map(startsLater).filter(Boolean), tables), f.weights);
+    if (CONFIG.train.length > 1) evaluation.trainByRow = CONFIG.train.map((t, i) => evaluate(train.filter((c, j) => trainRows[j].trainRow === i), f.weights));
+    if (phaseFit) {
+      /* G10a-1d: the phase step before -> after on every set (right = metre, tempo and 90 % of the bar lines; the metre and tempo never move) */
+      const holdLater = await extractAll(readJsonl(files.holdout0).concat(readJsonl(files.holdout1)).map(startsLater).filter(Boolean), tables);
+      const holdPhaseOnly = await extractAll(readJsonl(files.holdout1).map(r => Object.assign({}, r, { phaseOnly: true })), tables);
+      evaluation.phase = { weights: phaseFit.weights, fitted: phaseFit.cases, loss: phaseFit.loss,
+        train: evaluatePhase(train, f.weights, phaseFit.weights), trainLater: evaluatePhase(laterTrain, f.weights, phaseFit.weights),
+        holdout: evaluatePhase(hold, f.weights, phaseFit.weights), holdoutLater: evaluatePhase(holdLater, f.weights, phaseFit.weights),
+        holdoutHelperPhaseOnly: evaluatePhase(holdPhaseOnly, f.weights, phaseFit.weights) };
+    }
     if (cv) {
       /* G10a-1b: also the out-of-fold performances of the first training row (no beats) played four times in a row (long-x4)
          and, of its x/4 references, swung all through and played four times (pop-x4): a cover's length and swing on references
@@ -524,4 +633,4 @@ function mergeEval(parts, K) {
 }
 
 if (require.main === module && isMainThread) main().then(code => process.exit(code), e => { console.error(e && e.stack || e); process.exit(2); });
-module.exports = { CONFIG, extract, fit, evaluate, rightReading, skeletonInput, repeated, swungAll, startsLater };
+module.exports = { CONFIG, extract, fit, evaluate, rightReading, skeletonInput, repeated, swungAll, startsLater, phaseCase, phasePick };
