@@ -2218,6 +2218,12 @@
     "This song was converted as a piano recording (the PC worker has no song mode yet). Update the worker and convert it again.": "这首歌按钢琴演奏转换了（电脑上的 worker 还没有普通歌曲模式）。请更新 worker 后重新转换。",
     "song: separated layers": "普通歌曲：音源分离",
     "Melody · bass · accompaniment": "旋律 · 贝斯 · 伴奏",
-    "Set apart (one model only)": "暂放的音（仅一个模型听到）"
+    "Set apart (one model only)": "暂放的音（仅一个模型听到）",
+    "Melody from": "旋律来源",
+    "voice": "人声",
+    "guitar": "吉他",
+    "piano": "钢琴",
+    "synth / other instrument": "合成器 / 其他乐器",
+    "no melody line (the lead sheet finds one)": "没有旋律线（由领谱寻找）"
   }
 }
