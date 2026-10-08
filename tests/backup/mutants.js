@@ -18,16 +18,30 @@ const MUTANTS = [
   { name: 'the wipe misses ppp-media', prop: 'P5', from: "const KNOWN_DBS = ['ppp-engrave', 'ppp-media'];", to: "const KNOWN_DBS = ['ppp-engrave'];", also: [["/^ppp/i.test(d.name)", "/^ppp-engrave/i.test(d.name)"]] },
   { name: 'the wipe leaves the settings keys', prop: 'P5', from: "const pppKeys = storage => allKeys(storage).filter(k => /^ppp/i.test(k));", to: "const pppKeys = storage => allKeys(storage).filter(k => /^ppp\\.(song|library|state)/i.test(k));" },
   { name: 'the wipe says ok about a blocked database', prop: 'P5', from: "if (r.ok) report.removed.dbs++; else failed.push({ kind: 'db', name: name, why: r.why });", to: "report.removed.dbs++;" , also: [["const dl = await dbsLeft(env);", "const dl = [];"]] },
+  { name: 'the wipe leaves the session keys', prop: 'P5', from: "try { if (env.session) allKeys(env.session).filter(k => /^ppp/i.test(k)).forEach(k => env.session.removeItem(k)); } catch (e) { /* session keys are not data */ }", to: "" },
+  { name: 'the wipe leaves the language cookie', prop: 'P5', from: "try { if (env.document) env.document.cookie = 'ppp_locale=; Path=/; Max-Age=0; SameSite=Lax'; } catch (e) { /* a cookie is not data */ }", to: "" },
+  { name: 'a song whose id is a name of Object.prototype is dropped by a restore', prop: 'P7', from: "const have = Object.create(null);", to: "const have = {};" },
+  { name: 'a link that is not a web address is kept', prop: 'P8', from: "const fix = (o, k) => { if (isObj(o) && has(o, k) && !okUrl(o[k])) { o[k] = null; blanked++; } };", to: "const fix = () => {};" },
   { name: 'a refused write is not undone', prop: 'P6', from: "for (let i = Math.min(done, writes.length - 1); i >= 0; i--) {", to: "for (let i = -1; i >= 0; i--) {" }
 ];
 
-/* the source with one mutant applied; every anchor must be there */
+/* The page's own code (Piano Coach App.dc.html) that makes the restore and the delete safe for a signed-in person, for a second open tab and for a song being read.
+   Served to the real page by tests/backup-ui.test.js in place of the page: the check of that behaviour must go red. */
+const PAGE_MUTANTS = [
+  { name: 'a restore does not put the merged state to the account', from: 'const account = await this.bkPutProgress();', to: 'const account = this.state.user ? true : null;' },
+  { name: 'the other tabs ignore the signal', from: 'm.from === this._tabId || this._dead) return;', to: 'm.from === this._tabId || this._dead || true) return;' },
+  { name: 'a song being read is not asked about', from: 'bkBusyWork() { return !!(this._importCtl || this._recording); }', to: 'bkBusyWork() { return false; }' }
+];
+
+/* the source with one mutant applied; every anchor must be there. A checkout with CRLF line endings (autocrlf) is read as LF: the anchors are written with LF. */
 function applyMutant(src, m) {
-  let out = src;
+  const lf = t => String(t).split(String.fromCharCode(13, 10)).join(String.fromCharCode(10));
+  let out = lf(src);
   [[m.from, m.to]].concat(m.also || []).forEach(pair => {
-    if (out.indexOf(pair[0]) < 0) throw new Error('mutant anchor missing: ' + pair[0].slice(0, 70));
-    out = out.split(pair[0]).join(pair[1]);
+    const from = lf(pair[0]);
+    if (out.indexOf(from) < 0) throw new Error('mutant anchor missing: ' + from.slice(0, 70));
+    out = out.split(from).join(pair[1]);
   });
   return out;
 }
-module.exports = { MUTANTS, applyMutant };
+module.exports = { MUTANTS, PAGE_MUTANTS, applyMutant };

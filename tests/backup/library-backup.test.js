@@ -8,7 +8,9 @@
      P3  the backup file holds no secret of this browser (the PC code, the one before it, the guest key) and no setting
      P4  a file past a bound (inflated size, file size) or of the wrong kind is refused, and a refusal writes nothing
      P5  the wipe leaves no ppp* key and no ppp* database (ppp-media and ppp-engrave included), and reports a database another tab holds open
-     P6  a storage that refuses a write leaves the profile as it was */
+     P6  a storage that refuses a write leaves the profile as it was
+     P7  a song whose id is a name of Object.prototype ('constructor', 'toString') is kept like any other
+     P8  a link that is not a web address is taken out of the file and counted, and the file is still read */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
@@ -16,7 +18,7 @@ const path = require('path');
 const zlib = require('zlib');
 
 const SRC_PATH = path.resolve(__dirname, '..', '..', 'library-backup.js');
-const SRC = fs.readFileSync(SRC_PATH, 'utf8');
+const SRC = fs.readFileSync(SRC_PATH, 'utf8').split(String.fromCharCode(13, 10)).join(String.fromCharCode(10));      /* a CRLF checkout (autocrlf) is read as LF */
 const B = require(SRC_PATH);
 
 /* ------------------------------------------------------------------------------------------------ fakes */
@@ -204,7 +206,65 @@ async function p6(mod) {
   if (local.snapshot() !== snap) return 'a refused write left a half restore';
   return null;
 }
-const PROPS = { P1: p1, P2: p2, P3: p3, P4: p4, P5: p5, P6: p6 };
+/* the session keys and the language cookie are PPP's too: a profile with both, and a delete */
+async function p5b(mod) {
+  const st = profile(2);
+  const session = new FakeStorage();
+  session.setItem('ppp-backup-flash', '{"fresh":3}'); session.setItem('ppp-other-session', 'x'); session.setItem('__seeded', '1');
+  const doc = { _c: 'ppp_locale=ko-KR; other=1', get cookie() { return this._c; }, set cookie(v) { this._c = /^ppp_locale=;/.test(v) ? 'other=1' : v; } };
+  const rep = await mod.wipe({ storage: st, session: session, document: doc, indexedDB: new FakeIDB([]), blockedMs: 30 });
+  const left = [...session.m.keys()].filter(k => /^ppp/i.test(k));
+  if (left.length) return 'ppp session keys left: ' + left.join(',');
+  if (session.getItem('__seeded') !== '1') return 'a session key that is not ours was removed';
+  if (/ppp_locale=[^;]/.test(doc.cookie)) return 'the language cookie was not cleared: ' + doc.cookie;
+  if (!rep.ok) return 'the report is not ok: ' + JSON.stringify(rep);
+  return null;
+}
+/* song ids that are names of Object.prototype: a map looked up by id must not find them where they are not */
+async function p7(mod) {
+  const ids = ['constructor', 'toString', 'hasOwnProperty', 'valueOf', 'isPrototypeOf'];
+  const make = (own, secrets) => {
+    const st = new FakeStorage();
+    const songs = own.map((id, i) => ({ id: id, title: 'T ' + id, kind: 'musicxml', addedAt: 1 + i, lastAt: 1, prog: 0, mem: 0, measures: 4 }));
+    own.forEach(id => st.setItem('ppp.song.v1.' + id, JSON.stringify(slotFor('T ' + id, 12))));
+    st.setItem('ppp.library.v1', JSON.stringify({ songs: songs, current: 'demo', demo: null }));
+    void secrets;
+    return st;
+  };
+  const here = make(['hasOwnProperty', 'song-l9x']);
+  const there = make(ids.concat(['song-n1x']));
+  const bk = mod.build(there, {});
+  if (bk.counts.songs !== 6) return 'the backup lost a song whose id is a name of Object.prototype: ' + bk.counts.songs;
+  const keep = here.getItem('ppp.song.v1.song-l9x');
+  const r = mod.apply(bk, here, {});
+  if (!r.ok) return 'apply failed: ' + r.code;
+  const got = JSON.parse(here.getItem('ppp.library.v1')).songs.map(c => c.id).sort();
+  const want = ids.concat(['song-l9x', 'song-n1x']).sort();
+  if (JSON.stringify(got) !== JSON.stringify(want)) return 'the library holds ' + got.join(',') + ' and not ' + want.join(',');
+  for (const id of ids) if (here.getItem('ppp.song.v1.' + id) !== there.getItem('ppp.song.v1.' + id)) return 'the slot of ' + id + ' is not the backup\'s';
+  if (here.getItem('ppp.song.v1.song-l9x') !== keep) return 'a local slot changed';
+  if (r.fresh !== 5 || r.same !== 1) return 'counted ' + r.fresh + ' new and ' + r.same + ' here, not 5 and 1';
+  return null;
+}
+/* a link that is not a web address is taken out of the file, counted, and the file is still read */
+async function p8(mod) {
+  const st = profile(2);
+  const bk = mod.build(st, {});
+  bk.library.songs[0].url = 'javascript:alert(1)';
+  bk.library.songs[1].url = '';
+  bk.slots['song-t0x'].importSource = { kind: 'youtube', url: 'data:text/html,x' };
+  bk.slots['song-t1x'].score.source = { kind: 'youtube', url: 'ftp://x/y' };
+  const gz = await mod.encode(bk, {}, new Date());
+  const d = await mod.decode(gz.bytes, {});
+  if (!d.ok) return 'a file with odd links was refused: ' + d.code;
+  if (d.blanked !== 4) return 'blanked ' + d.blanked + ' links, not 4';
+  const text = JSON.stringify(d.backup);
+  if (/javascript:|data:text|ftp:\/\//.test(text)) return 'an odd link is still in the file';
+  const ok = await mod.decode((await mod.encode(mod.build(profile(2), {}), {}, new Date())).bytes, {});
+  if (!ok.ok || ok.blanked !== 0) return 'a clean file reports blanked links';
+  return null;
+}
+const PROPS = { P1: p1, P2: p2, P3: p3, P4: p4, P5: async mod => (await p5(mod)) || (await p5b(mod)), P6: p6, P7: p7, P8: p8 };
 
 /* ------------------------------------------------------------------------------------------------ the real module holds every property */
 for (const name of Object.keys(PROPS)) {
@@ -281,10 +341,6 @@ test('validate refuses a file the page could not have made', () => {
   assert.equal(v(o => { o.slots['song-t0x'] = 5; }).code, 'bad-slot');
   assert.equal(v(o => { o.slots['song-t0x'].score = { measures: 1 }; }).code, 'bad-slot');
   assert.equal(v(o => { o.library = []; }).code, 'bad-shape');
-  assert.equal(v(o => { o.library.songs[0].url = 'javascript:alert(1)'; }).code, 'bad-shape');
-  assert.equal(v(o => { o.slots['song-t0x'].importSource = { kind: 'youtube', url: 'data:text/html,x' }; }).code, 'bad-shape');
-  assert.equal(v(o => { o.slots['song-t0x'].score.source = { url: 'javascript:1' }; }).code, 'bad-shape');
-  assert.equal(v(o => { o.library.songs[0].url = 'https://www.youtube.com/watch?v=abcdefghijk'; }).ok, true);
   assert.equal(v(o => { o.library.songs = new Array(B.LIMITS.songs + 1).fill(0); }).code, 'too-many-songs');
   assert.equal(v(o => { o.slots['song-t0x'].history = JSON.parse('{"__proto__":{"x":1}}'); }).code, 'unsafe-key');
   assert.equal(v(o => { let d = o.slots['song-t0x']; for (let i = 0; i < B.LIMITS.depth + 5; i++) { d.deep = {}; d = d.deep; } }).code, 'too-complex');
@@ -406,4 +462,20 @@ test('the flash message crosses one reload and is read once', () => {
   B.flashSet(s, { n: 3 });
   assert.deepEqual(B.flashTake(s), { n: 3 });
   assert.equal(B.flashTake(s), null);
+});
+
+test('a write that fails for another reason than a full storage is reported as "write", and undone', () => {
+  const other = profile(4, { prefix: 'song-w', secrets: false });
+  const bk = B.build(other, {});
+  const local = profile(1, { prefix: 'song-v' });
+  const snap = local.snapshot();
+  const set = local.setItem.bind(local);
+  local.setItem = (k, v) => { if (/song-w2x$/.test(k)) throw new Error('boom'); return set(k, v); };
+  const r = B.apply(bk, local, {});
+  assert.equal(r.ok, false); assert.equal(r.code, 'write');
+  assert.equal(local.snapshot(), snap);
+});
+
+test('library-backup.js never touches the network', () => {
+  assert.doesNotMatch(SRC.replace(/\/\*[\s\S]*?\*\//g, ''), /\bfetch\s*\(|XMLHttpRequest|sendBeacon|WebSocket|navigator\./);
 });

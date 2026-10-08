@@ -216,7 +216,7 @@
     const obj = parse(s);
     if (!isObj(obj)) return { ok: false, code: 'not-json' };
     const v = validate(obj);
-    return v.ok ? { ok: true, backup: obj, exportedAt: obj.exportedAt } : { ok: false, code: v.code };
+    return v.ok ? { ok: true, backup: obj, exportedAt: obj.exportedAt, blanked: sanitize(obj) } : { ok: false, code: v.code };
   }
 
   /* ---------------------------------------------------------------- validate */
@@ -255,12 +255,11 @@
     if (b.library.songs.length > LIMITS.songs) return { ok: false, code: 'too-many-songs' };
     if (has(b, 'state') && b.state !== null && !isObj(b.state)) return { ok: false, code: 'bad-shape' };
     if (b.library.demo != null && !isObj(b.library.demo)) return { ok: false, code: 'bad-shape' };
-    const seen = {};
+    const seen = Object.create(null);
     for (const card of b.library.songs) {
       if (!isObj(card) || !isSongId(card.id) || has(seen, card.id)) return { ok: false, code: 'bad-id' };
       seen[card.id] = true;
       if (card.title != null && (typeof card.title !== 'string' || card.title.length > LIMITS.title)) return { ok: false, code: 'bad-shape' };
-      if (!okUrl(card.url)) return { ok: false, code: 'bad-shape' };
     }
     for (const id of Object.keys(b.slots)) {
       if (id !== 'demo' && !isSongId(id)) return { ok: false, code: 'bad-id' };
@@ -269,12 +268,20 @@
       if (slot.score != null) {
         const sc = slot.score;
         if (!isObj(sc) || !Array.isArray(sc.measures) || !Array.isArray(sc.notes)) return { ok: false, code: 'bad-slot' };
-        if (isObj(sc.source) && !okUrl(sc.source.url)) return { ok: false, code: 'bad-shape' };
       } else if (id !== 'demo') return { ok: false, code: 'bad-slot' };
-      if (isObj(slot.importSource) && !okUrl(slot.importSource.url)) return { ok: false, code: 'bad-shape' };
       if (JSON.stringify(slot).length > LIMITS.slot) return { ok: false, code: 'slot-too-big' };
     }
     return { ok: true };
+  }
+
+  /* A link in a card or a slot that is not a web address (empty, javascript:, data:, ftp:) is taken out of the file - the field becomes null - and counted; the rest of
+     the file is read as it is. The page opens a song's video from such a link, so it is never kept; it is no reason to refuse a whole library. -> the number taken out */
+  function sanitize(b) {
+    let blanked = 0;
+    const fix = (o, k) => { if (isObj(o) && has(o, k) && !okUrl(o[k])) { o[k] = null; blanked++; } };
+    b.library.songs.forEach(c => fix(c, 'url'));
+    Object.keys(b.slots).forEach(id => { const s = b.slots[id]; fix(s.importSource, 'url'); if (isObj(s.score)) fix(s.score.source, 'url'); });
+    return blanked;
   }
 
   /* ---------------------------------------------------------------- merging progress (section 7.5) */
@@ -413,11 +420,11 @@
   function plan(bk, storage, opts) {
     opts = opts || {};
     const lib = readLibrary(storage);
-    const localCards = {};
+    const localCards = Object.create(null);          /* no prototype: 'constructor' and 'toString' are ids a song may have */
     lib.songs.forEach(c => { if (isObj(c) && typeof c.id === 'string') localCards[c.id] = c; });
     const out = { total: bk.library.songs.length, skipped: 0, fresh: [], same: [], copies: [], items: [], demo: null };
-    const idMap = {};
-    const used = {};
+    const idMap = Object.create(null);
+    const used = Object.create(null);
     Object.keys(localCards).forEach(id => { used[id] = true; });
     bk.library.songs.forEach(card => {
       const slot = has(bk.slots, card.id) ? bk.slots[card.id] : null;
@@ -470,7 +477,7 @@
     const put = (k, text) => { if (getItem(storage, k) !== text) writes.push([k, text]); };
     const copyTitle = typeof opts.copyTitle === 'function' ? opts.copyTitle : (t => t + ' (backup)');
     const date = typeof bk.exportedAt === 'string' && /^\d{4}-\d{2}-\d{2}/.test(bk.exportedAt) ? bk.exportedAt.slice(0, 10) : '';
-    const mergedFor = {};                           /* id -> merged slot, for the open song's mirror in the state */
+    const mergedFor = Object.create(null);          /* id -> merged slot, for the open song's mirror in the state */
     const added = [];
 
     p.items.forEach(it => {
@@ -497,7 +504,7 @@
       ['prog', 'mem', 'lastAt'].forEach(k => { if (isNum(it.card[k]) && (!isNum(o[k]) || it.card[k] > o[k])) o[k] = it.card[k]; });
       return o;
     });
-    const have = {};
+    const have = Object.create(null);
     songs.forEach(c => { if (isObj(c)) have[c.id] = true; });
     p.items.forEach(it => {
       if (it.kind === 'same' || have[it.id]) return;
@@ -616,7 +623,7 @@
 
   return Object.freeze({
     FORMAT, VERSION, LIMITS, KEY, STATE_FIELDS,
-    build, encode, decode, validate, plan, apply, summary, wipe, fileName,
+    build, encode, decode, validate, sanitize, plan, apply, summary, wipe, fileName,
     mergeHistory, mergeMemory, mergeSecs, mergeSlot, mergeState, mergeCourse,
     scoreKeyOf, copyIdOf, pppKeys, flashSet, flashTake
   });

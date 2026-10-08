@@ -8,11 +8,18 @@
      - into a profile that has other songs: none is removed or changed; the same id with another score keeps both (the copy has the visible Korean suffix) and a
        second restore adds nothing; a song with the same score gets the progress merged;
      - refusals that change nothing: a PNG, foreign JSON, a 25 MB file, a small gzip that inflates past the bound (zip bomb), a newer version, a corrupt gzip, a
-       __proto__ key, a javascript: link;
+       __proto__ key; a link that is not a web address (javascript:, an empty one) is taken out of the file, counted and shown, and the file is restored;
      - delete everything: the first question cancels, the second (count of songs, "Back up first" which really downloads, a typed word) cancels, a wrong word keeps
        the button off, the right word deletes: 0 ppp* localStorage keys and 0 ppp* IndexedDB databases are read BEFORE the reload (the reload is held back), then the
        reload: nothing of the old data comes back; a database another tab holds open is reported (and the retry works once it is closed).
-   And for each safety property a MUTANT of library-backup.js is served to the page (tests/backup/mutants.js): the same check must go red. */
+     - a SIGNED-IN person (the account's /api/auth/me and /api/progress are stubbed): a restore puts the merged state to the account before it reloads (else the
+       account's old progress would come back at the next load), says so plainly when it could not; a delete clears this device only, says that the account keeps its
+       progress, and calls the server for nothing;
+     - a SECOND open tab: it freezes when the first starts a delete or a restore and reloads when it is done (or shows a banner while a song is being read), so
+       closing it brings nothing back; the tab that acts refuses to start while a song is being read or a recording waits to be checked;
+     - the questions are dialogs (role, name, focus in and back, Escape), the result is a live region, the typed-word field has a name.
+   And for each safety property a MUTANT of library-backup.js (and, for the account, the tabs and the song being read, of the page itself) is served to the page
+   (tests/backup/mutants.js): the same check must go red. */
 'use strict';
 const puppeteer = require('puppeteer');
 const fs = require('fs');
@@ -20,11 +27,12 @@ const os = require('os');
 const path = require('path');
 const zlib = require('zlib');
 const { startServer } = require('./serve-free');
-const { MUTANTS, applyMutant } = require('./backup/mutants.js');
+const { MUTANTS, PAGE_MUTANTS, applyMutant } = require('./backup/mutants.js');
 
 const REPO = path.resolve(__dirname, '..');
 const KO = JSON.parse(fs.readFileSync(path.join(REPO, 'i18n', 'ko-KR.json'), 'utf8')).content;
 const MODULE_SRC = fs.readFileSync(path.join(REPO, 'library-backup.js'), 'utf8');
+const APP_SRC = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const errors = [];
 const ok = (name, cond, detail) => {
@@ -66,6 +74,7 @@ const GENERIC = 'That file is not a PPP backup, or it is damaged. Nothing was ch
       page.on('pageerror', e => pageErrors.push('[pageerror] ' + e.message));
       await page.setViewport({ width: 1100, height: 1400 });
       await page.evaluateOnNewDocument(cfg => {
+        if (cfg.noBc) { try { window.BroadcastChannel = undefined; } catch (e) { /* kept */ } }
         /* every file the page offers as a download is kept here: its name and its bytes */
         if (!window.__dl) {
           window.__dl = [];
@@ -84,7 +93,7 @@ const GENERIC = 'That file is not a PPP backup, or it is damaged. Nothing was ch
         }
         /* a profile is made once: a reload (after a restore, after a delete) must not make it again */
         try {
-          if (sessionStorage.getItem('__seeded')) return;
+          if (cfg.noSeed || sessionStorage.getItem('__seeded')) return;
           sessionStorage.setItem('__seeded', '1');
           localStorage.setItem('ppp-locale', cfg.locale);
           localStorage.setItem('ppp-guest', '1');
@@ -99,14 +108,24 @@ const GENERIC = 'That file is not a PPP backup, or it is damaged. Nothing was ch
             localStorage.setItem('ppp.cdn', '1');
           }
         } catch (e) { /* none */ }
-      }, { locale: o.locale || 'ko-KR', slots: o.slots || null, cards: o.cards || null, secrets: o.secrets || null });
+      }, { locale: o.locale || 'ko-KR', slots: o.slots || null, cards: o.cards || null, secrets: o.secrets || null, noSeed: o.seed === false, noBc: !!o.noBc });
       /* one handler for every request of the page: a mutant of library-backup.js in its place, and the reload held back when a check wants to read the page first */
-      const ctl = page.__ctl = { src: o.mutant ? applyMutant(MODULE_SRC, o.mutant) : null, hold: false, held: 0 };
+      const ctl = page.__ctl = { src: o.mutant ? applyMutant(MODULE_SRC, o.mutant) : null, html: o.pageMutant ? applyMutant(APP_SRC, o.pageMutant) : null, hold: false, held: 0, account: o.account || null, api: [] };
       await page.setRequestInterception(true);
       page.on('request', r => {
-        if (ctl.src && /\/library-backup\.js(\?|$)/.test(r.url())) r.respond({ status: 200, contentType: 'text/javascript', body: ctl.src });
-        else if (ctl.hold && r.isNavigationRequest() && r.frame() === page.mainFrame()) { ctl.held++; r.abort('aborted'); }
-        else r.continue();
+        let u;
+        try { u = new URL(r.url()); } catch (e) { r.continue(); return; }
+        if (u.pathname.startsWith('/api/')) ctl.api.push(r.method() + ' ' + u.pathname);
+        const json = (status, body) => r.respond({ status: status, contentType: 'application/json', body: JSON.stringify(body) });
+        if (ctl.hold && r.isNavigationRequest() && r.frame() === page.mainFrame()) { ctl.held++; r.abort('aborted'); }
+        else if (ctl.src && /\/library-backup\.js$/.test(u.pathname)) r.respond({ status: 200, contentType: 'text/javascript', body: ctl.src });
+        else if (ctl.html && r.isNavigationRequest() && /Piano( |%20)Coach/.test(u.pathname)) r.respond({ status: 200, contentType: 'text/html; charset=utf-8', body: ctl.html });
+        else if (ctl.account && u.pathname === '/api/auth/me') json(200, { id: 'u-test', email: 't@example.com', displayName: 'T' });
+        else if (ctl.account && u.pathname === '/api/progress' && r.method() === 'GET') json(200, ctl.account.payload ? { payload: ctl.account.payload } : {});
+        else if (ctl.account && u.pathname === '/api/progress' && r.method() === 'PUT') {
+          if (ctl.account.putStatus === 200 || !ctl.account.putStatus) { try { ctl.account.payload = JSON.parse(r.postData() || '{}').payload; } catch (e) { /* kept */ } json(200, { ok: true }); }
+          else json(ctl.account.putStatus, { error: 'no' });
+        } else r.continue();
       });
       await page.goto(srv.url, { waitUntil: 'networkidle2', timeout: 60000 });
       await ready(page);
@@ -217,7 +236,7 @@ const GENERIC = 'That file is not a PPP backup, or it is damaged. Nothing was ch
     await gotoSettings(A);
     const sec = await text(A, '[data-backup-section]');
     ok('Settings has the "My data" section in Korean', !!sec && sec.includes(LABELS.title) && sec.includes(LABELS.make) && sec.includes(LABELS.pick) && sec.includes(LABELS.wipe), sec && sec.slice(0, 80));
-    ok('it says that the secrets are not in the file (Korean)', !!sec && sec.includes(ko('One file with your songs and your practice progress. It does not contain your PC link code, your link-sharing key or any password, and not the videos you uploaded.')));
+    ok('it says that the secrets are not in the file (Korean)', !!sec && sec.includes(ko('One file with your songs and your practice progress. It holds song titles, file names, YouTube links and the names of people whose shared scores you added, so keep it private. It does not contain your PC link code, your link-sharing key or any password, and not the videos you uploaded.')));
     ok('"no backup yet" before the first backup', (await text(A, '[data-backup-last]')) === LABELS.last0);
     const before = await dump(A);
     ok('the planted profile is what the page holds (30 slots, the secrets, the library)', songKeys(before).length === 30 && !!before['ppp.pclink.v1'] && !!before['ppp-guest-key'] && JSON.parse(before['ppp.library.v1']).songs.length === 30);
@@ -342,7 +361,6 @@ const GENERIC = 'That file is not a PPP backup, or it is damaged. Nothing was ch
         corrupt: { buf: (() => { const g = zlib.gzipSync(Buffer.from(JSON.stringify({ app: 'ppp-library', v: 1, pad: 'x'.repeat(5000) }))); return g.subarray(0, g.length - 20); })(), msg: ko(GENERIC), label: 'a cut-off gzip' },
         newer: { buf: Buffer.from(JSON.stringify({ app: 'ppp-library', v: 2, library: { songs: [] }, slots: {} })), msg: ko('That backup was made by a newer version of PPP. Update PPP and try again. Nothing was changed.'), label: 'a newer version' },
         proto: { buf: Buffer.from('{"app":"ppp-library","v":1,"library":{"songs":[]},"slots":{"demo":{"score":null,"__proto__":{"polluted":1}}}}'), msg: ko(GENERIC), label: 'a __proto__ key' },
-        badurl: { buf: Buffer.from(JSON.stringify({ app: 'ppp-library', v: 1, library: { songs: [{ id: 'song-x1', title: 'x', url: 'javascript:alert(1)' }] }, slots: { 'song-x1': { score: { measures: [], notes: [] } } } })), msg: ko(GENERIC), label: 'a javascript: link' },
         big: { buf: Buffer.alloc(25 * 1024 * 1024, 0x20), msg: ko('That file is too large to be a PPP backup ({{mb}} MB). Nothing was changed.', { mb: 25 }), label: 'a 25 MB file' },
         bomb: { buf: zlib.gzipSync(Buffer.alloc(50 * 1024 * 1024, 0x20), { level: 9 }), msg: ko('That file expands to far more than a backup can hold, so it was not opened. Nothing was changed.'), label: 'a small gzip that inflates to 50 MB' }
       };
@@ -381,6 +399,8 @@ const GENERIC = 'That file is not a PPP backup, or it is damaged. Nothing was ch
       try {
         const page = page0.page = await openProfile(ctx, { cards: PLANT.cards, slots: PLANT.slots, secrets: SECRET, mutant: mutant });
         await plantDatabases(page);
+        await page.evaluate(() => { sessionStorage.setItem('ppp-test-session', 'x'); });
+        if (!/ppp_locale=/.test(await page.evaluate(() => document.cookie))) v.push('the test profile has no language cookie to delete');
         await gotoSettings(page);
         const pre = await dump(page), preDbs = await dbNames(page);
         if (full) {
@@ -426,6 +446,8 @@ const GENERIC = 'That file is not a PPP backup, or it is damaged. Nothing was ch
         if (dbs.length) v.push('ppp* IndexedDB databases left: ' + dbs.join(','));
         const ss = await page.evaluate(() => Object.keys(sessionStorage).filter(k => /^ppp/i.test(k)));
         if (ss.length) v.push('ppp* session keys left: ' + ss.join(','));
+        const cookie = await page.evaluate(() => document.cookie);
+        if (/ppp_locale=/.test(cookie)) v.push('the language cookie is still there: ' + cookie);
         if (full) {
           ok('the page says it was deleted (Korean) and, read before the reload: 0 ppp* localStorage keys', done === DELETED && keys.length === 0, keys.join(','));
           ok('read before the reload: 0 ppp* IndexedDB databases (indexedDB.databases())', dbs.length === 0, dbs.join(','));
@@ -481,6 +503,286 @@ const GENERIC = 'That file is not a PPP backup, or it is damaged. Nothing was ch
       await ctx.close();
     }
 
+    /* ------------------------------------------------------------------------------------------ 7. odd links, a song with nothing behind it, a write that fails */
+    console.log('\n── 7. a link that is not a web address, a song with nothing behind it, a write that fails ──');
+    {
+      const bk2 = JSON.parse(JSON.stringify(bk));
+      const firstId = bk2.library.songs[0].id, secondId = bk2.library.songs[1].id;
+      bk2.library.songs[0].url = 'javascript:alert(1)';
+      bk2.slots[secondId].importSource = { kind: 'youtube', url: '' };
+      bk2.library.songs.push({ id: 'song-ghost1', title: 'Ghost', kind: 'musicxml', addedAt: 1, lastAt: 1, prog: 0, mem: 0, measures: 3 });     /* a card with no slot in the file */
+      const f = path.join(TMP, 'odd-links.ppp-library.json');
+      fs.writeFileSync(f, JSON.stringify(bk2));
+      const ctx = await newContext();
+      const page = await openProfile(ctx, {});
+      await gotoSettings(page);
+      await chooseFile(page, f);
+      ok('a file with odd links and a card with no slot is read: a plan panel appears (it is not refused)', (await planOrMsg(page)) === 'plan', await msgOf(page));
+      ok('the counts: 31 songs in the file, 30 new', (await text(page, '[data-backup-plan-counts]')) === ko(COUNTS, { total: 31, fresh: 30, same: 0, copies: 0 }), await text(page, '[data-backup-plan-counts]'));
+      ok('the links taken out and the song skipped are said (Korean)', (await text(page, '[data-backup-plan-blanked]')) === ko('Links that were not web addresses were left out: {{n}}.', { n: 2 }) && (await text(page, '[data-backup-plan-skipped]')) === ko('Songs that could not be read and were skipped: {{n}}.', { n: 1 }), (await text(page, '[data-backup-plan-blanked]')) + ' | ' + (await text(page, '[data-backup-plan-skipped]')));
+      await restoreNow(page);
+      const d = await dump(page);
+      const lib = JSON.parse(d['ppp.library.v1']).songs;
+      ok('after the restore the odd links are null and the rest of the songs is there', lib.find(c => c.id === firstId).url === null && JSON.parse(d['ppp.song.v1.' + secondId]).importSource.url === null && !/javascript:/.test(JSON.stringify(d)) && songKeys(d).length === 30);
+      ok('the card with no slot was not added', !lib.some(c => c.id === 'song-ghost1'));
+      const toast = await waitFor(() => page.evaluate(t => document.body.innerText.includes(t), ko('Songs that could not be read and were skipped: {{n}}.', { n: 1 }) + ' ' + ko('Links that were not web addresses were left out: {{n}}.', { n: 2 })), 15000);
+      ok('the message after the reload says both, with the counts', !!toast);
+      await ctx.close();
+    }
+    {
+      /* a card whose slot was never written is left alone at boot for a minute: the backup leaves it out and says so */
+      const ghost = { id: 'song-ghost2', title: 'Ghost', kind: 'musicxml', addedAt: Date.now(), lastAt: 1, prog: 0, mem: 0, measures: 3 };
+      const ctx = await newContext();
+      const page = await openProfile(ctx, { cards: PLANT.locals.concat([ghost]), slots: PLANT.localSlots });
+      await gotoSettings(page);
+      await click(page, '[data-backup-make]');
+      const dl = await download(page, 0);
+      const m = await msgOf(page);
+      ok('a backup that had to leave a song out says so, in the result (Korean)', !!dl && m === ko('Backup saved as {{file}}. Songs in it: {{n}}. Songs left out because they could not be read: {{skipped}}.', { file: dl.name, n: 5, skipped: 1 }) && (await page.evaluate(() => document.querySelector('[data-backup-msg]').getAttribute('data-kind'))) === 'bad', m);
+      ok('and the file counts them: 5 songs, 1 skipped', !!dl && readBackup(dl.bytes).library.songs.length === 5 && readBackup(dl.bytes).counts.skipped === 1);
+      await ctx.close();
+    }
+    {
+      /* a write that fails for another reason than a full storage is not "a damaged file", and leaves nothing half done */
+      const ctx = await newContext();
+      const page = await openProfile(ctx, { cards: PLANT.locals, slots: PLANT.localSlots });
+      const other = await openProfile(ctx, { seed: false });                      /* a second tab: told to stop writing, and told that nothing happened */
+      await gotoSettings(page);
+      await chooseFile(page, FILE);
+      await planOrMsg(page);
+      const pre = stable(await dump(page));
+      await page.evaluate(() => { const orig = Storage.prototype.setItem; Storage.prototype.setItem = function (k) { if (/ppp\.song\.v1\.song-pa5$/.test(k)) throw new Error('boom'); return orig.apply(this, arguments); }; });
+      await click(page, '[data-backup-restore-yes]');
+      const m = await waitFor(async () => { const t = await msgOf(page); return t || null; }, 8000);
+      ok('a refused write is said as it is (Korean), not as a damaged file', m === ko('The backup could not be written to this browser’s storage. Nothing was changed.'), m);
+      ok('and nothing was left half done', stable(await dump(page)) === pre);
+      await sleep(500);
+      ok('the other tab, which was told to stop writing, writes again once it is told that nothing happened (no banner, not frozen)', (await other.evaluate(() => PPP.app._frozen === false)) && !(await exists(other, '[data-tab-note]')));
+      await ctx.close();
+    }
+
+    /* ------------------------------------------------------------------------------------------ 8. a signed-in person */
+    console.log('\n── 8. a signed-in person: a restore tells the account, a delete leaves it alone ──');
+    const FILE_XP = path.join(TMP, 'xp.ppp-library.json');
+    { const b = JSON.parse(JSON.stringify(bk)); b.state = { xp: 9000, minutes: 400, streak: 9 }; fs.writeFileSync(FILE_XP, JSON.stringify(b)); }
+    const stateXp = async page => { try { return JSON.parse((await dump(page))['ppp.state.v2']).xp; } catch (e) { return undefined; } };
+    async function accountRestore(pageMutant, putStatus) {
+      const v = [];
+      const ctx = await newContext();
+      const acc = { payload: { xp: 1500, minutes: 20, streak: 2 }, putStatus: putStatus || 200 };
+      try {
+        const page = await openProfile(ctx, { cards: PLANT.locals, slots: PLANT.localSlots, account: acc, pageMutant: pageMutant });
+        if (!(await waitFor(async () => (await stateXp(page)) === 1500, 15000))) v.push('the page did not take the account\'s progress at load');
+        await gotoSettings(page);
+        await chooseFile(page, FILE_XP);
+        if ((await planOrMsg(page)) !== 'plan') { v.push('no plan panel: ' + (await msgOf(page))); return { v, ctx }; }
+        const puts0 = page.__ctl.api.filter(x => x === 'PUT /api/progress').length;
+        const navigated = page.waitForNavigation({ waitUntil: 'load', timeout: 30000 }).catch(() => null);
+        await click(page, '[data-backup-restore-yes]');
+        const said = await waitFor(async () => { const t = await msgOf(page); return t && t.startsWith(ko('Restored. The page reloads now.')) ? t : null; }, 8000);
+        await navigated;
+        await ready(page);
+        await waitFor(async () => (await stateXp(page)) !== undefined, 8000);
+        const xp = await stateXp(page);
+        const puts = page.__ctl.api.filter(x => x === 'PUT /api/progress').length - puts0;
+        return { v, ctx, page, acc, said, xp, puts };
+      } catch (e) { v.push('threw: ' + e.message); return { v, ctx }; }
+    }
+    {
+      const r = await accountRestore(null, 200);
+      if (r.xp !== 9000) r.v.push('after the reload the xp is ' + r.xp + ', not the restored 9000 (the account\'s old progress came back)');
+      if (r.acc && r.acc.payload.xp !== 9000) r.v.push('the account holds xp ' + r.acc.payload.xp + ', not 9000');
+      ok('signed in: the restored xp is in the account and in the page after the reload (not undone by the load)', r.v.length === 0, r.v.join('; '));
+      ok('the page said "restored" with nothing about the account', r.said === ko('Restored. The page reloads now.'), r.said);
+      await r.ctx.close();
+    }
+    {
+      const r = await accountRestore(null, 500);
+      ok('signed in, the account cannot be updated: the message says so plainly (Korean) before the reload', r.said === ko('Restored. The page reloads now.') + ' ' + ko('Your account could not be updated, so progress kept in your account may come back as it was.'), r.said);
+      ok('and the account\'s old progress is what comes back, as the message said (xp 1500)', r.xp === 1500, String(r.xp));
+      ok('the toast after the reload says it again', !!(await waitFor(() => r.page.evaluate(t => document.body.innerText.includes(t), ko('Your account could not be updated, so progress kept in your account may come back as it was.')), 10000)));
+      await r.ctx.close();
+    }
+    async function accountDelete() {
+      const v = [];
+      const ctx = await newContext();
+      const acc = { payload: { xp: 1500, minutes: 20, streak: 2 }, putStatus: 200 };
+      let page = null;
+      try {
+        page = await openProfile(ctx, { cards: PLANT.cards, slots: PLANT.slots, secrets: SECRET, account: acc });
+        if (!(await waitFor(async () => (await stateXp(page)) === 1500, 15000))) v.push('the page did not take the account\'s progress at load');
+        await gotoSettings(page);
+        const row = await text(page, '[data-wipe-account]');
+        const line = ko('You are signed in. Progress kept in your account stays there and comes back here after the reload; only this device is cleared.');
+        if (row !== line) v.push('the row does not say that the account keeps its progress: ' + row);
+        await click(page, '[data-wipe-start]');
+        await page.waitForSelector('[data-wipe-step1]', { timeout: 5000 });
+        if ((await text(page, '[data-wipe-account1]')) !== line) v.push('the first question does not say it');
+        await click(page, '[data-wipe-next]');
+        await page.waitForSelector('[data-wipe-step2]', { timeout: 5000 });
+        if ((await text(page, '[data-wipe-account2]')) !== line) v.push('the second question does not say it');
+        await page.type('[data-wipe-input]', WORD);
+        const ctl = holdReloads(page);
+        const api0 = ctl.api.length;
+        await click(page, '[data-wipe-go]');
+        const said = await waitFor(async () => { const m = await msgOf(page); return m && m !== ko('Deleting…') ? m : null; }, 25000);
+        if (said !== ko('Everything on this device was deleted. Progress kept in your account stays, and comes back when the page reloads. The page reloads now.')) v.push('the result does not say that the account keeps its progress: ' + said);
+        const calls = ctl.api.slice(api0).filter(x => !/^GET /.test(x));
+        if (calls.length) v.push('the delete called the server: ' + calls.join(', '));
+        const keys = pppKeys(await dump(page)), dbs = (await dbNames(page)).filter(n => /^ppp/i.test(n));
+        if (keys.length) v.push('ppp* keys left: ' + keys.join(','));
+        if (dbs.length) v.push('ppp* databases left: ' + dbs.join(','));
+        ctl.hold = false;
+        await page.reload({ waitUntil: 'networkidle2' });
+        await readyOrGate(page);
+        const back = await waitFor(async () => (await stateXp(page)) === 1500, 10000);
+        if (!back) v.push('the account\'s progress did not come back after the reload');
+        if (songKeys(await dump(page)).length) v.push('a song came back');
+        return { v, ctx };
+      } catch (e) { v.push('threw: ' + e.message); return { v, ctx }; }
+    }
+    {
+      const r = await accountDelete();
+      ok('signed in: the delete says in three places and in the result that the account keeps its progress, calls the server for nothing, and the account\'s progress comes back with the reload', r.v.length === 0, r.v.join('; '));
+      await r.ctx.close();
+    }
+
+    /* ------------------------------------------------------------------------------------------ 9. a second open tab */
+    console.log('\n── 9. a second open tab cannot undo a delete or a restore ──');
+    async function twoTabs(kind, o) {
+      o = o || {};
+      const v = [];
+      const ctx = await newContext();
+      try {
+        const cards = PLANT.locals.slice(), slots = Object.assign({}, PLANT.localSlots);
+        cards.push(PLANT.cards.find(c => c.id === 'song-pa3')); slots['song-pa3'] = PLANT.none['song-pa3'];
+        const tab1 = await openProfile(ctx, { cards: cards, slots: slots, secrets: SECRET, noBc: o.noBc, pageMutant: o.pageMutant });
+        const tab2 = await openProfile(ctx, { seed: false, noBc: o.noBc, pageMutant: o.pageMutant });
+        await gotoSongs(tab2);
+        await click(tab2, '[data-open-song="song-pa3"]');
+        if (!(await waitFor(async () => { try { return JSON.parse((await dump(tab2))['ppp.state.v2']).songId === 'song-pa3'; } catch (e) { return false; } }, 15000))) v.push('tab 2 did not open the song');
+        /* tab 2 keeps writing while it is open, as a page being played does */
+        await tab2.evaluate(() => { window.__alive = 'yes'; window.__tick = setInterval(() => PPP.app.setState({ tickTest: Date.now() }), 100); });
+        if (o.busy2) await tab2.evaluate(() => { PPP.app._importCtl = { cancelled: false }; });
+        await gotoSettings(tab1);
+        if (kind === 'delete') {
+          await toSecondQuestion(tab1);
+          await tab1.type('[data-wipe-input]', WORD);
+          holdReloads(tab1);
+          await click(tab1, '[data-wipe-go]');
+          if (!(await waitFor(async () => (await msgOf(tab1)) === DELETED, 25000))) v.push('tab 1 did not finish the delete');
+        } else {
+          await chooseFile(tab1, FILE);
+          if ((await planOrMsg(tab1)) !== 'plan') v.push('tab 1 has no plan panel');
+          await restoreNow(tab1);
+        }
+        await sleep(1500);
+        let alive = null;
+        try { alive = await tab2.evaluate(() => window.__alive || null); } catch (e) { alive = 'navigating'; }
+        if (o.busy2) {
+          const banner = await text(tab2, '[data-tab-note-text]');
+          if (alive !== 'yes') v.push('tab 2 was reloaded while a song was being read in it');
+          if (banner !== ko('Your data was changed in another tab. Reload this page to see it.')) v.push('tab 2 shows no banner: ' + banner);
+          if (!(await tab2.evaluate(() => PPP.app._frozen === true))) v.push('tab 2 still writes');
+        } else if (alive === 'yes') v.push('tab 2 was not reloaded');
+        await tab2.close();                                    /* closing a tab saves what it holds: nothing of the old data may come back */
+        await sleep(800);
+        const d = await dump(tab1);
+        if (kind === 'delete') {
+          const slotKeys = songKeys(d);
+          if (slotKeys.length) v.push('song slots came back: ' + slotKeys.join(','));
+          if (d['ppp.pclink.v1'] || d['ppp-guest-key']) v.push('a secret came back');
+          let libN = 0, sid = null;
+          try { libN = JSON.parse(d['ppp.library.v1'] || '{"songs":[]}').songs.length; } catch (e) { libN = -1; }
+          try { sid = JSON.parse(d['ppp.state.v2']).songId; } catch (e) { sid = null; }
+          if (libN) v.push('the library came back with ' + libN + ' songs');
+          if (sid === 'song-pa3') v.push('the state came back with the deleted song open');
+        } else {
+          const want = JSON.parse(PLANT.slots['song-pa3']).history.byMeasure[1].attempts;
+          let got = null;
+          try { got = JSON.parse(d['ppp.song.v1.song-pa3']).history.byMeasure[1].attempts; } catch (e) { got = null; }
+          if (got !== want) v.push('the merged practice of the open song was written over: attempts ' + got + ', not ' + want);
+          if (songKeys(d).length !== 35) v.push('the restore holds ' + songKeys(d).length + ' song slots, not 35');
+        }
+        return { v, ctx };
+      } catch (e) { v.push('threw: ' + e.message); return { v, ctx }; }
+    }
+    for (const [kind, o, label] of [['delete', {}, 'a delete'], ['restore', {}, 'a restore'], ['delete', { noBc: true }, 'a delete, with no BroadcastChannel (the storage event)'], ['delete', { busy2: true }, 'a delete, tab 2 reading a song']]) {
+      const r = await twoTabs(kind, o);
+      ok('a second open tab (writing, on a song) cannot undo ' + label + ': it freezes, reloads or warns, and closing it brings nothing back', r.v.length === 0, r.v.join('; '));
+      await r.ctx.close();
+    }
+
+    /* ------------------------------------------------------------------------------------------ 10. a song being read */
+    console.log('\n── 10. a song being read or a recording waiting: asked about, not lost ──');
+    async function busyCheck(pageMutant) {
+      const v = [];
+      const ctx = await newContext();
+      try {
+        const page = await openProfile(ctx, { cards: PLANT.locals, slots: PLANT.localSlots, pageMutant: pageMutant });
+        await gotoSettings(page);
+        await page.evaluate(() => { window.__alive = 'yes'; PPP.app._importCtl = { cancelled: false }; });
+        await click(page, '[data-wipe-start]');
+        await sleep(400);
+        const m = await msgOf(page);
+        if (m !== ko('A song is being read or a recording is waiting to be checked. Finish or cancel that first, then try again.')) v.push('delete did not stop: ' + m);
+        if (await exists(page, '[data-wipe-step1]')) v.push('the first question opened while a song is being read');
+        await page.evaluate(() => { PPP.app._importCtl = null; });
+        await chooseFile(page, FILE);
+        if ((await planOrMsg(page)) !== 'plan') { v.push('no plan panel'); return { v, ctx }; }
+        await page.evaluate(() => { PPP.app._recording = { url: null }; });
+        const pre = stable(await dump(page));
+        await click(page, '[data-backup-restore-yes]');
+        await sleep(1500);
+        let alive = null;
+        try { alive = await page.evaluate(() => window.__alive || null); } catch (e) { alive = 'gone'; }
+        if (alive !== 'yes') v.push('the page reloaded while a recording was waiting');
+        else {
+          if ((await msgOf(page)) !== ko('A song is being read or a recording is waiting to be checked. Finish or cancel that first, then try again.')) v.push('restore did not stop: ' + (await msgOf(page)));
+          if (stable(await dump(page)) !== pre) v.push('restore changed the storage');
+          await page.evaluate(() => { PPP.app._recording = null; });
+        }
+        return { v, ctx };
+      } catch (e) { v.push('threw: ' + e.message); return { v, ctx }; }
+    }
+    {
+      const r = await busyCheck(null);
+      ok('while a song is being read the delete does not start; while a recording waits the restore does not run (Korean message, nothing changed, no reload)', r.v.length === 0, r.v.join('; '));
+      await r.ctx.close();
+    }
+
+    /* ------------------------------------------------------------------------------------------ 11. the questions as dialogs */
+    console.log('\n── 11. the questions are dialogs: name, focus, Escape, a live result ──');
+    {
+      const ctx = await newContext();
+      const page = await openProfile(ctx, { cards: PLANT.locals, slots: PLANT.localSlots });
+      await gotoSettings(page);
+      const active = () => page.evaluate(() => { const a = document.activeElement; return a ? (a.getAttribute('data-wipe-cancel') !== null ? 'wipe-cancel' : a.getAttribute('data-wipe-input') !== null ? 'wipe-input' : a.getAttribute('data-wipe-start') !== null ? 'wipe-start' : a.getAttribute('data-backup-restore-no') !== null ? 'restore-no' : a.getAttribute('data-backup-file') !== null ? 'backup-file' : a.tagName) : null; });
+      const attr = (sel, name) => page.evaluate((s, n) => { const e = document.querySelector(s); return e ? e.getAttribute(n) : null; }, sel, name);
+      ok('the result line is a live region that is always there', (await attr('[data-backup-live]', 'role')) === 'status' && (await attr('[data-backup-live]', 'aria-live')) === 'polite');
+      await click(page, '[data-wipe-start]');
+      await page.waitForSelector('[data-wipe-step1]');
+      await sleep(250);
+      ok('the first question is an alert dialog with a name, and the focus is in it (on Cancel)', (await attr('[data-wipe-step1]', 'role')) === 'alertdialog' && (await attr('[data-wipe-step1]', 'aria-label')) === ko('Delete everything on this device') && (await active()) === 'wipe-cancel', await active());
+      ok('it warns that other open tabs reload', (await text(page, '[data-wipe-step1]')).includes(ko('Other open PPP tabs of this browser reload when this is done, so finish what you are doing in them first.')));
+      await click(page, '[data-wipe-next]');
+      await page.waitForSelector('[data-wipe-step2]');
+      await sleep(250);
+      ok('the second question is one too, the focus is in the typed-word field, and the field has a name', (await attr('[data-wipe-step2]', 'role')) === 'alertdialog' && (await active()) === 'wipe-input' && (await attr('[data-wipe-input]', 'aria-label')) === ko('Type the word to confirm'), await active());
+      await page.keyboard.press('Escape');
+      await sleep(300);
+      ok('Escape cancels the question and the focus goes back to the button that opened it', !(await exists(page, '[data-wipe-step2]')) && !(await exists(page, '[data-wipe-step1]')) && (await active()) === 'wipe-start', await active());
+      await chooseFile(page, FILE);
+      await planOrMsg(page);
+      await sleep(250);
+      ok('the restore question is an alert dialog with a name, with the focus on Cancel, and it warns about other tabs', (await attr('[data-backup-plan]', 'role')) === 'alertdialog' && (await attr('[data-backup-plan]', 'aria-label')) === ko('Restore from a backup') && (await active()) === 'restore-no' && (await text(page, '[data-backup-plan]')).includes(ko('Other open PPP tabs of this browser reload when this is done, so finish what you are doing in them first.')), await active());
+      await page.keyboard.press('Escape');
+      await sleep(300);
+      ok('Escape cancels it and the focus goes back to the file chooser', !(await exists(page, '[data-backup-plan]')) && (await active()) === 'backup-file', await active());
+      ok('nothing was changed by any of it', songKeys(await dump(page)).length === 5);
+      await ctx.close();
+    }
+
     /* ------------------------------------------------------------------------------------------ 6. the mutants: the same checks go red */
     console.log('\n── 6. mutants of library-backup.js served to the page: the browser checks notice ──');
     const mut = name => { const m = MUTANTS.find(x => x.name === name); if (!m) throw new Error('no mutant: ' + name); return m; };
@@ -512,6 +814,33 @@ const GENERIC = 'That file is not a PPP backup, or it is damaged. Nothing was ch
     {
       const r = await deleteScenario(mut('the wipe leaves the settings keys'), false);
       ok('mutant "the wipe leaves the settings keys": the keys check goes red', r.v.some(x => /localStorage keys left/.test(x)), r.v.join('; '));
+      await r.ctx.close();
+    }
+    {
+      const r = await deleteScenario(mut('the wipe leaves the session keys'), false);
+      ok('mutant "the wipe leaves the session keys": the session keys check goes red', r.v.some(x => /session keys left/.test(x)), r.v.join('; '));
+      await r.ctx.close();
+    }
+    {
+      const r = await deleteScenario(mut('the wipe leaves the language cookie'), false);
+      ok('mutant "the wipe leaves the language cookie": the cookie check goes red', r.v.some(x => /cookie is still there/.test(x)), r.v.join('; '));
+      await r.ctx.close();
+    }
+    const pm = name => { const m = PAGE_MUTANTS.find(x => x.name === name); if (!m) throw new Error('no page mutant: ' + name); return m; };
+    {
+      const r = await accountRestore(pm('a restore does not put the merged state to the account'), 200);
+      if (r.xp !== 9000) r.v.push('xp ' + r.xp);
+      ok('page mutant "a restore does not put the merged state to the account": the signed-in check goes red (the account\'s old xp comes back)', r.v.length > 0, r.v.join('; '));
+      await r.ctx.close();
+    }
+    for (const kind of ['delete', 'restore']) {
+      const r = await twoTabs(kind, { pageMutant: pm('the other tabs ignore the signal') });
+      ok('page mutant "the other tabs ignore the signal": the two-tab check of ' + (kind === 'delete' ? 'a delete' : 'a restore') + ' goes red', r.v.length > 0, r.v.join('; '));
+      await r.ctx.close();
+    }
+    {
+      const r = await busyCheck(pm('a song being read is not asked about'));
+      ok('page mutant "a song being read is not asked about": the busy check goes red', r.v.length > 0, r.v.join('; '));
       await r.ctx.close();
     }
   } catch (e) {
