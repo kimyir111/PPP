@@ -20,6 +20,7 @@
     "test:omr-normalize": "node --test \"tests/omr/normalize/*.test.js\"",
     "test:omr-apply": "node --test \"tests/omr/apply/*.test.js\"",
     "test:omr-app": "node tests/omr-normalize-app.test.js",
+    "test:omr-apply-app": "node tests/omr-apply-app.test.js",
     "test:practice": "node --test \"tests/practice/**/*.test.js\"",
     "test:songgraph": "node --test \"tests/songgraph/**/*.test.js\"",
     "test:arrangement-planner": "node --test --test-concurrency=1 \"tests/arrangement/**/*.test.js\"",
