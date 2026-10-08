@@ -2131,6 +2131,9 @@
     "Piano recording: the piano models listen to the recording as it is. For a song with singing or a band, choose Song.": "钢琴演奏：钢琴模型直接听录音。有人声或乐队的歌曲请选择「普通歌曲」。",
     "Song separation + melody, bass and accompaniment on your PC": "在我的电脑上分离音源 + 旋律、贝斯、伴奏",
     "Your PC needs the updated worker for song mode": "普通歌曲模式需要更新电脑上的 worker",
-    "This song was converted as a piano recording (the PC worker has no song mode yet). Update the worker and convert it again.": "这首歌按钢琴演奏转换了（电脑上的 worker 还没有普通歌曲模式）。请更新 worker 后重新转换。"
+    "This song was converted as a piano recording (the PC worker has no song mode yet). Update the worker and convert it again.": "这首歌按钢琴演奏转换了（电脑上的 worker 还没有普通歌曲模式）。请更新 worker 后重新转换。",
+    "song: separated layers": "普通歌曲：音源分离",
+    "Melody · bass · accompaniment": "旋律 · 贝斯 · 伴奏",
+    "Set apart (one model only)": "暂放的音（仅一个模型听到）"
   }
 }

@@ -8674,8 +8674,10 @@ const Import = {
       suspectMeasures: suspectMeasures, summary: summary, advice: advice,
       measures: measures.length, notes: sounding.length, staves: score.staves,
       transcribed: true, tempo: stats.tempo,
-      confidenceKind: modelCount > 1 ? 'model-agreement' : 'single-model-estimate',
-      modelAgreement: modelAgreement, modelCount: modelCount
+      /* G10d: a song's figure is the estimate (no measured agreement covers its melody and bass): said as one, with the notes of each layer and the accompaniment notes set apart */
+      confidenceKind: songMode ? 'song-estimate' : modelCount > 1 ? 'model-agreement' : 'single-model-estimate',
+      modelAgreement: modelAgreement, modelCount: modelCount,
+      songLayers: songMode ? { melody: heard.song.melody | 0, bass: heard.song.bass | 0, accomp: heard.song.accomp | 0, setApart: (ensemble && ensemble.uncertain) | 0 } : undefined
     };
   },
 
@@ -19239,11 +19241,12 @@ class Component extends DCLogic {
               ['Notes', String(sounding.length)],
               ['Staves', String(score.staves)]
             ];
-          if (heard && src.taskMode) rows.push(['Mode', src.taskMode === 'piano-arrangement'
+          if (heard && rep.songLayers) rows.push(['Mode', tx('song: separated layers')], ['Melody · bass · accompaniment', rep.songLayers.melody + ' · ' + rep.songLayers.bass + ' · ' + rep.songLayers.accomp], ['Set apart (one model only)', String(rep.songLayers.setApart)]);
+          else if (heard && src.taskMode) rows.push(['Mode', src.taskMode === 'piano-arrangement'
             ? tx('playable piano arrangement') : tx('faithful solo-piano transcription')]);
           if (rep.level) {
             const confLabel = rep.confidenceKind === 'model-agreement' ? 'Model agreement'
-              : rep.confidenceKind === 'single-model-estimate' ? 'Estimated confidence' : 'Confidence';
+              : rep.confidenceKind === 'single-model-estimate' || rep.confidenceKind === 'song-estimate' ? 'Estimated confidence' : 'Confidence';
             const confValue = rep.confidenceKind === 'model-agreement' && rep.modelAgreement != null
               ? rep.modelAgreement : rep.confidence;
             rows.push([confLabel, R0((confValue || 0) * 100) + '% · ' + tx(rep.level)]);
@@ -19425,7 +19428,8 @@ class Component extends DCLogic {
         const src = S.importSource || {};
         const confidenceLabel = src.referenceScore ? 'Recognition check'
           : rep.confidenceKind === 'model-agreement' ? 'Model agreement'
-            : rep.confidenceKind === 'single-model-estimate' ? 'Estimated confidence' : 'Confidence';
+            : rep.confidenceKind === 'single-model-estimate' || rep.confidenceKind === 'song-estimate' ? 'Estimated confidence' : 'Confidence';
+        const layers = rep.songLayers || null;
         const confidenceValue = rep.confidenceKind === 'model-agreement' && rep.modelAgreement != null
           ? rep.modelAgreement : (rep.confidence == null ? 1 : rep.confidence);
         if (this._recording) return [
@@ -19441,7 +19445,10 @@ class Component extends DCLogic {
         ].concat((rep.uncertainMeasures || []).length ? [{ k: 'Unsure measures', v: String(rep.uncertainMeasures.length) }] : [])
          .concat(src.referenceScore ? [{ k: 'Score source', v: src.referenceScore.kind === 'musicxml' || src.referenceScore.kind === 'mxl' ? 'MusicXML' : tx('uploaded score') }] : [])
          .concat(src.retrieved ? [{ k: 'Score', v: tx('catalog') }] : [])
-         .concat(src.taskMode ? [{ k: 'Mode', v: src.taskMode === 'piano-arrangement'
+         .concat(layers ? [{ k: 'Mode', v: tx('song: separated layers') },
+           { k: 'Melody · bass · accompaniment', v: layers.melody + ' · ' + layers.bass + ' · ' + layers.accomp },
+           { k: 'Set apart (one model only)', v: String(layers.setApart) }]
+           : src.taskMode ? [{ k: 'Mode', v: src.taskMode === 'piano-arrangement'
            ? tx('playable arrangement') : tx('faithful solo piano') }] : [])
          .concat(src.amt && !src.referenceScore ? [{ k: 'Engine', v: src.engine || src.amt }] : [])
          .concat(src.beatSource === 'audio' ? [{ k: 'Beat', v: tx('from the recording') }] : [])
