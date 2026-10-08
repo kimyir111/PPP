@@ -66,12 +66,20 @@ function checkRow(row, r) {
   try { const rep = NC.checkGraph(r.graph); const counts = {}; Object.keys(rep.classes).forEach(k => { counts[k] = rep.classes[k].count; }); row.check = { counts: counts, bars: rep.bars }; } catch (e) { row.check = null; }
 }
 
+/* G10a-1d: the benchmark performer's beats (it alone writes beatConfidence) mark the score's bar lines: the recording conversion v2 may
+   read them as before; a replay's beats come from a real tracker and stay phase evidence only (audio-score.js opts.recBeats) */
+function oracleBeats(job) {
+  const o = Object.assign({}, job.opts || {});
+  if (job.input && job.input.beats && job.input.beatConfidence != null) o.recBeats = 'oracle';
+  return o;
+}
+
 for (const line of lines) {
   const job = JSON.parse(line);
   const t0 = process.hrtime.bigint();
   let row;
   try {
-    const r = A.toMusicXml(job.input, job.opts || {});
+    const r = A.toMusicXml(job.input, oracleBeats(job));
     row = { id: job.id, ok: true, xml: r.xml, stats: r.stats };
     if (graphs) emitGraph(job.id, r);
     if (doCheck) checkRow(row, r);
