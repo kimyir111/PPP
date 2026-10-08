@@ -338,7 +338,7 @@ gate/1 missed six of the review's seven; gate/2 missed seven of the final review
 metrics/4 missed the repeat, the implicit bars and the split bar.
 
 **Since G1** `toMusicXml` writes its MusicXML from a ScoreGraph (`buildGraph`, then the ScoreGraph
-exporter; `buildXml` stays behind `opts.legacyWriter`, which the bench never sets). The writer
+exporter; the old `buildXml` writer was removed by MX-3, having been behind `opts.legacyWriter`, which the bench never set). The writer
 mutations therefore make their defect in `buildGraph` — the same defect in the file as before: the
 same printed tempo, metre, key, dots, bar numbers, clef, rests, accidentals, repeat sign, implicit bars
 or split bar — and `<staves>` is dropped in the exporter. The review scripts use the same edits
