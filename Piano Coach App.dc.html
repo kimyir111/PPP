@@ -106,6 +106,13 @@
 <script src="./engrave/source.js?v=4"></script>
 <script src="./engrave/index.js?v=4"></script>
 <script src="./score-search.js"></script>
+<script>
+/* G13-1 (G13-D3): React is served from vendor/react-18.3.1/ (tests/engrave/vendor-react.test.js pins its bytes to the SRI in support.js). PPP.cdn: ?cdn=1 (this visit) or localStorage 'ppp.cdn' = '1' puts the unpkg copies back; ?cdn=0 is vendored for this visit; any other value is no choice, and no choice is the default (vendored). */
+window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('ppp.cdn'); } catch (e) { /* no storage: the default */ } try { var u = new URLSearchParams(location.search).get('cdn'); if (u === '1' || u === '0') c = u; } catch (e) { /* no address to read */ } return c === '1'; })();
+</script>
+<script src="./vendor/react-18.3.1/react.production.min.js?h=d949f1c3687a"></script>
+<script src="./vendor/react-18.3.1/react-dom.production.min.js?h=35f4f974f4b2"></script>
+<script>if (window.PPP_CDN) { delete window.React; delete window.ReactDOM; } /* support.js then finds no React and loads the SRI-pinned unpkg copies, as before */</script>
 <script src="./support.js"></script>
 <script src="./lessons.js"></script>
 <script src="./course.js"></script>
@@ -10398,6 +10405,9 @@ window.PPP = {
   /* G08b §11: 'single' (default since G9e default-on: one note per hand) | 'legacy' | 'g8'. Any other value is 'legacy' (G4-F2-1's convention). */
   get arranger() { return ARRANGER_MODE; },
   set arranger(v) { ARRANGER_MODE = v === 'g8' ? 'g8' : v === 'single' ? 'single' : 'legacy'; },
+  /* G13-1 (G13-D3): true = React came from unpkg (?cdn=1 or the remembered '1'), false (default) = vendor/react-18.3.1/. Read-only truth about THIS load; a new value applies on the next load. Any value but '1' is no choice: the default returns and the remembered choice is forgotten. */
+  get cdn() { return window.PPP_CDN === true; },
+  set cdn(v) { try { if (v === '1' || v === 1 || v === true) localStorage.setItem('ppp.cdn', '1'); else localStorage.removeItem('ppp.cdn'); } catch (e) { /* not remembered */ } },
   /* G10a-4/G10a-5b: 'v2' (default: the staged recording conversion, docs/GOALS/G10 section 6) | 'legacy' (the classic one). Any other value is no choice: the default comes back and the remembered choice is forgotten. A choice is remembered on this device. */
   get recording() { return RECORDING_MODE; },
   set recording(v) { setRecordingMode(v); },

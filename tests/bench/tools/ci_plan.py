@@ -6,13 +6,13 @@
 In `.github/workflows/bench.yml` the job `plan` runs this first, on the pull request's merge commit (HEAD, whose first parent
 HEAD^1 is the base), and the other jobs read its answer `mode`:
 
-    full     every check of the gate (the 60 steps of the shard jobs). The answer for anything that is not a pull request (a push
+    full     every check of the gate (the 63 steps of the shard jobs). The answer for anything that is not a pull request (a push
              to main, a manual run, the schedule), for a pull request whose file list cannot be read, for any file this tool
              does not know to be harmless, and for the workflow, `package.json` and `tests/bench/` themselves.
     tooling  only documents and files of the home-PC worker (tools/home-worker/, tests/home-worker/) and of the review tests
              (tests/review/): the only step of the gate that reads them is `npm run test:home-worker` (see the table in the README), so
-             the `light` job runs that, the bench unit tests and the two cheapest sanity checks.
-    docs     only documents (`docs/`, a markdown or licence file at the repository root): the `light` job runs the two cheapest
+             the `light` job runs that, the bench unit tests and the three cheap sanity checks.
+    docs     only documents (`docs/`, a markdown or licence file at the repository root): the `light` job runs the three cheap
              sanity checks. No step of the gate reads a document.
 
 The rule is a WHITELIST. A path counts as light only if it is under a listed directory (or is a listed kind of root file); every
