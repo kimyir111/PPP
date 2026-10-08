@@ -4,8 +4,8 @@
 every changed path is not the app's page, a practice module, a practice suite or what they run on; anything it cannot trust is `run` and
 `harness` (the mutation check) too. (2) The workflow's practice jobs are checks of their own: not jobs of the gate (the gate neither
 waits for them nor counts them), they wait for practice-plan, run on a pull request only when it said so and always on a schedule or a
-manual run, and between them run the eleven suites, the recorder, the mutation check, the perf probe and the event-parity harness (G11a-2) with its own mutation check. The workflow is read as text
-(PyYAML is not installed in CI)."""
+manual run, and between them run the eleven suites (twice: on the legacy player and on the graph plan, G11a-3), the recorder, the mutation check, the perf probe, the event-parity harness (G11a-2) with its own
+mutation check, and the PPP.practice switch's test (G11a-3) with its own mutation check. The workflow is read as text (PyYAML is not installed in CI)."""
 
 import contextlib
 import importlib.util
@@ -49,6 +49,7 @@ class PathClasses(unittest.TestCase):
         for p in ("tests/practice/perf.js", "tests/practice/baselines/legacy.json", "tests/practice/baselines/perf.json", "tests/practice/plan.py",
                   "tests/practice/record.js", "tests/practice/canon.js", "tests/practice/lib.js", "tests/practice/mutants.js", "tests/practice/perf-selftest.js",
                   "tests/practice/parity.js", "tests/practice/parity-core.js", "tests/practice/parity-mutants.js", "tests/practice/baselines/parity.json",
+                  "tests/practice/switch.js", "tests/practice/switch-page.js", "tests/practice/switch-mutants.js", "tests/practice/baselines/switch.json",
                   "tests/practice/run-suites.js", ".github/workflows/bench.yml",
                   "tests/engrave/tools/with-port.js", "tests/serve-free.js", "tests/boot.js"):
             self.assertEqual(self.cls(p), (True, True), p)
@@ -186,8 +187,9 @@ class PracticeJobs(unittest.TestCase):
         self.assertTrue(m, f"{job} has no needs")
         return [x.strip() for x in m.group(1).strip("[]").split(",")]
 
-    def test_the_six_jobs_are_there_and_none_is_a_gate_job(self):
-        self.assertEqual(sorted(self.practice), ["practice-legacy", "practice-parity", "practice-parity-mutants", "practice-perf", "practice-plan", "practice-suites"])
+    def test_the_eight_jobs_are_there_and_none_is_a_gate_job(self):
+        self.assertEqual(sorted(self.practice), ["practice-legacy", "practice-parity", "practice-parity-mutants", "practice-perf", "practice-plan", "practice-suites",
+                                                 "practice-switch", "practice-switch-mutants"])
         for name in self.practice:
             self.assertFalse(GATE_JOB.match(name), name)
             self.assertNotIn(name, self.needs_of("gate"))
@@ -204,7 +206,7 @@ class PracticeJobs(unittest.TestCase):
         self.assertIn("fetch-depth: 2", body)
 
     def test_the_jobs_wait_for_the_plan_and_run_on_a_pull_request_only_when_it_says_so(self):
-        for name in ("practice-suites", "practice-legacy", "practice-perf", "practice-parity", "practice-parity-mutants"):
+        for name in ("practice-suites", "practice-legacy", "practice-perf", "practice-parity", "practice-parity-mutants", "practice-switch", "practice-switch-mutants"):
             body = self.jobs[name]
             self.assertEqual(self.needs_of(name), ["practice-plan"], name)
             m = re.search(r"^    if: (.*)$", body, re.M)
@@ -214,7 +216,7 @@ class PracticeJobs(unittest.TestCase):
             self.assertIn("github.event_name == 'schedule'", cond, name)
             self.assertIn("github.event_name == 'workflow_dispatch'", cond, name)
             # the mutants of the parity check run on a pull request only for the probes (like the recorder's mutation check), the rest whenever the plan says run
-            want = "harness" if name == "practice-parity-mutants" else "run"
+            want = "harness" if name in ("practice-parity-mutants", "practice-switch-mutants") else "run"
             self.assertIn("github.event_name == 'pull_request' && needs.practice-plan.outputs.%s == 'true'" % want, cond, name)
             self.assertNotIn("'push'", cond, name)
 
@@ -228,6 +230,19 @@ class PracticeJobs(unittest.TestCase):
         self.assertIn("- run: node tests/practice/parity-mutants.js --core --shard ${{ matrix.part }}/4\n        " + pr, mutants)
         self.assertIn("- run: node tests/practice/parity-mutants.js --shard ${{ matrix.part }}/4\n        " + other, mutants)
 
+    def test_the_suites_run_on_both_players_and_the_switch_test_has_its_own_jobs(self):
+        suites = self.jobs["practice-suites"]
+        self.assertIn("practice: [legacy, graph]", suites)
+        self.assertIn("- run: node tests/practice/run-suites.js --practice ${{ matrix.practice }} --log-dir tests/practice/out/suites-${{ matrix.practice }}", suites)
+        self.assertIn("name: practice-suites-${{ matrix.practice }}", suites)
+        switch = self.jobs["practice-switch"]
+        pr, other = "if: ${{ github.event_name == 'pull_request' }}", "if: ${{ github.event_name != 'pull_request' }}"
+        self.assertIn("- run: node tests/practice/switch.js --sample 5\n        " + pr, switch)
+        self.assertIn("- run: node tests/practice/switch.js\n        " + other, switch)
+        mutants = self.jobs["practice-switch-mutants"]
+        self.assertIn("part: [1, 2, 3]", mutants)
+        self.assertIn("- run: node tests/practice/switch-mutants.js --shard ${{ matrix.part }}/3", mutants)
+
     def test_the_mutation_check_runs_on_a_pull_request_only_for_the_probes(self):
         body = self.jobs["practice-legacy"]
         m = re.search(r"^      - if: (.*)\n        run: node tests/practice/mutants\.js$", body, re.M)
@@ -235,7 +250,9 @@ class PracticeJobs(unittest.TestCase):
         self.assertIn("github.event_name != 'pull_request' || needs.practice-plan.outputs.harness == 'true'", m.group(1))
 
     def test_each_job_installs_before_it_runs_and_they_run_the_probes(self):
-        want = {"practice-suites": ["npm ci", "node tests/practice/run-suites.js"],
+        want = {"practice-suites": ["npm ci", "node tests/practice/run-suites.js --practice ${{ matrix.practice }} --log-dir tests/practice/out/suites-${{ matrix.practice }}"],
+                "practice-switch": ["npm ci", "node tests/practice/switch.js --sample 5", "node tests/practice/switch.js"],
+                "practice-switch-mutants": ["npm ci", "node tests/practice/switch-mutants.js --shard ${{ matrix.part }}/3"],
                 "practice-legacy": ["npm ci", "node tests/practice/record.js check", "node tests/practice/mutants.js"],
                 "practice-perf": ["npm ci", "node tests/practice/perf-selftest.js", "node tests/practice/perf.js check", "node tests/practice/perf.js record --attempts 5"],
                 "practice-parity": ["npm ci", "node tests/practice/parity.js check --sample 5", "node tests/practice/parity.js check"],
@@ -245,7 +262,8 @@ class PracticeJobs(unittest.TestCase):
             for c in cmds:
                 self.assertIn(c, got, name)
             self.assertEqual(got[0], "npm ci", name)
-        for body in (self.jobs["practice-suites"], self.jobs["practice-legacy"], self.jobs["practice-perf"], self.jobs["practice-parity"], self.jobs["practice-parity-mutants"]):
+        for body in (self.jobs["practice-suites"], self.jobs["practice-legacy"], self.jobs["practice-perf"], self.jobs["practice-parity"], self.jobs["practice-parity-mutants"],
+                     self.jobs["practice-switch"], self.jobs["practice-switch-mutants"]):
             self.assertIn("actions/setup-node@v4", body)
 
     def test_the_perf_job_can_record_and_otherwise_checks(self):
@@ -277,6 +295,9 @@ class PracticeJobs(unittest.TestCase):
 
     def test_the_npm_scripts_name_the_same_commands(self):
         self.assertEqual(self.scripts["test:practice-suites"], "node tests/practice/run-suites.js")
+        self.assertEqual(self.scripts["test:practice-suites-graph"], "node tests/practice/run-suites.js --practice graph")
+        self.assertEqual(self.scripts["test:practice-switch"], "node tests/practice/switch.js")
+        self.assertEqual(self.scripts["test:practice-switch-mutants"], "node tests/practice/switch-mutants.js")
         self.assertEqual(self.scripts["test:practice-legacy"], "node tests/practice/record.js check")
         self.assertEqual(self.scripts["test:practice-perf"], "node tests/practice/perf.js check")
         self.assertEqual(self.scripts["test:practice-perf-selftest"], "node tests/practice/perf-selftest.js")
@@ -285,6 +306,8 @@ class PracticeJobs(unittest.TestCase):
         self.assertEqual(self.scripts["test:practice-parity-mutants"], "node tests/practice/parity-mutants.js")
         self.assertIn("test:practice-suites", self.scripts["test:practice-browser"])
         self.assertIn("test:practice-parity", self.scripts["test:practice-browser"])
+        self.assertIn("test:practice-suites-graph", self.scripts["test:practice-browser"])
+        self.assertIn("test:practice-switch", self.scripts["test:practice-browser"])
         # main's own Node unit tests of practice/ (G11a-1) keep the name test:practice
         self.assertEqual(self.scripts["test:practice"], 'node --test "tests/practice/**/*.test.js"')
 

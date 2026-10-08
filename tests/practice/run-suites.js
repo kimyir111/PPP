@@ -10,6 +10,7 @@
      node tests/practice/run-suites.js --shard 2/3        every third suite (the CI jobs that split the list use this)
      node tests/practice/run-suites.js --log-dir DIR      each suite's full output (default tests/practice/out/suites)
      node tests/practice/run-suites.js --port N           use the server already listening on N (the mutation proxy of mutants.js) instead of starting one
+     node tests/practice/run-suites.js --practice graph   every page starts on PPP.practice 'graph' (G11a-3: the same suites against the plan made from the ScoreGraph; default legacy)
 
    A suite's checks are the lines its own ok() helper prints, starting with a tick or a cross (playback-scheduler: PASS or FAIL). The run is red when a suite exits non-zero, runs
    past its limit, or prints no check at all (a suite that silently did nothing is not a pass). The last lines of a failing suite are printed
@@ -46,7 +47,7 @@ const PASS_LINE = /^\s*(✓|PASS) /;
 const FAIL_LINE = /^\s*(✗|FAIL) /;
 
 function parseArgs(argv) {
-  const a = { only: null, list: false, shard: null, port: null, logDir: path.join(__dirname, 'out', 'suites') };
+  const a = { only: null, list: false, shard: null, port: null, practice: 'legacy', logDir: null };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
     if (k === '--only') a.only = String(argv[++i] || '').split(',').filter(Boolean);
@@ -54,18 +55,21 @@ function parseArgs(argv) {
     else if (k === '--shard') { const m = /^(\d+)\/(\d+)$/.exec(argv[++i] || ''); if (!m || +m[1] < 1 || +m[1] > +m[2]) throw new Error('--shard K/N'); a.shard = [+m[1], +m[2]]; }
     else if (k === '--log-dir') a.logDir = path.resolve(argv[++i]);
     else if (k === '--port') a.port = +argv[++i];
+    else if (k === '--practice') { a.practice = argv[++i]; if (a.practice !== 'legacy' && a.practice !== 'graph') throw new Error('--practice legacy|graph'); }
     else throw new Error('unknown argument ' + k);
   }
+  if (!a.logDir) a.logDir = path.join(__dirname, 'out', a.practice === 'graph' ? 'suites-graph' : 'suites');
   return a;
 }
 
-function runOne(suite, port, logDir) {
+function runOne(suite, port, logDir, practice) {
   return new Promise(resolve => {
     const t0 = Date.now();
     const log = path.join(logDir, suite.name + '.log');
     const chunks = [];
     const env = Object.assign({}, process.env, { PPP_PORT: String(port), NODE_ENV: 'production' });
     delete env.PPP_URL;                      // the suites that read it would bypass the port rewrite
+    if (practice === 'graph') env.PPP_PRACTICE = 'graph'; else delete env.PPP_PRACTICE;   // with-port.js starts every page on PPP.practice 'graph'
     const child = spawn(process.execPath, ['-r', WITH_PORT, path.join(ROOT, 'tests', suite.file)], { cwd: ROOT, env, stdio: ['ignore', 'pipe', 'pipe'] });
     child.stdout.on('data', d => chunks.push(d));
     child.stderr.on('data', d => chunks.push(d));
@@ -98,12 +102,12 @@ function runOne(suite, port, logDir) {
   fs.mkdirSync(args.logDir, { recursive: true });
   const srv = args.port ? { port: args.port, close: async () => {} } : await startServer();
   if (srv.external) { console.log('PPP_URL is set: the suites would not use a free port; unset it'); process.exit(2); }
-  console.log(args.port ? 'using the server on port ' + args.port : 'serving this tree on ' + srv.url);
+  console.log((args.port ? 'using the server on port ' + args.port : 'serving this tree on ' + srv.url) + ' (PPP.practice ' + args.practice + ')');
   const results = [];
   try {
     for (const s of list) {
       process.stdout.write(s.name + ' ... ');
-      const r = await runOne(s, srv.port, args.logDir);
+      const r = await runOne(s, srv.port, args.logDir, args.practice);
       results.push(r);
       const bad = r.code !== 0 || r.timedOut || r.fail > 0 || r.pass < s.min;
       console.log((bad ? 'FAILED' : 'ok') + ' (' + r.pass + ' checks, ' + r.seconds.toFixed(0) + ' s)');

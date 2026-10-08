@@ -40,6 +40,7 @@ HARNESS_DIRS = ("tests/practice/baselines/",)
 HARNESS_FILES = (".github/workflows/bench.yml", "tests/engrave/tools/with-port.js", "tests/serve-free.js", "tests/boot.js",
                  "tests/practice/canon.js", "tests/practice/lib.js", "tests/practice/mutants.js", "tests/practice/perf.js", "tests/practice/perf-selftest.js",
                  "tests/practice/parity.js", "tests/practice/parity-core.js", "tests/practice/parity-mutants.js",
+                 "tests/practice/switch.js", "tests/practice/switch-page.js", "tests/practice/switch-mutants.js",
                  "tests/practice/plan.py",
                  "tests/practice/record.js", "tests/practice/run-suites.js")
 

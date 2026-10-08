@@ -25,10 +25,13 @@ const http = require('http');
 const TO = process.env.PPP_PORT || '8793';
 const STRICT = process.env.PPP_STRICT === '1';
 const KEEP_8788 = process.env.PPP_KEEP_8788 === '1';
+/* PPP_PRACTICE=graph (G11a-3): every document the suite opens starts on PPP.practice 'graph' (the remembered choice, set before the app runs - the same way PPP_STRICT works), so a
+   suite written for the legacy player is run against the graph plan without being edited. Nothing set (or any other value): the page's own default. */
+const PRACTICE = process.env.PPP_PRACTICE === 'graph' ? 'graph' : '';
 const fix = u => (typeof u === 'string' ? u.replace(/(127\.0\.0\.1|localhost):8777/g, '127.0.0.1:' + TO) : u);
 const helperUrl = u => /^https?:\/\/(127\.0\.0\.1|localhost):8788\//.test(String(u || ''));
 
-const summary = { pages: 0, versions: new Set(), draws: 0, fallbacks: {}, fallbackWarnings: 0, fallbackTexts: [], songs: [], errors: 0 };
+const summary = { pages: 0, versions: new Set(), draws: 0, fallbacks: {}, fallbackWarnings: 0, fallbackTexts: [], songs: [], errors: 0, practice: { modes: new Set(), graph: 0, fallback: 0, reasons: {} } };
 async function collect(p) {
   try {
     if (p.isClosed && p.isClosed()) return;
@@ -37,7 +40,8 @@ async function collect(p) {
         const S = window.PPPEngravePage && window.PPPEngravePage.stats;
         return { v: window.PPPEngrave && window.PPPEngrave.version,
           draws: S ? S.draws : 0, fb: window.PPP && window.PPP.engraveStats ? window.PPP.engraveStats.fallbacks : null,
-          songs: window.PPP && window.PPP.engraveStats ? Object.keys(window.PPP.engraveStats.bySong).map(k => k + ' ' + window.PPP.engraveStats.bySong[k]) : [] };
+          songs: window.PPP && window.PPP.engraveStats ? Object.keys(window.PPP.engraveStats.bySong).map(k => k + ' ' + window.PPP.engraveStats.bySong[k]) : [],
+          pr: window.PPP && window.PPP.practiceStats ? { mode: window.PPP.practice, g: window.PPP.practiceStats.graph, f: window.PPP.practiceStats.practiceFallback.total, r: window.PPP.practiceStats.practiceFallback.reasons } : null };
       }),
       new Promise(res => setTimeout(() => res(null), 1500))
     ]);
@@ -46,6 +50,12 @@ async function collect(p) {
     summary.draws += r.draws || 0;
     Object.keys(r.fb || {}).forEach(k => { summary.fallbacks[k] = (summary.fallbacks[k] || 0) + r.fb[k]; });
     (r.songs || []).forEach(s => { if (summary.songs.length < 12 && summary.songs.indexOf(s) < 0) summary.songs.push(s); });
+    if (r.pr) {
+      summary.practice.modes.add(r.pr.mode);
+      summary.practice.graph += r.pr.g || 0;
+      summary.practice.fallback += r.pr.f || 0;
+      Object.keys(r.pr.r || {}).forEach(k => { summary.practice.reasons[k] = (summary.practice.reasons[k] || 0) + r.pr.r[k]; });
+    }
   } catch (e) { summary.errors++; }
 }
 
@@ -63,6 +73,11 @@ const patchPage = p => {
     p.evaluateOnNewDocument(() => {
       try { localStorage.setItem('ppp.strictEngrave', '1'); } catch (e) { /* no storage */ }
     }).catch(() => {});
+  }
+  if (PRACTICE) {
+    p.evaluateOnNewDocument(v => {
+      try { localStorage.setItem('ppp.practice.v1', v); } catch (e) { /* no storage */ }
+    }, PRACTICE).catch(() => {});
   }
   p.on('console', m => {
     if (!/\[ppp\] engrave fallback/.test(m.text())) return;
@@ -153,4 +168,10 @@ process.on('exit', () => {
     ', pages ' + summary.pages + '\n');
   summary.fallbackTexts.forEach(t => process.stdout.write('[with-port]   ' + t + '\n'));
   if (summary.songs.length) process.stdout.write('[with-port]   songs: ' + summary.songs.join('; ') + '\n');
+  /* G11a-3: which practice plan the suite ran on, and what the graph plan did (plans made from a graph; plans that stayed legacy, by reason) */
+  const pr = summary.practice;
+  if (PRACTICE || pr.graph || pr.fallback) {
+    process.stdout.write('[with-port]   practice ' + ([...pr.modes].join('/') || '?') + ': graph plans ' + pr.graph + ', fallbacks ' + pr.fallback +
+      (pr.fallback ? ' (' + Object.keys(pr.reasons).map(k => k + ' ' + pr.reasons[k]).join(', ') + ')' : '') + '\n');
+  }
 });

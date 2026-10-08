@@ -87,7 +87,7 @@ function mutatingProxy(upstream, edits) {
       const chunks = [];
       ur.on('data', c => chunks.push(c));
       ur.on('end', () => {
-        let text = Buffer.concat(chunks).toString('utf8');
+        let text = Buffer.concat(chunks).toString('utf8').replace(/\r\n/g, '\n');   /* one line end whatever the checkout: a multi-line `from` matches on every machine */
         const counts = edits.map(([from]) => text.split(from).length - 1);
         applied = counts;
         if (counts.every(c => c === 1)) edits.forEach(([from, to]) => { text = text.replace(from, () => to); });
