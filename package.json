@@ -27,6 +27,7 @@
     "test:repair": "node --test \"tests/repair/**/*.test.js\"",
     "test:review": "node --test \"tests/review/**/*.test.js\"",
     "smoke:live": "node tests/live/smoke.js",
+    "test:monitoring": "node tests/release/release.test.js && node tests/server-stats.test.js && node tests/release/mutants.js",
     "test:rec": "node --test \"tests/rec/**/*.test.js\"",
     "test:practice-variant": "node --test \"tests/practice-variant/**/*.test.js\"",
     "test:practice-sim": "node --test \"tests/practice-sim/**/*.test.js\"",

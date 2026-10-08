@@ -76,7 +76,7 @@ finished, so until then it is absent, not green):
 | `light` | what runs instead of the shards for a change that is only documents or the home-PC worker's files (below). |
 | `gate` | green only if the plan succeeded and every job it asked for did, and the others were skipped; red for a failed, cancelled or *skipped* job that was wanted, a job that ran when it was not wanted, or a job of the file that `gate` does not wait for. It prints the mode it ran in (`gate passed: FULL mode, 16 shards and 2 merges succeeded`, or `LIGHT docs-only`). |
 
-**The steps.** Each of the gate's 73 steps is in exactly one shard job with its command unchanged, in the relative order the single
+**The steps.** Each of the gate's 74 steps is in exactly one shard job with its command unchanged, in the relative order the single
 job had (`tests/bench/unit/test_ci_plan.py` holds the invariants and fails if one is broken). A `run --suite X` and its `check --suite X`
 (or a `*_data.py` and its trainer's `--check`) stay in the same job, because the second reads what the first wrote. A step you add goes
 in the job with the most slack (the comments list the times; the slowest job decides the wall-clock). Nothing needs installing: the
@@ -85,7 +85,7 @@ except `shard-c`, which runs the ScoreGraph tests and `git show aff7080:package.
 One of the 64, `npm run test:practice` (G11a-1, `practice/plan.js` against the app's own player; it is in `shard-o`, one of the least loaded of the sixteen on the
 slow draw), reads `practice/`, `tests/practice/`, `scoregraph/`, `engrave/`, the page, committed score files and `tests/bench/corpus/*.json`: no path the light modes skip
 (read from its code, not traced under `strace`).
-One of the 73, `npm run test:omr-normalize` (G12-1, `omr/normalize.js` and `omr/helper-output.js`: planted defects, mutants, no engine; it is in `shard-g`), reads `omr/`, `omr-service.js` (as text), `scoregraph/xml.js` and `scoregraph/index.js`
+One of the 74, `npm run test:omr-normalize` (G12-1, `omr/normalize.js` and `omr/helper-output.js`: planted defects, mutants, no engine; it is in `shard-g`), reads `omr/`, `omr-service.js` (as text), `scoregraph/xml.js` and `scoregraph/index.js`
 and builds every page it normalises in memory: no committed score file, no path the light modes skip.
 
 **Two suites are cut across jobs.** `rec-core` (2,538 cases, 370 s alone) and `rec-grid` (1,410 cases, 434 s) run as
@@ -123,7 +123,7 @@ listed file type; one other path makes the whole change `full`. The classifier t
 change to the rules never applies to itself (it is under `tests/bench/`, so `full`, and the new rules start with the next change); a
 base without one (the change that adds it) is `full`.
 
-| mode | every changed path is | `light` runs | the 73 steps |
+| mode | every changed path is | `light` runs | the 74 steps |
 |---|---|---|---|
 | `docs` | `docs/**/*.{md,txt,png,jpg,jpeg,gif,pdf}`, or a root `*.md` / `LICENSE*` / `COPYING*` / `NOTICE*` | `lint-corpus`, `make_provenance.py --check`, `node tests/i18n/gaps.js --check` (the cheap checks: they prove the checkout, the committed registry and the i18n baseline are sound) | skipped |
 | `tooling` | the above, or `tests/review/**`, `tools/home-worker/**`, `tests/home-worker/**` with a type of `.js .json .md .txt .cmd .ps1` | the three above, the bench unit tests, `npm run test:home-worker` | skipped |
@@ -158,6 +158,11 @@ G11b-0 added four steps: `npm run test:practice-sim` and `tests/practice-sim/bas
 K/3` (K = 1..3). They were not traced with strace; by their code they open `Piano Coach App.dc.html`, `practice/`, `tests/practice-sim/`,
 `scoregraph/`, `difficulty/`, `playability/` and the eight score files the simulator plays (`catalog/method/`, `catalog/hymns/`, a
 fixture of its own), and nothing under the paths above.
+
+G13-7a added one step (`npm run test:monitoring`, in `shard-g`; not in `light`): the release script, the daily smoke's issue reporter and the server's counters, each with a fake `gh`, a
+fake Render and a fake page (the counters also run the real `server.js` on a free port), and the mutants of all three (`tests/release/mutants.js`; about 10 s). It was read, not traced: it
+opens `tools/release/*.js`, `server-stats.js`, `server.js`, `.github/workflows/live-smoke.yml` (as text) and its own files, and nothing under the paths above (the release script names `docs/RELEASES.md` as the file it appends to, but the
+test gives it an in-memory file; the two files are on `NAMES_DOCS` in `unit/test_ci_plan.py` for that reason). A change under `tools/release/` is `full`: `tools/` is not on the whitelist.
 
 The one step that walks the whole tree is the A48 test of `npm run test:engrave` (it imports every committed `.musicxml`, `.mxl`,
 `.mid` and score-named `.xml` file it finds, anywhere), and `tests/engrave/marks.test.js` fails on any tracked font; so a file of those
