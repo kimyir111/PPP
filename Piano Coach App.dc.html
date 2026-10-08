@@ -13630,8 +13630,13 @@ class Component extends DCLogic {
      played this way never counts as evidence that you can play it at tempo. */
   following(state) {
     const S = state || this.state;
-    return this.liveMidi() && S.toggles.follow !== false;
+    return S.screen !== 'score' && this.liveMidi() && S.toggles.follow !== false;
   }
+  /* The score view is for listening: Play there is the whole piece once, both
+     hands, whatever the practice page was last set to (its passage loop, one
+     hand). */
+  looping(S) { S = S || this.state; return !!S.loop && S.screen !== 'score'; }
+  playHands(S) { S = S || this.state; return S.screen === 'score' ? 'both' : S.hands; }
 
   /* Every onset in the loop range, hand-filtered, in playing order — sounding
      notes, written rests (including in one hand while the other holds), and
@@ -13996,7 +14001,7 @@ class Component extends DCLogic {
   transportKey(S) {
     const [from, to] = this.range(S);
     /* liveMidi is not in the key: a USB blip would panic the sounding score. */
-    return [S.score.id, from, to, S.loop ? 1 : 0, S.tempo, S.hands,
+    return [S.score.id, from, to, this.looping(S) ? 1 : 0, S.tempo, this.playHands(S),
       this.midiOutLive() ? 1 : 0, this.midiOutId() || '',
       S.toggles.notes ? 1 : 0, S.metro && S.toggles.sound ? 1 : 0].join('|');
   }
@@ -14147,8 +14152,9 @@ class Component extends DCLogic {
         this._perf.advanceTo(nowMs() + this._perf.timing.window + 1);
         result = this._perf.result();
       }
-      Object.assign(patch, this.completeLap(S, hit, tot, result));
-      if (S.loop) {
+      /* listening on the score view is not a practice run: no lap, no progress */
+      if (S.screen !== 'score') Object.assign(patch, this.completeLap(S, hit, tot, result));
+      if (this.looping(S)) {
         /* The next lap starts exactly when this one ended, not when a tick
            happened to notice — the notes for it are already on that time. */
         const lapEnd = tp.t0 + PianoScore.msAt(plan, endB, scale) - PianoScore.msAt(plan, tp.b0, scale);
@@ -14224,8 +14230,8 @@ class Component extends DCLogic {
             if (n.q >= endB - 1e-9) break;
             const t = T(n.q);
             if (t >= horizon) break;
-            if (t < from || n.q <= skip || !this.handOk(n.note, S.hands)) continue;
-            const up = S.loop ? Math.min(T(n.upQ), lapEnd) : T(n.upQ);
+            if (t < from || n.q <= skip || !this.handOk(n.note, this.playHands(S))) continue;
+            const up = this.looping(S) ? Math.min(T(n.upQ), lapEnd) : T(n.upQ);
             /* Duck only after a strike in this run. Listen-only Play keeps
                the written dynamic even if a keyboard is plugged in. */
             const vel = this._playAlong ? Math.max(1, Math.round(n.vel * 0.55)) : n.vel;
@@ -14259,7 +14265,7 @@ class Component extends DCLogic {
           }
         }
       }
-      if (!S.loop || endB < 1e-6) break;
+      if (!this.looping(S) || endB < 1e-6) break;
       lapB = 0; lapT = lapEnd; skip = -Infinity;
     }
   }
@@ -14279,7 +14285,7 @@ class Component extends DCLogic {
     for (let i = firstAtOrAfter(list, a, 'q'); i < list.length; i++) {
       const s = list[i];
       if (s.q >= b) break;
-      if (!this.handOk(s.note, S.hands)) continue;
+      if (!this.handOk(s.note, this.playHands(S))) continue;
       out.tot++;
       const n = s.note;
       const mb = this._sim ? this.simBucket(n.m) : null;   /* not "b" — that is the span end */
@@ -14478,7 +14484,8 @@ class Component extends DCLogic {
     if (k === 'escape' && this.state.sidebarOpen) { this.setState({ sidebarOpen: false }); return; }
     /* Escape is what everyone tries first to get out of a full screen. */
     if (k === 'escape' && this.state.focus) { this.toggleFocus(); return; }
-    if (k === 'f') { e.preventDefault(); this.toggleFocus(); return; }
+    /* focus mode is the practice page's; the score view has no keyboard to focus on */
+    if (k === 'f' && this.state.screen !== 'score') { e.preventDefault(); this.toggleFocus(); return; }
     if (k === ' ') { e.preventDefault(); this.togglePlay(); }
     else if (k === 'r') this.setState({ beat: Score.startQ(this.state.score, this.range()[0]), runHit: 0, runTot: 0, wrongNotes: [] });
     else if (k === 'l') this.setState(s => ({ loop: !s.loop }));
@@ -17783,7 +17790,7 @@ class Component extends DCLogic {
       const transportScale = tp.scale || 1;
       let elapsed = PianoScore.msAt(plan, tp.b0 || 0, transportScale) + Math.max(0, nowMs() - tp.t0);
       const total = PianoScore.msAt(plan, plan.soundLengthQ || 0, transportScale);
-      if (S.loop && total > 0 && elapsed >= total) elapsed = elapsed % total;
+      if (this.looping(S) && total > 0 && elapsed >= total) elapsed = elapsed % total;
       soundQ = PianoScore.qAt(plan, elapsed, transportScale);
     } else {
       soundQ = PianoScore.soundAtWritten(plan, S.beat || 0);
