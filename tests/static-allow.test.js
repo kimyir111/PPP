@@ -68,6 +68,8 @@ function expectedServed(rel) {
   const ext = path.extname(name);
   if (parts.length === 1) return ROOT_SERVED.indexOf(name) > -1;
   const top = parts[0];
+  /* G11a-3: PPP.practice 'graph' loads practice/plan.js and nothing else of practice/ (the simulator and the variant splice are not loaded by any page) */
+  if (top === 'practice') return rel === 'practice/plan.js';
   if (CODE_DIRS.indexOf(top) > -1) {
     if (parts.length === 2) return ext === '.js';
     if (parts.length === 3 && parts[1] === 'weights') return ext === '.json' && (top === 'rec' || top === 'difficulty');
@@ -97,14 +99,14 @@ test('isServed: the examples that matter', () => {
     'difficulty/tools/dataset/method-books.json', 'i18n/ko-KR.json', 'audio/piano/A0.mp3', 'assets/hands/hand-right-black.png',
     'catalog/index.json', 'catalog/method/index.json', 'catalog/hymns/index.json', 'catalog/hymns/all-creatures.musicxml', 'catalog/method/beyer/001.mxl',
     'samples/prelude-fragment.musicxml', 'vendor/vexflow-4.2.3.js', 'vendor/LICENSE-vexflow.txt', 'vendor/react-18.3.1/react.production.min.js',
-    'vendor/react-18.3.1/LICENSE-react.txt', 'THIRD_PARTY_NOTICES.md'].forEach(rel => assert.equal(allow.isServed(rel), true, rel));
+    'vendor/react-18.3.1/LICENSE-react.txt', 'THIRD_PARTY_NOTICES.md', 'practice/plan.js'].forEach(rel => assert.equal(allow.isServed(rel), true, rel));
   ['server.js', 'render.yaml', 'package.json', 'package-lock.json', 'Dockerfile', 'README.md', 'index.html', 'static-allow.js', 'home-jobs.js', 'share-guest.js', 'omr-service.js',
     'arrange_score.py', 'transcribe.py', DOCS + '/PPP_MASTER_ROADMAP.md', WORKER_DIR + '/worker.js', 'tests/boot.js', 'tools/anything', 'rec/tools/train.js', 'rec/tools/key-eval.js', 'scoregraph/README.md',
     'scoregraph/tools/notation-check.js', 'difficulty/tools/train.js', 'audio/piano/README.md', 'catalog/shared-seeds.json', 'catalog/build-shared-seeds.js',
     'catalog/hymns/build.js', 'catalog/method/books.json', 'catalog/method/build.py', 'catalog/method/src/beyer/001.abc', 'vendor/README.md', 'vendor/.gitattributes',
     '.env', '.git/config', '.github/workflows/bench.yml', 'data/store.json', 'node_modules/pg/package.json', 'review/build.js', 'Server.js', 'SUPPORT.JS', 'scoregraph/INDEX.JS',
     'scoregraph/../server.js', 'vendor/../server.js', 'vendor/./vexflow-4.2.3.js', 'vendor/react-18.3.1/../../server.js', '../server.js', '/server.js', 'scoregraph\\index.js', '', 'scoregraph/', 'scoregraph', 'scoregraph//index.js', 'support.js\0', 'support.js.',
-    'support.js::$DATA'].forEach(rel => assert.equal(allow.isServed(rel), false, JSON.stringify(rel)));
+    'support.js::$DATA', 'practice/sim.js', 'practice/variant.js', 'practice/plan.js.map', 'practice/../server.js', 'practice/tools/anything.js', 'Practice/plan.js'].forEach(rel => assert.equal(allow.isServed(rel), false, JSON.stringify(rel)));
   assert.equal(allow.isServed(null), false);
   assert.equal(allow.isServed(undefined), false);
   assert.equal(allow.isServed({}), false);

@@ -36,6 +36,8 @@ const CODE_DIRS = 'scoregraph|engrave|playability|difficulty|songgraph|arrangeme
 
 const RULES = [
   new RegExp('^(?:' + CODE_DIRS + ')/[\\w.-]+\\.js$'),
+  /* G11a-3: the practice plan of the graph (PPP.practice 'graph' asks for it, once). Only this file: practice/ also holds the simulator and the variant splice, which no page loads */
+  /^practice\/plan\.js$/,
   /* the trained weights the stages read (rec/weights/*.json, difficulty/weights/g6a-v1.json) */
   /^(?:rec|difficulty)\/weights\/[\w.-]+\.json$/,
   /* the one training table the arranger's real bands need (loadArrangerReference) - the only file of a tools/ folder the page asks for */
