@@ -156,7 +156,8 @@ def run(args) -> int:
     problem = suite.env_problem(not nohelper, any(t.endswith("-A") for t in tiers))
     if problem:
         return suite.skip(problem, args.require_env)
-    out_dir = os.path.join(args.out or suite.OUT, args.mode + render.SUFFIX)
+    omr_mode = getattr(args, "omr", None)
+    out_dir = os.path.join(args.out or suite.OUT, args.mode + render.SUFFIX + ("-" + omr_mode if omr_mode and omr_mode != "legacy" else ""))
     os.makedirs(out_dir, exist_ok=True)
     img_tiers = [t for t in tiers if t != "brace-less"]
     if img_tiers:
@@ -200,7 +201,7 @@ def run(args) -> int:
         print(f"omr-live-2 {args.mode}: {len(jobs)} files through Import.load at {base}"
               + (f", helper on port {helper_port}" if not nohelper else ", no helper"))
         r = subprocess.run([node, os.path.join(envinfo.REPO, "tests", "bench", "node", "omr-live.js"), "--in", jobs_path, "--out", rows_path,
-                            "--base", base, "--helper-port", str(helper_port)], capture_output=True, env=envinfo.node_env(), timeout=7200)
+                            "--base", base, "--helper-port", str(helper_port)] + (["--omr", omr_mode] if omr_mode else []), capture_output=True, env=envinfo.node_env(), timeout=7200)
         if r.returncode != 0:
             msg = r.stderr.decode("utf-8", "replace").strip().splitlines()
             return suite.skip("the app page did not run OMR: " + (msg[-1] if msg else f"exit {r.returncode}"), args.require_env)
@@ -219,7 +220,7 @@ def run(args) -> int:
     with open(os.path.join(out_dir, "summary.txt"), "w", encoding="utf-8", newline="\n") as h:
         h.write(bl.table(results) + "\n")
     print(bl.table(results))
-    print(f"wrote {os.path.relpath(os.path.join(out_dir, 'results.json'), envinfo.REPO)}")
+    print(f"wrote {suite.rel(os.path.join(out_dir, 'results.json'))}")
     if args.check:
         return suite.do_check(results, args.baseline or suite.baseline_path(args.mode, "5.11.0"))
     return 0
@@ -248,6 +249,8 @@ def score_app(doc, sel, tiers, jobs, rows, args, health, elapsed) -> Dict[str, A
     results.update(created=datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"), git=suite.git_info(),
                    versions=render.tool_versions(), cases_sha256=suite.cases_digest(), tiers=OrderedDict(), inputs_sha256={},
                    timing_s=round(elapsed, 1))
+    if getattr(args, "omr", None):
+        results["omr"] = args.omr           # PPP.omr of the page for this run (G12-1)
     for tier in tiers:
         scored, extra, notes = [], [], {}
         ms = 0.0

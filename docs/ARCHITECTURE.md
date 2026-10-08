@@ -86,14 +86,13 @@ tests/bench/           + sg-roundtrip 명령, 다중 파일 SUT(audio-score.js +
 ### G1 구현 후 (2026-09-23, 브랜치 `g1-scoregraph`)
 
 - **S0–S1 완료.** `scoregraph/` 라이브러리(13개 파일), validator, canonical JSON, MusicXML import/export. 코퍼스 369개 파일이 `sg-roundtrip`의 L1, L1+, L2와 재생 순서를 통과한다 (allowlist 2개).
-- **S2 완료.** `toMusicXml`은 `buildGraph`로 ScoreGraph를 만들고, ScoreGraph exporter가 쓴 MusicXML을 돌려준다. 반환값은 `{xml, stats, graph, graphIssues}`다. 들은 음, 페달, 마디 시각은 `source` performance 층에 있다. `opts.legacyWriter`는 G0 writer(`buildXml`)를 한 릴리스 동안 남긴 되돌리기 경로다.
+- **S2 완료.** `toMusicXml`은 `buildGraph`로 ScoreGraph를 만들고, ScoreGraph exporter가 쓴 MusicXML을 돌려준다. 반환값은 `{xml, stats, graph, graphIssues}`다. 들은 음, 페달, 마디 시각은 `source` performance 층에 있다. G0 writer(`buildXml`)와 그 되돌리기 옵션 `opts.legacyWriter`는 MX-3(2026-10-08)에서 지웠다. writer는 이것 하나다.
 - 앱은 `scoregraph/*.js`를 `audio-score.js` **앞에** 로드한다 (`?v=8`). `audio-score.js`는 버전이 다른 라이브러리를 거절한다.
 - 그 밖의 소비자(앱 import, 저장, 렌더러, 재생, 편곡)는 아직 MusicXML 문자열과 legacy `Score`를 쓴다. S3부터는 G2 이후다.
 
 ```
 heard notes (초) ─► toMusicXml ─► buildGraph ─► ScoreGraph ─► musicxml.export ─► MusicXML ─► (이하 §1과 같음)
                                                   │ graph, graphIssues도 반환 (앱은 아직 쓰지 않음)
-                                     opts.legacyWriter ─► buildXml ─► MusicXML (되돌리기 경로)
 ```
 
 - **G3 (브랜치 `g3-score-intelligence`, G03 §27, 미병합)**: `buildGraph`와 exporter 사이에 graph → graph pass 층 `professionalize()`(`scoregraph/pro*.js`, `meter-grid.js`)가 들어간다. 순서 staff → voice → (G3b perf-voices → regularize) → rhythm → tuplet → spell → beam → marks → (ottava), critic이 pass마다 보존 규칙을 검사한다. `toMusicXml(opts.professional)`: `'off'`(기본) · `'shadow'`(돌리고 report만) · `'on'`(G3 그래프를 export). 반환값에 `proReport`. flip 전까지 기본 `'off'`.
@@ -114,7 +113,7 @@ G2는 **producer 쪽 경계**를 연다. 전문과 근거는 `docs/GOALS/G02_SCO
 - **MIDI는 연주지 악보가 아니다**: 무손실 performance 층 + `op:'inferred'`로 표시한 최소 기보 skeleton까지만 만든다. 리듬 양자화·성부 분리·손 배정은 G3다.
 - **import 경계는 throw하지 않는다** (G2-D3). 파일 하나의 결함이 서비스를 죽이지 않는다.
 - schema는 `scoregraph_version` **2**다 (MIDI track·channel, 일반 CC, barline fermata, glissando, multiple-rest).
-- **S3 완료.** 사람이 여는 파일은 그래프를 거쳐 `legacy-score.js`의 `toScore`가 앱 `Score`로 만든다. `parseMusicXML`은 `PPP.legacyImport`로 한 릴리스 남는 되돌리기 경로다. 앱이 스스로 만든 XML(녹음·편곡·OMR)은 아직 옛 경로이고, 그것이 S4/S5다.
+- **S3 완료.** 사람이 여는 파일은 그래프를 거쳐 `legacy-score.js`의 `toScore`가 앱 `Score`로 만든다. `parseMusicXML`로 되돌리는 스위치 `PPP.legacyImport`는 MX-3(2026-10-08)에서 지웠다. `parseMusicXML` 자체는 앱이 스스로 만든 XML이 쓰는 동안(S4) 남는다. 앱이 스스로 만든 XML(녹음·편곡·OMR)은 아직 옛 경로이고, 그것이 S4/S5다.
 - `.mid`가 열린다: 무손실 performance + `audio-score.js`의 기존 quantizer가 만든 **inferred** 기보. 세 곳에서 추론임을 말한다 (G02 §24.8).
 
 ### G4 설계 (Proposed, 2026-09-24, 브랜치 `g4-professional-engraving`, 미구현)

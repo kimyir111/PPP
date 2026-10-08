@@ -1,7 +1,7 @@
 # Releases
 
 One row per deploy of ppp-web (Render service `srv-dalt5s6k1f9s739cuetg`), newest first. Written in G13-0; the procedure that produces a
-row is `docs/RELEASE_CHECKLIST.md`. Until `tools/release/release.js` exists (G13-7a) the person who deploys adds the row.
+row is `docs/RELEASE_CHECKLIST.md`. `node tools/release/release.js <sha> --confirm` (G13-7a) adds the row at the top of the table after it has deployed and run the smoke check; commit it. By hand otherwise.
 
 **A row.**
 - **Date**: UTC, the time Render created the deploy.
