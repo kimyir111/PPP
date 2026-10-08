@@ -220,7 +220,7 @@ def run(args) -> int:
     with open(os.path.join(out_dir, "summary.txt"), "w", encoding="utf-8", newline="\n") as h:
         h.write(bl.table(results) + "\n")
     print(bl.table(results))
-    print(f"wrote {os.path.relpath(os.path.join(out_dir, 'results.json'), envinfo.REPO)}")
+    print(f"wrote {suite.rel(os.path.join(out_dir, 'results.json'))}")
     if args.check:
         return suite.do_check(results, args.baseline or suite.baseline_path(args.mode, "5.11.0"))
     return 0

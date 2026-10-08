@@ -84,6 +84,14 @@ def parse_tiers(text: str) -> List[str]:
     return tiers
 
 
+def rel(path: str) -> str:
+    """A path as the repository sees it; one on another drive (an --out on C: for a tree on D:) is shown whole."""
+    try:
+        return os.path.relpath(path, envinfo.REPO)
+    except ValueError:
+        return path
+
+
 def git_info() -> Dict[str, Any]:
     def run(*a):
         try:
@@ -229,7 +237,7 @@ def run_engine(args) -> int:
     print(bl.table(results))
     if results["timeouts"]:
         print(f"WARNING: {len(results['timeouts'])} pages timed out and count as unread; run the same command again (finished pages are kept)")
-    print(f"wrote {os.path.relpath(os.path.join(out_dir, 'results.json'), envinfo.REPO)}")
+    print(f"wrote {rel(os.path.join(out_dir, 'results.json'))}")
     if args.check:
         return do_check(results, args.baseline or baseline_path("engine", eng["version"]))
     return 0
@@ -285,7 +293,7 @@ def score_engine(doc, sel, tiers, order, inputs, recs, eng, args) -> Dict[str, A
 # ---------------------------------------------------------------------------------------- check / baseline
 def do_check(results: Dict[str, Any], base_path: str) -> int:
     if not os.path.isfile(base_path):
-        print(f"ERROR NO_BASELINE: {os.path.relpath(base_path, envinfo.REPO)} does not exist (run `baseline --reason ...` first)")
+        print(f"ERROR NO_BASELINE: {rel(base_path)} does not exist (run `baseline --reason ...` first)")
         return 2
     verdict = bl.check(results, bl.load(base_path))
     print(bl.format_check(verdict))
@@ -339,7 +347,7 @@ def cmd_baseline(args) -> int:
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w", encoding="utf-8", newline="\n") as h:
         h.write(bl.dumps(bl.to_baseline(results, args.reason)))
-    print(f"recorded {os.path.relpath(out, envinfo.REPO)}")
+    print(f"recorded {rel(out)}")
     return 0
 
 
