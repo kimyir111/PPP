@@ -303,6 +303,7 @@ jobs:
       - run: npm run test:home-worker                              # G10b-1: the home-PC queue, its worker and server.js with it (Node only, ~40 s; the Postgres part skips without PPP_TEST_PG_URL)
       - run: npm run test:backup                                   # G13-6: Settings > My data, its module alone (library-backup.js against a fake storage and a fake IndexedDB): six safety properties and 15 mutants that each break one of them (Node only)
       - run: npm run test:server-hygiene                           # G13-5: the served-path allowlist (a lazy module the page loads must be on it), the security headers, the signup limit, the paged Shared Scores list (Node only; the Postgres part skips without PPP_TEST_PG_URL)
+      - run: npm run test:load                                     # G13-4: load performance, Node only: the catalog of the language in use is the only one fetched (i18n.js), content-hash URLs (immutable only for the right hash), the self-hosted fonts
       - if: always()
         uses: actions/upload-artifact@v4
         with:

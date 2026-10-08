@@ -136,6 +136,20 @@
     return interpolate(out, vars);
   }
 
+  /* G13-4a: a switch fires the listeners when the new language's catalog is in (at once when it already is: English, or one the page has shown before),
+     and only for the latest switch - a second switch while the first is on its way makes the first stale. */
+  var switchSeq = 0;
+  function switchTo(next) {
+    var mine = ++switchSeq;
+    var wait = load(next);
+    if (global.PPP_I18N) global.PPP_I18N.ready = wait;
+    if (loaded[next]) { fire(next); return; }
+    wait.then(function () { if (mine === switchSeq) fire(next); });
+  }
+  function fire(next) {
+    listeners.forEach(function (fn) { try { fn(next); } catch (e) {} });
+  }
+
   function setLocale(next) {
     if (!isLocale(next)) return locale;
     locale = next;
@@ -143,7 +157,7 @@
     try { localStorage.setItem(STORAGE_KEY, next); } catch (e) {}
     persistCookie(next);
     applyDocumentLocale(next, source);
-    listeners.forEach(function (fn) { try { fn(next); } catch (e) {} });
+    switchTo(next);
     return locale;
   }
 
@@ -153,7 +167,7 @@
     source = 'automatic';
     persistCookie(locale);
     applyDocumentLocale(locale, source);
-    listeners.forEach(function (fn) { try { fn(locale); } catch (e) {} });
+    switchTo(locale);
     return locale;
   }
 
@@ -207,18 +221,31 @@
     return './i18n/' + loc + '.json';
   }
 
-  var ready = Promise.all(SUPPORTED.map(function (loc) {
-    return fetch(catalogUrl(loc), { cache: 'no-store' })
+  /* G13-4a: only the catalog of the language in use is fetched (the other three were fetched on every load: 184 KB on the wire for a person who reads one of them);
+     the others come when the language is switched. English is the key of every string, so it has no catalog to wait for. A catalog that cannot be fetched leaves
+     the page in English, as before, and is asked for again at the next switch to it. */
+  var loaded = {};
+  var pending = {};
+  loaded[DEFAULT_LOCALE] = true;
+  function load(loc) {
+    if (loaded[loc]) return Promise.resolve();
+    if (pending[loc]) return pending[loc];
+    pending[loc] = fetch(catalogUrl(loc), { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : { content: {} }; })
-      .then(function (json) { catalogs[loc] = indexContent(json && json.content); })
-      .catch(function () { catalogs[loc] = {}; });
-  }));
+      .then(function (json) { catalogs[loc] = indexContent(json && json.content); loaded[loc] = true; })
+      .catch(function () { catalogs[loc] = {}; })
+      .then(function () { pending[loc] = null; });
+    return pending[loc];
+  }
+
+  var ready = load(locale);
 
   global.PPP_I18N = {
     SUPPORTED: SUPPORTED,
     OPTIONS: OPTIONS,
     STORAGE_KEY: STORAGE_KEY,
     ready: ready,
+    load: load,
     isLocale: isLocale,
     detectLocale: detectLocale,
     getLocale: function () { return locale; },
