@@ -2224,6 +2224,7 @@
     "guitar": "기타",
     "piano": "피아노",
     "synth / other instrument": "신스·기타 악기",
-    "no melody line (the lead sheet finds one)": "멜로디 선 없음 (리드시트가 찾아요)"
+    "no melody line (the lead sheet finds one)": "멜로디 선 없음 (리드시트가 찾아요)",
+    "not recorded (an earlier conversion)": "기록 없음 (이전 변환)"
   }
 }

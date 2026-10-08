@@ -2224,6 +2224,7 @@
     "guitar": "吉他",
     "piano": "钢琴",
     "synth / other instrument": "合成器 / 其他乐器",
-    "no melody line (the lead sheet finds one)": "没有旋律线（由领谱寻找）"
+    "no melody line (the lead sheet finds one)": "没有旋律线（由领谱寻找）",
+    "not recorded (an earlier conversion)": "无记录（较早的转换）"
   }
 }

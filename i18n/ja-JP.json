@@ -2224,6 +2224,7 @@
     "guitar": "ギター",
     "piano": "ピアノ",
     "synth / other instrument": "シンセ・その他の楽器",
-    "no melody line (the lead sheet finds one)": "メロディーの線なし（リードシートが探します）"
+    "no melody line (the lead sheet finds one)": "メロディーの線なし（リードシートが探します）",
+    "not recorded (an earlier conversion)": "記録なし（以前の変換）"
   }
 }
