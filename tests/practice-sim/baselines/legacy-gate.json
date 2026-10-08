@@ -554,6 +554,7 @@
    "practiceHeads",
    "practiceGraphBuild",
    "PRACTICE_CACHE",
+   "PRACTICE_RETRY",
    "practiceGraphPlan",
    "practicePlan",
    "PIANO_VISUALIZER_DEFAULTS",

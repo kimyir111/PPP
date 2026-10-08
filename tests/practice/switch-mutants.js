@@ -39,8 +39,11 @@ const ROWS = [
   ['W15', 'a fallback is not counted', [["    practiceCountFallback(score, r.reason);", ""]], 'fallbacks'],
   ['W16', 'a link that is not ok is used', [["  if (!src.link || !src.link.ok) return { reason: 'LINK_FAILED' };", "  if (!src.link) return { reason: 'LINK_FAILED' };"]], 'fallbacks'],
   ['W17', 'a plan that cannot be built is thrown into the player', [["    return { reason: 'BUILD_ERROR' };", "    throw e;"]], 'fallbacks'],
-  ['W18', 'a fallback is never decided again', [["  if (hit && (hit.graph || hit.stamp === practiceStamp())) return hit.plan;", "  if (hit) return hit.plan;"]], 'fallbacks'],
-  ['W19', 'nothing is kept: every ask builds again', [["  if (hit && (hit.graph || hit.stamp === practiceStamp())) return hit.plan;", "  if (false) return hit.plan;"]], 'fallbacks'],
+  ['W18', 'a fallback is never decided again', [["  if (hit && (hit.graph || !(hit.tries < 5 && PRACTICE_RETRY[hit.reason] && hit.stamp !== practiceStamp()))) return hit.plan;", "  if (hit) return hit.plan;"]], 'fallbacks'],
+  ['W19', 'nothing is kept: every ask builds again', [["  if (hit && (hit.graph || !(hit.tries < 5 && PRACTICE_RETRY[hit.reason] && hit.stamp !== practiceStamp()))) return hit.plan;", "  if (false) return hit.plan;"]], 'fallbacks'],
+  ['W28', 'a fallback is decided again at every ask (the stamp is not looked at)', [["hit.tries < 5 && PRACTICE_RETRY[hit.reason] && hit.stamp !== practiceStamp()", "hit.tries < 5 && PRACTICE_RETRY[hit.reason]"]], 'fallbacks'],
+  ['W29', 'a fallback is decided again for ever (no limit on the tries)', [["hit.tries < 5 && PRACTICE_RETRY", "PRACTICE_RETRY"]], 'fallbacks'],
+  ['W30', 'a plan that cannot be built is decided again whenever the engraver has been busy', [["const PRACTICE_RETRY = { NOT_LOADED: 1, NO_ENGRAVER: 1, RESOLVE_ERROR: 1, NO_GRAPH: 1, LINK_FAILED: 1 };", "const PRACTICE_RETRY = { NOT_LOADED: 1, NO_ENGRAVER: 1, RESOLVE_ERROR: 1, NO_GRAPH: 1, LINK_FAILED: 1, BUILD_ERROR: 1, MEASURES: 1, IDENTITY: 1, EMPTY: 1 };"]], 'fallbacks'],
   ['W20', 'a plan made from the graph is not counted', [["    PRACTICE_STATS.graph++;", ""]], 'switch,fallbacks'],
   /* the plan the player reads */
   ['W21', 'a graph plan is made for the wrong range (the last bar is left out)', [["  const i0 = (Score.measure(score, a) || ms[0]).index, i1 = (Score.measure(score, b) || ms[ms.length - 1]).index;",

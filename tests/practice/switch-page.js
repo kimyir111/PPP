@@ -376,6 +376,26 @@
         } finally { app.resolveSync = origResolve; }
         void real;
       }
+      /* ...but not for ever: five decisions at most (a Score that never resolves is not looked at on every change of the engraver), and a graph that disagrees with the Score is decided once */
+      {
+        const sc = await fresh();
+        app.resolveSync = function (s) { return s === sc ? { graph: null, via: 'none', link: { ok: false, byNote: [] } } : origResolve.call(this, s); };
+        try {
+          const f0 = stats().total;
+          PPP.practicePlan(sc);
+          for (let i = 0; i < 9; i++) { origResolve.call(app, await fresh()); PPP.practicePlan(sc); }
+          check('a fallback whose reason can change is decided at most five times (ten asks, the engraver busy in between)', stats().total - f0 === 5, stats().total - f0);
+        } finally { app.resolveSync = origResolve; }
+        const sc2 = await fresh();
+        const real2 = origResolve.call(app, sc2);
+        app.resolveSync = function (s) { return s === sc2 ? { graph: Object.assign({}, real2.graph, { parts: null }), via: 'live', link: real2.link } : origResolve.call(this, s); };
+        try {
+          const f0 = stats().total;
+          PPP.practicePlan(sc2);
+          for (let i = 0; i < 3; i++) { origResolve.call(app, await fresh()); PPP.practicePlan(sc2); }
+          check('a plan that cannot be built is decided once, whatever the engraver does next', stats().total - f0 === 1, stats().total - f0);
+        } finally { app.resolveSync = origResolve; }
+      }
     } catch (e) {
       check('the fallback probe ran', false, message(e));
     } finally {

@@ -863,7 +863,7 @@ jobs:
 
   # practice-switch-mutants: does the switch test notice a switch that got worse? tests/practice/switch-mutants.js breaks ONE line of the page at a time (practicePlan returns the legacy plan
   # under 'graph', a call site asks PianoScore.of again, the default is graph, a value that is no choice is graph, a fallback is not counted, a link that is not ok is used, ...) and the
-  # test, run on the sections the row names, must go red; 27 rows, 1-17 s each. On a pull request only when the probes themselves changed (practice-plan's `harness`), every night otherwise.
+  # test, run on the sections the row names, must go red; 30 rows, 1-25 s each (three shards). On a pull request only when the probes themselves changed (practice-plan's `harness`), every night otherwise.
   practice-switch-mutants:
     needs: practice-plan
     if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.harness == 'true')) }}

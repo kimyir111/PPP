@@ -3520,7 +3520,9 @@ function practiceGraphBuild(score, a, b, src0) {
   return { plan: plan, src: src };
 }
 const PRACTICE_CACHE = typeof WeakMap === 'function' ? new WeakMap() : null;
-/* One plan per (Score, range), like PianoScore.of: a graph plan is kept for good; a fallback is kept until something that could change it has happened (practiceStamp). */
+/* One plan per (Score, range), like PianoScore.of: a graph plan is kept for good; a fallback whose reason can change (the module is not here, the engraver has no graph or no good link for the Score yet) is kept until
+   something that could change it has happened (practiceStamp), and then decided again, at most five times; the others (the graph and the Score disagree about the measures, a plan that cannot be built) for good. */
+const PRACTICE_RETRY = { NOT_LOADED: 1, NO_ENGRAVER: 1, RESOLVE_ERROR: 1, NO_GRAPH: 1, LINK_FAILED: 1 };
 function practiceGraphPlan(score, from, to) {
   if (!score) return PianoScore.of(score, from, to);
   const a = from == null ? Score.first(score) : from;
@@ -3528,15 +3530,16 @@ function practiceGraphPlan(score, from, to) {
   const key = a + ':' + b;
   let bag = PRACTICE_CACHE && PRACTICE_CACHE.get(score);
   const hit = bag && bag[key];
-  if (hit && (hit.graph || hit.stamp === practiceStamp())) return hit.plan;
+  if (hit && (hit.graph || !(hit.tries < 5 && PRACTICE_RETRY[hit.reason] && hit.stamp !== practiceStamp()))) return hit.plan;
   const r = practiceGraphBuild(score, a, b, bag && bag.src);
+  const tries = hit && !hit.graph ? hit.tries + 1 : 1;
   let entry;
   if (r.plan) {
     PRACTICE_STATS.graph++;
     entry = { plan: r.plan, graph: true };
   } else {
     practiceCountFallback(score, r.reason);
-    entry = { plan: PianoScore.of(score, from, to), graph: false, stamp: practiceStamp() };
+    entry = { plan: PianoScore.of(score, from, to), graph: false, reason: r.reason, tries: tries, stamp: practiceStamp() };
   }
   if (PRACTICE_CACHE) {
     if (!bag) { bag = {}; PRACTICE_CACHE.set(score, bag); }
