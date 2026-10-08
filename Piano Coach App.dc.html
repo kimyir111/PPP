@@ -16986,9 +16986,14 @@ class Component extends DCLogic {
           flush();
         }, { root: scroller, rootMargin: MARGIN + 'px 0px' });
       }
+      /* an element is (re)observed when it is new, when it now shows another card (the list was replaced and the page kept the element), and the "Show more" row after a page came */
       els.forEach(el => {
-        if (!el.__pppSharedSeen) { el.__pppSharedSeen = true; this._sharedIO.observe(el); }
-        else if (this._sharedRewatch && el.hasAttribute('data-shared-more')) { this._sharedIO.unobserve(el); this._sharedIO.observe(el); }
+        const key = el.hasAttribute('data-shared-more') ? '*more' : el.getAttribute('data-shared');
+        const was = el.__pppSharedKey;
+        if (was === key && !(this._sharedRewatch && key === '*more')) return;
+        if (was !== undefined) this._sharedIO.unobserve(el);
+        el.__pppSharedKey = key;
+        this._sharedIO.observe(el);
       });
       this._sharedRewatch = false;
     } else if (!this._sharedScan) {
