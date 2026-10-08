@@ -46,12 +46,15 @@ class PathClasses(unittest.TestCase):
         self.assertEqual(len(practice_plan.SUITE_FILES), 11)
 
     def test_the_probes_and_the_workflow_also_run_the_mutation_check(self):
-        for p in ("tests/practice/perf.js", "tests/practice/baselines/legacy.json", "tests/practice/plan.py", ".github/workflows/bench.yml",
+        for p in ("tests/practice/perf.js", "tests/practice/baselines/legacy.json", "tests/practice/baselines/perf.json", "tests/practice/plan.py",
+                  "tests/practice/record.js", "tests/practice/canon.js", "tests/practice/lib.js", "tests/practice/mutants.js",
+                  "tests/practice/run-suites.js", ".github/workflows/bench.yml",
                   "tests/engrave/tools/with-port.js", "tests/serve-free.js", "tests/boot.js"):
             self.assertEqual(self.cls(p), (True, True), p)
 
-    def test_the_page_and_a_suite_alone_do_not_run_the_mutation_check(self):
-        for p in ("Piano Coach App.dc.html", "tests/follow.test.js", "practice/plan.js", "package.json"):
+    def test_the_page_a_suite_and_the_node_tests_of_practice_do_not_run_the_mutation_check(self):
+        for p in ("Piano Coach App.dc.html", "tests/follow.test.js", "practice/plan.js", "practice/variant.js", "package.json",
+                  "tests/practice/plan.test.js", "tests/practice/helpers.js", "tests/practice/fixtures/pedals.musicxml"):
             self.assertEqual(self.cls(p), (True, False), p)
 
     def test_everything_else_is_not_a_reason(self):
@@ -79,6 +82,7 @@ class WholeChange(unittest.TestCase):
 
     def test_the_probes_set_the_harness_flag(self):
         self.assertEqual(practice_plan.classify(["notes/a.md", "tests/practice/record.js"])[:2], (True, True))
+        self.assertEqual(practice_plan.classify(["notes/a.md", "tests/practice/plan.test.js"])[:2], (True, False))
 
     def test_an_empty_list_runs_everything(self):
         self.assertEqual(practice_plan.classify([])[:2], (True, True))
@@ -95,7 +99,7 @@ class WholeChange(unittest.TestCase):
 class FromARealMergeCommit(unittest.TestCase):
     def merge(self, repo, changes, deletes=()):
         git(repo, "init", "-q", "-b", "main")
-        for rel in ("notes/a.md", "server.js", "Piano Coach App.dc.html", "tests/practice/x.js"):
+        for rel in ("notes/a.md", "server.js", "Piano Coach App.dc.html", "tests/practice/record.js", "tests/practice/plan.test.js"):
             write(repo, rel, "one\n")
         git(repo, "add", ".")
         git(repo, "commit", "-q", "-m", "base")
@@ -135,7 +139,8 @@ class FromARealMergeCommit(unittest.TestCase):
         self.assertIn("**RUN**", text)
 
     def test_a_probe_runs_the_mutation_check(self):
-        self.assertEqual(self.plan(["tests/practice/x.js"])[:2], ("true", "true"))
+        self.assertEqual(self.plan(["tests/practice/record.js"])[:2], ("true", "true"))
+        self.assertEqual(self.plan(["tests/practice/plan.test.js"])[:2], ("true", "false"))
 
     def test_a_deleted_page_runs(self):
         self.assertEqual(self.plan(["notes/a.md"], deletes=["Piano Coach App.dc.html"])[0], "true")
@@ -259,7 +264,9 @@ class PracticeJobs(unittest.TestCase):
         self.assertEqual(self.scripts["test:practice-legacy"], "node tests/practice/record.js check")
         self.assertEqual(self.scripts["test:practice-perf"], "node tests/practice/perf.js check")
         self.assertEqual(self.scripts["test:practice-mutants"], "node tests/practice/mutants.js")
-        self.assertIn("test:practice-suites", self.scripts["test:practice"])
+        self.assertIn("test:practice-suites", self.scripts["test:practice-browser"])
+        # main's own Node unit tests of practice/ (G11a-1) keep the name test:practice
+        self.assertEqual(self.scripts["test:practice"], 'node --test "tests/practice/**/*.test.js"')
 
 
 if __name__ == "__main__":

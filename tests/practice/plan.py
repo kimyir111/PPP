@@ -9,7 +9,8 @@ base) and the jobs `practice-suites` and `practice-probes` read its answers:
     run       true when the change touches the app's page, the practice modules, the practice tests or what they run on (the list below).
               A pull request that touches none of them does not start the practice jobs: the gate (tests/bench/tools/ci_plan.py) is
               what runs for everything else, and the nightly runs the practice jobs on the whole tree.
-    harness   true when the change touches the probes themselves (tests/practice/, the suites' port helper, the workflow): the mutation check
+    harness   true when the change touches the probes themselves (their files in tests/practice/, their baselines, the suites' port helper,
+              the workflow): the mutation check
               (tests/practice/mutants.js, several minutes) runs only then, and every night.
 
 It is the gate's classifier turned around, with the same safeguard: the question is "is it certain that the practice jobs are not needed?",
@@ -25,16 +26,20 @@ import argparse
 import subprocess
 import sys
 
-# The page, and the modules the practice screens are made of. practice/ is the directory G11a-1 creates.
+# The page, the modules the practice screens are made of (practice/, G11a-1) and the practice tests (tests/practice/: the probes below and
+# G11a-1's Node unit tests of practice/).
 APP_FILES = ("Piano Coach App.dc.html",)
-APP_DIRS = ("practice/",)
+APP_DIRS = ("practice/", "tests/practice/")
 # The suites themselves and what they and the probes stand on (the server helper, the page boot, the port rewrite).
 SUITE_FILES = tuple("tests/%s.test.js" % n for n in (
     "follow", "falling-notes", "memory", "learning", "playback-scheduler", "coach", "midi", "interactions", "lessons", "course", "alignment"))
 RUN_FILES = ("tests/boot.js", "tests/serve-free.js", "tests/engrave/tools/with-port.js", "package.json", "package-lock.json")
-# The probes: a change here also runs the mutation check.
-HARNESS_DIRS = ("tests/practice/",)
-HARNESS_FILES = (".github/workflows/bench.yml", "tests/engrave/tools/with-port.js", "tests/serve-free.js", "tests/boot.js")
+# The probes: a change here also runs the mutation check. (A change to G11a-1's Node unit tests in tests/practice/ is a practice test, `run`,
+# and not a probe.)
+HARNESS_DIRS = ("tests/practice/baselines/",)
+HARNESS_FILES = (".github/workflows/bench.yml", "tests/engrave/tools/with-port.js", "tests/serve-free.js", "tests/boot.js",
+                 "tests/practice/canon.js", "tests/practice/lib.js", "tests/practice/mutants.js", "tests/practice/perf.js", "tests/practice/plan.py",
+                 "tests/practice/record.js", "tests/practice/run-suites.js")
 
 
 def clean(path):
