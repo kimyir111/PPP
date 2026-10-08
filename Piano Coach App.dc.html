@@ -1464,6 +1464,17 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
               </div>
             </div>
 
+            <!-- G11b-1 (PPP.learner 'typed' only): one tap to say how the run just finished felt. Shown while nothing is playing, never in the way of a loop. -->
+            <sc-if value="{{ showRunRating }}" hint-placeholder-val="{{ false }}">
+              <div data-run-rating style="margin-top: 10px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <span style="flex: 1 0 100%; font-size: 12px; color: var(--ink3);">{{ runRatingLabel }}</span>
+                <sc-for list="{{ runRatingChoices }}" as="rc" hint-placeholder-count="3">
+                  <button onClick="{{ rc.on }}" data-run-rating-v="{{ rc.v }}" style="padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 12px; cursor: pointer;" style-hover="border-color: var(--ink3);">{{ rc.label }}</button>
+                </sc-for>
+                <button onClick="{{ skipRunRating }}" data-run-rating-skip aria-label="{{ runRatingSkip }}" title="{{ runRatingSkip }}" style="margin-left: auto; padding: 3px 8px; border: 0; background: transparent; color: var(--ink3); font-family: inherit; font-size: 14px; cursor: pointer;">×</button>
+              </div>
+            </sc-if>
+
             <!-- A passage you picked yourself: why it is hard and the steps for
                  it. Shown only when the session is not already driving this
                  passage, so there is never more than one instruction at a time. -->
@@ -2496,6 +2507,17 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
             </div>
             <button onClick="{{ resetProgress }}" style="margin-left: auto; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--bad); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--bad);">Reset</button>
           </div>
+          <!-- G11b-1 (PPP.learner 'typed' only): the practice log, kept on this device, written out as a file on request. -->
+          <sc-if value="{{ showLogSettings }}" hint-placeholder-val="{{ false }}">
+            <div data-run-log-settings style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px 22px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+              <div style="min-width: 0; flex: 1; flex-basis: 260px;">
+                <div style="font-size: 13.5px; font-weight: 500;">{{ runLogTitle }}</div>
+                <div style="font-size: 12px; color: var(--ink3); margin-top: 2px;">{{ runLogSub }}</div>
+                <div data-run-log-status style="font-size: 12px; color: var(--ink2); margin-top: 4px;">{{ runLogStatus }}</div>
+              </div>
+              <button onClick="{{ exportRunLog }}" data-run-log-export style="margin-left: auto; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--ink3);">{{ runLogExportLabel }}</button>
+            </div>
+          </sc-if>
           <sc-if value="{{ showHomeSettings }}" hint-placeholder-val="{{ false }}">
             <div data-home-settings style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px 22px; display: flex; flex-direction: column; gap: 12px;">
               <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
@@ -5363,6 +5385,75 @@ function setRecordingArrangeMode(v) {
   try { if (c) localStorage.setItem(RECORDING_ARRANGE_KEY, c); else localStorage.removeItem(RECORDING_ARRANGE_KEY); } catch (e) { /* not remembered */ }
   return RECORDING_ARRANGE_MODE;
 }
+/* ============================ G11b-1: typed practice evidence and the run log (PPP.learner) ============================
+   docs/GOALS/G11_ADAPTIVE_PRACTICE.md G11-D4, G11-D5, G11-D6, sections 7.5 and 9, phase row G11b-1. PPP.learner = 'legacy' (default) | 'typed'. The semantics are PPP.recording's: a choice is one of those two strings,
+   anything else (a typo, null, a storage that throws) is no choice and no choice is the default; layers, the first that holds a choice wins: ?learner= in the address (this visit only, never stored), the device's
+   remembered choice (localStorage LEARNER_KEY), the default.
+   'legacy' is the page as it was: the localStorage aggregates (history, memory, secs) are written byte for byte as before, practice/runlog.js is never requested, IndexedDB 'ppp-runlog' is never opened.
+   'typed' adds, and changes nothing the legacy screens read: every finished run is named - source 'measured' (a clock run judged by the matcher), 'follow' (Follow mode: no timing), 'memory' (a recall) or 'simulated'
+   (Demo Input: no keyboard, hits drawn at random) - and the name goes into the run summary of the history; the three real kinds also go into the bounded run log of practice/runlog.js (IndexedDB, per song and music hash,
+   at most 300 runs of 2 KB), which a person can export from Settings. A simulated run is only counted on its epoch, never logged: it is not evidence. A log that cannot be had (a private window, a full disk, a damaged
+   record) is given up for the session without a word (stats.degraded) and the page works as under 'legacy'.
+   PPP.demoRuns = 'count' (default: today) | 'separate' is decision U4 (G11 section 14.1), OFF until the user decides: under 'typed' and 'separate' a run without a keyboard still moves the screen (laps, minutes, section bars, the
+   plan's task) but is not folded into history.byMeasure or the memory record, the things weakness, recommendations and memory eligibility are read from. It does nothing under 'legacy'. */
+const LEARNER_KEY = 'ppp.learner.v1';
+const LEARNER_DEFAULT = 'legacy';
+function learnerChoice(v) { return v === 'typed' || v === 'legacy' ? v : null; }
+let LEARNER_MODE = (() => {
+  let m = LEARNER_DEFAULT;
+  try { m = learnerChoice(localStorage.getItem(LEARNER_KEY)) || m; } catch (e) { /* no storage: the default */ }
+  try { const u = learnerChoice(new URLSearchParams(location.search).get('learner')); if (u) m = u; } catch (e) { /* no address to read */ }
+  return m;
+})();
+const DEMO_RUNS_KEY = 'ppp.demoRuns.v1';
+const DEMO_RUNS_DEFAULT = 'count';
+function demoRunsChoice(v) { return v === 'count' || v === 'separate' ? v : null; }
+let DEMO_RUNS_MODE = (() => {
+  let m = DEMO_RUNS_DEFAULT;
+  try { m = demoRunsChoice(localStorage.getItem(DEMO_RUNS_KEY)) || m; } catch (e) { /* no storage: the default */ }
+  try { const u = demoRunsChoice(new URLSearchParams(location.search).get('demoRuns')); if (u) m = u; } catch (e) { /* no address to read */ }
+  return m;
+})();
+/* a choice is remembered; a value that is no choice puts the default back and forgets the remembered one */
+function setLearnerMode(v) {
+  const c = learnerChoice(v);
+  LEARNER_MODE = c || LEARNER_DEFAULT;
+  try { if (c) localStorage.setItem(LEARNER_KEY, c); else localStorage.removeItem(LEARNER_KEY); } catch (e) { /* not remembered */ }
+  if (LEARNER_MODE === 'typed') loadRunLogModule();
+  return LEARNER_MODE;
+}
+function setDemoRunsMode(v) {
+  const c = demoRunsChoice(v);
+  DEMO_RUNS_MODE = c || DEMO_RUNS_DEFAULT;
+  try { if (c) localStorage.setItem(DEMO_RUNS_KEY, c); else localStorage.removeItem(DEMO_RUNS_KEY); } catch (e) { /* not remembered */ }
+  return DEMO_RUNS_MODE;
+}
+/* what kind of run a finished lap was: no result = no keyboard judged it (Demo Input); a Follow result carries its flag; a recall is a memory lap */
+function runSource(S, result) { return !result ? 'simulated' : result.follow ? 'follow' : S.practiceMode === 'memory' ? 'memory' : 'measured'; }
+const RUNLOG_SCRIPT = 'practice/runlog.js';
+const RUNLOG_FILE_V = 1; /* the ?v= of practice/runlog.js: bump it when the file changes */
+let _runLogPromise = null;
+/* practice/runlog.js, asked for only while PPP.learner is 'typed'; resolves true when window.PPPRunLog is there; never rejects; a failed download is asked for again next time */
+function loadRunLogModule() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return Promise.resolve(false);
+  if (window.PPPRunLog) return Promise.resolve(true);
+  if (_runLogPromise) return _runLogPromise;
+  _runLogPromise = new Promise(resolve => {
+    try {
+      const el = document.createElement('script');
+      el.src = './' + RUNLOG_SCRIPT + '?v=' + RUNLOG_FILE_V;
+      el.onload = () => resolve(!!window.PPPRunLog);
+      el.onerror = () => resolve(false);
+      document.head.appendChild(el);
+    } catch (e) { resolve(false); }
+  }).then(ok => { _runLogPromise = null; return ok; });
+  return _runLogPromise;
+}
+if (LEARNER_MODE === 'typed') loadRunLogModule();
+/* a song removed from My Songs takes its run log with it (a no-op under 'legacy', which never wrote one) */
+function forgetRunLog(songId) {
+  try { if (LEARNER_MODE === 'typed' && window.PPPRunLog) window.PPPRunLog.pageLog(window).forget(songId); } catch (e) { /* the log is not the song's problem */ }
+}
 /* ============================ G12-1: PPP.omr (docs/GOALS/G12_OMR.md G12-D10) ============================
    PPP.omr = 'legacy' (default) | 'v2'. A choice is one of those two strings; anything else is no choice, and no choice is the default (PPP.recording's rule).
    'legacy' is the import this page made before G12-1, byte for byte: the helper's `musicxml` field, Import.mergeMusicXml, the hand rule as it was. 'v2' keeps what the
@@ -6510,13 +6601,16 @@ const Learning = {
       h.byMeasure[m] = s;
     });
 
-    h.runs.push({
+    const summary = {
       at: at, from: result.run ? result.run.from : null, to: result.run ? result.run.to : null,
       hands: hands, tempo: tempo, simulated: !!meta.simulated,
       accuracy: result.accuracy, noteAccuracy: result.noteAccuracy,
       timingAccuracy: result.timingAccuracy, meanDeltaMs: result.meanDeltaMs,
       counts: result.counts
-    });
+    };
+    /* G11b-1: only a page on PPP.learner 'typed' names the kind of run (measured, follow, memory, simulated); the summary of a 'legacy' page has no such key, byte for byte */
+    if (meta.source !== undefined) summary.source = meta.source;
+    h.runs.push(summary);
     if (h.runs.length > LEARN.runKeep) h.runs = h.runs.slice(-LEARN.runKeep);
     return h;
   },
@@ -10596,6 +10690,15 @@ window.PPP = {
      Any other value is no choice: the default comes back and the remembered choice is forgotten (PPP.recording's rule). A choice is remembered on this device; ?recordingArrange= in the address is for that visit only. */
   get recordingArrange() { return RECORDING_ARRANGE_MODE; },
   set recordingArrange(v) { setRecordingArrangeMode(v); },
+  /* G11b-1 (docs/GOALS/G11 G11-D5, G11-D6): 'legacy' (default: the learner history exactly as it was) | 'typed' (every run is named, and the measured, follow and memory runs go into the run log, practice/runlog.js).
+     Any other value is no choice: the default comes back and the remembered choice is forgotten (PPP.recording's rule). A choice is remembered on this device; ?learner= in the address is for that visit only.
+     PPP.demoRuns is decision U4, OFF: 'count' (default: a run without a keyboard is folded into the history as today) | 'separate' (under 'typed', it is not). runLog is for tests and the console. */
+  get learner() { return LEARNER_MODE; },
+  set learner(v) { setLearnerMode(v); },
+  get demoRuns() { return DEMO_RUNS_MODE; },
+  set demoRuns(v) { setDemoRunsMode(v); },
+  get runLog() { const A = window.PPP && window.PPP.app; return { log: LEARNER_MODE === 'typed' && window.PPPRunLog ? window.PPPRunLog.pageLog(window) : null, laps: A && A._runLogLaps ? A._runLogLaps.slice() : [] }; },
+  loadRunLogModule,
   /* G12-1 (G12-D10): 'legacy' (default: the import as it was) | 'v2' (omr/normalize.js keeps what the engine read). Any other value is no choice: the default comes back and the remembered choice is forgotten. Remembered on this device; ?omr= is for that visit only. */
   get omr() { return OMR_MODE; },
   set omr(v) { setOmrMode(v); },
@@ -12887,6 +12990,7 @@ class Component extends DCLogic {
     this.applyTheme();
     this.persist();
     this.maybeReplan();
+    if (LEARNER_MODE === 'typed') this.warmRunLog(this.state.score);   /* G11b-1: the Score's music hash and note ids are worked out in idle time, not at the end of a lap */
     this.followKeyboard();
     this.followStaff();
     this.watchShared();
@@ -12899,6 +13003,7 @@ class Component extends DCLogic {
       if (this.state.sidebarOpen) this.setState({ sidebarOpen: false });
       /* G10b-1; G10b-5: a device with no link also asks (once per page) whether the site has the queue at all on the Add screen - the button that explains how to connect is shown only where there is something to connect to */
       if (this.state.screen === 'upload' || this.state.screen === 'settings') this.homeRefresh(true);
+      if (this.state.screen === 'settings') this.refreshRunLogStatus();   /* G11b-1: a no-op under PPP.learner 'legacy' */
       if (this.state.homeSheet) this.setState({ homeSheet: false });       /* the sheet that explains the PC button belongs to the Add screen */
       /* G10b-4: the link in its read-only field (the copy fallback) and the shown code are put away when Settings is left */
       if (this.state.screen !== 'settings' && (this.state.homePairManual || this.state.homeCodeShown)) this.setState({ homePairManual: false, homeCodeShown: false });
@@ -14918,18 +15023,24 @@ class Component extends DCLogic {
     /* The feedback loop: every finished run folds into the history, which is
        what weakness, section state and the next recommendation are read from. */
     const measured = result || this.simResult(S);
+    /* G11b-1: PPP.learner 'typed' names the run (null under 'legacy', where nothing below differs from before); a run without a keyboard is kept out of history and memory only under PPP.demoRuns 'separate' (U4, off) */
+    const kind = LEARNER_MODE === 'typed' ? runSource(S, result) : null;
+    const demoApart = kind === 'simulated' && DEMO_RUNS_MODE === 'separate';
     if (measured) {
       if (!result) patch.drift = measured.meanDeltaMs;
-      patch.history = Learning.record(S.history, measured, {
+      const meta = {
         at: Clock.now(), tempo: S.tempo, scoreTempo: S.score.tempo,
         hands: S.hands, simulated: !result, follow: !!(result && result.follow)
-      });
+      };
+      if (kind) meta.source = kind;
+      if (!demoApart) patch.history = Learning.record(S.history, measured, meta);
     }
+    if (kind) this.logRun(S, kind, result, measured, from, to, acc);
 
     if (S.practiceMode === 'memory') {
       /* A recall attempt is scored and recorded separately from practice, and
          only this can move memory strength. */
-      const res = measured;
+      const res = demoApart ? null : measured;
       if (res) {
         const before = Memory.get(S.memory, this.sectionOf(from).id);
         const mem = this.recordRecall(S, res);
@@ -14967,7 +15078,94 @@ class Component extends DCLogic {
         this.say(tx('{{label}} done.', { label: stp.label }));
       } else patch.seqReps = reps;
     } else this.say(tx('Run finished at {{pct}}% accuracy.', { pct: acc }));
+    /* U4, off: the one thing a person is told when a run without a keyboard was kept out of their progress */
+    if (demoApart && measured) this.say(tx('Demo input is not counted as practice progress.'));
     return patch;
+  }
+
+  /* ============================ G11b-1: the run log (PPP.learner 'typed') ============================ */
+  /* The key a run is logged under: the open song, and the music hash of its Score (the engraver's scoreHash, once per Score object; warmRunLog asks for it in idle time so a lap only reads it) */
+  runLogKey(S) {
+    const L = window.PPPRunLog;
+    const info = L.scoreInfo(S.score, sc => {
+      const E = window.PPPEngrave, M = window.PPPEngraveModules;
+      if (!E || typeof E.scoreHash !== 'function') return null;
+      return { hash: E.scoreHash(sc), hashV: (M && M.source && M.source.HASH_VERSION) || 'h2' };
+    });
+    const h = info.hash();
+    return { songId: S.songId || 'demo', hash: h.hash, hashV: h.hashV, info: info, meta: { measures: info.measures, scoreTempo: info.scoreTempo, title: info.title } };
+  }
+  warmRunLog(score) {
+    if (LEARNER_MODE !== 'typed' || !window.PPPRunLog || !score || this._warmedScore === score) return;
+    this._warmedScore = score;
+    if (!this._runLogWarm) { this._runLogWarm = true; window.PPPRunLog.warmUp(window); }
+    const go = () => { try { if (!this._dead && LEARNER_MODE === 'typed') this.runLogKey(Object.assign({}, this.state, { score: score })).info.warm(); } catch (e) { /* asked again by the lap that needs it */ } };
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: 800 }); else setTimeout(go, 200);
+  }
+  /* One finished lap into the log. Synchronous work only builds the (at most 2 KB) entry and queues it; IndexedDB is written in the background. Never throws: a log that fails is given up for the session (PPPRunLog's stats). */
+  logRun(S, kind, result, measured, from, to, acc) {
+    const L = window.PPPRunLog;
+    if (!L) { this._runLogSkipped = (this._runLogSkipped || 0) + 1; return; }
+    try {
+      const t0 = nowMs();
+      const log = L.pageLog(window);
+      const key = this.runLogKey(S);
+      if (kind === 'simulated') { log.noteSimulated(key.songId, key.hash, key.meta, key.hashV); this.noteRunLogTime(t0, kind); return; }
+      const info = key.info, perf = this._perf;
+      const fromEngine = kind !== 'follow' && perf && perf.run && perf.expected && result && result.counts && perf.expected.length === result.counts.expected;
+      const rr = fromEngine ? L.rowsFromEngine(perf, info) : L.rowsFromResult(result, info);
+      const mem = S.practiceMode === 'memory' ? Memory.get(S.memory, this.sectionOf(from).id) : null;
+      const built = L.buildEntry({
+        id: 'r' + Clock.now().toString(36) + (this._runLogSeq = (this._runLogSeq || 0) + 1).toString(36), at: Clock.now(), src: kind,
+        mode: S.practiceMode === 'memory' ? 'memory' : 'practice', hands: S.hands, tempo: S.tempo, scoreTempo: S.score.tempo,
+        from: Math.max(0, info.idxOf(from)), to: Math.max(0, info.idxOf(to)), hints: (S.hints || []).length, level: mem ? (S.memReveal ? 0 : mem.level) : 0,
+        expected: rr.expected, matched: rr.matched, wrong: result && result.counts ? result.counts.wrong : 0, extra: result && result.counts ? result.counts.extra : 0,
+        accuracy: result ? result.accuracy : acc / 100, rows: rr.rows, wrongs: L.wrongsFromResult(result, info)
+      });
+      this.noteRunLogTime(t0, kind);
+      log.append(key.songId, key.hash, built.entry, key.meta, key.hashV).then(r => {
+        if (r && r.ok && !this._dead) this.setState({ ratingRun: { songId: key.songId, hash: key.hash, n: r.n } });
+      });
+    } catch (e) { this._runLogErrors = (this._runLogErrors || 0) + 1; }
+  }
+  noteRunLogTime(t0, kind) {
+    const laps = this._runLogLaps || (this._runLogLaps = []);
+    laps.push({ ms: nowMs() - t0, kind: kind });
+    if (laps.length > 200) laps.shift();
+  }
+  /* the one-tap rating of the run just finished (1 easy, 2 just right, 3 hard); the row goes away */
+  rateRun(v) {
+    const r = this.state.ratingRun;
+    this.setState({ ratingRun: null });
+    if (!r || !window.PPPRunLog || LEARNER_MODE !== 'typed') return;
+    window.PPPRunLog.pageLog(window).rate(r.songId, r.hash, r.n, v);
+  }
+  /* Settings: what the log holds (or why it holds nothing) */
+  refreshRunLogStatus() {
+    if (LEARNER_MODE !== 'typed') return;
+    loadRunLogModule().then(ok => {
+      if (!ok || this._dead) return this.setState({ runLogInfo: { failed: true } });
+      return window.PPPRunLog.pageLog(window).epochs().then(r => {
+        if (this._dead) return;
+        if (!r.ok) { this.setState({ runLogInfo: { failed: true } }); return; }
+        const songs = new Set(r.epochs.map(e => e.songId));
+        this.setState({ runLogInfo: { runs: r.epochs.reduce((a, e) => a + e.runs, 0), sim: r.epochs.reduce((a, e) => a + e.sim.n, 0), songs: songs.size } });
+      });
+    });
+  }
+  /* Settings: the whole log as a JSON file (no audio, no raw MIDI, nothing from the account, the guest key or the PC link) */
+  exportRunLog() {
+    loadRunLogModule().then(ok => {
+      if (!ok) { this.say(tx('The practice log cannot be saved in this browser right now.')); return null; }
+      return window.PPPRunLog.pageLog(window).exportAll();
+    }).then(r => {
+      if (!r) return;
+      if (!r.ok) { this.say(tx('The practice log cannot be saved in this browser right now.')); return; }
+      if (!r.file.epochs.some(e => e.runs.length || e.sim.n)) { this.say(tx('Nothing to export yet.')); return; }
+      const P = window.PPPRunLog;
+      P.download(P.exportText(r.file), P.fileName(r.file.exportedAt));
+      this.say(tx('Practice log exported.'));
+    });
   }
 
   say(msg) {
@@ -15793,6 +15991,25 @@ class Component extends DCLogic {
         open: () => this.openHomeJob(j.id), cancel: () => this.cancelHomeJob(j.id),
         openLabel: S.homeOpening === j.id ? tx('Opening…') : tx('Open'), cancelLabel: tx('Cancel'), btnStyle: btn
       })),
+      /* G11b-1, PPP.learner 'typed' only: the one-tap rating of the run just finished (shown while nothing plays) and Settings > Practice log. Under 'legacy' none of these is shown and none of their strings is made. */
+      showRunRating: !!(LEARNER_MODE === 'typed' && S.ratingRun && !S.playing),
+      runRatingLabel: LEARNER_MODE === 'typed' ? tx('How was that run?') : '',
+      runRatingChoices: LEARNER_MODE === 'typed' ? [[1, 'Easy'], [2, 'Just right'], [3, 'Hard']].map(([v, label]) => ({ v: v, label: tx(label), on: () => this.rateRun(v) })) : [],
+      skipRunRating: () => this.setState({ ratingRun: null }),
+      runRatingSkip: LEARNER_MODE === 'typed' ? tx('Skip') : '',
+      showLogSettings: LEARNER_MODE === 'typed',
+      runLogTitle: LEARNER_MODE === 'typed' ? tx('Practice log') : '',
+      runLogSub: LEARNER_MODE === 'typed' ? tx('Runs are kept on this device only. Press Export and send the file to whoever asked for it.') : '',
+      runLogExportLabel: LEARNER_MODE === 'typed' ? tx('Export practice log') : '',
+      runLogStatus: (() => {
+        if (LEARNER_MODE !== 'typed') return '';
+        const i = S.runLogInfo;
+        if (!i) return '';
+        if (i.failed) return tx('The practice log cannot be saved in this browser right now.');
+        if (!i.runs && !i.sim) return tx('No runs saved yet.');
+        return tx('Runs saved: {{runs}} · songs: {{songs}}', { runs: i.runs, songs: i.songs }) + (i.sim ? ' · ' + tx('Without a keyboard (not counted): {{n}}', { n: i.sim }) : '');
+      })(),
+      exportRunLog: () => this.exportRunLog(),
       /* Settings > Connect my PC: for everybody (no account), unless the site has no queue or this browser cannot keep a link */
       showHomeSettings: !!(!S.homeOff && (linked || PcLink.supported())),
       homeSettingsTitle: tx('Connect my PC'),
@@ -17344,6 +17561,7 @@ class Component extends DCLogic {
     try { localStorage.removeItem(SONG_KEY + id); } catch (e) {}
     MediaStore.del(id);
     engraveForget(id);
+    forgetRunLog(id);
     this.setState({ armedRemove: null });
     if (!opts.quiet && gone) this.say(tx('Removed {{title}} from My Songs.', { title: gone.title }));
   }

@@ -74,6 +74,7 @@ function expectedServed(rel) {
     return rel === 'difficulty/tools/dataset/method-books.json';
   }
   if (top === 'omr') return rel === 'omr/normalize.js';           /* G12-1: the page's lazy normaliser; omr/helper-output.js is the local helper's */
+  if (top === 'practice') return rel === 'practice/runlog.js';    /* G11b-1: the run log, fetched only under PPP.learner 'typed'; plan.js, sim.js and variant.js are Node-only */
   if (top === 'i18n') return parts.length === 2 && ext === '.json';
   if (top === 'audio') return parts.length === 3 && parts[1] === 'piano' && ext === '.mp3';
   if (top === 'assets') return ext === '.png';

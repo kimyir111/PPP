@@ -4,7 +4,7 @@
 every changed path is not the app's page, a practice module, a practice suite or what they run on; anything it cannot trust is `run` and
 `harness` (the mutation check) too. (2) The workflow's practice jobs are checks of their own: not jobs of the gate (the gate neither
 waits for them nor counts them), they wait for practice-plan, run on a pull request only when it said so and always on a schedule or a
-manual run, and between them run the eleven suites, the recorder, the mutation check, the perf probe and the event-parity harness (G11a-2) with its own mutation check. The workflow is read as text
+manual run, and between them run the twelve suites, the recorder, the mutation check, the perf probe and the event-parity harness (G11a-2) with its own mutation check. The workflow is read as text
 (PyYAML is not installed in CI)."""
 
 import contextlib
@@ -23,7 +23,7 @@ _spec = importlib.util.spec_from_file_location("practice_plan", os.path.join(uti
 practice_plan = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(practice_plan)
 
-SUITES = ("follow", "falling-notes", "memory", "learning", "playback-scheduler", "coach", "midi", "interactions", "lessons", "course", "alignment")
+SUITES = ("follow", "falling-notes", "memory", "learning", "playback-scheduler", "coach", "midi", "interactions", "lessons", "course", "alignment", "learner-log")
 
 
 def run_main(argv):
@@ -40,10 +40,10 @@ class PathClasses(unittest.TestCase):
                   "tests/boot.js", "tests/serve-free.js", "tests/engrave/tools/with-port.js", "package.json", "package-lock.json"):
             self.assertTrue(self.cls(p)[0], p)
 
-    def test_all_eleven_suites_are_named(self):
+    def test_all_twelve_suites_are_named(self):
         for name in SUITES:
             self.assertTrue(self.cls(f"tests/{name}.test.js")[0], name)
-        self.assertEqual(len(practice_plan.SUITE_FILES), 11)
+        self.assertEqual(len(practice_plan.SUITE_FILES), 12)
 
     def test_the_probes_and_the_workflow_also_run_the_mutation_check(self):
         for p in ("tests/practice/perf.js", "tests/practice/baselines/legacy.json", "tests/practice/baselines/perf.json", "tests/practice/plan.py",
@@ -233,6 +233,16 @@ class PracticeJobs(unittest.TestCase):
         m = re.search(r"^      - if: (.*)\n        run: node tests/practice/mutants\.js$", body, re.M)
         self.assertTrue(m, "the mutation step")
         self.assertIn("github.event_name != 'pull_request' || needs.practice-plan.outputs.harness == 'true'", m.group(1))
+
+    def test_the_page_mutants_of_the_learner_log_run_with_the_recorders_mutation_check(self):
+        body = self.jobs["practice-legacy"]
+        m = re.search(r"^      - if: (.*)\n        run: node tests/practice/learner-mutants\.js", body, re.M)
+        self.assertTrue(m, "the learner mutation step")
+        self.assertIn("github.event_name != 'pull_request' || needs.practice-plan.outputs.harness == 'true'", m.group(1))
+        for path in ("tests/practice/learner-mutants.js", "tests/practice/learner-proxy.js", "tests/practice/learner-record.js", "tests/practice/baselines/learner-legacy.json"):
+            self.assertEqual(practice_plan.path_class(path), (True, True), path)
+        self.assertEqual(practice_plan.path_class("practice/runlog.js"), (True, False))
+        self.assertEqual(practice_plan.path_class("tests/learner-log.test.js"), (True, False))
 
     def test_each_job_installs_before_it_runs_and_they_run_the_probes(self):
         want = {"practice-suites": ["npm ci", "node tests/practice/run-suites.js"],
