@@ -2118,6 +2118,15 @@
     "High-quality conversion uses your own PC. This device is not connected to it yet. The quickest way:": "高品質変換は自分のPCで動きます。この端末はまだPCにつながっていません。いちばん早い方法はこちらです。",
     "On your PC double-click the desktop shortcut “PPP connect my devices (pair)”: it opens PPP already connected.": "PCで、デスクトップの「PPP connect my devices (pair)」ショートカットをダブルクリックしてください。PPPが接続済みの状態で開きます。",
     "From another device: open the link you copied with “Connect another device: copy link”.": "別の端末からは、「別の端末をつなぐ：リンクをコピー」でコピーしたリンクを開いてください。",
-    "More in Settings": "設定でさらに見る"
+    "More in Settings": "設定でさらに見る",
+    "What is it?": "どんな音源ですか？",
+    "Piano recording": "ピアノ演奏",
+    "Song (vocals, band)": "一般の曲（歌・バンド）",
+    "Song": "一般の曲",
+    "Song: your PC separates the voice, the bass and the other instruments first and leaves the drums out; the sung melody becomes the tune of the score. It takes a little longer.": "一般の曲：PC がまず歌声・ベース・ほかの楽器を分け、ドラムは除きます。歌のメロディーが楽譜の旋律になります。少し時間がかかります。",
+    "Piano recording: the piano models listen to the recording as it is. For a song with singing or a band, choose Song.": "ピアノ演奏：ピアノのモデルが録音をそのまま聞きます。歌やバンドのある曲なら「一般の曲」を選んでください。",
+    "Song separation + melody, bass and accompaniment on your PC": "自分の PC で音源分離＋メロディー・ベース・伴奏",
+    "Your PC needs the updated worker for song mode": "一般の曲モードには PC のワーカーの更新が必要です",
+    "This song was converted as a piano recording (the PC worker has no song mode yet). Update the worker and convert it again.": "この曲はピアノ演奏として変換されました（PC のワーカーにまだ一般の曲モードがありません）。ワーカーを更新してからもう一度変換してください。"
   }
 }

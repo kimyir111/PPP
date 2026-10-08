@@ -199,8 +199,8 @@ test('the page uses it where it arranges one note per hand, from a graph the pag
   /* G10c-1b: the screens call arrangeSingleNoteWithLeadsheet (tests/rec/leadsheet-app.test.js); the reduction it falls back to, and calls for every request that is no lead sheet's, is this function: its definition and its two returns */
   const uses = html.match(/arrangeSingleNoteWithHandsFallback\(/g) || [];
   assert.equal(uses.length, 3, 'its definition and the two returns of arrangeSingleNoteWithLeadsheet');
-  assert.match(html, /sn = await arrangeSingleNoteWithLeadsheet\(src\.graph, plan, sourceScore\.title, !!d\.recording\)/, 'the Song Arranger');
-  assert.match(html, /const sn = await arrangeSingleNoteWithLeadsheet\(built\.graph, plan, S\.score\.title, isLeadsheetSong\(S\.importSource\)\)/, 'the review screen: it was one arrangeSingleNote run, and p6 was refused there');
+  assert.match(html, /sn = await arrangeSingleNoteWithLeadsheet\(src\.graph, withSongLayers\(plan, sourceScore\.source\), sourceScore\.title, !!d\.recording\)/, 'the Song Arranger');
+  assert.match(html, /const sn = await arrangeSingleNoteWithLeadsheet\(built\.graph, withSongLayers\(plan, S\.importSource, heard\), S\.score\.title, isLeadsheetSong\(S\.importSource\)\)/, 'the review screen: it was one arrangeSingleNote run, and p6 was refused there');
   assert.match(html, /sn\.handsFallback \? \{ handsFallback: sn\.handsFallback \} : \{\}, sn\.classicFallback \? \{ classicFallback: true \} : \{\}/, 'the Song Arranger copy\'s source.arrangement names the fallback');
   assert.match(html, /Object\.assign\(\{ engine: 'ppp\.g9-single' \}, sn\.handsFallback \? \{ handsFallback: sn\.handsFallback \} : \{\}, sn\.classicFallback \? \{ classicFallback: true \} : \{\}, leadsheetMark\(sn\)\)/, 'and so does the review screen\'s');
   assert.equal((html.match(/await arrangeSingleNote\(/g) || []).length, 3, 'arrangeSingleNote: the fallback\'s first run and its retry loop, and the lead sheet\'s one run (G10c-1b); nowhere else');
