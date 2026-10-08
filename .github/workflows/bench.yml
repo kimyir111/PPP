@@ -1,6 +1,6 @@
 # G0 score-quality benchmark (tests/bench/README.md).
 # The gate is the regression gate on every push/PR. It is a small job `plan` (which checks does this change need?), sixteen parallel
-# shard jobs (shard-a .. shard-p) that run its 63 steps, two merge jobs (merge-rec-core, merge-rec-grid) that join the shards of the two
+# shard jobs (shard-a .. shard-p) that run its 64 steps, two merge jobs (merge-rec-core, merge-rec-grid) that join the shards of the two
 # suites that are cut across several shard jobs and check them, a job `light` (for a change that is only documents or the home-PC
 # worker's files), and the job named `gate`, which passes only when every job the plan asked for passed (TD22, TD22b). The nightly jobs
 # (full suite, gate sensitivity, the independent review's adversarial checks, the recording suites) run on a schedule or by hand and
@@ -315,8 +315,8 @@ jobs:
             tests/bench/out/rec-arrange-smoke/summary.md
           overwrite: true
 
-  # shard-j: rec-core 1/4, rec-smoke, replay-of-app
-  #   (steps ~134 s on a fast runner, ~195 s on a slow one)
+  # shard-j: rec-core 1/4, rec-smoke, replay-of-app, test:practice-variant
+  #   (steps ~134 s on a fast runner, ~195 s on a slow one, before test:practice-variant, which adds 7-11 s: 67 tests in 7.1 s and 11.3 s on two draws, 2026-10-08, PR 227)
   shard-j:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
@@ -343,6 +343,7 @@ jobs:
       - run: python tests/bench/run.py run --suite rec-smoke       # G10a-0: the recording metrics on the calibrated humanizer
       - run: python tests/bench/run.py check --suite rec-smoke
       - run: python tests/bench/run.py run --suite replay-of-app   # the same fixtures with the app's options
+      - run: npm run test:practice-variant                         # G11c-0: the passage splice of an easier or harder arrangement (practice/variant.js, G11 section 8.2): its checks, its mutants, and the benchmark sample on frozen arrangements, every accepted splice read by an independent verifier
 
   # shard-k: rec-core 2/4, test:arrangement-planner, replay-of, golden
   #   (steps ~134 s on a fast runner, ~195 s on a slow one)
