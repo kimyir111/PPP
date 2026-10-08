@@ -13,13 +13,20 @@ const http = require('http');
 const path = require('path');
 const { spawn } = require('child_process');
 
-function freePort() {
+function listenOn(port) {
   return new Promise((resolve, reject) => {
     const s = net.createServer();
     s.unref();
     s.on('error', reject);
-    s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); });
+    s.listen(port, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); });
   });
+}
+/* PPP_PORT_RANGE=8950-8999 keeps a machine that reserves a band of ports for its suites inside it; without it the operating system chooses */
+async function freePort() {
+  const m = /^(\d+)-(\d+)$/.exec(process.env.PPP_PORT_RANGE || '');
+  if (!m) return listenOn(0);
+  for (let p = +m[1]; p <= +m[2]; p++) { try { return await listenOn(p); } catch (e) { /* taken: the next one */ } }
+  throw new Error('no free port in ' + process.env.PPP_PORT_RANGE);
 }
 
 function healthy(port) {
