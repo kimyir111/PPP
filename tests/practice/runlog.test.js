@@ -101,6 +101,15 @@ test('the header: tempo ratio, hands, memory, hints, accuracy', () => {
   assert.equal(e.md, 'memory'); assert.equal(e.hd, 'l'); assert.equal(e.sr, 0.75); assert.equal(e.hn, 2); assert.equal(e.lv, 3); assert.equal(e.ac, 0.123);
 });
 
+test('a Follow run has no tempo: the slider says nothing about it', () => {
+  const e = entryOf({ src: 'follow', tempo: 100, scoreTempo: 80, rows: rows(0, 1) });
+  assert.equal(e.tp, null); assert.equal(e.sr, null);
+  assert.ok(R.validEntry(e), 'a Follow run with no tempo is a run');
+  assert.ok(!R.validEntry(Object.assign({}, entryOf({ rows: rows(0, 1) }), { tp: null })), 'a measured run without a tempo is not');
+  assert.ok(!R.validEntry(Object.assign({}, e, { tp: 'fast' })));
+  assert.equal(entryOf({ src: 'measured', tempo: 100, scoreTempo: 80 }).sr, 1.25);
+});
+
 test('validEntry refuses what is not a run', () => {
   const good = entryOf({ rows: rows(0, 1) });
   assert.ok(R.validEntry(good));
@@ -228,6 +237,21 @@ test('a simulated run is not evidence: append refuses it, the epoch counts it', 
   await log.append('s', 'h', run(1), meta);
   assert.equal((await log.evidence('s', 'h')).runs.length, 1);
   assert.equal((await log.evidence('s', 'h')).epoch.sim.n, 2, 'the counter survives a real run');
+});
+
+test('a lap with a keyboard and nothing played is counted as idle, not logged: its own counter, next to the one for no keyboard', async () => {
+  const log = R.createLog({ backend: R.memoryBackend() });
+  for (let i = 0; i < 5; i++) assert.deepEqual(await log.noteIdle('s', 'h', meta, 'h2'), { ok: true, idle: i + 1 });
+  assert.deepEqual(await log.noteSimulated('s', 'h', meta, 'h2'), { ok: true, sim: 1 });
+  const ev = await log.evidence('s', 'h');
+  assert.equal(ev.runs.length, 0);
+  assert.deepEqual([ev.epoch.idle.n, ev.epoch.sim.n], [5, 1]);
+  assert.equal(log.stats.idle, 5);
+  assert.deepEqual(await log.noteIdle('', 'h', meta), { ok: false, code: 'key' });
+  await log.append('s', 'h', run(1), meta);
+  const ex = await log.exportAll();
+  assert.deepEqual([ex.file.epochs[0].idle.n, ex.file.epochs[0].sim.n, ex.file.epochs[0].runs.length], [5, 1, 1]);
+  assert.deepEqual(R.parseExport(R.exportText(ex.file)).file.epochs, ex.file.epochs);
 });
 
 test('a row that says simulated is skipped and counted however it got into the store', async () => {

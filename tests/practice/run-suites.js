@@ -26,7 +26,7 @@ const WITH_PORT = path.join(ROOT, 'tests', 'engrave', 'tools', 'with-port.js');
 
 /* name, file, minutes before the runner gives up on it, and `min`: about three quarters of the checks the suite printed when the list was
    written (2026-10-08: follow 32, falling-notes 26, memory 36, learning 34, playback-scheduler 9, coach 48, midi 74, interactions 52,
-   lessons 130, course 49, alignment 11 = 501; learner-log, 84, was added by G11b-1). A suite that prints far fewer has stopped testing (a skipped block, a changed output),
+   lessons 130, course 49, alignment 11 = 501; learner-log, 103, was added by G11b-1). A suite that prints far fewer has stopped testing (a skipped block, a changed output),
    so the runner fails it. Raise `min` when a suite grows. */
 const SUITES = [
   { name: 'follow', file: 'follow.test.js', limit: 8, min: 25 },
@@ -40,7 +40,7 @@ const SUITES = [
   { name: 'lessons', file: 'lessons.test.js', limit: 12, min: 100 },
   { name: 'course', file: 'course.test.js', limit: 8, min: 38 },
   { name: 'alignment', file: 'alignment.test.js', limit: 5, min: 8 },
-  { name: 'learner-log', file: 'learner-log.test.js', limit: 10, min: 62 }
+  { name: 'learner-log', file: 'learner-log.test.js', limit: 12, min: 76 }
 ];
 
 const PASS_LINE = /^\s*(✓|PASS) /;

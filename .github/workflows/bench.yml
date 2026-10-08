@@ -708,7 +708,7 @@ jobs:
           grep -E '^(run|harness)=' "$GITHUB_OUTPUT"
 
   # practice-suites: the twelve practice and playback browser suites (follow, falling-notes, memory, learning, playback-scheduler, coach, midi,
-  # interactions, lessons, course, alignment, learner-log (G11b-1: PPP.learner and the run log): about 585 checks) on a port the runner is given, with NODE_ENV=production and
+  # interactions, lessons, course, alignment, learner-log (G11b-1: PPP.learner and the run log): about 600 checks) on a port the runner is given, with NODE_ENV=production and
   # tests/engrave/tools/with-port.js (G11-D12). They had never run in CI before; a suite is green only if it exits 0, fails no check and prints
   # about as many checks as it did when the list was written (a suite that stopped testing is not a pass). About 4 minutes of suites.
   practice-suites:
