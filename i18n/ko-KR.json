@@ -2218,6 +2218,12 @@
     "This song was converted as a piano recording (the PC worker has no song mode yet). Update the worker and convert it again.": "이 곡은 피아노 연주로 변환됐어요(PC 워커에 아직 일반 곡 모드가 없어요). 워커를 업데이트한 뒤 다시 변환하세요.",
     "song: separated layers": "일반 곡: 음원 분리",
     "Melody · bass · accompaniment": "멜로디 · 베이스 · 반주",
-    "Set apart (one model only)": "따로 둔 음 (한 모델만 들음)"
+    "Set apart (one model only)": "따로 둔 음 (한 모델만 들음)",
+    "Melody from": "멜로디 출처",
+    "voice": "보컬",
+    "guitar": "기타",
+    "piano": "피아노",
+    "synth / other instrument": "신스·기타 악기",
+    "no melody line (the lead sheet finds one)": "멜로디 선 없음 (리드시트가 찾아요)"
   }
 }
