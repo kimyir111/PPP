@@ -28,10 +28,14 @@ function convertHelperNotes(raw) {
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.notes)) throw new Error('not a helper notes file (no notes list' + (raw && raw.error ? '; the helper says: ' + String(raw.error).slice(0, 200) : '') + ')');
   let dropped = 0;
   const notes = [];
+  /* G10d song mode (transcribe.py --mode song): every note says its layer, 1 the melody, 2 the bass, 3 the accompaniment; a note of a song without one is not used */
+  const song = raw.mode === 'song';
   raw.notes.forEach(n => {
     if (!n || !isFinite(n.on) || !isFinite(n.off) || !isFinite(n.midi) || n.on < 0 || n.off <= n.on || n.midi < 21 || n.midi > 108) { dropped++; return; }
     const vel = isFinite(n.vel) ? Math.max(1, Math.min(127, Math.round(n.vel))) : 64;
-    notes.push({ on: r4(n.on), off: r4(n.off), midi: Math.round(n.midi), vel: vel });
+    const x = { on: r4(n.on), off: r4(n.off), midi: Math.round(n.midi), vel: vel };
+    if (song) { if (n.track !== 1 && n.track !== 2 && n.track !== 3) { dropped++; return; } x.track = n.track; }
+    notes.push(x);
   });
   if (notes.length < MIN_NOTES) throw new Error('the helper file has ' + notes.length + ' usable notes (needs at least ' + MIN_NOTES + ')');
   notes.sort((a, b) => a.on - b.on || a.midi - b.midi || a.off - b.off);
@@ -46,6 +50,7 @@ function convertHelperNotes(raw) {
       modelFailures: raw.modelFailures && raw.modelFailures.length ? raw.modelFailures : null, invalidNotesDropped: dropped
     }
   };
+  if (song) heard.song = { separation: raw.song && typeof raw.song.separation === 'string' ? raw.song.separation : null };
   return { heard: heard, report: { notes: notes.length, dropped: dropped, uncertain: heard.helper.uncertain, pedalsDropped: heard.helper.pedalSpansDropped, duration: duration } };
 }
 

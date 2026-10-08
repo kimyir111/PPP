@@ -74,8 +74,8 @@ async function main() {
       const a = await mk(S, '21.0.0.1'), b = await mk(S, '21.0.0.2');
       const st = await req(S.port, 'GET', '/api/worker/status', { code: a.body.clientCode });
       const w = st.body && st.body.worker;
-      ok('the answer is { worker: {...} } and the worker object has the six fields it always had - with the same meaning - plus linkTag', st.status === 200 && Object.keys(st.body).join() === 'worker'
-        && Object.keys(w).sort().join() === 'activePollSeconds,alive,everSeen,hasToken,idlePollSeconds,lastSeenAt,linkTag' && w.hasToken === true && w.everSeen === false && w.alive === false && w.lastSeenAt === null
+      ok('the answer is { worker: {...} } and the worker object has the six fields it always had - with the same meaning - plus linkTag and (G10d) songMode, null until the PC has claimed since this server started', st.status === 200 && Object.keys(st.body).join() === 'worker'
+        && Object.keys(w).sort().join() === 'activePollSeconds,alive,everSeen,hasToken,idlePollSeconds,lastSeenAt,linkTag,songMode' && w.songMode === null && w.hasToken === true && w.everSeen === false && w.alive === false && w.lastSeenAt === null
         && Number.isFinite(w.idlePollSeconds) && w.idlePollSeconds >= 900 && w.activePollSeconds === 15, st.text);
       ok('linkTag is 6 lowercase hex characters: the last 6 of the link\'s id (pc_ + 22 hex), i.e. of a hash of the code', /^[0-9a-f]{6}$/.test(w.linkTag) && w.linkTag === a.body.id.slice(-6) && w.linkTag === J.linkTagOf(J.linkIdOf(J.codeHash(a.body.clientCode))) && J.codeHash(a.body.clientCode).toString('hex').slice(0, 22).endsWith(w.linkTag), w.linkTag);
       ok('it is not made of the code: it is neither the first nor the last 6 characters of it, and another link has another name', w.linkTag !== a.body.clientCode.slice(0, 6) && w.linkTag !== a.body.clientCode.slice(-6) && (await req(S.port, 'GET', '/api/worker/status', { code: b.body.clientCode })).body.worker.linkTag !== w.linkTag);

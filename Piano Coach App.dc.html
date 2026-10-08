@@ -1058,6 +1058,14 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
                   <button type="button" onClick="{{ openHomeSheet }}" data-home-pc-help aria-haspopup="dialog" style="padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;" style-hover="border-color: var(--ink3);">{{ homeHelpLabel }}</button>
                 </sc-if>
               </div>
+              <sc-if value="{{ showHomePc }}" hint-placeholder-val="{{ false }}">
+                <div data-home-mode role="radiogroup" aria-label="{{ homeModeLabel }}" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; font-size: 12px; color: var(--ink3);">
+                  <span data-no-i18n="1">{{ homeModeLabel }}</span>
+                  <button type="button" role="radio" aria-checked="{{ homeModePianoOn }}" data-home-mode-piano data-no-i18n="1" onClick="{{ setHomeModePiano }}" style="{{ homeModePianoStyle }}">{{ homeModePianoText }}</button>
+                  <button type="button" role="radio" aria-checked="{{ homeModeSongOn }}" data-home-mode-song data-no-i18n="1" onClick="{{ setHomeModeSong }}" style="{{ homeModeSongStyle }}">{{ homeModeSongText }}</button>
+                </div>
+                <div data-home-mode-note data-no-i18n="1" style="font-size: 11.5px; line-height: 1.5; color: var(--ink3); margin-top: 4px;">{{ homeModeNote }}</div>
+              </sc-if>
               <sc-if value="{{ hasHomePcState }}" hint-placeholder-val="{{ false }}">
                 <div data-home-pc-state="{{ homePcStateKind }}" role="status" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; line-height: 1.5; color: var(--ink3); margin-top: 8px;">
                   <span>{{ homePcStateText }}</span>
@@ -1959,6 +1967,11 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
               </div>
             </sc-for>
           </div>
+          <sc-if value="{{ sharedHasMore }}" hint-placeholder-val="{{ false }}">
+            <div data-shared-more style="display: flex; justify-content: center; padding: 4px 0 20px;">
+              <button onClick="{{ sharedMoreOn }}" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--accent); color: var(--accent);">{{ sharedMoreLabel }}</button>
+            </div>
+          </sc-if>
         </div>
       </sc-if>
 
@@ -5107,7 +5120,7 @@ async function arrangeSingleNote(builtGraph, plan) {
   const leadSources = !!builtGraph && !!builtGraph.provenance && builtGraph.provenance.sources;
   const lead = !!plan && plan.recordingArrange === 'leadsheet' && Array.isArray(leadSources) && leadSources.some(x => !!x && x.kind === 'audio-score');
   let key = null;
-  try { key = SER.fingerprint(builtGraph) + '|' + (plan && plan.level) + (lead ? '|leadsheet' : ''); } catch (e) { key = null; }
+  try { key = SER.fingerprint(builtGraph) + '|' + (plan && plan.level) + (lead ? '|leadsheet' + (plan.melodyTrack ? '|m' + plan.melodyTrack : '') : ''); } catch (e) { key = null; }
   if (key && SINGLE_CACHE.has(key)) return Object.assign({ cached: true, ms: Date.now() - t0 }, SINGLE_CACHE.get(key));
   await singleTick();
   try {
@@ -5116,7 +5129,7 @@ async function arrangeSingleNote(builtGraph, plan) {
     if (lead) {
       const LSM = window.PPPRecLeadsheet;
       if (!LSM) return { ok: false, reason: 'LEADSHEET_NOT_LOADED' };
-      const prep = LSM.prepare(builtGraph, { songgraph: SGG });
+      const prep = LSM.prepare(builtGraph, Object.assign({ songgraph: SGG }, plan.melodyTrack ? { melodyTrack: plan.melodyTrack } : {}));
       if (!prep.ok) return { ok: false, reason: prep.reason, message: prep.message };
       src = prep.graph; sg = prep.sg; leadsheet = prep.report; /* the lead sheet and its SongGraph (the harmony of every heard note) go where the recording graph went */
     } else sg = SGG.analyze(builtGraph);
@@ -8397,6 +8410,7 @@ const Import = {
     const report = Import.validateTranscription(score, built.stats, heard);
     if (wantV2) Import.recordingNotes(report, built, score, heard, rejectedV2 ? 'implausible' : useV2 ? 'unreadable' : 'not-loaded');
     const engineLabel = what.mode === 'arrange' ? 'Broad audio model + playable piano reduction'
+      : heard.homePc && isSongHeard(heard) ? 'Song separation + melody, bass and accompaniment on your PC'
       : heard.homePc ? 'Piano ensemble on your PC'
       : heard.engine === 'ensemble' ? 'Piano ensemble (' + (((heard.ensemble || {}).models || []).join(' + ') || 'multiple models') + ')'
       : heard.engine === 'transkun' ? 'Transkun'
@@ -8416,6 +8430,7 @@ const Import = {
       barStarts: built.stats.barStarts,
       transcriptionVersion: TRANSCRIPTION_VERSION,
       amt: heard.engine || null,
+      songLayers: isSongHeard(heard) ? Object.assign({}, heard.song) : undefined,
       beatSource: built.stats.beatSource,
       quantizer: built.stats.quantizer,
       beatRepairs: built.stats.beatRepairs || 0,
@@ -8635,8 +8650,11 @@ const Import = {
       heard.engine === 'onsets-and-frames' || heard.engine === 'basic-pitch');
     const fallback = browserFallback;
     const ensemble = heard && heard.ensemble;
-    const modelCount = ensemble && ensemble.models ? ensemble.models.length : 1;
-    const modelAgreement = ensemble && isFinite(+ensemble.agreement) ? clamp(+ensemble.agreement, 0, 1) : null;
+    /* G10d song mode: the melody and the bass come from a pitch tracker and only the accompaniment from the piano models, so their agreement is no measure of the whole
+       and "only one piano model" is no warning about it */
+    const songMode = isSongHeard(heard);
+    const modelCount = songMode ? 2 : ensemble && ensemble.models ? ensemble.models.length : 1;
+    const modelAgreement = !songMode && ensemble && isFinite(+ensemble.agreement) ? clamp(+ensemble.agreement, 0, 1) : null;
     /* Pedalled virtuoso passages are where harmonics and repeated sustains
        most often turn into convincing but false notes. Treat density as a
        warning much earlier than the old 20-notes/second ceiling. */
@@ -12500,6 +12518,22 @@ const PcLocal = (() => {
   };
 })();
 
+/* G10d: what "High-quality (my PC)" is asked to convert. 'piano' (the default): a piano recording, the piano models on it as it is. 'song': a song that is not a piano recording (singing, a band,
+   electronic music): the PC separates it first, leaves the drums out and sends the melody (the voice), the bass and the accompaniment as layers (home-jobs.js JOB_KINDS, transcribe.py --mode song).
+   Remembered on this device. */
+const HomeMode = (() => {
+  const LS = 'ppp.homemode.v1';
+  return {
+    get() { try { return localStorage.getItem(LS) === 'song' ? 'song' : 'piano'; } catch (e) { return 'piano'; } },
+    set(m) { try { if (m === 'song') localStorage.setItem(LS, 'song'); else localStorage.removeItem(LS); } catch (e) { /* not remembered */ } }
+  };
+})();
+/* the layers of a song-mode result (home-result.js SONG_TRACKS): the lead sheet takes the tune from the melody layer instead of guessing it from the highest notes */
+const SONG_TRACKS = Object.freeze({ melody: 1, bass: 2, accomp: 3 });
+const isSongHeard = heard => !!(heard && heard.song);
+/* the plan an arranger entry hands on: the person's plan, with the melody layer named only for a song-mode recording (its heard notes, or a saved song's source.songLayers) */
+function withSongLayers(plan, source, heard) { return isSongHeard(heard) || (source && source.songLayers) ? Object.assign({}, plan, { melodyTrack: SONG_TRACKS.melody }) : plan; }
+
 /* G10b-5: when the site does not recognise this device's PC code, the code is NOT forgotten (see Component.homeNotRecognized). It is looked at again retryAtMs after the FIRST such answer (now, +5 s, +30 s), then
    on every opening of the Add or Settings screen and every return to the tab; it is let go of only after `answers` answers of "not valid", each at least spacingMs after the one before, the first one at least
    spanMs ago - or when the person removes it. */
@@ -12571,6 +12605,7 @@ class Component extends DCLogic {
       authName: '',
       /* Shared Scores, and the share dialog (null when closed) */
       sharedList: null, sharedLoad: 'idle', sharedError: '', sharedFilter: 'All', sharedQuery: '',
+      sharedNext: null, sharedGenres: null, sharedMore: 'idle', sharedNearN: 0,
       sharedLinked: null, sharedOpening: null, shareDlg: null,
       /* Piano Basics: where you are in the course, what is done, and the
          working state of the step on screen (see learnVals) */
@@ -12732,6 +12767,7 @@ class Component extends DCLogic {
     this.maybeReplan();
     this.followKeyboard();
     this.followStaff();
+    this.watchShared();
     if (this._i18nRaf) cancelAnimationFrame(this._i18nRaf);
     this._i18nRaf = requestAnimationFrame(() => { this._i18nRaf = 0; this.applyI18n(); });
     const alias = this.state.screen;
@@ -12757,6 +12793,7 @@ class Component extends DCLogic {
   }
   componentWillUnmount() {
     this._dead = true;
+    this.unwatchShared();
     clearInterval(this._iv);
     if (this._i18nRaf) cancelAnimationFrame(this._i18nRaf);
     clearTimeout(this._an); clearTimeout(this._toast); clearTimeout(this._quiz); clearTimeout(this._save);
@@ -13046,7 +13083,13 @@ class Component extends DCLogic {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email, password: password, displayName: displayName })
     }).then(async r => {
-      if (r.status === 502 || r.status === 503 || r.status === 429) {
+      if (r.status === 429) {
+        /* G13-5: the limiter's refusal (code 'too-many': signup, 20 requests / 10 accounts an hour ...) is an answer: it is shown at once and not asked again. Any other 429 is a busy edge, tried again below. */
+        const b = await r.json().catch(() => null);
+        if (b && b.code === 'too-many' && typeof b.error === 'string') throw new Error(tx(b.error));
+        const err = new Error(tx('Could not reach the server.')); err.transient = true; throw err;
+      }
+      if (r.status === 502 || r.status === 503) {
         const err = new Error(tx('Could not reach the server.')); err.transient = true; throw err;
       }
       const body = await r.json().catch(() => ({}));
@@ -14944,7 +14987,8 @@ class Component extends DCLogic {
       /* the browser lets a page launch a registered scheme from a click it has seen; the title is waited for at most 2.5 s on a local device so the launch comes while the click is fresh */
       const titleP = Import.youtubeTitle(url).catch(() => null);
       const title = (local ? await Promise.race([titleP, new Promise(res => setTimeout(() => res(null), 2500))]) : await titleP) || '';
-      const r = await this.homeApi('/api/jobs', { method: 'POST', body: { url: url, title: title } });
+      const mode = S.homeMode || HomeMode.get();
+      const r = await this.homeApi('/api/jobs', { method: 'POST', body: mode === 'song' ? { url: url, title: title, mode: 'song' } : { url: url, title: title } });
       const launched = !!(local && r.job && r.job.status === 'queued' && this.launchPcWorker());
       PcLink.clearPrev();         /* using the link is the person saying it is theirs: nothing to go back to */
       this.say(launched ? tx('Asked this PC to start. If nothing happens, run the desktop shortcut.') : r.existing ? tx('That link is already waiting for your PC.') : tx('Sent to your PC. It will be converted when your PC checks in.'));
@@ -14961,11 +15005,15 @@ class Component extends DCLogic {
      two to four times too short), and the ensemble's summary, which the review screen reads for its model-agreement figure */
   homeHeard(res) {
     const e = res.ensemble || {};
-    return {
-      notes: res.notes, duration: res.duration, engine: res.engine || 'ensemble', qualityTier: 'local-piano-ensemble', homePc: true,
+    const song = res.mode === 'song' && res.song ? res.song : null;
+    const heard = {
+      notes: res.notes, duration: res.duration, engine: res.engine || 'ensemble', qualityTier: song ? 'local-song-separated' : 'local-piano-ensemble', homePc: true,
       truncated: res.duration >= IMPORT_LIMITS.maxAudioMinutes * 60 - 1, device: res.device || null, model: res.model || null,
       ensemble: { models: e.models || [], primary: e.primary || null, agreement: e.agreement, accepted: e.accepted, uncertain: e.uncertain || 0 }
     };
+    /* G10d song mode: every note keeps its layer (track 1 melody, 2 bass, 3 accompaniment); the lead sheet takes the tune from the melody layer */
+    if (song) heard.song = { separation: song.separation || null, melody: song.melody | 0, bass: song.bass | 0, accomp: song.accomp | 0 };
+    return heard;
   }
   async openHomeJob(id) {
     if (this.state.homeOpening) return;
@@ -14974,6 +15022,7 @@ class Component extends DCLogic {
       const r = await this.homeApi('/api/jobs/' + encodeURIComponent(id));
       if (!r.result || !r.result.notes || !r.result.notes.length) throw new Error(tx('The notes of that conversion are no longer kept.'));
       this._homePre = { heard: this.homeHeard(r.result), title: r.job.title || '' };
+      if (r.job.kind === 'youtube-song' && r.result.mode !== 'song') this.say(tx('This song was converted as a piano recording (the PC worker has no song mode yet). Update the worker and convert it again.'));
       this.setState({ homeOpening: null });
       this.startImport({ url: r.job.url, name: r.job.title || r.job.url, meta: 'YouTube · ' + tx('my PC'), kind: 'youtube', mode: 'auto' });
     } catch (e) {
@@ -15233,6 +15282,8 @@ class Component extends DCLogic {
     const seen = !!(linked && W && W.everSeen);
     const addOn = queueOn && !arrangeMode && !!(linked || PcLink.supported());
     const unrecText = tx('This device holds a PC link that the site does not recognise right now.');
+    const homeMode = S.homeMode || HomeMode.get();
+    const modeChip = on => 'padding:5px 11px;border-radius:999px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;border:1px solid ' + (on ? 'var(--accent)' : 'var(--line)') + ';background:' + (on ? 'var(--accent-3)' : 'var(--bg)') + ';color:' + (on ? 'var(--accent)' : 'var(--ink2)') + ';';
     const pcState = !linked || seen ? '' : unrec ? unrecText
       : !W ? (S.homeCheck === 'failed' ? tx('Could not check your PC right now. You can still send the job.') : tx('Checking your PC…'))
         : tx('Your PC has not connected yet: it will take the job when it does');
@@ -15266,6 +15317,15 @@ class Component extends DCLogic {
       homeSheetMoreLabel: tx('More in Settings'), homeSheetMore: () => { this.setState({ homeSheet: false }); this.go('settings')(); },
       homePcLabel: S.homeBusy ? tx('Sending…') : tx('High-quality (my PC)'),
       addYoutubeHome: () => this.addYoutubeHome(),
+      homeModeLabel: tx('What is it?'),
+      homeModePianoText: tx('Piano recording'), homeModeSongText: tx('Song (vocals, band)'),
+      homeModePianoOn: homeMode === 'piano' ? 'true' : 'false', homeModeSongOn: homeMode === 'song' ? 'true' : 'false',
+      homeModePianoStyle: modeChip(homeMode === 'piano'), homeModeSongStyle: modeChip(homeMode === 'song'),
+      setHomeModePiano: () => { HomeMode.set('piano'); this.setState({ homeMode: 'piano' }); },
+      setHomeModeSong: () => { HomeMode.set('song'); this.setState({ homeMode: 'song' }); },
+      homeModeNote: homeMode === 'song'
+        ? tx('Song: your PC separates the voice, the bass and the other instruments first and leaves the drums out; the sung melody becomes the tune of the score. It takes a little longer.')
+        : tx('Piano recording: the piano models listen to the recording as it is. For a song with singing or a band, choose Song.'),
       hasHomeTag: !!(addOn && seen && myTag), homeTagCaption: myTag ? tx('Sends to PC link …{{tag}}', { tag: myTag }) : '',
       homeLocal: local,
       /* a phone waits for the PC's next check (the PC says how often); the PC itself is asked to start at once */
@@ -15280,7 +15340,8 @@ class Component extends DCLogic {
       checkHomeAgain: () => this.homeRefresh(),
       homeJobsTitle: tx('My conversions (on my PC)'),
       homeJobs: jobs.slice(0, 8).map(j => ({
-        id: j.id, title: j.title || j.url, status: statusOf(j), canOpen: j.status === 'done', canCancel: pendingJob(j), canRemove: !pendingJob(j),
+        id: j.id, title: j.title || j.url, canOpen: j.status === 'done',
+        status: statusOf(j) + (j.kind === 'youtube-song' ? ' · ' + tx('Song') + (j.status === 'queued' && W && W.songMode === false ? ' · ' + tx('Your PC needs the updated worker for song mode') : '') : ''), canCancel: pendingJob(j), canRemove: !pendingJob(j),
         remove: () => this.removeHomeJob(j.id), removeLabel: tx('Remove'),
         statusStyle: 'font-size:12px;color:' + (j.status === 'done' ? 'var(--good)' : j.status === 'failed' ? 'var(--bad)' : 'var(--ink3)') + ';',
         open: () => this.openHomeJob(j.id), cancel: () => this.cancelHomeJob(j.id),
@@ -15923,7 +15984,7 @@ class Component extends DCLogic {
         this.setState({ arrangementStatus: tx('Writing one note per hand…') });
         /* G10a-5b: the same two retries as the Song Arranger (a v2 graph refused for hard violations: the classic hands, then the classic conversion of the same heard notes) */
         /* G10c-1b: a recording is arranged from its lead sheet first (arrangeSingleNoteWithLeadsheet; the reduction, with those two retries, when it refuses); anything else goes to the reduction as before */
-        const sn = await arrangeSingleNoteWithLeadsheet(built.graph, plan, S.score.title, isLeadsheetSong(S.importSource));
+        const sn = await arrangeSingleNoteWithLeadsheet(built.graph, withSongLayers(plan, S.importSource, heard), S.score.title, isLeadsheetSong(S.importSource));
         if (sn.ok) {
           arranged = graphToReviewScore(sn.graph, S.score.title);
           engraveRemember(arranged, sn.graph, 'g9-single');
@@ -16702,7 +16763,7 @@ class Component extends DCLogic {
       try {
         const src = window.PPPEngrave ? await window.PPPEngrave.app.resolve(sourceScore, { key: d.songId }) : null;
         /* G10c-1b: a recording is arranged from its lead sheet first (arrangeSingleNoteWithLeadsheet), the reduction when that refuses; anything else is the reduction as before */
-        if (src && src.graph) sn = await arrangeSingleNoteWithLeadsheet(src.graph, plan, sourceScore.title, !!d.recording);
+        if (src && src.graph) sn = await arrangeSingleNoteWithLeadsheet(src.graph, withSongLayers(plan, sourceScore.source), sourceScore.title, !!d.recording);
       } catch (e) { sn = { ok: false, reason: 'SINGLE_CRASH', message: e && e.message }; }
       if (!sn.ok) {
         /* G9e refusals: nothing is saved. The window stays open with the notice (which does not go away by itself) and the choice; the standard arrangement is saved only on its click */
@@ -16939,25 +17000,140 @@ class Component extends DCLogic {
     });
     if (changed) this.libraryWrite(lib);
   }
-  /* Shared Scores: everything posted, or only yours (posted or not). */
-  loadShared(quiet) {
+  /* Shared Scores: everything posted, or only yours (posted or not). G13-5: what is posted comes a page at a time (the server's SHARE_PAGE; the search and the
+     genre are asked of the server, which knows all of it), and the next page when the end of the list comes near (watchShared) or the button is pressed. Yours
+     is the whole list in one answer, as before: the cards of My Songs are marked "shared" from it. An older server answers everything and no cursor: the same screen. */
+  loadShared(quiet, more, fresh) {
     const S = this.state;
     const mine = S.sharedFilter === 'Mine';
-    const seq = this._sharedSeq = (this._sharedSeq || 0) + 1;
-    if (mine && !S.user) { this.setState({ sharedList: [], sharedLoad: 'ready', sharedError: '' }); return; }
-    if (!quiet) this.setState({ sharedLoad: 'loading', sharedError: '' });
-    this.shareApi(mine ? '?mine=1' : '')
+    if (more && (S.sharedMore === 'loading' || !S.sharedNext || mine)) return;
+    const seq = more ? (this._sharedSeq || 0) : (this._sharedSeq = (this._sharedSeq || 0) + 1);
+    if (mine && !S.user) { this.setState({ sharedList: [], sharedNext: null, sharedLoad: 'ready', sharedError: '' }); return; }
+    if (more) this.setState({ sharedMore: 'loading' });
+    else this.setState(quiet ? { sharedMore: 'idle' } : { sharedLoad: 'loading', sharedError: '', sharedMore: 'idle' });
+    const genre = SHARE_GENRES.indexOf(S.sharedFilter) > -1 ? S.sharedFilter : '';
+    const q = (S.sharedQuery || '').trim();
+    const have = (S.sharedList || []).length;
+    /* a refresh keeps as many rows as the person has already scrolled to */
+    const args = mine ? ['mine=1'] : more ? ['cursor=' + encodeURIComponent(S.sharedNext)]
+      : ['limit=' + Math.max(24, Math.min(100, quiet && !fresh ? have : 0))];
+    if (!mine && genre) args.push('genre=' + encodeURIComponent(genre));
+    if (!mine && q) args.push('q=' + encodeURIComponent(q.slice(0, 80)));
+    this.shareApi('?' + args.join('&'))
       .then(body => {
         if (seq !== this._sharedSeq) return;
-        const list = Array.isArray(body.shares) ? body.shares : [];
-        this.setState({ sharedList: list, sharedLoad: 'ready' });
-        if (mine) this.syncShareCards(list);
+        const rows = Array.isArray(body.shares) ? body.shares : [];
+        const next = typeof body.next === 'string' && body.next ? body.next : null;
+        const patch = { sharedNext: mine ? null : next, sharedLoad: 'ready', sharedMore: 'idle' };
+        if (Array.isArray(body.genres)) patch.sharedGenres = body.genres;
+        if (more) {
+          const cur = this.state.sharedList || [], seen = new Set(cur.map(x => x.id));
+          patch.sharedList = cur.concat(rows.filter(x => !seen.has(x.id)));
+          this._sharedRewatch = true; /* the "Show more" row is asked about again: it may still be in view */
+        } else patch.sharedList = rows;
+        this.setState(patch);
+        if (mine) this.syncShareCards(rows);
       })
-      .catch(e => { if (seq === this._sharedSeq) this.setState({ sharedLoad: 'error', sharedError: e.message }); });
+      .catch(e => {
+        if (seq !== this._sharedSeq) return;
+        if (more) this.setState({ sharedMore: 'error', sharedError: e.message });
+        else this.setState({ sharedLoad: 'error', sharedError: e.message });
+      });
   }
   setSharedFilter(f) {
     if (this.state.sharedFilter === f) return;
-    this.setState({ sharedFilter: f, sharedList: null }, () => this.loadShared());
+    this.setState({ sharedFilter: f, sharedList: null, sharedNext: null }, () => this.loadShared());
+  }
+  /* typing in the search box asks the server again once the typing stops (the answer replaces the list; the cards already there stay until it comes) */
+  setSharedQuery(v) {
+    const mine = this.state.sharedFilter === 'Mine';
+    /* the cursor of the old list is no use to the new search: no "Show more" until the answer is in */
+    this.setState(mine ? { sharedQuery: v } : { sharedQuery: v, sharedNext: null });
+    clearTimeout(this._sharedQT);
+    if (mine) return;
+    this._sharedQT = setTimeout(() => { if (!this._dead && this.state.screen === 'shared') this.loadShared(true, false, true); }, 300);
+  }
+  /* G13-5: this screen drew the preview of every card at once (110 cards: 14,636 nodes, 89 MB on a phone). A card draws its preview only while it is within
+     a few hundred pixels of the window, and lets it go when it is far off (its box keeps its height, so nothing moves); the first screenful is drawn before
+     the window has been asked. IntersectionObserver on the element that scrolls; where there is none, a scroll listener asks the cards where they are. The same
+     watch loads the next page when the "Show more" row comes near. */
+  watchShared() {
+    const root = this._root && this._root.current;
+    if (this.state.screen !== 'shared' || !root) { if (this._sharedIO || this._sharedNear) this.unwatchShared(); return; }
+    const els = root.querySelectorAll('[data-shared], [data-shared-more]');
+    if (!els.length) return;
+    let scroller = this._sharedScroller;
+    if (!scroller || !scroller.isConnected) {
+      scroller = null;
+      for (let e = els[0].parentElement; e && e !== document.documentElement; e = e.parentElement) {
+        const o = getComputedStyle(e).overflowY;
+        if (o === 'auto' || o === 'scroll') { scroller = e; break; }
+      }
+      if (scroller !== this._sharedScroller) this.unwatchShared();
+      this._sharedScroller = scroller;
+    }
+    const MARGIN = 300;
+    const apply = (el, hit) => {
+      if (el.hasAttribute('data-shared-more')) { if (hit && this.state.sharedMore !== 'error') this.loadShared(true, true); return; }
+      const id = el.getAttribute('data-shared');
+      const near = this._sharedNear || (this._sharedNear = new Set());
+      if (hit === near.has(id)) return;
+      if (hit) near.add(id); else near.delete(id);
+      this._sharedDirty = true;
+    };
+    const flush = () => {
+      if (!this._sharedDirty || this._sharedRaf) return;
+      this._sharedRaf = requestAnimationFrame(() => {
+        this._sharedRaf = 0;
+        if (this._sharedDirty && !this._dead) { this._sharedDirty = false; this.setState(st => ({ sharedNearN: (st.sharedNearN || 0) + 1 })); }
+      });
+    };
+    if (typeof IntersectionObserver === 'function') {
+      if (!this._sharedIO) {
+        this._sharedIO = new IntersectionObserver(es => {
+          es.forEach(en => { if (!en.target.isConnected) { this._sharedIO.unobserve(en.target); return; } apply(en.target, en.isIntersecting); });
+          flush();
+        }, { root: scroller, rootMargin: MARGIN + 'px 0px' });
+      }
+      /* an element is (re)observed when it is new, when it now shows another card (the list was replaced and the page kept the element), and the "Show more" row after a page came */
+      els.forEach(el => {
+        const key = el.hasAttribute('data-shared-more') ? '*more' : el.getAttribute('data-shared');
+        const was = el.__pppSharedKey;
+        if (was === key && !(this._sharedRewatch && key === '*more')) return;
+        if (was !== undefined) this._sharedIO.unobserve(el);
+        el.__pppSharedKey = key;
+        this._sharedIO.observe(el);
+      });
+      this._sharedRewatch = false;
+    } else if (!this._sharedScan) {
+      /* no IntersectionObserver: look at the cards when the window scrolls or changes size (one look a frame) */
+      const target = scroller || window;
+      const scan = () => {
+        const host = this._root && this._root.current;
+        if (!host || this.state.screen !== 'shared') return;
+        const box = scroller ? scroller.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+        host.querySelectorAll('[data-shared], [data-shared-more]').forEach(el => {
+          const r = el.getBoundingClientRect();
+          apply(el, r.bottom >= box.top - MARGIN && r.top <= box.bottom + MARGIN);
+        });
+        flush();
+      };
+      let raf = 0;
+      this._sharedScan = { target: target, fn: () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; scan(); }); }, scan: scan };
+      target.addEventListener('scroll', this._sharedScan.fn, { passive: true });
+      window.addEventListener('resize', this._sharedScan.fn);
+    }
+    if (this._sharedScan) this._sharedScan.scan();
+  }
+  unwatchShared() {
+    if (this._sharedIO) { this._sharedIO.disconnect(); this._sharedIO = null; }
+    if (this._sharedScan) {
+      this._sharedScan.target.removeEventListener('scroll', this._sharedScan.fn);
+      window.removeEventListener('resize', this._sharedScan.fn);
+      this._sharedScan = null;
+    }
+    if (this._sharedRaf) { cancelAnimationFrame(this._sharedRaf); this._sharedRaf = 0; }
+    this._sharedNear = null; this._sharedDirty = false; this._sharedScroller = null;
   }
   /* A shared score's link lands on it, for anyone, signed in or not. */
   landShared(id) {
@@ -17018,14 +17194,19 @@ class Component extends DCLogic {
     try {
       if (full && full.measures && full.measures.length) sc = Score.finalize(openingBars(JSON.parse(JSON.stringify(full)), bars));
     } catch (e) { sc = null; }
-    return (this._sharedThumbs[key] = sc);
+    this._sharedThumbs[key] = sc;
+    /* the oldest go when there are many (a long list scrolled through) */
+    const keys = Object.keys(this._sharedThumbs);
+    if (keys.length > 60) delete this._sharedThumbs[keys[0]];
+    return sc;
   }
-  /* One card of Shared Scores, and the larger one a link lands on. */
-  sharedCard(x, big) {
+  /* One card of Shared Scores, and the larger one a link lands on. Its preview is made only while the card is near the window (watchShared; idx: its place in the list). */
+  sharedCard(x, big, idx) {
     const S = this.state;
     const have = this.sharedOnShelf(x);
     const opening = S.sharedOpening === x.id;
-    const th = big ? this.sharedThumb('linked:' + x.id, this._linkedScore, 4) : this.sharedThumb(x.id + ':' + x.updatedAt, x.preview, 2);
+    const near = big || (this._sharedNear ? this._sharedNear.has(x.id) : idx < 6);
+    const th = !near ? null : big ? this.sharedThumb('linked:' + x.id, this._linkedScore, 4) : this.sharedThumb(x.id + ':' + x.updatedAt, x.preview, 2);
     return {
       id: x.id, title: x.title,
       sub: [x.composer, tx('Shared by {{name}}', { name: x.owner })].filter(Boolean).join(' · '),
@@ -17453,13 +17634,13 @@ class Component extends DCLogic {
       note = tx('Sign in to see the scores you have shared. Links you sent as a guest stay on their song in My Songs.');
       act = { label: tx('Sign in'), on: () => this.setState({ guest: false }) };
     } else if (!S.sharedList) note = tx('Loading shared scores…');
-    else if (!list.length) {
+    else if (!list.length && (mine || (!q && !genre))) {
       note = tx(mine ? 'You have not shared a score yet. Share one from My Songs.' : 'Nothing has been shared yet. Share one of your songs from My Songs.');
       act = { label: tx('Go to My Songs'), on: this.go('songs') };
     } else if (!shown.length) note = tx(genre ? 'No shared score in {{genre}}.' : 'No shared score matches “{{q}}”.',
       genre ? { genre: tx(genre) } : { q: q });
     /* All, then the genres that actually have a score behind them, then yours */
-    const present = SHARE_GENRES.filter(g => list.some(x => (x.genre || '') === g));
+    const present = SHARE_GENRES.filter(g => S.sharedGenres ? S.sharedGenres.indexOf(g) > -1 : list.some(x => (x.genre || '') === g));
     const chips = [['All', tx('All')]]
       .concat(present.map(g => [g, tx(g)]))
       .concat([['Mine', tx('Shared by me')]]);
@@ -17467,8 +17648,11 @@ class Component extends DCLogic {
       sharedFilters: chips.map(([id, label]) => ({
         label: label, style: this.pill(filter === id), on: () => this.setSharedFilter(id)
       })),
-      sharedQuery: S.sharedQuery || '', setSharedQuery: e => this.setState({ sharedQuery: e.target.value }),
-      sharedCards: shown.map(x => this.sharedCard(x)),
+      sharedQuery: S.sharedQuery || '', setSharedQuery: e => this.setSharedQuery(e.target.value),
+      sharedCards: shown.map((x, i) => this.sharedCard(x, false, i)),
+      sharedHasMore: !!S.sharedNext && !mine && S.sharedLoad === 'ready',
+      sharedMoreLabel: S.sharedMore === 'loading' ? tx('Loading shared scores…') : S.sharedMore === 'error' ? tx('Try again') : tx('Show more'),
+      sharedMoreOn: () => this.loadShared(true, true),
       sharedHasNote: !!note, sharedNote: note,
       sharedHasAction: !!act, sharedActionLabel: act ? act.label : '', sharedAction: act ? act.on : null,
       /* the score a link landed on: a list of one once it has arrived */
