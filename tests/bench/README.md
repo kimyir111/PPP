@@ -157,6 +157,11 @@ K/3` (K = 1..3). They were not traced with strace; by their code they open `Pian
 `scoregraph/`, `difficulty/`, `playability/` and the eight score files the simulator plays (`catalog/method/`, `catalog/hymns/`, a
 fixture of its own), and nothing under the paths above.
 
+G13-7a added one step (`npm run test:monitoring`, in `shard-g`; not in `light`): the release script, the daily smoke's issue reporter and the server's counters, each with a fake `gh`, a
+fake Render and a fake page (the counters also run the real `server.js` on a free port), and the mutants of all three (`tests/release/mutants.js`; about 10 s). It was read, not traced: it
+opens `tools/release/*.js`, `server-stats.js`, `server.js` and its own files, and nothing under the paths above (the release script names `docs/RELEASES.md` as the file it appends to, but the
+test gives it an in-memory file; the two files are on `NAMES_DOCS` in `unit/test_ci_plan.py` for that reason). A change under `tools/release/` is `full`: `tools/` is not on the whitelist.
+
 The one step that walks the whole tree is the A48 test of `npm run test:engrave` (it imports every committed `.musicxml`, `.mxl`,
 `.mid` and score-named `.xml` file it finds, anywhere), and `tests/engrave/marks.test.js` fails on any tracked font; so a file of those
 types is an input of the gate wherever it lies, and the light lists do not name them (a `docs/example.musicxml` is `full`).

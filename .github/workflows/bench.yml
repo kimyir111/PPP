@@ -247,8 +247,8 @@ jobs:
       - run: python tests/bench/run.py run --suite replay-public-v2   # G10a-3 (S9): the helper's real pedal on rendered audio (no pedal was played), with the pedal policy
       - run: python tests/bench/tools/make_rec_suites.py --check   # the committed rec-* suites are the generator's (G10a-0)
 
-  # shard-g: the grid trainer check, core, test:difficulty
-  #   (steps ~133 s on a fast runner, ~195 s on a slow one)
+  # shard-g: the grid trainer check, core, test:difficulty, test:monitoring
+  #   (steps ~133 s on a fast runner, ~195 s on a slow one, before test:monitoring (G13-7a): 10 s on a Windows desktop, estimated 10-20 s on a runner)
   shard-g:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
@@ -267,6 +267,7 @@ jobs:
       - run: python tests/bench/run.py run --suite core
       - run: python tests/bench/run.py check --suite core
       - run: node tests/bench/tools/train_grid.js --check          # G10a-2 (AI-5b): the grid stage's committed weights are what the training makes (G10 section 20)
+      - run: npm run test:monitoring                               # G13-7a: the release script (a red or missing gate refuses), the daily smoke's issue reporter, the server's counters and the mutants of all three (Node only, no network)
       - if: always()
         uses: actions/upload-artifact@v4
         with:
