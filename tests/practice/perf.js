@@ -13,7 +13,8 @@
    a frame is bound by the compositor as much as by the CPU). A metric passes when that is within 20 % of the baseline (plus a small floor, because
    performance.now() has a resolution of 0.1 ms: a p95 of 0.1 ms is one tick; the floor is 4x as large under the 4x throttle). Slower than that is RED; faster than 20 % under the baseline is
    reported, not failed (refresh the baseline when it is a real gain). Noise only adds time, so a metric counts at its BEST attempt, in the
-   baseline (3 probes recorded, 5 for the runner) and in `check` (up to 3 probes, it stops at the first clean one). The baseline is kept per
+   baseline (3 probes recorded, 5 for the runner) and in `check` (up to 3 probes, it stops at the first clean one). The band is 20 % on the
+   CPU model the baseline was recorded on and 45 % on another (see TOL_OTHER_CPU). The baseline is kept per
    profile (local, ci), because a shared runner and a developer's machine are not the same kind of machine; the profile is `ci` when
    GITHUB_ACTIONS is set.
 
@@ -31,6 +32,11 @@ const L = require('./lib');
 const BASELINE = path.join(__dirname, 'baselines', 'perf.json');
 const PIECE = 'catalog/method/sonatina/020.mxl';
 const TOL = 0.2;
+/* On the CPU model the baseline was recorded on, the band is TOL. On another model it is wider: one calibration workload does not predict how
+   a different CPU generation runs every other workload (the GitHub runner pool mixes EPYC 7763 and EPYC 9V45: with the calibration ratio taken
+   out, r4.unit.beginMean still came out +46 % and the other metrics -30..+40 %, run 37751245427). 45 % is still well under the 2x slowdown the
+   check exists to see (perf-selftest.js plants one). */
+const TOL_OTHER_CPU = 0.45;
 
 /* key suffix -> { floor (ms or count slack), doc: [1x, 4x] from G11 section 1, kind, info4 }. `info4`: a single short task (or the worst of
    many) under the 4x throttle is slowed by 1x-5x depending on where in the throttle's duty cycle it falls, so at 4x the number is reported
@@ -62,7 +68,7 @@ const SPECS = {
   'live.paintMax': { floor: 16, doc: [null, 64] },
   /* long tasks: counts, with the slack they are allowed over the baseline (the entry's belong to the engraver, G4 B5) */
   'long.play': { kind: 'count', slack: [0, 1], doc: [0, 1] },
-  'long.entry': { kind: 'count', slack: [1, 1], doc: [2, 3] }
+  'long.entry': { kind: 'count', slack: [1, 2], doc: [2, 3] }
 };
 /* counters that must come out exactly the same, and counters that depend on when the clock run starts (how many of the piece's onsets fall into
    the 7.5 s and 10 s windows): those need only be 80 % of the baseline's, which is what "the probe measured something" asks */
@@ -284,7 +290,7 @@ async function probeOnce(url) {
 
 /* flat view: "r1.unit.build" -> value (ms, or a count) */
 function flatten(run) {
-  const f = { calib: {}, v: {}, exact: {}, long: {}, throttle: {} };
+  const f = { calib: {}, v: {}, exact: {}, long: {}, throttle: {}, machine: machine() };
   [1, 4].forEach(r => {
     const x = run.rate[r];
     f.calib['r' + r] = x.calib;
@@ -353,14 +359,22 @@ function compareRuns(base, runs) {
     red++;
     rows.push({ k: 'r4.throttle', base: '~4x', now: runs.map(x => x.throttle.r4.before.toFixed(1) + '/' + x.throttle.r4.after.toFixed(1)).join(' '), status: 'RED', note: 'the CPU throttle did not take hold (the same workload must take 3-6x as long under it): no 4x number can be trusted' });
   }
+  /* the CPU model of the probes against the one the baseline was recorded on (a probe without the field is taken to be the same) */
+  const otherCpu = runs.some(x => x.machine && base.machine && x.machine.cpu !== base.machine.cpu);
+  const tol = otherCpu ? TOL_OTHER_CPU : TOL;
   Object.keys(base.metrics).forEach(k => {
     const spec = specOf(k), b = base.metrics[k], rate = rateOf(k);
     if (b.v == null || !usable(rate).length) return;
     const vals = usable(rate).map(x => x.v[k]).filter(v => v != null);
     if (!vals.length) { rows.push({ k, status: 'RED', note: 'not measured' }); red++; return; }
     if (spec.kind === 'count') {
-      const best = Math.min.apply(null, vals);
-      const limit = b.v + spec.slack[rate === 1 ? 0 : 1];
+      /* a long task is one over 50 ms on the BASELINE's machine: on a slower one a task is long only past 50 ms times how much slower it is */
+      const counts = usable(rate).map(x => {
+        const durs = x.long && x.long[k.replace('.long.', '.')];
+        return durs ? durs.filter(d => d > 50 * machineScale(base, x)).length : x.v[k];
+      });
+      const best = Math.min.apply(null, counts);
+      const limit = b.v + spec.slack[rate === 1 ? 0 : 1] + (otherCpu ? 1 : 0);
       const bad = best > limit;
       if (bad) red++;
       rows.push({ k, base: b.v, now: best, limit, status: bad ? 'RED' : 'ok', note: bad ? 'more long tasks than the baseline allows' : '' });
@@ -373,13 +387,13 @@ function compareRuns(base, runs) {
     /* the floor is for a 1x machine; under the 4x throttle every task, and the jitter of the throttle's duty cycle, is 4x as long */
     const floor = spec.floor * (rate === 4 ? 4 : 1);
     const ref = spec.cold && b.spread ? Math.max(b.v, b.spread[1]) : b.v;       // a cold single shot: the baseline's slowest probe, not its luckiest
-    const limit = ref * (1 + TOL) + floor;
-    const low = b.v * (1 - TOL) - floor;
+    const limit = ref * (1 + tol) + floor;
+    const low = b.v * (1 - tol) - floor;
     const bad = best > limit;
     const info = !!spec.info4 && rate === 4;
     if (bad && !info) red++;
     rows.push({ k, base: b.v, now: round(best), limit: round(limit), status: bad ? (info ? 'info' : 'RED') : (best < low && !info) ? 'faster' : 'ok',
-      note: bad ? (info ? 'over the baseline; a single short task under the throttle is not held (info)' : 'slower than the baseline by more than 20 %') : (best < low && !info) ? 'faster than the baseline by more than 20 %: refresh it if this is a real gain' : '' });
+      note: bad ? (info ? 'over the baseline; a single short task under the throttle is not held (info)' : 'slower than the baseline by more than ' + Math.round(tol * 100) + ' %' + (otherCpu ? ' (another CPU model than the baseline)' : '')) : (best < low && !info) ? 'faster than the baseline by more than 20 %: refresh it if this is a real gain' : '' });
   });
   EXACT.forEach(e => ['r1', 'r4'].forEach(r => {
     const k = r + '.' + e;
@@ -455,7 +469,7 @@ async function main() {
         runs.push(flatten(await probeOnce(url)));
         result = compareRuns(base, runs);
         const last = runs[runs.length - 1];
-        console.log('  probe ' + (i + 1) + '/' + attempts + ': ' + ((Date.now() - t0) / 1000).toFixed(0) + ' s, calib ' + round(last.calib.r1) + ' / ' + round(last.calib.r4) + ' ms (baseline ' + base.calib.r1 + ' / ' + base.calib.r4 + '), machine x' + machineScale(base, last).toFixed(2) + ', 4x throttle measured ' + round(last.throttle.r4.before) + ' then ' + round(last.throttle.r4.after) + (last.throttle.r4.valid ? '' : ' NOT VALID') + ', ' + (result.red ? result.red + ' metric(s) over' : 'all within'));
+        console.log('  probe ' + (i + 1) + '/' + attempts + ': ' + ((Date.now() - t0) / 1000).toFixed(0) + ' s, calib ' + round(last.calib.r1) + ' / ' + round(last.calib.r4) + ' ms (baseline ' + base.calib.r1 + ' / ' + base.calib.r4 + '), ' + last.machine.cpu.replace(/ \d+-Core Processor/, '') + (last.machine.cpu === base.machine.cpu ? '' : ' (the baseline: ' + base.machine.cpu.replace(/ \d+-Core Processor/, '') + ')') + ', machine x' + machineScale(base, last).toFixed(2) + ', 4x throttle measured ' + round(last.throttle.r4.before) + ' then ' + round(last.throttle.r4.after) + (last.throttle.r4.valid ? '' : ' NOT VALID') + ', ' + (result.red ? result.red + ' metric(s) over' : 'all within'));
         if (!result.red) break;
       }
       console.log('perf probe vs profile "' + profileName() + '": ' + result.rows.length + ' metrics, best of ' + runs.length + ' probe(s)');

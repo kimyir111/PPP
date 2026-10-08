@@ -25,15 +25,16 @@ const PLAN = /^r[14]\.unit\.buildMean$/;
 
 /* A probe as flatten() makes it, from a baseline profile: every time is the baseline's, times `ratio` (a slower machine), times `noise`, and
    times 2 for the keys `plant` picks; the calibration is the baseline's times `ratio`. */
-function synth(base, ratio, noise, plant) {
+function synth(base, ratio, noise, plant, cpu, mismatch) {
   const v = {};
   Object.keys(base.metrics).forEach(k => {
     const spec = P.specOf(k), b = base.metrics[k];
     if (b.v == null) return;
-    v[k] = spec.kind === 'count' ? b.v : b.v * ratio * noise * (plant && plant.test(k) ? 2 : 1);
+    v[k] = spec.kind === 'count' ? b.v : b.v * ratio * noise * (mismatch || 1) * (plant && plant.test(k) ? 2 : 1);
   });
   return {
     calib: { r1: base.calib.r1 * ratio, r4: base.calib.r4 * ratio }, v: v, exact: Object.assign({}, base.exact), long: {},
+    machine: { cpu: cpu || base.machine.cpu },
     throttle: { r1: { valid: true }, r4: { before: 4.2, after: 4.2, tries: 1, valid: true } }
   };
 }
@@ -57,6 +58,18 @@ Object.keys(file.profiles).forEach(name => {
       ok('... and nothing else is red', got.every(k => want.indexOf(k) >= 0), got.filter(k => want.indexOf(k) < 0).join(' '));
     });
   }
+  /* another CPU model than the baseline's: the calibration does not predict every workload (up to 40 % off, measured), the band is 45 % */
+  const OTHER = 'Some Other CPU 3000';
+  for (const ratio of [1.0, 1.4]) {
+    const res = P.compareRuns(base, [synth(base, ratio, 1.0, null, OTHER, 1.4)]);
+    ok('another CPU model, ' + ratio + 'x as slow and every workload 40 % off the calibration, is green', res.red === 0, redKeys(res).join(' '));
+    [['the matcher', MATCHER], ['the plan build', PLAN]].forEach(([what, re]) => {
+      const planted = P.compareRuns(base, [synth(base, ratio, 1.0, re, OTHER, 1.0)]);
+      const want = Object.keys(base.metrics).filter(k => re.test(k));
+      const missing = want.filter(k => redKeys(planted).indexOf(k) < 0);
+      ok('another CPU model: a planted 2x slowdown of ' + what + ' is still red at calibration ratio ' + ratio, !missing.length, missing.length ? 'NOT red: ' + missing.join(' ') : '');
+    });
+  }
   const clean = P.compareRuns(base, [synth(base, 1.0, 1.0)]);
   const seen = clean.rows.filter(r => (MATCHER.test(r.k) || PLAN.test(r.k)) && r.limit != null).map(r => [r.limit / r.base, r.k]).sort((a, b) => a[0] - b[0]);
   console.log('  (a slowdown of the matcher or the plan build is seen from x' + seen[0][0].toFixed(2) + ' (' + seen[0][1] + ') to x' + seen[seen.length - 1][0].toFixed(2) + ' (' + seen[seen.length - 1][1] + '))');
@@ -73,6 +86,15 @@ Object.keys(file.profiles).forEach(name => {
     Object.keys(real.v).forEach(k => { if (P.specOf(k).kind !== 'count') real.v[k] = base.metrics[k].v * 1.382; });
     real.v['r1.unit.begin'] = 14.5;
     ok('the slow draw of the runner pool of run 37750030861 (machine x1.38, a cold begin of 14.5 ms) is green', P.compareRuns(base, [real]).red === 0, redKeys(P.compareRuns(base, [real])).join(' '));
+    /* run 37751245427: an EPYC 7763 (calibration 153.4 / 153.7, x1.42) against a baseline recorded on an EPYC 9V45; r4.unit.beginMean came out
+       3.634 ms after the calibration (base 2.487, 5.16 ms raw) and r4.long.entry counted 3 tasks over 50 ms (72-95 ms) against a base of 1 */
+    const real2 = synth(base, 1.0, 1.0, null, 'AMD EPYC 7763 64-Core Processor');
+    real2.calib = { r1: 153.4, r4: 153.7 };
+    Object.keys(real2.v).forEach(k => { if (P.specOf(k).kind !== 'count') real2.v[k] = base.metrics[k].v * 1.42; });
+    real2.v['r4.unit.beginMean'] = 5.16;
+    real2.long = { 'r4.entry': [72, 80, 95], 'r4.play': [], 'r1.entry': [], 'r1.play': [] };
+    real2.v['r4.long.entry'] = 3;
+    ok('the slow EPYC 7763 draw of run 37751245427 (beginMean +46 % after the calibration, 3 entry long tasks at 4x) is green', P.compareRuns(base, [real2]).red === 0, redKeys(P.compareRuns(base, [real2])).join(' '));
   }
   /* what must not pass */
   const tooSlow = P.compareRuns(base, [synth(base, 4.0, 1.0)]);
