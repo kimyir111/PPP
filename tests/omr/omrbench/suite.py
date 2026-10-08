@@ -9,7 +9,7 @@
     fetch-real ...                 the real-scan tier's page images (tests/omr/omrbench/fetch_real.py; never run by the gate)
 
     --cases   all | tune | held | s1 | s1-app | id,id,...  (an id, a case name, or tag:<name>)
-    --tiers   clean-A,clean-B,scan-A,scan-B,photo-A,photo-B,brace-less (default: all seven); scan and photo are also reported merged (A + B)
+    --tiers   clean-A,clean-B,scan150-A,scan150-B,scan200-A,scan200-B,photo-A,photo-B,brace-less (default: all nine); scan and photo are also reported merged (A + B)
 
 It is a LOCAL tool: it needs Audiveris 5.11, Java (Audiveris brings its own), Verovio, NumPy, OpenCV and puppeteer (tests/omr/README.md).
 Where one is missing it prints ``SKIPPED: <reason>`` and exits 0 (2 with --require-env); the CI gate never runs it, only the unit tests of its
@@ -32,11 +32,10 @@ from . import BENCH, BENCH_VERSION, baseline as bl, cases as casesmod, degrade, 
 HERE = envinfo.HERE
 OUT = os.path.join(HERE, "out")
 BASELINE_DIR = os.path.join(HERE, "baselines")
-PAGE_TIERS = ("clean-A", "clean-B", "scan-A", "scan-B", "photo-A", "photo-B")
+PAGE_TIERS = ("clean-A", "clean-B", "scan150-A", "scan150-B", "scan200-A", "scan200-B", "photo-A", "photo-B")
 TIERS = PAGE_TIERS + ("brace-less",)
 MODES = ("engine", "app", "app-nohelper")
-MERGED = {"scan": ("scan-A", "scan-B"), "photo": ("photo-A", "photo-B")}
-VARIANT_OF = {"clean": "clean", "scan": "scan", "photo": "photo"}
+MERGED = {"scan": ("scan150-A", "scan150-B", "scan200-A", "scan200-B"), "photo": ("photo-A", "photo-B")}
 
 
 def baseline_path(mode: str = "engine", engine_version: str = "5.11.0") -> str:

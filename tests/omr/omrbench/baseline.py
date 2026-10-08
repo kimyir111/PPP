@@ -139,7 +139,7 @@ def table(results: Dict[str, Any]) -> str:
     """The numbers of a results file as a text table (tier x the headline metrics, on the 'all' and the 's1' subsets)."""
     cols = [("omr.note_f1", "noteF1"), ("omr.played_f1", "playedF1"), ("omr.bar_exact", "bars ok"), ("omr.measure_alignment_rate", "aligned"),
             ("omr.bar_count_exact", "count ok"), ("omr.parts_ok", "parts ok"), ("omr.flag.voice.recall", "flag R"),
-            ("omr.flag.voice.precision", "flag P")]
+            ("omr.flag.voice.precision", "flag P")]  # voice rule; the app path: the app's own flags
     out = []
     for sub in ("all", "s1"):
         out.append(f"subset {sub}")
@@ -148,6 +148,11 @@ def table(results: Dict[str, Any]) -> str:
             a = t["subsets"].get(sub)
             if not a:
                 continue
-            vals = " ".join(f"{a[m]:9.3f}" if a.get(m) is not None else f"{'-':>9}" for m, _ in cols)
+            def val(m):
+                v = a.get(m)
+                if v is None and ".voice." in m:                 # the app path has the app's own flags only
+                    v = a.get(m.replace(".voice.", ".app."))
+                return f"{v:9.3f}" if v is not None else f"{'-':>9}"
+            vals = " ".join(val(m) for m, _ in cols)
             out.append(f"  {tier:9} {a['cases']:5d} {vals}   {a['exact_bars']}/{a['truth_bars']}")
     return "\n".join(out)

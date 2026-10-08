@@ -29,9 +29,9 @@ from collections import OrderedDict
 from fractions import Fraction as F
 from typing import Any, Dict, List, Optional, Tuple
 
-from . import BENCH, BENCH_VERSION, baseline as bl, cases as casesmod, envinfo, metrics, render, xmlscore
+from . import BENCH, BENCH_VERSION, baseline as bl, cases as casesmod, degrade, envinfo, metrics, render, xmlscore
 
-APP_TIERS = ("pdf-A", "photo-A", "scan-A", "pdf-B", "photo-B", "scan-B", "brace-less")
+APP_TIERS = ("pdf-A", "photo-A", "scan150-A", "scan200-A", "pdf-B", "photo-B", "scan150-B", "scan200-B", "brace-less")
 DEFAULT_TIERS = "pdf-A,photo-A,brace-less"
 
 
@@ -138,7 +138,7 @@ def build_jobs(sel: List[Dict[str, Any]], tiers: List[str], doc: Dict[str, Any],
                 if len(pages) != 1:
                     skipped.append(f"{c['case']}|{tier} (a {len(pages)}-page excerpt: the app takes one image)")
                     continue
-                path, typ = os.path.join(render.RENDER, c["case"], e, ("photo" if kind == "photo" else "scan") + "-p1.jpg"), "image/jpeg"
+                path, typ = os.path.join(render.RENDER, c["case"], e, kind + "-p1.jpg"), "image/jpeg"
             jobs.append({"id": f"{c['case']}|{tier}", "case": c["case"], "tier": tier, "path": path, "type": typ})
     return jobs
 
@@ -160,7 +160,7 @@ def run(args) -> int:
     os.makedirs(out_dir, exist_ok=True)
     img_tiers = [t for t in tiers if t != "brace-less"]
     if img_tiers:
-        render.render_cases(sel, engravers=sorted({t.split("-")[1] for t in img_tiers}), variants=("photo", "scan"), force=args.force)
+        render.render_cases(sel, engravers=sorted({t.split("-")[1] for t in img_tiers}), variants=degrade.DEGRADED, force=args.force)
     skipped: List[str] = []
     jobs = build_jobs(sel, tiers, doc, skipped)
     for s in skipped:
@@ -240,9 +240,11 @@ def score_app(doc, sel, tiers, jobs, rows, args, health, elapsed) -> Dict[str, A
     fixtures = {f["case"]: f for f in doc.get("fixtures", [])}
     results: Dict[str, Any] = OrderedDict(schema=bl.RESULTS_SCHEMA, bench=BENCH, bench_version=BENCH_VERSION, mode=args.mode)
     nohelper = args.mode == "app-nohelper"
-    results["engine"] = {"name": "browser draft reader (PdfLayer.notate)" if nohelper else "audiveris via the local helper",
-                         "version": "-" if nohelper else (health.get("audiveris") or {}).get("version", "5.11.0") if isinstance(health.get("audiveris"), dict) else "5.11.0",
-                         "helper": {k: health.get(k) for k in ("version", "audiveris", "pdfToMusic")} if health else None}
+    if nohelper:
+        results["engine"] = {"name": "browser draft reader (PdfLayer.notate)", "version": "-", "helper": None}
+    else:
+        installed = envinfo.audiveris_version(envinfo.audiveris_path(args.audiveris)) or {"version": "?", "jar_sha256": None}
+        results["engine"] = dict(installed, name="audiveris via the local helper", helper={k: health.get(k) for k in ("version", "audiveris", "pdfToMusic")})
     results.update(created=datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"), git=suite.git_info(),
                    versions=render.tool_versions(), cases_sha256=suite.cases_digest(), tiers=OrderedDict(), inputs_sha256={},
                    timing_s=round(elapsed, 1))

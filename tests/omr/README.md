@@ -12,7 +12,7 @@ engraver A  Verovio 6.3 (python package)        engraver B  PPP's own print path
    │  SVG pages, A4                                │  SVG pages, A4 print layout
    ▼  node/raster.js: headless Chrome, CPU raster ▼
 clean 300 DPI PNG (2480 x 3508)
-   │  degrade.py      photo: synthetic phone photo of FLAT paper, JPEG q70, 3000 px tall    scan: 150 DPI grey, JPEG q60
+   │  degrade.py      photo: synthetic phone photo of FLAT paper, JPEG q70, 3000 px tall    scan: 150 or 200 DPI grey, JPEG q60
    ▼
 page images  ──►  engine alone: Audiveris 5.11 ─► .mxl ──►  metrics.py (omr.*)   ──►  results.json  ──► check against / write a baseline
              └─►  app path: the app's own Import.load (the helper, or none) ─► the Score the app plays ─► the same metrics
@@ -27,8 +27,8 @@ pip install -r tests/omr/requirements.txt      # verovio, numpy, opencv, PyMuPDF
 
 python tests/bench/run.py omr-live-2 cases --check                    # the 60 excerpts still are what the corpus registry gives
 python tests/bench/run.py omr-live-2 determinism                      # render the S1 pages 3 times (in order, reversed, rotated): every byte equal?
-python tests/bench/run.py omr-live-2 run --cases s1 --jobs 2          # the design document's 15 pages, 6 tiers + brace-less, ~40 min
-python tests/bench/run.py omr-live-2 run                              # all 60 excerpts, all tiers (engine alone); ~400 pages
+python tests/bench/run.py omr-live-2 run --cases s1 --jobs 2          # the design document's 15 pages, all tiers
+python tests/bench/run.py omr-live-2 run                              # all 60 excerpts, all tiers (engine alone); ~530 pages, about an hour on an idle PC with --jobs 3
 python tests/bench/run.py omr-live-2 check                            # last run against tests/omr/baselines/audiveris-5.11.0.json (exit 1 = regression)
 python tests/bench/run.py omr-live-2 baseline --reason "..."          # record the last full run as the baseline (refused for a partial or timed-out run)
 
@@ -38,7 +38,7 @@ python tests/bench/run.py omr-live-2 fetch-real --check               # the real
 ```
 
 `--cases` is `all`, `tune`, `held`, `s1`, `s1-app` or a list of ids (`hymns/silent-night,method_beyer_012,tag:collection:hanon`). `--tiers` is a
-list of `clean-A clean-B scan-A scan-B photo-A photo-B brace-less`. Anything missing prints `SKIPPED: <reason>` and exits 0 (`--require-env`:
+list of `clean-A clean-B scan150-A scan150-B scan200-A scan200-B photo-A photo-B brace-less`. Anything missing prints `SKIPPED: <reason>` and exits 0 (`--require-env`:
 2), like the other environment tiers (`run.py omr-live`). A page whose inputs did not change is not rendered or read again (`--force`).
 Page images, engine output and results are written under `tests/omr/out/` (git-ignored) and are **never committed**.
 
@@ -53,8 +53,9 @@ from a run that has one. `--jobs 1` is the timing the design document measured (
 | --- | --- | --- |
 | `clean-A` | 60 excerpts x up to 24 bars (1,169 bars), Verovio, A4 300 DPI | hymns, Beyer, Czerny 599 / 849, Hanon, Burgmuller, sonatinas, catalogue; every metre and key the pool has |
 | `clean-B` | the same excerpts, PPP's own print path | title area and page numbers, as PPP prints them |
-| `scan-A`, `scan-B` | clean-A / clean-B at 150 DPI grey, JPEG q60 | merged as the `scan` tier |
-| `photo-A`, `photo-B` | clean-A / clean-B as a synthetic phone photo of flat paper | merged as the `photo` tier. No page curl, no shadow, no glare: a real photo is worse |
+| `scan150-A`, `scan150-B` | clean-A / clean-B at 150 DPI grey, JPEG q60 | PPP's print sets a 7 mm staff: 10 px an interline at 150 DPI, which Audiveris refuses ("a too low interline value of 10 pixels ... Sheet ignored"), so `scan150-B` reads nothing: a fact about the engine, kept in the numbers |
+| `scan200-A`, `scan200-B` | the same at 200 DPI (14 px an interline) | with the two above, merged as the `scan` tier |
+| `photo-A`, `photo-B` | clean-A / clean-B as a synthetic phone photo of flat paper (perspective, 1.5 degrees, uneven light, blur, noise, 3000 px, JPEG q70) | merged as the `photo` tier. No page curl, no shadow, no glare: a real photo is worse |
 | `brace-less` | the 4 G0 fixtures (`tests/fixtures`) | a thin bracket instead of a brace, bar lines that do not cross the staves: issues 11 and 12. Engine alone reads the PNG and the JPG; the app path reads all four |
 | real-scan | public-domain scans of the very editions the catalogue was transcribed from | **not in G12-0's numbers**: the fetch script is written, the list is empty (below) |
 
@@ -103,6 +104,36 @@ measured, so `raster.js` runs with `--disable-gpu`: the CPU raster is byte-stabl
 function of (engraver, page), `degrade.py`), the JPEG. `omr-live-2 determinism` renders three times (in order, reversed, rotated) and compares every byte.
 Another machine's Chrome, OpenCV or Verovio can still draw a pixel differently: the baseline stores the sha256 of each page-image set and `check`
 says so when they differ.
+
+## Reproducing section 1 of the design document (A0)
+
+The 15 pages of section 1 are the `s1` subset. Audiveris 5.11 on them, the baseline's pages (CPU raster) against the document, and the same pages
+with `OMR_CHROME_GPU=1` (the raster the document was measured on; this PC's GPU):
+
+| tier (s1, 15 pages, 267 bars) | design document | `OMR_CHROME_GPU=1` | baseline (CPU raster) |
+| --- | --- | --- | --- |
+| clean-A | note F1 0.845, 168 bars exact (63 %) | 0.845, 168 (63 %) | 0.846, 169 (63 %) |
+| photo-A | 0.616, 69 (26 %) | 0.616, 69 (26 %) | 0.627, 65 (24 %) |
+| scan150-A | 0.756, 108 (40 %) | 0.756, 108 (40 %) | **0.721**, 100 (37 %) |
+
+With the GPU raster the numbers of section 1 come out to the last digit, so the renderer, the degradations, the engine call and the metrics are
+the document's. The CPU raster (the default, because it is byte-stable) draws thin lines slightly differently, and Audiveris reads the 150 DPI scans
+of those pages differently: the scan tier of 15 pages moves by 0.035 (clean and photo stay within 0.011). Audiveris itself is deterministic (its output
+for the same image is byte-identical in every run and with 3 pages in parallel: checked on all 17 scan pages of the document); what moves it is the page.
+The 60-excerpt tiers average four times as many pages. If you need the document's own pixels, `OMR_CHROME_GPU=1` writes them to `out/render-gpu/`,
+`out/engine-gpu/` (never mixed with the baseline's); its pages are not byte-stable from one run to the next, and a baseline is refused from them.
+
+The app path on the same pieces (6 PDFs and 6 photos, the document's E1 and E9):
+
+| app path | design document | omr-live-2 |
+| --- | --- | --- |
+| browser draft reader (no helper), 6 vector PDFs | 0 of 83 bars exactly right; played F1 0.07 / 0.09 / 0.62 / 0.45 / 0.31 / 0.33 | 0 of 83; the same six F1s (mean 0.311) |
+| ... 6 phone photos | 5 refused, 1 read as 1 bar, F1 0.00 | the same |
+| ... fixture `piano-clean.png` | F1 0.05 | 0.047 |
+| Audiveris through the helper, fixtures PNG / JPG / multipage PDF | played F1 0.500, 32 of 48 notes silenced, "good", confidence 1.00, no suspect bar | the same (note F1 1.000: the engine read it all) |
+| ... the fixture PDF | 16 bars for 8, one staff, confidence 0.80 | the same |
+| ... 6 vector PDFs | 0 of 24 wrong bars flagged | 58 of 83 bars right, 25 wrong, 0 flagged |
+| ... 6 phone photos | at most 5 of 59 wrong bars flagged (5 flagged) | 22 of 83 bars right, 7 flagged, all of them wrong (the photo pages differ) |
 
 ## What the CI gate runs
 

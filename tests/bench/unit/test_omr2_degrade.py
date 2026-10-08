@@ -16,7 +16,8 @@ class Parameters(unittest.TestCase):
         self.assertEqual((p["perspective"], p["rotation_deg"], p["blur_sigma"], p["noise_sigma"]), (0.025, 1.5, 1.1, 6.0))
         self.assertEqual((p["light_x"], p["light_y"]), ((1.0, 0.75), (0.95, 1.0)))
         self.assertEqual((p["height_px"], p["jpeg_quality"]), (3000, 70))
-        self.assertEqual(D.SCAN150, {"factor": 2, "jpeg_quality": 60})
+        self.assertEqual(D.SCAN, {"scan150": {"dpi": 150, "jpeg_quality": 60}, "scan200": {"dpi": 200, "jpeg_quality": 60}})
+        self.assertEqual(D.VARIANTS, ("clean", "photo", "scan150", "scan200"))
 
     def test_the_seed_is_a_function_of_the_engraver_and_the_page(self):
         self.assertEqual([D.seed_for("A", n) for n in (1, 2, 3)], [1001, 1003, 1005], "the design document's seeds")
@@ -70,9 +71,10 @@ class Pixels(unittest.TestCase):
         left, right = a[mid - 30:mid + 30, 100:300].mean(), a[mid - 30:mid + 30, -300:-100].mean()
         self.assertGreater(left, right + 15, "the light falls from 1.0 to 0.75 across the page")
 
-    def test_a_scan_is_half_size_and_grey(self):
-        s = D.scan_array(self.img)
-        self.assertEqual(s.shape, (175, 124))
+    def test_a_scan_is_grey_at_its_resolution(self):
+        self.assertEqual(D.scan_array(self.img).shape, (175, 124), "150 DPI: half of the 300 DPI page")
+        self.assertEqual(D.scan_array(self.img, 200).shape, (233, 165), "200 DPI: two thirds")
+        self.assertEqual(D.scan_array(self.img, 150).shape, D.scan_array(self.img).shape)
 
     def test_jpeg_bytes_are_deterministic(self):
         a = D.jpeg_bytes(D.photo_array(self.img, 1001), 70)
@@ -86,7 +88,7 @@ class Pixels(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             p = os.path.join(d, "clean-p1.png")
             cv2.imwrite(p, self.img)
-            for v in ("photo", "scan"):
+            for v in D.DEGRADED:
                 data, ext = D.degrade_file(p, v, "A", 1)
                 self.assertEqual(ext, ".jpg")
                 self.assertEqual(data[:2], b"\xff\xd8")

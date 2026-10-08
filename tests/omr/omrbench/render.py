@@ -7,7 +7,7 @@ Per case (tests/omr/cases.json) under ``tests/omr/out/render/<case>/``:
     B/p1.svg ...              engraver B, PPP's own print path (node/ppp-print.js)
     <E>/clean-p1.png ...      A4 300 DPI (2480 x 3508) by headless Chrome (node/raster.js)
     <E>/photo-p1.jpg ...      degrade.py, seed per (engraver, page)
-    <E>/scan-p1.jpg ...       150 DPI grey
+    <E>/scan150-p1.jpg ...    150 DPI grey (and scan200-p1.jpg at 200 DPI)
     <E>/score.pdf             a vector PDF of the SVG pages (only for the app path: ``ensure_pdf``)
     render.json               every file's sha256 and size, the tool versions
 
@@ -241,7 +241,7 @@ def render_cases(cases: List[Dict[str, Any]], engravers=ENGRAVERS, variants=degr
             for i, svg in enumerate(plan[c["case"]][e], 1):
                 clean = os.path.join(root, c["case"], e, f"clean-p{i}.png")
                 entry = {"page": i, "svg": {"sha256": sha256_file(svg)}, "clean": {"file": clean, "sha256": sha256_file(clean), "size": png_size(clean)}}
-                for v in ("photo", "scan"):
+                for v in degrade.DEGRADED:
                     if v not in variants:
                         continue
                     out = os.path.join(root, c["case"], e, f"{v}-p{i}.jpg")

@@ -127,7 +127,9 @@ class SelectionAndTiers(unittest.TestCase):
         self.assertEqual(SU.parse_tiers("clean-A,photo-B"), ["clean-A", "photo-B"])
         with self.assertRaises(SystemExit):
             SU.parse_tiers("clean-C")
-        self.assertEqual(SU.tier_parts("scan-B"), ("scan", "B"))
+        self.assertEqual(SU.tier_parts("scan200-B"), ("scan200", "B"))
+        self.assertEqual(sorted(SU.MERGED), ["photo", "scan"])
+        self.assertEqual(len(SU.MERGED["scan"]), 4)
         self.assertEqual(SU.tier_parts("brace-less"), ("fixture", "-"))
 
 
@@ -164,6 +166,41 @@ class Committed(unittest.TestCase):
         self.assertEqual(len(b["tiers"]["clean-A"]["subsets"]["all"]) > 5, True)
         self.assertEqual(b["tiers"]["clean-A"]["subsets"]["all"]["cases"], 60)
         self.assertEqual(b["tiers"]["clean-A"]["subsets"]["s1"]["cases"], 15)
+
+    def test_the_numbers_of_section_one_are_reproduced_by_the_baseline_pages(self):
+        """A0: the document's section-1 numbers (docs/GOALS/G12_OMR.md E3, E4), on the 15 pages, within 0.02. The scan150 tier is the known
+        exception: the CPU raster the baseline is made on draws thin lines a little differently from the GPU raster the document was measured on,
+        and Audiveris reads those 150 DPI pages 0.035 differently (README, 'Reproducing section 1'; the GPU raster gives the document's numbers
+        to the last digit)."""
+        f = os.path.join(BASE_DIR, "audiveris-5.11.0.json")
+        if not os.path.isfile(f):
+            self.skipTest("no engine baseline committed yet")
+        t = B.load(f)["tiers"]
+        for tier, f1, bars in (("clean-A", 0.845, 168 / 267), ("photo-A", 0.616, 69 / 267)):
+            a = t[tier]["subsets"]["s1"]
+            self.assertAlmostEqual(a["omr.note_f1"], f1, delta=0.02, msg=tier)
+            self.assertAlmostEqual(a["exact_bars"] / a["truth_bars"], bars, delta=0.02, msg=tier)
+            self.assertEqual(a["truth_bars"], 267)
+        a = t["scan150-A"]["subsets"]["s1"]
+        self.assertAlmostEqual(a["omr.note_f1"], 0.756, delta=0.04)
+        self.assertAlmostEqual(a["exact_bars"] / a["truth_bars"], 108 / 267, delta=0.04)
+
+    def test_the_app_path_baselines_hold_the_documents_e1_e6_and_e9_findings(self):
+        draft = os.path.join(BASE_DIR, "browser-draft.app.json")
+        helper = os.path.join(BASE_DIR, "audiveris-5.11.0.app.json")
+        if not (os.path.isfile(draft) and os.path.isfile(helper)):
+            self.skipTest("no app-path baselines committed yet")
+        d, h = B.load(draft)["tiers"], B.load(helper)["tiers"]
+        pdf = d["pdf-A"]["subsets"]["all"]
+        self.assertEqual((pdf["exact_bars"], pdf["truth_bars"]), (0, 83), "E1: the browser draft reads 0 of 83 bars right")
+        self.assertAlmostEqual(pdf["omr.played_f1"], 0.31, delta=0.01)
+        self.assertEqual(d["photo-A"]["subsets"]["all"]["omr.note_f1"], 0.0, "E1: 5 of 6 photos refused, the sixth read as one bar")
+        for case in ("brace-less_piano-clean.png", "brace-less_piano-clean.jpg"):
+            row = h["brace-less"]["cases"][case]
+            self.assertEqual(row["metrics"]["omr.played_f1"], 0.5, "E6: the hand rule silences a whole staff")
+            self.assertEqual(row["metrics"]["omr.note_f1"], 1.0, "... of notes the engine read right")
+        self.assertEqual(h["brace-less"]["cases"]["brace-less_piano-clean.pdf"]["counts"]["out_bars"], 16, "E6 / issue 12: 16 bars for 8")
+        self.assertEqual(h["pdf-A"]["subsets"]["all"]["omr.flag.app.recall"], 0.0, "E9: the app's flags find none of the wrong bars of the PDFs")
 
 
 if __name__ == "__main__":
