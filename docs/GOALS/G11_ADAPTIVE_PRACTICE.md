@@ -27,6 +27,8 @@ recording lead sheet as generators and a new, verified measure-aligned splice.
 
 **G11a-2 is built** (2026-10-08): the event-parity harness `tests/practice/parity.js` (+ `parity-core.js`, `parity-mutants.js`, 12 new fixtures); compat mode equals the legacy player on all 418 files and every fix difference is booked to its cause; the record, the counts per cause against the expectations of the design and the five (and twenty) mutants are §10.3.
 
+**G11b-1 is built** (2026-10-08): `PPP.learner = 'legacy' | 'typed'`, `practice/runlog.js` (typed evidence, the bounded run log in IndexedDB, the export), the Settings card and the rating row, and `PPP.demoRuns` (decision U4, off); the legacy aggregates are proved byte-identical against the page before the phase; the record, the budgets and the places that count Demo Input today are §19.
+
 ## 1. What was measured before designing (evidence)
 
 All numbers were measured for this document at `3567e27` in an independent server of this worktree
@@ -736,6 +738,59 @@ latency, and whether any of the simulator's parameter ranges is plausible at all
 **For G11b-2.** Fit only on tune pieces and seeds k < 100; report hold-out. Compare at equal session minutes; `reached`
 is 0 for legacy, so "time to mastery −20 %" should be read on the capped minutes (463 for every legacy learner) together
 with `masteredShareEnd`; "no type worse than legacy by > 5 %" per type from `byArmType`.
+
+## 19. G11b-1: typed evidence and the run log (2026-10-08; Sonnet; branch `g11b-1-evidence`)
+
+**What was built.** `PPP.learner = 'legacy' | 'typed'` (default `'legacy'`; key `ppp.learner.v1`, query `?learner=`, PPP.recording's idiom: anything else, a typo, a
+storage that throws = `legacy`). The doc's D11 called the second value `'adaptive'`; that name is for G11b-3 (the policy), `'typed'` is this phase's. Under `'typed'`
+every finished lap is named (G11-D5) in `history.runs[i].source` (`measured`, `follow`, `memory`, `simulated`) and the three real kinds go into the bounded run log
+(G11-D6) in `practice/runlog.js` (UMD, Node + browser; global `PPPRunLog`; requested only while `typed`; `static-allow.js` serves exactly that one file of `practice/`).
+Under `'legacy'` the page is as it was: no request for the module, no IndexedDB `ppp-runlog`, no new localStorage key, no new string made (proved by the golden dump below).
+
+**The log.** IndexedDB `ppp-runlog` v1 (`songs`, `epochs`, `runs`, `ratings`). An epoch is one (song id, music hash): the hash is the engraver's `scoreHash` (`PPPEngrave`,
+`h2`, once per Score object, worked out in idle time), so a log epoch and a stored graph name the same music; a rewrite, an edit or a re-import is a new epoch, the old one is kept and is
+read-only (only the song's `current` epoch takes runs; an Undo that brings the old music back makes it current again). At most 300 runs per epoch (the oldest goes, its rating with
+it), at most 2000 bytes of JSON per run (the file's limit is 2048; the rest is for a rating). A run is `{v, id, at, src, md, hd, tp, sr, f, t, g, hn, lv, ex, ht, wr, xt, ac, R, W}`;
+`R` is one row per measure INDEX and hand `[index, hand, expected, matched, signedMeanMs, absMeanMs, missedNoteIds?]`, `W` the wrong and extra keys per measure. A missed note id is the
+note's index in the Score's note list (stable for a hash; graph event ids need G11a-3's ids on `expected` and are not in the file yet). A run longer than about 40 measures cannot have a row per
+measure and hand in 2 KB: neighbouring measures are merged by 2, 4, 8 (`g` says how many), counts and weighted means kept, the ids given up first. The legend travels with the export (`schema`).
+**A simulated run is not logged.** `append` refuses it; the epoch counts it (`sim: {n, last}`), so an export says how much practice had no keyboard (U1) and the model, which reads
+`evidence()`, cannot see a random run. A rating (`Easy / Just right / Hard`, once a run has stopped playing, never during a loop) is a separate record (`ratings`), so a run is never edited;
+the export puts it on the run as `rt`. Settings has a **Practice log** card (typed only): what is kept, and **Export practice log**, a JSON file (`ppp-practice-log-YYYYMMDD.json`)
+built from the log's own fields by an allow-list (`pickEntry`): no audio, no MIDI, nothing of the account, the guest key or the PC link. `parseExport` reads it back (the test: the log and
+the re-read file are equal). A song removed from My Songs takes its log; "Reset practice progress" does NOT (the log is the append-only record; see the open questions).
+
+**Failing storage.** A refused database (`SecurityError`), a full disk (`QuotaExceededError`, thrown on the spot or at commit), a newer database (`VersionError`), an open or a call that
+does not answer in 2.5 s, any other error: the FIRST one degrades the log for the session (`stats.degraded` = `blocked | quota | version | timeout | backend`), every later call answers
+`degraded` at once without touching the store, nothing is retried and **no message is shown** (the legacy "storage is full" toast belongs to localStorage and is unchanged). A damaged row is
+skipped and counted (`stats.corrupt`); a damaged epoch record is repaired by the next run (numbering continues after the highest key kept). The page counts every lap and writes its history as under
+`legacy` in all of these (tested for each).
+
+**Decision U4 as a switch, OFF.** `PPP.demoRuns = 'count' (default) | 'separate'` (`ppp.demoRuns.v1`, `?demoRuns=`). Under `typed` + `separate`, a lap without a keyboard still moves the screen (laps,
+minutes, the section bars, the plan's task, the lap toast) but is not folded into `history.byMeasure`/`runs[]` and does not touch the memory record (a random recall can no longer move memory strength or
+"memorize" a section); the toast says so ("Demo input is not counted as practice progress."). It does nothing under `legacy`. Nothing flips on its own: the default is today's.
+
+**Where Demo Input counts today** (E9, re-read in `completeLap`): `Learning.record` (`history.byMeasure` and `runs[]`), the recall record (`recordRecall` -> `Memory.recordAttempt`: a random recall moves memory
+strength, and can mark a section memorized), the section accuracy bars (`secs[].acc` by a 0.35 EMA, `reps`), the coach task counter and `coachDone` accuracies (`advanceCoach`, from `lastAcc`), the Loop
+panel's step repetitions (`seqReps`), minutes, xp and the weekly bars. Not the method-book day tick (real results only). The sample song's own seeded history is 23 runs marked `simulated`.
+
+**Tests.** `tests/learner-log.test.js` (84 checks, 8 sections, in `tests/practice/run-suites.js` and so in the `practice-suites` job): the switch; byte identity (below); a measured, a Follow, a recall
+and a Demo Input lap through the real UI with a fake keyboard; the cap of 300 on the real IndexedDB, 2 KB, epochs, ratings, the export through the Settings button; five failing-storage paths and a damaged log;
+the budget at CPU 4x; `demoRuns`; the card and the rating row in four languages. `tests/practice/runlog.test.js` (31) and `runlog-mutation.test.js` (18 mutants of the module + control) run in `npm run test:practice`;
+`tests/practice/learner-mutants.js` (21 rows: 16 of the page, 5 of the served module, each run against the sections that must notice; in the `practice-legacy` job next to `mutants.js`, on a pull request only
+when the probes themselves change) breaks "simulated counted as measured", "Follow/recall counted as measured", "the cap removed", "a legacy page writes to IndexedDB", "U4 decided for the user" and the rest.
+**Byte identity under `legacy`:** a scripted session of ten laps (measured x4, a recall with hints, Follow, Demo Input x4; seeded `Math.random`, the app's injectable clock, `Date.now` frozen from the first script on)
+is run on the page of `a070d70` (before this phase) and on this page; the SHA-256 and size of `ppp.state.v2`, `ppp.song.v1.demo`, `ppp.library.v1`, `history`, `memory`, `secs` and the run list are equal
+(`tests/practice/baselines/learner-legacy.json`, written from the old page by `node tests/practice/learner-record.js --rev a070d70`, twice, equal). Under `typed` the same session equals the golden once the `source` key of each run summary
+is taken out.
+
+**Budgets** (1,763-note Sonatina, 158 measures, whole piece in one run, CPU 4x, 60 laps): the log's synchronous share of a lap (building the entry, queueing the write) has a median of 1.0-1.2 ms and a p90 of 1.3-1.8 ms
+(the first lap of a page, which compiles the code, 4.7-6.3 ms; now and then one lap shows 10-16 ms when Chrome's throttle slows a short task 3-5x, the same effect `tests/practice/perf.js` documents, so the test holds the median and the p90 of 60 laps, scaled by the speed of the machine, and prints the worst); the IndexedDB commits
+finish within 1 ms of the last lap; the largest run is 1,674 bytes (`g` = 4), a four-bar lap about 340 bytes. The module is warmed (`warmUp`, hash and note ids) in idle time when a Score appears, not at the end of a lap.
+
+**Open questions for the Lead.** (1) "Reset practice progress" clears accuracy, memory and plan ticks but not the log; the log is the evidence for H-11, so it is kept - say if reset should clear it. (2) A song's log is kept as long as the song; there is
+no total cap across songs (300 x 2 KB = 0.6 MB per epoch, one epoch per music hash); a global cap or a "clear the log" button is a few lines. (3) The first ~100 ms of a page's life (the module is still loading) log nothing for a lap
+that ends then; `history.runs[].source` is still set. (4) Missed ids are Score note indexes, not graph event ids: G11a-3 puts ids on `expected`; then `R` can carry them, or the export can map them through the stored graph of the same hash.
 
 ## Appendix A. Measurement commands (Lead's scratchpad)
 
