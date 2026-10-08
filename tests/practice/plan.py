@@ -38,7 +38,8 @@ RUN_FILES = ("tests/boot.js", "tests/serve-free.js", "tests/engrave/tools/with-p
 # and not a probe.)
 HARNESS_DIRS = ("tests/practice/baselines/",)
 HARNESS_FILES = (".github/workflows/bench.yml", "tests/engrave/tools/with-port.js", "tests/serve-free.js", "tests/boot.js",
-                 "tests/practice/canon.js", "tests/practice/lib.js", "tests/practice/mutants.js", "tests/practice/perf.js", "tests/practice/plan.py",
+                 "tests/practice/canon.js", "tests/practice/lib.js", "tests/practice/mutants.js", "tests/practice/perf.js", "tests/practice/perf-selftest.js",
+                 "tests/practice/plan.py",
                  "tests/practice/record.js", "tests/practice/run-suites.js")
 
 

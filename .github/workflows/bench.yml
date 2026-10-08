@@ -749,8 +749,9 @@ jobs:
           overwrite: true
 
   # practice-perf: the perf probe (tests/practice/perf.js check): matcher, plan building, press to painted frame and long tasks on the
-  # 1,776-note Sonatina at CPU 1x and 4x, against the baseline of this kind of machine (profile `ci`), 20 % after the machine's speed is taken
-  # out, best of 3 probes. A job of its own so that nothing else loads the runner while it measures. A manual run with `-f perf_record=true`
+  # 1,776-note Sonatina at CPU 1x and 4x, against the baseline of this kind of machine (profile `ci`): every limit grows with how much slower than
+  # the baseline's the runner of the day is (a calibration workload, up to 3x), the +20 % band on top, best of 3 probes. perf-selftest.js first
+  # holds the check itself (no browser): a slow runner is green, a planted 2x slowdown of the matcher or the plan build is red at any speed. A job of its own so that nothing else loads the runner while it measures. A manual run with `-f perf_record=true`
   # measures 5 probes and uploads tests/practice/baselines/perf.json to commit, instead of checking.
   practice-perf:
     needs: practice-plan
@@ -762,6 +763,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '24' }
       - run: npm ci
+      - run: node tests/practice/perf-selftest.js                  # the check itself: a slow machine is green, a planted 2x slowdown red at calibration ratio 1.0 and 1.4
+        if: ${{ github.event.inputs.perf_record != 'true' }}
       - run: node tests/practice/perf.js check
         if: ${{ github.event.inputs.perf_record != 'true' }}
       - run: node tests/practice/perf.js record --attempts 5

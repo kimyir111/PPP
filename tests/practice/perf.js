@@ -9,8 +9,8 @@
               median, p95, max over the presses with a time of their own), the long tasks of 8 s of play, the long tasks of entering Practice
      counters strikes, expected notes, presses, paint samples (exact: a probe that measured nothing must not pass)
    A machine's speed is taken out first: a fixed CPU workload (calib) is timed in the same page under the same throttle, and every time is
-   compared as `time x min(1, calib(baseline) / calib(now))` (a slower machine is given its due; a faster one is not charged for it: a frame
-   is bound by the compositor as much as by the CPU). A metric passes when that is within 20 % of the baseline (plus a small floor, because
+   compared as `time / max(1, calib(now) / calib(baseline))` (every limit grows with a slower machine, up to 3x; none shrinks for a faster one:
+   a frame is bound by the compositor as much as by the CPU). A metric passes when that is within 20 % of the baseline (plus a small floor, because
    performance.now() has a resolution of 0.1 ms: a p95 of 0.1 ms is one tick; the floor is 4x as large under the 4x throttle). Slower than that is RED; faster than 20 % under the baseline is
    reported, not failed (refresh the baseline when it is a real gain). Noise only adds time, so a metric counts at its BEST attempt, in the
    baseline (3 probes recorded, 5 for the runner) and in `check` (up to 3 probes, it stops at the first clean one). The baseline is kept per
@@ -34,24 +34,27 @@ const TOL = 0.2;
 
 /* key suffix -> { floor (ms or count slack), doc: [1x, 4x] from G11 section 1, kind, info4 }. `info4`: a single short task (or the worst of
    many) under the 4x throttle is slowed by 1x-5x depending on where in the throttle's duty cycle it falls, so at 4x the number is reported
-   against the baseline but cannot turn the job red; the means of batches (unit.buildMean, unit.beginMean, the matcher means) hold the 4x line. */
+   against the baseline but cannot turn the job red; the means of batches (unit.buildMean, unit.beginMean, the matcher means) hold the 4x line.
+   `cold`: a single first call in a fresh page. Its best of 5 baseline probes is luck (the baseline's own probes spread 1.5-2x), so it is held to
+   the baseline's SLOWEST probe (+20 % and the floor); the means hold the tight line. The floors of the means are small on purpose: a mean over
+   many calls does not have the timer's 0.1 ms quantum, and a floor larger than the value would hide a planted 2x slowdown (perf-selftest.js). */
 const SPECS = {
-  'unit.import': { floor: 6, info4: true, doc: [76, 353] },
-  'unit.toScore': { floor: 2, info4: true, doc: [7, 44] },
-  'unit.link': { floor: 3, info4: true, doc: [15, 81] },
-  'unit.agree': { floor: 3, info4: true, doc: [19, 99] },
-  'unit.build': { floor: 2.5, info4: true, doc: [7, 35] },
-  'unit.buildMean': { floor: 1, doc: [null, null] },
-  'unit.unroll': { floor: 0.6, info4: true, doc: [0.1, 0.2] },
-  'unit.tempoMap': { floor: 0.6, info4: true, doc: [0.1, 1.0] },
-  'unit.begin': { floor: 2.5, info4: true, doc: [8, 30] },
-  'unit.beginMean': { floor: 0.6, doc: [null, null] },
-  'matcher.noteOnMean': { floor: 0.03, doc: [null, null] },
+  'unit.import': { floor: 6, info4: true, cold: true, doc: [76, 353] },
+  'unit.toScore': { floor: 2, info4: true, cold: true, doc: [7, 44] },
+  'unit.link': { floor: 3, info4: true, cold: true, doc: [15, 81] },
+  'unit.agree': { floor: 3, info4: true, cold: true, doc: [19, 99] },
+  'unit.build': { floor: 2.5, info4: true, cold: true, doc: [7, 35] },
+  'unit.buildMean': { floor: 0.5, doc: [null, null] },
+  'unit.unroll': { floor: 0.6, info4: true, cold: true, doc: [0.1, 0.2] },
+  'unit.tempoMap': { floor: 0.6, info4: true, cold: true, doc: [0.1, 1.0] },
+  'unit.begin': { floor: 2.5, info4: true, cold: true, doc: [8, 30] },
+  'unit.beginMean': { floor: 0.08, doc: [null, null] },
+  'matcher.noteOnMean': { floor: 0.003, doc: [null, null] },
   'matcher.noteOnP95': { floor: 0.15, doc: [0.1, 0.2] },
   'matcher.noteOnMax': { floor: 0.8, info4: true, doc: [0.3, 1.7] },
-  'matcher.wrongMean': { floor: 0.03, doc: [null, null] },
+  'matcher.wrongMean': { floor: 0.005, doc: [null, null] },
   'matcher.wrongP95': { floor: 0.15, doc: [0.2, null] },
-  'matcher.resultMean': { floor: 0.5, doc: [null, null] },
+  'matcher.resultMean': { floor: 0.05, doc: [null, null] },
   'live.handlerP95': { floor: 0.3, doc: [0.1, 0.4] },
   'live.handlerMax': { floor: 1.5, info4: true, doc: [null, null] },
   'live.paintMed': { floor: 6, doc: [null, 31] },
@@ -336,6 +339,12 @@ function summarise(runs) {
   return b;
 }
 
+/* how many times slower this probe's machine is than the baseline's: the calibration workload timed in the two pages (unthrottled), the median of
+   the two (their mean); 1 when it is as fast or faster; at most 3 (a machine slower than that cannot be measured with, and goes red) */
+const calibOf = c => (c.r1 + c.r4) / 2;
+const SLOWEST = 3;
+function machineScale(base, run) { return Math.min(SLOWEST, Math.max(1, calibOf(run.calib) / calibOf(base.calib))); }
+
 function compareRuns(base, runs) {
   const rows = [];
   let red = 0;
@@ -357,12 +366,14 @@ function compareRuns(base, runs) {
       rows.push({ k, base: b.v, now: best, limit, status: bad ? 'RED' : 'ok', note: bad ? 'more long tasks than the baseline allows' : '' });
       return;
     }
-    const calibBase = base.calib['r' + rate];
-    const norms = usable(rate).filter(x => x.v[k] != null).map(x => x.v[k] * Math.min(1, calibBase / x.calib['r' + rate]));   // credit for a slower machine, none (no penalty) for a faster one
+    /* what the machine is worth: every limit grows with how much slower than the baseline's machine this probe's machine is (the calibration
+       workload, the two pages' median), and none shrinks when it is faster; the +20 % band is on top */
+    const norms = usable(rate).filter(x => x.v[k] != null).map(x => x.v[k] / machineScale(base, x));
     const best = Math.min.apply(null, norms);
     /* the floor is for a 1x machine; under the 4x throttle every task, and the jitter of the throttle's duty cycle, is 4x as long */
     const floor = spec.floor * (rate === 4 ? 4 : 1);
-    const limit = b.v * (1 + TOL) + floor;
+    const ref = spec.cold && b.spread ? Math.max(b.v, b.spread[1]) : b.v;       // a cold single shot: the baseline's slowest probe, not its luckiest
+    const limit = ref * (1 + TOL) + floor;
     const low = b.v * (1 - TOL) - floor;
     const bad = best > limit;
     const info = !!spec.info4 && rate === 4;
@@ -444,7 +455,7 @@ async function main() {
         runs.push(flatten(await probeOnce(url)));
         result = compareRuns(base, runs);
         const last = runs[runs.length - 1];
-        console.log('  probe ' + (i + 1) + '/' + attempts + ': ' + ((Date.now() - t0) / 1000).toFixed(0) + ' s, calib ' + round(last.calib.r1) + ' / ' + round(last.calib.r4) + ' ms (baseline ' + base.calib.r1 + ' / ' + base.calib.r4 + '), 4x throttle measured ' + round(last.throttle.r4.before) + ' then ' + round(last.throttle.r4.after) + (last.throttle.r4.valid ? '' : ' NOT VALID') + ', ' + (result.red ? result.red + ' metric(s) over' : 'all within'));
+        console.log('  probe ' + (i + 1) + '/' + attempts + ': ' + ((Date.now() - t0) / 1000).toFixed(0) + ' s, calib ' + round(last.calib.r1) + ' / ' + round(last.calib.r4) + ' ms (baseline ' + base.calib.r1 + ' / ' + base.calib.r4 + '), machine x' + machineScale(base, last).toFixed(2) + ', 4x throttle measured ' + round(last.throttle.r4.before) + ' then ' + round(last.throttle.r4.after) + (last.throttle.r4.valid ? '' : ' NOT VALID') + ', ' + (result.red ? result.red + ' metric(s) over' : 'all within'));
         if (!result.red) break;
       }
       console.log('perf probe vs profile "' + profileName() + '": ' + result.rows.length + ' metrics, best of ' + runs.length + ' probe(s)');
@@ -462,4 +473,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch(e => { console.error(e); process.exit(2); });
-module.exports = { probeOnce, flatten, summarise, compareRuns, SPECS, BASELINE };
+module.exports = { probeOnce, flatten, summarise, compareRuns, machineScale, specOf, rateOf, SPECS, BASELINE, TOL };

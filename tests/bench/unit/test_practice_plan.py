@@ -47,7 +47,7 @@ class PathClasses(unittest.TestCase):
 
     def test_the_probes_and_the_workflow_also_run_the_mutation_check(self):
         for p in ("tests/practice/perf.js", "tests/practice/baselines/legacy.json", "tests/practice/baselines/perf.json", "tests/practice/plan.py",
-                  "tests/practice/record.js", "tests/practice/canon.js", "tests/practice/lib.js", "tests/practice/mutants.js",
+                  "tests/practice/record.js", "tests/practice/canon.js", "tests/practice/lib.js", "tests/practice/mutants.js", "tests/practice/perf-selftest.js",
                   "tests/practice/run-suites.js", ".github/workflows/bench.yml",
                   "tests/engrave/tools/with-port.js", "tests/serve-free.js", "tests/boot.js"):
             self.assertEqual(self.cls(p), (True, True), p)
@@ -223,7 +223,7 @@ class PracticeJobs(unittest.TestCase):
     def test_each_job_installs_before_it_runs_and_they_run_the_probes(self):
         want = {"practice-suites": ["npm ci", "node tests/practice/run-suites.js"],
                 "practice-legacy": ["npm ci", "node tests/practice/record.js check", "node tests/practice/mutants.js"],
-                "practice-perf": ["npm ci", "node tests/practice/perf.js check", "node tests/practice/perf.js record --attempts 5"]}
+                "practice-perf": ["npm ci", "node tests/practice/perf-selftest.js", "node tests/practice/perf.js check", "node tests/practice/perf.js record --attempts 5"]}
         for name, cmds in want.items():
             got = [c for c in commands_of(self.jobs[name])]
             for c in cmds:
@@ -263,6 +263,7 @@ class PracticeJobs(unittest.TestCase):
         self.assertEqual(self.scripts["test:practice-suites"], "node tests/practice/run-suites.js")
         self.assertEqual(self.scripts["test:practice-legacy"], "node tests/practice/record.js check")
         self.assertEqual(self.scripts["test:practice-perf"], "node tests/practice/perf.js check")
+        self.assertEqual(self.scripts["test:practice-perf-selftest"], "node tests/practice/perf-selftest.js")
         self.assertEqual(self.scripts["test:practice-mutants"], "node tests/practice/mutants.js")
         self.assertIn("test:practice-suites", self.scripts["test:practice-browser"])
         # main's own Node unit tests of practice/ (G11a-1) keep the name test:practice
