@@ -16,14 +16,14 @@ const FX = require('./covers-fixtures.js');
 const { pop, swung } = FX;
 const W = REC.loadWeights();
 /* the same weights without the G10a-1b terms read at inference (no cap, no swung frames, no convention preference) */
-const WITHOUT = Object.assign({}, W, { beatCap: 0, swing: null, conventionPrior: null });
+const WITHOUT = Object.assign({}, W, { beatCap: 0, swing: null, conventionPrior: null, metricalRho: false });
 const read = (p, w) => REC.skeleton(skeletonInput(p.notes), { weights: w || W });
 
 test('the committed model carries both terms: a beat cap within the training lengths and swung frames', () => {
   assert.ok(W.beatCap > 0 && W.beatCap <= 334, 'beatCap ' + W.beatCap);
   assert.ok(Array.isArray(W.swing) && W.swing.length >= 1 && W.swing.every(s => s > 0.5 && s < 0.75), 'swing ' + JSON.stringify(W.swing));
   assert.equal(W.weights.length, MODEL.FEATURES.length);
-  assert.equal(MODEL.FEATURES[MODEL.FEATURES.length - 1], 'swing');
+  assert.ok(MODEL.FEATURES.indexOf('swing') === 25 && MODEL.FEATURES[MODEL.FEATURES.length - 1] === 'hbar', 'G10a-1d appended hbar after swing');
   assert.ok(W.conventionPrior && W.conventionPrior['2/4'] < 0 && Object.keys(W.conventionPrior).length === 1, 'conventionPrior ' + JSON.stringify(W.conventionPrior));
 });
 
@@ -37,7 +37,7 @@ test('a swung frame looks for each attack\'s written slot 1.5 times as far as th
   assert.ok(x.ok, x.got);
 });
 
-test('the convention preference: 2/4 against 4/4 moves by the prior when no downbeats are heard, not when they are', () => {
+test('the convention preference: 2/4 against 4/4 moves by the prior when no downbeats are heard, and (G10a-1d, downbeats as phase) when they are', () => {
   const x = FX.priorCheck(REC);
   assert.ok(x.ok, x.got + ' (want ' + x.want + ')');
 });
@@ -50,7 +50,9 @@ test('scaled(): the per-beat evidence grows with the beats up to the cap, then s
   for (let k = 0; k < F; k++) assert.equal(a[k], b[k], MODEL.FEATURES[k]);
   for (let k = 0; k < MODEL.PER_ATTACK; k++) assert.equal(c[k], 1 / 400);
   for (let k = MODEL.PER_ATTACK; k < MODEL.PER_BEAT; k++) assert.ok(Math.abs(c[k] - Math.sqrt(100) / 900) < 1e-15, MODEL.FEATURES[k]);
-  for (let k = MODEL.PER_BEAT; k < F; k++) assert.equal(c[k], 1);
+  /* G10a-1d: the harmonic rhythm (hbar) is per-beat evidence too */
+  assert.ok(Math.abs(c[MODEL.HBAR] - Math.sqrt(100) / 900) < 1e-15, 'hbar');
+  for (let k = MODEL.PER_BEAT; k < F; k++) if (k !== MODEL.HBAR) assert.equal(c[k], 1);
   /* the same music k times as long weighs the same once past the cap (a sum that grows with the beats, divided by the beats, times
      the square root of the counted beats) */
   [2, 4, 8].forEach(k => {

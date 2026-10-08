@@ -61,11 +61,25 @@ async function resultRules() {
   const vs = R.validateResult(shuffled);
   ok('a result whose notes arrive in any order is stored in order: by onset, then pitch (so the page, which reads them in order, can)', vs.ok && vs.result.notes.every((n, i, a) => !i || a[i - 1].on < n.on || (a[i - 1].on === n.on && a[i - 1].midi <= n.midi)) && vs.result.notes[0].on === 0, vs.ok ? JSON.stringify(vs.result.notes.slice(0, 3)) : vs.error);
   ok('the result keeps only on, off, midi, vel per note', v.ok && v.result.notes.every(n => Object.keys(n).sort().join() === 'midi,off,on,vel'));
-  const dirty = Object.assign({}, good, { pedals: [{ on: 1, off: 2 }], beats: [1, 2, 3], downbeats: [1], uncertainNotes: [{ on: 1, off: 2, midi: 60 }], __proto__x: 1, evil: '<script>' });
+  const dirty = Object.assign({}, good, { pedals: [{ on: 1, off: 2 }], uncertainNotes: [{ on: 1, off: 2, midi: 60 }], __proto__x: 1, evil: '<script>' });
   dirty.notes = good.notes.map(n => Object.assign({}, n, { confidence: 1, support: 2, models: ['x'], extra: 'y' }));
   const vd = R.validateResult(dirty);
-  ok('pedals, beats, uncertain notes, per-note extras and unknown keys are stripped', vd.ok && Object.keys(vd.result).sort().join() === 'device,duration,engine,ensemble,model,notes,v'
+  ok('pedals, uncertain notes, per-note extras and unknown keys are stripped', vd.ok && Object.keys(vd.result).sort().join() === 'device,duration,engine,ensemble,model,notes,v'
     && vd.result.notes.every(n => Object.keys(n).length === 4), vd.ok ? Object.keys(vd.result).join() : vd.error);
+  /* G10a-1d: the helper's beats and downbeats are kept, strictly bounded */
+  const withBeats = Object.assign({}, good, { beats: [0.5, 1, 1.5000004, 2], downbeats: [0.5, 2] });
+  const vbt = R.validateResult(withBeats);
+  ok('beats and downbeats are kept (rounded to 0.1 ms)', vbt.ok && JSON.stringify(vbt.result.beats) === '[0.5,1,1.5,2]' && JSON.stringify(vbt.result.downbeats) === '[0.5,2]', vbt.ok ? JSON.stringify(vbt.result.beats) : vbt.error);
+  const badBeats = (name, extra) => { const r = R.validateResult(Object.assign({}, good, extra)); ok(name, !r.ok && r.code === 'bad-beats', r.ok ? 'accepted' : r.code); };
+  badBeats('beats that do not rise are refused', { beats: [1, 2, 2, 3] });
+  badBeats('a beat that is not a number is refused', { beats: [1, '2', 3] });
+  badBeats('a beat that is not finite is refused', { beats: [1, 2, Infinity] });
+  badBeats('a negative beat is refused', { beats: [-1, 2, 3] });
+  badBeats('a beat past the end of the piece (+ 1 s) is refused', { beats: [1, 2, good.notes[good.notes.length - 1].off + 30] });
+  badBeats('beats that are not a list are refused', { beats: { a: 1 } });
+  badBeats('more than 20,000 beats are refused', { beats: Array.from({ length: 20001 }, (x, i) => i * 0.01) });
+  badBeats('downbeats without beats are refused', { downbeats: [1, 2] });
+  badBeats('downbeats that do not rise are refused', { beats: [1, 2, 3, 4], downbeats: [3, 1] });
   const bad = (name, mut, code) => {
     const b = JSON.parse(JSON.stringify(good)); mut(b);
     const r = R.validateResult(b);

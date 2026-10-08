@@ -169,8 +169,13 @@
 
   /* a track made of beat times the caller already has (the helper's audio beat tracker): sorted, doubles (< 20 ms)
      dropped, a gap of about k beats filled with k - 1 evenly spaced beats (a tracker misses beats), extended to cover
-     the attacks. null when fewer than four beats remain */
-  function audioTrack(times, attacks) {
+     the attacks. null when fewer than four beats remain.
+     G10a-1d: opts.maxIrregular (the weights' `audioMaxIrregular`): null as well when more than that share of the filled track's
+     intervals is outside 0.7-1.4 times their median or had to be filled in - the tracker changed its pulse level inside the piece (Beat This on the
+     real covers of G10 section 36: one piece with 120 of 256 intervals under 0.6 of the median, beats a tenth of a second apart
+     for half a minute), so it is no one pulse to read a metre on. The notes' own pulse tracks are read instead; the downbeats
+     still count as phase evidence. */
+  function audioTrack(times, attacks, opts) {
     const raw = (times || []).filter(Number.isFinite).slice().sort((a, b) => a - b).filter((t, i, a) => !i || t - a[i - 1] > 0.02);
     if (raw.length < 4 || attacks.length < 2) return null;
     const gaps = [];
@@ -178,10 +183,21 @@
     const med = gaps.slice().sort((a, b) => a - b)[gaps.length >> 1];
     if (!(med > 0)) return null;
     const out = [raw[0]];
+    let filled = 0;
     for (let i = 1; i < raw.length; i++) {
       const g = raw[i] - raw[i - 1], k = Math.round(g / med);
-      if (k >= 2 && k <= 4 && Math.abs(g / k - med) < 0.25 * med) for (let j = 1; j < k; j++) out.push(raw[i - 1] + g * j / k);
+      if (k >= 2 && k <= 4 && Math.abs(g / k - med) < 0.25 * med) { for (let j = 1; j < k; j++) out.push(raw[i - 1] + g * j / k); filled += k - 1; }
       out.push(raw[i]);
+    }
+    if (opts && opts.maxIrregular != null) {
+      /* the intervals still irregular after the filling, and the beats the filling had to add (a tracker that went to half its pulse for a
+         while: one real cover had a third of its beats filled) */
+      let bad = filled, extra = 0;
+      for (let i = 1; i < out.length; i++) { const g = out[i] - out[i - 1]; if (g < 0.7 * med || g > 1.4 * med) bad++; if (g < 0.7 * med) extra++; }
+      if (bad > opts.maxIrregular * (out.length - 1)) return null;
+      /* an interval shorter than 0.7 of the median is a beat too many, and every later beat is then one off: opts.maxExtra (the weights'
+         audioMaxExtra) of them at most */
+      if (opts.maxExtra != null && extra > opts.maxExtra * (out.length - 1)) return null;
     }
     return { period: med, beats: extend(out, attacks[0].t - 0.05, attacks[attacks.length - 1].t + 0.05), audio: true };
   }

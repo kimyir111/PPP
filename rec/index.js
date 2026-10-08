@@ -63,10 +63,13 @@
     const tracks = beats.tracks(att, { tight: W.tight, maxTracks: W.maxTracks });
     /* the helper's audio beats, when the caller has them (Beat This on the helper; the browser path has none): one more
        track, and its downbeats are evidence for the bar lines */
-    const audio = opts.beats ? beats.audioTrack(opts.beats, att) : null;
+    const audio = opts.beats ? beats.audioTrack(opts.beats, att, W.audioMaxIrregular != null ? { maxIrregular: W.audioMaxIrregular, maxExtra: W.audioMaxExtra } : null) : null;
     if (audio) tracks.unshift(audio);
     if (!tracks.length) return null;
-    const ch = metre.choose(att, cls, tracks, W, { downbeats: audio && opts.downbeats && opts.downbeats.length ? opts.downbeats : null });
+    /* the downbeats: with a model whose downbeats are phase evidence only (downPhase, G10a-1d) they count even when the audio beat
+       track was not usable (they are read through the notes' own pulse tracks); before, only with that track */
+    const hasDown = opts.downbeats && opts.downbeats.length && (audio || (W.downPhase && opts.beats));
+    const ch = metre.choose(att, cls, tracks, W, { downbeats: hasDown ? opts.downbeats : null });
     if (!ch) return null;
     const wb = metre.writtenBeats(ch.best, tracks, ch.slots, att);
     if (wb.beats.length < 2) return null;

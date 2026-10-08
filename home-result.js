@@ -3,8 +3,8 @@
    One file, two users: server.js (home-jobs.js) validates every result a worker posts with it, and the worker itself
    (tools/home-worker/worker.js) cuts what it sends down to the same bounds, so a result the worker builds is one the server
    accepts. The result is the helper's ACCEPTED notes in the heard-notes format of the app's own browser transcription
-   ({ on, off, midi, vel }); everything else the helper writes (pedals, beats, single-model notes, per-note confidence) is
-   not part of it and is stripped here, never stored.
+   ({ on, off, midi, vel }), and since G10a-1d the helper's audio beats and downbeats (bounded, checked); everything else the helper
+   writes (pedals, single-model notes, per-note confidence) is not part of it and is stripped here, never stored.
 
    Pure: no I/O, no clock. */
 'use strict';
@@ -18,7 +18,9 @@ const LIMITS = {
   MAX_NOTES: 20000,
   /* the body of a result, and what is stored of it (the stripped, rounded JSON) */
   RESULT_MAX_BYTES: 2 * 1024 * 1024,
-  MODELS_MAX: 6
+  MODELS_MAX: 6,
+  /* G10a-1d: beats and downbeats, each at most this many (a 15-minute piece at 240 beats a minute is 3,600) */
+  MAX_BEATS: 20000
 };
 
 const NAME_RE = /^[a-z0-9][a-z0-9._+-]{0,39}$/;
@@ -110,6 +112,24 @@ function validateResult(body, limits) {
   }
 
   const result = { v: 1, notes: notes, duration: duration, engine: engine, model: model, device: device, ensemble: ensemble };
+
+  /* G10a-1d: the helper's audio beats and downbeats (Beat This, beat_track.py), optional. The page passes them to the recording conversion
+     v2 as EVIDENCE of the bar phase (rec/: never bar lines); strict: each a list of at most MAX_BEATS finite seconds, rising, from 0 to the
+     duration + 1 s; downbeats only with beats. Anything else in the body is still stripped. */
+  for (const key of ['beats', 'downbeats']) {
+    if (body[key] == null) continue;
+    const xs = body[key];
+    if (!Array.isArray(xs) || xs.length > L.MAX_BEATS) return bad('The ' + key + ' are not usable.', 'bad-beats');
+    const out = new Array(xs.length);
+    for (let i = 0; i < xs.length; i++) {
+      const t = xs[i];
+      if (!isNum(t) || t < 0 || t > duration + 1) return bad('The ' + key + ' are not usable.', 'bad-beats');
+      out[i] = r4(t);
+      if (i && !(out[i] > out[i - 1])) return bad('The ' + key + ' are not usable.', 'bad-beats');
+    }
+    result[key] = out;
+  }
+  if (result.downbeats && !result.beats) return bad('Downbeats came without beats.', 'bad-beats');
   const bytes = Buffer.byteLength(JSON.stringify(result));
   if (bytes > L.RESULT_MAX_BYTES) return bad('The result is larger than ' + Math.round(L.RESULT_MAX_BYTES / 1048576) + ' MB.', 'too-large');
   return { ok: true, result: result, bytes: bytes };

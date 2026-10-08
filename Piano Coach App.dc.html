@@ -8284,9 +8284,11 @@ const Import = {
     const wantV2 = RECORDING_MODE === 'v2' && what.mode !== 'arrange';
     const useV2 = wantV2 && recordingModulesReady();
     let rejectedV2 = false;
+    /* G10a-1d: the home PC's Beat This beats go to v2 only (as bar-phase evidence); the classic conversion of a PC result stays notes-only */
+    const pcClassic = v2 => heard.homePc && !v2;
     const convert = v2 => window.PPPAudioScore.toMusicXml({
       notes: heard.notes, pedals: heard.pedals,
-      beats: heard.beats, downbeats: heard.downbeats,
+      beats: pcClassic(v2) ? undefined : heard.beats, downbeats: pcClassic(v2) ? undefined : heard.downbeats,
       grid: heard.grid, title: title
     }, Object.assign({ title: title, easy: what.mode === 'arrange', closeGaps: true, exactBars: true }, v2 ? { recording: 'v2' } : {}));
     try {
@@ -14856,15 +14858,16 @@ class Component extends DCLogic {
       this.setState({ homeBusy: false, ytError: e.message });
     }
   }
-  /* the notes the PC heard, as the page's heard-notes object: the accepted notes only (no pedal, no beats: the helper's own beats made v2 write bars
-     two to four times too short), and the ensemble's summary, which the review screen reads for its model-agreement figure */
+  /* the notes the PC heard, as the page's heard-notes object: the accepted notes (no pedal), and the ensemble's summary, which the review screen reads for
+     its model-agreement figure. G10a-1d: the PC's Beat This beats and downbeats when it sent them; v2 reads them as evidence of the bar phase only */
   homeHeard(res) {
     const e = res.ensemble || {};
-    return {
+    const beats = Array.isArray(res.beats) && res.beats.length >= 4 ? { beats: res.beats, downbeats: Array.isArray(res.downbeats) ? res.downbeats : [] } : {};
+    return Object.assign(beats, {
       notes: res.notes, duration: res.duration, engine: res.engine || 'ensemble', qualityTier: 'local-piano-ensemble', homePc: true,
       truncated: res.duration >= IMPORT_LIMITS.maxAudioMinutes * 60 - 1, device: res.device || null, model: res.model || null,
       ensemble: { models: e.models || [], primary: e.primary || null, agreement: e.agreement, accepted: e.accepted, uncertain: e.uncertain || 0 }
-    };
+    });
   }
   async openHomeJob(id) {
     if (this.state.homeOpening) return;

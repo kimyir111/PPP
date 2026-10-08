@@ -122,7 +122,12 @@ async function queue(S, user, id) { return (await S.as(user).post('/api/jobs', {
       const heard = convertHelperNotes(fakeRaw).heard;
       ok('the notes are exactly those of review/h10/helper-heard.js (the accepted ones, rounded, sorted)', JSON.stringify(r.result.notes) === JSON.stringify(heard.notes), r.result.notes.length + ' vs ' + heard.notes.length);
       ok('the 17 uncertain notes are not notes: they are a number', r.result.notes.length === 120 && r.result.ensemble.uncertain === 17 && r.result.ensemble.accepted === 120);
-      ok('there is no pedal and no beats in what is sent, and no per-note confidence', !('pedals' in r.result) && !('beats' in r.result) && !('uncertainNotes' in r.result) && r.result.notes.every(n => Object.keys(n).sort().join() === 'midi,off,on,vel'));
+      ok('there is no pedal and no beats in what is sent without a beat tracker, and no per-note confidence', !('pedals' in r.result) && !('beats' in r.result) && !('uncertainNotes' in r.result) && r.result.notes.every(n => Object.keys(n).sort().join() === 'midi,off,on,vel'));
+      /* G10a-1d: the beat tracker's beats and downbeats go with the notes, cut to the piece, rising, rounded */
+      const rb = w.toResult(fakeRaw, { beats: [3, 1, 2, 2, 4.123456, 200, NaN, 5, 6], downbeats: [1, 'x', 4.123456] });
+      ok('the beat tracker\'s beats go with the notes: finite, rising, within the piece, rounded; its downbeats likewise', JSON.stringify(rb.result.beats) === JSON.stringify([3, 4.1235, 5, 6]) && JSON.stringify(rb.result.downbeats) === JSON.stringify([1, 4.1235]) && L.mod('home-result.js').validateResult(rb.result).ok, JSON.stringify([rb.result.beats, rb.result.downbeats]));
+      const rf = w.toResult(fakeRaw, { beats: [1, 2, 3], downbeats: [1] });
+      ok('fewer than four usable beats: the notes go alone', !('beats' in rf.result) && !('downbeats' in rf.result));
       ok('the ensemble summary is what the page reads: models, primary, agreement', r.result.ensemble.models.join() === 'transkun,piano-transcription' && r.result.ensemble.primary === 'transkun' && r.result.ensemble.agreement === 0.812 && r.result.device === 'cuda' && r.result.engine === 'ensemble');
       ok('what is sent passes the site\'s own checks', L.mod('home-result.js').validateResult(r.result).ok);
       const long = JSON.parse(JSON.stringify(fakeRaw)); long.notes.forEach((n, i) => { n.on = i * 10; n.off = i * 10 + 5; }); long.duration = 1200;
@@ -160,6 +165,31 @@ async function queue(S, user, id) { return (await S.as(user).post('/api/jobs', {
     const none = await newWorker(S, token, st).w.runOnce();
     ok('--once with nothing waiting says so and exits 0', none === 0);
     ok('the log line of a token it would otherwise show is cut', W.makeLog({ token: token }, () => {}, () => {}).redact('x ' + token + ' y Bearer abc.def') === 'x ppw_*** y Bearer ***');
+
+    heading('G10a-1d: the beat tracker (beat_track.py) runs after the models; its beats go with the notes; a failure of it fails nothing');
+    {
+      const FAKE_BT = path.join(__dirname, 'fake-beat-track.js');
+      const jb = await queue(S, 'u1', 'beatsbeats1');
+      const xb = newWorker(S, token, st, { beatTrackPy: FAKE_BT });
+      ok('a job with the beat tracker is done', (await xb.w.runOnce()) === 0 && xb.w.stats.done === 1);
+      const gb = (await S.as('u1').get('/api/jobs/' + jb.id)).body;
+      ok('the site keeps its beats and downbeats beside the notes (rising, within the piece)', gb.result && Array.isArray(gb.result.beats) && gb.result.beats.length === 240 && gb.result.downbeats.length === 60 && gb.result.beats.every((t, i, a) => !i || t > a[i - 1]), gb.result ? Object.keys(gb.result).join() : 'none');
+      ok('the log says the beats went too', /and 240 beats/.test(xb.cap.out.join('\n')), xb.cap.out.join('\n').slice(-400));
+      process.env.FAKE_BEATS_MODE = 'fail';
+      const jf = await queue(S, 'u1', 'beatsfails1');
+      const xf = newWorker(S, token, st, { beatTrackPy: FAKE_BT });
+      ok('a beat tracker that fails: the job is done with the notes alone', (await xf.w.runOnce()) === 0 && xf.w.stats.done === 1);
+      const gf = (await S.as('u1').get('/api/jobs/' + jf.id)).body;
+      ok('...no beats in it, and the log says why', gf.result && !('beats' in gf.result) && /beat tracker did not run/.test(xf.cap.out.join('\n')));
+      process.env.FAKE_BEATS_MODE = 'garbage';
+      const jg = await queue(S, 'u1', 'beatsjunk01');
+      const xg = newWorker(S, token, st, { beatTrackPy: FAKE_BT });
+      ok('a beat tracker that writes junk: the same', (await xg.w.runOnce()) === 0 && !('beats' in (await S.as('u1').get('/api/jobs/' + jg.id)).body.result));
+      delete process.env.FAKE_BEATS_MODE;
+      const jo = await queue(S, 'u1', 'beatsoff001');
+      const xo = newWorker(S, token, st, { beatTrackPy: FAKE_BT, beats: false });
+      ok('beats: false in the settings: the tracker is not run', (await xo.w.runOnce()) === 0 && !('beats' in (await S.as('u1').get('/api/jobs/' + jo.id)).body.result));
+    }
 
     heading('failures: one short line on the site, the scratch removed');
     const fail = async (name, setup, expectText, retryExpected, mkJob) => {

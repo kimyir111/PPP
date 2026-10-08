@@ -94,8 +94,10 @@
   const PHASE_STEP_Q = 0.5;
   /* the first PER_ATTACK features grow with the piece (scaled by n^alpha / n, see scaled()); the rest are one number a piece */
   const FEATURES = ['kern', 'fill', 'bass', 'ioi', 'size', 'coll', 'bdur', 'bbass', 'bharm', 'bsize', 'bjoint', 'first', 'last', 'tempo', 'rep', 'repPc',
-    'is2/4', 'is3/4', 'is2/2', 'is3/8', 'is6/8', 'is9/8', 'is12/8', 'down', 'audio', 'swing'];
+    'is2/4', 'is3/4', 'is2/2', 'is3/8', 'is6/8', 'is9/8', 'is12/8', 'down', 'audio', 'swing', 'hbar'];
   const PER_ATTACK = 6, PER_BEAT = 11;
+  /* G10a-1d: hbar (index 26) is per-beat evidence too (scaled as bdur ... bjoint are), appended so that an older model reads as before */
+  const HBAR = 26;
   const KERN_FLOOR = -8;                /* one attack's timing term is never below this (a ghost note, a tracking slip) */
 
   const log2 = x => Math.log(x) / Math.LN2;
@@ -467,21 +469,107 @@
     out[15] = same ? samePc / same : 0;
     /* one bias per metre against 4/4 (learned with the weights: how often each metre is the reading) */
     for (let j = 0, k = 16; j < METRES.length; j++) { if (METRES[j].key === '4/4') continue; out[k++] = j === mi ? 1 : 0; }
-    /* the helper's audio downbeats, when the caller has them: the share that falls on a bar line of the reading (within
-       a quarter of a quarter); and whether the reading stands on the helper's own beat track */
+    /* the helper's audio downbeats, when the caller has them, and whether the reading stands on the helper's own beat track.
+       G10a-1d (fr.downPhase, a model with `downPhase`): the downbeats are evidence of the bar PHASE only, never of the bar
+       length: the share of them on the reading's bar lines minus the best share any phase of the same pulse and metre gets.
+       Every metre's best phase scores 0, so the downbeats cannot choose a metre or a tempo; a downbeat pulse of half the bar
+       (Beat This on pop: every other downbeat is a half bar) scores the two half-bar phases alike and leaves them to the
+       notes. Before (no downPhase): the plain share, which every shorter bar raises (G10 section 36). */
     let down = 0;
     if (fr.downbeats && fr.downbeats.length) {
-      let hit = 0;
-      fr.downbeats.forEach(t => {
-        const q = fr.rho * beats.position(fr.track.beats, t) - phi, d = q / m.barQ;
-        if (Math.abs(d - Math.round(d)) * m.barQ < 0.25) hit++;
-      });
-      down = hit / fr.downbeats.length;
+      if (fr.downPhase) {
+        const sh = downShares(fr, mi);
+        const k = Math.round(phi / PHASE_STEP_Q) % sh.length;
+        let mx = 0;
+        for (let j = 0; j < sh.length; j++) if (sh[j] > mx) mx = sh[j];
+        /* times how far the best phase's share is above chance (u: one share per written beat of the bar), so downbeats that point
+           at no phase of this metre (a tracker whose downbeat period is not the bar's: three beats under a 4/4 reading) say nothing;
+           u is one share per beat of the accent evidence: a quarter in x/4, an eighth in 3/8, a dotted quarter in 6/8, 9/8, 12/8 */
+        const u = m.beatSlots / m.S, c = mx > u ? (mx - u) / (1 - u) : 0;
+        down = (sh[k] - mx) * c;
+      } else {
+        let hit = 0;
+        fr.downbeats.forEach(t => {
+          const q = fr.rho * beats.position(fr.track.beats, t) - phi, d = q / m.barQ;
+          if (Math.abs(d - Math.round(d)) * m.barQ < 0.25) hit++;
+        });
+        down = hit / fr.downbeats.length;
+      }
     }
     out[23] = down;
-    out[24] = fr.track.audio ? 1 : 0;
+    /* G10a-1d (downPhase): standing on the helper's beat track counts only for a reading whose bar holds at least two of its beats: a
+       tracker that marks one downbeat every two to four beats (Beat This on every real cover of G10 section 36) does not hear its beat as
+       the bar, so a reading that makes each of its beats a bar (3/8 at one and a half times the tempo) contradicts it */
+    out[24] = fr.track.audio && (!fr.downPhase || m.barQ / fr.rho >= 2 - 1e-9) ? 1 : 0;
     out[25] = fr.swing ? 1 : 0;
+    /* G10a-1d: the harmonic rhythm at the bar line (hbar): chords change at bar lines more than inside bars */
+    if (out.length > HBAR) out[HBAR] = harmonicContrast(m, slots, fr.att, fr.n) * acc.nb;
     return keepSlots ? slots : null;
+  }
+
+  /* G10a-1d: the share of the helper's downbeats on the bar lines of every phase (PHASE_STEP_Q apart) of one pulse frame and
+     metre, within a quarter of a quarter (the tolerance the plain share always had); computed once per frame and metre */
+  function downShares(fr, mi) {
+    const cache = fr.downCache || (fr.downCache = []);
+    if (cache[mi]) return cache[mi];
+    const m = METRES[mi], np = Math.round(m.barQ / PHASE_STEP_Q);
+    const sh = new Float64Array(np);
+    const n = fr.downbeats.length;
+    fr.downbeats.forEach(t => {
+      const q = fr.rho * beats.position(fr.track.beats, t);
+      for (let j = 0; j < np; j++) {
+        const d = (q - j * PHASE_STEP_Q) / m.barQ;
+        if (Math.abs(d - Math.round(d)) * m.barQ < 0.25) sh[j] += 1 / n;
+      }
+    });
+    cache[mi] = sh;
+    return sh;
+  }
+
+  /* G10a-1d: the harmonic rhythm of a reading. The attacks' pitch classes (every note's class once, the lowest note's twice: the
+     bass names the chord) are summed per window - half a bar in 4/4, 2/2 and 12/8, a beat (the metre's beat unit) otherwise -
+     and the change between two windows is 1 - the cosine of their sums. Per bar: the change at its bar line minus the mean
+     change at its inner window boundaries; returned: the mean over the bars where both are defined (0 when none). A reading
+     whose bar lines are where the chords change scores high; the same reading half a bar off scores the negative. On the
+     catalogue's 4/4 hold-out performances the right phase beats the half-bar shift in 82 % of cases by this alone (G10 section
+     36); it is what tells beat 1 from beat 3 when the first onset is an intro and the accents are alike. */
+  let hbBuf = new Float64Array(12 * 256), hbHas = new Uint8Array(256);
+  function harmonicContrast(m, slots, att, n) {
+    if (n < 2) return 0;
+    const Wn = (m.key === '4/4' || m.key === '2/2') ? 48 : m.key === '12/8' ? 72 : m.beatSlots;
+    const per = Math.round(m.S / Wn);
+    let wlo = Infinity, whi = -Infinity;
+    for (let i = 0; i < n; i++) { const w = Math.floor(slots[i] / Wn); if (w < wlo) wlo = w; if (w > whi) whi = w; }
+    wlo -= 1;
+    const nw = whi - wlo + 1;
+    if (nw * 12 > hbBuf.length) { hbBuf = new Float64Array(nw * 24); hbHas = new Uint8Array(nw * 2); }
+    const C = hbBuf, has = hbHas;
+    C.fill(0, 0, nw * 12); has.fill(0, 0, nw);
+    for (let i = 0; i < n; i++) {
+      const w = Math.floor(slots[i] / Wn) - wlo, a = att[i], base = w * 12;
+      let x = a.pcs;
+      while (x) { const b = x & -x; C[base + (31 - Math.clz32(b))] += 1; x ^= b; }
+      C[base + (a.low % 12)] += 1;
+      has[w] = 1;
+    }
+    /* the change into window w (index from wlo), or -1 when either window is empty */
+    const change = w => {
+      if (w < 1 || w >= nw || !has[w] || !has[w - 1]) return -1;
+      let ab = 0, aa = 0, bb = 0;
+      for (let p = 0, i = (w - 1) * 12, j = w * 12; p < 12; p++, i++, j++) { ab += C[i] * C[j]; aa += C[i] * C[i]; bb += C[j] * C[j]; }
+      return 1 - ab / Math.sqrt(aa * bb);
+    };
+    let sum = 0, cnt = 0;
+    const b0 = Math.floor((wlo + 1) / per), b1 = Math.floor(whi / per);
+    for (let b = b0; b <= b1; b++) {
+      const dl = change(b * per - wlo);
+      if (dl < 0) continue;
+      let s = 0, k = 0;
+      for (let j = 1; j < per; j++) { const x = change(b * per + j - wlo); if (x >= 0) { s += x; k++; } }
+      if (!k) continue;
+      sum += dl - s / k; cnt++;
+    }
+    return cnt ? sum / cnt : 0;
   }
 
   /* the per-attack features scaled to n^alpha (alpha 1: the plain log-likelihood; 0: the mean per attack): how fast the
@@ -500,7 +588,7 @@
     const aA = Array.isArray(alpha) ? alpha[0] : alpha, aB = Array.isArray(alpha) ? alpha[1] : alpha;
     const k = Math.pow(Math.max(1, n), aA) / Math.max(1, n);
     const nb = Math.max(1, nBeats || 1), kb = Math.pow(cap > 0 && nb > cap ? cap : nb, aB) / nb;
-    for (let i = 0; i < FEATURES.length; i++) out[i] = i < PER_ATTACK ? fv[i] * k : i < PER_BEAT ? fv[i] * kb : fv[i];
+    for (let i = 0; i < FEATURES.length; i++) out[i] = i < PER_ATTACK ? fv[i] * k : i < PER_BEAT || i === HBAR ? fv[i] * kb : fv[i];
     return out;
   }
 
@@ -513,6 +601,7 @@
     return s;
   }
 
-  return Object.freeze({ R, SCHEMA, METRES, BY_KEY, FAMILIES, FEATURES, PER_ATTACK, PER_BEAT, NLEV, PHASE_STEP_Q, buildTables, prepared,
-    frame, features, scaled, score, log2, lgamma, logBB, countSlots, fillCounts, beatEvidence, beatScan, swingHeard, swingWritten });
+  return Object.freeze({ R, SCHEMA, METRES, BY_KEY, FAMILIES, FEATURES, PER_ATTACK, PER_BEAT, HBAR, NLEV, PHASE_STEP_Q, buildTables, prepared,
+    frame, features, scaled, score, log2, lgamma, logBB, countSlots, fillCounts, beatEvidence, beatScan, swingHeard, swingWritten,
+    harmonicContrast, downShares });
 });

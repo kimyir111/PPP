@@ -76,8 +76,9 @@ function phaseCheck(REC) {
 }
 
 /* the convention preference of a rec/index.js's metre stage: with a model whose conventionPrior lowers 2/4 by 0.75 nats, the
-   posterior odds of 2/4 against 4/4 fall by exactly that when no downbeats are heard and do not move when they are (a pop piece
-   whose 2/4 and 4/4 readings both hold a fifth of the posterior or more) */
+   posterior odds of 2/4 against 4/4 fall by exactly that when no downbeats are heard (a pop piece whose 2/4 and 4/4 readings both
+   hold a fifth of the posterior or more), and since G10a-1d (a model with downPhase: the downbeats never decide the bar length) when
+   they are heard too; a model without downPhase does not apply it over heard downbeats */
 function priorCheck(REC) {
   const W = REC.loadWeights();
   const att = REC.attacks.attacksOf(skeletonInput(pop(8, 120, { jitter: 0.02, seed: 4 }).notes)), cls = REC.attacks.classes(att);
@@ -87,8 +88,9 @@ function priorCheck(REC) {
     return Math.log(ch.metrePosterior['2/4'] / ch.metrePosterior['4/4']);
   };
   const none = odds({ '2/4': -0.75 }, null) - odds(null, null), down = odds({ '2/4': -0.75 }, [1, 3, 5]) - odds(null, [1, 3, 5]);
-  return { name: 'the convention preference moves the 2/4 : 4/4 odds without downbeats only', ok: Math.abs(none + 0.75) < 0.01 && Math.abs(down) < 0.01,
-    got: 'shift ' + none.toFixed(3) + ' without downbeats, ' + down.toFixed(3) + ' with', want: '-0.750 without, 0.000 with' };
+  const want = W.downPhase ? -0.75 : 0;
+  return { name: 'the convention preference moves the 2/4 : 4/4 odds without downbeats, and with them when they are phase evidence only', ok: Math.abs(none + 0.75) < 0.01 && Math.abs(down - want) < 0.01,
+    got: 'shift ' + none.toFixed(3) + ' without downbeats, ' + down.toFixed(3) + ' with', want: '-0.750 without, ' + want.toFixed(3) + ' with' };
 }
 /* a rec/index.js's committed model is the trainer's configuration (rec/tools/train.js CONFIG of this repository): the cap, the swing
    points and the convention preference that G10 section 28 chose */

@@ -1,8 +1,8 @@
 {
- "sha256": "25b41bfbb7bddb17bdbadbec60564cab58bd3237668e2873936fbb21e94a7c3f",
+ "sha256": "1b7e289635ab32008672fefa4efbca75dc21fab04c73ed7464db8ee4727c9bd0",
  "schema": "ppp.rec-time-skeleton/1",
  "name": "ai5a",
- "version": "v1.1",
+ "version": "v1.2",
  "features": [
   "kern",
   "fill",
@@ -29,35 +29,37 @@
   "is12/8",
   "down",
   "audio",
-  "swing"
+  "swing",
+  "hbar"
  ],
  "weights": [
-  3.003218,
-  5.830768,
-  7.783225,
-  5.173998,
-  5.475406,
-  2.853897,
-  -1.773596,
-  1.285696,
-  1.201409,
-  -0.490372,
-  1.48894,
-  0.722618,
-  0.542752,
-  1.081486,
-  4.550158,
-  -1.190864,
-  -1.609158,
-  -0.684669,
-  -3.662297,
-  -2.432842,
-  0.044945,
-  -2.450376,
-  -2.062474,
-  8.887038,
-  3.919759,
-  0.968671
+  2.703669,
+  5.748309,
+  7.320483,
+  5.974871,
+  5.675261,
+  1.976194,
+  -1.706094,
+  1.067288,
+  1.044939,
+  -0.335825,
+  1.497363,
+  0.545373,
+  0.537845,
+  1.100074,
+  4.647886,
+  -0.539626,
+  -1.477002,
+  -0.172291,
+  -3.679926,
+  -1.758956,
+  0.134135,
+  -2.052949,
+  -1.858677,
+  6.594315,
+  3.611049,
+  0.986913,
+  0.374307
  ],
  "alpha": [
   0,
@@ -73,6 +75,10 @@
  "conventionPrior": {
   "2/4": -0.75
  },
+ "downPhase": true,
+ "audioMaxIrregular": 0.15,
+ "audioMaxExtra": 0.03,
+ "metricalRho": true,
  "tables": {
   "families": {
    "simple": {
@@ -2080,7 +2086,7 @@
  "training": {
   "references": 259,
   "holdout": "excluded (fnv1a32(id) % 5 == 0)",
-  "performances": 3108,
+  "performances": 3600,
   "sets": [
    {
     "profiles": "cover,cover-pedal,human-real,cover+of",
@@ -2099,8 +2105,8 @@
    }
   ],
   "l2": 0.0001,
-  "loss": 1.101242,
-  "fitted": 2778,
+  "loss": 1.17833,
+  "fitted": 3174,
   "data_sha256": "7d3687349ac1fe09f67fd35207be37a4fdceec896db6dd06c735ca6edf9628c4",
   "tool": "rec/tools/train.js",
   "data": "tests/bench/tools/rec_dataset.py (licence-clean catalogue, humanizer perform/3)"
