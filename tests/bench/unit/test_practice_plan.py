@@ -224,9 +224,9 @@ class PracticeJobs(unittest.TestCase):
         self.assertIn("- run: node tests/practice/parity.js check --sample 5\n        " + pr, body)
         self.assertIn("- run: node tests/practice/parity.js check\n        " + other, body)
         mutants = self.jobs["practice-parity-mutants"]
-        self.assertIn("shard: [1, 2, 3]", mutants)
-        self.assertIn("- run: node tests/practice/parity-mutants.js --core --shard ${{ matrix.shard }}/3\n        " + pr, mutants)
-        self.assertIn("- run: node tests/practice/parity-mutants.js --shard ${{ matrix.shard }}/3\n        " + other, mutants)
+        self.assertIn("part: [1, 2, 3]", mutants)
+        self.assertIn("- run: node tests/practice/parity-mutants.js --core --shard ${{ matrix.part }}/3\n        " + pr, mutants)
+        self.assertIn("- run: node tests/practice/parity-mutants.js --shard ${{ matrix.part }}/3\n        " + other, mutants)
 
     def test_the_mutation_check_runs_on_a_pull_request_only_for_the_probes(self):
         body = self.jobs["practice-legacy"]
@@ -239,7 +239,7 @@ class PracticeJobs(unittest.TestCase):
                 "practice-legacy": ["npm ci", "node tests/practice/record.js check", "node tests/practice/mutants.js"],
                 "practice-perf": ["npm ci", "node tests/practice/perf-selftest.js", "node tests/practice/perf.js check", "node tests/practice/perf.js record --attempts 5"],
                 "practice-parity": ["npm ci", "node tests/practice/parity.js check --sample 5", "node tests/practice/parity.js check"],
-                "practice-parity-mutants": ["npm ci", "node tests/practice/parity-mutants.js --core --shard ${{ matrix.shard }}/3", "node tests/practice/parity-mutants.js --shard ${{ matrix.shard }}/3"]}
+                "practice-parity-mutants": ["npm ci", "node tests/practice/parity-mutants.js --core --shard ${{ matrix.part }}/3", "node tests/practice/parity-mutants.js --shard ${{ matrix.part }}/3"]}
         for name, cmds in want.items():
             got = [c for c in commands_of(self.jobs[name])]
             for c in cmds:

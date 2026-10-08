@@ -817,15 +817,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        part: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '24' }
       - run: npm ci
-      - run: node tests/practice/parity-mutants.js --core --shard ${{ matrix.shard }}/3
+      - run: node tests/practice/parity-mutants.js --core --shard ${{ matrix.part }}/3
         if: ${{ github.event_name == 'pull_request' }}
-      - run: node tests/practice/parity-mutants.js --shard ${{ matrix.shard }}/3
+      - run: node tests/practice/parity-mutants.js --shard ${{ matrix.part }}/3
         if: ${{ github.event_name != 'pull_request' }}
 
   nightly:
