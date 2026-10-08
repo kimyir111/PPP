@@ -207,18 +207,24 @@
   }
 
   function catalogUrl(loc) {
+    /* G13-4c: the server names the content hash of each catalog in the page (window.PPP_HASHES), and a catalog asked for by its hash is kept by the browser for good;
+       without it (another server, a file opened from disk) the url is as it was */
+    var hashes = global.PPP_HASHES;
+    var hash = hashes && hashes['i18n/' + loc + '.json'];
     try {
       if (typeof document !== 'undefined') {
         var scripts = document.getElementsByTagName('script');
         for (var i = 0; i < scripts.length; i++) {
           var src = scripts[i].src || '';
           if (/i18n\.js(\?|#|$)/.test(src)) {
-            return src.replace(/i18n\.js(\?|#|$)/, 'i18n/' + loc + '.json$1').replace(/\?$|#$/, '');
+            if (hash) return src.replace(/i18n\.js(\?|#|$).*$/, 'i18n/' + loc + '.json?h=' + hash);
+            /* the script's own ?h= is the hash of i18n.js, not of a catalog */
+            return src.replace(/i18n\.js(\?|#|$)/, 'i18n/' + loc + '.json$1').replace(/\?$|#$/, '').replace(/\?h=[0-9a-f]+/, '');
           }
         }
       }
     } catch (e) {}
-    return './i18n/' + loc + '.json';
+    return './i18n/' + loc + '.json' + (hash ? '?h=' + hash : '');
   }
 
   /* G13-4a: only the catalog of the language in use is fetched (the other three were fetched on every load: 184 KB on the wire for a person who reads one of them);
@@ -230,7 +236,9 @@
   function load(loc) {
     if (loaded[loc]) return Promise.resolve();
     if (pending[loc]) return pending[loc];
-    pending[loc] = fetch(catalogUrl(loc), { cache: 'no-store' })
+    var url = catalogUrl(loc);
+    /* a url that names the content may come from the browser's cache; one that does not is never kept (the server says no-store, and this makes sure) */
+    pending[loc] = fetch(url, /[?]h=[0-9a-f]{12}$/.test(url) ? undefined : { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : { content: {} }; })
       .then(function (json) { catalogs[loc] = indexContent(json && json.content); loaded[loc] = true; })
       .catch(function () { catalogs[loc] = {}; })

@@ -1,0 +1,112 @@
+/* G13-4 mutation checks. A small copy of the tree is made, ONE rule of the load-performance work is broken in it, and the tests that should notice are run against the copy
+   (PPP_LOAD_ROOT, see lib.js): a mutant that survives is a rule nothing tests. The repository's own files are never touched.
+
+     node tests/load/mutants.js            run them all (and the unmutated copy, which must pass)
+     node tests/load/mutants.js C3 A1      only these
+
+   Exit code 0 when every mutant is killed. */
+'use strict';
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { spawnSync } = require('child_process');
+
+const REPO = path.resolve(__dirname, '..', '..');
+const SERVER = ['server.js', 'static-allow.js', 'static-assets.js', 'share-guest.js', 'home-jobs.js', 'home-jobs-store.js', 'home-result.js', 'signup-limit.js', 'server-stats.js'];
+const ROOT_FILES = ['Piano Coach App.dc.html', 'i18n.js', 'support.js', 'lessons.js', 'course.js', 'score-search.js', 'library-backup.js', 'audio-score.js', 'package.json', 'render.yaml'];
+const DIRS = ['scoregraph', 'playability', 'difficulty', 'songgraph', 'arrangement', 'realize', 'engrave', 'vendor', 'i18n'];
+const SINGLES = ['audio/piano/A0.mp3', 'assets/hands/hand-right-black.png', 'catalog/shared-seeds.json'];
+
+function copyDir(from, to) {
+  fs.mkdirSync(to, { recursive: true });
+  for (const e of fs.readdirSync(from, { withFileTypes: true })) {
+    if (e.name === 'tools' || e.name === 'node_modules' || e.name.startsWith('.')) continue;
+    if (e.isDirectory()) copyDir(path.join(from, e.name), path.join(to, e.name));
+    else fs.copyFileSync(path.join(from, e.name), path.join(to, e.name));
+  }
+}
+function makeCopy() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-mut-'));
+  for (const f of SERVER.concat(ROOT_FILES)) fs.copyFileSync(path.join(REPO, f), path.join(dir, f));
+  for (const d of DIRS) copyDir(path.join(REPO, d), path.join(dir, d));
+  for (const f of SINGLES) {
+    if (!fs.existsSync(path.join(REPO, f))) continue;
+    fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true });
+    fs.copyFileSync(path.join(REPO, f), path.join(dir, f));
+  }
+  return dir;
+}
+
+const LAZY = 'i18n-lazy.test.js', HASH = 'content-hash.test.js';
+
+/* id, file, what the mutant breaks, [from, to] or a list of them (each replaced once), the test that must fail */
+const M = [
+  /* G13-4a: i18n.js */
+  ['A1', 'i18n.js', 'every catalog is fetched at boot again (the old behaviour)', ["var ready = load(locale);", "var ready = Promise.all(SUPPORTED.map(function (l) { return load(l); }));"], LAZY],
+  ['A2', 'i18n.js', 'English waits for a catalog it does not have', ["loaded[DEFAULT_LOCALE] = true;", "loaded[DEFAULT_LOCALE] = false;"], LAZY],
+  ['A3', 'i18n.js', 'a switch tells the listeners before the catalog is in (they translate nothing)', ["wait.then(function () { if (mine === switchSeq) fire(next); });", "fire(next); wait.then(function () { if (mine === switchSeq) fire(next); });"], LAZY],
+  ['A4', 'i18n.js', 'a switch that was overtaken is still announced', ["if (mine === switchSeq) fire(next);", "fire(next);"], LAZY],
+  ['A5', 'i18n.js', 'a catalog already fetched is fetched again at every switch', ["if (loaded[loc]) return Promise.resolve();\n    if (pending[loc]) return pending[loc];", "if (pending[loc]) return pending[loc];"], LAZY],
+  ['A6', 'i18n.js', 'a catalog that failed is never asked for again', ["      .then(function () { pending[loc] = null; });", "      .then(function () { /* pending stays */ });"], LAZY],
+  ['A7', 'i18n.js', 'ready stays the first catalog\'s promise after a switch', ["if (global.PPP_I18N) global.PPP_I18N.ready = wait;", ""], LAZY],
+  /* G13-4c: static-assets.js, server.js, i18n.js */
+  ['C1', 'server.js', 'a wrong hash is answered immutable (any ?h= is believed)', ["if (e.hash === want) {", "if (true) {"], HASH],
+  ['C2', 'static-assets.js', 'the hash ignores the content', [".update(body).digest('hex').slice(0, 12)", ".update('same').digest('hex').slice(0, 12)"], HASH],
+  ['C3', 'static-assets.js', 'the hash of a text file depends on CRLF vs LF', ["Buffer.from(buf.toString('utf8').replace(/\\r\\n/g, '\\n'), 'utf8')", "buf"], HASH],
+  ['C4', 'static-assets.js', 'the page is not rewritten (scripts keep ?v=N, no hashes)', ["const head = cut < 0 ? text : rewriteHead(text.slice(0, cut), root);", "const head = cut < 0 ? text : text.slice(0, cut);"], HASH],
+  ['C5', 'static-assets.js', 'gzip is sent whatever the browser said', ["const gz = buf.length >= MIN_GZIP && acceptsGzip(req.headers['accept-encoding']);", "const gz = buf.length >= MIN_GZIP;"], HASH],
+  ['C6', 'static-assets.js', 'gzip;q=0 is read as gzip (the header is matched as text)', ["if (name !== 'gzip' && name !== '*') continue;\n    let q = 1;", "if (name !== 'gzip' && name !== '*') continue;\n    let q = 1; return true;"], HASH],
+  ['C7', 'static-assets.js', 'one entity tag for both encodings', ["const etag = '\"' + e.hash + (gz ? '-gz' : '') + '\"';", "const etag = '\"' + e.hash + '\"';"], HASH],
+  ['C8', 'static-assets.js', 'an answer says gzip but sends the plain bytes', ["if (gz) { body = await gzipOnce(e, buf); headers['Content-Encoding'] = 'gzip'; }", "if (gz) { headers['Content-Encoding'] = 'gzip'; }"], HASH],
+  ['C9', 'static-assets.js', 'the hash of a file is kept for ever (a changed file keeps its old hash)', ["if (c && c.mtimeMs === st.mtimeMs && c.size === st.size) return c;\n  const e = { mtimeMs: st.mtimeMs, size: st.size, hash: hashBytes(", "if (c) return c;\n  const e = { mtimeMs: st.mtimeMs, size: st.size, hash: hashBytes("], HASH],
+  ['C10', 'static-assets.js', 'mp3 and pictures become hashable', ["const HASHABLE = new Set(['.js', '.json', '.css', '.woff2', '.woff']);", "const HASHABLE = new Set(['.js', '.json', '.css', '.woff2', '.woff', '.mp3', '.png']);"], HASH],
+  ['C11', 'server.js', 'the page itself is kept by the browser', ["send(res, 200, Buffer.from(text, 'utf8'), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });", "send(res, 200, Buffer.from(text, 'utf8'), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });"], HASH],
+  ['C12', 'server.js', 'the served list is not asked (a server file is handed out)', ["if (!staticAllow.isServed(rel)) { noteNotServed(abs, rel); return jsonError(res, 404, 'Not found'); }", "if (false) { noteNotServed(abs, rel); return jsonError(res, 404, 'Not found'); }"], HASH],
+  ['C13', 'static-assets.js', 'a file the server does not serve gets a hash in the page (a probe)', ["if (!HASHABLE.has(path.extname(r).toLowerCase()) || !allow.isServed(r)) return null;", "if (!HASHABLE.has(path.extname(r).toLowerCase())) return null;"], HASH],
+  ['C14', 'static-assets.js', 'a Range request gets a slice of the (gzip) body', ["let body = buf;\n  if (gz)", "let body = buf;\n  if (req.headers.range) return { status: 206, headers: Object.assign(headers, { 'Content-Range': 'bytes 0-9/' + buf.length }), body: buf.slice(0, 10) };\n  if (gz)"], HASH],
+  ['C15', 'static-assets.js', 'the catalogs\' hashes are not in the page', ["const tag = '<script>window.PPP_HASHES=' + JSON.stringify(hashMap(root)) + ';</script>';", "const tag = '<script>window.PPP_HASHES={};</script>';"], HASH],
+  ['C16', 'static-assets.js', 'the body of the page after the head is changed', ["let out = cut < 0 ? head : head + text.slice(cut);", "let out = cut < 0 ? head : head + text.slice(cut).replace(/\\?v=/g, '?h=');"], HASH],
+  ['C17', 'static-assets.js', 'HEAD or GET with the wrong Content-Length for a gzip body', ["headers['Content-Length'] = body.length;", "headers['Content-Length'] = buf.length;"], HASH],
+  ['C21', 'static-assets.js', 'a woff2 is gzipped again', ["&& !/^font\\//.test(type) && acceptsGzip", "&& acceptsGzip"], HASH],
+  ['C18', 'i18n.js', 'a hashed catalog is fetched with cache: no-store (the browser never keeps it)', ["fetch(url, /[?]h=[0-9a-f]{12}$/.test(url) ? undefined : { cache: 'no-store' })", "fetch(url, { cache: 'no-store' })"], LAZY],
+  ['C19', 'i18n.js', 'the catalog url ignores window.PPP_HASHES', ["var hash = hashes && hashes['i18n/' + loc + '.json'];", "var hash = null;"], LAZY],
+  ['C20', 'i18n.js', 'the hash of i18n.js itself is passed on as the catalog\'s', [".replace(/\\?$|#$/, '').replace(/\\?h=[0-9a-f]+/, '')", ".replace(/\\?$|#$/, '')"], LAZY]
+];
+
+function run(m, dir) {
+  const [, file, , edits, test] = m;
+  const list = Array.isArray(edits[0]) ? edits : [edits];
+  for (const [from, to] of list) {
+    const f = path.join(dir, file);
+    const src = fs.readFileSync(f, 'utf8');
+    const first = src.indexOf(from);
+    if (first < 0 || src.indexOf(from, first + 1) >= 0) throw new Error(m[0] + ': the text to break is ' + (first < 0 ? 'not in ' : 'more than once in ') + file + ': ' + JSON.stringify(from.slice(0, 80)));
+    fs.writeFileSync(f, src.slice(0, first) + to + src.slice(first + from.length));
+  }
+  const r = spawnSync(process.execPath, ['--test', '--test-timeout=8000', path.join(REPO, 'tests', 'load', test)], { env: Object.assign({}, process.env, { PPP_LOAD_ROOT: dir }), encoding: 'utf8', timeout: 120000 });
+  return r.status;
+}
+
+(function main() {
+  const only = process.argv.slice(2);
+  const todo = M.filter(m => !only.length || only.includes(m[0]));
+  const base = makeCopy();
+  let bad = 0;
+  try {
+    for (const t of [LAZY, HASH]) {
+      const r = spawnSync(process.execPath, ['--test', '--test-timeout=20000', path.join(REPO, 'tests', 'load', t)], { env: Object.assign({}, process.env, { PPP_LOAD_ROOT: base }), encoding: 'utf8', timeout: 120000 });
+      console.log((r.status === 0 ? 'ok      ' : 'FAIL    ') + 'unmutated copy: ' + t);
+      if (r.status !== 0) { bad++; console.log((r.stdout || '').split('\n').filter(l => /✖|Error|expected|actual/.test(l)).slice(0, 12).join('\n')); }
+    }
+    for (const m of todo) {
+      const dir = makeCopy();
+      let status;
+      try { status = run(m, dir); } catch (e) { console.log('ERROR   ' + m[0] + ' ' + e.message); bad++; continue; } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+      const killed = status !== 0;
+      if (!killed) bad++;
+      console.log((killed ? 'killed  ' : 'SURVIVED') + ' ' + m[0].padEnd(4) + ' ' + m[1].padEnd(18) + ' ' + m[2]);
+    }
+  } finally { fs.rmSync(base, { recursive: true, force: true }); }
+  console.log(bad ? '\n' + bad + ' problem(s)' : '\nall ' + todo.length + ' mutants killed');
+  process.exitCode = bad ? 1 : 0;
+})();

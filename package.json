@@ -51,6 +51,8 @@
     "test:practice-parity-mutants": "node tests/practice/parity-mutants.js",
     "test:vendor-react-app": "node tests/vendor-react-app.test.js",
     "test:load": "node --test \"tests/load/*.test.js\"",
+    "test:load-mutants": "node tests/load/mutants.js",
+    "test:load-app": "node tests/load-app/dom-identity.js",
     "test:scoregraph:perf": "node -e \"process.env.PPP_PERF='1'; require('child_process').execFileSync(process.execPath, ['--test', 'tests/scoregraph/g3-perf.test.js'], { stdio: 'inherit', env: process.env })\"",
     "test:arranger": "python tests/arranger_test.py",
     "omr": "node omr-service.js",

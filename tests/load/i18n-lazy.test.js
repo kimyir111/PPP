@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const SRC = fs.readFileSync(path.join(__dirname, '..', '..', 'i18n.js'), 'utf8');
+const SRC = fs.readFileSync(path.join(require('./lib').REPO, 'i18n.js'), 'utf8');
 const CATALOG = {
   'ko-KR': { Home: '홈', 'Hello {{n}}': '안녕 {{n}}' },
   'ja-JP': { Home: 'ホーム' },
@@ -21,6 +21,7 @@ const CATALOG = {
 function page(opts) {
   opts = opts || {};
   const asked = [];
+  const inits = [];
   const held = {};
   const storage = {};
   if (opts.saved) storage['ppp-locale'] = opts.saved;
@@ -42,20 +43,22 @@ function page(opts) {
     navigator: { languages: opts.languages || ['en-US'], language: (opts.languages || ['en-US'])[0] },
     Promise, Intl, JSON, Object, String, Array, RegExp, Math, console,
     NodeFilter: { SHOW_TEXT: 4 },
-    fetch(url) {
+    fetch(url, init) {
       const m = /i18n\/([A-Za-z-]+)\.json/.exec(url);
       const loc = m ? m[1] : '?';
       asked.push(String(url));
+      inits.push(init);
       return new Promise((resolve, reject) => { (held[loc] = held[loc] || []).push({ resolve, reject }); });
     }
   };
+  if (opts.hashes) ctx.PPP_HASHES = opts.hashes;
   ctx.window = ctx;
   vm.createContext(ctx);
   vm.runInContext(SRC, ctx, { filename: 'i18n.js' });
   const I = ctx.PPP_I18N;
   const answer = (loc, how) => { const q = held[loc] || []; held[loc] = []; q.forEach(h => (how === 'fail' ? h.reject(new Error('offline')) : h.resolve({ ok: how !== 'http404', json: async () => ({ content: CATALOG[loc] || {} }) }))); };
   return {
-    I, asked, storage, doc,
+    I, asked, inits, storage, doc,
     release: loc => { answer(loc); return new Promise(r => setImmediate(r)); },
     fail: loc => { answer(loc, 'fail'); return new Promise(r => setImmediate(r)); },
     http404: loc => { answer(loc, 'http404'); return new Promise(r => setImmediate(r)); },
@@ -97,9 +100,29 @@ test('the browser language picks the catalog when nothing is saved', async () =>
   assert.deepEqual(z.locales(), ['zh-CN']);
 });
 
-test('the catalog url keeps the script\'s query (?v=, and later ?h=)', async () => {
+test('the catalog url keeps the script\'s ?v= when the server has not named a hash', async () => {
   const p = page({ saved: 'ko-KR', scriptSrc: 'http://localhost/i18n.js?v=7' });
   assert.match(p.asked[0], /\/i18n\/ko-KR\.json\?v=7$/);
+  assert.equal(p.inits[0].cache, 'no-store', 'a url that does not name the content is never taken from the cache');
+});
+
+test('G13-4c: with window.PPP_HASHES the catalog is asked for by its own content hash, and may come from the browser cache', async () => {
+  const hashes = { 'i18n/ko-KR.json': 'aaaaaaaaaaaa', 'i18n/ja-JP.json': 'bbbbbbbbbbbb', 'i18n/zh-CN.json': 'cccccccccccc', 'i18n/en-US.json': 'dddddddddddd' };
+  /* the script tag carries the hash of i18n.js itself: it must not be taken for the catalog's */
+  const p = page({ saved: 'ko-KR', hashes, scriptSrc: 'http://localhost/i18n.js?h=0123456789ab' });
+  assert.match(p.asked[0], /^http:\/\/localhost\/i18n\/ko-KR\.json\?h=aaaaaaaaaaaa$/);
+  assert.equal(p.inits[0], undefined, 'no cache: no-store, so the immutable answer is used');
+  p.I.setLocale('ja-JP');
+  assert.match(p.asked[1], /\/i18n\/ja-JP\.json\?h=bbbbbbbbbbbb$/);
+  /* a hash for one catalog only: the others are asked for as before */
+  const q = page({ saved: 'ja-JP', hashes: { 'i18n/ko-KR.json': 'aaaaaaaaaaaa' }, scriptSrc: 'http://localhost/i18n.js?h=0123456789ab' });
+  assert.match(q.asked[0], /\/i18n\/ja-JP\.json$/, 'the script\'s own ?h= is dropped, not passed on');
+  assert.equal(q.inits[0].cache, 'no-store');
+});
+
+test('G13-4c: a script tag with no query at all', async () => {
+  const p = page({ saved: 'zh-CN', hashes: { 'i18n/zh-CN.json': 'eeeeeeeeeeee' }, scriptSrc: 'http://localhost/Piano/i18n.js' });
+  assert.match(p.asked[0], /^http:\/\/localhost\/Piano\/i18n\/zh-CN\.json\?h=eeeeeeeeeeee$/);
 });
 
 test('switching to a language fetches only that catalog, and tells the listeners when it is in', async () => {
