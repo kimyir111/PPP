@@ -3,6 +3,12 @@ tests/.shots/
 # the vendored helpers (audiveris, the transcription venv, yt-dlp, ffmpeg) live in tools/ and are not source; the home-PC worker (G10b-1) is
 /tools/*
 !/tools/home-worker/
+# the release script and the daily smoke's issue reporter (G13-7a) are source too
+!/tools/release/
+# ... but nothing secret is ever source there (a PC code, a token, a local setting)
+/tools/release/pc-code*
+/tools/release/*.local.*
+/tools/release/token*
 # ... but its settings hold the person's token
 /tools/home-worker/worker.config.json
 # the PC link's client code (a master secret) for pair.cmd - never committed

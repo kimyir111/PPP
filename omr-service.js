@@ -35,6 +35,14 @@ const path = require('path');
 const zlib = require('zlib');
 const crypto = require('crypto');
 const { execFile, spawn } = require('child_process');
+/* G12-1: every movement of a page, not only the newest file. Production runs this file too (render.yaml), so omr/helper-output.js is optional: if it is missing or broken
+   the service starts and answers as it always did, and a page's `movements` is its one newest file (the `musicxml` field never depends on it). */
+let readMovements = null;
+try { readMovements = require('./omr/helper-output.js').readMovements; } catch (e) { readMovements = null; }
+function pageMovements(outDir, xml) {
+  if (typeof readMovements !== 'function') return [xml];
+  try { return readMovements(outDir, readMxlSync, xml); } catch (e) { return [xml]; }
+}
 
 /* ---- .env, for development ----
    The key belongs to the environment, not to the source tree, and never to the
@@ -214,7 +222,8 @@ function recognisePage(imgPath, outDir) {
         }
         try {
           const xml = readMxlSync(mxl);
-          resolve({ ok: true, ms: Date.now() - t0, musicxml: xml });
+          /* `musicxml` is what it always was (the newest file); `movements` (G12-1) is every file of the page, in movement order */
+          resolve({ ok: true, ms: Date.now() - t0, musicxml: xml, movements: pageMovements(outDir, xml) });
         } catch (e) {
           resolve({ ok: false, ms: Date.now() - t0, error: 'The MusicXML Audiveris produced could not be read: ' + e.message });
         }
@@ -1405,7 +1414,9 @@ const server = http.createServer(async (req, res) => {
     ms: Date.now() - t0,
     pages: results.map(r => ({ index: r.index, ok: !!r.ok, error: r.error || null, ms: r.ms || 0 })),
     /* one MusicXML document per recognised page, merged by the client */
-    musicxml: results.map(r => (r.ok ? r.musicxml : null))
+    musicxml: results.map(r => (r.ok ? r.musicxml : null)),
+    /* G12-1: the same pages, every movement of each (a page Audiveris split gives several); an old client ignores this */
+    movements: results.map(r => (r.ok ? r.movements : null))
   });
 });
 

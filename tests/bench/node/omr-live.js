@@ -26,6 +26,8 @@ const base = arg('--base', 'http://127.0.0.1:8777');
    127.0.0.1:P instead (a helper started on a free port, so another session's helper on 8788 is never used or disturbed); --helper-port 0
    refuses them (no helper: what production does). Without the flag nothing is intercepted and this file behaves as before. */
 const helperPort = arg('--helper-port', null);
+/* G12-1: --omr legacy|v2 opens the page with ?omr=<mode> (PPP.omr for this run only). Without the flag the page is opened as before. */
+const omrMode = arg('--omr', null);
 
 (async () => {
   const jobs = fs.readFileSync(arg('--in'), 'utf8').split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
@@ -45,7 +47,7 @@ const helperPort = arg('--helper-port', null);
         return req.continue();
       });
     }
-    await page.goto(base + '/Piano%20Coach%20App.dc.html', { waitUntil: 'networkidle2', timeout: 60000 });
+    await page.goto(base + '/Piano%20Coach%20App.dc.html' + (omrMode ? '?omr=' + encodeURIComponent(omrMode) : ''), { waitUntil: 'networkidle2', timeout: 60000 });
     await page.waitForFunction(() => window.PPP && window.PPP.Import && window.PPP.Import.load, { timeout: 30000 });
     for (const job of jobs) {
       const b64 = fs.readFileSync(job.path).toString('base64');
