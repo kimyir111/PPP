@@ -26,7 +26,7 @@ pip install -r tests/omr/requirements.txt      # verovio, numpy, opencv, PyMuPDF
 # Audiveris 5.11: PPP_AUDIVERIS, --audiveris, <repo>/tools/audiveris/Audiveris/Audiveris.exe, or the same in the main worktree
 
 python tests/bench/run.py omr-live-2 cases --check                    # the 60 excerpts still are what the corpus registry gives
-python tests/bench/run.py omr-live-2 determinism                      # render the S1 pages twice (second time reversed): every byte equal?
+python tests/bench/run.py omr-live-2 determinism                      # render the S1 pages 3 times (in order, reversed, rotated): every byte equal?
 python tests/bench/run.py omr-live-2 run --cases s1 --jobs 2          # the design document's 15 pages, 6 tiers + brace-less, ~40 min
 python tests/bench/run.py omr-live-2 run                              # all 60 excerpts, all tiers (engine alone); ~400 pages
 python tests/bench/run.py omr-live-2 check                            # last run against tests/omr/baselines/audiveris-5.11.0.json (exit 1 = regression)
@@ -97,10 +97,10 @@ machine's Chrome or OpenCV. The app-path baselines are `audiveris-5.11.0.app.jso
 
 ## Determinism
 
-The same excerpt gives the same bytes in every run and in any order: the truth export, the Verovio SVG, the PPP print SVG (Windows and Linux alike:
+The same excerpt gives the same bytes in every run and in any order: the truth export, the Verovio SVG (given `xmlIdSeed`: without it Verovio draws random element ids), the PPP print SVG (Windows and Linux alike:
 `tests/omr/node/ppp-print.test.js`), the PNG (Chrome's **GPU** raster draws the same SVG with a different anti-aliasing from one shot to the next,
 measured, so `raster.js` runs with `--disable-gpu`: the CPU raster is byte-stable), the photo and the scan (NumPy `default_rng(seed)`, the seed a
-function of (engraver, page), `degrade.py`), the JPEG. `omr-live-2 determinism` renders twice, the second time in reverse order, and compares every byte.
+function of (engraver, page), `degrade.py`), the JPEG. `omr-live-2 determinism` renders three times (in order, reversed, rotated) and compares every byte.
 Another machine's Chrome, OpenCV or Verovio can still draw a pixel differently: the baseline stores the sha256 of each page-image set and `check`
 says so when they differ.
 

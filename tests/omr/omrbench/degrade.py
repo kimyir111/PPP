@@ -109,9 +109,9 @@ def jpeg_bytes(img, quality: int) -> bytes:
 
 def degrade_file(clean_png: str, variant: str, engraver: str, page: int) -> Tuple[bytes, str]:
     """(bytes, extension) of the photo or the scan of a clean page file."""
-    import cv2
     if variant not in ("photo", "scan"):
         raise ValueError("variant: photo | scan")
+    import cv2
     img = cv2.imread(clean_png)
     if img is None:
         raise RuntimeError(f"cannot read {clean_png}")
