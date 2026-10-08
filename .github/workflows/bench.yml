@@ -315,7 +315,7 @@ jobs:
           overwrite: true
 
   # shard-j: rec-core 1/4, rec-smoke, replay-of-app, test:practice-variant
-  #   (steps ~134 s on a fast runner, ~195 s on a slow one, before test:practice-variant, which adds 7 s: 67 tests in 7.1 s, 2026-10-08, PR 227)
+  #   (steps ~134 s on a fast runner, ~195 s on a slow one, before test:practice-variant, which adds 7-11 s: 67 tests in 7.1 s and 11.3 s on two draws, 2026-10-08, PR 227)
   shard-j:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
