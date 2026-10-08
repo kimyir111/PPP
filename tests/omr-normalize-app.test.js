@@ -51,6 +51,9 @@ const halves = doc([part('P1', [
   '<backup><duration>2</duration></backup><note><pitch><step>C</step><octave>3</octave></pitch><duration>2</duration><voice>5</voice><type>whole</type><staff>2</staff></note></measure>',
   '<measure number="2" width="200"><note><pitch><step>F</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>half</type><staff>1</staff></note><note><pitch><step>A</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>half</type><staff>1</staff></note>' +
   '<backup><duration>2</duration></backup><note><pitch><step>D</step><octave>3</octave></pitch><duration>2</duration><voice>5</voice><type>whole</type><staff>2</staff></note></measure>'])]);
+/* a page the normaliser cannot read: an element nested 20,000 deep in its first bar (the JS stack overflows in omr/normalize.js; the legacy import does not look at it) */
+const deepPair = pairOnly.replace('<measure number="1" width="200">', '<measure number="1" width="200"><foo>'.replace('<foo>', '<foo>'.repeat(20000)) + '</foo>'.repeat(20000));
+const deepBody = { ok: true, engine: 'Audiveris', pages: [{ index: 0, ok: true }], musicxml: [deepPair], movements: [[deepPair]] };
 const halvesBody = { ok: true, engine: 'Audiveris', pages: [{ index: 0, ok: true }], musicxml: [halves], movements: [[halves]] };
 const twoPages = { ok: true, engine: 'Audiveris', pages: [{ index: 0, ok: true }, { index: 1, ok: true }], musicxml: [mv1, pairOnly], movements: [[mv1], [pairOnly]] };
 /* the fixture as the PDF reads it: one part of one staff, four systems G F G F of four bars (tests/fixtures/piano-clean.pdf through pdf.js, Audiveris 5.11) */
@@ -76,7 +79,7 @@ async function importWith(page, body, mode) {
       s.notes.forEach(n => { if (!n.rest) hands[n.hand] = (hands[n.hand] || 0) + 1; });
       return { ok: true, bars: s.measures.length, staves: s.staves, notes: s.notes.filter(n => !n.rest).length, hands: hands, xml: r.musicxml,
         normalize: r.report.normalize ? { counts: r.report.normalize.counts, notes: r.report.normalize.notes, bars: r.report.normalize.bars } : null,
-        mergedLegacy: I.mergeMusicXml(body.musicxml), lengths: s.notes.filter(n => !n.rest).map(n => Math.round(n.dur * 100) / 100).slice(0, 6) };
+        normalizeFailed: r.report.normalizeFailed || null, mergedLegacy: I.mergeMusicXml(body.musicxml), lengths: s.notes.filter(n => !n.rest).map(n => Math.round(n.dur * 100) / 100).slice(0, 6) };
     } catch (e) { return { ok: false, error: String(e && e.message || e) }; }
   }, body, mode, PNG);
 }
@@ -182,6 +185,30 @@ async function importWith(page, body, mode) {
       return { counts, whole: new DOMParser().parseFromString(xml, 'application/xml').querySelector('part').querySelectorAll('measure').length };
     }, twoPages);
     ok('PdfLayer\'s per-page documents carry each page\'s bar count', docs.counts.join() === '3,4' && docs.whole === 7, JSON.stringify(docs));
+    await page.close();
+  }
+
+  /* ---------------------------------------------------------------- the normaliser throws */
+  console.log('v2 with a page the normaliser cannot read');
+  {
+    const { page } = await fresh();
+    const l = await importWith(page, deepBody, 'legacy');
+    const v = await importWith(page, deepBody, 'v2');
+    ok('the legacy import of that page is what it is (it reads it, or refuses it)', true, l.ok ? l.bars + ' bars' : l.error);
+    ok('v2 ends as the legacy import: the same outcome, the same bars, the same xml, the same hands', v.ok === l.ok && v.bars === l.bars && v.xml === l.xml && JSON.stringify(v.hands) === JSON.stringify(l.hands) && v.error === l.error,
+      JSON.stringify([v.ok, l.ok, v.bars, l.bars, v.error, l.error]));
+    ok('and says why: report.normalizeFailed names the error, report.normalize is not there', !l.ok || (v.normalize === null && /internal-error/.test(v.normalizeFailed || '')), JSON.stringify(v.normalizeFailed));
+    const g = await importWith(page, pairBody, 'v2');
+    ok('the next v2 import is not affected (the normaliser still works)', g.ok && g.staves === 2 && g.normalize && !g.normalizeFailed, JSON.stringify([g.ok, g.staves, g.normalizeFailed]));
+    /* a normaliser that THROWS out of normalize() (the module catches its own, so this is a stand-in for any that is not caught): the import is the legacy one and says why */
+    await page.evaluate(() => { window.__realNormalizer = window.PPPOmrNormalize; window.PPPOmrNormalize = { normalize() { throw new RangeError('Maximum call stack size exceeded'); }, pagesFromHelper: window.__realNormalizer.pagesFromHelper }; });
+    const tv = await importWith(page, pairBody, 'v2'), tl = await importWith(page, pairBody, 'legacy');
+    ok('a normaliser that throws leaves the legacy import: the same xml, the same hands (the first part silenced as before), the same bars', tv.ok && tv.xml === tl.xml && tv.xml === tv.mergedLegacy && JSON.stringify(tv.hands) === JSON.stringify(tl.hands) && tv.bars === tl.bars && tv.hands.x === 16,
+      JSON.stringify([tv.ok, tv.bars, tl.bars, tv.hands, tl.hands]));
+    ok('... and report.normalizeFailed says "threw: Maximum call stack size exceeded"; there is no report.normalize', tv.normalize === null && tv.normalizeFailed === 'threw: Maximum call stack size exceeded' && tl.normalizeFailed === null, JSON.stringify([tv.normalizeFailed, tl.normalizeFailed]));
+    await page.evaluate(() => { window.PPPOmrNormalize = window.__realNormalizer; });
+    const back = await importWith(page, pairBody, 'v2');
+    ok('and with the real normaliser back the next v2 import is v2 again', back.ok && back.staves === 2 && !back.hands.x && back.normalize, JSON.stringify([back.ok, back.staves, back.hands]));
     await page.close();
   }
 

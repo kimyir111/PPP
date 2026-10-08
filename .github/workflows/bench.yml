@@ -248,7 +248,7 @@ jobs:
       - run: python tests/bench/tools/make_rec_suites.py --check   # the committed rec-* suites are the generator's (G10a-0)
 
   # shard-g: the grid trainer check, core, test:difficulty, test:omr-normalize
-  #   (steps ~133 s on a fast runner, ~195 s on a slow one, before test:omr-normalize, which adds about 1 s: 70 tests in 0.5 s here, 2026-10-08, G12-1)
+  #   (steps ~133 s on a fast runner, ~195 s on a slow one, before test:omr-normalize, which adds about 2-3 s: 93 tests in 0.9 s on Windows here and in about 2.5 s on Linux (Docker, Node 24), where the 2 that start the helper with a stand-in for Audiveris also run, 2026-10-08, G12-1)
   shard-g:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}

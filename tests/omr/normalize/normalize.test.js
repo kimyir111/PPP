@@ -183,9 +183,49 @@ test('idempotent: normalising a normalised file changes no note, no bar and no s
     const r1 = N.normalize(S[name].pages(), S[name].opts ? S[name].opts() : undefined);
     const r2 = N.normalize([r1.xml]);
     assert.deepEqual(SC.summary(r2.xml), SC.summary(r1.xml), name);
-    assert.deepEqual(r2.report.changes.map(c => c.rule).filter(x => x !== 'movements'), name === 'divisionsZero' ? [] : r2.report.changes.map(c => c.rule).filter(x => x !== 'movements'));
+    assert.deepEqual(r2.report.changes, [], name + ': the second pass reports no change at all (no repair, no merge, no fold, no ghost)');
+    assert.deepEqual(L.multiset([r2.xml]), L.multiset([r1.xml]), name + ': and keeps every note');
     assert.equal(r2.report.counts.divisionsRepaired + r2.report.counts.ghostParts + r2.report.counts.systemsFolded + r2.report.counts.partsMerged, 0, name + ' needs no second pass');
   }
+});
+
+test('invariant: the multiset of (pitch, onset, duration, tie, chord, grace) is the same before and after normalisation, in EVERY scenario', () => {
+  for (const name of Object.keys(S)) {
+    const pages = S[name].pages();
+    const before = L.multiset([].concat.apply([], pages.map(p => (Array.isArray(p) ? p : [p]))));
+    const r = N.normalize(pages, S[name].opts ? S[name].opts() : undefined);
+    assert.equal(r.ok, true, name);
+    assert.ok(before.length > 0, name + ' has notes');
+    assert.deepEqual(L.multiset([r.xml]), before, name + ': a note was lost, moved in its bar, changed in length, untied, or turned into/out of a chord or a grace note');
+  }
+  /* the scenarios that matter most for it have all four kinds in them */
+  const rich = L.multiset([SC.truthDocRich(0, 2)]).join(' ');
+  assert.ok(/\|chord\|/.test(rich) && /\|grace/.test(rich) && /\|start\|/.test(rich) && /\|stop\|/.test(rich), 'the rich bars have a chord, a grace note and a tie');
+});
+
+test('a chord does not move the lower staff: the <backup> is the end of the upper staff, not the sum of its chord notes', () => {
+  const r = N.normalize(S.pairRich.pages());
+  const o = read(r.xml).parts[0];
+  o.bars.forEach(b => {
+    const lower = b.notes.filter(n => n.staff === 2 && !n.chord && !n.grace).map(n => n.on);
+    assert.equal(Math.min.apply(null, lower), 0, 'the lower staff starts with the bar');
+    assert.deepEqual(lower.slice().sort((a, c) => a - c), [0, 2, 3], 'the lower staff plays at 0, 2 and 3');
+  });
+  assert.match(r.xml, /<backup><duration>6<\/duration><\/backup>/, 'three quarters in divisions 2');
+});
+
+test('safety: a document nested 20,000 deep does not throw out of normalize(): it is an answer (ok false, internal-error) the caller falls back on', () => {
+  const deep = '<foo>'.repeat(20000) + '</foo>'.repeat(20000);
+  const bomb = doc([part('P1', [SC.grandBar(0, SC.grandFirst({ lead: deep })), SC.grandBar(1)], { div: 2, staved: true })]);
+  let r;
+  assert.doesNotThrow(() => { r = N.normalize([bomb]); });
+  assert.equal(r.ok, false);
+  assert.equal(r.error, 'internal-error');
+  assert.match(r.detail, /call stack|too much recursion/i);
+  assert.equal(r.xml, null);
+  assert.deepEqual(r.report.changes.map(c => c.rule), ['internal-error']);
+  /* the other pages of a run are not the victims of one page: a good document beside it is read when asked alone */
+  assert.equal(N.normalize([doc([part('P1', SC.series(0, 2, SC.grandBar, SC.grandFirst()), { div: 2, staved: true })])]).ok, true);
 });
 
 test('a clean one-part page passes through note for note, on the same staves, with the same durations', () => {

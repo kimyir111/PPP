@@ -522,7 +522,7 @@ import is the one `main` makes (proof below). `tests/omr/README.md` has the comm
 | the helper's `/omr` answer has `movements` (every `.mxl` of each page, in movement order) beside the `musicxml` it always had (a new field; the old one is the line it was) | `omr/helper-output.js`, `omr-service.js` |
 | `PPP.omr` (`'legacy'` default, `'v2'`; `?omr=`; `localStorage['ppp.omr.v1']`; any other value is no choice and the default comes back: PPP.recording's rule). Under `'v2'` `Import.load` reads the pages through the normaliser (fetched when a v2 import needs it, never by a legacy page; if it cannot be fetched the import is what legacy makes), `PdfLayer.apply` gets a per-page document with the page's bar count, `report.normalize` carries the normaliser's report, and `parseMusicXML(xml, name, {omrPiano: true})` never silences a staff of an engine import that has no two-staff part (top staff right hand, every other left) | `Piano Coach App.dc.html` (small hunks: the switch beside PPP.recording, `Import.omrXml`, the three `parseMusicXML` calls, one hand-rule line, `PPP.omr`) |
 | `run --normalize` (engine alone, the files read through `omr/normalize.js`; diagnostic, never a baseline), `run --mode app --omr v2` (the page in v2, results in `out/app-v2/`) | `tests/omr/omrbench/`, `tests/omr/node/normalize-cli.js`, `tests/bench/node/omr-live.js` |
-| 74 Node tests (`npm run test:omr-normalize`, a step of the gate, in `shard-g`): 14 scenarios of pages built the way the engine was seen to write them, each answer computed from the same music written as one grand staff; 28 mutants of the module, each caught (`MUT-NOOP` the control); the helper's movement order. The browser suite `npm run test:omr-app` (local): the switch, legacy unchanged, v2, an old helper, a normaliser that cannot be fetched | `tests/omr/normalize/`, `tests/omr-normalize-app.test.js` |
+| 93 Node tests (`npm run test:omr-normalize`, a step of the gate, in `shard-g`; 2 of them stand in for Audiveris with a shell script and so run on Linux, in the gate, and here in Docker): 18 scenarios of pages built the way the engine was seen to write them (4 of them "rich": chords, grace notes, ties and a `<forward>` in the pair, systems, fold and pages paths), each answer computed from the same music written as one grand staff; one invariant test (the multiset of pitch, onset, duration, tie, chord, grace is the same before and after, in every scenario); 35 mutants of the module, each caught by the scenario named for it (`MUT-NOOP` the control); the helper's movement order and the service started with, without and with a broken `omr/helper-output.js`. The browser suite `npm run test:omr-app` (local): the switch, legacy unchanged, v2, an old helper, a normaliser that cannot be fetched, that throws, and a page nested 20,000 deep | `tests/omr/normalize/`, `tests/omr-normalize-app.test.js` |
 
 **What the 480 files of G12-0 showed (rule 3 changed because of it).** Audiveris does not split a piano into "two parts that line up", as section 7.1 assumed. It reads a page *system by system*:
 the notes of a system are in one part (or pair of parts) and the other parts of the movement hold whole-bar rests for the same bars; which part holds a system differs from page to page and
@@ -543,7 +543,7 @@ before each); `systems` folds equal G-over-F pairs (it also did so on three phot
 | brace-less, app path, the PDF: bars | 16 bars, one staff, played F1 0.638 | **8 bars, two staves**, played F1 0.979 (6 of 8 bars exact; the other two lack one note each) | 16 -> 8: met |
 | brace-less, engine alone, PNG + JPG | played F1 0.500, parts ok 0.00 | 1.000, parts ok 1.00 | |
 | clean app path (6 vector PDFs) played F1 against the engine alone's | 0.887 | **0.956**; the engine alone, normalised, on the same 6 pieces 0.960: -0.004 | >= engine - 0.01: met |
-| photo app path (6 JPEGs) played F1 | 0.447 (note F1 0.552: the hand rule silences 0.105) | **0.600** (0.6001; the engine alone normalised, same 6 pieces: 0.6001: nothing is lost between the engine and the app) | >= 0.60: met, by 0.0001 |
+| photo app path (6 JPEGs) played F1 | 0.447 (note F1 0.552: the hand rule silences 0.105) | **0.600** (0.6001; the engine alone normalised, same 6 pieces: 0.6001: nothing is lost between the engine and the app) | >= 0.60: met by 0.0001 (0.6001 against 0.60 on 6 files: inside noise, not a margin) |
 | Czerny 599/10, clean, the page whose shortest value is a half note | note F1 0.587, 0 of 12 bars (every half note a quarter) | **1.000, 12 of 12** (engine alone and app path) | |
 | the photo movements (s1 photo-A, engine alone, the helper keeps one file a page): note F1 | 0.539 (design document, GPU raster: 0.498) | 0.627 with every movement (design 0.616); **0.638** normalised | |
 | s1 clean-A (engine alone), note F1 / bars exact | 0.846 / 169 of 267 (63.3 %) | **0.874 / 181 (67.8 %)** | |
@@ -564,8 +564,7 @@ aggregates and per-case metrics equal the baseline's exactly. (3) The helper's `
 for `omr/normalize.js` and the helper's `movements` are ignored (browser suite). (5) `omr/normalize.js` is not in the page's script list.
 
 **Beyond the s1 pages: all 60 excerpts**, G12-0's own engine files re-read with `run --normalize` (the sha-256 of each page image equals the one in its engine record, for all the 65 (A) or 67 (B) pages of each tier; every clean and photo file
-of s1 that I re-ran here is identical in text to G12-0's, and 16 of 17 scan150 files; the 17th, `method_burgmuller25_003`, differs in two notes' dots: see Findings), pooled over the 60 (the held-out half is in the numbers and was not read
-case by case); `scan150-B` (PPP's own print at 150 DPI, which the engine refuses) is not in the table.
+of s1 that I re-ran here is identical in text to G12-0's, and 16 of 17 scan150 files; the 17th, `method_burgmuller25_003`, differs in two notes' dots: see Findings), pooled over all 60 excerpts: **this is not a held-out measurement** (the held-out half is 18 of the 60 excerpts, 30 %, and is not reported apart); `scan150-B` (PPP's own print at 150 DPI, which the engine refuses) is not in the table.
 
 | tier (60 excerpts) | note F1 | played F1 | bars exactly right | parts ok |
 | --- | --- | --- | --- | --- |
@@ -595,8 +594,29 @@ played F1 and from 25 % to 44 % of bars exactly right; PPP's own print (clean-B,
   time: twice under its own name and twice on a copy named `scan-p1.jpg` as in G12-0; all four raw `.mxl` files are identical to each other and to my earlier run under load, and differ from G12-0's. So it is not load and not the file
   name, and since the files compared are the engine's own output it is not the normaliser. This page's output differs from G12-0's for the same image, stable over four quiet runs here; the cause is unknown (no Audiveris
   setting or version change is known to me; I am not guessing).
-- Held-out discipline: the rules came from the structure counts of all 480 files and from the tuning half. While understanding the shapes I looked at the bar-by-bar structure of two held-out excerpts (`i-know-whom`,
-  `all-creatures`) before any rule or threshold existed; the one threshold, `OVERLAP_MAX` 0.25, was not tuned: no bar is shared in the tuning half at all, so any value from 0.05 to 0.5 gives the same output on it.
+- Held-out discipline, said plainly: the groups-and-per-bar-source rule was shaped by a structure census over **all 480 files, held-out reads included**, and by looking at the bar-by-bar structure of two held-out excerpts
+  (`i-know-whom`, `all-creatures`) while the shapes were understood, before any threshold existed. No number in this section is therefore a clean held-out result: the 60-excerpt table is pooled, the s1 and app rows are
+  small samples (15 pages, 6 files). The one threshold, `OVERLAP_MAX` 0.25, was not tuned: no bar is shared in the tuning half at all, so any value from 0.05 to 0.5 gives the same output on it.
+- The photo gate (played F1 >= 0.60) is met by 0.0001 (0.6001) on 6 files. That is inside noise: it says nothing is lost between the engine and the app (the engine alone, normalised, gives the same 0.6001), not that photos are good.
+  What photos get is the 60-excerpt number above (0.767 played F1, 44 % of bars exactly right), and that is pooled.
+- The browser suite (`test:omr-app`) is not in the gate: the gate has no browser shard (its jobs have no `npm install`); the only browser jobs of the workflow are the practice jobs and the nightly ones, which run `npm ci` and
+  download Chrome before they run a suite (not measured here; a minute or more, not the 15 s a step of a shard may add). It stays a local suite; the normaliser itself, which is where the logic is, is in the gate.
+
+**Known limits (the independent review's minor findings that are not fixed in G12-1; stated plainly).**
+- `foldSystems` (`omr/normalize.js`) folds a REAL single-staff piece whose clef alternates G and F from one system to the next, with equal lengths in each pair, into a grand staff of half the bars. The signature is the
+  PDF's, and a pitch-range check (the F-clef systems sitting below the G-clef ones) would tell the two apart; there is none.
+- A movement that holds only rests and is read as two or more parts adds a phantom empty column to the output (the "parts kept" path writes every part, and the join pads the shorter movements with empty bars). Harmless
+  to the notes; the part list is longer than the music.
+- A `<divisions>` that changes in the MIDDLE of a part re-times the notes after it without a flag: the repair and the scaling read the divisions in force at the start of each bar. Audiveris does not write this.
+- Pair detection looks at the upper part's clef (G) and the bar counts, not at the lower part's clef: two one-staff parts with a G clef over a G clef (a violin duet) are merged as one "Piano" when no other group shares
+  their bars.
+- The helper's answer repeats the XML for a page it did not split (`musicxml` and `movements[0]`): up to twice the size for single-movement pages.
+- A `parts-fragmented` result (groups that share bars, left as parts) gets its hands by staff position under `'v2'`: the top staff right, every other staff left, not by clef or pitch range.
+
+**Review round (PR #237, verdict: merge).** Fixed: `Import.omrXml` falls back on any throw and `normalize()` never throws (a document nested 20,000 deep overflows the stack: `ok: false`, `internal-error`;
+`report.normalizeFailed` says why); `omr/helper-output.js` is an optional `require` in `omr-service.js` (the service starts and answers as before without it); rich scenarios, the invariant test and the mutants
+`MUT-CURSOR-COUNTS-CHORD` (the reviewer's), `-IGNORES-FORWARD`, `-IGNORES-BACKUP`, `MUT-FORWARD-UNSCALED`, `MUT-TIE-LOST`, `MUT-GRACE-LOST`, `MUT-NORMALIZE-THROWS`; the idempotence test compared a list with itself and now
+asserts that the second pass reports no change.
 
 **Decisions of the Lead's kind taken here (reversible).** Groups and per-bar sources instead of pairwise merging (above); a pair needs a G clef on the upper part and bar counts within one; a lone one-staff group may be part of a merge
 but a one-staff part that shares bars with another group makes the movement "several parts"; `OVERLAP_MAX` 0.25; the divisions repair reads the value most notes agree on (at least half of them; dotted notes, tuplets, grace notes and notes

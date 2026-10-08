@@ -4,7 +4,7 @@
    line broken and asserts that each broken copy gives a different answer to at least one of them. */
 'use strict';
 const L = require('./lib.js');
-const { note, rest, back, bar, part, doc, read, sigs } = L;
+const { note, rest, back, fwd, bar, part, doc, read, sigs } = L;
 
 const NAMES = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 const P = deg => NAMES[((deg % 7) + 7) % 7] + Math.floor(deg / 7);
@@ -22,6 +22,25 @@ const restGrand = extra => Object.assign({ items: [rest(4, { measure: true, noTy
 const first = (extra) => Object.assign({ div: 2, key: 0, time: [4, 4] }, extra);
 const grandFirst = extra => first(Object.assign({ staves: 2, clefs: ['G', 'F'] }, extra));
 
+/* ---- RICH bars: a chord, a grace note, a tie and a <forward>, the things a bar of the engine's has that a plain one does not ----
+   Right hand, voice 1: a chord of two quarters at 0, a grace note before the tied quarter at 1 (tied into the quarter at 2), a quarter at 3;
+   voice 2: a <forward> of a quarter, then a half note from 1 to 3 (so the right hand ends at 3 quarters, not 4: the <backup> to the left hand must be 3).
+   Left hand, voice 5: a chord of two halves at 0, a quarter at 2 tied into the quarter at 3. */
+const richRh = (i, o) => {
+  const k = (i % 5) + (o || 0);
+  return [note(P(35 + k), 1, { s: 1, v: 1 }), note(P(37 + k), 1, { chord: true, s: 1, v: 1 }),
+    note(P(38 + k), 0, { grace: true, s: 1, v: 1 }), note(P(36 + k), 1, { s: 1, v: 1, tie: 'start' }), note(P(36 + k), 1, { s: 1, v: 1, tie: 'stop' }), note(P(34 + k), 1, { s: 1, v: 1 }),
+    back(4), fwd(1), note(P(39 + k), 2, { s: 1, v: 2 })];
+};
+const richLh = i => {
+  const k = i % 4;
+  return [note(P(21 + k), 2, { s: 2, v: 5 }), note(P(25 + k), 2, { chord: true, s: 2, v: 5 }), note(P(26 + k), 1, { s: 2, v: 5, tie: 'start' }), note(P(26 + k), 1, { s: 2, v: 5, tie: 'stop' })];
+};
+const unstaff = n => (n.kind === 'note' ? Object.assign({}, n, { s: undefined, v: n.v >= 5 ? n.v - 4 : n.v }) : n);
+const richGrandBar = (i, extra) => Object.assign({ items: richRh(i).concat([back(3)], richLh(i)), staved: true }, extra);
+const richRhBar = (i, extra) => Object.assign({ items: richRh(i).map(unstaff) }, extra);
+const richLhBar = (i, extra) => Object.assign({ items: richLh(i).map(unstaff) }, extra);
+
 /* the one part of n bars [from, to) as a grand staff: the truth every scenario compares with */
 function truthDoc(from, to, o) {
   const bars = [];
@@ -35,6 +54,12 @@ function summary(xml) {
   return { parts: o.parts.length, staves: p.staves, bars: p.bars.length, sigs: sigs(p), numbers: p.bars.map(b => b.number).join(',') };
 }
 const truth = (from, to) => summary(truthDoc(from, to));
+function truthDocRich(from, to) {
+  const bars = [];
+  for (let i = from; i < to; i++) bars.push(Object.assign({}, richGrandBar(i), i === from ? grandFirst() : {}));
+  return doc([part('P1', bars, { div: 2, staved: true })], { names: ['Piano'] });
+}
+const truthRich = (from, to) => summary(truthDocRich(from, to));
 
 /* one bar series of an engine page: the part's bars from i0 to i1 (exclusive) */
 const series = (i0, i1, fn, o) => { const out = []; for (let i = i0; i < i1; i++) out.push(Object.assign({}, fn(i), i === i0 && o ? o : {})); return out; };
@@ -156,6 +181,36 @@ S.changes = {
   expect: () => ({ keyBars: '1:2,5:-1', timeBars: '1:4/4,5:3/4' })
 };
 
+/* the same four paths with rich bars (chords, grace notes, ties, <forward>): the pair, one piano read system by system, the PDF's systems, and pages of other divisions */
+S.pairRich = {
+  why: 'a pair with chords, grace notes, ties and a <forward>: the lower staff starts with the bar, nothing is lost',
+  pages: () => [doc([part('P1', series(0, 4, richRhBar, first({ clefs: ['G'] })), { div: 2 }), part('P2', series(0, 4, richLhBar, first({ clefs: ['F'] })), { div: 2 })])],
+  expect: () => truthRich(0, 4)
+};
+S.systemsRich = {
+  why: 'one piano read system by system, with chords, grace notes, ties and a <forward>',
+  pages: () => [doc([
+    part('P1', [richGrandBar(0, grandFirst()), richGrandBar(1), restGrand(), restGrand()], { div: 2, staved: true }),
+    part('P2', [restBar(first({ clefs: ['G'] })), restBar(), richRhBar(2), richRhBar(3)], { div: 2 }),
+    part('P3', [restBar(first({ clefs: ['F'] })), restBar(), richLhBar(2), richLhBar(3)], { div: 2 })])],
+  expect: () => truthRich(0, 4)
+};
+S.foldRich = {
+  why: 'the systems of the PDF folded, with chords, grace notes, ties and a <forward>',
+  pages: () => [doc([part('P1', [
+    richRhBar(0, first({ clefs: ['G'], print: true })), richRhBar(1),
+    richLhBar(0, first({ clefs: ['F'], newSystem: true, div: undefined })), richLhBar(1),
+    richRhBar(2, { clefs: ['G'], time: [4, 4], newSystem: true }), richRhBar(3),
+    richLhBar(2, { clefs: ['F'], time: [4, 4], newSystem: true }), richLhBar(3)], { div: 2 })])],
+  expect: () => truthRich(0, 4)
+};
+S.pagesRich = {
+  why: 'pages of other divisions with a <forward>, a chord, a grace note and a tie: every duration and every <forward> is scaled',
+  pages: () => [doc([part('P1', series(0, 2, richGrandBar, grandFirst()), { div: 2, staved: true })]),
+    doc([part('P1', series(2, 4, richGrandBar, grandFirst({ div: 4 })), { div: 4, staved: true })])],
+  expect: () => truthRich(0, 4)
+};
+
 /* a bar-count check against what the page shows */
 S.barCount = {
   why: 'a page whose bar count differs from what its layout shows is reported and its bars flagged',
@@ -191,4 +246,4 @@ function probe(N, name) {
   }
 }
 
-module.exports = { S, probe, summary, truth, truthDoc, P, rhOf, lhOf, rhBar, lhBar, grandBar, restBar, restGrand, first, grandFirst, series };
+module.exports = { S, probe, summary, truth, truthDoc, truthRich, truthDocRich, P, rhOf, lhOf, rhBar, lhBar, grandBar, restBar, restGrand, richRh, richLh, richRhBar, richLhBar, richGrandBar, first, grandFirst, series };

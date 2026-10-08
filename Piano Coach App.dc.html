@@ -7571,11 +7571,17 @@ const Import = {
 
   /* G12-1: the recognised pages as ONE document. 'legacy' is mergeMusicXml of the helper's `musicxml` (the newest file of each page). 'v2' (omr/normalize.js) joins every movement of
      every page, repairs divisions, makes the grand staff the engine split, and sets omr.normalize (its report); omr.musicxml then holds, per page, a document with that page's bar
-     count, which is all PdfLayer.apply reads from it. A normaliser that could not be fetched or read nothing leaves the import what it was. */
+     count, which is all PdfLayer.apply reads from it. A normaliser that could not be fetched, threw, or read nothing leaves the import what legacy makes, and says why in
+     omr.normalizeFailed (the import's report.normalizeFailed). */
   async omrXml(omr) {
     if (OMR_MODE !== 'v2') return Import.mergeMusicXml(omr.musicxml);
-    const N = await loadOmrNormalize();
-    const r = N ? N.normalize(N.pagesFromHelper(omr)) : null;
+    let r = null;
+    try {
+      const N = await loadOmrNormalize();
+      r = N ? N.normalize(N.pagesFromHelper(omr)) : null;
+      if (!r) omr.normalizeFailed = 'not-loaded';
+      else if (!r.ok) omr.normalizeFailed = String(r.error || 'not-ok') + (r.detail ? ': ' + r.detail : '');
+    } catch (e) { r = null; omr.normalizeFailed = 'threw: ' + String(e && e.message || e).slice(0, 160); }
     if (!r || !r.ok) return Import.mergeMusicXml(omr.musicxml);
     omr.normalize = r.report;
     omr.musicxml = r.pages.map(p => (p.ok ? p.counting : null));
@@ -8931,6 +8937,7 @@ const Import = {
       report.advice = tx('Compare every measure with the original before practising.');
     }
     if (omr && omr.normalize) report.normalize = omr.normalize;   /* G12-1: what omr/normalize.js changed, for the review (and G12-3's flags) */
+    else if (omr && omr.normalizeFailed) report.normalizeFailed = omr.normalizeFailed;   /* PPP.omr = 'v2' but the import is the legacy one: why */
     source.status = report.level === 'poor' ? 'low-confidence' : 'recognised';
     score.source = source;
     /* page images stay in memory for the review screen; they are never persisted */

@@ -30,15 +30,20 @@ function pitchXml(p) {
 function noteXml(n, div, staved) {
   const dur = Math.round(n.q * div);
   let s = '<note default-x="10">';
+  if (n.grace) s += '<grace/>';
   if (n.chord) s += '<chord/>';
   s += n.p ? pitchXml(n.p) : '<rest' + (n.measure ? ' measure="yes"' : '') + '/>';
-  s += '<duration>' + dur + '</duration>';
+  if (!n.grace) s += '<duration>' + dur + '</duration>';
+  const tieStop = n.tie === 'stop' || n.tie === 'both', tieStart = n.tie === 'start' || n.tie === 'both';
+  if (tieStop) s += '<tie type="stop"/>';
+  if (tieStart) s += '<tie type="start"/>';
   s += '<voice>' + (n.v || 1) + '</voice>';
-  if (!n.noType) s += '<type>' + (n.type || TYPE[n.q] || 'quarter') + '</type>';
+  if (!n.noType) s += '<type>' + (n.type || (n.grace ? 'eighth' : TYPE[n.q]) || 'quarter') + '</type>';
   if (n.dot) s += '<dot/>';
   if (n.tm) s += '<time-modification><actual-notes>' + n.tm[0] + '</actual-notes><normal-notes>' + n.tm[1] + '</normal-notes></time-modification>';
   if (n.p && !n.chord) s += '<stem default-y="10">up</stem>';
   if (n.s || staved) s += '<staff>' + (n.s || 1) + '</staff>';
+  if (tieStop || tieStart) s += '<notations>' + (tieStop ? '<tied type="stop"/>' : '') + (tieStart ? '<tied type="start"/>' : '') + '</notations>';
   return s + '</note>';
 }
 function clefXml(sign, line, number) {
@@ -101,6 +106,21 @@ function pitchOf(el) {
   return k('step').text.trim() + (alter > 0 ? '#'.repeat(alter) : alter < 0 ? 'b'.repeat(-alter) : '') + k('octave').text.trim();
 }
 /* {parts: [{staves, divisions: [per bar], bars: [{number, len, notes: [{p, on, dur, staff, voice, rest}], clefs, key, time}]}]} (quarters) */
+const TYPEQ = { whole: 4, half: 2, quarter: 1, eighth: 0.5, '16th': 0.25, '32nd': 0.125 };
+/* divisions per quarter of a part written with <divisions>0</divisions>: from the first note that has a type, no dot and a duration */
+function inferDivisions(pe) {
+  let found = null;
+  const walk = e => {
+    if (found !== null) return;
+    if (e.name === 'note' && !e.kids.some(k => k.name === 'grace' || k.name === 'dot' || k.name === 'time-modification')) {
+      const ty = e.kids.find(k => k.name === 'type'), du = e.kids.find(k => k.name === 'duration');
+      if (ty && du && TYPEQ[ty.text.trim()] && parseFloat(du.text) > 0) { found = parseFloat(du.text) / TYPEQ[ty.text.trim()]; return; }
+    }
+    e.kids.forEach(walk);
+  };
+  walk(pe);
+  return found === null ? 1 : found;
+}
 function read(xml) {
   const root = XML.parse(xml).root;
   const kid = (el, n) => el.kids.find(x => x.name === n);
@@ -116,7 +136,7 @@ function read(xml) {
         if (e.name === 'attributes') {
           B.hasAttributes = true;
           e.kids.forEach(c => {
-            if (c.name === 'divisions') { div = parseFloat(c.text); P.divisionsSeen.push(div); }
+            if (c.name === 'divisions') { div = parseFloat(c.text); if (div === 0) div = inferDivisions(pe); P.divisionsSeen.push(div); }
             if (c.name === 'staves') P.staves = Math.max(P.staves, parseInt(c.text, 10));
             if (c.name === 'key') { key = parseInt(kid(c, 'fifths').text, 10); B.keyChange = key; }
             if (c.name === 'time') { time = kid(c, 'beats').text + '/' + kid(c, 'beat-type').text; B.timeChange = time; }
@@ -126,14 +146,15 @@ function read(xml) {
         else if (e.name === 'forward') { content = true; cur += parseFloat(kid(e, 'duration').text) / div; }
         else if (e.name === 'note') {
           content = true;
-          if (kid(e, 'grace')) return;
-          const dur = parseFloat(kid(e, 'duration').text) / div;
+          const grace = !!kid(e, 'grace');
+          const dur = grace ? 0 : parseFloat(kid(e, 'duration').text) / div;
+          const tie = e.kids.filter(k => k.name === 'tie').map(k => k.attrs.type).sort().join('+');
           const chord = !!kid(e, 'chord');
           const isRest = !!kid(e, 'rest');
           const staff = kid(e, 'staff') ? parseInt(kid(e, 'staff').text, 10) : 1;
           P.staves = Math.max(P.staves, staff);
-          B.notes.push({ p: isRest ? null : pitchOf(kid(e, 'pitch')), on: chord ? last : cur, dur: dur, staff: staff, voice: kid(e, 'voice') ? parseInt(kid(e, 'voice').text, 10) : 1, rest: isRest, chord: chord });
-          if (!chord) { last = cur; cur += dur; }
+          B.notes.push({ p: isRest ? null : pitchOf(kid(e, 'pitch')), on: chord ? last : cur, dur: dur, staff: staff, voice: kid(e, 'voice') ? parseInt(kid(e, 'voice').text, 10) : 1, rest: isRest, chord: chord, grace: grace, tie: tie });
+          if (!chord && !grace) { last = cur; cur += dur; }
         }
       });
       B.key = key; B.time = time; B.clefs = Object.assign({}, clefs); B.div = div;
@@ -144,7 +165,13 @@ function read(xml) {
   return out;
 }
 /* the sounding content of a bar as a comparable string: sorted "staff on dur pitch", rests left out */
-const sig = (b, o) => b.notes.filter(n => !n.rest).map(n => (o && o.noStaff ? '' : n.staff + ' ') + n.on + ' ' + n.dur + ' ' + n.p).sort().join(' | ');
+const sig = (b, o) => b.notes.filter(n => !n.rest).map(n => (o && o.noStaff ? '' : n.staff + ' ') + n.on + ' ' + n.dur + ' ' + n.p + (n.chord ? ' chord' : '') + (n.grace ? ' grace' : '') + (n.tie ? ' tie:' + n.tie : '')).sort().join(' | ');
+/* every sounding note of the documents as (pitch, onset in its bar, duration, tie, chord, grace) in quarters, whatever its bar, staff, part or voice: what normalisation may move but never change */
+const multiset = texts => {
+  const out = [];
+  texts.forEach(t => read(t).parts.forEach(p => p.bars.forEach(b => b.notes.forEach(n => { if (!n.rest) out.push([n.p, n.on, n.dur, n.tie, n.chord ? 'chord' : '', n.grace ? 'grace' : ''].join('|')); }))));
+  return out.sort();
+};
 const sigs = (p, o) => p.bars.map(b => sig(b, o));
 const pitched = r => r.parts.reduce((s, p) => s + p.bars.reduce((t, b) => t + b.notes.filter(n => !n.rest).length, 0), 0);
 
@@ -154,4 +181,4 @@ function run(pages, opts) {
   return Object.assign({ r: r }, r.ok ? { out: read(r.xml) } : {});
 }
 
-module.exports = { REPO, N, XML, note, rest, back, fwd, raw, bar, part, doc, read, sig, sigs, pitched, run, pitchXml, clefXml };
+module.exports = { REPO, N, XML, note, rest, back, fwd, raw, bar, part, doc, read, sig, sigs, multiset, pitched, run, pitchXml, clefXml };

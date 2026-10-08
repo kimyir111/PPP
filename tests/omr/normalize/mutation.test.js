@@ -54,6 +54,10 @@ const widthKept = Nn => {
   const r = Nn.normalize([doc([part('P1', [{ items: [note('G4', 4, { type: 'whole' })], div: 1, time: [4, 4], clefs: ['G'], width: 90, number: 0 }])])]);
   return read(r.xml).parts[0].bars[0].attrs.width;
 };
+const deepAnswer = Nn => {
+  const bomb = doc([part('P1', [SC.grandBar(0, SC.grandFirst({ lead: '<foo>'.repeat(20000) + '</foo>'.repeat(20000) })), SC.grandBar(1)], { div: 2, staved: true })]);
+  try { const r = Nn.normalize([bomb]); return r.ok + '/' + r.error; } catch (e) { return 'threw'; }
+};
 const dropped = Nn => {
   const grand = part('P1', [SC.grandBar(0, SC.grandFirst()), SC.grandBar(1), SC.grandBar(2), SC.grandBar(3)], { div: 2, staved: true });
   const junk = part('P2', [SC.restBar(SC.first({ clefs: ['G'] })), SC.restBar(), SC.restBar(), { items: [note('C6', 4, { type: 'whole' })] }], { div: 2 });
@@ -97,6 +101,20 @@ const MUTATIONS = [
     edits: [['const n = g.pitchedAt(b); if (n > best)', 'const n = 1; if (n > best)']], scenario: 'systemsReversed' },
   { id: 'MUT-GHOST-KEPT', why: 'a part of rests is kept as a group: the bar nobody plays is taken from it, with its own (wrong) time signature',
     edits: [['const real = groups.filter(g => g.pitched > 0);', 'const real = groups;']], scenario: 'ghost' },
+  { id: 'MUT-CURSOR-COUNTS-CHORD', why: 'a chord note counts as a note that takes time when the <backup> to the lower staff is worked out: the lower staff starts a quarter early (the reviewer mutant)',
+    edits: [["if (!kid(e, 'chord') && !kid(e, 'grace')) cur += num(textOf(e, 'duration')) || 0;", "if (!kid(e, 'grace')) cur += num(textOf(e, 'duration')) || 0;"]], scenario: 'pairRich', also: ['systemsRich', 'foldRich'] },
+  { id: 'MUT-CURSOR-IGNORES-FORWARD', why: 'a <forward> does not move the end of the upper staff when the <backup> is worked out: the lower staff starts late',
+    edits: [["else if (e.name === 'forward') cur += num(textOf(e, 'duration')) || 0;", ""]], scenario: 'pairRich', also: ['systemsRich', 'foldRich'] },
+  { id: 'MUT-CURSOR-IGNORES-BACKUP', why: 'a <backup> in the upper staff (its second voice) is not subtracted: the lower staff starts after the bar',
+    edits: [["else if (e.name === 'backup') cur -= num(textOf(e, 'duration')) || 0;", ""]], scenario: 'pairRich', also: ['systemsRich', 'foldRich'] },
+  { id: 'MUT-FORWARD-UNSCALED', why: 'a <forward> is not scaled to the divisions of the document with the notes and backups: the second voice starts at the wrong beat',
+    edits: [['        content = true;\n        scaleDur(c);', "        content = true;\n        if (n !== 'forward') scaleDur(c);"]], scenario: 'pagesRich' },
+  { id: 'MUT-TIE-LOST', why: 'the <tie> elements of a note are dropped when it is copied: a tied pair is struck twice',
+    edits: [["kids: el.kids.map(clone), text: el.text }; }", "kids: el.kids.filter(k => k.name !== 'tie').map(clone), text: el.text }; }"]], scenario: 'pairRich', also: ['systemsRich', 'foldRich', 'pagesRich'] },
+  { id: 'MUT-GRACE-LOST', why: 'a grace note is dropped when a bar is copied',
+    edits: [["      const c = clone(e);\n      if (n === 'note' || n === 'backup' || n === 'forward') {", "      if (n === 'note' && kid(e, 'grace')) return;\n      const c = clone(e);\n      if (n === 'note' || n === 'backup' || n === 'forward') {"]], scenario: 'systemsRich', also: ['pairRich', 'foldRich', 'pagesRich'] },
+  { id: 'MUT-NORMALIZE-THROWS', why: 'normalize() lets an exception out (a document nested 20,000 deep overflows the stack): the page would have to catch it',
+    edits: [["try { return normalizePages(pagesIn, opts); } catch (e) {", "try { return normalizePages(pagesIn, opts); } catch (e) { throw e;"]], probe: deepAnswer, clean: 'false/internal-error' },
   { id: 'MUT-TRIO-MERGED', why: 'parts that play in the same bars are merged as if they were one piano: the smaller group\'s notes are dropped',
     edits: [['if (shared > OVERLAP_MAX * active) {', 'if (false) {']], scenario: 'trio' },
   { id: 'MUT-OVERLAP-UNCOUNTED', why: 'the notes dropped where two groups share a bar are not counted',
@@ -128,7 +146,7 @@ test('MUT-NOOP: the control. A comment is added and nothing moves', () => {
 
 test('the real module answers every scenario and probe the way the mutants are measured against', () => {
   for (const m of MUTATIONS) {
-    if (m.scenario) assert.deepEqual(probe(L.N, m.scenario), S[m.scenario].expect(), m.id);
+    if (m.scenario) [m.scenario].concat(m.also || []).forEach(sc => assert.deepEqual(probe(L.N, sc), S[sc].expect(), m.id + ' ' + sc));
     else assert.deepEqual(m.probe(L.N), m.clean, m.id);
   }
 });
@@ -136,14 +154,17 @@ test('the real module answers every scenario and probe the way the mutants are m
 for (const m of MUTATIONS) {
   test(m.id + ': ' + m.why, () => {
     const M = mutant(m.edits);
-    let answer;
-    try { answer = m.scenario ? probe(M, m.scenario) : m.probe(M); } catch (e) { answer = 'threw: ' + e.message; }
-    const clean = m.scenario ? S[m.scenario].expect() : m.clean;
-    assert.notDeepEqual(answer, clean, 'the mutant gives the real answer: the suite would not notice');
+    const seen = [m.scenario].concat(m.also || []).filter(Boolean);
+    const answers = (seen.length ? seen : [null]).map(sc => {
+      try { return sc ? [probe(M, sc), S[sc].expect()] : [m.probe(M), m.clean]; } catch (e) { return ['threw: ' + e.message, 'a normal answer']; }
+    });
+    /* the named scenario must see it (that is what the mutant is for); the others are named only if they see it too */
+    assert.notDeepEqual(answers[0][0], answers[0][1], 'the mutant gives the real answer: the suite would not notice');
+    answers.slice(1).forEach((a, i) => assert.notDeepEqual(a[0], a[1], 'the scenario ' + seen[i + 1] + ' does not see this mutant'));
   });
 }
 
 test('every scenario is read by at least one mutation: no scenario is dead weight', () => {
-  const used = new Set(MUTATIONS.map(m => m.scenario).filter(Boolean));
+  const used = new Set([].concat.apply([], MUTATIONS.map(m => [m.scenario].concat(m.also || []))).filter(Boolean));
   assert.deepEqual(Object.keys(S).filter(n => !used.has(n)), []);
 });

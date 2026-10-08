@@ -429,8 +429,18 @@
     return finish(cols, len, why);
   }
 
-  /* ---- joining the movements, then writing the document ---- */
+  /* normalize never throws: a document that makes the module fail (a stack overflow on absurdly deep nesting; a bug) is an answer, `ok: false` with
+     error 'internal-error', and the caller falls back on what it did before */
   function normalize(pagesIn, opts) {
+    try { return normalizePages(pagesIn, opts); } catch (e) {
+      const detail = String(e && e.message || e).slice(0, 160);
+      return { ok: false, error: 'internal-error', detail: detail, xml: null, pages: [],
+        report: { version: VERSION, bars: 0, structure: [], staves: [], counts: {}, changes: [{ rule: 'internal-error', error: detail }], flags: {}, notes: [{ kind: 'internal-error', n: 1 }] } };
+    }
+  }
+
+  /* ---- joining the movements, then writing the document ---- */
+  function normalizePages(pagesIn, opts) {
     opts = opts || {};
     const ctx = { changes: [], counts: { pages: 0, pagesRead: 0, movements: 0, movementsJoined: 0, divisionsRepaired: 0, divisionsUnknown: 0,
       ghostParts: 0, partsMerged: 0, partsKept: 0, systemsFolded: 0, droppedNotes: 0, overlapBars: 0, unreadable: 0, barCountMismatch: 0 } };
