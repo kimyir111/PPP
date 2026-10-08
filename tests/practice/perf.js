@@ -9,7 +9,8 @@
               median, p95, max over the presses with a time of their own), the long tasks of 8 s of play, the long tasks of entering Practice
      counters strikes, expected notes, presses, paint samples (exact: a probe that measured nothing must not pass)
    A machine's speed is taken out first: a fixed CPU workload (calib) is timed in the same page under the same throttle, and every time is
-   compared as `time x calib(baseline) / calib(now)`. A metric passes when that is within 20 % of the baseline (plus a small floor, because
+   compared as `time x min(1, calib(baseline) / calib(now))` (a slower machine is given its due; a faster one is not charged for it: a frame
+   is bound by the compositor as much as by the CPU). A metric passes when that is within 20 % of the baseline (plus a small floor, because
    performance.now() has a resolution of 0.1 ms: a p95 of 0.1 ms is one tick; the floor is 4x as large under the 4x throttle). Slower than that is RED; faster than 20 % under the baseline is
    reported, not failed (refresh the baseline when it is a real gain). Noise only adds time, so a metric counts at its BEST attempt, in the
    baseline (3 probes recorded, 5 for the runner) and in `check` (up to 3 probes, it stops at the first clean one). The baseline is kept per
@@ -357,7 +358,7 @@ function compareRuns(base, runs) {
       return;
     }
     const calibBase = base.calib['r' + rate];
-    const norms = usable(rate).filter(x => x.v[k] != null).map(x => x.v[k] * calibBase / x.calib['r' + rate]);
+    const norms = usable(rate).filter(x => x.v[k] != null).map(x => x.v[k] * Math.min(1, calibBase / x.calib['r' + rate]));   // credit for a slower machine, none (no penalty) for a faster one
     const best = Math.min.apply(null, norms);
     /* the floor is for a 1x machine; under the 4x throttle every task, and the jitter of the throttle's duty cycle, is 4x as long */
     const floor = spec.floor * (rate === 4 ? 4 : 1);
