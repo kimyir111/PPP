@@ -4,7 +4,7 @@
 every changed path is not the app's page, a practice module, a practice suite or what they run on; anything it cannot trust is `run` and
 `harness` (the mutation check) too. (2) The workflow's practice jobs are checks of their own: not jobs of the gate (the gate neither
 waits for them nor counts them), they wait for practice-plan, run on a pull request only when it said so and always on a schedule or a
-manual run, and between them run the eleven suites, the recorder, the mutation check and the perf probe. The workflow is read as text
+manual run, and between them run the eleven suites, the recorder, the mutation check, the perf probe and the event-parity harness (G11a-2) with its own mutation check. The workflow is read as text
 (PyYAML is not installed in CI)."""
 
 import contextlib
@@ -48,13 +48,15 @@ class PathClasses(unittest.TestCase):
     def test_the_probes_and_the_workflow_also_run_the_mutation_check(self):
         for p in ("tests/practice/perf.js", "tests/practice/baselines/legacy.json", "tests/practice/baselines/perf.json", "tests/practice/plan.py",
                   "tests/practice/record.js", "tests/practice/canon.js", "tests/practice/lib.js", "tests/practice/mutants.js", "tests/practice/perf-selftest.js",
+                  "tests/practice/parity.js", "tests/practice/parity-core.js", "tests/practice/parity-mutants.js", "tests/practice/baselines/parity.json",
                   "tests/practice/run-suites.js", ".github/workflows/bench.yml",
                   "tests/engrave/tools/with-port.js", "tests/serve-free.js", "tests/boot.js"):
             self.assertEqual(self.cls(p), (True, True), p)
 
     def test_the_page_a_suite_and_the_node_tests_of_practice_do_not_run_the_mutation_check(self):
         for p in ("Piano Coach App.dc.html", "tests/follow.test.js", "practice/plan.js", "practice/variant.js", "package.json",
-                  "tests/practice/plan.test.js", "tests/practice/helpers.js", "tests/practice/fixtures/pedals.musicxml"):
+                  "tests/practice/plan.test.js", "tests/practice/helpers.js", "tests/practice/fixtures/pedals.musicxml",
+                  "tests/practice/parity-core.test.js", "tests/practice/fixtures/parity/dangling-ties.musicxml"):
             self.assertEqual(self.cls(p), (True, False), p)
 
     def test_everything_else_is_not_a_reason(self):
@@ -184,8 +186,8 @@ class PracticeJobs(unittest.TestCase):
         self.assertTrue(m, f"{job} has no needs")
         return [x.strip() for x in m.group(1).strip("[]").split(",")]
 
-    def test_the_four_jobs_are_there_and_none_is_a_gate_job(self):
-        self.assertEqual(sorted(self.practice), ["practice-legacy", "practice-perf", "practice-plan", "practice-suites"])
+    def test_the_six_jobs_are_there_and_none_is_a_gate_job(self):
+        self.assertEqual(sorted(self.practice), ["practice-legacy", "practice-parity", "practice-parity-mutants", "practice-perf", "practice-plan", "practice-suites"])
         for name in self.practice:
             self.assertFalse(GATE_JOB.match(name), name)
             self.assertNotIn(name, self.needs_of("gate"))
@@ -202,7 +204,7 @@ class PracticeJobs(unittest.TestCase):
         self.assertIn("fetch-depth: 2", body)
 
     def test_the_jobs_wait_for_the_plan_and_run_on_a_pull_request_only_when_it_says_so(self):
-        for name in ("practice-suites", "practice-legacy", "practice-perf"):
+        for name in ("practice-suites", "practice-legacy", "practice-perf", "practice-parity", "practice-parity-mutants"):
             body = self.jobs[name]
             self.assertEqual(self.needs_of(name), ["practice-plan"], name)
             m = re.search(r"^    if: (.*)$", body, re.M)
@@ -211,8 +213,20 @@ class PracticeJobs(unittest.TestCase):
             self.assertIn("!cancelled()", cond, name)                                  # a skipped plan (schedule, manual run) must not skip them
             self.assertIn("github.event_name == 'schedule'", cond, name)
             self.assertIn("github.event_name == 'workflow_dispatch'", cond, name)
-            self.assertIn("github.event_name == 'pull_request' && needs.practice-plan.outputs.run == 'true'", cond, name)
+            # the mutants of the parity check run on a pull request only for the probes (like the recorder's mutation check), the rest whenever the plan says run
+            want = "harness" if name == "practice-parity-mutants" else "run"
+            self.assertIn("github.event_name == 'pull_request' && needs.practice-plan.outputs.%s == 'true'" % want, cond, name)
             self.assertNotIn("'push'", cond, name)
+
+    def test_the_parity_check_takes_a_sample_on_a_pull_request_and_the_corpus_otherwise(self):
+        body = self.jobs["practice-parity"]
+        pr, other = "if: ${{ github.event_name == 'pull_request' }}", "if: ${{ github.event_name != 'pull_request' }}"
+        self.assertIn("- run: node tests/practice/parity.js check --sample 5\n        " + pr, body)
+        self.assertIn("- run: node tests/practice/parity.js check\n        " + other, body)
+        mutants = self.jobs["practice-parity-mutants"]
+        self.assertIn("shard: [1, 2, 3]", mutants)
+        self.assertIn("- run: node tests/practice/parity-mutants.js --core --shard ${{ matrix.shard }}/3\n        " + pr, mutants)
+        self.assertIn("- run: node tests/practice/parity-mutants.js --shard ${{ matrix.shard }}/3\n        " + other, mutants)
 
     def test_the_mutation_check_runs_on_a_pull_request_only_for_the_probes(self):
         body = self.jobs["practice-legacy"]
@@ -223,13 +237,15 @@ class PracticeJobs(unittest.TestCase):
     def test_each_job_installs_before_it_runs_and_they_run_the_probes(self):
         want = {"practice-suites": ["npm ci", "node tests/practice/run-suites.js"],
                 "practice-legacy": ["npm ci", "node tests/practice/record.js check", "node tests/practice/mutants.js"],
-                "practice-perf": ["npm ci", "node tests/practice/perf-selftest.js", "node tests/practice/perf.js check", "node tests/practice/perf.js record --attempts 5"]}
+                "practice-perf": ["npm ci", "node tests/practice/perf-selftest.js", "node tests/practice/perf.js check", "node tests/practice/perf.js record --attempts 5"],
+                "practice-parity": ["npm ci", "node tests/practice/parity.js check --sample 5", "node tests/practice/parity.js check"],
+                "practice-parity-mutants": ["npm ci", "node tests/practice/parity-mutants.js --core --shard ${{ matrix.shard }}/3", "node tests/practice/parity-mutants.js --shard ${{ matrix.shard }}/3"]}
         for name, cmds in want.items():
             got = [c for c in commands_of(self.jobs[name])]
             for c in cmds:
                 self.assertIn(c, got, name)
             self.assertEqual(got[0], "npm ci", name)
-        for body in (self.jobs["practice-suites"], self.jobs["practice-legacy"], self.jobs["practice-perf"]):
+        for body in (self.jobs["practice-suites"], self.jobs["practice-legacy"], self.jobs["practice-perf"], self.jobs["practice-parity"], self.jobs["practice-parity-mutants"]):
             self.assertIn("actions/setup-node@v4", body)
 
     def test_the_perf_job_can_record_and_otherwise_checks(self):
@@ -265,7 +281,10 @@ class PracticeJobs(unittest.TestCase):
         self.assertEqual(self.scripts["test:practice-perf"], "node tests/practice/perf.js check")
         self.assertEqual(self.scripts["test:practice-perf-selftest"], "node tests/practice/perf-selftest.js")
         self.assertEqual(self.scripts["test:practice-mutants"], "node tests/practice/mutants.js")
+        self.assertEqual(self.scripts["test:practice-parity"], "node tests/practice/parity.js check")
+        self.assertEqual(self.scripts["test:practice-parity-mutants"], "node tests/practice/parity-mutants.js")
         self.assertIn("test:practice-suites", self.scripts["test:practice-browser"])
+        self.assertIn("test:practice-parity", self.scripts["test:practice-browser"])
         # main's own Node unit tests of practice/ (G11a-1) keep the name test:practice
         self.assertEqual(self.scripts["test:practice"], 'node --test "tests/practice/**/*.test.js"')
 

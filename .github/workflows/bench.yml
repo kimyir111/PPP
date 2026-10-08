@@ -34,12 +34,14 @@
 #    (a step that skips quietly without history would hide a check; `npm run test:home-worker-page` and jobs-pg do, and neither is in the gate).
 #
 # THE PRACTICE JOBS (G11a-0, docs/GOALS/G11_ADAPTIVE_PRACTICE.md section 5 G11-D12) are NOT part of the gate: practice-plan, practice-suites,
-# practice-legacy and practice-perf are checks of their own, so the gate's jobs, steps and verdict are as they were (test_ci_plan.py reads only
-# plan, light, shard-* and merge-*). On a pull request practice-plan (tests/practice/plan.py, the base's copy, like the gate's) decides whether
+# practice-legacy, practice-perf, practice-parity and practice-parity-mutants are checks of their own, so the gate's jobs, steps and verdict are as they were
+# (test_ci_plan.py reads only plan, light, shard-* and merge-*). On a pull request practice-plan (tests/practice/plan.py, the base's copy, like the gate's) decides whether
 # the change touches the app's page, practice/ or the practice tests; if so the three jobs run: the eleven practice and playback browser suites
 # on a free port (tests/practice/run-suites.js), the legacy recorder's baseline (what the legacy player, matcher and follow gates do with every
 # catalogue piece) and the mutation check that proves the baseline notices a broken matcher, and the perf probe (matcher, plan building, press
-# to paint, long tasks) against its committed baseline. The same three jobs run every night and on a manual run. A manual run can be
+# to paint, long tasks) against its committed baseline. The same three jobs run every night and on a manual run. G11a-2 adds two more: practice-parity (the
+# event-parity harness tests/practice/parity.js: practice/plan.js against the legacy player, every difference booked to its cause; the whole corpus in about a minute, a
+# sample of it on a pull request) and practice-parity-mutants (the planted defects of practice/plan.js the check must notice, in three shards). A manual run can be
 # narrowed to them with `-f only=practice` (the heavy nightly jobs below are then skipped; the gate still runs), and `-f perf_record=true`
 # makes practice-perf measure a new baseline for this kind of machine and upload it instead of checking.
 name: bench
@@ -775,6 +777,56 @@ jobs:
           name: practice-perf
           path: tests/practice/baselines/perf.json
           overwrite: true
+
+  # practice-parity: the event-parity harness (tests/practice/parity.js, docs/GOALS/G11 section 6.2). The graph plan practice/plan.js (added to the served page by addScriptTag)
+  # against the app's own PianoScore.build, matcher, follow gates and scheduler, in a real page on a free port: compat mode must be the legacy player to the last bit on the
+  # catalogue, the 69 committed fixtures and the hand-written ones (whole piece and 20 four-bar windows, three hands, two tempi, six scripted performances), the real scheduler on
+  # 12 pieces must queue the same notes, pedal events and clicks, and with the fix options on every difference must be booked to JUMP, GRACE, FOLLOW_REPEAT or FOLLOW_TIE
+  # (anything else is UNEXPLAINED and fails). Counts per cause are compared with tests/practice/baselines/parity.json. The whole corpus takes about a minute (418 files, 51 s on
+  # a developer's laptop); a pull request runs every 5th catalogue file, every fixture and every file the baseline gives a cause (about 20 s) and the nightly and a manual run the lot.
+  practice-parity:
+    needs: practice-plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.run == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci
+      - run: node tests/practice/parity.js check --sample 5
+        if: ${{ github.event_name == 'pull_request' }}
+      - run: node tests/practice/parity.js check
+        if: ${{ github.event_name != 'pull_request' }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: practice-parity
+          path: tests/practice/out/parity.json
+          overwrite: true
+
+  # practice-parity-mutants: does the parity check notice a plan that got worse? tests/practice/parity-mutants.js adds a copy of practice/plan.js with ONE line broken to the page in
+  # place of the real one and runs the whole check on a sample of the corpus (about 17 s a row); every row must turn it red (the five the design names: the pedal change lift, one
+  # visit shifted, ties keyed by pitch only, the hand filter, a volta pass off by one - and twenty more), except two that tests/practice/plan.test.js watches. On a pull request only
+  # when the probes themselves changed (practice-plan's `harness`), then only the five; every night all 25, in three shards.
+  practice-parity-mutants:
+    needs: practice-plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.harness == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci
+      - run: node tests/practice/parity-mutants.js --core --shard ${{ matrix.shard }}/3
+        if: ${{ github.event_name == 'pull_request' }}
+      - run: node tests/practice/parity-mutants.js --shard ${{ matrix.shard }}/3
+        if: ${{ github.event_name != 'pull_request' }}
 
   nightly:
     if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.event.inputs.only != 'practice'
