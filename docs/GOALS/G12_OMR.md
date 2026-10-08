@@ -441,3 +441,70 @@ python -I appscore.py data appout.jsonl
 
 `compare.py --selftest` (truth against itself) gives F1 1.000 and exact bars 1.00 on all 15; the stricter flag rule
 fires there only on pick-up and irregular bars (0-2 per piece).
+
+## 20. G12-0 implementation record (Implementer, Sonnet, 2026-10-08)
+
+Branch `g12-0-bench` (`D:/PPP-g12p0`), PR #226, from `main` `439d3b0`. Tests and tooling only; the app, the server and the helper are untouched.
+`tests/omr/README.md` is the manual; this section records what was measured and decided.
+
+**Built (row G12-0 of section 11).** `python tests/bench/run.py omr-live-2 run|check|baseline|render|determinism|cases|fetch-real`:
+60 catalogue excerpts (1,169 bars: the pool's longest-enough pieces; the 15 pages of section 1 are always in; every metre and key of the pool is
+present; 18 of 60 held out, quoted as a number only) engraved by Verovio 6.3 (clean-A) and by PPP's print path (clean-B), A4 300 DPI by headless
+Chrome, degraded to a synthetic flat-paper photo (photo-A/B), a 150 DPI scan and a 200 DPI scan (scan150/scan200-A/B); the 4 G0 fixtures as the
+brace-less tier; Audiveris 5.11 alone (`--mode engine`) or through `Import.load` with the helper (`--mode app`) or without it (`--mode app-nohelper`,
+what production does). The `omr.*` metrics are `note_f1`, `played_f1`, `bar_exact` (pooled), `measure_alignment_rate`, `duration_acc`, `staff_acc`,
+`beam_kept`, `bar_count_exact`, `parts_ok`, `parts_fragmented`, `time_ok`, `key_ok`, `div0` and `flag.<rule>.recall/precision` (rules `app` and `voice`;
+`external_flags` is the hook for G12-3). The real-scan fetch script is written and refuses anything the host does not mark public domain; its list is
+empty (nothing was downloaded, no licence was read). Baselines (`tests/omr/baselines/`): `audiveris-5.11.0.json` (engine alone, every tier),
+`audiveris-5.11.0.app.json` (helper), `browser-draft.app.json` (no helper), each with `check` at tolerance 0.02.
+
+**A0, clause by clause.**
+
+| clause | result |
+| --- | --- |
+| deterministic, 3 runs, reversed order | `omr-live-2 determinism`: truth, SVG, PNG, JPEG byte-identical in three renders (in order, reversed, rotated); the Node parts (`ppp-print.test.js`, in the gate) likewise, on Windows here and on Linux in the gate. Three things had to be fixed to get there: Verovio draws random element ids unless `xmlIdSeed` is set; Chrome's GPU raster draws the same SVG with a different anti-aliasing from one shot to the next (6 shots, 3 PNGs), so the benchmark rasterises on the CPU (`--disable-gpu`); the PDF is made in Chrome's quirks mode, as the document's measurement was (standards mode moved the browser draft reader's F1 of two PDFs by 0.03-0.09) |
+| section-1 numbers within +-0.02 | **clean and photo yes, scan150 no on the CPU raster.** s1 (15 pages): clean-A F1 0.846, 169 of 267 bars (document 0.845, 168); photo-A 0.627, 65 (0.616, 69); scan150-A **0.721**, 100 (0.756, 108). With `OMR_CHROME_GPU=1` (the document's raster) all three come out to the last digit: 0.845 / 168, 0.616 / 69, 0.756 / 108. Audiveris is deterministic (17 of 17 outputs byte-identical on the document's own scan images, three at a time); what moves is the page: a different anti-aliasing of the same page moves the mean of 15 150 DPI scans by 0.035. The 60-excerpt tiers average four times as many pages. The Lead may prefer to make the GPU raster the baseline's (it reproduces section 1; its pages are not byte-stable) |
+| each new metric proven by a mutation | `tests/bench/unit/test_omr2_metrics.py`: a dropped bar, an extra bar, a wrong staff, a halved duration, a wrong pitch, a missing rest, a missed note, fragmented parts, a misread metre and key, divisions 0 (as read and repaired), lost beams, a read of nothing, a missed flag, a false flag, a flag outside the score |
+| E1, E6, E9 on the app path | no helper: 0 of 83 bars, played F1 0.07 / 0.09 / 0.62 / 0.45 / 0.31 / 0.33 (mean 0.311), 5 of 6 photos refused and the sixth one bar, as measured; brace-less fixtures: PNG, JPG, multipage 32 of 48 notes silenced, played F1 0.500, "good", confidence 1.00, no flag; the PDF 16 bars for 8, one staff. With the helper: 58 of 83 bars exactly right on the PDFs, 25 wrong, **0 flagged** (document: 0 of 24); on the photos 22 of 83, 7 bars flagged, all of them wrong (document: 5 flagged; the photo pages differ) |
+
+**Baseline (engine alone, all 60 excerpts; note F1 is the mean over excerpts, bars are pooled; the held-out half is in the totals).**
+
+| tier | excerpts | note F1 | played F1 | bars exactly right | bar count exact | parts ok | flag R (voice rule) | flag P |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| clean-A | 60 | 0.877 | 0.870 | 815 / 1169 (69.7 %) | 0.77 | 0.98 | 0.78 | 0.92 |
+| clean-B | 60 | 0.888 | 0.815 | 685 / 1169 (58.6 %) | 0.92 | 0.77 | 0.61 | 0.94 |
+| scan150-A | 60 | 0.793 | 0.793 | 518 / 1169 (44.3 %) | 0.73 | 0.97 | 0.78 | 0.92 |
+| scan150-B | 60 | 0.000 | 0.000 | 0 / 1169 | 0.00 | 0.00 | - | - |
+| scan200-A | 60 | 0.876 | 0.871 | 807 / 1169 (69.0 %) | 0.77 | 0.98 | 0.80 | 0.92 |
+| scan200-B | 60 | 0.835 | 0.668 | 471 / 1169 (40.3 %) | 0.93 | 0.42 | 0.56 | 0.92 |
+| photo-A | 60 | 0.702 | 0.473 | 201 / 1169 (17.2 %) | 0.15 | 0.17 | 0.49 | 0.97 |
+| photo-B | 60 | 0.830 | 0.798 | 432 / 1169 (37.0 %) | 0.95 | 0.85 | 0.68 | 0.91 |
+| **scan** (the four above) | 240 | 0.626 | 0.583 | 1796 / 4676 (38.4 %) | 0.61 | 0.59 | 0.69 | 0.92 |
+| **photo** (A + B) | 120 | 0.766 | 0.636 | 633 / 2338 (27.1 %) | 0.55 | 0.51 | 0.58 | 0.94 |
+| brace-less (engine alone, PNG + JPG) | 2 | 1.000 | 0.500 | 16 / 16 | 1.00 | 0.00 | - | - |
+
+**What the 60 excerpts and the new tiers showed, beyond section 1.**
+- **PPP's own print is not readable at 150 DPI.** Its staff is 7 mm high: 10 px an interline at 150 DPI, and Audiveris answers "a too low interline value
+  of 10 pixels ... NOT RELIABLE ... Sheet ignored" on every page (scan150-B). At 200 DPI (14 px) it reads them (F1 0.835, 40 % of bars). That is why a
+  200 DPI scan was added to the 150 DPI one; the merged `scan` tier holds both, scan150-B's zeros included.
+- **clean-B (PPP's print) is read worse than Verovio's where it matters to the app**: note F1 0.888 but played F1 0.815, because only 77 % of the pages
+  come back as exactly one grand-staff part (the rest as `1x1x2` or `2x1x1`: Audiveris splits off extra parts on PPP's pages, which the hand rule then
+  plays or silences by position); 58.6 % of bars right against 69.7 %. Its bar count is exact more often (92 % against 77 %).
+- **Photos lose the parts structure more than the notes**: photo-A has note F1 0.702 but played F1 0.473 (only 10 of 60 pages come back as one grand-staff
+  part; 15 as `2x1x1`, 15 as `1x1`, 11 as `1x1x2` ...; 30 % are the issue-11 shape, several single-staff parts only); photo-B 0.830 / 0.798. The gap
+  between note F1 and played F1 is the G12-1 target (K3).
+- **The offline flag rules on the full set**: the app's rule finds 0.26-0.35 of the wrong bars (precision 0.84-0.99); the stricter voice rule 0.49-0.78
+  (precision 0.92-0.97). G12-3's target is 0.90 at 0.60.
+- **Seven pages fail inside Audiveris** besides scan150-B (a NullPointerException in `Part.isDrumPart`, a `NonInvertibleLineException`); they count as
+  read-nothing.
+- **A busy PC changes the answer.** Audiveris gives each step of a page 120 s and drops the page when a step is slower; beside another job on every core
+  (4 pages at once next to a 14-thread job) pages were lost that way. The tool passes `-option org.audiveris.omr.Main.sheetStepTimeOut=1800` (an on-time
+  page is unchanged), marks any page that still times out and refuses to record a baseline from a run that has one. The helper in `--mode app` takes no
+  such option: run the app path on a quiet PC.
+
+**Decisions of the Lead's kind taken here (reversible).** 1,169 bars rather than "about 1,400": the pool's pieces are short (hymns 16-24 bars, exercises
+8-24) and the quotas take what exists; scan has two resolutions (above); the baseline is on the CPU raster; case selection is a hash of the id, the
+held-out half the 18 smallest split hashes; the brace-less tier reads the two images alone and all four files on the app path; the PDFs of the app path are
+vector PDFs of the same SVG pages; `omr-live.js` gained `--helper-port` (the page believes the helper is on 8788; the tool sends it to a helper it started
+on a free port, or refuses it), so another session's helper is never used. **Not done:** the real-scan tier's pages and scoring (the list is empty; G12-6),
+a page-curl and shadow photo (K2), the correction-time measures of section 13.

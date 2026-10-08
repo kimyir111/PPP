@@ -22,6 +22,10 @@ const searchPaths = [path.join(repoRoot, 'node_modules')].concat(
   (process.env.PPP_BENCH_NODE_MODULES || '').split(path.delimiter).filter(Boolean));
 const puppeteer = require(require.resolve('puppeteer', { paths: searchPaths }));
 const base = arg('--base', 'http://127.0.0.1:8777');
+/* G12-0 (omr-live-2): the page reaches the helper at the fixed address http://127.0.0.1:8788. --helper-port P sends those requests to
+   127.0.0.1:P instead (a helper started on a free port, so another session's helper on 8788 is never used or disturbed); --helper-port 0
+   refuses them (no helper: what production does). Without the flag nothing is intercepted and this file behaves as before. */
+const helperPort = arg('--helper-port', null);
 
 (async () => {
   const jobs = fs.readFileSync(arg('--in'), 'utf8').split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
@@ -30,6 +34,17 @@ const base = arg('--base', 'http://127.0.0.1:8777');
   try {
     const page = await browser.newPage();
     page.setDefaultTimeout(600000);
+    if (helperPort !== null) {
+      await page.setRequestInterception(true);
+      page.on('request', req => {
+        const u = req.url();
+        if (/^http:\/\/(127\.0\.0\.1|localhost):8788(\/|$)/.test(u)) {
+          if (helperPort === '0') return req.abort('connectionrefused');
+          return req.continue({ url: u.replace(/^http:\/\/(127\.0\.0\.1|localhost):8788/, 'http://127.0.0.1:' + helperPort) });
+        }
+        return req.continue();
+      });
+    }
     await page.goto(base + '/Piano%20Coach%20App.dc.html', { waitUntil: 'networkidle2', timeout: 60000 });
     await page.waitForFunction(() => window.PPP && window.PPP.Import && window.PPP.Import.load, { timeout: 30000 });
     for (const job of jobs) {
