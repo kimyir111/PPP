@@ -3,14 +3,14 @@
 
    One probe run, on the 1,776-note Sonatina (catalog/method/sonatina/020.mxl, the piece G06 timed), at CPU 1x and 4x (Chrome's throttle):
      unit     MusicXML import, toScore+finalize, legacy.link, legacy.agree, PianoScore.build (cold, the first call in a fresh page - what a person
-              waits for - and warm: the median of 9), time.unroll, time.tempoMap, PerformanceEngine.begin (cold, warm)
-     matcher  noteOn + advanceTo per press (mean and p95 of 400 presses), a wrong key (mean, p95), result()
+              waits for - and the mean of 20), time.unroll, time.tempoMap, PerformanceEngine.begin (cold, and the mean of 60)
+     matcher  noteOn + advanceTo per press (mean, p95, max of 2000 presses), a wrong key (mean, p95 of 500), result() (mean of 20)
      live     the app's own MIDI handler through a live clock run with a fake keyboard (p95, max), press -> painted frame (two requestAnimationFrames;
               median, p95, max over the presses with a time of their own), the long tasks of 8 s of play, the long tasks of entering Practice
      counters strikes, expected notes, presses, paint samples (exact: a probe that measured nothing must not pass)
    A machine's speed is taken out first: a fixed CPU workload (calib) is timed in the same page under the same throttle, and every time is
    compared as `time x calib(baseline) / calib(now)`. A metric passes when that is within 20 % of the baseline (plus a small floor, because
-   performance.now() has a resolution of 0.1 ms: a p95 of 0.1 ms is one tick). Slower than that is RED; faster than 20 % under the baseline is
+   performance.now() has a resolution of 0.1 ms: a p95 of 0.1 ms is one tick; the floor is 4x as large under the 4x throttle). Slower than that is RED; faster than 20 % under the baseline is
    reported, not failed (refresh the baseline when it is a real gain). Noise only adds time, so a metric counts at its BEST attempt, in the
    baseline (3 probes recorded, 5 for the runner) and in `check` (up to 3 probes, it stops at the first clean one). The baseline is kept per
    profile (local, ci), because a shared runner and a developer's machine are not the same kind of machine; the profile is `ci` when
@@ -31,26 +31,28 @@ const BASELINE = path.join(__dirname, 'baselines', 'perf.json');
 const PIECE = 'catalog/method/sonatina/020.mxl';
 const TOL = 0.2;
 
-/* key suffix -> { floor (ms or count slack), doc: [1x, 4x] from G11 section 1, kind } */
+/* key suffix -> { floor (ms or count slack), doc: [1x, 4x] from G11 section 1, kind, info4 }. `info4`: a single short task (or the worst of
+   many) under the 4x throttle is slowed by 1x-5x depending on where in the throttle's duty cycle it falls, so at 4x the number is reported
+   against the baseline but cannot turn the job red; the means of batches (unit.buildMean, unit.beginMean, the matcher means) hold the 4x line. */
 const SPECS = {
-  'unit.import': { floor: 6, doc: [76, 353] },
-  'unit.toScore': { floor: 2, doc: [7, 44] },
-  'unit.link': { floor: 3, doc: [15, 81] },
-  'unit.agree': { floor: 3, doc: [19, 99] },
-  'unit.build': { floor: 2.5, doc: [7, 35] },
-  'unit.buildWarm': { floor: 1.5, doc: [null, null] },
-  'unit.unroll': { floor: 0.6, doc: [0.1, 0.2] },
-  'unit.tempoMap': { floor: 0.6, doc: [0.1, 1.0] },
-  'unit.begin': { floor: 2.5, doc: [8, 30] },
-  'unit.beginWarm': { floor: 1.5, doc: [null, null] },
+  'unit.import': { floor: 6, info4: true, doc: [76, 353] },
+  'unit.toScore': { floor: 2, info4: true, doc: [7, 44] },
+  'unit.link': { floor: 3, info4: true, doc: [15, 81] },
+  'unit.agree': { floor: 3, info4: true, doc: [19, 99] },
+  'unit.build': { floor: 2.5, info4: true, doc: [7, 35] },
+  'unit.buildMean': { floor: 1, doc: [null, null] },
+  'unit.unroll': { floor: 0.6, info4: true, doc: [0.1, 0.2] },
+  'unit.tempoMap': { floor: 0.6, info4: true, doc: [0.1, 1.0] },
+  'unit.begin': { floor: 2.5, info4: true, doc: [8, 30] },
+  'unit.beginMean': { floor: 0.6, doc: [null, null] },
   'matcher.noteOnMean': { floor: 0.03, doc: [null, null] },
   'matcher.noteOnP95': { floor: 0.15, doc: [0.1, 0.2] },
-  'matcher.noteOnMax': { floor: 0.8, doc: [0.3, 1.7] },
+  'matcher.noteOnMax': { floor: 0.8, info4: true, doc: [0.3, 1.7] },
   'matcher.wrongMean': { floor: 0.03, doc: [null, null] },
   'matcher.wrongP95': { floor: 0.15, doc: [0.2, null] },
-  'matcher.result': { floor: 1, doc: [null, null] },
+  'matcher.resultMean': { floor: 0.5, doc: [null, null] },
   'live.handlerP95': { floor: 0.3, doc: [0.1, 0.4] },
-  'live.handlerMax': { floor: 1.5, doc: [null, null] },
+  'live.handlerMax': { floor: 1.5, info4: true, doc: [null, null] },
   'live.paintMed': { floor: 6, doc: [null, 31] },
   'live.paintP95': { floor: 10, doc: [null, 55] },
   'live.paintMax': { floor: 16, doc: [null, 64] },
@@ -58,7 +60,10 @@ const SPECS = {
   'long.play': { kind: 'count', slack: [0, 1], doc: [0, 1] },
   'long.entry': { kind: 'count', slack: [1, 1], doc: [2, 3] }
 };
-const EXACT = ['strikes', 'expected', 'measures', 'presses', 'paintSamples'];
+/* counters that must come out exactly the same, and counters that depend on when the clock run starts (how many of the piece's onsets fall into
+   the 7.5 s and 10 s windows): those need only be 80 % of the baseline's, which is what "the probe measured something" asks */
+const EXACT = ['strikes', 'expected', 'measures'];
+const AT_LEAST = ['presses', 'paintSamples'];
 
 /* ---------------- in the page ---------------- */
 function installFakeMidi() {
@@ -123,35 +128,39 @@ async function unitsInPage(file) {
   const beginRun = { from: first, to: last, hands: 'both', tempo: score.tempo || 84, startedAt: 0 };
   const eng = new PPP.PerformanceEngine(score);
   const [, tBegin] = T(() => eng.begin(beginRun));
-  const warm = f => { const a = []; for (let i = 0; i < 9; i++) a.push(T(f)[1]); return med(a); };
-  const buildWarm = warm(() => PPP.PianoScore.build(score, first, last));
-  const beginWarm = warm(() => new PPP.PerformanceEngine(score).begin(beginRun));
+  /* batches: the mean of many calls. A single task shorter than the throttle's duty cycle is slowed by anything from 1x to 5x, depending on
+     where in the cycle it falls, so the single shots above are the cold first calls (what a person waits for) and the numbers a check can hold
+     are these means */
+  const batch = (n, f) => { const t = performance.now(); for (let i = 0; i < n; i++) f(); return (performance.now() - t) / n; };
+  const buildMean = batch(20, () => PPP.PianoScore.build(score, first, last));
+  const beginMean = batch(60, () => new PPP.PerformanceEngine(score).begin(beginRun));
   const exp = eng.expected.slice();
-  const n = Math.min(400, exp.length), lat = [];
-  for (let i = 0; i < n; i++) {
-    const x = exp[Math.floor(i * exp.length / n)];
-    const t = performance.now();
-    eng.noteOn({ midi: x.midi, t: x.tMs + 20, type: 'on' });
-    eng.advanceTo(x.tMs);
-    lat.push(performance.now() - t);
+  const n = Math.min(400, exp.length), lat = [], wrong = [];
+  for (let round = 0; round < 5; round++) {
+    const e = round === 0 ? eng : new PPP.PerformanceEngine(score).begin(beginRun);
+    for (let i = 0; i < n; i++) {
+      const x = exp[Math.floor(i * exp.length / n)];
+      const t = performance.now();
+      e.noteOn({ midi: x.midi, t: x.tMs + 20, type: 'on' });
+      e.advanceTo(x.tMs);
+      lat.push(performance.now() - t);
+    }
+    const e2 = new PPP.PerformanceEngine(score).begin(beginRun);
+    for (let i = 0; i < 100; i++) {
+      const t = performance.now();
+      e2.noteOn({ midi: 20, t: e2.expected[Math.floor(i * e2.expected.length / 100)].tMs, type: 'on' });
+      wrong.push(performance.now() - t);
+    }
   }
   const mean = a => a.reduce((s, v) => s + v, 0) / a.length;
-  const eng2 = new PPP.PerformanceEngine(score);
-  eng2.begin(beginRun);
-  const wrong = [];
-  for (let i = 0; i < 100; i++) {
-    const t = performance.now();
-    eng2.noteOn({ midi: 20, t: eng2.expected[Math.floor(i * eng2.expected.length / 100)].tMs, type: 'on' });
-    wrong.push(performance.now() - t);
-  }
-  const [, tResult] = T(() => eng.result());
+  const resultMean = batch(20, () => eng.result());
   return {
     exact: { strikes: plan.strikes.length, expected: exp.length, measures: score.measures.length, linkOk: link.ok, agreeOk: agree.ok },
     v: {
-      'unit.import': tImport, 'unit.toScore': tToScore, 'unit.link': tLink, 'unit.agree': tAgree, 'unit.build': tBuild, 'unit.buildWarm': buildWarm,
-      'unit.unroll': tUnroll, 'unit.tempoMap': tTempo, 'unit.begin': tBegin, 'unit.beginWarm': beginWarm,
+      'unit.import': tImport, 'unit.toScore': tToScore, 'unit.link': tLink, 'unit.agree': tAgree, 'unit.build': tBuild, 'unit.buildMean': buildMean,
+      'unit.unroll': tUnroll, 'unit.tempoMap': tTempo, 'unit.begin': tBegin, 'unit.beginMean': beginMean,
       'matcher.noteOnMean': mean(lat), 'matcher.noteOnP95': q(lat, 0.95), 'matcher.noteOnMax': Math.max.apply(null, lat),
-      'matcher.wrongMean': mean(wrong), 'matcher.wrongP95': q(wrong, 0.95), 'matcher.result': tResult
+      'matcher.wrongMean': mean(wrong), 'matcher.wrongP95': q(wrong, 0.95), 'matcher.resultMean': resultMean
     }
   };
 }
@@ -350,11 +359,15 @@ function compareRuns(base, runs) {
     const calibBase = base.calib['r' + rate];
     const norms = usable(rate).filter(x => x.v[k] != null).map(x => x.v[k] * calibBase / x.calib['r' + rate]);
     const best = Math.min.apply(null, norms);
-    const limit = b.v * (1 + TOL) + spec.floor;
-    const low = b.v * (1 - TOL) - spec.floor;
+    /* the floor is for a 1x machine; under the 4x throttle every task, and the jitter of the throttle's duty cycle, is 4x as long */
+    const floor = spec.floor * (rate === 4 ? 4 : 1);
+    const limit = b.v * (1 + TOL) + floor;
+    const low = b.v * (1 - TOL) - floor;
     const bad = best > limit;
-    if (bad) red++;
-    rows.push({ k, base: b.v, now: round(best), limit: round(limit), status: bad ? 'RED' : best < low ? 'faster' : 'ok', note: bad ? 'slower than the baseline by more than 20 %' : best < low ? 'faster than the baseline by more than 20 %: refresh it if this is a real gain' : '' });
+    const info = !!spec.info4 && rate === 4;
+    if (bad && !info) red++;
+    rows.push({ k, base: b.v, now: round(best), limit: round(limit), status: bad ? (info ? 'info' : 'RED') : (best < low && !info) ? 'faster' : 'ok',
+      note: bad ? (info ? 'over the baseline; a single short task under the throttle is not held (info)' : 'slower than the baseline by more than 20 %') : (best < low && !info) ? 'faster than the baseline by more than 20 %: refresh it if this is a real gain' : '' });
   });
   EXACT.forEach(e => ['r1', 'r4'].forEach(r => {
     const k = r + '.' + e;
@@ -362,6 +375,13 @@ function compareRuns(base, runs) {
     const bad = got.some(v => v !== base.exact[k]);
     if (bad) red++;
     rows.push({ k, base: base.exact[k], now: got[got.length - 1], status: bad ? 'RED' : 'ok', note: bad ? 'a counter differs: the probe did not measure what it did' : '' });
+  }));
+  AT_LEAST.forEach(e => ['r1', 'r4'].forEach(r => {
+    const k = r + '.' + e;
+    const got = Math.max.apply(null, runs.map(x => x.exact[k]));
+    const bad = !(got >= 0.8 * base.exact[k]);
+    if (bad) red++;
+    rows.push({ k, base: base.exact[k], now: got, status: bad ? 'RED' : 'ok', note: bad ? 'far fewer presses than the baseline: the probe did not measure what it did' : '' });
   }));
   ['r1', 'r4'].forEach(r => {
     const bad = runs.some(x => !x.exact[r + '.live']);
