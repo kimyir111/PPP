@@ -142,6 +142,26 @@ class SongModeTest(unittest.TestCase):
         notes = transcribe.track_notes(y, self.SR, librosa.note_to_hz('C2'), librosa.note_to_hz('C6'), gate=0.01)
         self.assertEqual(notes, [])
 
+    def test_a_click_inside_a_held_note_does_not_cut_it(self):
+        """a drum bleeding into the stem makes an onset but no dip of the note's level: one note"""
+        y = np.concatenate([self.silence(0.3), self.tone(69, 1.2), self.silence(0.3)])
+        rng = np.random.default_rng(3)
+        for t in (0.6, 0.85, 1.1):
+            i = int(t * self.SR)
+            y[i:i + 400] += (0.25 * rng.standard_normal(400) * np.exp(-np.arange(400) / 80.0)).astype(np.float32)
+        notes = transcribe.track_notes(y, self.SR, librosa.note_to_hz('C2'), librosa.note_to_hz('C6'), gate=0.01)
+        self.assertEqual([n['midi'] for n in notes], [69])
+        self.assertGreater(notes[0]['off'] - notes[0]['on'], 1.0)
+
+    def test_a_note_struck_again_without_silence_is_two_notes(self):
+        """a re-attack: the level falls to a fifth for 30 ms and comes back, with no silence between"""
+        a = self.tone(64, 0.5)
+        b = self.tone(64, 0.5)
+        dip = (self.tone(64, 0.03) * 0.2).astype(np.float32)
+        y = np.concatenate([self.silence(0.3), a, dip, b, self.silence(0.3)])
+        notes = transcribe.track_notes(y, self.SR, librosa.note_to_hz('C2'), librosa.note_to_hz('C6'), gate=0.005)
+        self.assertEqual([n['midi'] for n in notes], [64, 64])
+
     def test_an_accompaniment_note_that_repeats_the_melody_goes(self):
         melody = [{'on': 1.0, 'off': 1.5, 'midi': 72}]
         accomp = [{'on': 1.03, 'off': 1.4, 'midi': 72}, {'on': 1.0, 'off': 1.4, 'midi': 64}, {'on': 1.2, 'off': 1.4, 'midi': 72}]
