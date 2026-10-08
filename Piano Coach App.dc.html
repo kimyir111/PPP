@@ -12542,7 +12542,7 @@ const isSongHeard = heard => !!(heard && heard.song);
 function melodyFromLabel(layers) {
   const f = layers && layers.melodyFrom;
   return !layers || !layers.melody ? tx('no melody line (the lead sheet finds one)')
-    : f === 'vocals' ? tx('voice') : f === 'guitar' ? tx('guitar') : f === 'piano' ? tx('piano') : f === 'other' ? tx('synth / other instrument') : tx('voice');
+    : f === 'vocals' ? tx('voice') : f === 'guitar' ? tx('guitar') : f === 'piano' ? tx('piano') : f === 'other' ? tx('synth / other instrument') : tx('not recorded (an earlier conversion)');
 }
 function withSongLayers(plan, source, heard) { return isSongHeard(heard) || (source && source.songLayers) ? Object.assign({}, plan, { melodyTrack: SONG_TRACKS.melody }) : plan; }
 
