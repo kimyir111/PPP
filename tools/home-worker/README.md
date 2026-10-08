@@ -63,6 +63,18 @@ PPP 사이트(무료 서버)는 강력한 피아노 모델(TransKun + Kong)을 �
 - **안전**: `pppworker://` 뒤에 무엇이 붙어도 **버려져요**(등록된 명령에 `%1` 이 없고 `run-hidden.vbs` 는 인자를 읽지 않아요). 아무 웹사이트나 이 주소를 열 수 있지만, 그러면 브라우저가 먼저 허락을 묻고, 허락해도 **워커가 한 번 돌아 PPP 사이트에서 내 링크의 할 일만 가져올 뿐**(CPU/GPU 시간 정도)이에요. 동시에 두 번 돌지 않아요(실행 잠금: 같은 폴더의 `worker.lock`, 45분 넘으면 무시).
 - 확인: `node tools/home-worker/worker.js --protocol-status`. **지우기: `unregister-protocol.cmd` 더블클릭**(또는 `--unregister-protocol`) — 이 도구가 만든 항목만 지워요.
 
+## 일반 곡 모드 (G10d, 선택)
+
+PPP의 「어떤 음원인가요?」에서 **일반 곡 (노래·밴드)** 을 고르면, PC가 먼저 음원을 나눕니다(Demucs `htdemucs_6s`, MIT). 드럼은 빼고, 노래는 멜로디로, 베이스는 베이스 라인으로(음높이 추적 pYIN), 기타·피아노·나머지 악기는 기존 피아노 모델 두 개로 듣습니다. 음마다 어느 층(멜로디 1 / 베이스 2 / 반주 3)인지 붙여서 보내고, 악보의 쉬운 단계(리드시트)는 노래 멜로디를 선율로 씁니다. 피아노 모델은 사람 목소리를 거의 못 듣기 때문에(TransKun은 보컬만 넣으면 2:37 동안 2음) 노래가 있는 곡은 이 모드가 필요합니다.
+
+설치(한 번만, 변환 환경과 같은 Python으로). 패키지를 Python 자체에 넣지 않고 따로 둡니다:
+
+```
+tools/transcribe-venv/Scripts/python.exe -m pip install --target tools/song-lib --no-deps demucs==4.0.1 julius einops dora-search openunmix lameenc omegaconf antlr4-python3-runtime==4.9.3 treetable retrying submitit cloudpickle pyyaml
+```
+
+`tools/song-lib`은 워커가 알아서 찾습니다(`transcribe.py` 옆의 `tools/song-lib`, 또는 저장소의 `tools/song-lib`). 다른 곳에 두었다면 설정 파일에 `"songLib": "D:/.../song-lib"`. 처음 한 번은 분리 모델(약 50 MB)을 받습니다. `--check`가 "song mode: the source separation (demucs) is there"라고 하면 준비 끝입니다. 설치하지 않아도 피아노 변환은 그대로 되고, 일반 곡 변환만 무엇을 설치할지 알려 주며 실패합니다. 2분 37초 곡이 RTX 5070 Ti에서 약 70초 걸렸습니다.
+
 ## 문제 해결
 
 | 증상 | 원인/해결 |
@@ -95,3 +107,5 @@ Setup in 4 steps: (1) the transcription environment from the root README (`tools
 - Waiting is the **site's** call (`nextPollSeconds`: 15 s while something is queued, claimed or just finished, otherwise **an hour** by default, and the site will not go below 15 minutes); `idlePollSeconds` in the settings can only lengthen it. The shorter the idle interval, the longer the free server stays awake (15 minutes or less: all month; 20 minutes: about 77%; an hour: about 26%). Free-tier arithmetic: `docs/GOALS/G10B_HOME_WORKER.md`.
 - Limits: the PC must be on with the worker running; latency up to the check interval; only your own link's jobs; YouTube links only; the helper's pedal is not used, and its beats only as evidence of the bar phase; at most 15 minutes of audio; results are kept 3 days.
 - Optional `ytdlpPath` downloads the audio with yt-dlp on this PC (the site is the fallback); `audioBase` names another place for `/api/youtube-audio`.
+
+Song mode (G10d, optional): choose **Song (vocals, band)** on the Add screen. The PC separates the song (Demucs htdemucs_6s), leaves the drums out, tracks the sung melody and the bass line (pYIN) and runs the piano ensemble on the rest; every note carries its layer (1 melody, 2 bass, 3 accompaniment) and the lead sheet takes its tune from the melody. Install once: `tools/transcribe-venv/Scripts/python.exe -m pip install --target tools/song-lib --no-deps demucs==4.0.1 julius einops dora-search openunmix lameenc omegaconf antlr4-python3-runtime==4.9.3 treetable retrying submitit cloudpickle pyyaml` (or set `songLib` in the settings). Without it piano conversions work and song conversions fail with a message saying what to install.

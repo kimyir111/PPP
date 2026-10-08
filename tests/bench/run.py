@@ -23,6 +23,7 @@
     python tests/bench/run.py sg-roundtrip                      # MusicXML -> ScoreGraph -> MusicXML over the corpus (G1)
     python tests/bench/run.py conformance [--require-env]       # parser parity with the app (T1)
     python tests/bench/run.py omr-live [--require-env]
+    python tests/bench/run.py omr-live-2 run|check|baseline|render|determinism|cases|fetch-real ...   # G12-0, local (tests/omr/README.md)
     python tests/bench/run.py record-replay [--require-env]
 """
 
@@ -203,6 +204,13 @@ def cmd_sg_roundtrip(args) -> int:
     return sg_roundtrip.cli(args)
 
 
+def cmd_omr_live_2(args) -> int:
+    """G12-0: the OMR benchmark with exact truth (tests/omr). A local tool, never a gate step: it needs Audiveris, Verovio and Chrome."""
+    sys.path.insert(0, os.path.join(util.repo_root(), "tests", "omr"))
+    from omrbench import suite as omr_suite
+    return omr_suite.main(args.rest)
+
+
 def cmd_env_tier(name):
     def run(args) -> int:
         from pppbench import tiers
@@ -294,6 +302,10 @@ def main(argv=None) -> int:
         p.add_argument("--require-env", action="store_true")
         p.add_argument("--base-url", default="http://localhost:8777")
         p.set_defaults(fn=cmd_env_tier(tier))
+    p = sub.add_parser("omr-live-2", help="the OMR benchmark with exact truth (G12-0; local: Audiveris, Verovio, Chrome)",
+                       add_help=False)
+    p.add_argument("rest", nargs=argparse.REMAINDER)
+    p.set_defaults(fn=cmd_omr_live_2)
     args = ap.parse_args(argv)
     try:
         return args.fn(args)

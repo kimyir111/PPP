@@ -27,8 +27,8 @@ const { fs, path, REPO, errors, sleep, ok, setBase, openPage, clean, errs, addCh
 const heardFile = process.env.PPP_HEARD_FILE;
 const HEARD = heardFile ? JSON.parse(fs.readFileSync(heardFile, 'utf8')) : F.crossLines(9);
 
-/* in the page: the ledger-line tool is a tool, not part of the app */
-const addLedger = page => page.addScriptTag({ url: new URL(page.url()).origin + '/scoregraph/tools/ledger-stats.js' });
+/* in the page: the ledger-line tool is a tool, not part of the app (the server does not serve it since G13-5: its text is put in the page) */
+const addLedger = page => page.addScriptTag({ content: fs.readFileSync(path.join(REPO, 'scoregraph', 'tools', 'ledger-stats.js'), 'utf8') });
 /* what the open song says about its octave lines, in the Score, the graph and the engraved page */
 const lines = page => page.evaluate(() => {
   const A = window.PPP.app, sc = A.state.score, rs = window.PPPEngrave.app.resolveSync(sc), g = rs.graph, LS = window.PPPScoreGraphModules.ledgerStats;

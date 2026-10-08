@@ -42,3 +42,30 @@ VexFlow; the Bravura notice above (`LICENSE-bravura-OFL.txt`) covers them, and t
 
 Not an upgrade path to VexFlow 5 (G04 §7.3 B, R3): 4.2.3 is pinned. G4a only vendors and verifies the file; nothing loads
 it yet. The legacy renderer keeps loading the same version from the CDN until the engraving renderer replaces it (G4b+).
+
+## react-18.3.1/
+
+React and ReactDOM 18.3.1, the UMD production builds, served by PPP so that the page does not stop when unpkg.com is unreachable
+(docs/GOALS/G13_PRODUCTIZATION.md G13-D2, G13-1). The page loads them with two plain `<script>` tags before `support.js`, as
+`./vendor/react-18.3.1/<file>?h=<12 hex of the sha256>` (server.js answers a matching `?h=` `immutable`, gzip); `support.js`
+(generated, not edited) then finds React and does not fetch it. They are the files `support.js` pins and checks (`REACT_URL` /
+`REACT_SRI`, `REACT_DOM_URL` / `REACT_DOM_SRI`), so the proof of identity is that pin: `tests/engrave/vendor-react.test.js`
+checks the sha384 of each file against the constants in `support.js`, so a pin and a file cannot drift apart.
+
+| File | From | Size | sha256 | SRI (sha384) |
+| --- | --- | --- | --- | --- |
+| `react-18.3.1/react.production.min.js` | `https://unpkg.com/react@18.3.1/umd/react.production.min.js` (npm `react@18.3.1`) | 10,751 bytes | `d949f1c3687aedadcedac85261865f29b17cd273997e7f6b2bfc53b2f9d4c4dd` | `sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z` |
+| `react-18.3.1/react-dom.production.min.js` | `https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js` (npm `react-dom@18.3.1`) | 131,835 bytes | `35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d` | `sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1` |
+
+Licence: MIT (Copyright (c) Facebook, Inc. and its affiliates), `react-18.3.1/LICENSE-react.txt` and
+`react-18.3.1/LICENSE-react-dom.txt`, each the package's own `LICENSE` byte for byte (unpkg.com/react@18.3.1/LICENSE and
+unpkg.com/react-dom@18.3.1/LICENSE; the two files happen to be identical). Neither package has a NOTICE file.
+
+**The way back (`PPP.cdn`, G13-D3).** `?cdn=1` in the address (this visit), or `localStorage['ppp.cdn'] = '1'` (this device; `PPP.cdn = 1`
+in the console writes it), makes the page drop the vendored React and load the pinned unpkg copies, exactly as before G13-1. `?cdn=0`
+is "vendored" for one visit even when a `1` is stored. Any other value is no choice, and no choice is the default: vendored. This
+switch is removed one release after G13-1 has been live (G13-D3). A page whose vendored files fail to load has no React either, and
+`support.js` then loads the unpkg ones on its own.
+
+To change the version: move the pins in `support.js` first (it is generated), then replace the folder, the two `?h=` values in the app
+head and this table; the test says which of them is out of step.

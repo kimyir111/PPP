@@ -33,6 +33,16 @@ pretending otherwise. Set `ANTHROPIC_API_KEY` before starting it to enable the c
 Serve it over HTTP rather than opening the file directly — the runtime loads React from a CDN
 with subresource integrity, which `file://` blocks.
 
+The server hands out only the files the page uses, as `static-allow.js` names them (G13-5): the app and
+its scripts, the modules it loads on demand (`rec/`, `realize/`, `critics/`, `candidates/`, `repair/`, the engraver),
+the catalogues, the piano samples, the language files and `vendor/`. Everything else — `server.js`, `package.json`,
+`render.yaml`, `docs/`, `tests/`, `tools/`, the folders' `tools/` and READMEs — is a 404. A new script the
+page loads needs to be on that list when it is added; `npm run test:server-hygiene` reads the page's script tags
+and loader lists and fails when one is not. A file that exists, is not on the list and is asked for is named once
+in the server log (`Static: "…" is a file of this site that is not on the served list`). Every answer carries
+`X-Content-Type-Options`, `Referrer-Policy` and `X-Frame-Options`; HSTS goes out only for a request that came in over
+https (`PPP_HSTS=0` turns it off).
+
 ## Files
 
 | File | What it is |
@@ -43,6 +53,7 @@ with subresource integrity, which `file://` blocks.
 | `course.js` | Method Books: the academy path (Beyer → Czerny 100 → Czerny 30 → Czerny 40, with Hanon, Burgmüller and sonatinas beside them), today's plan, the practice circles, passing and the streak. Pure functions over the saved course state. |
 | `catalog/method/` | The method-book scores as `.mxl`, `index.json` (built by `build.py` from `books.json`), and `src/` — the ABC the Beyer, Czerny 100 and other transcriptions were written in. |
 | `index.html` | Entry point; redirects to the app. |
+| `static-allow.js`, `signup-limit.js` | G13-5: which files the static server hands out, and the rules of the signup limiter (`server.js` does the HTTP). |
 | `audio/piano/` | Salamander Grand Piano samples (CC BY 3.0), 30 MP3s, 1.3 MB. See its `README.md`. |
 | `samples/prelude-fragment.musicxml` | A test score — 3/4, G major, chords, rests, a tie, a printed accidental. |
 | `tests/` | Browser tests and fixtures. See `tests/README.md`. |
@@ -61,7 +72,7 @@ and components this app is built from. It is reference material and was not pull
 
 `.dc.html` is a Design Component: an `<x-dc>` HTML template plus a
 `class Component extends DCLogic` whose `renderVals()` returns the flat object the template
-binds to. The runtime boots itself, pulls React 18 from unpkg, and mounts. Because the format
+binds to. The runtime boots itself, takes React 18 (served from `vendor/react-18.3.1/`; `?cdn=1` loads the same files from unpkg, G13-1), and mounts. Because the format
 is preserved, the app still round-trips to Claude Design.
 
 ## Importing a PDF or a photo
@@ -458,7 +469,7 @@ notes as they are now, under the same link.
 
 | Route | |
 | --- | --- |
-| `GET /api/shares` | Posted scores, newest first, with a two-bar preview each. `?mine=1`: yours, posted or not. |
+| `GET /api/shares` | Posted scores, newest first, with a two-bar preview each, 24 a page: `{ shares, next }`, `next` an opaque cursor for `?cursor=` (null at the end); `?limit=` (at most 100), `?genre=`, `?q=`; the first page also has `genres`. `?mine=1`: yours, posted or not, all in one answer. |
 | `POST /api/shares` | Share a song (signed in, or a guest with `X-PPP-Guest`). One copy per song: sharing it again updates it. |
 | `GET /api/shares/:id` | One share, with its score. Anyone with the id (404 once a guest link has expired). |
 | `PATCH /api/shares/:id` | `{ listed }` — post or take down. Account owner only. |

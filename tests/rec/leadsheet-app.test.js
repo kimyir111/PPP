@@ -379,8 +379,10 @@ test('the page: rec/leadsheet.js is in no up-front list, not in RECORDING_SCRIPT
   assert.equal((html.match(/await arrangeSingleNote\(/g) || []).length, 3);
   assert.equal((html.match(/await arrangeSingleNoteWithHandsFallback\(/g) || []).length, 1, 'awaited once: the reduction after a lead sheet refusal (the other return is the request the lead sheet is not asked for)');
   assert.equal((html.match(/arrangeSingleNoteWithHandsFallback\(/g) || []).length, 3, 'its definition and the two returns of arrangeSingleNoteWithLeadsheet');
-  assert.match(html, /sn = await arrangeSingleNoteWithLeadsheet\(src\.graph, plan, sourceScore\.title, !!d\.recording\)/, 'the Song Arranger (a recording that is no Full song: d.recording, set when it opens)');
-  assert.match(html, /const sn = await arrangeSingleNoteWithLeadsheet\(built\.graph, plan, S\.score\.title, isLeadsheetSong\(S\.importSource\)\)/, 'the review screen\'s Apply arrangement');
+  assert.match(html, /sn = await arrangeSingleNoteWithLeadsheet\(src\.graph, withSongLayers\(plan, sourceScore\.source\), sourceScore\.title, !!d\.recording\)/, 'the Song Arranger (a recording that is no Full song: d.recording, set when it opens)');
+  /* G10d: the plan the review screen hands on is the person's plan, with the melody layer named only for a song-mode result (heard.song, or a saved song's source.songLayers) */
+  assert.match(html, /function withSongLayers\(plan, source, heard\) \{ return isSongHeard\(heard\) \|\| \(source && source\.songLayers\) \? Object\.assign\(\{\}, plan, \{ melodyTrack: SONG_TRACKS\.melody \}\) : plan; \}/);
+  assert.match(html, /const sn = await arrangeSingleNoteWithLeadsheet\(built\.graph, withSongLayers\(plan, S\.importSource, heard\), S\.score\.title, isLeadsheetSong\(S\.importSource\)\)/, 'the review screen\'s Apply arrangement');
   assert.equal((html.match(/arrangeSingleNoteWithLeadsheet\(/g) || []).length, 3, 'its definition and the two screens');
   /* the copies carry the mark and the words */
   assert.equal((html.match(/leadsheetMark\(sn\)\) \};/g) || []).length, 2, 'both copies\' source.arrangement');

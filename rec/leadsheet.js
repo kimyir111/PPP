@@ -2,7 +2,7 @@
    PPP rec/ - the lead sheet of a recording (docs/GOALS/G10_AUDIO_TO_SCORE.md section 9 "option G" and section 33; phase G10c-1a)
 
      isRecording(g)         is this graph a transcription (a source of kind 'audio-score': what scoregraph/gaps.js isTranscription and repair/ gate on)?
-     prepare(g, opts)       -> { ok: true, graph, sg, report, melody } | { ok: false, reason, message }
+     prepare(g, opts)       -> { ok: true, graph, sg, report, melody } | { ok: false, reason, message }   (opts.melodyTrack: the tune is that layer's notes, G10d song mode)
      collect(g), selectMelody(notes, params), shiftOctaves(melody, params), harmonyOf(g)      the steps of prepare, exported for the tests and the benchmark
 
    WHY. The one-note-per-hand arranger REDUCES a transcription: it thins every hand of the recording graph. On a real piano cover that refuses the dense pieces (3 of the
@@ -57,6 +57,7 @@
   const Q = 24;                    /* ticks a quarter (the writer's unit) */
   const TPW = 96;                  /* ticks a whole note */
   const MIN_NOTES = 4;
+  const LAYER_SHARE = 0.1;         /* G10d: a melody layer is used when it has at least this share of the piece's onset instants (a few notes of bleed in an instrumental's vocal stem are not a tune) */
 
   /* the constants of the melody search and the octave pass: engineering values chosen from the structure of the problem (a step costs nothing, a leap costs by its size, a note
      the line skips costs about a leap and a half), not fitted to any benchmark; section 33.2 says which were looked at and which were not. */
@@ -110,7 +111,12 @@
     /* the performance layer: velocity and the heard release of each head */
     const perf = (g.performances || [])[0] || null;
     const link = new Map();
-    if (perf) (perf.notes || []).forEach(n => { if (n.link !== undefined) link.set(n.link, n); });
+    /* two heard notes written as one head (an accompaniment note on the key and the tick of a melody note): the lower layer number wins, melody before bass before accompaniment */
+    if (perf) (perf.notes || []).forEach(n => {
+      if (n.link === undefined) return;
+      const o = link.get(n.link);
+      if (!o || (Number.isInteger(n.track) && (!Number.isInteger(o.track) || n.track < o.track))) link.set(n.link, n);
+    });
     let ptm = null;
     if (perf) { try { ptm = T.perfTimeMap(g, perf.id); } catch (e) { ptm = null; } }
     const heardEnd = n => {
@@ -146,7 +152,7 @@
           const hv = heardEnd(pn);
           notes.push({
             i: order++, headId: h.id, tick: a, midi: P.midi(h.pitch), pitch: { step: h.pitch.step, alter: h.pitch.alter || 0, oct: h.pitch.oct },
-            vel: pn && typeof pn.vel === 'number' ? pn.vel : 64, staff: staffIx.get(e.staff) || 0,
+            vel: pn && typeof pn.vel === 'number' ? pn.vel : 64, staff: staffIx.get(e.staff) || 0, track: pn && Number.isInteger(pn.track) ? pn.track : null,
             endW: endW === null || endW === undefined ? a + 6 : endW, endH: hv
           });
         }
@@ -353,7 +359,11 @@
     const params = Object.assign({}, PARAMS, opts.params);
     const col = collect(g);
     if (!col.ok) return col;
-    const sel = selectMelody(col.notes, params, col.info);
+    /* G10d song mode: a recording whose notes say their layer (opts.melodyTrack, the melody layer's track: the sung tune, separated from the band) takes its tune from that layer; the
+       search below still picks one line through it and the harmony is still every heard note. Too few notes in the layer (a song with no voice): the skyline over every note, as before. */
+    const layer = opts.melodyTrack ? col.notes.filter(n => n.track === opts.melodyTrack) : [];
+    const fromLayer = layer.length >= Math.max(MIN_NOTES, Math.ceil(LAYER_SHARE * new Set(col.notes.map(n => n.tick)).size));
+    const sel = selectMelody(fromLayer ? layer : col.notes, params, col.info);
     if (sel.melody.length < MIN_NOTES) return fail('LEADSHEET_NO_MELODY', sel.melody.length + ' melody notes');
     const shifts = shiftOctaves(sel.melody, params);
     let L;
@@ -368,7 +378,7 @@
     return {
       ok: true, graph: L, sg: sg,
       report: {
-        version: VERSION, notes: col.notes.length, instants: sel.instants, melodyNotes: sel.melody.length, shifted: moved, bars: col.info.bars,
+        version: VERSION, notes: col.notes.length, instants: sel.instants, melodyNotes: sel.melody.length, melodyFrom: fromLayer ? 'layer' : 'skyline', shifted: moved, bars: col.info.bars,
         windows: harmony.length, chordWindows: harmony.filter(w => w.root !== null && w.root !== undefined).length, middle: sel.mu
       },
       melody: sel.melody.map((n, j) => ({ head: n.headId, q: q(n.tick), midi: n.midi, shift: shifts[j], staff: n.staff }))
