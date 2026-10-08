@@ -715,7 +715,8 @@ jobs:
   # tests/engrave/tools/with-port.js (G11-D12). They had never run in CI before; a suite is green only if it exits 0, fails no check and prints
   # about as many checks as it did when the list was written (a suite that stopped testing is not a pass). About 4 minutes of suites. G11a-3: twice, as a matrix - the page's
   # own player (PPP.practice 'legacy') and every page started on 'graph' (the plan made from the ScoreGraph; tests/engrave/tools/with-port.js sets the remembered choice before
-  # the app runs) - and the suites must pass both ways, unedited.
+  # the app runs) - and the suites must pass both ways, unedited. Each player in two shards (run-suites.js --shard K/2: every second suite; 2.6 and 1.5 minutes of suites, so that no check
+  # is longer than 4 minutes with its install).
   practice-suites:
     needs: practice-plan
     if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.run == 'true')) }}
@@ -725,17 +726,18 @@ jobs:
       fail-fast: false
       matrix:
         practice: [legacy, graph]
+        part: [1, 2]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '24' }
       - run: npm ci                                        # puppeteer (and its Chrome)
-      - run: node tests/practice/run-suites.js --practice ${{ matrix.practice }} --log-dir tests/practice/out/suites-${{ matrix.practice }}
+      - run: node tests/practice/run-suites.js --practice ${{ matrix.practice }} --shard ${{ matrix.part }}/2 --log-dir tests/practice/out/suites-${{ matrix.practice }}-${{ matrix.part }}
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: practice-suites-${{ matrix.practice }}
-          path: tests/practice/out/suites-${{ matrix.practice }}
+          name: practice-suites-${{ matrix.practice }}-${{ matrix.part }}
+          path: tests/practice/out/suites-${{ matrix.practice }}-${{ matrix.part }}
           overwrite: true
 
   # practice-legacy: the legacy recorder (tests/practice/record.js check: canonical digests of PianoScore.build, the matcher's verdicts for six

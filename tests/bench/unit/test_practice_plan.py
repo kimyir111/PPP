@@ -233,8 +233,9 @@ class PracticeJobs(unittest.TestCase):
     def test_the_suites_run_on_both_players_and_the_switch_test_has_its_own_jobs(self):
         suites = self.jobs["practice-suites"]
         self.assertIn("practice: [legacy, graph]", suites)
-        self.assertIn("- run: node tests/practice/run-suites.js --practice ${{ matrix.practice }} --log-dir tests/practice/out/suites-${{ matrix.practice }}", suites)
-        self.assertIn("name: practice-suites-${{ matrix.practice }}", suites)
+        self.assertIn("part: [1, 2]", suites)
+        self.assertIn("- run: node tests/practice/run-suites.js --practice ${{ matrix.practice }} --shard ${{ matrix.part }}/2 --log-dir tests/practice/out/suites-${{ matrix.practice }}-${{ matrix.part }}", suites)
+        self.assertIn("name: practice-suites-${{ matrix.practice }}-${{ matrix.part }}", suites)
         switch = self.jobs["practice-switch"]
         pr, other = "if: ${{ github.event_name == 'pull_request' }}", "if: ${{ github.event_name != 'pull_request' }}"
         self.assertIn("- run: node tests/practice/switch.js --sample 5\n        " + pr, switch)
@@ -250,7 +251,7 @@ class PracticeJobs(unittest.TestCase):
         self.assertIn("github.event_name != 'pull_request' || needs.practice-plan.outputs.harness == 'true'", m.group(1))
 
     def test_each_job_installs_before_it_runs_and_they_run_the_probes(self):
-        want = {"practice-suites": ["npm ci", "node tests/practice/run-suites.js --practice ${{ matrix.practice }} --log-dir tests/practice/out/suites-${{ matrix.practice }}"],
+        want = {"practice-suites": ["npm ci", "node tests/practice/run-suites.js --practice ${{ matrix.practice }} --shard ${{ matrix.part }}/2 --log-dir tests/practice/out/suites-${{ matrix.practice }}-${{ matrix.part }}"],
                 "practice-switch": ["npm ci", "node tests/practice/switch.js --sample 5", "node tests/practice/switch.js"],
                 "practice-switch-mutants": ["npm ci", "node tests/practice/switch-mutants.js --shard ${{ matrix.part }}/3"],
                 "practice-legacy": ["npm ci", "node tests/practice/record.js check", "node tests/practice/mutants.js"],
