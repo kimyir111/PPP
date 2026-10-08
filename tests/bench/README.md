@@ -75,7 +75,7 @@ finished, so until then it is absent, not green):
 | `light` | what runs instead of the shards for a change that is only documents or the home-PC worker's files (below). |
 | `gate` | green only if the plan succeeded and every job it asked for did, and the others were skipped; red for a failed, cancelled or *skipped* job that was wanted, a job that ran when it was not wanted, or a job of the file that `gate` does not wait for. It prints the mode it ran in (`gate passed: FULL mode, 16 shards and 2 merges succeeded`, or `LIGHT docs-only`). |
 
-**The steps.** Each of the gate's 64 steps is in exactly one shard job with its command unchanged, in the relative order the single
+**The steps.** Each of the gate's 68 steps is in exactly one shard job with its command unchanged, in the relative order the single
 job had (`tests/bench/unit/test_ci_plan.py` holds the invariants and fails if one is broken). A `run --suite X` and its `check --suite X`
 (or a `*_data.py` and its trainer's `--check`) stay in the same job, because the second reads what the first wrote. A step you add goes
 in the job with the most slack (the comments list the times; the slowest job decides the wall-clock). Nothing needs installing: the
@@ -120,7 +120,7 @@ listed file type; one other path makes the whole change `full`. The classifier t
 change to the rules never applies to itself (it is under `tests/bench/`, so `full`, and the new rules start with the next change); a
 base without one (the change that adds it) is `full`.
 
-| mode | every changed path is | `light` runs | the 64 steps |
+| mode | every changed path is | `light` runs | the 68 steps |
 |---|---|---|---|
 | `docs` | `docs/**/*.{md,txt,png,jpg,jpeg,gif,pdf}`, or a root `*.md` / `LICENSE*` / `COPYING*` / `NOTICE*` | `lint-corpus`, `make_provenance.py --check`, `node tests/i18n/gaps.js --check` (the cheap checks: they prove the checkout, the committed registry and the i18n baseline are sound) | skipped |
 | `tooling` | the above, or `tests/review/**`, `tools/home-worker/**`, `tests/home-worker/**` with a type of `.js .json .md .txt .cmd .ps1` | the three above, the bench unit tests, `npm run test:home-worker` | skipped |
@@ -150,6 +150,11 @@ G11c-0 added one step (`npm run test:practice-variant`, in `shard-j`; not in `li
 It was read, not traced: it opens the source modules (`practice/`, `scoregraph/`, `playability/`, `difficulty/`, `engrave/`), the catalogue pieces of `catalog/` through the
 importer and its own files in `tests/practice-variant/` (the arrangements its sample is spliced from are frozen in `fixtures/sample-variants.json`: the arrangers do not run).
 It opens none of the paths the light modes skip.
+
+G11b-0 added four steps: `npm run test:practice-sim` and `tests/practice-sim/baseline.js --check --part
+K/3` (K = 1..3). They were not traced with strace; by their code they open `Piano Coach App.dc.html`, `practice/`, `tests/practice-sim/`,
+`scoregraph/`, `difficulty/`, `playability/` and the eight score files the simulator plays (`catalog/method/`, `catalog/hymns/`, a
+fixture of its own), and nothing under the paths above.
 
 The one step that walks the whole tree is the A48 test of `npm run test:engrave` (it imports every committed `.musicxml`, `.mxl`,
 `.mid` and score-named `.xml` file it finds, anywhere), and `tests/engrave/marks.test.js` fails on any tracked font; so a file of those
