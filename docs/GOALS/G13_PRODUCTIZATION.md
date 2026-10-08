@@ -199,9 +199,9 @@ Line numbers are App unless a file is named.
 
 | Item | Where, size | Callers | Gate | Removal needs |
 | --- | --- | --- | --- | --- |
-| `buildXml` + `opts.legacyWriter` | `audio-score.js` 1193-1315 (~123 lines) | the app never passes it; 4 tests | – | nothing (**dead in production**) |
-| `PPP.legacyImport` (`LEGACY_IMPORT`) | 4827, 10356-10357 | 3 branches (5549, 5573, 8669) | default off | nothing (G4f done) |
-| `parseMusicXML` + 7 private helpers | 4212-4733 (~521 lines; `navWord` is shared with `PdfLayer` and stays) | **9 ungated call sites**: the catalogue match 8251, the recording import 8304 (re-parses `built.xml` although `built.graph` exists), OMR 8753/8788/8797, rewrite 15660/15755/16089, the arranger base 15864; and `catalog/build-shared-seeds.js:229` | 3 behind `LEGACY_IMPORT` | S4 per producer (recording, catalogue, arranger here; OMR in G12) |
+| `buildXml` + `opts.legacyWriter` | `audio-score.js` 1193-1315 (~123 lines) | the app never passes it; 4 tests | – | nothing (**dead in production**) - **removed by MX-3a, 2026-10-08** |
+| `PPP.legacyImport` (`LEGACY_IMPORT`) | 4827, 10356-10357 | 3 branches (5549, 5573, 8669) | default off | nothing (G4f done) - **removed by MX-3b, 2026-10-08** |
+| `parseMusicXML` + 7 private helpers | 4212-4733 (~521 lines; `navWord` is shared with `PdfLayer` and stays) | **9 ungated call sites**: the catalogue match 8251, the recording import 8304 (re-parses `built.xml` although `built.graph` exists), OMR 8753/8788/8797, rewrite 15660/15755/16089, the arranger base 15864; and `catalog/build-shared-seeds.js:229` | the 3 behind `LEGACY_IMPORT` went with MX-3b | S4 per producer (recording, catalogue, arranger here; OMR in G12) |
 | legacy `Score` object | 3930-4139 (210 lines, 17 methods) | 156 `Score.*` calls (109 in the UI component; `PianoScore`, `PerformanceEngine`, `Learning`, `Memory`, `Coach`, `Fingering`, `ScoreArranger`); `Score.finalize` 17 calls | – | **G11a (S5-play)** and stored data |
 | `packScore` / `unpackScore` | 3892-3919 | 10 calls; **every saved song slot and every share is in this shape** | – | a reader kept for old data, forever or until a migration |
 | `scoregraph/legacy-score.js` `toScore` / `fromScore` / `compare` | 1,421 lines | `toScore` 4 app calls + review/realize tools; `fromScore` in `engrave/source.js:143` (the projected fallback) | – | `fromScore` stays as the reader of old data; `toScore` goes with the Score |
