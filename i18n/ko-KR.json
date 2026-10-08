@@ -2215,6 +2215,9 @@
     "Piano recording: the piano models listen to the recording as it is. For a song with singing or a band, choose Song.": "피아노 연주: 피아노 모델이 녹음을 그대로 듣습니다. 노래나 밴드가 있는 곡이면 「일반 곡」을 고르세요.",
     "Song separation + melody, bass and accompaniment on your PC": "내 PC에서 음원 분리 + 멜로디·베이스·반주",
     "Your PC needs the updated worker for song mode": "일반 곡 모드는 PC 워커 업데이트가 필요해요",
-    "This song was converted as a piano recording (the PC worker has no song mode yet). Update the worker and convert it again.": "이 곡은 피아노 연주로 변환됐어요(PC 워커에 아직 일반 곡 모드가 없어요). 워커를 업데이트한 뒤 다시 변환하세요."
+    "This song was converted as a piano recording (the PC worker has no song mode yet). Update the worker and convert it again.": "이 곡은 피아노 연주로 변환됐어요(PC 워커에 아직 일반 곡 모드가 없어요). 워커를 업데이트한 뒤 다시 변환하세요.",
+    "song: separated layers": "일반 곡: 음원 분리",
+    "Melody · bass · accompaniment": "멜로디 · 베이스 · 반주",
+    "Set apart (one model only)": "따로 둔 음 (한 모델만 들음)"
   }
 }
