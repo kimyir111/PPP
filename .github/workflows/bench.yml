@@ -277,8 +277,8 @@ jobs:
             tests/bench/out/core/run.json
           overwrite: true
 
-  # shard-h: the rests trainer check, test:home-worker, the key check, replay-public
-  #   (steps ~166 s on a fast runner, ~193 s on a slow one)
+  # shard-h: the rests trainer check, test:home-worker, test:server-hygiene, the key check, replay-public
+  #   (steps ~166 s on a fast runner, ~193 s on a slow one, before test:server-hygiene (G13-5): that step took 5 s on a runner)
   shard-h:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
@@ -297,6 +297,7 @@ jobs:
       - run: node tests/bench/tools/train_rests.js --check         # G10a-3 (AI-5b, S6): the silence classifier's weights and evaluation are what the training makes (G10 section 22; ~30-60 s)
       - run: python tests/bench/run.py run --suite replay-public   # exits with the replay verdict
       - run: npm run test:home-worker                              # G10b-1: the home-PC queue, its worker and server.js with it (Node only, ~40 s; the Postgres part skips without PPP_TEST_PG_URL)
+      - run: npm run test:server-hygiene                           # G13-5: the served-path allowlist (a lazy module the page loads must be on it), the security headers, the signup limit, the paged Shared Scores list (Node only; the Postgres part skips without PPP_TEST_PG_URL)
       - if: always()
         uses: actions/upload-artifact@v4
         with:

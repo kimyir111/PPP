@@ -159,6 +159,27 @@ async function queue(S, user, id) { return (await S.as(user).post('/api/jobs', {
     ok('the token is nowhere in the log', cap.lines().every(l => l.indexOf(token) < 0 && l.indexOf(token.slice(17)) < 0 && !/ppw_[A-Za-z0-9_-]{12}_[A-Za-z0-9_-]{20}/.test(l)));
     const none = await newWorker(S, token, st).w.runOnce();
     ok('--once with nothing waiting says so and exits 0', none === 0);
+
+    heading('song mode (G10d): a job of kind youtube-song');
+    const sj = (await S.as('u1').post('/api/jobs', { url: WATCH('songsong001'), title: 'A song', mode: 'song' })).body.job;
+    const sw = newWorker(S, token, st, { songLib: '/fake/song-lib' });
+    ok('the song job is done', (await sw.w.runOnce()) === 0 && sw.w.stats.done === 1, sw.cap.lines().join('\n').slice(-600));
+    const sa = JSON.parse(fs.readFileSync(process.env.FAKE_ARGV_FILE, 'utf8')).argv;
+    ok('transcribe.py is asked for --mode song, with the separation folder', sa[sa.indexOf('--mode') + 1] === 'song' && sa[sa.indexOf('--song-lib') + 1] === '/fake/song-lib', JSON.stringify(sa));
+    const sg = (await S.as('u1').get('/api/jobs/' + sj.id)).body;
+    ok('the site has the song result: mode song, every note with its layer', sg.result && sg.result.mode === 'song' && sg.result.notes.length === 120 && sg.result.notes.every(n => [1, 2, 3].indexOf(n.track) >= 0) && sg.result.song.melody === 40, JSON.stringify(sg.result && sg.result.song));
+    ok('the log says what was heard layer by layer, and that the drums were left out', /melody 40, bass 40, accompaniment 40 \(the drums are left out\)/.test(sw.cap.out.join('\n')) && /song mode/.test(sw.cap.out.join('\n')), sw.cap.out.join('\n').slice(0, 900));
+    await queue(S, 'u1', 'pianoafter1');
+    const pw = newWorker(S, token, st, { songLib: '/fake/song-lib' });
+    await pw.w.runOnce();
+    const pa = JSON.parse(fs.readFileSync(process.env.FAKE_ARGV_FILE, 'utf8')).argv;
+    ok('a piano job is not asked for song mode', pa.indexOf('--mode') < 0 && pa.indexOf('--song-lib') < 0, JSON.stringify(pa));
+    process.env.FAKE_MODE = 'nosep';
+    const nj = (await S.as('u1').post('/api/jobs', { url: WATCH('songnosep01'), title: 'No separation', mode: 'song' })).body.job;
+    await newWorker(S, token, st).w.runOnce();
+    const nr = jobOf(S, nj.id);
+    ok('a song job on a PC without the separation fails at once (not retried) and says what to install', nr.status === 'failed' && /demucs/.test(nr.error) && /Song mode/.test(nr.error), nr.status + ' / ' + nr.error);
+    delete process.env.FAKE_MODE;
     ok('the log line of a token it would otherwise show is cut', W.makeLog({ token: token }, () => {}, () => {}).redact('x ' + token + ' y Bearer abc.def') === 'x ppw_*** y Bearer ***');
 
     heading('failures: one short line on the site, the scratch removed');

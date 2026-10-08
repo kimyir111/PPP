@@ -257,6 +257,30 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
     await sleep(500);
     ok('a link that is not YouTube is refused by the page, before any request', /not a link to a YouTube video/.test(await text(pg, '[data-youtube]')) && pg.__rec.posts.filter(p => p.path === '/api/jobs').length === postsBefore);
 
+    heading('G10d: piano recording or song');
+    const modeOf = () => pg.evaluate(() => ({ piano: document.querySelector('[data-home-mode-piano]').getAttribute('aria-checked'), song: document.querySelector('[data-home-mode-song]').getAttribute('aria-checked'), note: document.querySelector('[data-home-mode-note]').innerText, kept: localStorage.getItem('ppp.homemode.v1') }));
+    const m0 = await modeOf();
+    ok('beside the button: "Piano recording" (chosen) or "Song (vocals, band)", with a line that says what each does', m0.piano === 'true' && m0.song === 'false' && /Piano recording: the piano models/.test(m0.note) && m0.kept === null, JSON.stringify(m0));
+    ok('the job asked for above (piano) went without a mode', !('mode' in JSON.parse(jpost.body)));
+    await click(pg, '[data-home-mode-song]');
+    await sleep(200);
+    const m1 = await modeOf();
+    ok('choosing Song marks it, says the voice becomes the tune and the drums are left out, and is remembered on this device', m1.song === 'true' && m1.piano === 'false' && /drums out/.test(m1.note) && m1.kept === 'song', JSON.stringify(m1));
+    const SONG_YT = 'https://www.youtube.com/watch?v=songsong001';
+    await typeLink(pg, SONG_YT);
+    await click(pg, '[data-home-pc]');
+    await pg.waitForFunction(() => document.querySelectorAll('[data-home-job]').length === 2, { timeout: 8000 });
+    const spost = pg.__rec.posts.filter(p => p.path === '/api/jobs' && p.method === 'POST' && JSON.parse(p.body).url === SONG_YT)[0];
+    ok('the button then asks for the conversion in song mode', !!spost && JSON.parse(spost.body).mode === 'song', spost && spost.body);
+    const songJob = (await req(port, 'GET', '/api/jobs', { code: code })).body.jobs.find(j => j.url === SONG_YT);
+    ok('the site has it as a song job, and the list says so', !!songJob && songJob.kind === 'youtube-song' && /· Song/.test(await pg.evaluate(id => document.querySelector('[data-home-job="' + id + '"] [data-home-status]').innerText, songJob.id)));
+    await req(port, 'POST', '/api/jobs/' + songJob.id + '/cancel', { code: code, body: {} });
+    await req(port, 'DELETE', '/api/jobs/' + songJob.id, { code: code });
+    await click(pg, '[data-home-mode-piano]');
+    await sleep(200);
+    ok('Piano recording again: chosen, and nothing is remembered (the default)', (await modeOf()).piano === 'true' && (await modeOf()).kept === null);
+    await goAdd(pg); await sleep(600);
+
     heading('looking again: backing off, stopping, a way to look once more');
     {
       const table = await pg.evaluate(() => {

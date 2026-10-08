@@ -1027,6 +1027,10 @@
     "Creating…": "만드는 중…",
     "Created a {{level}} {{style}} arrangement.": "{{level}} · {{style}} 편곡을 만들었습니다.",
     "Shared Scores": "악보 공유",
+    "Show more": "더 보기",
+    "Too many attempts. Try again later.": "시도가 너무 많았어요. 잠시 뒤에 다시 시도해 주세요.",
+    "Too many accounts were made from here just now. Try again later.": "이 네트워크에서 방금 계정이 너무 많이 만들어졌어요. 잠시 뒤에 다시 시도해 주세요.",
+    "PPP is making a lot of accounts just now. Try again in a little while.": "지금 계정을 만드는 사람이 많아요. 조금 뒤에 다시 시도해 주세요.",
     "Scores anyone can open": "누구나 볼 수 있는 악보",
     "Share": "공유",
     "Shared": "공유됨",
@@ -2202,6 +2206,15 @@
     "Unsupported style": "지원하지 않는 스타일이에요",
     "MIDI input": "MIDI 입력",
     "Reference score page {{n}}": "기준 악보 {{n}}페이지",
-    "Uploaded page {{n}}": "올린 {{n}}페이지"
+    "Uploaded page {{n}}": "올린 {{n}}페이지",
+    "What is it?": "어떤 음원인가요?",
+    "Piano recording": "피아노 연주",
+    "Song (vocals, band)": "일반 곡 (노래·밴드)",
+    "Song": "일반 곡",
+    "Song: your PC separates the voice, the bass and the other instruments first and leaves the drums out; the sung melody becomes the tune of the score. It takes a little longer.": "일반 곡: PC가 먼저 목소리, 베이스, 다른 악기를 나누고 드럼은 뺍니다. 노래 멜로디가 악보의 선율이 됩니다. 시간이 조금 더 걸려요.",
+    "Piano recording: the piano models listen to the recording as it is. For a song with singing or a band, choose Song.": "피아노 연주: 피아노 모델이 녹음을 그대로 듣습니다. 노래나 밴드가 있는 곡이면 「일반 곡」을 고르세요.",
+    "Song separation + melody, bass and accompaniment on your PC": "내 PC에서 음원 분리 + 멜로디·베이스·반주",
+    "Your PC needs the updated worker for song mode": "일반 곡 모드는 PC 워커 업데이트가 필요해요",
+    "This song was converted as a piano recording (the PC worker has no song mode yet). Update the worker and convert it again.": "이 곡은 피아노 연주로 변환됐어요(PC 워커에 아직 일반 곡 모드가 없어요). 워커를 업데이트한 뒤 다시 변환하세요."
   }
 }

@@ -1025,6 +1025,10 @@
     "Creating…": "正在创建…",
     "Created a {{level}} {{style}} arrangement.": "已创建{{level}}・{{style}}编配。",
     "Shared Scores": "乐谱分享",
+    "Show more": "显示更多",
+    "Too many attempts. Try again later.": "尝试次数太多了。请稍后再试。",
+    "Too many accounts were made from here just now. Try again later.": "这个网络刚刚创建了太多账号。请稍后再试。",
+    "PPP is making a lot of accounts just now. Try again in a little while.": "现在创建账号的人很多。请过一会儿再试。",
     "Scores anyone can open": "任何人都能打开的乐谱",
     "Share": "分享",
     "Shared": "已分享",
@@ -2202,6 +2206,15 @@
     "Unsupported style": "不支持的风格",
     "MIDI input": "MIDI 输入",
     "Reference score page {{n}}": "参考乐谱 第 {{n}} 页",
-    "Uploaded page {{n}}": "上传的第 {{n}} 页"
+    "Uploaded page {{n}}": "上传的第 {{n}} 页",
+    "What is it?": "这是什么音源？",
+    "Piano recording": "钢琴演奏",
+    "Song (vocals, band)": "普通歌曲（人声、乐队）",
+    "Song": "普通歌曲",
+    "Song: your PC separates the voice, the bass and the other instruments first and leaves the drums out; the sung melody becomes the tune of the score. It takes a little longer.": "普通歌曲：电脑先分离人声、贝斯和其他乐器，并去掉鼓；演唱的旋律成为乐谱的主旋律。需要稍长一点的时间。",
+    "Piano recording: the piano models listen to the recording as it is. For a song with singing or a band, choose Song.": "钢琴演奏：钢琴模型直接听录音。有人声或乐队的歌曲请选择「普通歌曲」。",
+    "Song separation + melody, bass and accompaniment on your PC": "在我的电脑上分离音源 + 旋律、贝斯、伴奏",
+    "Your PC needs the updated worker for song mode": "普通歌曲模式需要更新电脑上的 worker",
+    "This song was converted as a piano recording (the PC worker has no song mode yet). Update the worker and convert it again.": "这首歌按钢琴演奏转换了（电脑上的 worker 还没有普通歌曲模式）。请更新 worker 后重新转换。"
   }
 }

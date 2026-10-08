@@ -336,31 +336,15 @@ def consensus(results, onset_tolerance=0.09):
     }
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument('--wav', required=True)
-    ap.add_argument('--kong-wav', default='')
-    ap.add_argument('--out', required=True)
-    ap.add_argument('--checkpoint', default='')
-    ap.add_argument('--aria-checkpoint', default='')
-    ap.add_argument('--device', default='auto')
-    ap.add_argument('--engine', default='auto')
-    a = ap.parse_args()
+MODEL_NAMES = {
+    'transkun': 'TransKun V2',
+    'piano-transcription': 'Kong et al. high-resolution piano transcription',
+    'aria-amt': 'Aria-AMT piano transcription'
+}
 
-    t0 = time.time()
-    import soundfile as sf
-    import torch
 
-    audio, sr = sf.read(a.wav, dtype='float32', always_2d=False)
-    duration = (audio.shape[0] if audio.ndim == 1 else audio.shape[0]) / float(sr)
-
-    if a.device == 'auto':
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    else:
-        device = a.device
-    if device == 'cpu':
-        torch.set_num_threads(max(1, os.cpu_count() or 1))
-
+def run_piano_models(a, wav, kong_wav, device, lo=0.02, width=0.94):
+    """The piano ensemble on one recording -> (results, failures). Progress runs from lo to lo + width."""
     requested = a.engine.lower()
     available = []
     if have_transkun():
@@ -383,37 +367,265 @@ def main():
     results = []
     failures = []
     for index, engine in enumerate(chosen):
-        lo = 0.02 + index / len(chosen) * 0.94
-        span = 0.94 / len(chosen)
+        base = lo + index / len(chosen) * width
+        span = width / len(chosen)
         say('ENGINE ' + engine)
-        say('PROGRESS %.3f' % lo)
+        say('PROGRESS %.3f' % base)
         try:
             if engine == 'transkun':
-                notes, pedals = transcribe_transkun(a.wav, device)
+                notes, pedals = transcribe_transkun(wav, device)
             elif engine == 'piano-transcription':
-                kong_wav = a.kong_wav or a.wav
                 notes, pedals, _kong_duration = transcribe_kong(
-                    kong_wav, a.checkpoint, device,
-                    progress=lambda p, base=lo, width=span: say('PROGRESS %.3f' % (base + width * p)))
+                    kong_wav or wav, a.checkpoint, device,
+                    progress=lambda p, b=base, w=span: say('PROGRESS %.3f' % (b + w * p)))
             else:
-                notes, pedals = transcribe_aria(a.wav, a.aria_checkpoint)
+                notes, pedals = transcribe_aria(wav, a.aria_checkpoint)
             results.append({'engine': engine, 'notes': notes, 'pedals': pedals})
-            say('PROGRESS %.3f' % (lo + span))
+            say('PROGRESS %.3f' % (base + span))
         except Exception as e:
             failures.append({'engine': engine, 'error': str(e)[:300]})
             sys.stderr.write('%s failed: %s\n' % (engine, e))
+    return results, failures
 
+
+# ---------------------------------------------------------------- song mode
+# A song that is not a piano recording (singing, a band, electronic music). The piano models are trained on piano alone: on a song
+# TransKun hears almost nothing of the voice (2 notes of a 2:37 vocal stem) and Kong hears the drums as notes, so the ensemble keeps the
+# drums and sets the tune apart. Song mode separates the recording first (Demucs htdemucs_6s), leaves the drums out, follows the sung
+# melody and the bass line with a pitch tracker (one note at a time), and runs the piano ensemble on what is left (guitar, piano, other).
+# Every note says which layer it is: track 1 the melody (the voice), 2 the bass, 3 the accompaniment.
+SONG_TRACK = {'melody': 1, 'bass': 2, 'accomp': 3}
+SONG_MODEL = 'htdemucs_6s'
+PT_SR = 22050          # the pitch tracker's sample rate
+PT_HOP = 256           # 11.6 ms a frame
+NOTE_MIN_S = 0.09      # a tracked note shorter than this is a glide or a consonant, not a note
+SPLIT_MIN_S = 0.06     # an onset splits a held pitch only when both pieces are at least this long
+PITCH_TOL = 0.6        # semitones a frame may stray from the note's median and still belong to it
+JOIN_GAP_S = 0.04      # two pieces of the same pitch closer than this (no onset between them) are one note
+LAYER_MIN = 0.08       # a stem quieter than this share of the mix (95th-percentile frame level) is not there at all
+DOUBLE_TOL_S = 0.06    # an accompaniment note on the same key as a melody or bass note this close is the same sound heard twice
+
+
+def separate(wav, device, lib):
+    """wav (44.1 kHz) -> ({source: float32 array [channels, samples]}, sample rate) with Demucs."""
+    if lib and lib not in sys.path:
+        sys.path.insert(0, lib)
+    try:
+        from demucs.pretrained import get_model
+        from demucs.apply import apply_model
+    except Exception as e:
+        raise SystemExit('SONG_SEPARATION_MISSING: the source separation (demucs) is not installed on this PC: ' + str(e)[:200])
+    import numpy as np
+    import soundfile as sf
+    import torch
+    model = get_model(SONG_MODEL)
+    model.eval()
+    model.to(device)
+    x, sr = sf.read(wav, dtype='float32', always_2d=True)
+    if sr != model.samplerate:
+        raise SystemExit('the separation needs %d Hz audio, got %d' % (model.samplerate, sr))
+    if x.shape[1] == 1:
+        x = np.repeat(x, 2, axis=1)
+    t = torch.from_numpy(np.ascontiguousarray(x[:, :2].T))
+    ref = t.mean(0)
+    mu, sd = ref.mean(), ref.std() + 1e-8
+    with torch.no_grad():
+        y = apply_model(model, ((t - mu) / sd)[None].to(device), device=device, shifts=1, split=True, overlap=0.25, progress=False)[0]
+    y = (y * sd + mu).cpu().numpy()
+    return {name: y[i] for i, name in enumerate(model.sources)}, sr
+
+
+def frame_level(mono, frame=2048, hop=PT_HOP):
+    import numpy as np
+    import librosa
+    return librosa.feature.rms(y=mono, frame_length=frame, hop_length=hop)[0].astype(np.float64)
+
+
+def track_notes(mono, sr, fmin, fmax, gate):
+    """One note at a time from a separated stem: pYIN pitch, cut into notes where the pitch moves (more than PITCH_TOL from the
+    note's median) and where an onset falls inside a held pitch (a repeated note). Frames quieter than `gate` are silence."""
+    import numpy as np
+    import librosa
+    y = librosa.resample(mono, orig_sr=sr, target_sr=PT_SR) if sr != PT_SR else mono
+    frame = 4096 if fmin < 60 else 2048
+    f0, voiced, _p = librosa.pyin(y, fmin=fmin, fmax=fmax, sr=PT_SR, frame_length=frame, hop_length=PT_HOP)
+    # the level that says sound or silence is read over a short window (23 ms; 46 ms for a bass): over the pitch tracker's long one a break of 80 ms
+    # between two sung notes is not silence, and the release of the first note is cut off as a note of its own
+    level = frame_level(y, frame=1024 if fmin < 60 else 512)
+    n = min(len(f0), len(level))
+    midi = librosa.hz_to_midi(np.where(np.isnan(f0[:n]), 1.0, f0[:n]))
+    on_frames = set(int(i) for i in librosa.onset.onset_detect(y=y, sr=PT_SR, hop_length=PT_HOP, backtrack=False))
+    dt = PT_HOP / float(PT_SR)
+    split_min = int(round(SPLIT_MIN_S / dt))
+    segs = []
+    cur = None
+    for i in range(n):
+        ok = bool(voiced[i]) and not np.isnan(f0[i]) and level[i] >= gate
+        if ok and cur is not None:
+            med = float(np.median(cur['m']))
+            if abs(midi[i] - med) <= PITCH_TOL and not (i in on_frames and i - cur['a'] >= split_min):
+                cur['m'].append(midi[i]); cur['lv'].append(level[i]); cur['b'] = i + 1
+                continue
+        if cur is not None:
+            segs.append(cur)
+            cur = None
+        if ok:
+            cur = {'a': i, 'b': i + 1, 'm': [midi[i]], 'lv': [level[i]], 'onset': i in on_frames}
+    if cur is not None:
+        segs.append(cur)
+    notes = []
+    for s in segs:
+        key = int(round(float(np.median(s['m']))))
+        on, off = s['a'] * dt, s['b'] * dt
+        if notes and notes[-1]['midi'] == key and on - notes[-1]['off'] <= JOIN_GAP_S and not s['onset']:
+            notes[-1]['off'] = off
+            notes[-1]['_lv'] = max(notes[-1]['_lv'], max(s['lv']))
+            continue
+        notes.append({'on': on, 'off': off, 'midi': key, '_lv': max(s['lv'])})
+    peak = max([x['_lv'] for x in notes] or [1.0]) or 1.0
+    out = []
+    for x in notes:
+        if x['off'] - x['on'] < NOTE_MIN_S or x['midi'] < 21 or x['midi'] > 108:
+            continue
+        vel = int(round(40 + 75 * min(1.0, (x['_lv'] / peak) ** 0.5)))
+        out.append({'on': round(x['on'], 4), 'off': round(x['off'], 4), 'midi': x['midi'], 'vel': vel})
+    return out
+
+
+def drop_doubles(accomp, others):
+    """Accompaniment notes that are the melody or the bass heard again (the same key, starting within DOUBLE_TOL_S) go."""
+    by_key = {}
+    for n in others:
+        by_key.setdefault(n['midi'], []).append(n['on'])
+    kept, dropped = [], 0
+    for n in accomp:
+        if any(abs(t - n['on']) <= DOUBLE_TOL_S for t in by_key.get(n['midi'], [])):
+            dropped += 1
+            continue
+        kept.append(n)
+    return kept, dropped
+
+
+def run_song(a, device, duration, t0):
+    import numpy as np
+    import soundfile as sf
+    say('ENGINE separation')
+    say('PROGRESS 0.020')
+    stems, sr = separate(a.wav, device, a.song_lib)
+    try:
+        import torch
+        if device == 'cuda':
+            torch.cuda.empty_cache()   # the separation's cached blocks go before TransKun (a subprocess) needs the GPU
+    except Exception:
+        pass
+    say('PROGRESS 0.300')
+    mono = {k: v.mean(axis=0).astype(np.float32) for k, v in stems.items()}
+    mix_mono = sum(mono.values())
+    mix_p95 = float(np.percentile(frame_level(mix_mono), 95)) or 1e-6
+    p95 = {k: float(np.percentile(frame_level(v), 95)) for k, v in mono.items()}
+    present = {k: p95[k] >= LAYER_MIN * mix_p95 for k in mono}
+    import librosa
+    melody, bass = [], []
+    if present.get('vocals'):
+        say('ENGINE vocal-melody')
+        melody = track_notes(mono['vocals'], sr, librosa.note_to_hz('C2'), librosa.note_to_hz('C6'), gate=0.1 * p95['vocals'])
+        for n in melody:
+            n['track'] = SONG_TRACK['melody']
+    say('PROGRESS 0.400')
+    if present.get('bass'):
+        say('ENGINE bass-line')
+        bass = track_notes(mono['bass'], sr, librosa.note_to_hz('A0'), librosa.note_to_hz('C4'), gate=0.1 * p95['bass'])
+        for n in bass:
+            n['track'] = SONG_TRACK['bass']
+    say('PROGRESS 0.450')
+    # the accompaniment: everything that is neither the voice, nor the bass, nor the drums
+    rest_names = [k for k in stems if k not in ('vocals', 'bass', 'drums')]
+    accomp, failures, merged = [], [], None
+    # next to the output (the worker's job folder, which it removes even when it has to stop this process), not in the system's temp
+    work = tempfile.mkdtemp(prefix='song-', dir=os.path.dirname(os.path.abspath(a.out)))
+    try:
+        if rest_names and any(present.get(k) for k in rest_names):
+            rest = sum(stems[k] for k in rest_names)
+            w44 = os.path.join(work, 'accomp.wav')
+            sf.write(w44, rest.T, sr, subtype='PCM_16')
+            w16 = os.path.join(work, 'accomp-16k.wav')
+            sf.write(w16, librosa.resample(rest.mean(axis=0), orig_sr=sr, target_sr=16000), 16000, subtype='PCM_16')
+            results, failures = run_piano_models(a, w44, w16, device, lo=0.45, width=0.53)
+            if results:
+                merged = consensus(results)
+                accomp = merged['notes']
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    accomp, doubles = drop_doubles(accomp, melody + bass)
+    for n in accomp:
+        n['track'] = SONG_TRACK['accomp']
+    notes = sorted(melody + bass + accomp, key=lambda n: (n['on'], n['midi']))
+    if len(notes) < 4:
+        raise SystemExit('SONG_NO_NOTES: no melody, bass or accompaniment was heard in this recording')
+    used = [r for r in (merged['ensemble']['models'] if merged else [])]
+    model = 'Demucs ' + SONG_MODEL + ' + pYIN melody and bass' + (' + ' + ' + '.join(MODEL_NAMES.get(m, m) for m in used) + ' on the accompaniment' if used else '')
+    ens = merged['ensemble'] if merged else {'models': [], 'primary': None, 'agreement': None, 'accepted': 0, 'uncertain': 0}
+    return {
+        'engine': 'song',
+        'mode': 'song',
+        'model': model,
+        'device': device,
+        'duration': duration,
+        'ms': int((time.time() - t0) * 1000),
+        'notes': notes,
+        'pedals': [],
+        'uncertainNotes': merged['uncertainNotes'] if merged else [],
+        'ensemble': ens,
+        'song': {
+            'separation': SONG_MODEL, 'melody': len(melody), 'bass': len(bass), 'accomp': len(accomp), 'doublesDropped': doubles,
+            'layers': {k: round(p95[k] / mix_p95, 3) for k in sorted(p95)}
+        },
+        'modelFailures': failures
+    }
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--wav', required=True)
+    ap.add_argument('--kong-wav', default='')
+    ap.add_argument('--out', required=True)
+    ap.add_argument('--checkpoint', default='')
+    ap.add_argument('--aria-checkpoint', default='')
+    ap.add_argument('--device', default='auto')
+    ap.add_argument('--engine', default='auto')
+    ap.add_argument('--mode', default='piano', choices=['piano', 'song'])
+    ap.add_argument('--song-lib', default='')
+    a = ap.parse_args()
+
+    t0 = time.time()
+    import soundfile as sf
+    import torch
+
+    audio, sr = sf.read(a.wav, dtype='float32', always_2d=False)
+    duration = (audio.shape[0] if audio.ndim == 1 else audio.shape[0]) / float(sr)
+
+    if a.device == 'auto':
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    else:
+        device = a.device
+    if device == 'cpu':
+        torch.set_num_threads(max(1, os.cpu_count() or 1))
+
+    if a.mode == 'song':
+        result = run_song(a, device, duration, t0)
+        with open(a.out, 'w', encoding='utf-8') as f:
+            json.dump(result, f)
+        say('PROGRESS 1')
+        say('DONE')
+        return
+
+    results, failures = run_piano_models(a, a.wav, a.kong_wav, device)
     if not results:
         raise SystemExit('all transcription engines failed: ' + '; '.join(x['engine'] for x in failures))
     merged = consensus(results)
     notes, pedals = merged['notes'], merged['pedals']
     engine = 'ensemble' if len(results) > 1 else results[0]['engine']
-    model_names = {
-        'transkun': 'TransKun V2',
-        'piano-transcription': 'Kong et al. high-resolution piano transcription',
-        'aria-amt': 'Aria-AMT piano transcription'
-    }
-    model_name = ' + '.join(model_names.get(r['engine'], r['engine']) for r in results)
+    model_name = ' + '.join(MODEL_NAMES.get(r['engine'], r['engine']) for r in results)
     result = {
         'engine': engine,
         'model': model_name,
