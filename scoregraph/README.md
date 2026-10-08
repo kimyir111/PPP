@@ -67,4 +67,5 @@ use (`I-EXT`). Registered:
 | --- | --- | --- | --- |
 | `musicxml.beam` | Beam spanner | `{levels: n}` | the source wrote only the first `n` beam levels (for example only the primary beam over sixteenths); the export writes no deeper level. Set by the MusicXML import only when the source wrote fewer levels than the note values imply. |
 | `ppp.g3` | Event | `{was: {dur, display}}` | G3's own audit trail (docs/GOALS/G03 §18.1–18.2): what a G3b pass (R-reg, off by default) changed a notated length from. Holds no ID (an ID inside `ext` is never checked, G02 §18 S5). Nothing reads it back; G3a writes nothing here. |
+| `ppp.omr` | graph | `{hands: 'by-staff', engine?}` | the graph was made from a page by an OMR engine (omr/apply.js `markOmr`, G12-2). `legacy-score.js` `toScore` then gives a graph none of whose parts has two staves (the engine split a grand staff into parts of one staff each) the hands by staff position, the top staff right and every other left, instead of playing the last part only and silencing the rest. Any other graph is read as before. |
 | `test.*` | anywhere | any JSON | reserved for test fixtures |

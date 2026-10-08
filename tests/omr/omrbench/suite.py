@@ -434,6 +434,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--normalize", action="store_true", help="(engine mode, diagnostic) read each case's files through omr/normalize.js (G12-1), as the app does under PPP.omr = 'v2'; never a baseline")
     p.add_argument("--omr", choices=("legacy", "v2"), default=None, help="(app mode) the page's PPP.omr for the run (default: the page's own, legacy); results go to <out>/app-v2 for v2")
     p.add_argument("--base-url", default=None, help="(app mode) an app server already running; default: one started here on a free port")
+    p.add_argument("--replay", action="store_true", help="(app mode, G12-2) no helper and no engine: the page is told what Audiveris wrote earlier (<out>/engine, from an engine-alone run), so any tree's page can be compared on the same engine output; results go to <out>/app[-v2]-replay")
     p.set_defaults(fn=lambda a: run_engine(a) if a.mode == "engine" else run_app(a))
     p = sub.add_parser("check", help="compare a results file with the committed baseline")
     p.add_argument("--results")

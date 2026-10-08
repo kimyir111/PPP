@@ -34,7 +34,9 @@ python tests/bench/run.py omr-live-2 baseline --reason "..."          # record t
 
 python tests/bench/run.py omr-live-2 run --mode app                   # the same pages through Import.load with the helper (Audiveris), 6 pieces
 python tests/bench/run.py omr-live-2 run --mode app-nohelper          # ... with no helper: the browser draft reader, i.e. what the live site does today
-python tests/bench/run.py omr-live-2 run --mode app --omr v2          # ... with PPP.omr = 'v2' (G12-1: omr/normalize.js keeps what the engine read); results in out/app-v2/
+python tests/bench/run.py omr-live-2 run --mode app --omr v2          # ... with PPP.omr = 'v2' (G12-1: omr/normalize.js keeps what the engine read; G12-2: the import is a ScoreGraph, PdfLayer's findings are its edits); results in out/app-v2/
+python tests/bench/run.py omr-live-2 run --mode app --omr v2 --replay --cases all --base-url http://127.0.0.1:PORT   # ... with no engine: the page is told what Audiveris wrote in an earlier engine-alone run (out/engine), so two trees' pages (a `git archive` of main on one port, this tree on another) are compared on the same engine output; results in out/app-v2-replay/
+node tests/omr/node/s4-stats.js --check                              # no browser: every engine document through normalize + the ScoreGraph importer: refusals, repairs, beams (G12-2)
 python tests/bench/run.py omr-live-2 run --normalize --cases s1       # engine alone, each case's files read through omr/normalize.js (diagnostic; never a baseline)
 python tests/bench/run.py omr-live-2 fetch-real --check               # the real-scan tier (offline); see below
 ```
