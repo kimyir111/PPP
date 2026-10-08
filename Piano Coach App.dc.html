@@ -1952,6 +1952,11 @@
               </div>
             </sc-for>
           </div>
+          <sc-if value="{{ sharedHasMore }}" hint-placeholder-val="{{ false }}">
+            <div data-shared-more style="display: flex; justify-content: center; padding: 4px 0 20px;">
+              <button onClick="{{ sharedMoreOn }}" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--accent); color: var(--accent);">{{ sharedMoreLabel }}</button>
+            </div>
+          </sc-if>
         </div>
       </sc-if>
 
@@ -12505,6 +12510,7 @@ class Component extends DCLogic {
       authName: '',
       /* Shared Scores, and the share dialog (null when closed) */
       sharedList: null, sharedLoad: 'idle', sharedError: '', sharedFilter: 'All', sharedQuery: '',
+      sharedNext: null, sharedGenres: null, sharedMore: 'idle', sharedNearN: 0,
       sharedLinked: null, sharedOpening: null, shareDlg: null,
       /* Piano Basics: where you are in the course, what is done, and the
          working state of the step on screen (see learnVals) */
@@ -12666,6 +12672,7 @@ class Component extends DCLogic {
     this.maybeReplan();
     this.followKeyboard();
     this.followStaff();
+    this.watchShared();
     if (this._i18nRaf) cancelAnimationFrame(this._i18nRaf);
     this._i18nRaf = requestAnimationFrame(() => { this._i18nRaf = 0; this.applyI18n(); });
     const alias = this.state.screen;
@@ -12691,6 +12698,7 @@ class Component extends DCLogic {
   }
   componentWillUnmount() {
     this._dead = true;
+    this.unwatchShared();
     clearInterval(this._iv);
     if (this._i18nRaf) cancelAnimationFrame(this._i18nRaf);
     clearTimeout(this._an); clearTimeout(this._toast); clearTimeout(this._quiz); clearTimeout(this._save);
@@ -16873,25 +16881,135 @@ class Component extends DCLogic {
     });
     if (changed) this.libraryWrite(lib);
   }
-  /* Shared Scores: everything posted, or only yours (posted or not). */
-  loadShared(quiet) {
+  /* Shared Scores: everything posted, or only yours (posted or not). G13-5: what is posted comes a page at a time (the server's SHARE_PAGE; the search and the
+     genre are asked of the server, which knows all of it), and the next page when the end of the list comes near (watchShared) or the button is pressed. Yours
+     is the whole list in one answer, as before: the cards of My Songs are marked "shared" from it. An older server answers everything and no cursor: the same screen. */
+  loadShared(quiet, more, fresh) {
     const S = this.state;
     const mine = S.sharedFilter === 'Mine';
-    const seq = this._sharedSeq = (this._sharedSeq || 0) + 1;
-    if (mine && !S.user) { this.setState({ sharedList: [], sharedLoad: 'ready', sharedError: '' }); return; }
-    if (!quiet) this.setState({ sharedLoad: 'loading', sharedError: '' });
-    this.shareApi(mine ? '?mine=1' : '')
+    if (more && (S.sharedMore === 'loading' || !S.sharedNext || mine)) return;
+    const seq = more ? (this._sharedSeq || 0) : (this._sharedSeq = (this._sharedSeq || 0) + 1);
+    if (mine && !S.user) { this.setState({ sharedList: [], sharedNext: null, sharedLoad: 'ready', sharedError: '' }); return; }
+    if (more) this.setState({ sharedMore: 'loading' });
+    else this.setState(quiet ? { sharedMore: 'idle' } : { sharedLoad: 'loading', sharedError: '', sharedMore: 'idle' });
+    const genre = SHARE_GENRES.indexOf(S.sharedFilter) > -1 ? S.sharedFilter : '';
+    const q = (S.sharedQuery || '').trim();
+    const have = (S.sharedList || []).length;
+    /* a refresh keeps as many rows as the person has already scrolled to */
+    const args = mine ? ['mine=1'] : more ? ['cursor=' + encodeURIComponent(S.sharedNext)]
+      : ['limit=' + Math.max(24, Math.min(100, quiet && !fresh ? have : 0))];
+    if (!mine && genre) args.push('genre=' + encodeURIComponent(genre));
+    if (!mine && q) args.push('q=' + encodeURIComponent(q.slice(0, 80)));
+    this.shareApi('?' + args.join('&'))
       .then(body => {
         if (seq !== this._sharedSeq) return;
-        const list = Array.isArray(body.shares) ? body.shares : [];
-        this.setState({ sharedList: list, sharedLoad: 'ready' });
-        if (mine) this.syncShareCards(list);
+        const rows = Array.isArray(body.shares) ? body.shares : [];
+        const next = typeof body.next === 'string' && body.next ? body.next : null;
+        const patch = { sharedNext: mine ? null : next, sharedLoad: 'ready', sharedMore: 'idle' };
+        if (Array.isArray(body.genres)) patch.sharedGenres = body.genres;
+        if (more) {
+          const cur = this.state.sharedList || [], seen = new Set(cur.map(x => x.id));
+          patch.sharedList = cur.concat(rows.filter(x => !seen.has(x.id)));
+          this._sharedRewatch = true; /* the "Show more" row is asked about again: it may still be in view */
+        } else patch.sharedList = rows;
+        this.setState(patch);
+        if (mine) this.syncShareCards(rows);
       })
-      .catch(e => { if (seq === this._sharedSeq) this.setState({ sharedLoad: 'error', sharedError: e.message }); });
+      .catch(e => {
+        if (seq !== this._sharedSeq) return;
+        if (more) this.setState({ sharedMore: 'error', sharedError: e.message });
+        else this.setState({ sharedLoad: 'error', sharedError: e.message });
+      });
   }
   setSharedFilter(f) {
     if (this.state.sharedFilter === f) return;
-    this.setState({ sharedFilter: f, sharedList: null }, () => this.loadShared());
+    this.setState({ sharedFilter: f, sharedList: null, sharedNext: null }, () => this.loadShared());
+  }
+  /* typing in the search box asks the server again once the typing stops (the answer replaces the list; the cards already there stay until it comes) */
+  setSharedQuery(v) {
+    const mine = this.state.sharedFilter === 'Mine';
+    /* the cursor of the old list is no use to the new search: no "Show more" until the answer is in */
+    this.setState(mine ? { sharedQuery: v } : { sharedQuery: v, sharedNext: null });
+    clearTimeout(this._sharedQT);
+    if (mine) return;
+    this._sharedQT = setTimeout(() => { if (!this._dead && this.state.screen === 'shared') this.loadShared(true, false, true); }, 300);
+  }
+  /* G13-5: this screen drew the preview of every card at once (110 cards: 14,636 nodes, 89 MB on a phone). A card draws its preview only while it is within
+     a few hundred pixels of the window, and lets it go when it is far off (its box keeps its height, so nothing moves); the first screenful is drawn before
+     the window has been asked. IntersectionObserver on the element that scrolls; where there is none, a scroll listener asks the cards where they are. The same
+     watch loads the next page when the "Show more" row comes near. */
+  watchShared() {
+    const root = this._root && this._root.current;
+    if (this.state.screen !== 'shared' || !root) { if (this._sharedIO || this._sharedNear) this.unwatchShared(); return; }
+    const els = root.querySelectorAll('[data-shared], [data-shared-more]');
+    if (!els.length) return;
+    let scroller = this._sharedScroller;
+    if (!scroller || !scroller.isConnected) {
+      scroller = null;
+      for (let e = els[0].parentElement; e && e !== document.documentElement; e = e.parentElement) {
+        const o = getComputedStyle(e).overflowY;
+        if (o === 'auto' || o === 'scroll') { scroller = e; break; }
+      }
+      if (scroller !== this._sharedScroller) this.unwatchShared();
+      this._sharedScroller = scroller;
+    }
+    const MARGIN = 300;
+    const apply = (el, hit) => {
+      if (el.hasAttribute('data-shared-more')) { if (hit && this.state.sharedMore !== 'error') this.loadShared(true, true); return; }
+      const id = el.getAttribute('data-shared');
+      const near = this._sharedNear || (this._sharedNear = new Set());
+      if (hit === near.has(id)) return;
+      if (hit) near.add(id); else near.delete(id);
+      this._sharedDirty = true;
+    };
+    const flush = () => {
+      if (!this._sharedDirty || this._sharedRaf) return;
+      this._sharedRaf = requestAnimationFrame(() => {
+        this._sharedRaf = 0;
+        if (this._sharedDirty && !this._dead) { this._sharedDirty = false; this.setState(st => ({ sharedNearN: (st.sharedNearN || 0) + 1 })); }
+      });
+    };
+    if (typeof IntersectionObserver === 'function') {
+      if (!this._sharedIO) {
+        this._sharedIO = new IntersectionObserver(es => {
+          es.forEach(en => { if (!en.target.isConnected) { this._sharedIO.unobserve(en.target); return; } apply(en.target, en.isIntersecting); });
+          flush();
+        }, { root: scroller, rootMargin: MARGIN + 'px 0px' });
+      }
+      els.forEach(el => {
+        if (!el.__pppSharedSeen) { el.__pppSharedSeen = true; this._sharedIO.observe(el); }
+        else if (this._sharedRewatch && el.hasAttribute('data-shared-more')) { this._sharedIO.unobserve(el); this._sharedIO.observe(el); }
+      });
+      this._sharedRewatch = false;
+    } else if (!this._sharedScan) {
+      /* no IntersectionObserver: look at the cards when the window scrolls or changes size (one look a frame) */
+      const target = scroller || window;
+      const scan = () => {
+        const host = this._root && this._root.current;
+        if (!host || this.state.screen !== 'shared') return;
+        const box = scroller ? scroller.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+        host.querySelectorAll('[data-shared], [data-shared-more]').forEach(el => {
+          const r = el.getBoundingClientRect();
+          apply(el, r.bottom >= box.top - MARGIN && r.top <= box.bottom + MARGIN);
+        });
+        flush();
+      };
+      let raf = 0;
+      this._sharedScan = { target: target, fn: () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; scan(); }); }, scan: scan };
+      target.addEventListener('scroll', this._sharedScan.fn, { passive: true });
+      window.addEventListener('resize', this._sharedScan.fn);
+    }
+    if (this._sharedScan) this._sharedScan.scan();
+  }
+  unwatchShared() {
+    if (this._sharedIO) { this._sharedIO.disconnect(); this._sharedIO = null; }
+    if (this._sharedScan) {
+      this._sharedScan.target.removeEventListener('scroll', this._sharedScan.fn);
+      window.removeEventListener('resize', this._sharedScan.fn);
+      this._sharedScan = null;
+    }
+    if (this._sharedRaf) { cancelAnimationFrame(this._sharedRaf); this._sharedRaf = 0; }
+    this._sharedNear = null; this._sharedDirty = false; this._sharedScroller = null;
   }
   /* A shared score's link lands on it, for anyone, signed in or not. */
   landShared(id) {
@@ -16952,14 +17070,19 @@ class Component extends DCLogic {
     try {
       if (full && full.measures && full.measures.length) sc = Score.finalize(openingBars(JSON.parse(JSON.stringify(full)), bars));
     } catch (e) { sc = null; }
-    return (this._sharedThumbs[key] = sc);
+    this._sharedThumbs[key] = sc;
+    /* the oldest go when there are many (a long list scrolled through) */
+    const keys = Object.keys(this._sharedThumbs);
+    if (keys.length > 60) delete this._sharedThumbs[keys[0]];
+    return sc;
   }
-  /* One card of Shared Scores, and the larger one a link lands on. */
-  sharedCard(x, big) {
+  /* One card of Shared Scores, and the larger one a link lands on. Its preview is made only while the card is near the window (watchShared; idx: its place in the list). */
+  sharedCard(x, big, idx) {
     const S = this.state;
     const have = this.sharedOnShelf(x);
     const opening = S.sharedOpening === x.id;
-    const th = big ? this.sharedThumb('linked:' + x.id, this._linkedScore, 4) : this.sharedThumb(x.id + ':' + x.updatedAt, x.preview, 2);
+    const near = big || (this._sharedNear ? this._sharedNear.has(x.id) : idx < 6);
+    const th = !near ? null : big ? this.sharedThumb('linked:' + x.id, this._linkedScore, 4) : this.sharedThumb(x.id + ':' + x.updatedAt, x.preview, 2);
     return {
       id: x.id, title: x.title,
       sub: [x.composer, tx('Shared by {{name}}', { name: x.owner })].filter(Boolean).join(' · '),
@@ -17393,7 +17516,7 @@ class Component extends DCLogic {
     } else if (!shown.length) note = tx(genre ? 'No shared score in {{genre}}.' : 'No shared score matches “{{q}}”.',
       genre ? { genre: tx(genre) } : { q: q });
     /* All, then the genres that actually have a score behind them, then yours */
-    const present = SHARE_GENRES.filter(g => list.some(x => (x.genre || '') === g));
+    const present = SHARE_GENRES.filter(g => S.sharedGenres ? S.sharedGenres.indexOf(g) > -1 : list.some(x => (x.genre || '') === g));
     const chips = [['All', tx('All')]]
       .concat(present.map(g => [g, tx(g)]))
       .concat([['Mine', tx('Shared by me')]]);
@@ -17401,8 +17524,11 @@ class Component extends DCLogic {
       sharedFilters: chips.map(([id, label]) => ({
         label: label, style: this.pill(filter === id), on: () => this.setSharedFilter(id)
       })),
-      sharedQuery: S.sharedQuery || '', setSharedQuery: e => this.setState({ sharedQuery: e.target.value }),
-      sharedCards: shown.map(x => this.sharedCard(x)),
+      sharedQuery: S.sharedQuery || '', setSharedQuery: e => this.setSharedQuery(e.target.value),
+      sharedCards: shown.map((x, i) => this.sharedCard(x, false, i)),
+      sharedHasMore: !!S.sharedNext && !mine && S.sharedLoad === 'ready',
+      sharedMoreLabel: S.sharedMore === 'loading' ? tx('Loading shared scores…') : S.sharedMore === 'error' ? tx('Try again') : tx('Show more'),
+      sharedMoreOn: () => this.loadShared(true, true),
       sharedHasNote: !!note, sharedNote: note,
       sharedHasAction: !!act, sharedActionLabel: act ? act.label : '', sharedAction: act ? act.on : null,
       /* the score a link landed on: a list of one once it has arrived */
