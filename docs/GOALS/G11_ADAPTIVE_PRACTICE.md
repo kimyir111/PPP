@@ -782,7 +782,7 @@ when the probes themselves change) breaks "simulated counted as measured", "Foll
 **Byte identity under `legacy`:** a scripted session of ten laps (measured x4, a recall with hints, Follow, Demo Input x4; seeded `Math.random`, the app's injectable clock, `Date.now` frozen from the first script on)
 is run on the page of `a070d70` (before this phase) and on this page; the SHA-256 and size of `ppp.state.v2`, `ppp.song.v1.demo`, `ppp.library.v1`, `history`, `memory`, `secs` and the run list are equal
 (`tests/practice/baselines/learner-legacy.json`, written from the old page by `node tests/practice/learner-record.js --rev a070d70`, twice, equal). Under `typed` the same session equals the golden once the `source` key of each run summary
-is taken out.
+is taken out. The G11b-0 simulator runs the page's own `completeLap` in a vm: it now takes nine more declarations with it (`LEARNER_*`, `DEMO_RUNS_*`, `runSource`), so `legacy-gate.json` and `legacy-full.json` list them in `appCode.declarations` (nothing else in either file changed), and the 144 gate runs, recomputed against the new page, are identical.
 
 **Budgets** (1,763-note Sonatina, 158 measures, whole piece in one run, CPU 4x, 60 laps): the log's synchronous share of a lap (building the entry, queueing the write) has a median of 1.0-1.2 ms and a p90 of 1.3-1.8 ms
 (the first lap of a page, which compiles the code, 4.7-6.3 ms; now and then one lap shows 10-16 ms when Chrome's throttle slows a short task 3-5x, the same effect `tests/practice/perf.js` documents, so the test holds the median and the p90 of 60 laps, scaled by the speed of the machine, and prints the worst); the IndexedDB commits
