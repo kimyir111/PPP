@@ -1,6 +1,6 @@
 # G0 score-quality benchmark (tests/bench/README.md).
 # The gate is the regression gate on every push/PR. It is a small job `plan` (which checks does this change need?), sixteen parallel
-# shard jobs (shard-a .. shard-p) that run its 69 steps, two merge jobs (merge-rec-core, merge-rec-grid) that join the shards of the two
+# shard jobs (shard-a .. shard-p) that run its 73 steps, two merge jobs (merge-rec-core, merge-rec-grid) that join the shards of the two
 # suites that are cut across several shard jobs and check them, a job `light` (for a change that is only documents or the home-PC
 # worker's files), and the job named `gate`, which passes only when every job the plan asked for passed (TD22, TD22b). The nightly jobs
 # (full suite, gate sensitivity, the independent review's adversarial checks, the recording suites) run on a schedule or by hand and
