@@ -1136,10 +1136,11 @@ async function serveStatic(req, res, urlPath, url) {
 }
 
 const loginAttempts = new Map();
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 function tooMany(ip) {
   const now = Date.now();
   const row = loginAttempts.get(ip) || { n: 0, t: now };
-  if (now - row.t > 15 * 60 * 1000) { row.n = 0; row.t = now; }
+  if (now - row.t > LOGIN_WINDOW_MS) { row.n = 0; row.t = now; }
   row.n += 1;
   loginAttempts.set(ip, row);
   return row.n > 40;
@@ -1241,7 +1242,8 @@ async function handleApi(req, res, url) {
 
   if (method === 'POST' && p === '/api/auth/login') {
     const ip = guestShare.clientIp(req);
-    if (tooMany(ip)) return jsonError(res, 429, 'Too many attempts. Try again later.');
+    /* G13-5b: the same refusal as the signup limiter's (code 'too-many': the page shows it and stops, where any other 429 it takes for a busy edge and tries again), and the longest it can last */
+    if (tooMany(ip)) return send(res, 429, { error: 'Too many attempts. Try again later.', code: 'too-many' }, { 'Retry-After': String(LOGIN_WINDOW_MS / 1000) });
     let body;
     try { body = JSON.parse((await readBody(req)).toString('utf8') || '{}'); }
     catch (e) { return jsonError(res, 400, 'Invalid JSON'); }

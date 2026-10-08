@@ -214,6 +214,25 @@ test('signup: every request is counted - 20 in 15 minutes from one address, vali
   } finally { await srv.close(); rm(dir); }
 });
 
+test('login: 40 attempts in 15 minutes from one address, then the same kind of 429 as the signup limiter\'s (code, Retry-After), and nothing else changes', async () => {
+  const dir = tmp(); const srv = await boot(dir);
+  try {
+    const ok1 = await signup(srv.port, '203.0.113.150', { email: 'who@example.com' });
+    assert.equal(ok1.status, 201);
+    const login = (ip, o) => req(srv.port, 'POST', '/api/auth/login', { ip: ip, body: Object.assign({ email: 'who@example.com', password: 'practice-ok' }, o || {}) });
+    const seen = [];
+    for (let i = 0; i < 40; i++) seen.push((await login('203.0.113.151', { password: 'wrong-password' })).status);
+    assert.deepEqual(seen, new Array(40).fill(401), 'a wrong password is a 401 until the limit');
+    const limited = await login('203.0.113.151', { password: 'wrong-password' });
+    assert.equal(limited.status, 429);
+    assert.deepEqual(limited.body, { error: 'Too many attempts. Try again later.', code: 'too-many' });
+    assert.equal(limited.headers['retry-after'], '900', 'the window is 15 minutes: wait that long at most');
+    assert.equal((await login('203.0.113.151')).status, 429, 'the right password is limited as well, from that address');
+    assert.equal((await login('203.0.113.152')).status, 200, 'another address signs in');
+    assert.equal((await login('203.0.113.152', { password: 'nope-nope' })).status, 401);
+  } finally { await srv.close(); rm(dir); }
+});
+
 test('signup: a request from this machine itself (no proxy header) is not limited per address', async () => {
   const dir = tmp(); const srv = await boot(dir);
   try {
