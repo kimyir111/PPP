@@ -8,7 +8,7 @@
      node tests/practice/parity-mutants.js              the five rows the design names (CORE) + the rows below, on a sample of the corpus
      node tests/practice/parity-mutants.js --core       only the five
      node tests/practice/parity-mutants.js M1 M2        only these rows
-     node tests/practice/parity-mutants.js --shard 2/3  every third of the selected rows, starting at the second (the CI matrix)
+     node tests/practice/parity-mutants.js --shard 2/4  every fourth of the selected rows, starting at the second (the CI matrix)
      node tests/practice/parity-mutants.js --list
      node tests/practice/parity-mutants.js --sample 3   a bigger sample (default 8: every 8th catalogue file, every fixture, every file the baseline gives a cause)
 
