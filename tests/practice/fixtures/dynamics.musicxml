@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- G11a-1 fixture, written by hand for the tests of PPP (no source music): how loud, in 4/4 with quarters of 1, one staff.
+     Bar 1: p, then an accented and a marcato quarter. Bar 2: a crescendo to the f of bar 3. Bar 3: f, an sf written on one note.
+     Bar 4: a diminuendo from beat 1 to beat 3, where an mp is printed that also carries <sound dynamics="50"/>. -->
+<score-partwise version="4.0">
+  <work><work-title>Dynamics</work-title></work>
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes><divisions>1</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+      <direction placement="below"><direction-type><dynamics><p/></dynamics></direction-type></direction>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type><notations><articulations><accent/></articulations></notations></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type><notations><articulations><strong-accent/></articulations></notations></note>
+    </measure>
+    <measure number="2">
+      <direction placement="below"><direction-type><wedge type="crescendo"/></direction-type></direction>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+    </measure>
+    <measure number="3">
+      <direction placement="below"><direction-type><wedge type="stop"/></direction-type></direction>
+      <direction placement="below"><direction-type><dynamics><f/></dynamics></direction-type></direction>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type><notations><dynamics><sf/></dynamics></notations></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+    </measure>
+    <measure number="4">
+      <direction placement="below"><direction-type><wedge type="diminuendo"/></direction-type></direction>
+      <note><pitch><step>A</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+      <direction placement="below"><direction-type><wedge type="stop"/></direction-type></direction>
+      <direction placement="below"><direction-type><dynamics><mp/></dynamics></direction-type><sound dynamics="50"/></direction>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+      <barline location="right"><bar-style>light-heavy</bar-style></barline>
+    </measure>
+  </part>
+</score-partwise>

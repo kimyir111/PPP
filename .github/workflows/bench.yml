@@ -1,6 +1,6 @@
 # G0 score-quality benchmark (tests/bench/README.md).
 # The gate is the regression gate on every push/PR. It is a small job `plan` (which checks does this change need?), sixteen parallel
-# shard jobs (shard-a .. shard-p) that run its 62 steps, two merge jobs (merge-rec-core, merge-rec-grid) that join the shards of the two
+# shard jobs (shard-a .. shard-p) that run its 63 steps, two merge jobs (merge-rec-core, merge-rec-grid) that join the shards of the two
 # suites that are cut across several shard jobs and check them, a job `light` (for a change that is only documents or the home-PC
 # worker's files), and the job named `gate`, which passes only when every job the plan asked for passed (TD22, TD22b). The nightly jobs
 # (full suite, gate sensitivity, the independent review's adversarial checks, the recording suites) run on a schedule or by hand and
@@ -466,8 +466,8 @@ jobs:
             tests/bench/out/robust-app/summary.md
           overwrite: true
 
-  # shard-o: rec-grid 2/3, robust
-  #   (steps ~125 s on a fast runner, ~196 s on a slow one)
+  # shard-o: rec-grid 2/3, robust, test:practice
+  #   (steps ~125 s on a fast runner, ~196 s on a slow one, before test:practice, which adds 5 s: 80 tests in 4.6 s on a slow draw, 2026-10-08, PR 225)
   shard-o:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
@@ -493,6 +493,7 @@ jobs:
             tests/bench/out/rec-grid/shards/2-of-3/run.json
           retention-days: 1                # an input of the merge job, not a result
           overwrite: true
+      - run: npm run test:practice                                 # G11a-1: practice/plan.js - the PlaybackPlan from the graph, parity with the app's PianoScore, jumps, graces, follow gates, mutants (G11 §6.1)
       - if: always()
         uses: actions/upload-artifact@v4
         with:

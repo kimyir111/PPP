@@ -6,7 +6,7 @@
 In `.github/workflows/bench.yml` the job `plan` runs this first, on the pull request's merge commit (HEAD, whose first parent
 HEAD^1 is the base), and the other jobs read its answer `mode`:
 
-    full     every check of the gate (the 62 steps of the shard jobs). The answer for anything that is not a pull request (a push
+    full     every check of the gate (the 63 steps of the shard jobs). The answer for anything that is not a pull request (a push
              to main, a manual run, the schedule), for a pull request whose file list cannot be read, for any file this tool
              does not know to be harmless, and for the workflow, `package.json` and `tests/bench/` themselves.
     tooling  only documents and files of the home-PC worker (tools/home-worker/, tests/home-worker/) and of the review tests
