@@ -320,8 +320,14 @@
     let pianoPart = partSpan.findIndex(sp => sp && sp.count >= 2);
     if (pianoPart < 0) pianoPart = partSpan.length - 1;
     const piano = partSpan[pianoPart] || { base: 0, count: 2 };
+    /* G12-2 (docs/GOALS/G12_OMR.md): a graph made from a page by an OMR engine says so (ext 'ppp.omr', hands 'by-staff', set by omr/apply.js). The engine may split a
+       grand staff into several parts of one staff each, and then no part has two staves and the rule below would play the LAST part only and silence the rest: for such a
+       graph the top staff plays the right hand and every other staff the left, none is silent. Any other graph (a file, a recording, a MIDI file) has no such mark and
+       is read exactly as before. */
+    const byStaff = !!(g.ext && g.ext['ppp.omr'] && g.ext['ppp.omr'].hands === 'by-staff') && partSpan.length > 1 && !partSpan.some(sp => sp && sp.count >= 2);
     notes.forEach(n => {
       const staff = n.staff || 1;
+      if (byStaff) { n.hand = staff === 1 ? 'r' : 'l'; return; }
       const lh = piano.base + piano.count;
       const rh = piano.count >= 2 ? lh - 1 : lh;
       if (piano.count >= 2) n.hand = staff === rh ? 'r' : staff === lh ? 'l' : 'x';
@@ -1416,6 +1422,9 @@
     return { app: shape(a), graph: b ? shape(b) : null };
   }
 
+  /* ratQ, chordFromText and chordText are the conversions fromScore and toScore make between a Score's quarters and chord names and the graph's: omr/apply.js (G12-2) writes
+     chords and positions into a graph by the same rules, so it uses these and does not copy them */
   return Object.freeze({ toScore, compare, describe, inferredNotation, scoreNotationInferred, unfinalize, comparable, agree, agreeFrom, link, fromScore,
+    ratQ, chordFromText, chordText,
     NOTE_SCALARS, MEASURE_SCALARS, MEASURE_OBJECTS, SCORE_LISTS });
 });
