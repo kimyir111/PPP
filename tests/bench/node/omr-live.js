@@ -91,7 +91,7 @@ function recorded(job) {
           return {
             id: id, ok: true, engine: (r.source && (r.source.engine || r.source.kind)) || null,
             graph: { kept: !!r.graph, via: via, agree: agree, failed: rep.graphFailed || null, findings: rep.graph && rep.graph.findings ? rep.graph.findings.total : null,
-              skipped: rep.graph && rep.graph.skipped ? rep.graph.skipped.length : null, normalizeFailed: rep.normalizeFailed || null,
+              skipped: rep.graph && rep.graph.skipped ? rep.graph.skipped.length : null, skippedWhy: rep.graph && rep.graph.skipped && rep.graph.skipped.length ? rep.graph.skipped : null, normalizeFailed: rep.normalizeFailed || null,
               normalize: rep.normalize ? rep.normalize.counts : null },
             pages: (r.pageImages || []).length,
             report: { confidence: rep.confidence == null ? null : rep.confidence, level: rep.level || null,
