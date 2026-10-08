@@ -579,18 +579,12 @@ const GUEST_LOCK_KEY = 727001;
    every request to the route (it costs the scrypt before it can be answered), accounts made per hour and per day from an address, and accounts made per hour by
    everybody. The accounts are counted from the users table (created_at, created_ip_tag), so a restart does not forget them; the requests are counted in memory,
    as the login limit is. A request from this machine itself (the socket, no proxy header) is not limited per address: that is a developer's server. */
-const SIGNUP = { ATTEMPTS: 20, ATTEMPT_MS: 15 * 60 * 1000, PER_ADDRESS_HOUR: 10, PER_ADDRESS_DAY: 30, SITE_HOUR: 100, HOUR_MS: 60 * 60 * 1000, DAY_MS: 24 * 60 * 60 * 1000 };
+const signupLimit = require('./signup-limit');
+const SIGNUP = signupLimit.SIGNUP;
 const signupAttempts = guestShare.slidingWindow(SIGNUP.ATTEMPTS, SIGNUP.ATTEMPT_MS);
-const signupInflight = { site: 0, byTag: new Map() };
+const signupInflight = signupLimit.inflight();
 const signupKey = crypto.createHmac('sha256', SECRET).update('ppp-signup-address').digest();
 const signupTagOf = ip => crypto.createHmac('sha256', signupKey).update(homeJobs.addrKey(ip)).digest('hex').slice(0, 16);
-const LOOPBACK = /^(?:127\.\d+\.\d+\.\d+|::1|::ffff:127\.\d+\.\d+\.\d+)$/i;
-/* why an account may not be made now (made = what the table says, before = requests of the same moment that have passed the check and not yet written), or null */
-function signupRefusal(made, before, local) {
-  if (made.siteHour + before.site >= SIGNUP.SITE_HOUR) return 'site';
-  if (!local && (made.addrHour + before.tag >= SIGNUP.PER_ADDRESS_HOUR || made.addrDay + before.tag >= SIGNUP.PER_ADDRESS_DAY)) return 'address';
-  return null;
-}
 
 /* A store failure is one line in the log, and at most a few lines a minute, not a stack per request: a request that
    makes the store fail can be sent over and over. */
@@ -1065,7 +1059,7 @@ function safePath(urlPath) {
    to read in the log after a deploy, so the first 40 distinct such paths are named, once each. */
 const notServedSeen = new Set();
 function noteNotServed(abs, rel) {
-  if (notServedSeen.size >= 40 || notServedSeen.has(rel) || rel.indexOf(' ') >= 0) return;
+  if (notServedSeen.size >= 40 || notServedSeen.has(rel) || rel.indexOf('\0') >= 0) return;
   fs.stat(abs, (err, st) => {
     if (err || !st.isFile() || notServedSeen.size >= 40 || notServedSeen.has(rel)) return;
     notServedSeen.add(rel);
@@ -1188,7 +1182,7 @@ async function handleApi(req, res, url) {
   if (method === 'POST' && p === '/api/auth/signup') {
     /* G13-5 (TD26): see SIGNUP. The requests are counted before the body is read; the accounts made lately, before the password is hashed. */
     const who = guestShare.clientAddress(req);
-    const local = who.source === 'socket' && LOOPBACK.test(who.ip);
+    const local = who.source === 'socket' && signupLimit.LOOPBACK.test(who.ip);
     const tag = signupTagOf(who.ip);
     if (!local && !signupAttempts.take(tag)) return jsonError(res, 429, 'Too many attempts. Try again later.', { code: 'too-many' });
     let body;
@@ -1199,11 +1193,10 @@ async function handleApi(req, res, url) {
     if (!email) return jsonError(res, 422, 'Enter a valid email.');
     if (password.length < 8) return jsonError(res, 422, 'Password must be at least 8 characters.');
     /* this request holds a place from here to the end: another that reads the table in the same moment sees it as one more account */
-    const before = { site: signupInflight.site, tag: signupInflight.byTag.get(tag) || 0 };
-    signupInflight.site++; signupInflight.byTag.set(tag, before.tag + 1);
+    const slot = signupInflight.take(tag);
     try {
       let refusal = null;
-      try { refusal = signupRefusal(await store.countSignups(tag, Date.now()), before, local); }
+      try { refusal = signupLimit.refusal(await store.countSignups(tag, Date.now()), slot.before, local); }
       catch (e) { logStoreError(e); return jsonError(res, 500, 'Could not create account.'); }
       if (refusal) {
         return jsonError(res, 429, refusal === 'site' ? 'PPP is making a lot of accounts just now. Try again in a little while.'
@@ -1227,8 +1220,7 @@ async function handleApi(req, res, url) {
       setCookie(res, signSession(user.id));
       send(res, 201, publicUser(user));
     } finally {
-      signupInflight.site--;
-      if (before.tag) signupInflight.byTag.set(tag, signupInflight.byTag.get(tag) - 1); else signupInflight.byTag.delete(tag);
+      slot.release();
     }
     return;
   }

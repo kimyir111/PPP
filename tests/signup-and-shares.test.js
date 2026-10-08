@@ -72,6 +72,53 @@ const tagOf = ip => {
 };
 const user = (i, ip, ageMs) => ({ id: 'seed-' + i, email: 'seed' + i + '@example.com', displayName: 'S', passwordHash: 'x', ipTag: ip ? tagOf(ip) : undefined, createdAt: new Date(Date.now() - ageMs).toISOString() });
 
+/* ---- the rules themselves (signup-limit.js), with no server ---- */
+const SL = require(path.join(REPO, 'signup-limit.js'));
+
+test('signup-limit: the numbers, and what a count of recent accounts allows', () => {
+  assert.deepEqual(SL.SIGNUP, { ATTEMPTS: 20, ATTEMPT_MS: 900000, PER_ADDRESS_HOUR: 10, PER_ADDRESS_DAY: 30, SITE_HOUR: 100, HOUR_MS: 3600000, DAY_MS: 86400000 });
+  const none = { site: 0, tag: 0 };
+  assert.equal(SL.refusal({ siteHour: 0, addrHour: 9, addrDay: 29 }, none, false), null);
+  assert.equal(SL.refusal({ siteHour: 0, addrHour: 10, addrDay: 10 }, none, false), 'address');
+  assert.equal(SL.refusal({ siteHour: 0, addrHour: 3, addrDay: 30 }, none, false), 'address');
+  assert.equal(SL.refusal({ siteHour: 99, addrHour: 0, addrDay: 0 }, none, false), null);
+  assert.equal(SL.refusal({ siteHour: 100, addrHour: 0, addrDay: 0 }, none, false), 'site');
+  assert.equal(SL.refusal({ siteHour: 100, addrHour: 10, addrDay: 30 }, none, false), 'site', 'the site first');
+  /* the places held by other requests count as accounts */
+  assert.equal(SL.refusal({ siteHour: 0, addrHour: 8, addrDay: 8 }, { site: 1, tag: 1 }, false), null);
+  assert.equal(SL.refusal({ siteHour: 0, addrHour: 8, addrDay: 8 }, { site: 2, tag: 2 }, false), 'address');
+  assert.equal(SL.refusal({ siteHour: 98, addrHour: 0, addrDay: 0 }, { site: 2, tag: 0 }, false), 'site');
+  assert.equal(SL.refusal({ siteHour: 98, addrHour: 0, addrDay: 0 }, { site: 1, tag: 0 }, false), null);
+  /* the machine itself is not limited per address, the site's cap is the site's */
+  assert.equal(SL.refusal({ siteHour: 0, addrHour: 500, addrDay: 500 }, { site: 0, tag: 500 }, true), null);
+  assert.equal(SL.refusal({ siteHour: 100, addrHour: 0, addrDay: 0 }, none, true), 'site');
+  ['127.0.0.1', '127.1.2.3', '::1', '::ffff:127.0.0.1'].forEach(ip => assert.ok(SL.LOOPBACK.test(ip), ip));
+  ['128.0.0.1', '10.0.0.1', '1127.0.0.1', '::2', '::ffff:10.0.0.1', '', '127.0.0.1.evil', 'x127.0.0.1'].forEach(ip => assert.ok(!SL.LOOPBACK.test(ip), ip));
+});
+
+test('signup-limit: the places held, whatever order the requests end in', () => {
+  const g = SL.inflight();
+  const a = g.take('x'), b = g.take('x'), c = g.take('y');
+  assert.deepEqual(a.before, { site: 0, tag: 0 });
+  assert.deepEqual(b.before, { site: 1, tag: 1 }, 'b sees a');
+  assert.deepEqual(c.before, { site: 2, tag: 0 }, 'c sees both of them for the site and none for its own address');
+  a.release(); /* the first to take is the first to leave: b still holds a place for x */
+  assert.deepEqual(g.held(), { site: 2, tags: 2 });
+  const d = g.take('x');
+  assert.deepEqual(d.before, { site: 2, tag: 1 }, 'd sees b (x) and c (y) for the site and b for its own');
+  b.release(); b.release(); /* a second release changes nothing */
+  assert.deepEqual(g.held(), { site: 2, tags: 2 });
+  const e = g.take('x');
+  assert.deepEqual(e.before, { site: 2, tag: 1 }, 'only d holds x now');
+  d.release(); e.release(); c.release();
+  assert.deepEqual(g.held(), { site: 0, tags: 0 }, 'nothing is left held, and the table is empty');
+  /* the last of three to leave, and the first to leave, in a ring */
+  const [p, q, r] = [g.take('z'), g.take('z'), g.take('z')];
+  q.release(); p.release();
+  assert.deepEqual(g.take('z').before, { site: 1, tag: 1 }, 'only r is held');
+  r.release();
+});
+
 test('signup: 10 accounts an hour from one address, then 429; another address is unaffected', async () => {
   const dir = tmp(); const srv = await boot(dir);
   try {
