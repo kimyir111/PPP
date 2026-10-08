@@ -50,7 +50,7 @@ function convertHelperNotes(raw) {
       modelFailures: raw.modelFailures && raw.modelFailures.length ? raw.modelFailures : null, invalidNotesDropped: dropped
     }
   };
-  if (song) heard.song = { separation: raw.song && typeof raw.song.separation === 'string' ? raw.song.separation : null };
+  if (song) heard.song = { separation: raw.song && typeof raw.song.separation === 'string' ? raw.song.separation : null, melodyFrom: raw.song && typeof raw.song.melodyFrom === 'string' ? raw.song.melodyFrom : null };
   return { heard: heard, report: { notes: notes.length, dropped: dropped, uncertain: heard.helper.uncertain, pedalsDropped: heard.helper.pedalSpansDropped, duration: duration } };
 }
 

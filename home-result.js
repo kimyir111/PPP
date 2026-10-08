@@ -29,6 +29,8 @@ const LIMITS = {
 /* the layers of a song-mode result (transcribe.py SONG_TRACK) */
 const SONG_TRACKS = Object.freeze({ melody: 1, bass: 2, accomp: 3 });
 const TRACK_OK = new Set([1, 2, 3]);
+/* where a song's melody layer came from: the voice, or (an instrumental) the stem whose line the PC followed */
+const MELODY_FROM = new Set(['vocals', 'other', 'guitar', 'piano']);
 
 const NAME_RE = /^[a-z0-9][a-z0-9._+-]{0,39}$/;
 const DEVICE_RE = /^[a-z0-9][a-z0-9:._-]{0,15}$/;
@@ -133,7 +135,8 @@ function validateResult(body, limits) {
     const s = body.song && typeof body.song === 'object' && !Array.isArray(body.song) ? body.song : {};
     if (s.separation != null && (typeof s.separation !== 'string' || !SEPARATION_RE.test(s.separation))) return bad('The song summary is not usable.', 'bad-meta');
     result.mode = 'song';
-    result.song = { separation: s.separation || null, melody: count('melody'), bass: count('bass'), accomp: count('accomp') };
+    if (s.melodyFrom != null && !MELODY_FROM.has(s.melodyFrom)) return bad('The song summary is not usable.', 'bad-meta');
+    result.song = { separation: s.separation || null, melodyFrom: s.melodyFrom || null, melody: count('melody'), bass: count('bass'), accomp: count('accomp') };
   }
   const bytes = Buffer.byteLength(JSON.stringify(result));
   if (bytes > L.RESULT_MAX_BYTES) return bad('The result is larger than ' + Math.round(L.RESULT_MAX_BYTES / 1048576) + ' MB.', 'too-large');

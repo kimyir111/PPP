@@ -2273,6 +2273,13 @@
     "This song was converted as a piano recording (the PC worker has no song mode yet). Update the worker and convert it again.": "この曲はピアノ演奏として変換されました（PC のワーカーにまだ一般の曲モードがありません）。ワーカーを更新してからもう一度変換してください。",
     "song: separated layers": "一般の曲：音源分離",
     "Melody · bass · accompaniment": "メロディー・ベース・伴奏",
-    "Set apart (one model only)": "保留した音（片方のモデルのみ）"
+    "Set apart (one model only)": "保留した音（片方のモデルのみ）",
+    "Melody from": "メロディーの元",
+    "voice": "歌声",
+    "guitar": "ギター",
+    "piano": "ピアノ",
+    "synth / other instrument": "シンセ・その他の楽器",
+    "no melody line (the lead sheet finds one)": "メロディーの線なし（リードシートが探します）",
+    "not recorded (an earlier conversion)": "記録なし（以前の変換）"
   }
 }

@@ -505,7 +505,7 @@ function createWorker(cfg, deps) {
       ensemble: { models: hh.models || [], primary: hh.primary || null, agreement: hh.agreement, accepted: notes.length, uncertain: hh.uncertain || 0 }
     };
     /* G10d song mode: the notes carry their layer (convertHelperNotes keeps it), and the result says so */
-    if (h.song) { result.mode = 'song'; result.song = { separation: h.song.separation || null }; }
+    if (h.song) { result.mode = 'song'; result.song = { separation: h.song.separation || null, melodyFrom: h.song.melodyFrom || null }; }
     const v = Result.validateResult(result);
     if (!v.ok) throw new JobError('The notes did not pass the site\'s checks: ' + v.error, false);
     return { result: result, report: c.report, bytes: v.bytes };
