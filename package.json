@@ -27,6 +27,7 @@
     "smoke:live": "node tests/live/smoke.js",
     "test:rec": "node --test \"tests/rec/**/*.test.js\"",
     "test:practice-variant": "node --test \"tests/practice-variant/**/*.test.js\"",
+    "test:practice-sim": "node --test \"tests/practice-sim/**/*.test.js\"",
     "test:home-worker": "node tests/home-worker/jobs.test.js && node tests/home-worker/links.test.js && node tests/home-worker/server.test.js && node tests/home-worker/worker.test.js && node tests/home-worker/pair.test.js && node tests/home-worker/protocol.test.js && node tests/home-worker/jobs-pg.test.js && node tests/home-worker/worker-real.test.js",
     "test:home-worker-page": "node tests/home-worker/page.test.js && node tests/home-worker/pairing.test.js && node tests/home-worker/findable.test.js",
     "test:home-worker-mutants": "node tests/home-worker/mutants.js",
