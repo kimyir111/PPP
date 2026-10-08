@@ -43,12 +43,15 @@ const PLANTED = 'A brand new sentence that nobody translated yet.';
 const addScript = text => app => app + '\n<script>\nconst planted = ' + text + ';\n</script>\n';
 const addTemplate = html => app => app.replace('</x-dc>', html + '\n</x-dc>');
 
-test('the committed baseline is today: the real tree passes, and lists 54 strings and 2 parity keys', () => {
-  const r = check(ROOT, '--check');
+test('the committed baseline is EMPTY (G13-2): the real tree has no gap and no parity gap, so any new one fails', () => {
+  const r = check(ROOT, '--check', '--strict');
   assert.equal(r.code, 0, r.out);
   const base = JSON.parse(read(gaps.BASELINE_REL));
-  assert.equal(Object.keys(base.gaps.template).length + Object.keys(base.gaps.tx).length, 54);
-  assert.equal(Object.keys(base.parity).length, 2);
+  assert.equal(Object.keys(base.gaps.template).length + Object.keys(base.gaps.tx).length, 0);
+  assert.equal(Object.keys(base.parity).length, 0);
+  const now = gaps.scan(ROOT);
+  assert.equal(Object.keys(now.gaps.template).length + Object.keys(now.gaps.tx).length, 0, 'strings the page can show that a catalog lacks');
+  assert.equal(Object.keys(now.parity).length, 0, 'keys of one catalog that another lacks');
 });
 
 test('an unchanged copy passes', () => withTree({}, dir => {
@@ -137,11 +140,20 @@ test('the extractor reads the page: it finds the strings today (a checker that r
 });
 
 test('the baseline only shrinks: a fixed gap passes (and --strict fails), --update shrinks, and --update refuses to add', () => {
-  const base = JSON.parse(read(gaps.BASELINE_REL));
-  const fixedString = Object.keys(base.gaps.tx)[0];
-  withTree({ catalogs: (l, content) => { content[fixedString] = 'translated ' + l; } }, dir => {
+  /* the committed baseline is empty, so a tree with one planted gap and a baseline that lists it (--update --allow-new) is the starting point */
+  withTree({ app: addScript(`tx('${PLANTED}')`) }, dir => {
     const file = path.join(dir, gaps.BASELINE_REL);
-    let r = check(dir, '--check');
+    let r = check(dir, '--update', '--allow-new');
+    assert.equal(r.code, 0, r.out);
+    assert.ok(PLANTED in JSON.parse(fs.readFileSync(file, 'utf8')).gaps.tx, 'the baseline lists the planted gap');
+    assert.equal(check(dir, '--check', '--strict').code, 0);
+    for (const l of gaps.LOCALES) {                                  /* translate it: the gap is fixed */
+      const p = path.join(dir, 'i18n', l + '.json');
+      const c = JSON.parse(fs.readFileSync(p, 'utf8'));
+      c.content[PLANTED] = 'translated ' + l;
+      fs.writeFileSync(p, JSON.stringify(c));
+    }
+    r = check(dir, '--check');
     assert.equal(r.code, 0, r.out);
     assert.match(r.out, /are fixed/);
     r = check(dir, '--check', '--strict');
@@ -149,8 +161,8 @@ test('the baseline only shrinks: a fixed gap passes (and --strict fails), --upda
     r = check(dir, '--update');
     assert.equal(r.code, 0, r.out);
     const shrunk = JSON.parse(fs.readFileSync(file, 'utf8'));
-    assert.equal(Object.keys(shrunk.gaps.tx).length, Object.keys(base.gaps.tx).length - 1);
-    assert.ok(!(fixedString in shrunk.gaps.tx));
+    assert.equal(Object.keys(shrunk.gaps.tx).length, 0);
+    assert.ok(!(PLANTED in shrunk.gaps.tx));
     r = check(dir, '--check', '--strict');
     assert.equal(r.code, 0, r.out);
   });

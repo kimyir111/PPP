@@ -137,8 +137,8 @@ function baselineText(state) {
   const block = (o, pad) => (Object.keys(o).length
     ? '{' + NL + Object.keys(o).sort().map(k => pad + '  ' + JSON.stringify(k) + ': ' + JSON.stringify(o[k])).join(',' + NL) + NL + pad + '}'
     : '{}');
-  const note = 'G13-0: the i18n gaps that existed when the static checker (tests/i18n/gaps.js) was added. Only gaps NOT listed here fail the gate. '
-    + 'G13-2 translates them and empties this file; never add to it by hand (--update refuses to add without --allow-new).';
+  const note = 'The i18n gaps the static checker (tests/i18n/gaps.js) tolerates: G13-0 listed the 54 strings and 2 parity keys that existed when it was added, '
+    + 'G13-2 translated them and emptied this file, so ANY gap fails the gate now. Never add to it by hand (--update refuses to add without --allow-new).';
   return [
     '{',
     '  "note": ' + JSON.stringify(note) + ',',
