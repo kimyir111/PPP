@@ -106,6 +106,18 @@ test('an empty 200 response does not count as a restored score engine', async ()
   converts(b);
 });
 
+test('a failed consumer must be reloaded even when the core global was restored', async () => {
+  const b = boot('scoregraph/index.js');
+  b.fail(src => src.includes('realize/notation.js'));
+  assert.equal(await b.ctx.loadScoreModules(), false);
+  assert.ok(b.ctx.PPPScoreGraph, 'the core itself recovered');
+  assert.equal(b.ctx.scoreModulesReady(), false);
+  b.fail(() => false);
+  assert.equal(await b.ctx.loadScoreModules(), true);
+  assert.equal(b.requests.length, urls.length * 2);
+  converts(b);
+});
+
 test('a stalled recovery releases callers and keeps sharing the late download', async () => {
   const b = boot('scoregraph/index.js');
   b.stall(() => true);

@@ -5176,8 +5176,9 @@ function graphToReviewScore(g, title) {
    Reload its consumers too: their factories may have kept a missing dependency.
    Healthy pages make no extra requests; concurrent callers share one recovery. */
 let _scoreModulesPromise = null;
+let _scoreModulesFailed = false;
 function scoreModulesReady() {
-  return !!(window.PPPScoreGraph && window.PPPAudioScore && window.PPPSongGraph && window.PPPRealize && window.PPPEngrave);
+  return !_scoreModulesFailed && !!(window.PPPScoreGraph && window.PPPAudioScore && window.PPPSongGraph && window.PPPRealize && window.PPPEngrave);
 }
 function loadScoreModules() {
   if (_scoreModulesPromise) return scoreModulesWait(_scoreModulesPromise);
@@ -5195,8 +5196,13 @@ function loadScoreModules() {
     el.onload = () => { el.remove(); resolve(true); };
     el.onerror = () => { el.remove(); resolve(false); };
     document.head.appendChild(el);
-  }))).then(results => results.every(Boolean) && scoreModulesReady())
-    .catch(() => false).then(ok => { _scoreModulesPromise = null; return ok; });
+  }))).then(results => {
+    _scoreModulesFailed = false;
+    const ok = results.every(Boolean) && scoreModulesReady();
+    _scoreModulesFailed = !ok;
+    return ok;
+  }).catch(() => { _scoreModulesFailed = true; return false; })
+    .then(ok => { _scoreModulesPromise = null; return ok; });
   return scoreModulesWait(_scoreModulesPromise);
 }
 function scoreModulesWait(promise) {
