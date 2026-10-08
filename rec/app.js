@@ -133,7 +133,8 @@
     const perf = sourcePerf(graph);
     if (!perf) return null;
     const notes = perf.notes.filter(n => n && isFinite(n.on) && isFinite(n.off) && n.off > n.on && isFinite(n.midi))
-      .map(n => ({ on: n.on / 1e6, off: n.off / 1e6, midi: n.midi, vel: isFinite(n.vel) ? n.vel : 64 }))
+      /* G10d: a note's layer (a song-mode recording: 1 melody, 2 bass, 3 accompaniment; a MIDI file: its track) goes with it, so the conversion written again keeps it */
+      .map(n => Object.assign({ on: n.on / 1e6, off: n.off / 1e6, midi: n.midi, vel: isFinite(n.vel) ? n.vel : 64 }, Number.isInteger(n.track) ? { track: n.track } : {}))
       .sort((a, b) => a.on - b.on || a.midi - b.midi);
     if (!notes.length) return null;
     const pedals = (perf.pedals || []).filter(p => p && p.pedal === 'damper' && isFinite(p.on) && isFinite(p.off) && p.off > p.on)

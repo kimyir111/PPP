@@ -126,9 +126,53 @@ async function tokenRules() {
     && J.addrKey('::ffff:1.2.3.4') === '1.2.3.4' && J.addrKey('1.2.3.4') === '1.2.3.4' && J.addrKey('fe80::1%eth0') === J.addrKey('fe80:0:0:0::7'), J.addrKey('2001:db8:1:2::1'));
 }
 
+/* G10d song mode: a job may ask for 'song' (kind 'youtube-song'); its result's notes say their layer */
+async function songMode() {
+  heading('song mode (G10d): the kind of a job, and the layers of its result');
+  const good = goodResult(40);
+  const layered = Object.assign({}, good, { mode: 'song', song: { separation: 'htdemucs_6s', melody: 999 } });
+  layered.notes = good.notes.map((n, i) => Object.assign({}, n, { track: 1 + (i % 3) }));
+  const v = R.validateResult(layered);
+  ok('a song result keeps each note\'s layer (1 melody, 2 bass, 3 accompaniment) and says mode "song"', v.ok && v.result.mode === 'song' && v.result.notes.every(n => n.track === 1 || n.track === 2 || n.track === 3), v.ok ? '' : v.error);
+  ok('its layer counts are counted from the notes, not taken from the worker', v.ok && v.result.song.melody + v.result.song.bass + v.result.song.accomp === 40 && v.result.song.melody !== 999 && v.result.song.separation === 'htdemucs_6s');
+  const noLayer = JSON.parse(JSON.stringify(layered)); delete noLayer.notes[5].track;
+  ok('a song note without a layer is refused', !R.validateResult(noLayer).ok && R.validateResult(noLayer).code === 'bad-note');
+  const badLayer = JSON.parse(JSON.stringify(layered)); badLayer.notes[5].track = 4;
+  ok('a layer that is not 1, 2 or 3 is refused', !R.validateResult(badLayer).ok);
+  ok('an unknown mode is refused', !R.validateResult(Object.assign({}, good, { mode: 'band' })).ok);
+  ok('a separation name that is not a plain name is refused', !R.validateResult(Object.assign({}, layered, { song: { separation: '<b>x</b>' } })).ok);
+  const piano = R.validateResult(Object.assign({}, good, { notes: good.notes.map(n => Object.assign({}, n, { track: 1 })) }));
+  ok('a piano result (no mode) keeps no layer: on, off, midi, vel only, and no song summary', piano.ok && piano.result.notes.every(n => n.track === undefined) && piano.result.mode === undefined && piano.result.song === undefined);
+
+  const S = await L.startService({ users: ['s1'] });
+  try {
+    const tk = await mkToken(S, 's1');
+    const q = await enqueue(S, 's1', 'song0000001', { mode: 'song' });
+    ok('a job asked for in song mode is kind "youtube-song"', q.status === 201 && q.body.job.kind === 'youtube-song', q.status + ' ' + JSON.stringify(q.body).slice(0, 120));
+    const qp = await enqueue(S, 's1', 'song0000001');
+    ok('the same link asked for as a piano recording is another job (kind "youtube")', qp.status === 201 && qp.body.job.kind === 'youtube' && qp.body.job.id !== q.body.job.id);
+    const qd = await enqueue(S, 's1', 'song0000001', { mode: 'song' });
+    ok('the same link in the same mode again is the waiting job, not a new one', qd.status === 200 && qd.body.existing === true && qd.body.job.id === q.body.job.id);
+    const qb = await enqueue(S, 's1', 'song0000002', { mode: 'karaoke' });
+    ok('an unknown mode is refused (422 bad-mode) and costs nothing', qb.status === 422 && qb.body.code === 'bad-mode');
+    ok('mode "piano" is the plain kind', (await enqueue(S, 's1', 'song0000003', { mode: 'piano' })).body.job.kind === 'youtube');
+    const old = (await S.worker(tk).post('/api/worker/claim', { once: true })).body.job;
+    ok('a worker from before song mode (its claim does not say song: true) is not handed the song job: it gets the piano job behind it', old && old.id === qp.body.job.id && old.kind === 'youtube', JSON.stringify(old));
+    ok('the list says the worker of the PC cannot do song mode (songMode false), so the page can say why the song job waits', (await S.as('s1').get('/api/jobs')).body.worker.songMode === false);
+    const g = (await S.worker(tk).post('/api/worker/claim', { once: true, song: true })).body.job;
+    ok('a worker that says song: true is handed it, and told its kind', g && g.id === q.body.job.id && g.kind === 'youtube-song', JSON.stringify(g));
+    ok('and the list then says the PC can (songMode true)', (await S.as('s1').get('/api/jobs')).body.worker.songMode === true);
+    const r = await S.worker(tk).post('/api/worker/jobs/' + g.id + '/result', layered);
+    ok('the song result is taken', r.status === 200, r.status + ' ' + JSON.stringify(r.body));
+    const got = (await S.as('s1').get('/api/jobs/' + g.id)).body;
+    ok('and the page reads it back with its layers', got.result && got.result.mode === 'song' && got.result.notes.every(n => [1, 2, 3].indexOf(n.track) >= 0) && got.job.kind === 'youtube-song');
+  } finally { await S.close(); }
+}
+
 async function main() {
   await resultRules();
   await tokenRules();
+  await songMode();
 
   const S = await L.startService();
   try {
@@ -201,7 +245,7 @@ async function main() {
     ok('the job is untouched', (await S.as('u1').get('/api/jobs/' + e1.body.job.id)).body.job.status === 'queued');
     const c1 = await S.worker(tok1).post('/api/worker/claim', {});
     ok("u1's token claims it", c1.status === 200 && c1.body.job && c1.body.job.id === e1.body.job.id && c1.body.job.url === URL1 && c1.body.job.attempt === 1, JSON.stringify(c1.body));
-    ok('a claim answer carries only what the worker needs', Object.keys(c1.body.job).sort().join() === 'attempt,id,maxAttempts,title,url');
+    ok('a claim answer carries only what the worker needs (G10d: and the kind, piano or song)', Object.keys(c1.body.job).sort().join() === 'attempt,id,kind,maxAttempts,title,url' && c1.body.job.kind === 'youtube');
     const stolen = await S.worker(tok2).post('/api/worker/jobs/' + e1.body.job.id + '/result', goodResult(40));
     ok("a claimed job still cannot be finished by another link's token", stolen.status === 404);
     ok('the owner sees it claimed', (await S.as('u1').get('/api/jobs')).body.jobs.find(j => j.id === e1.body.job.id).status === 'claimed');

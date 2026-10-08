@@ -2120,6 +2120,15 @@
     "High-quality conversion uses your own PC. This device is not connected to it yet. The quickest way:": "고품질 변환은 내 PC에서 실행돼요. 이 기기는 아직 내 PC와 연결되지 않았어요. 가장 빠른 방법은 다음과 같아요.",
     "On your PC double-click the desktop shortcut “PPP connect my devices (pair)”: it opens PPP already connected.": "내 PC에서 바탕화면의 “PPP connect my devices (pair)” 바로가기를 두 번 클릭하세요. 이미 연결된 상태로 PPP가 열려요.",
     "From another device: open the link you copied with “Connect another device: copy link”.": "다른 기기에서는 “다른 기기 연결: 링크 복사”로 복사해 둔 링크를 여세요.",
-    "More in Settings": "설정에서 더 보기"
+    "More in Settings": "설정에서 더 보기",
+    "What is it?": "어떤 음원인가요?",
+    "Piano recording": "피아노 연주",
+    "Song (vocals, band)": "일반 곡 (노래·밴드)",
+    "Song": "일반 곡",
+    "Song: your PC separates the voice, the bass and the other instruments first and leaves the drums out; the sung melody becomes the tune of the score. It takes a little longer.": "일반 곡: PC가 먼저 목소리, 베이스, 다른 악기를 나누고 드럼은 뺍니다. 노래 멜로디가 악보의 선율이 됩니다. 시간이 조금 더 걸려요.",
+    "Piano recording: the piano models listen to the recording as it is. For a song with singing or a band, choose Song.": "피아노 연주: 피아노 모델이 녹음을 그대로 듣습니다. 노래나 밴드가 있는 곡이면 「일반 곡」을 고르세요.",
+    "Song separation + melody, bass and accompaniment on your PC": "내 PC에서 음원 분리 + 멜로디·베이스·반주",
+    "Your PC needs the updated worker for song mode": "일반 곡 모드는 PC 워커 업데이트가 필요해요",
+    "This song was converted as a piano recording (the PC worker has no song mode yet). Update the worker and convert it again.": "이 곡은 피아노 연주로 변환됐어요(PC 워커에 아직 일반 곡 모드가 없어요). 워커를 업데이트한 뒤 다시 변환하세요."
   }
 }

@@ -6,6 +6,10 @@
    ({ on, off, midi, vel }); everything else the helper writes (pedals, beats, single-model notes, per-note confidence) is
    not part of it and is stripped here, never stored.
 
+   G10d song mode (a job of kind 'youtube-song': the PC separates the song first): every note also says its layer, `track`
+   1 the melody (the voice), 2 the bass, 3 the accompaniment (SONG_TRACKS), and the result says mode 'song' with a short
+   summary (song: how many notes each layer has, the separation model). A piano result has neither.
+
    Pure: no I/O, no clock. */
 'use strict';
 
@@ -16,13 +20,19 @@ const LIMITS = {
   SECONDS_SLACK: 5,
   MIN_NOTES: 4,
   MAX_NOTES: 20000,
+  /* a song-mode result holds three layers (melody, bass, accompaniment): 30,000 notes with their layer are about 1.9 MB, under RESULT_MAX_BYTES */
+  SONG_MAX_NOTES: 30000,
   /* the body of a result, and what is stored of it (the stripped, rounded JSON) */
   RESULT_MAX_BYTES: 2 * 1024 * 1024,
   MODELS_MAX: 6
 };
+/* the layers of a song-mode result (transcribe.py SONG_TRACK) */
+const SONG_TRACKS = Object.freeze({ melody: 1, bass: 2, accomp: 3 });
+const TRACK_OK = new Set([1, 2, 3]);
 
 const NAME_RE = /^[a-z0-9][a-z0-9._+-]{0,39}$/;
 const DEVICE_RE = /^[a-z0-9][a-z0-9:._-]{0,15}$/;
+const SEPARATION_RE = /^[a-z0-9][a-z0-9_.+-]{0,39}$/;   /* a separation model's name (htdemucs_6s) */
 const r4 = v => Math.round(v * 10000) / 10000;
 const isInt = v => typeof v === 'number' && Number.isInteger(v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
@@ -36,15 +46,18 @@ function cleanText(value, max) {
 }
 
 /* body (parsed JSON) -> { ok: true, result, bytes } | { ok: false, error, code }.
-   result = { v, notes: [{ on, off, midi, vel }] sorted by on, midi, off; duration; engine; model; device; ensemble }. */
+   result = { v, notes: [{ on, off, midi, vel, track? }] sorted by on, midi, off; duration; engine; model; device; ensemble; mode?; song? }. */
 function validateResult(body, limits) {
   const L = Object.assign({}, LIMITS, limits || {});
   if (!body || typeof body !== 'object' || Array.isArray(body)) return bad('The result is not an object.', 'bad-result');
   const list = body.notes;
   if (!Array.isArray(list)) return bad('The result has no notes list.', 'bad-result');
   if (list.length < L.MIN_NOTES) return bad('Fewer than ' + L.MIN_NOTES + ' notes.', 'too-few-notes');
-  if (list.length > L.MAX_NOTES) return bad('More than ' + L.MAX_NOTES + ' notes.', 'too-many-notes');
+  const maxNotes = body.mode === 'song' ? Math.max(L.MAX_NOTES, L.SONG_MAX_NOTES) : L.MAX_NOTES;
+  if (list.length > maxNotes) return bad('More than ' + maxNotes + ' notes.', 'too-many-notes');
   const ceiling = L.MAX_SECONDS + L.SECONDS_SLACK;
+  const song = body.mode === 'song';
+  if (body.mode != null && body.mode !== 'song' && body.mode !== 'piano') return bad('The mode is not usable.', 'bad-meta');
   const notes = new Array(list.length);
   let last = 0;
   for (let i = 0; i < list.length; i++) {
@@ -59,9 +72,13 @@ function validateResult(body, limits) {
     const on = r4(n.on), off = r4(n.off);
     if (!(off > on)) return bad('Note ' + i + ' is too short.', 'bad-note');
     notes[i] = { on: on, off: off, midi: n.midi, vel: vel };
+    if (song) {
+      if (!TRACK_OK.has(n.track)) return bad('Note ' + i + ' has no usable layer.', 'bad-note');
+      notes[i].track = n.track;
+    }
     if (off > last) last = off;
   }
-  notes.sort((a, b) => a.on - b.on || a.midi - b.midi || a.off - b.off);
+  notes.sort((a, b) => a.on - b.on || a.midi - b.midi || a.off - b.off || (a.track || 0) - (b.track || 0));
   let duration = last;
   if (body.duration != null) {
     if (!isNum(body.duration) || body.duration <= 0 || body.duration > ceiling) return bad('The duration is not usable.', 'bad-duration');
@@ -110,9 +127,17 @@ function validateResult(body, limits) {
   }
 
   const result = { v: 1, notes: notes, duration: duration, engine: engine, model: model, device: device, ensemble: ensemble };
+  if (song) {
+    /* the layer counts are the notes' own (what the worker says is not trusted for them); the separation model is a name */
+    const count = k => notes.reduce((c, n) => c + (n.track === SONG_TRACKS[k] ? 1 : 0), 0);
+    const s = body.song && typeof body.song === 'object' && !Array.isArray(body.song) ? body.song : {};
+    if (s.separation != null && (typeof s.separation !== 'string' || !SEPARATION_RE.test(s.separation))) return bad('The song summary is not usable.', 'bad-meta');
+    result.mode = 'song';
+    result.song = { separation: s.separation || null, melody: count('melody'), bass: count('bass'), accomp: count('accomp') };
+  }
   const bytes = Buffer.byteLength(JSON.stringify(result));
   if (bytes > L.RESULT_MAX_BYTES) return bad('The result is larger than ' + Math.round(L.RESULT_MAX_BYTES / 1048576) + ' MB.', 'too-large');
   return { ok: true, result: result, bytes: bytes };
 }
 
-module.exports = { LIMITS, validateResult, cleanText };
+module.exports = { LIMITS, SONG_TRACKS, validateResult, cleanText };
