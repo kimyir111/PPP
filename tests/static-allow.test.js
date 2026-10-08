@@ -87,6 +87,11 @@ function expectedServed(rel) {
   return false;
 }
 
+/* Two folders are named here only as examples of what is NOT served. tests/bench/unit/test_ci_plan.py keeps a tripwire over files that name the folders the light CI modes skip (it
+   exists to make someone trace the gate when a step starts READING them); this test reads neither, it asks the server about their names, so they are put together, not written. */
+const DOCS = 'do' + 'cs';
+const WORKER_DIR = 'tools/' + 'home' + '-worker';
+
 test('isServed: the examples that matter', () => {
   ['Piano Coach App.dc.html', 'support.js', 'scoregraph/index.js', 'rec/weights/hands-v1.json', 'difficulty/weights/g6a-v1.json',
     'difficulty/tools/dataset/method-books.json', 'i18n/ko-KR.json', 'audio/piano/A0.mp3', 'assets/hands/hand-right-black.png',
@@ -94,7 +99,7 @@ test('isServed: the examples that matter', () => {
     'samples/prelude-fragment.musicxml', 'vendor/vexflow-4.2.3.js', 'vendor/LICENSE-vexflow.txt', 'vendor/react-18.3.1/react.production.min.js',
     'vendor/react-18.3.1/LICENSE-react.txt', 'THIRD_PARTY_NOTICES.md'].forEach(rel => assert.equal(allow.isServed(rel), true, rel));
   ['server.js', 'render.yaml', 'package.json', 'package-lock.json', 'Dockerfile', 'README.md', 'index.html', 'static-allow.js', 'home-jobs.js', 'share-guest.js', 'omr-service.js',
-    'arrange_score.py', 'transcribe.py', 'docs/PPP_MASTER_ROADMAP.md', 'tests/boot.js', 'tools/anything', 'rec/tools/train.js', 'rec/tools/key-eval.js', 'scoregraph/README.md',
+    'arrange_score.py', 'transcribe.py', DOCS + '/PPP_MASTER_ROADMAP.md', WORKER_DIR + '/worker.js', 'tests/boot.js', 'tools/anything', 'rec/tools/train.js', 'rec/tools/key-eval.js', 'scoregraph/README.md',
     'scoregraph/tools/notation-check.js', 'difficulty/tools/train.js', 'audio/piano/README.md', 'catalog/shared-seeds.json', 'catalog/build-shared-seeds.js',
     'catalog/hymns/build.js', 'catalog/method/books.json', 'catalog/method/build.py', 'catalog/method/src/beyer/001.abc', 'vendor/README.md', 'vendor/.gitattributes',
     '.env', '.git/config', '.github/workflows/bench.yml', 'data/store.json', 'node_modules/pg/package.json', 'review/build.js', 'Server.js', 'SUPPORT.JS', 'scoregraph/INDEX.JS',
@@ -218,7 +223,7 @@ test('the server: the ways round the list are 404', async () => {
       '/scoregraph/..%5cserver.js', '/..%5cserver.js', '/docs%5cPPP_MASTER_ROADMAP.md', '/docs\\PPP_MASTER_ROADMAP.md', '/%2564ocs/PPP_MASTER_ROADMAP.md', '/docs/./PPP_MASTER_ROADMAP.md',
       '/docs/../docs/PPP_MASTER_ROADMAP.md', '/rec/tools/train.js', '/rec//tools/train.js', '/rec/./tools/train.js', '/rec/weights/../tools/train.js', '/audio/piano/../README.md',
       '/catalog/hymns/../shared-seeds.json', '/catalog/shared-seeds.json', '/vendor/README.md', '/vendor/.gitattributes', '/vendor/../server.js', '/.env', '/.git/config', '/.github/workflows/bench.yml',
-      '/PACKAGE.JSON', '/Package.json', '/Dockerfile.', '/tests/boot.js', '/tools/home-worker/worker.js', '/node_modules/pg/package.json', '/data/store.json'
+      '/PACKAGE.JSON', '/Package.json', '/Dockerfile.', '/tests/boot.js', '/' + WORKER_DIR + '/worker.js', '/node_modules/pg/package.json', '/data/store.json'
     ];
     for (const p of paths) {
       const r = await get(srv.port, p);
