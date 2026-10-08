@@ -401,7 +401,8 @@ Numbered as in G0 §14. Each is visible in the baseline or in the known-failure 
   beams and stems have no metric yet (golden labels a voice change STRUCTURAL_CHANGE); G4.
 - Leftovers now that G2 is in: remove `buildXml` and `opts.legacyWriter`, and `parseMusicXML`
   with `PPP.legacyImport`, after one release — each is a way back, kept deliberately, and each has a
-  shadow check to prove it can go. The app's storage, renderer and player onto the graph is
+  shadow check to prove it can go. (MX-3, 2026-10-08, removed `buildXml`, `opts.legacyWriter` and
+  `PPP.legacyImport`; `parseMusicXML` stays until S4 moves the producers that still call it.) The app's storage, renderer and player onto the graph is
   G4–G5 (G01 §15.2 S4–S5, Appendix B).
 
 ### MX-1 — playback correctness (2026-09-25)

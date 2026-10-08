@@ -96,7 +96,7 @@ At `a0bc2ea`. The detailed structure is in `docs/ARCHITECTURE.md`.
 | S5-play | Playback, practice judging, follow and Coach read the graph | not started | **G11a** (the only Goal that needs it); two playback bugs go earlier in MX-1 |
 | S6 | Arrangement input and output on the graph | not started | G8 |
 | S7 | SongGraph and planner | not started | G7 (drums: not scheduled, §5.13) |
-| S8 | Remove `parseMusicXML`, `buildXml`, `packScore`, the legacy renderer | not started | staged: the switches in MX-3 after G4f; the legacy renderer one release after the G4f flip; `packScore` and the legacy Score in G13 |
+| S8 | Remove `parseMusicXML`, `buildXml`, `packScore`, the legacy renderer | partly: `buildXml` and `PPP.legacyImport` are gone (MX-3, 2026-10-08) | staged: the switches in MX-3 after G4f; the legacy renderer one release after the G4f flip; `packScore` and the legacy Score in G13 |
 
 **What already exists as legacy code** (surveyed 2026-09-25 at `a0bc2ea`). Later Goals are migrations and upgrades of these, not greenfield:
 
@@ -158,7 +158,7 @@ Each item has one owner and one trigger. The deferred item is not done until its
 | F7 — full-suite baselines predate `audio-score.js` changes | G01 §23 | "user decision" | – | MX-2 (Lead proposes the rebaseline, §18 note) |
 | R4 — a `.mid` with fewer than 4 notes does not open, and the message says it has no notes | G02 §25 | Needs a new quantizer | Honest message now; lower floor in G10a | MX-1 (message) / G10a (floor) |
 | R5 — G2 page checks (`shadow-legacy`, `app-import-check`, `pitch-layers-check`) and all browser suites not in CI | G02 §25.6 | Need puppeteer and a server | – | **G4f** (nightly Chrome job) |
-| `buildXml` + `opts.legacyWriter`; `PPP.legacyImport` | G01 §15.3, G2-D13 | "one release"; the owner lapsed after G2 | Shadow checks prove each can go | **MX-3** after G4f |
+| `buildXml` + `opts.legacyWriter`; `PPP.legacyImport` | G01 §15.3, G2-D13 | "one release"; the owner lapsed after G2 | Shadow checks prove each can go | **MX-3** after G4f (done 2026-10-08) |
 | Storing the graph with a song on the server; sharing graphs; syncing songs | G2-D14, G4-U1 | Size strategy; per-device cache only | – | G13 (earlier only if the user asks, §18 D-5) |
 | G0 Step 14 — arrangement invariants | G00 §16.6 | never done | – | G7b (definitions), G5 (playability baseline of the legacy arrangers) |
 | G4 upstream-defect list ("what engraving exposed") | G04 §26.1, §30.8 | Produced at G4f | – | input to G10a |
@@ -227,7 +227,7 @@ Small, deterministic fixes with a clear right answer. They are not Goals; each i
 | --- | --- | --- | --- |
 | Purpose | Drawn = played = judged for 8va and pedal `change`; stop saying a `.mid` has no notes | The catalogue plays and notates what its editions say | Delete switches whose shadow checks prove they are dead |
 | Why now | The G4f flip cannot ship a renderer that draws 8va where the app does not play it (G04 §32.12.10) | Hymns are G7a's SATB harmony and melody set, and G6 uses the catalogue | Each has been past its "one release" since G1/G2 |
-| Slot | **CLOSED** — PR #13 `e37d37a` (2026-09-25) | After G4f, before G5 | After G4f |
+| Slot | **CLOSED** — PR #13 `e37d37a` (2026-09-25) | After G4f, before G5 | **CLOSED** — MX-3a/3b, branch `mx-3-legacy-removal` (2026-10-08) |
 | Scope | Issue 3 in `Score.finalize` (App 3593–3606 adds the shift to what sounds and draws the file's pitch — right only if the file held the written pitch) and the matching un-shift in `legacy.fromScore` (`legacy-score.js` 601–613); pedal `change` = damper lift then re-press (`PianoScore`, App 2681); R4 message; an audit of every 8va file's encoding. Brief in §15 | Fix `catalog/hymns/abc-to-musicxml.js` (key signature, tie stops, carried accidentals), regenerate the hymns, fix the issue-14/15 files with evidence — including `in-the-bleak-midwinter.musicxml`, whose last bar holds the rest of the piece (175/4; G04 §33.15) — and any 8va file MX-1's audit finds encoded as written pitch; **rebaseline the G0 suites** (including F7) with reasons | Remove `buildXml` + `opts.legacyWriter`, and `PPP.legacyImport` (the import door only — S4 paths still call `parseMusicXML`) |
 | Carry-overs | – | From MX-1 (review 2026-09-25): (a) migrate songs saved between `72549cb` and MX-1 (an 8va plays an octave low), keyed on the finalize-rule marker MX-1 stamps (MX1-D3, review M1) — 1 of 110 production shares has an octave line, song slots are browser-local; (b) MIDI out: a same-point pedal `stop` + `start` sends only CC64 127 (M4); (c) an octave line naming no staff shifts bass notes but brackets only the treble (E18 bar 3), and the legacy renderer draws a pedal change as a lone ∗ (M5; the legacy renderer retires at G4f, so fix only if it ships before); (d) rebaseline the G0 bench's model of the pre-MX-1 app (`ottava="app"`, `octave_shift_playback`, C10/C11, r20, `golden.py` 237/285; MX1-D7) | – |
 | Acceptance | Page check: the app's sounding MIDI = the graph's concert pitch on all 30 8va files; pedal `change` lifts in `PianoScore` events; `ab` core/smoke identical (the bench excludes 8va truth, G0-D10) | Hymns: key/spelling metrics enabled; `lint-corpus` 0 errors; `update-baseline` with reason; hold-out untouched | `shadow-legacy --check` and `sg-roundtrip` unchanged; the G0 gate is green |
