@@ -564,7 +564,7 @@ aggregates and per-case metrics equal the baseline's exactly. (3) The helper's `
 for `omr/normalize.js` and the helper's `movements` are ignored (browser suite). (5) `omr/normalize.js` is not in the page's script list.
 
 **Beyond the s1 pages: all 60 excerpts**, G12-0's own engine files re-read with `run --normalize` (the sha-256 of each page image equals the one in its engine record, for all the 65 (A) or 67 (B) pages of each tier; every clean and photo file
-of s1 that I re-ran here is identical in text to G12-0's, and 16 of 17 scan150 files; the 17th differs in two notes' dots, stable over three runs here), pooled over the 60 (the held-out half is in the numbers and was not read
+of s1 that I re-ran here is identical in text to G12-0's, and 16 of 17 scan150 files; the 17th, `method_burgmuller25_003`, differs in two notes' dots: see Findings), pooled over the 60 (the held-out half is in the numbers and was not read
 case by case); `scan150-B` (PPP's own print at 150 DPI, which the engine refuses) is not in the table.
 
 | tier (60 excerpts) | note F1 | played F1 | bars exactly right | parts ok |
@@ -590,7 +590,11 @@ played F1 and from 25 % to 44 % of bars exactly right; PPP's own print (clean-B,
 - Not done: the layout evidence (`PdfLayer.layout`'s bar lines per page) is accepted by `normalize` (`opts.pageBars`; a page whose bar count differs is reported and its bars flagged `bar-count`, tested) but the page does not pass it yet: it is a flag
   signal and goes in with G12-3. The hand rule of `scoregraph/legacy-score.js` (the graph path, not used by OMR yet) is untouched: G12-2 moves OMR onto it. `report.normalize` is not saved with the song and not shown on a screen.
 - **The PC was not quiet** (Unity and other sessions' jobs: the load averaged 60-70 % and never fell below 25 % in the 40 minutes I waited): the runs were made at below-normal priority, one page at a time, with Audiveris's step limit raised
-  as the tool does; no page timed out and the outputs match G12-0's (above). I say it because one scan150 page's dotted rhythm differs from G12-0's, which may be load (Audiveris searches rhythms under a time limit).
+  as the tool does; no page timed out and the outputs match G12-0's (above) except one page. That page, `method_burgmuller25_003` scan150-A p1, differs from G12-0's file for the same image (same sha-256; two notes of staff 2 are
+  plain quarters, duration 6, here and dotted quarters, duration 9, there; one bar of 267, 99 vs 100 in s1 scan150-A). I re-ran it on the PC once it had gone quiet (mean load 23 % before the runs), at below-normal priority, one at a
+  time: twice under its own name and twice on a copy named `scan-p1.jpg` as in G12-0; all four raw `.mxl` files are identical to each other and to my earlier run under load, and differ from G12-0's. So it is not load and not the file
+  name, and since the files compared are the engine's own output it is not the normaliser. This page's output differs from G12-0's for the same image, stable over four quiet runs here; the cause is unknown (no Audiveris
+  setting or version change is known to me; I am not guessing).
 - Held-out discipline: the rules came from the structure counts of all 480 files and from the tuning half. While understanding the shapes I looked at the bar-by-bar structure of two held-out excerpts (`i-know-whom`,
   `all-creatures`) before any rule or threshold existed; the one threshold, `OVERLAP_MAX` 0.25, was not tuned: no bar is shared in the tuning half at all, so any value from 0.05 to 0.5 gives the same output on it.
 
