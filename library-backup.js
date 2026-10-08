@@ -54,6 +54,8 @@
   const parse = s => { try { return JSON.parse(s); } catch (e) { return undefined; } };
   const isSongId = id => typeof id === 'string' && /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$/.test(id) && id !== 'demo';
   const clone = v => (v === undefined ? v : JSON.parse(JSON.stringify(v)));
+  /* a link a card or a slot carries is a web address or nothing (the page opens a song's video from it) */
+  const okUrl = u => u == null || (typeof u === 'string' && /^https?:\/\//i.test(u));
 
   /* ---------------------------------------------------------------- storage access (never throws) */
   function getItem(storage, k) { try { const v = storage.getItem(k); return v === undefined ? null : v; } catch (e) { return null; } }
@@ -258,6 +260,7 @@
       if (!isObj(card) || !isSongId(card.id) || has(seen, card.id)) return { ok: false, code: 'bad-id' };
       seen[card.id] = true;
       if (card.title != null && (typeof card.title !== 'string' || card.title.length > LIMITS.title)) return { ok: false, code: 'bad-shape' };
+      if (!okUrl(card.url)) return { ok: false, code: 'bad-shape' };
     }
     for (const id of Object.keys(b.slots)) {
       if (id !== 'demo' && !isSongId(id)) return { ok: false, code: 'bad-id' };
@@ -266,7 +269,9 @@
       if (slot.score != null) {
         const sc = slot.score;
         if (!isObj(sc) || !Array.isArray(sc.measures) || !Array.isArray(sc.notes)) return { ok: false, code: 'bad-slot' };
+        if (isObj(sc.source) && !okUrl(sc.source.url)) return { ok: false, code: 'bad-shape' };
       } else if (id !== 'demo') return { ok: false, code: 'bad-slot' };
+      if (isObj(slot.importSource) && !okUrl(slot.importSource.url)) return { ok: false, code: 'bad-shape' };
       if (JSON.stringify(slot).length > LIMITS.slot) return { ok: false, code: 'slot-too-big' };
     }
     return { ok: true };
@@ -464,7 +469,7 @@
     const writes = [];                              /* [key, text] */
     const put = (k, text) => { if (getItem(storage, k) !== text) writes.push([k, text]); };
     const copyTitle = typeof opts.copyTitle === 'function' ? opts.copyTitle : (t => t + ' (backup)');
-    const date = typeof bk.exportedAt === 'string' ? bk.exportedAt.slice(0, 10) : '';
+    const date = typeof bk.exportedAt === 'string' && /^\d{4}-\d{2}-\d{2}/.test(bk.exportedAt) ? bk.exportedAt.slice(0, 10) : '';
     const mergedFor = {};                           /* id -> merged slot, for the open song's mirror in the state */
     const added = [];
 

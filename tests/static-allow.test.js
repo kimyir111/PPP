@@ -61,7 +61,7 @@ const tracked = () => execFileSync('git', ['ls-files', '-z'], { cwd: REPO, maxBu
 
 /* ---- the rule, said again from what each folder is for (not from static-allow.js) ---- */
 const CODE_DIRS = ['scoregraph', 'engrave', 'playability', 'difficulty', 'songgraph', 'arrangement', 'realize', 'rec', 'candidates', 'critics', 'repair'];
-const ROOT_SERVED = ['Piano Coach App.dc.html', 'support.js', 'i18n.js', 'audio-score.js', 'score-search.js', 'lessons.js', 'course.js'];
+const ROOT_SERVED = ['Piano Coach App.dc.html', 'support.js', 'i18n.js', 'library-backup.js', 'audio-score.js', 'score-search.js', 'lessons.js', 'course.js'];
 function expectedServed(rel) {
   const parts = rel.split('/');
   const name = parts[parts.length - 1];

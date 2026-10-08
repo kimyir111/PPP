@@ -212,36 +212,10 @@ for (const name of Object.keys(PROPS)) {
 }
 
 /* ------------------------------------------------------------------------------------------------ the mutants: one broken safety line each */
-function mutant(from, to, all) {
-  const src = all ? SRC.split(from).join(to) : SRC.replace(from, to);
-  assert.notEqual(src, SRC, 'the mutation did not apply: ' + from.slice(0, 60));
-  const m = { exports: {} };
-  new Function('module', 'exports', 'globalThis', 'require', src + '\nmodule.exports = module.exports;').call(m, m, m.exports, globalThis, require);
-  assert.ok(m.exports && m.exports.build, 'the mutant did not load');
-  return m.exports;
-}
-const MUTANTS = [
-  { name: 'a restore drops the songs that are here', prop: 'P1', from: 'const songs = localLib.songs.map(c => {', to: 'const songs = localLib.songs.filter(() => false).map(c => {' },
-  { name: 'a restore replaces the local slot of an id it also has', prop: 'P1', from: "put(KEY.SONG + it.id, JSON.stringify(it.slot));\n      }\n    });", to: "put(KEY.SONG + it.id, JSON.stringify(it.slot));\n      }\n    });\n    localLib.songs.forEach(c => { if (c && c.id && bk.slots[c.id]) put(KEY.SONG + c.id, JSON.stringify(bk.slots[c.id])); });" },
-  { name: 'a different score replaces the local one (no copy)', prop: 'P2', from: "} else {                                     /* the same id, another score", to: "} else if (true) { const t = lslot; out.same.push(card.id); idMap[card.id] = card.id; out.items.push({ kind: 'same', id: card.id, from: card.id, card: card, slot: Object.assign({}, slot, { score: t && t.score }), local: Object.assign({}, lslot, { score: slot.score }), localRaw: raw, hadCard: true });\n      } else {                                     /* mutant: the same id, another score" },
-  { name: 'the copy has no suffix', prop: 'P2', from: "card.title = copyTitle(typeof card.title === 'string' ? card.title : '', date);", to: '' },
-  { name: 'a restore twice adds a second copy', prop: 'P2', from: "const base = copyIdOf(card.id, key);", to: "const base = copyIdOf(card.id, key + Math.random());" },
-  { name: 'the backup holds the PC code (the guard is off)', prop: 'P3', from: "/* @secrets-excluded: nothing above reads ppp.pclink.*, ppp-guest-key or any account data */", to: "out.pc = parse(getItem(storage, KEY.PC)); out.guest = getItem(storage, KEY.GUEST);" , also: [["secretsOf(storage).forEach(s => {", "[].forEach(s => {"]] },
-  { name: 'the backup holds the PC code (the guard is on)', prop: 'P3', from: "/* @secrets-excluded: nothing above reads ppp.pclink.*, ppp-guest-key or any account data */", to: "out.pc = parse(getItem(storage, KEY.PC));" },
-  { name: 'the backup holds the settings of the state', prop: 'P3', from: "STATE_FIELDS = Object.freeze(['minutes',", to: "STATE_FIELDS = Object.freeze(['theme', 'toggles', 'midiDeviceId', 'visualSettings', 'minutes'," },
-  { name: 'there is no bound on the inflated size', prop: 'P4', from: "if (total > max) {", to: "if (total > max && false) {" },
-  { name: 'there is no bound on the file size', prop: 'P4', from: "if (bytes.length > LIMITS.file) return", to: "if (false) return" },
-  { name: 'a foreign JSON is accepted', prop: 'P4', from: "if (!isObj(b) || b.app !== FORMAT) return { ok: false, code: 'not-ppp' };", to: "if (!isObj(b)) return { ok: false, code: 'not-ppp' };" },
-  { name: 'the wipe misses ppp-media', prop: 'P5', from: "const KNOWN_DBS = ['ppp-engrave', 'ppp-media'];", to: "const KNOWN_DBS = ['ppp-engrave'];", also: [["/^ppp/i.test(d.name)", "/^ppp-engrave/i.test(d.name)"]] },
-  { name: 'the wipe leaves the settings keys', prop: 'P5', from: "const pppKeys = storage => allKeys(storage).filter(k => /^ppp/i.test(k));", to: "const pppKeys = storage => allKeys(storage).filter(k => /^ppp\\.(song|library|state)/i.test(k));" },
-  { name: 'the wipe says ok about a blocked database', prop: 'P5', from: "if (r.ok) report.removed.dbs++; else failed.push({ kind: 'db', name: name, why: r.why });", to: "report.removed.dbs++;" , also: [["const dl = await dbsLeft(env);", "const dl = [];"]] },
-  { name: 'a refused write is not undone', prop: 'P6', from: "for (let i = Math.min(done, writes.length - 1); i >= 0; i--) {", to: "for (let i = -1; i >= 0; i--) {" }
-];
+const { MUTANTS, applyMutant } = require('./mutants.js');
 for (const m of MUTANTS) {
   test('mutant: ' + m.name + ' -> ' + m.prop + ' fails', async () => {
-    let src = SRC;
-    const pairs = [[m.from, m.to]].concat(m.also || []);
-    pairs.forEach(([a, b]) => { assert.ok(src.indexOf(a) >= 0, 'anchor missing: ' + a.slice(0, 70)); src = src.split(a).join(b); });
+    const src = applyMutant(SRC, m);
     const box = { exports: {} };
     new Function('module', 'exports', 'globalThis', 'require', src).call(box, box, box.exports, globalThis, require);
     const mod = box.exports;
@@ -250,7 +224,6 @@ for (const m of MUTANTS) {
     assert.ok(verdict, 'the property ' + m.prop + ' still holds for the mutant: nothing would notice this break');
   });
 }
-void mutant;
 
 /* ------------------------------------------------------------------------------------------------ the rest of the contract */
 test('30 songs out and in on a fresh profile: every slot byte for byte, the cards and the demo progress the same', async () => {
@@ -308,6 +281,10 @@ test('validate refuses a file the page could not have made', () => {
   assert.equal(v(o => { o.slots['song-t0x'] = 5; }).code, 'bad-slot');
   assert.equal(v(o => { o.slots['song-t0x'].score = { measures: 1 }; }).code, 'bad-slot');
   assert.equal(v(o => { o.library = []; }).code, 'bad-shape');
+  assert.equal(v(o => { o.library.songs[0].url = 'javascript:alert(1)'; }).code, 'bad-shape');
+  assert.equal(v(o => { o.slots['song-t0x'].importSource = { kind: 'youtube', url: 'data:text/html,x' }; }).code, 'bad-shape');
+  assert.equal(v(o => { o.slots['song-t0x'].score.source = { url: 'javascript:1' }; }).code, 'bad-shape');
+  assert.equal(v(o => { o.library.songs[0].url = 'https://www.youtube.com/watch?v=abcdefghijk'; }).ok, true);
   assert.equal(v(o => { o.library.songs = new Array(B.LIMITS.songs + 1).fill(0); }).code, 'too-many-songs');
   assert.equal(v(o => { o.slots['song-t0x'].history = JSON.parse('{"__proto__":{"x":1}}'); }).code, 'unsafe-key');
   assert.equal(v(o => { let d = o.slots['song-t0x']; for (let i = 0; i < B.LIMITS.depth + 5; i++) { d.deep = {}; d = d.deep; } }).code, 'too-complex');
