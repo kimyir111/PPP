@@ -100,10 +100,16 @@ test('v2 with the helper\'s audio beats and downbeats reads them (beatSource aud
   const p = march(16, 100, { jitter: 0.015, seed: 8 });
   const beats = [], downbeats = [];
   for (let k = 0; k <= 16 * 4; k++) { beats.push(1 + k * 0.6); if (k % 4 === 0) downbeats.push(1 + k * 0.6); }
-  const r = AS.toMusicXml({ notes: p.notes, beats: beats, downbeats: downbeats }, v2);
+  /* G10a-1d: beats marked as the score's bar lines (opts.recBeats 'oracle': the benchmark's own performer) */
+  const r = AS.toMusicXml({ notes: p.notes, beats: beats, downbeats: downbeats }, Object.assign({ recBeats: 'oracle' }, v2));
   assert.equal(r.stats.beatSource, 'audio-v2');
   assert.deepEqual([r.stats.beatsPerBar, r.stats.beatType], [4, 4]);
   assert.ok(Math.abs(r.stats.barStarts[0] - 1) < 0.05);
+  /* the same beats from a real tracker (not marked) are phase evidence only: the notes' metre and tempo, bar lines on the downbeats */
+  const q = AS.toMusicXml({ notes: p.notes, beats: beats, downbeats: downbeats }, v2), n = AS.toMusicXml({ notes: p.notes }, v2);
+  assert.equal(q.stats.beatSource, 'onset-v2');
+  assert.deepEqual([q.stats.beatsPerBar, q.stats.beatType, q.stats.tempo], [n.stats.beatsPerBar, n.stats.beatType, n.stats.tempo]);
+  assert.ok(Math.abs(q.stats.barStarts[0] - 1) < 0.05);
 });
 
 test('a page that has no weights (no rec/ or a broken weights file) writes the legacy way, never throws', () => {

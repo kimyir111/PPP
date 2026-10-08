@@ -50,7 +50,7 @@
 <script src="./scoregraph/musicxml-export.js?v=8"></script>
 <script src="./scoregraph/midi-file.js?v=8"></script>
 <script src="./scoregraph/midi-import.js?v=8"></script>
-<script src="./scoregraph/legacy-score.js?v=10"></script>
+<script src="./scoregraph/legacy-score.js?v=11"></script>
 <script src="./scoregraph/import.js?v=8"></script>
 <script src="./scoregraph/meter-grid.js?v=8"></script>
 <script src="./scoregraph/pro-critic.js?v=8"></script>
@@ -5531,7 +5531,8 @@ function setRecordingArrangeMode(v) {
    'legacy' is the import this page made before G12-1, byte for byte: the helper's `musicxml` field, Import.mergeMusicXml, the hand rule as it was. 'v2' keeps what the
    engine read (omr/normalize.js): every movement of every page, a repaired <divisions>, one grand staff for a piano the engine split into parts, bars counted once; and
    a piano import from the engine never has a silent staff. Layers, the first that holds a choice wins: ?omr= in the address (this visit only), the device's remembered
-   choice (localStorage 'ppp.omr.v1'), the default. omr/normalize.js is fetched when a v2 import needs it, never by a page that does not import a scan or a photo. */
+   choice (localStorage 'ppp.omr.v1'), the default. omr/normalize.js is fetched when a v2 import needs it, never by a page that does not import a scan or a photo.
+   G12-2: a 'v2' import is also a ScoreGraph (Import.omrS4: scoregraph/import.js, the findings of the page's lines as edits of it, omr/apply.js, fetched the same way) kept with the song; 'legacy' never asks for omr/. */
 const OMR_KEY = 'ppp.omr.v1';
 const OMR_DEFAULT = 'legacy';
 function omrChoice(v) { return v === 'v2' || v === 'legacy' ? v : null; }
@@ -5554,12 +5555,26 @@ function loadOmrNormalize() {
   if (_omrNormalizePromise) return _omrNormalizePromise;
   _omrNormalizePromise = new Promise(resolve => {
     const el = document.createElement('script');
-    el.src = './omr/normalize.js?v=1';
+    el.src = './omr/normalize.js?v=2';
     el.onload = () => resolve(window.PPPOmrNormalize || null);
     el.onerror = () => resolve(null);
     document.head.appendChild(el);
   }).then(m => { if (!m) _omrNormalizePromise = null; return m; });   /* a failed fetch is asked for again next time */
   return _omrNormalizePromise;
+}
+/* G12-2: omr/apply.js (the findings of the page's own text and lines as graph edits), fetched the same way, by a v2 import only */
+let _omrApplyPromise = null;
+function loadOmrApply() {
+  if (window.PPPOmrApply) return Promise.resolve(window.PPPOmrApply);
+  if (_omrApplyPromise) return _omrApplyPromise;
+  _omrApplyPromise = new Promise(resolve => {
+    const el = document.createElement('script');
+    el.src = './omr/apply.js?v=1';
+    el.onload = () => resolve(window.PPPOmrApply || null);
+    el.onerror = () => resolve(null);
+    document.head.appendChild(el);
+  }).then(m => { if (!m) _omrApplyPromise = null; return m; });
+  return _omrApplyPromise;
 }
 const _recLoaded = new Set();
 const _recGlobals = new Set();
@@ -7878,6 +7893,39 @@ const Import = {
     return r.xml;
   },
 
+  /* G12-2 (PPP.omr = 'v2', docs/GOALS/G12_OMR.md section 7.2): the engine's document is read by the ScoreGraph importer, the one door a MusicXML file uses; the findings of the page's own text and lines
+     (PdfLayer.apply: accidentals, phantom arpeggio notes, a late voice, 8va, chord names, segno and coda, title and tempo) are edits of that graph (omr/apply.js, op 'inferred', source omr / pdflayer);
+     and the Score is made from the edited graph (toScore), so the graph the renderer draws, the Score the player plays and the checks read are one thing and the engine's beams are drawn.
+     PdfLayer.apply runs on a scratch copy of the Score, never on the one kept. Returns {score, graph, fromPdf, applied, importReport}, or null when this is not a v2 import or anything failed (omr.graphFailed
+     says why): the caller then does what legacy does with the same document. layersOf: a function that gives the layers, one per page (a PDF's), or null - called here, inside the try, so a page
+     that cannot give them is a fallback and not an exception; docs: omr.musicxml (each page's bar count). */
+  async omrS4(omr, xml, name, layersOf, docs) {
+    if (OMR_MODE !== 'v2' || !omr || !omr.normalize) return null;
+    try {
+      const layers = typeof layersOf === 'function' ? layersOf() : layersOf;
+      const A = await loadOmrApply();
+      if (!A) { omr.graphFailed = 'apply-not-loaded'; return null; }
+      const got = await importToGraph(new TextEncoder().encode(xml), name, 'musicxml');
+      let graph = A.markOmr(got.graph, { engine: String(omr.engine || 'omr') }).graph;
+      let fromPdf = null, applied = { findings: A.count(A.emptyFindings()), applied: {}, already: 0, skipped: [], conflicts: 0 };   /* a photo or a scan has no lines of its own: nothing to apply */
+      if (layers && layers.some(Boolean)) {
+        try {
+          const scratch = Score.finalize(PPPScoreGraph.legacy.toScore(graph, { name: name, ids: true }));
+          const before = JSON.parse(JSON.stringify(scratch));
+          fromPdf = PdfLayer.apply(scratch, layers, docs, name);
+          const f = A.diff(before, scratch);
+          const r = A.apply(graph, f);
+          graph = r.graph;
+          applied = { findings: A.count(f), applied: r.applied, already: r.already, skipped: r.skipped.map(s => ({ group: s.group, why: s.why })), removed: r.removed, work: r.work, conflicts: f.conflicts.length };
+        } catch (e) { applied = { error: String(e && e.message || e).slice(0, 160) }; }   /* the page's lines could not be read: the recognised graph stands as it is */
+      }
+      graph = graphForScore(graph);
+      got.graph = graph;
+      const score = Score.finalize(PPPScoreGraph.legacy.toScore(graph, { name: name }));
+      return { score: score, graph: graph, fromPdf: fromPdf, applied: applied, importReport: Import.summariseGraph(got) };
+    } catch (e) { omr.graphFailed = 'threw: ' + String(e && (e.code || e.message) || e).slice(0, 160); return null; }
+  },
+
   /* ---- stitch per-page MusicXML into one document ----
      Audiveris numbers every page from 1 because it cannot know what came
      before, so measures are renumbered continuously as pages are appended.
@@ -8680,9 +8728,11 @@ const Import = {
     const wantV2 = RECORDING_MODE === 'v2' && what.mode !== 'arrange';
     const useV2 = wantV2 && recordingModulesReady();
     let rejectedV2 = false;
+    /* G10a-1d: the home PC's Beat This beats go to v2 only (as bar-phase evidence); the classic conversion of a PC result stays notes-only */
+    const pcClassic = v2 => heard.homePc && !v2;
     const convert = v2 => window.PPPAudioScore.toMusicXml({
       notes: heard.notes, pedals: heard.pedals,
-      beats: heard.beats, downbeats: heard.downbeats,
+      beats: pcClassic(v2) ? undefined : heard.beats, downbeats: pcClassic(v2) ? undefined : heard.downbeats,
       grid: heard.grid, title: title
     }, Object.assign({ title: title, easy: what.mode === 'arrange', closeGaps: true, exactBars: true }, v2 ? { recording: 'v2' } : {}));
     try {
@@ -9146,8 +9196,9 @@ const Import = {
     let score;
     let scoreXml = xml;
     const handOpts = omr && omr.normalize ? { omrPiano: true } : undefined;   /* G12-1: PPP.omr = 'v2' */
+    let s4 = await Import.omrS4(omr, xml, file.name, () => (kind === 'pdf' ? pages.map(p => p.layer || null) : null), omr && omr.musicxml);   /* G12-2: null unless a v2 import; then the graph, the Score made from it, PdfLayer's findings as its edits */
     try {
-      score = parseMusicXML(xml, file.name, handOpts);
+      score = s4 ? s4.score : parseMusicXML(xml, file.name, handOpts);
     } catch (e) {
       throw importError('bad-musicxml',
         tx('The notation was recognised but could not be turned into a score: {{message}}', { message: e.message }),
@@ -9160,7 +9211,7 @@ const Import = {
        chance to merge — the overlays are per-bar coordinates on the page. */
     if (kind === 'pdf') {
       try {
-        source.fromPdf = PdfLayer.apply(score, pages.map(p => p.layer || null), omr ? omr.musicxml : [xml], file.name);
+        source.fromPdf = s4 ? s4.fromPdf : PdfLayer.apply(score, pages.map(p => p.layer || null), omr ? omr.musicxml : [xml], file.name);
       } catch (e) { /* the recognised score stands as it is */ }
     }
 
@@ -9182,8 +9233,9 @@ const Import = {
         const omr2 = await Import.recognise(pages2, onStage);
         const xml2 = await Import.omrXml(omr2);
         stage('parse', {});
-        const score2 = parseMusicXML(xml2, file.name, handOpts);
-        const fromPdf2 = PdfLayer.apply(score2, pages2.map(p => p.layer || null), omr2.musicxml, file.name);
+        const s42 = await Import.omrS4(omr2, xml2, file.name, () => pages2.map(p => p.layer || null), omr2.musicxml);
+        const score2 = s42 ? s42.score : parseMusicXML(xml2, file.name, handOpts);
+        const fromPdf2 = s42 ? s42.fromPdf : PdfLayer.apply(score2, pages2.map(p => p.layer || null), omr2.musicxml, file.name);
         pages2.forEach(p => { delete p.layer; });
         const report2 = Import.validate(score2, { pageCount: pages2.length, pages: omr2.pages, missing: fromPdf2.missing });
         const flags = rep => new Set((rep.issues || []).filter(i => i.measure != null).map(i => i.measure));
@@ -9191,13 +9243,15 @@ const Import = {
         stage('merge', { pages: pages.length });
         const mergedXml = Import.mergeMeasuresWhereBetter(xml, xml2, f1, f2);
         if (mergedXml && mergedXml !== xml) {
-          const scoreM = parseMusicXML(mergedXml, file.name, handOpts);
-          const fromPdfM = PdfLayer.apply(scoreM, pages.map(p => p.layer || null), omr.musicxml, file.name);
+          const s4M = await Import.omrS4(omr, mergedXml, file.name, () => pages.map(p => p.layer || null), omr.musicxml);
+          const scoreM = s4M ? s4M.score : parseMusicXML(mergedXml, file.name, handOpts);
+          const fromPdfM = s4M ? s4M.fromPdf : PdfLayer.apply(scoreM, pages.map(p => p.layer || null), omr.musicxml, file.name);
           const reportM = Import.validate(scoreM, { pageCount: pages.length, pages: omr.pages, missing: fromPdfM.missing });
           /* adopt only when the merged score is strictly closer to the page */
           if (reportM.issues.length < report.issues.length) {
             score = scoreM;
             scoreXml = mergedXml;
+            s4 = s4M;
             source.fromPdf = fromPdfM;
             report = reportM;
           }
@@ -9221,11 +9275,13 @@ const Import = {
     }
     if (omr && omr.normalize) report.normalize = omr.normalize;   /* G12-1: what omr/normalize.js changed, for the review (and G12-3's flags) */
     else if (omr && omr.normalizeFailed) report.normalizeFailed = omr.normalizeFailed;   /* PPP.omr = 'v2' but the import is the legacy one: why */
+    if (s4) { report.graph = s4.applied; source.importReport = s4.importReport; }   /* G12-2: what the page's lines changed in the graph (counts, what was skipped and why), what the import kept and dropped */
+    else if (omr && omr.graphFailed) report.graphFailed = omr.graphFailed;           /* PPP.omr = 'v2' but the import is the legacy one: why */
     source.status = report.level === 'poor' ? 'low-confidence' : 'recognised';
     score.source = source;
     /* page images stay in memory for the review screen; they are never persisted */
-    engraveRememberXml(score, scoreXml, 'omr');
-    return { score: score, source: source, report: report, pageImages: pages, musicxml: xml };
+    if (s4) engraveRemember(score, s4.graph, 'omr'); else engraveRememberXml(score, scoreXml, 'omr');
+    return Object.assign({ score: score, source: source, report: report, pageImages: pages, musicxml: xml }, s4 ? { graph: s4.graph } : {});
   }
 };
 
@@ -15653,16 +15709,18 @@ class Component extends DCLogic {
       this.setState({ homeBusy: false, ytError: e.message });
     }
   }
-  /* the notes the PC heard, as the page's heard-notes object: the accepted notes only (no pedal, no beats: the helper's own beats made v2 write bars
-     two to four times too short), and the ensemble's summary, which the review screen reads for its model-agreement figure */
+  /* the notes the PC heard, as the page's heard-notes object: the accepted notes (no pedal), and the ensemble's summary, which the review screen reads for
+     its model-agreement figure. G10a-1d: the PC's Beat This beats and downbeats when it sent them; v2 reads them as evidence of the bar phase only */
   homeHeard(res) {
     const e = res.ensemble || {};
     const song = res.mode === 'song' && res.song ? res.song : null;
-    const heard = {
+    /* G10a-1d: the PC's Beat This beats and downbeats when it sent them; v2 reads them as evidence of the bar phase only */
+    const beats = Array.isArray(res.beats) && res.beats.length >= 4 ? { beats: res.beats, downbeats: Array.isArray(res.downbeats) ? res.downbeats : [] } : {};
+    const heard = Object.assign(beats, {
       notes: res.notes, duration: res.duration, engine: res.engine || 'ensemble', qualityTier: song ? 'local-song-separated' : 'local-piano-ensemble', homePc: true,
       truncated: res.duration >= IMPORT_LIMITS.maxAudioMinutes * 60 - 1, device: res.device || null, model: res.model || null,
       ensemble: { models: e.models || [], primary: e.primary || null, agreement: e.agreement, accepted: e.accepted, uncertain: e.uncertain || 0 }
-    };
+    });
     /* G10d song mode: every note keeps its layer (track 1 melody, 2 bass, 3 accompaniment); the lead sheet takes the tune from the melody layer */
     if (song) heard.song = { separation: song.separation || null, melodyFrom: song.melodyFrom || null, melody: song.melody | 0, bass: song.bass | 0, accomp: song.accomp | 0 };
     return heard;
@@ -16466,7 +16524,9 @@ class Component extends DCLogic {
       let built;
       try {
         built = window.PPPAudioScore.toMusicXml({
-          notes: heard.notes, pedals: heard.pedals, beats: heard.beats, downbeats: heard.downbeats, grid: heard.grid, title: S.score.title
+          /* G10a-1d: as finishHeard: the home PC's beats go to v2 only (bar-phase evidence); a song reopened later has no beats (heardForSong) */
+          notes: heard.notes, pedals: heard.pedals, beats: heard.homePc && !wantV2 ? undefined : heard.beats, downbeats: heard.homePc && !wantV2 ? undefined : heard.downbeats,
+          grid: heard.grid, title: S.score.title
         }, Object.assign({ title: S.score.title, closeGaps: true, exactBars: true }, wantV2 ? { recording: 'v2' } : {}));
       } catch (e) { return done((e && e.message) || tx('The rhythm could not be rewritten.')); }
       if (wantV2 && (!writtenByV2(built) || !v2Plausible(built, heard))) return done(tx('The new transcription method could not read this performance, so nothing was changed.'));

@@ -32,6 +32,20 @@
      systems       one part of one staff that is a run of systems that alternate G clef, F clef, G clef, F clef ... with the
                    same number of bars in each pair is a grand staff read as single staves (a page whose staves no bar line
                    joins): the pairs are folded to two staves, so 16 bars of one staff become 8 bars of two (issue 12)
+     zero length   a note whose <duration> is 0 (Audiveris writes <rest measure="yes"/> with <duration>0</duration> for the whole-bar rest of a bar
+                   it read nothing in: the ScoreGraph importer refuses such a file, E-DURATION) lasts what it should: a whole-bar rest the bar (beats
+                   x 4 / beat-type quarters of the time signature in force), any other note its own <type> (a plain, undotted note). A rest of
+                   length 0 did not move the cursor, so what follows it in the bar (the other staff's whole-bar rest, which Audiveris writes with
+                   no <backup> between) begins where the rest began: a repaired whole-bar rest that is followed by other content of the bar gets a
+                   <backup> of its own length, so the bar is not doubled; one followed by a note of its own voice and staff (a bar the engine
+                   read as empty and as full at once) is not repaired. Counted apart for rests and for pitched notes (zeroRestsRepaired,
+                   zeroNotesRepaired; flag duration-repaired) and reported. A zero note with no length to be read is left as it was and counted
+                   (zeroRestsLeft, zeroNotesLeft; flag duration-zero). No pitched note is dropped
+     wedges        a hairpin the engine wrote with its start and stop at one place (a crescendo and a diminuendo read as one mark: start, start,
+                   stop, stop) is a wedge that ends where it starts, which the importer refuses (E-SPAN-ORDER). The wedges that do not pair into
+                   a wedge of positive length, in a part that has such a pair, are removed (the importer would drop the unpaired ones itself,
+                   and a degenerate pair removed alone would let its neighbour pair with a later stop: a mark the page does not show). A hairpin
+                   is a mark, never a note. Counted (wedgesDropped, wedgesDegenerate, flag wedge-dropped) and reported
      pages         pages are joined by part AFTER the rules above, so a page whose parts were fragmented differently from page
                    1 lines up; bars are renumbered 1..N; key, time and clef changes are written where they happen
      bar count     a page whose output bar count differs from the bar count its own layout shows (opts.pageBars[i]) is reported
@@ -43,7 +57,7 @@
      movement-start  first bar of a movement after the first of its page
      divisions-repaired, divisions-unknown, pair-merged (the bar comes from two one-staff parts), source-switch (the bar's group
      differs from the previous bar's), overlap (two groups had notes here), parts-fragmented (parts the rules could not join),
-     folded (the bar comes from a system pair), bar-count
+     folded (the bar comes from a system pair), bar-count, duration-repaired, duration-zero, wedge-dropped
 
    Deterministic, idempotent in structure (a normalised file normalises to itself), no recursion on input depth beyond the XML's.
    ========================================================================== */
@@ -55,7 +69,7 @@
   'use strict';
   if (!XML) throw new Error('omr/normalize.js needs scoregraph/xml.js to be loaded first');
 
-  const VERSION = 1;
+  const VERSION = 2;
   const MAX_DIVISIONS = 5040;     /* the lcm of every divisions of a document may not pass this (96 is the largest seen) */
   const OVERLAP_MAX = 0.25;       /* groups that share more than this share of their bars are parts of a score, not one piano */
   const TYPE_Q = {
@@ -236,11 +250,86 @@
     return g;
   }
 
+  /* the length of a whole bar in the output's divisions, from the time signature in force at its start (null when it has none, or a mixed
+     or unmeasured one, or the length is not a whole number of divisions) */
+  function barLength(pbar, dOut) {
+    const t = pbar.start && pbar.start.time && pbar.start.time.el;
+    if (!t || kidsOf(t, 'beats').length !== 1 || kidsOf(t, 'beat-type').length !== 1) return null;
+    const bt = num(textOf(t, 'beat-type'));
+    let beats = 0;
+    const parts = String(textOf(t, 'beats') || '').split('+');
+    for (let i = 0; i < parts.length; i++) { const v = num(parts[i]); if (v == null || v <= 0) return null; beats += v; }
+    if (!(bt > 0)) return null;
+    const len = (beats * 4 / bt) * dOut;
+    return len >= 1 && Math.abs(len - Math.round(len)) < 1e-9 ? Math.round(len) : null;
+  }
+  /* a note of length 0: repaired in place (c is the converted copy) or counted as left; fx collects the answer */
+  function fixZeroDuration(c, pbar, dOut, fx) {
+    const d = kid(c, 'duration');
+    if (!d) return;
+    const v = num(d.text);
+    if (v == null || v > 0) return;
+    const r = kid(c, 'rest');
+    let len = null, how = null;
+    if (r && r.attrs.measure === 'yes') { len = barLength(pbar, dOut); how = 'measure-rest'; }
+    else {
+      const ty = textOf(c, 'type');
+      if (ty && TYPE_Q[ty] && !kid(c, 'dot') && !kid(c, 'time-modification') && !kid(c, 'grace')) {
+        const q = TYPE_Q[ty] * dOut;
+        if (q >= 1 && Math.abs(q - Math.round(q)) < 1e-9) { len = Math.round(q); how = 'type'; }
+      }
+    }
+    if (len) {
+      d.text = String(len);
+      fx.repaired++;
+      if (r) fx.rests++; else fx.notes++;
+      fx.how[how] = (fx.how[how] || 0) + 1;
+      if (how === 'measure-rest') fx.list.push({ el: c, d: d, len: len });
+    } else { fx.left++; if (r) fx.leftRests++; else fx.leftNotes++; }
+  }
+  /* The whole-bar rests repaired in a bar, once the bar's elements are all in (body). A rest of length 0 had not moved the cursor; with its length it does:
+     whatever the bar holds after it would start a bar late. A <backup> of the rest's length restores the place the elements after it always had. Notes of the
+     rest's own voice and staff after it would play at the same time as the rest (a bar that is empty and full at once): the repair is withdrawn, the zero stays,
+     counted as left and said (fx.refused) - the importer will refuse the document and say so. */
+  function settleMeasureRests(body, fx) {
+    const key = e => (textOf(e, 'voice') || '') + '|' + (textOf(e, 'staff') || '');
+    fx.list.forEach(r => {
+      const at = body.indexOf(r.el);
+      if (at < 0) return;
+      const later = body.slice(at + 1);
+      if (later.some(e => e.name === 'note' && key(e) === key(r.el))) {
+        r.d.text = '0';
+        fx.repaired--; fx.rests--; fx.left++; fx.leftRests++; fx.refused++;
+        fx.how['measure-rest']--;
+        if (!fx.how['measure-rest']) delete fx.how['measure-rest'];
+        return;
+      }
+      if (later.some(e => e.name === 'note' || e.name === 'forward')) {
+        body.splice(at + 1, 0, mk('backup', {}, [mk('duration', {}, String(r.len))]));
+        fx.backups++;
+      }
+    });
+  }
+  const newFixes = () => ({ repaired: 0, left: 0, rests: 0, notes: 0, leftRests: 0, leftNotes: 0, backups: 0, refused: 0, how: {}, list: [] });
+  function addFixes(a, b) {
+    if (!b) return a;
+    ['repaired', 'left', 'rests', 'notes', 'leftRests', 'leftNotes', 'backups', 'refused'].forEach(k => { a[k] += b[k]; });
+    Object.keys(b.how).forEach(k => { a.how[k] = (a.how[k] || 0) + b.how[k]; });
+    return a;
+  }
+  /* what a bar's fixes add to its flags */
+  function flagFixes(bo) {
+    if (!bo.fixes) return;
+    if (bo.fixes.repaired && bo.flags.indexOf('duration-repaired') < 0) bo.flags.push('duration-repaired');
+    if (bo.fixes.left && bo.flags.indexOf('duration-zero') < 0) bo.flags.push('duration-zero');
+  }
+
   /* ---- one bar of a source part, ready to go into a column: durations scaled to the document's divisions, the leading
           attributes dropped (the column writes its own), the staff and voice of a lower-staff part set ---- */
   function convertBar(pbar, dOut, staffNo, voiceOff, keepFraming) {
     const f = pbar.k * (dOut / pbar.D);
     const pre = [], body = [], barlines = [];
+    const fixes = newFixes();
     const attrs = {};
     ['width', 'implicit'].forEach(k => { if (pbar.el.attrs[k] != null) attrs[k] = pbar.el.attrs[k]; });
     let content = false;
@@ -263,6 +352,7 @@
       if (n === 'note' || n === 'backup' || n === 'forward') {
         content = true;
         scaleDur(c);
+        if (n === 'note') fixZeroDuration(c, pbar, dOut, fixes);
         if (n === 'note' && staffNo > 0) {
           setKid(c, 'staff', String(staffNo), LEAD_BEFORE_STAFF);
           if (voiceOff > 0) { const v = kid(c, 'voice'); if (v) { const vv = parseInt(v.text, 10); if (vv > 0) v.text = String(vv + voiceOff); } }
@@ -274,15 +364,19 @@
       if ((n === 'direction' || n === 'harmony' || n === 'figured-bass') && staffNo === 2) setKid(c, 'staff', '2', ['sound']);
       body.push(c);
     });
-    return { pre: pre, body: body, barlines: barlines, attrs: attrs };
+    settleMeasureRests(body, fixes);
+    return { pre: pre, body: body, barlines: barlines, attrs: attrs, fixes: fixes };
+  }
+  /* how far an element of a bar moves the cursor: a note by its duration (a chord note and a grace note do not move it), a <forward> on, a <backup> back */
+  function stepOf(e) {
+    if (e.name === 'note') { if (!kid(e, 'chord') && !kid(e, 'grace')) return num(textOf(e, 'duration')) || 0; }
+    else if (e.name === 'backup') return -(num(textOf(e, 'duration')) || 0);
+    else if (e.name === 'forward') return num(textOf(e, 'duration')) || 0;
+    return 0;
   }
   function cursorEnd(body) {
     let cur = 0;
-    body.forEach(e => {
-      if (e.name === 'note') { if (!kid(e, 'chord') && !kid(e, 'grace')) cur += num(textOf(e, 'duration')) || 0; }
-      else if (e.name === 'backup') cur -= num(textOf(e, 'duration')) || 0;
-      else if (e.name === 'forward') cur += num(textOf(e, 'duration')) || 0;
-    });
+    body.forEach(e => { cur += stepOf(e); });
     return Math.max(0, cur);
   }
 
@@ -304,13 +398,14 @@
       const barlines = upper ? upper.barlines : lower.barlines;
       const sg = gp ? gp.start : fp.start, sf = fp ? fp.start : gp.start;
       return { pre: pre, body: body.concat(barlines), srcAttrs: upper ? upper.attrs : lower.attrs, flags: ['pair-merged'], pitched: (gp ? gp.pitched : 0) + (fp ? fp.pitched : 0),
+        fixes: addFixes(addFixes(newFixes(), upper && upper.fixes), lower && lower.fixes),
         state: { key: sg.key || sf.key, time: sg.time || sf.time, clefs: { '1': gp ? gp.start.clefs['1'] : null, '2': fp ? fp.start.clefs['1'] : null } },
         src: g };
     }
     const pb = g.parts[0].bars[b];
     if (!pb) return null;
     const c = convertBar(pb, dOut, 0, 0, true);
-    return { pre: c.pre, body: c.body.concat(c.barlines), srcAttrs: c.attrs, flags: [], pitched: pb.pitched,
+    return { pre: c.pre, body: c.body.concat(c.barlines), srcAttrs: c.attrs, flags: [], pitched: pb.pitched, fixes: c.fixes,
       state: { key: pb.start.key, time: pb.start.time, clefs: pb.start.clefs }, src: g };
   }
   const emptyBar = () => ({ pre: [], body: [], flags: [], pitched: 0, state: { key: null, time: null, clefs: {} }, empty: true });
@@ -415,7 +510,7 @@
       const col = { staves: p.staves === 2 ? 2 : 1, bars: [] };
       p.bars.forEach(pb => {
         const c = convertBar(pb, dOut, 0, 0, true);
-        col.bars.push({ pre: c.pre, body: c.body.concat(c.barlines), srcAttrs: c.attrs, flags: [], pitched: pb.pitched,
+        col.bars.push({ pre: c.pre, body: c.body.concat(c.barlines), srcAttrs: c.attrs, flags: [], pitched: pb.pitched, fixes: c.fixes,
           state: { key: pb.start.key, time: pb.start.time, clefs: pb.start.clefs } });
       });
       len = Math.max(len, col.bars.length);
@@ -443,7 +538,9 @@
   function normalizePages(pagesIn, opts) {
     opts = opts || {};
     const ctx = { changes: [], counts: { pages: 0, pagesRead: 0, movements: 0, movementsJoined: 0, divisionsRepaired: 0, divisionsUnknown: 0,
-      ghostParts: 0, partsMerged: 0, partsKept: 0, systemsFolded: 0, droppedNotes: 0, overlapBars: 0, unreadable: 0, barCountMismatch: 0 } };
+      ghostParts: 0, partsMerged: 0, partsKept: 0, systemsFolded: 0, droppedNotes: 0, overlapBars: 0, unreadable: 0, barCountMismatch: 0,
+      zeroRestsRepaired: 0, zeroNotesRepaired: 0, zeroRestsLeft: 0, zeroNotesLeft: 0, zeroRestBackups: 0, zeroRestsRefused: 0,
+      zeroDurationsRepaired: 0, zeroDurationsLeft: 0, wedgesDropped: 0, wedgesDegenerate: 0 } };
     const list = Array.isArray(pagesIn) ? pagesIn : [];
     ctx.counts.pages = list.length;
     const movs = [];
@@ -517,6 +614,26 @@
       }
     });
 
+    /* notes of length 0, hairpins that end where they start: repaired or dropped, on the bars that are written (not on bars of a group that was left out) */
+    cols.forEach(c => {
+      c.bars.forEach((bo, i) => {
+        const fx = bo.fixes;
+        if (!fx || (!fx.repaired && !fx.left)) return;
+        ctx.counts.zeroRestsRepaired += fx.rests;
+        ctx.counts.zeroNotesRepaired += fx.notes;
+        ctx.counts.zeroRestsLeft += fx.leftRests;
+        ctx.counts.zeroNotesLeft += fx.leftNotes;
+        ctx.counts.zeroRestBackups += fx.backups;
+        ctx.counts.zeroRestsRefused += fx.refused;
+        ctx.counts.zeroDurationsRepaired += fx.repaired;      /* the sums of the rests and the pitched notes */
+        ctx.counts.zeroDurationsLeft += fx.left;
+        flagFixes(bo);
+        ctx.changes.push({ rule: 'zero-duration', bar: i + 1, page: bo.page, movement: bo.mv, repaired: fx.repaired, left: fx.left, rests: fx.rests, notes: fx.notes,
+          backups: fx.backups, refused: fx.refused, how: fx.how });
+      });
+      dropBadWedges(c, ctx);
+    });
+
     /* the document: the first usable file's header, one part per column */
     const header = movs[0].doc.root.kids.filter(k => k.name !== 'part-list' && k.name !== 'part').map(clone);
     const partList = mk('part-list', {}, cols.map((c, j) => mk('score-part', { id: 'P' + (j + 1) }, [
@@ -531,6 +648,53 @@
     pagesOut.forEach(p => { if (p.ok) p.counting = countingDoc(p.bars); });
     const structure = built.map(r => ({ page: r.info.page, movement: r.info.movement, read: r.info.read, out: r.info.out, bars: r.len, kept: r.kept }));
     return { ok: true, xml: xml, pages: pagesOut, report: finishReport(ctx, structure, total, flags, cols.map(c => c.staves)) };
+  }
+
+  /* The wedges of a column the way the ScoreGraph importer pairs them (scoregraph/musicxml-import.js 'wedge': a start while one of that
+     number is open drops the open one, a stop pairs the open one, a stop with none open and a start never stopped are dropped) and the way
+     the validator judges a pair (E-SPAN-ORDER: the stop at or before the start). Audiveris writes a crescendo and a diminuendo that meet
+     as start, start, stop, stop with no note between the middle two. When a column has a pair that ends where it starts, every wedge of the
+     column that does not make a pair of positive length is removed (see the header). Positions are bar index and place in the bar, in divisions. */
+  function dropBadWedges(col, ctx) {
+    const open = new Map(), bad = new Map();
+    let degenerate = 0;
+    const mark = (w, ref) => { if (!bad.has(w)) bad.set(w, ref); };
+    col.bars.forEach((bo, bi) => {
+      let cur = 0;
+      bo.body.forEach(e => {
+        cur += stepOf(e);
+        if (e.name === 'direction') {
+          const at = cur + (num(textOf(e, 'offset')) || 0);
+          kidsOf(e, 'direction-type').forEach(dt => kidsOf(dt, 'wedge').forEach(w => {
+            const ref = { w: w, dt: dt, dir: e, bo: bo, bar: bi + 1 };
+            const type = w.attrs.type, no = w.attrs.number || '1';
+            if (type === 'crescendo' || type === 'diminuendo') {
+              const prev = open.get(no);
+              if (prev) mark(prev.ref.w, prev.ref);
+              open.set(no, { bar: bi, at: at, ref: ref });
+            } else if (type === 'stop') {
+              const st = open.get(no);
+              if (!st) { mark(w, ref); return; }
+              open.delete(no);
+              if (bi < st.bar || (bi === st.bar && at <= st.at)) { mark(st.ref.w, st.ref); mark(w, ref); degenerate++; }
+            }
+          }));
+        }
+      });
+    });
+    if (!degenerate) return;
+    open.forEach(st => mark(st.ref.w, st.ref));
+    const perBar = new Map();
+    bad.forEach(ref => {
+      ref.dt.kids = ref.dt.kids.filter(k => k !== ref.w);
+      if (!ref.dt.kids.length) ref.dir.kids = ref.dir.kids.filter(k => k !== ref.dt);
+      if (!ref.dir.kids.some(k => k.name === 'direction-type')) ref.bo.body = ref.bo.body.filter(k => k !== ref.dir);
+      if (ref.bo.flags.indexOf('wedge-dropped') < 0) ref.bo.flags.push('wedge-dropped');
+      perBar.set(ref.bar, (perBar.get(ref.bar) || 0) + 1);
+    });
+    ctx.counts.wedgesDropped += bad.size;
+    ctx.counts.wedgesDegenerate += degenerate;
+    perBar.forEach((n, bar) => ctx.changes.push({ rule: 'wedges', bar: bar, dropped: n }));
   }
 
   /* a column's <part>: its bars, with the attributes written where the state changes */
@@ -600,6 +764,11 @@
     if (c.partsKept) n.push({ kind: 'parts-kept', n: c.partsKept });
     if (c.unreadable) n.push({ kind: 'unreadable', n: c.unreadable });
     if (c.barCountMismatch) n.push({ kind: 'bar-count', n: c.barCountMismatch });
+    if (c.zeroRestsRepaired) n.push({ kind: 'zero-rests', n: c.zeroRestsRepaired });
+    if (c.zeroNotesRepaired) n.push({ kind: 'zero-notes', n: c.zeroNotesRepaired });
+    if (c.zeroRestsLeft) n.push({ kind: 'zero-rests-left', n: c.zeroRestsLeft });
+    if (c.zeroNotesLeft) n.push({ kind: 'zero-notes-left', n: c.zeroNotesLeft });
+    if (c.wedgesDropped) n.push({ kind: 'wedges', n: c.wedgesDropped });
     return n;
   }
 
