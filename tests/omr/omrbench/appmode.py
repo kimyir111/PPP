@@ -156,7 +156,7 @@ def run(args) -> int:
     problem = suite.env_problem(not nohelper, any(t.endswith("-A") for t in tiers))
     if problem:
         return suite.skip(problem, args.require_env)
-    out_dir = os.path.join(args.out or suite.OUT, args.mode)
+    out_dir = os.path.join(args.out or suite.OUT, args.mode + render.SUFFIX)
     os.makedirs(out_dir, exist_ok=True)
     img_tiers = [t for t in tiers if t != "brace-less"]
     if img_tiers:

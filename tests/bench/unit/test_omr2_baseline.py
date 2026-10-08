@@ -72,11 +72,14 @@ class Check(unittest.TestCase):
         self.assertTrue(any(r["status"] == "new" for r in v["rows"]))
 
     def test_notes_say_when_the_runs_are_not_comparable(self):
-        base = B.to_baseline(results(), "test")
+        first = results()
+        first["versions"] = {"raster": "cpu"}
+        base = B.to_baseline(first, "test")
         r = results()
         r["bench_version"], r["mode"], r["cases_sha256"], r["inputs_sha256"] = 2, "app", "y", {"c1|clean-A": "bb"}
+        r["versions"] = {"raster": "gpu"}
         notes = " ".join(B.check(r, base)["notes"])
-        for word in ("bench_version", "mode", "case list", "page-image sets"):
+        for word in ("bench_version", "mode", "case list", "page-image sets", "rasterised on the gpu"):
             self.assertIn(word, notes)
 
     def test_the_text_report_names_the_regressions(self):

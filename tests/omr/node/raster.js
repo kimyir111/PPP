@@ -48,8 +48,10 @@ async function main() {
   const puppeteer = require(require.resolve('puppeteer', { paths: searchPaths }));
   /* --disable-gpu: with the GPU raster Chrome draws the same SVG with a different anti-aliasing from one shot to the next (measured:
      6 shots of one page, 3 different PNGs, within one browser session); on the CPU raster the same page is the same bytes, in any
-     order and across launches. The pages of omr-live-2 must not change between runs (A0). */
-  const browser = await puppeteer.launch({ headless: true, args: ['--disable-gpu'] });
+     order and across launches. The pages of omr-live-2 must not change between runs (A0). The CPU raster draws thin lines a little
+     differently from the GPU one, which moves Audiveris on the 150 DPI scans (the tier is chaotic: README, 'Reproducing section 1'). */
+  const gpu = process.env.OMR_CHROME_GPU === '1';      /* opt-in: the design document's section-1 measurement was made on the GPU raster; its pages are not byte-stable */
+  const browser = await puppeteer.launch({ headless: true, args: gpu ? [] : ['--disable-gpu'] });
   const failed = [];
   let ok = 0;
   const chromeVersion = await browser.version();

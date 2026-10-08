@@ -178,7 +178,7 @@ def run_engine(args) -> int:
         return skip(problem, args.require_env)
     exe = envinfo.audiveris_path(args.audiveris)
     eng = dict(envinfo.audiveris_version(exe) or {"version": "?", "jar_sha256": None}, name="audiveris", options=engine.engine_options())
-    out_dir = os.path.join(args.out or OUT, "engine")
+    out_dir = os.path.join(args.out or OUT, "engine" + render.SUFFIX)
     variants = sorted({tier_parts(t)[0] for t in page_tiers})
     print(f"omr-live-2 engine: {len(sel)} cases x {len(tiers)} tiers, Audiveris {eng['version']} ({exe})")
     report = render.render_cases(sel, engravers=engravers, variants=tuple(variants), force=args.force) if page_tiers else {}
@@ -263,7 +263,7 @@ def do_check(results: Dict[str, Any], base_path: str) -> int:
 
 
 def cmd_check(args) -> int:
-    path = args.results or os.path.join(OUT, args.mode, "results.json")
+    path = args.results or os.path.join(OUT, args.mode + render.SUFFIX, "results.json")
     if not os.path.isfile(path):
         print(f"ERROR NO_RESULTS: {path} does not exist (run `omr-live-2 run` first)")
         return 2
@@ -272,7 +272,7 @@ def cmd_check(args) -> int:
 
 
 def cmd_baseline(args) -> int:
-    path = args.results or os.path.join(OUT, args.mode, "results.json")
+    path = args.results or os.path.join(OUT, args.mode + render.SUFFIX, "results.json")
     if not os.path.isfile(path):
         print(f"ERROR NO_RESULTS: {path} does not exist (run `omr-live-2 run` first)")
         return 2
@@ -295,6 +295,9 @@ def cmd_baseline(args) -> int:
         return 2
     if results.get("cases_sha256") != cases_digest():
         print("ERROR STALE_RESULTS: tests/omr/cases.json changed since this run")
+        return 2
+    if (results.get("versions") or {}).get("raster") != "cpu":
+        print("ERROR RASTER: a baseline is recorded from the CPU raster (byte-stable); OMR_CHROME_GPU=1 pages are for reproducing section 1 only")
         return 2
     if results.get("timeouts"):
         print(f"ERROR TIMEOUTS: {len(results['timeouts'])} pages timed out (the PC was busy?); run again, finished pages are kept: {results['timeouts'][:3]}")

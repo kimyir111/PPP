@@ -30,7 +30,8 @@ from . import degrade, envinfo, truth as truthmod
 
 HERE = envinfo.HERE
 OUT = os.path.join(HERE, "out")
-RENDER = os.path.join(OUT, "render")
+SUFFIX = "-gpu" if os.environ.get("OMR_CHROME_GPU") == "1" else ""     # the GPU-raster pages and results live beside the CPU ones, never mixed
+RENDER = os.path.join(OUT, "render" + SUFFIX)
 NODE_DIR = os.path.join(HERE, "node")
 
 ENGRAVERS = ("A", "B")
@@ -64,8 +65,14 @@ def png_size(path: str) -> Optional[List[int]]:
     return list(struct.unpack(">II", head[16:24]))
 
 
+def raster_mode() -> str:
+    """``cpu`` (default: byte-stable) or ``gpu`` (OMR_CHROME_GPU=1: how the design document's section 1 was measured; not byte-stable)."""
+    return "gpu" if os.environ.get("OMR_CHROME_GPU") == "1" else "cpu"
+
+
 def tool_versions() -> Dict[str, Any]:
     v: Dict[str, Any] = dict(degrade.versions())
+    v["raster"] = raster_mode()
     try:
         import verovio
         v["verovio"] = verovio.toolkit().getVersion().split("[")[0]
@@ -214,7 +221,8 @@ def render_cases(cases: List[Dict[str, Any]], engravers=ENGRAVERS, variants=degr
             for i, svg in enumerate(plan[c["case"]][e], 1):
                 out = os.path.join(root, c["case"], e, f"clean-p{i}.png")
                 stamp = out + ".key"
-                key = sha256_file(svg) + "|" + json.dumps(_png_job(svg, out, e)["viewport"], sort_keys=True) + "|" + str(versions["puppeteer"])
+                key = (sha256_file(svg) + "|" + json.dumps(_png_job(svg, out, e)["viewport"], sort_keys=True) + "|" + str(versions["puppeteer"])
+                       + "|" + versions["raster"])
                 if force or not os.path.isfile(out) or not os.path.isfile(stamp) or open(stamp, encoding="utf-8").read() != key:
                     jobs.append(_png_job(svg, out, e))
                     todo.append((stamp, key))

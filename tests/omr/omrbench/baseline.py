@@ -84,6 +84,9 @@ def check(results: Dict[str, Any], base: Dict[str, Any], tol: float = TOLERANCE)
         notes.append(f"bench_version {results.get('bench_version')} vs the baseline's {base.get('bench_version')}: not comparable")
     if results.get("mode") != base.get("mode"):
         notes.append(f"mode {results.get('mode')} vs the baseline's {base.get('mode')}: not comparable")
+    rv, bv = (results.get("versions") or {}).get("raster"), ((base.get("recorded") or {}).get("versions") or {}).get("raster")
+    if rv != bv:
+        notes.append(f"the pages were rasterised on the {rv} and the baseline's on the {bv}: another anti-aliasing, so another page for Audiveris")
     if results.get("cases_sha256") != base.get("cases_sha256"):
         notes.append("the case list differs from the baseline's (tests/omr/cases.json changed)")
     for tier, bt in base["tiers"].items():
