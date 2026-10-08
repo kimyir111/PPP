@@ -58,19 +58,25 @@ const MSG_SITE = 'PPP is making a lot of accounts just now. Try again in a littl
       await page.evaluateOnNewDocument(loc => { try { localStorage.removeItem('ppp-guest'); localStorage.setItem('ppp-locale', loc); } catch (e) { /* none */ } }, locale);
       await page.setViewport({ width: 420, height: 900 });
       const posts = [], statuses = [];
-      page.on('request', r => { if (r.method() === 'POST' && /\/api\/auth\/signup$/.test(r.url())) posts.push(Date.now()); });
-      page.on('response', r => { if (/\/api\/auth\/signup$/.test(r.url())) statuses.push(r.status()); });
+      const route = o.login ? /\/api\/auth\/login$/ : /\/api\/auth\/signup$/;
+      page.on('request', r => { if (r.method() === 'POST' && route.test(r.url())) posts.push(Date.now()); });
+      page.on('response', r => { if (route.test(r.url())) statuses.push(r.status()); });
       if (o.intercept) { await page.setRequestInterception(true); page.on('request', r => { if (!o.intercept(r)) r.continue(); }); }
       if (o.before) await o.before(page);
       await page.goto(srv.url, { waitUntil: 'networkidle2', timeout: 60000 });
       await page.waitForSelector('[data-auth] form', { timeout: 20000 });
-      await page.evaluate(() => { const b = document.querySelectorAll('[data-auth] button[type=button]')[0]; if (b) b.click(); }); /* "Need an account?" */
-      await page.waitForSelector('[data-auth] input[name=confirmPassword]', { timeout: 10000 });
       const email = 'ui-' + Date.now() + '-' + Math.floor(Math.random() * 1e6) + '@example.com';
-      await page.type('[data-auth] input[name=displayName]', 'Pat');
-      await page.type('[data-auth] input[name=email]', email);
-      await page.type('[data-auth] input[name=password]', 'practice-ok');
-      await page.type('[data-auth] input[name=confirmPassword]', 'practice-ok');
+      if (o.login) {
+        await page.type('[data-auth] input[name=email]', email);
+        await page.type('[data-auth] input[name=password]', 'practice-ok');
+      } else {
+        await page.evaluate(() => { const b = document.querySelectorAll('[data-auth] button[type=button]')[0]; if (b) b.click(); }); /* "Need an account?" */
+        await page.waitForSelector('[data-auth] input[name=confirmPassword]', { timeout: 10000 });
+        await page.type('[data-auth] input[name=displayName]', 'Pat');
+        await page.type('[data-auth] input[name=email]', email);
+        await page.type('[data-auth] input[name=password]', 'practice-ok');
+        await page.type('[data-auth] input[name=confirmPassword]', 'practice-ok');
+      }
       posts.length = 0; statuses.length = 0; /* what the FORM sends is counted, not what a case did first */
       await page.click('[data-auth] button[type=submit]');
       const gate = () => page.evaluate(() => { const g = document.querySelector('[data-auth]'); return g ? g.innerText.replace(/\s+/g, ' ') : null; });
@@ -106,6 +112,27 @@ const MSG_SITE = 'PPP is making a lot of accounts just now. Try again in a littl
       ok('the Korean "too many attempts" is shown', !!shown, shown ? '' : String(await s.gate()).slice(0, 200));
       await sleep(5000);
       ok('exactly one POST from the form', s.posts.length === 1, s.posts.length + '');
+      await s.ctx.close();
+    }
+
+    console.log('\n── a limited LOGIN: one request, a final message in Korean ──');
+    {
+      const s = await signUpAs('198.51.100.9', 'ko-KR', {
+        login: true,
+        before: async page => {
+          /* 40 wrong-password logins from this address first (the cap), straight to the server */
+          await page.goto(srv.url, { waitUntil: 'domcontentloaded' });
+          const codes = await page.evaluate(async () => { const out = []; for (let i = 0; i < 40; i++) out.push((await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'nobody@example.com', password: 'wrong-password' }) })).status); return out; });
+          ok('40 logins from the address are answered (401 each) before the cap', codes.every(c => c === 401), codes.filter(c => c !== 401).join());
+        }
+      });
+      const shown = await waitFor(async () => { const t = await s.gate(); return t && t.includes(KO[MSG_ATTEMPTS]) ? t : null; }, 6000);
+      ok('the Korean "too many attempts" is shown on the login form', !!shown, shown ? '' : String(await s.gate()).slice(0, 200));
+      await sleep(8000); /* longer than the 3 seconds the page used to wait before asking again */
+      ok('exactly one POST to the login route, answered 429', s.posts.length === 1 && s.statuses.join() === '429', s.posts.length + ' POSTs, statuses ' + s.statuses.join());
+      const t = await s.gate();
+      ok('still that message: no "could not reach the server"', t && t.includes(KO[MSG_ATTEMPTS]) && !t.includes(KO['Could not reach the server.']), String(t).slice(0, 120));
+      ok('the form is free again, nobody is signed in', await s.page.evaluate(() => window.PPP.app.state.authBusy === false && !window.PPP.app.state.user));
       await s.ctx.close();
     }
 
