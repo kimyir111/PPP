@@ -362,14 +362,9 @@ const GENERIC = 'That file is not a PPP backup, or it is damaged. Nothing was ch
     /* ------------------------------------------------------------------------------------------ 5. delete everything */
     console.log('\n── 5. delete everything: two questions, cancel leaves all, then 0 keys and 0 databases ──');
     async function plantDatabases(page) {
-      /* the page's own handle to ppp-media (keepVideo opens it and keeps it), and a record in the graphs cache */
+      /* the page's own connections: keepVideo opens ppp-media and keeps it, and resolving a Score's graph opens the graphs cache ppp-engrave and keeps it */
       await page.evaluate(() => PPP.app.keepVideo('song-pa0', new Blob([new Uint8Array(4096)], { type: 'video/webm' })));
-      await page.evaluate(() => new Promise((resolve, reject) => {
-        const r = indexedDB.open('ppp-engrave', 2);
-        r.onupgradeneeded = () => { const d = r.result; if (!d.objectStoreNames.contains('graphs')) d.createObjectStore('graphs', { keyPath: 'key' }); if (!d.objectStoreNames.contains('meta')) d.createObjectStore('meta', { keyPath: 'key' }); };
-        r.onsuccess = () => { const d = r.result, t = d.transaction(['graphs', 'meta'], 'readwrite'); t.objectStore('graphs').put({ key: 'song-pa0', v: 1, data: new ArrayBuffer(64) }); t.objectStore('meta').put({ key: 'song-pa0', stored: 64, savedAt: 1 }); t.oncomplete = () => { d.close(); resolve(); }; t.onerror = () => reject(t.error); };
-        r.onerror = () => reject(r.error);
-      }));
+      await page.evaluate(() => PPPEngrave.app.resolve(PPP.buildDemoScore(), { key: 'song-pa0' }));
       await waitFor(async () => { const n = await dbNames(page); return n.includes('ppp-media') && n.includes('ppp-engrave'); }, 8000);
     }
     const WORD = ko('delete');
