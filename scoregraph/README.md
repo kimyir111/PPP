@@ -34,9 +34,9 @@ A graph is never changed in place: every op returns a new one (`rev` + 1) and an
   (`buildGraph`: the bars, note and rest pieces, ties, triplets, printed accidentals and pedal marks it
   decided; the heard notes, pedal and bar times in a `source` performance) and returns the MusicXML
   `musicxml.export` writes from it: `{xml, stats, graph, graphIssues}`. A graph ERROR throws.
-  `opts.legacyWriter` returns the G0 writer's file instead (`buildXml`, kept for one release; it does
-  not load this library). The app loads these files before `audio-score.js`, which refuses a library
-  whose `version` is not its own.
+  The G0 writer (`buildXml`, behind `opts.legacyWriter`) was removed by MX-3: this is the only writer.
+  The app loads these files before `audio-score.js`, which refuses a library whose `version` is not
+  its own.
 - Nothing else yet: the app's import, storage, renderer and player still use the MusicXML text and the
   legacy `Score` (G2 onwards; G01 §15.2).
 

@@ -39,7 +39,7 @@ from . import compare, runner, stages, suite as suite_mod, sut as sut_mod, util
 
 # G1 (docs/GOALS/G01 §15.3, §20 Step 7): since the flip, toMusicXml writes its MusicXML from the ScoreGraph
 # buildGraph builds, so the mutations that edited buildXml's text now make the same defect in buildGraph
-# (buildXml stays behind opts.legacyWriter, which the benchmark never sets). Each keeps its id, expectation
+# (buildXml, which was behind opts.legacyWriter and which the benchmark never set, was removed by MX-3). Each keeps its id, expectation
 # and metrics; what the file says is the same defect as before.
 SG_MEASURES = "    for (let i = 0; i < bars; i++) mid.push(b.measure({ number: String(i + 1), dur: W(bar) }).id);"
 SG_METER = "    b.meter({ m: mid[0], beats: [beatsPerBar], beatType: beatType });"
@@ -384,8 +384,8 @@ REC_MUTATIONS: List[Dict[str, Any]] = [
      "replacements": [(SG_TRAILING_REST, "      /* mutation: no trailing rests */")],
      "all": True, "expect": "REGRESSION", "metrics": ["rec.rest.recall"]},
     {"id": "REC-EXACT-BARS-OFF",          # the app's exact bars switched off: the library's bars, as they were before G9
-     "replacements": [("    } else if (opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4",
-                       "    } else if (false && opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4"),
+     "replacements": [("    } else if (opts.exactBars && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4",
+                       "    } else if (false && opts.exactBars && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4"),
                       ("    const exactOn = !v2w && !!opts.exactBars &&", "    const exactOn = false && !v2w && !!opts.exactBars &&")],
      "all": True, "expect": "REGRESSION", "metrics": ["rec.check.2", "rec.check.5", "rec.check.6", "rec.check.7"]},
     {"id": "REC-TRIPLETS-EVERYWHERE",     # every beat with two onsets is called a triplet beat
@@ -483,8 +483,8 @@ REC_ARRANGE_MUTATIONS: List[Dict[str, Any]] = [
                                      "          const t = (!full && t0[0] === '16th') ? ['16th', 1] : t0;")],
      "all": True, "expect": "REGRESSION", "metrics": ["arr.check.4"]},
     {"id": "ARR-EXACT-BARS-OFF",          # the app's exact bars switched off: the bars of the recording do not add up as drawn
-     "replacements": [("    } else if (opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4",
-                       "    } else if (false && opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4"),
+     "replacements": [("    } else if (opts.exactBars && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4",
+                       "    } else if (false && opts.exactBars && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4"),
                       ("    const exactOn = !v2w && !!opts.exactBars &&", "    const exactOn = false && !v2w && !!opts.exactBars &&")],
      "all": True, "expect": "REGRESSION", "metrics": ["arr.check.5", "arr.check.6"]},
     {"id": "ARR-TUPLET-RATIO",           # the bracket of a triplet beat is written 4:3 (class 7: a tuplet that is not a triplet)
@@ -630,7 +630,7 @@ REC_V2_MUTATIONS: List[Dict[str, Any]] = [
     # and S5's two-part guard (no benchmark piece both reads as four-part writing and is written in block chords: removing it changed
     # nothing; tests/rec/voices.test.js guards it)
     {"id": "REC-V2-WRITER-LEGACY", "v2": True,        # v2 writes with the x/4-only exact-bars writer again (compound and x/2 bars do not add up)
-     "find": "    const v2Writer = extra.recording === 'v2' && opts.exactBars && !opts.legacyWriter && opts.writer !== 'legacy' && (opts.sourceKind || 'audio-score') === 'audio-score' ? writerLib() : null;",
+     "find": "    const v2Writer = extra.recording === 'v2' && opts.exactBars && opts.writer !== 'legacy' && (opts.sourceKind || 'audio-score') === 'audio-score' ? writerLib() : null;",
      "replace": "    const v2Writer = null;",
      "expect": "REGRESSION", "metrics": ["rec.check.5"]},
     {"id": "REC-V2-WRITER-NO-BRACKETS", "v2": True,   # tuplet values written with no bracket

@@ -4876,9 +4876,10 @@ function findCentral(dv, u8, wanted) {
    of the app reads is a projection of it. The graph is what gets stored, so a
    later Goal can improve how a file is read without re-reading the file.
 
-   `PPP.legacyImport = true` puts parseMusicXML back for one release, the way
-   `opts.legacyWriter` kept buildXml. It is the way back, not a fallback: an
-   import that fails, fails, and says why (G2-D3).
+   An import that fails, fails, and says why (G2-D3): there is no second reader
+   to fall back to. parseMusicXML is no longer a door a person's file can take
+   (MX-3 removed the one-release switch that put it back); it stays for the
+   producers that hold MusicXML text of their own, until S4 moves them.
 
    A MIDI file is a performance, not a score. Its notes, pedals and controllers
    go into the graph exactly as the file states them; the note values, staves
@@ -4886,11 +4887,10 @@ function findCentral(dv, u8, wanted) {
    - the one G0 measures - and the graph says so (`sgFrom.inferred`), so nothing
    downstream can mistake the grid for the composer's (decision D3).
    ========================================================================== */
-let LEGACY_IMPORT = false;
 const scoreIdFor = name => ('f-' + String(name || 'score').replace(/[^A-Za-z0-9._:-]+/g, '-')).slice(0, 64);
 
-/* G05 §11 G5c: PPP.fingering = 'legacy' (default, one-release rollback switch,
-   same shape as PPP.legacyImport above) leaves every graph exactly as its
+/* G05 §11 G5c: PPP.fingering = 'legacy' (default, one-release rollback switch)
+   leaves every graph exactly as its
    importer built it, so the hand guide's live Fingering.plan(sc) call (App
    ~15680) recomputes fingering the same way it always has - nothing here
    changes what a person sees. 'inferred' additionally runs the G5b fingering
@@ -4923,8 +4923,8 @@ function graphForScore(graph) {
   return graph;
 }
 
-/* G06 §11 G6b: PPP.difficulty = 'legacy' (default, same one-release-rollback shape as PPP.fingering and
-   PPP.legacyImport above) leaves the Analysis screen's facts/hard list and the Coach's structural context
+/* G06 §11 G6b: PPP.difficulty = 'legacy' (default, same one-release-rollback shape as PPP.fingering
+   above) leaves the Analysis screen's facts/hard list and the Coach's structural context
    exactly as `Score.deriveSections`/`Coach.structural` already produce them - nothing here changes what a
    person sees. 'g6' reads the committed G6a ranker (difficulty/index.js, weights in
    difficulty/weights/g6a-v1.json) over the SAME ScoreGraph the renderer already resolves for this Score
@@ -5643,7 +5643,6 @@ function engraveForget(songId) {
 /* MusicXML PPP already holds as text - a catalogue piece, a method book - through the same reader.
    Synchronous, because the text is in hand: no caller's signature changes (G02 §14.2). */
 function scoreFromXml(xml, name) {
-  if (LEGACY_IMPORT) return parseMusicXML(xml, name);
   const r = PPPScoreGraph.musicxml.import(xml, { scoreId: scoreIdFor(name), sourceName: name });
   if (!r.ok) {
     const e = new Error(readerMessage(r.code, name, r.message));
@@ -5664,10 +5663,6 @@ async function scoreFromFile(file) {
     const e = new Error('PPP cannot read ' + (file.name || 'that file') + ' yet. Sheet music scans need OMR, which is not built. Upload MusicXML (.musicxml, .xml or .mxl) or MIDI (.mid).');
     e.soft = true;
     throw e;
-  }
-  if (LEGACY_IMPORT && kind !== 'midi') {
-    const xml = kind === 'mxl' ? await readMxl(await file.arrayBuffer()) : await file.text();
-    return parseMusicXML(xml, file.name);
   }
   const bytes = new Uint8Array(await file.arrayBuffer());
   const got = await importToGraph(bytes, file.name, kind);
@@ -8788,13 +8783,6 @@ const Import = {
     /* --- the three in-browser routes --- */
     if (kind === 'musicxml' || kind === 'mxl' || kind === 'midi') {
       stage('parse', {});
-      if (LEGACY_IMPORT && kind !== 'midi') {
-        const xml = kind === 'mxl' ? await readMxl(await file.arrayBuffer()) : await file.text();
-        const score = parseMusicXML(xml, file.name);
-        source.status = 'parsed';
-        const report = Import.validate(score, { pageCount: 0 });
-        return { score: score, source: source, report: Object.assign(report, { confidence: 1, level: 'good', advice: null, summary: null }) };
-      }
       const bytes = new Uint8Array(await file.arrayBuffer());
       const got = await importToGraph(bytes, file.name, kind);
       got.graph = graphForScore(got.graph);
@@ -10480,8 +10468,6 @@ window.PPP = {
   importToGraph,
   /* G9e-lite: the one-note-per-hand pipeline and its graph -> Score step, reachable for tests and the console (a real graph in, {ok, graph, reason} out) */
   arrangeSingleNote, graphToReviewScore,
-  get legacyImport() { return LEGACY_IMPORT; },
-  set legacyImport(v) { LEGACY_IMPORT = !!v; },
   /* G05 §11 G5c: 'legacy' (default) | 'inferred'. Any other value is 'legacy' (G4-F2-1's convention). */
   get fingering() { return FINGERING_MODE; },
   set fingering(v) { FINGERING_MODE = v === 'inferred' ? 'inferred' : 'legacy'; },
