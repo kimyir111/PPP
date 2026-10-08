@@ -21,9 +21,11 @@ from __future__ import annotations
 import argparse
 import datetime
 import hashlib
+import json
 import os
 import subprocess
 import sys
+import tempfile
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -82,6 +84,14 @@ def parse_tiers(text: str) -> List[str]:
     return tiers
 
 
+def rel(path: str) -> str:
+    """A path as the repository sees it; one on another drive (an --out on C: for a tree on D:) is shown whole."""
+    try:
+        return os.path.relpath(path, envinfo.REPO)
+    except ValueError:
+        return path
+
+
 def git_info() -> Dict[str, Any]:
     def run(*a):
         try:
@@ -133,6 +143,23 @@ def read_pages(recs: List[Dict[str, Any]], divisions: str = "as-read", movements
             except (OSError, xmlscore.ScoreError, ValueError, KeyError):
                 continue
     return xmlscore.join(docs) if docs else None
+
+
+NORMALIZE_CLI = os.path.join(envinfo.REPO, "tests", "omr", "node", "normalize-cli.js")
+
+
+def normalize_units(units: Dict[str, List[List[str]]]) -> Dict[str, Dict[str, Any]]:
+    """omr/normalize.js (G12-1) on the files Audiveris wrote: {key: [the .mxl files of each page]} -> {key: {ok, xml, report, pages}}.
+    One Node process for all of them. This is what the app does under PPP.omr = 'v2' before it reads a scan, run on the engine's files alone."""
+    with tempfile.TemporaryDirectory(prefix="omr-normalize-") as tmp:
+        jobs, out = os.path.join(tmp, "jobs.json"), os.path.join(tmp, "answers.json")
+        with open(jobs, "w", encoding="utf-8") as h:
+            json.dump([{"key": k, "pages": v} for k, v in units.items()], h)
+        r = subprocess.run([envinfo.node_binary(), NORMALIZE_CLI, "--jobs", jobs, "--out", out], capture_output=True, env=envinfo.node_env(), timeout=3600)
+        if r.returncode != 0:
+            raise SystemExit("normalize-cli failed: " + r.stderr.decode("utf-8", "replace")[-400:])
+        with open(out, encoding="utf-8") as h:
+            return json.load(h)
 
 
 def truth_score(case: Dict[str, Any], root: str = render.RENDER) -> xmlscore.Score:
@@ -210,7 +237,7 @@ def run_engine(args) -> int:
     print(bl.table(results))
     if results["timeouts"]:
         print(f"WARNING: {len(results['timeouts'])} pages timed out and count as unread; run the same command again (finished pages are kept)")
-    print(f"wrote {os.path.relpath(os.path.join(out_dir, 'results.json'), envinfo.REPO)}")
+    print(f"wrote {rel(os.path.join(out_dir, 'results.json'))}")
     if args.check:
         return do_check(results, args.baseline or baseline_path("engine", eng["version"]))
     return 0
@@ -221,6 +248,14 @@ def score_engine(doc, sel, tiers, order, inputs, recs, eng, args) -> Dict[str, A
                                "created": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"), "git": git_info(),
                                "versions": render.tool_versions(), "cases_sha256": cases_digest(), "movements": args.movements,
                                "divisions": args.divisions, "degrade": degrade.describe(), "tiers": OrderedDict(), "inputs_sha256": {}}
+    norm: Dict[str, Dict[str, Any]] = {}
+    if getattr(args, "normalize", False):
+        results["normalize"] = True          # a diagnostic run: omr/normalize.js on the engine's files (G12-1); never a baseline
+        units: Dict[str, List[List[str]]] = {}
+        for tier in tiers:
+            for c in ([dict(f, tags=["brace-less"]) for f in doc.get("fixtures", []) if f["engine"]] if tier == "brace-less" else sel):
+                units[f"{c['case']}|{tier}"] = [recs[k].get("mxl") or [] for k in order[(c["case"], tier)]]
+        norm = normalize_units(units)
     scored: Dict[str, List[Tuple[Dict[str, Any], metrics.CaseResult]]] = {}
     pages_of: Dict[str, int] = {}
     ms_of: Dict[str, float] = {}
@@ -232,7 +267,11 @@ def score_engine(doc, sel, tiers, order, inputs, recs, eng, args) -> Dict[str, A
         rows, extra, pages, ms = [], [], 0, 0.0
         for c, truth in units:
             rs = [recs[k] for k in order[(c["case"], tier)]]
-            r = metrics.judge(truth, read_pages(rs, args.divisions, args.movements))
+            if norm:
+                ans = norm.get(f"{c['case']}|{tier}") or {}
+                r = metrics.judge(truth, xmlscore.parse_score(ans["xml"]) if ans.get("ok") else None)
+            else:
+                r = metrics.judge(truth, read_pages(rs, args.divisions, args.movements))
             t_ms = sum(x["ms"] for x in rs)
             pages += len(rs)
             ms += t_ms
@@ -254,7 +293,7 @@ def score_engine(doc, sel, tiers, order, inputs, recs, eng, args) -> Dict[str, A
 # ---------------------------------------------------------------------------------------- check / baseline
 def do_check(results: Dict[str, Any], base_path: str) -> int:
     if not os.path.isfile(base_path):
-        print(f"ERROR NO_BASELINE: {os.path.relpath(base_path, envinfo.REPO)} does not exist (run `baseline --reason ...` first)")
+        print(f"ERROR NO_BASELINE: {rel(base_path)} does not exist (run `baseline --reason ...` first)")
         return 2
     verdict = bl.check(results, bl.load(base_path))
     print(bl.format_check(verdict))
@@ -298,6 +337,9 @@ def cmd_baseline(args) -> int:
     if (results.get("versions") or {}).get("raster") != "cpu":
         print("ERROR RASTER: a baseline is recorded from the CPU raster (byte-stable); OMR_CHROME_GPU=1 pages are for reproducing section 1 only")
         return 2
+    if results.get("normalize"):
+        print("ERROR DIAGNOSTIC_RUN: a run with --normalize reads the engine's files through omr/normalize.js; a baseline is the engine alone")
+        return 2
     if results.get("timeouts"):
         print(f"ERROR TIMEOUTS: {len(results['timeouts'])} pages timed out (the PC was busy?); run again, finished pages are kept: {results['timeouts'][:3]}")
         return 2
@@ -305,7 +347,7 @@ def cmd_baseline(args) -> int:
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w", encoding="utf-8", newline="\n") as h:
         h.write(bl.dumps(bl.to_baseline(results, args.reason)))
-    print(f"recorded {os.path.relpath(out, envinfo.REPO)}")
+    print(f"recorded {rel(out)}")
     return 0
 
 
@@ -389,6 +431,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--baseline")
     p.add_argument("--divisions", choices=("as-read", "repair"), default="as-read", help="how a <divisions> of 0 is read (default: as the app reads it)")
     p.add_argument("--movements", choices=("all", "last"), default="all", help="every movement file of a page, or one per page as the helper keeps it")
+    p.add_argument("--normalize", action="store_true", help="(engine mode, diagnostic) read each case's files through omr/normalize.js (G12-1), as the app does under PPP.omr = 'v2'; never a baseline")
+    p.add_argument("--omr", choices=("legacy", "v2"), default=None, help="(app mode) the page's PPP.omr for the run (default: the page's own, legacy); results go to <out>/app-v2 for v2")
     p.add_argument("--base-url", default=None, help="(app mode) an app server already running; default: one started here on a free port")
     p.set_defaults(fn=lambda a: run_engine(a) if a.mode == "engine" else run_app(a))
     p = sub.add_parser("check", help="compare a results file with the committed baseline")

@@ -17,6 +17,8 @@
     "test:playability": "node --test \"tests/playability/**/*.test.js\"",
     "test:difficulty": "node --test \"tests/difficulty/**/*.test.js\"",
     "test:omr": "node --test \"tests/omr/node/*.test.js\"",
+    "test:omr-normalize": "node --test \"tests/omr/normalize/*.test.js\"",
+    "test:omr-app": "node tests/omr-normalize-app.test.js",
     "test:practice": "node --test \"tests/practice/**/*.test.js\"",
     "test:songgraph": "node --test \"tests/songgraph/**/*.test.js\"",
     "test:arrangement-planner": "node --test --test-concurrency=1 \"tests/arrangement/**/*.test.js\"",
