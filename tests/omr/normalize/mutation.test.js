@@ -65,8 +65,69 @@ const dropped = Nn => {
   return r.report.counts.droppedNotes + '/' + r.report.counts.overlapBars;
 };
 
+/* G12-2: a direction that holds a dynamic and a wedge keeps the dynamic */
+const dynamicKept = Nn => {
+  const both = '<direction placement="below"><direction-type><dynamics><p/></dynamics></direction-type><direction-type><wedge type="diminuendo" spread="0"/></direction-type><staff>1</staff></direction>';
+  const x = doc([part('P1', [SC.grandWith(0, { 1: [SC.wedge('crescendo')], 2: [L.raw(both), SC.wedge('stop')], 3: [SC.wedge('stop')] }, SC.grandFirst()), SC.grandBar(1)], { div: 2, staved: true })]);
+  return /<dynamics><p\/><\/dynamics>/.test(Nn.normalize([x]).xml);
+};
+/* a column whose only wedge problem is an unclosed mark is not touched */
+const loneKept = Nn => SC.wedgesOf(Nn.normalize([doc([part('P1', [SC.grandWith(0, { 1: [SC.wedge('crescendo')] }, SC.grandFirst()), SC.grandBar(1)], { div: 2, staved: true })])]).xml);
+/* a pitched zero-length note with a plain type is repaired, one with a dot is left */
+const pitchedZero = Nn => {
+  const one = (extra) => doc([part('P1', [{ items: [note('C5', 1, { s: 1 }), note('D5', 0, Object.assign({ s: 1, type: 'quarter' }, extra)), note('E5', 1, { s: 1 })], staved: true, div: 2, key: 0, time: [4, 4], staves: 1, clefs: ['G'] }], { div: 2, staved: true })]);
+  const a = Nn.normalize([one()]), b = Nn.normalize([one({ dot: true })]);
+  return [a.report.counts.zeroDurationsRepaired, a.report.counts.zeroDurationsLeft, b.report.counts.zeroDurationsRepaired, b.report.counts.zeroDurationsLeft].join();
+};
+
 /* id, the mutation, the scenario that must see it (or a probe and what the real module answers) */
 const MUTATIONS = [
+  { id: 'MUT-ZERO-UNREPAIRED', why: 'a note of length 0 is found and counted but not given a length: the importer refuses the file (E-DURATION)',
+    edits: [["if (len) { d.text = String(len); fx.repaired++; fx.how[how] = (fx.how[how] || 0) + 1; }", "if (len) { fx.repaired++; fx.how[how] = (fx.how[how] || 0) + 1; }"]], scenario: 'zeroRest', also: ['zeroRestPair', 'zeroRestCompound', 'zeroRestTyped'] },
+  { id: 'MUT-ZERO-BAR-IN-QUARTERS', why: 'the length of a whole-bar rest ignores the beat type: a bar of 6/8 lasts six quarters',
+    edits: [["const len = (beats * 4 / bt) * dOut;", "const len = beats * dOut;"]], scenario: 'zeroRestCompound' },
+  { id: 'MUT-ZERO-TYPE-IGNORED', why: 'a zero-length note that is no whole-bar rest is not read from its type',
+    edits: [["if (ty && TYPE_Q[ty] && !kid(c, 'dot') && !kid(c, 'time-modification') && !kid(c, 'grace')) {", "if (false) {"]], scenario: 'zeroRestTyped' },
+  { id: 'MUT-ZERO-DOTTED-GUESSED', why: 'a dotted note of length 0 is read as if it were not dotted (a length the page does not give)',
+    edits: [["if (ty && TYPE_Q[ty] && !kid(c, 'dot') && !kid(c, 'time-modification') && !kid(c, 'grace')) {", "if (ty && TYPE_Q[ty] && !kid(c, 'grace')) {"]], probe: pitchedZero, clean: '1,0,0,1' },
+  { id: 'MUT-ZERO-GUESSED', why: 'a zero length with nothing to read it from is given one division and not reported as left',
+    edits: [["    else fx.left++;\n  }\n  const newFixes", "    else { d.text = '1'; fx.repaired++; }\n  }\n  const newFixes"]], scenario: 'zeroRestLeft' },
+  { id: 'MUT-ZERO-REPAIRS-UNCOUNTED', why: 'the repairs are made but not counted',
+    edits: [["ctx.counts.zeroDurationsRepaired += fx.repaired;", "ctx.counts.zeroDurationsRepaired += 0;"]], scenario: 'zeroRest', also: ['zeroRestPair', 'zeroRestCompound', 'zeroRestTyped'] },
+  { id: 'MUT-ZERO-LEFT-UNCOUNTED', why: 'a zero length that is left is not counted: the import will refuse and nobody can say why',
+    edits: [["ctx.counts.zeroDurationsLeft += fx.left;", "ctx.counts.zeroDurationsLeft += 0;"]], scenario: 'zeroRestLeft' },
+  { id: 'MUT-ZERO-UNFLAGGED', why: 'the bar of a repaired or left zero length carries no flag',
+    edits: [["        flagFixes(bo);\n", "\n"]], scenario: 'zeroRest', also: ['zeroRestLeft'] },
+  { id: 'MUT-ZERO-LOWER-PART-LOST', why: 'the repairs in the lower part of a pair are not added to the bar\'s',
+    edits: [["fixes: addFixes(addFixes(newFixes(), upper && upper.fixes), lower && lower.fixes),", "fixes: addFixes(newFixes(), upper && upper.fixes),"]], scenario: 'zeroRestPair' },
+  { id: 'MUT-WEDGE-NEVER-DROPPED', why: 'the hairpins that end where they start are left in the file: the importer refuses it (E-SPAN-ORDER)',
+    edits: [["    if (!degenerate) return;", "    return;"]], scenario: 'wedges', also: ['wedgesNumbered', 'wedgesAcrossBars', 'wedgesOffset'] },
+  { id: 'MUT-WEDGE-TOUCHES-CLEAN-COLUMN', why: 'a column with no degenerate pair is cleaned too (an unclosed mark the importer would drop itself)',
+    edits: [["    if (!degenerate) return;", "    if (!degenerate && !open.size) return;"]], probe: loneKept, clean: 'crescendo | ' },
+  { id: 'MUT-WEDGE-EQUAL-IS-FINE', why: 'a stop at the very place of its start is taken for a wedge of positive length',
+    edits: [["(bi === st.bar && at <= st.at)", "(bi === st.bar && at < st.at)"]], scenario: 'wedges', also: ['wedgesNumbered', 'wedgesAcrossBars'] },
+  { id: 'MUT-WEDGE-IGNORES-NUMBER', why: 'the number of a wedge is ignored: every wedge pairs with the open one, whatever its number',
+    edits: [["const type = w.attrs.type, no = w.attrs.number || '1';", "const type = w.attrs.type, no = '1';"]], scenario: 'wedgesNumbered' },
+  { id: 'MUT-WEDGE-BY-PLACE-ONLY', why: 'a stop in a later bar is judged by its place in the bar alone: a hairpin across a bar line is taken for one that ends before it starts',
+    edits: [["if (bi < st.bar || (bi === st.bar && at <= st.at))", "if (at <= st.at)"]], scenario: 'wedgesAcrossBars' },
+  { id: 'MUT-WEDGE-OFFSET-IGNORED', why: 'the <offset> of a direction is not added to its place: a stop put after its start by an offset is taken for one at the same place',
+    edits: [["const at = cur + (num(textOf(e, 'offset')) || 0);\n          kidsOf(e, 'direction-type')", "const at = cur;\n          kidsOf(e, 'direction-type')"]], scenario: 'wedgesOffset' },
+  { id: 'MUT-WEDGE-RESTART-KEPT', why: 'a start while a wedge is open leaves the open one in the file: after the degenerate pair is taken away it pairs with a later stop, a mark the page does not show',
+    edits: [["              if (prev) mark(prev.ref.w, prev.ref);\n", "\n"]], scenario: 'wedges' },
+  { id: 'MUT-WEDGE-UNPAIRED-STOP-KEPT', why: 'a stop with no start is left in the file',
+    edits: [["if (!st) { mark(w, ref); return; }", "if (!st) return;"]], scenario: 'wedges' },
+  { id: 'MUT-WEDGE-UNCLOSED-KEPT', why: 'a start that never stops is left in the file',
+    edits: [["    open.forEach(st => mark(st.ref.w, st.ref));\n", "\n"]], scenario: 'wedgesAcrossBars' },
+  { id: 'MUT-WEDGE-EMPTY-DIRECTION-LEFT', why: 'the wedge goes but its direction stays, empty (invalid MusicXML)',
+    edits: [["      if (!ref.dir.kids.some(k => k.name === 'direction-type')) ref.bo.body = ref.bo.body.filter(k => k !== ref.dir);\n", "\n"]], scenario: 'wedges' },
+  { id: 'MUT-WEDGE-WHOLE-DIRECTION', why: 'the whole direction goes with its wedge, the dynamic mark in it too',
+    edits: [["      ref.dt.kids = ref.dt.kids.filter(k => k !== ref.w);\n      if (!ref.dt.kids.length) ref.dir.kids = ref.dir.kids.filter(k => k !== ref.dt);\n      if (!ref.dir.kids.some(k => k.name === 'direction-type')) ref.bo.body = ref.bo.body.filter(k => k !== ref.dir);",
+      "      ref.bo.body = ref.bo.body.filter(k => k !== ref.dir);"]], probe: dynamicKept, clean: true },
+  { id: 'MUT-WEDGE-UNFLAGGED', why: 'the bar a wedge was taken from carries no flag',
+    edits: [["      if (ref.bo.flags.indexOf('wedge-dropped') < 0) ref.bo.flags.push('wedge-dropped');\n", "\n"]], scenario: 'wedges' },
+  { id: 'MUT-WEDGE-UNCOUNTED', why: 'the wedges taken away are not counted',
+    edits: [["ctx.counts.wedgesDropped += bad.size;", "ctx.counts.wedgesDropped += 0;"]], scenario: 'wedges' },
+
   { id: 'MUT-MOVEMENTS-FIRST-ONLY', why: 'only the first movement of a page is read: the old helper\'s loss, in the normaliser',
     edits: [['texts.forEach((text, mi) => {', 'texts.slice(0, 1).forEach((text, mi) => {']], scenario: 'movements' },
   { id: 'MUT-MOVEMENTS-REVERSED', why: 'the movements (and pages) are joined last first',
@@ -102,11 +163,11 @@ const MUTATIONS = [
   { id: 'MUT-GHOST-KEPT', why: 'a part of rests is kept as a group: the bar nobody plays is taken from it, with its own (wrong) time signature',
     edits: [['const real = groups.filter(g => g.pitched > 0);', 'const real = groups;']], scenario: 'ghost' },
   { id: 'MUT-CURSOR-COUNTS-CHORD', why: 'a chord note counts as a note that takes time when the <backup> to the lower staff is worked out: the lower staff starts a quarter early (the reviewer mutant)',
-    edits: [["if (!kid(e, 'chord') && !kid(e, 'grace')) cur += num(textOf(e, 'duration')) || 0;", "if (!kid(e, 'grace')) cur += num(textOf(e, 'duration')) || 0;"]], scenario: 'pairRich', also: ['systemsRich', 'foldRich'] },
+    edits: [["if (!kid(e, 'chord') && !kid(e, 'grace')) return num(textOf(e, 'duration')) || 0;", "if (!kid(e, 'grace')) return num(textOf(e, 'duration')) || 0;"]], scenario: 'pairRich', also: ['systemsRich', 'foldRich'] },
   { id: 'MUT-CURSOR-IGNORES-FORWARD', why: 'a <forward> does not move the end of the upper staff when the <backup> is worked out: the lower staff starts late',
-    edits: [["else if (e.name === 'forward') cur += num(textOf(e, 'duration')) || 0;", ""]], scenario: 'pairRich', also: ['systemsRich', 'foldRich'] },
+    edits: [["else if (e.name === 'forward') return num(textOf(e, 'duration')) || 0;", ""]], scenario: 'pairRich', also: ['systemsRich', 'foldRich'] },
   { id: 'MUT-CURSOR-IGNORES-BACKUP', why: 'a <backup> in the upper staff (its second voice) is not subtracted: the lower staff starts after the bar',
-    edits: [["else if (e.name === 'backup') cur -= num(textOf(e, 'duration')) || 0;", ""]], scenario: 'pairRich', also: ['systemsRich', 'foldRich'] },
+    edits: [["else if (e.name === 'backup') return -(num(textOf(e, 'duration')) || 0);", ""]], scenario: 'pairRich', also: ['systemsRich', 'foldRich'] },
   { id: 'MUT-FORWARD-UNSCALED', why: 'a <forward> is not scaled to the divisions of the document with the notes and backups: the second voice starts at the wrong beat',
     edits: [['        content = true;\n        scaleDur(c);', "        content = true;\n        if (n !== 'forward') scaleDur(c);"]], scenario: 'pagesRich' },
   { id: 'MUT-TIE-LOST', why: 'the <tie> elements of a note are dropped when it is copied: a tied pair is struck twice',
@@ -140,7 +201,7 @@ const MUTATIONS = [
 ];
 
 test('MUT-NOOP: the control. A comment is added and nothing moves', () => {
-  const M = mutant([['const VERSION = 1;', 'const VERSION = 1; /* a comment */']]);
+  const M = mutant([['const VERSION = 2;', 'const VERSION = 2; /* a comment */']]);
   for (const name of Object.keys(S)) assert.deepEqual(probe(M, name), S[name].expect(), name);
 });
 

@@ -179,7 +179,7 @@ test('a part more than one page long that a later page does not have is padded w
 
 test('idempotent: normalising a normalised file changes no note, no bar and no staff', () => {
   for (const name of Object.keys(S)) {
-    if (name === 'divisionsUnknown' || name === 'trio') continue;
+    if (name === 'divisionsUnknown' || name === 'trio' || name === 'zeroRestLeft') continue;   /* a zero length that cannot be repaired is reported again, as it should be */
     const r1 = N.normalize(S[name].pages(), S[name].opts ? S[name].opts() : undefined);
     const r2 = N.normalize([r1.xml]);
     assert.deepEqual(SC.summary(r2.xml), SC.summary(r1.xml), name);
@@ -279,6 +279,102 @@ test('the output is well formed for the page\'s DOM parser and the ScoreGraph\'s
     assert.equal(g.ok, true, name + ': ' + (g.message || ''));
     assert.match(r.xml, /^<\?xml version="1\.0" encoding="UTF-8"\?>\n<score-partwise/);
   }
+});
+
+/* ---- G12-2: the two things the ScoreGraph importer refused in 15 of the 415 files of G12-0's benchmark ---- */
+const importOf = xml => require(require('path').join(L.REPO, 'scoregraph', 'index.js')).musicxml.import(xml, { scoreId: 'n' });
+
+test('zero length: the importer refuses the pages as the engine wrote them (E-DURATION) and takes the normalised document, with the rests as long as their bars', () => {
+  const pages = S.zeroRest.pages();
+  const before = importOf(pages[0]);
+  assert.equal(before.ok, false);
+  assert.match(before.message, /E-DURATION/, 'the control: the raw page is refused for a note of length 0');
+  const r = N.normalize(pages);
+  const g = importOf(r.xml);
+  assert.equal(g.ok, true, g.message);
+  const rests = g.graph.parts[0].events.filter(e => e.kind === 'rest' && e.m === g.graph.timeline.measures[1].id);
+  assert.deepEqual(rests.map(e => e.dur), ['1', '1'], 'both whole-bar rests last the bar (1 whole note)');
+  assert.deepEqual(r.report.notes.filter(n => n.kind === 'zero-duration'), [{ kind: 'zero-duration', n: 2 }]);
+  assert.deepEqual(r.report.changes.filter(c => c.rule === 'zero-duration').map(c => [c.bar, c.repaired, c.left, c.how]), [[2, 2, 0, { 'measure-rest': 2 }]]);
+});
+
+test('zero length: a whole-bar rest lasts the bar of the time signature in force at that bar, also after a change of metre and in a part with other divisions', () => {
+  const mk = (time, div) => doc([part('P1', [{ items: [note('C5', 4, { s: 1, type: 'whole' })], staved: true, div: div, key: 0, time: [4, 4], staves: 1, clefs: ['G'] },
+    { items: [rest(0, { measure: true, noType: true })], staved: true, time: time }], { div: div, staved: true })]);
+  const cases = [[[3, 4], 3], [[2, 2], 4], [[6, 8], 3], [[12, 8], 6], [[5, 4], 5], [[2, 4], 2], [[7, 8], 3.5]];
+  cases.forEach(([time, quarters]) => {
+    [1, 2, 4].forEach(div => {
+      const r = N.normalize([mk(time, div)]);
+      const want = quarters * div;
+      if (Number.isInteger(want)) assert.equal(read(r.xml).parts[0].bars[1].notes.filter(n => n.rest).map(n => n.dur).join(), String(quarters), time.join('/') + ' with divisions ' + div);
+      else { assert.equal(r.report.counts.zeroDurationsLeft, 1, time.join('/') + ' with divisions ' + div + ': a length that is no whole number of divisions is left, not rounded'); }
+    });
+  });
+  /* the metre of the page after another page: the length follows the time signature written on the bar's own part */
+  const p1 = doc([part('P1', [{ items: [note('C5', 4, { s: 1, type: 'whole' })], staved: true, div: 2, key: 0, time: [4, 4], staves: 1, clefs: ['G'] }], { div: 2, staved: true })]);
+  const p2 = doc([part('P1', [{ items: [rest(0, { measure: true, noType: true })], staved: true, div: 2, key: 0, time: [3, 4], staves: 1, clefs: ['G'] }], { div: 2, staved: true })]);
+  const r = N.normalize([p1, p2]);
+  assert.equal(read(r.xml).parts[0].bars[1].notes.filter(n => n.rest).map(n => n.dur).join(), '3');
+});
+
+test('zero length: a whole-bar rest in a bar with no time signature at all is left and counted; a file whose rest is repaired is no more than that rest different', () => {
+  const noTime = doc([part('P1', [{ items: [note('C5', 4, { s: 1, type: 'whole' })], staved: true, div: 2, staves: 1, clefs: ['G'] }, { items: [rest(0, { measure: true, noType: true })], staved: true }], { div: 2, staved: true })]);
+  const r = N.normalize([noTime]);
+  assert.equal(r.report.counts.zeroDurationsLeft, 1);
+  assert.equal(r.report.counts.zeroDurationsRepaired, 0);
+  assert.deepEqual(r.report.flags[2], ['duration-zero']);
+});
+
+test('zero length: a PITCHED note of length 0 with a plain type lasts its type, counted: the one explicit exception to the invariant that no note changes length', () => {
+  const x = doc([part('P1', [{ items: [note('C5', 1, { s: 1 }), note('D5', 0, { s: 1, type: 'quarter' }), note('E5', 1, { s: 1 })], staved: true, div: 2, key: 0, time: [4, 4], staves: 1, clefs: ['G'] }], { div: 2, staved: true })]);
+  const r = N.normalize([x]);
+  assert.equal(r.report.counts.zeroDurationsRepaired, 1);
+  assert.deepEqual(r.report.changes.filter(c => c.rule === 'zero-duration').map(c => c.how), [{ type: 1 }]);
+  const notes = read(r.xml).parts[0].bars[0].notes;
+  assert.equal(notes.length, 3, 'no pitched note is lost');
+  assert.deepEqual(notes.map(n => n.p + ':' + n.dur), ['C5:1', 'D5:1', 'E5:1']);
+  /* and the same note with a dot or a tuplet has no length to read: left, counted, and still there */
+  const dotted = doc([part('P1', [{ items: [note('C5', 1, { s: 1 }), note('D5', 0, { s: 1, type: 'quarter', dot: true }), note('E5', 1, { s: 1 })], staved: true, div: 2, key: 0, time: [4, 4], staves: 1, clefs: ['G'] }], { div: 2, staved: true })]);
+  const d = N.normalize([dotted]);
+  assert.equal(d.report.counts.zeroDurationsLeft, 1);
+  assert.equal(read(d.xml).parts[0].bars[0].notes.length, 3);
+});
+
+test('wedges: the importer refuses the pages as the engine wrote them (E-SPAN-ORDER) and takes the normalised document, with the hairpin that is fine still there', () => {
+  const pages = S.wedges.pages();
+  const before = importOf(pages[0]);
+  assert.equal(before.ok, false);
+  assert.match(before.message, /E-SPAN-ORDER/, 'the control: the raw page is refused for a wedge that ends where it starts');
+  const r = N.normalize(pages);
+  const g = importOf(r.xml);
+  assert.equal(g.ok, true, g.message);
+  assert.deepEqual(g.graph.parts[0].spanners.filter(s => s.type === 'wedge').map(s => s.kind), ['crescendo']);
+  assert.deepEqual(r.report.notes.filter(n => n.kind === 'wedges'), [{ kind: 'wedges', n: 4 }]);
+  assert.deepEqual(r.report.changes.filter(c => c.rule === 'wedges'), [{ rule: 'wedges', bar: 2, dropped: 4 }]);
+  /* no note, and no other mark of the bar, went with them */
+  assert.deepEqual(L.multiset([r.xml]), L.multiset(pages));
+});
+
+test('wedges: a column with no hairpin that ends where it starts is not touched, even when a mark in it is unpaired (the importer drops that one itself)', () => {
+  const lone = doc([part('P1', [SC.grandWith(0, { 1: [SC.wedge('crescendo')] }, SC.grandFirst()), SC.grandBar(1)], { div: 2, staved: true })]);
+  const r = N.normalize([lone]);
+  assert.equal(SC.wedgesOf(r.xml), 'crescendo | ');
+  assert.equal(r.report.counts.wedgesDropped, 0);
+  const g = importOf(r.xml);
+  assert.equal(g.ok, true, g.message);
+  assert.equal(g.graph.parts[0].spanners.filter(s => s.type === 'wedge').length, 0);
+  assert.ok(g.report.issues.some(i => i.code === 'W-IMPORT-UNPAIRED'), 'the importer says so');
+});
+
+test('wedges: a direction that holds more than the wedge keeps the rest of it; one that held only the wedge goes', () => {
+  const both = '<direction placement="below"><direction-type><dynamics><p/></dynamics></direction-type><direction-type><wedge type="diminuendo" spread="0"/></direction-type><staff>1</staff></direction>';
+  const stop = SC.wedge('stop');
+  const x = doc([part('P1', [SC.grandWith(0, { 1: [SC.wedge('crescendo')], 2: [L.raw(both), stop], 3: [SC.wedge('stop')] }, SC.grandFirst()), SC.grandBar(1)], { div: 2, staved: true })]);
+  const r = N.normalize([x]);
+  assert.equal(r.report.counts.wedgesDegenerate, 1);
+  assert.match(r.xml, /<dynamics><p\/><\/dynamics>/, 'the dynamic mark of the direction stays');
+  assert.doesNotMatch(r.xml, /<wedge/);
+  assert.equal(importOf(r.xml).ok, true);
 });
 
 test('deterministic: the same pages give the same bytes, run after run and in any order of the scenarios', () => {

@@ -4,7 +4,7 @@
    line broken and asserts that each broken copy gives a different answer to at least one of them. */
 'use strict';
 const L = require('./lib.js');
-const { note, rest, back, fwd, bar, part, doc, read, sigs } = L;
+const { note, rest, back, fwd, raw, bar, part, doc, read, sigs } = L;
 
 const NAMES = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 const P = deg => NAMES[((deg % 7) + 7) % 7] + Math.floor(deg / 7);
@@ -211,6 +211,79 @@ S.pagesRich = {
   expect: () => truthRich(0, 4)
 };
 
+/* ---- notes of length 0 and hairpins that end where they start (G12-2) ---- */
+/* Audiveris 5.11 writes <rest measure="yes"/><duration>0</duration> for the whole-bar rest of a bar it read nothing in; in a grand staff, one for each staff, no <backup> between */
+const zeroRestGrand = extra => Object.assign({ items: [rest(0, { measure: true, noType: true, s: 1 }), rest(0, { measure: true, noType: true, s: 2, v: 5 })], staved: true }, extra);
+const zeroRestBar = extra => Object.assign({ items: [rest(0, { measure: true, noType: true })] }, extra);
+const wedge = (type, no, offset) => raw('<direction placement="below"><direction-type><wedge type="' + type + '" spread="0" default-x="0"' + (no ? ' number="' + no + '"' : '') + '/></direction-type>' + (offset ? '<offset>' + offset + '</offset>' : '') + '<staff>1</staff></direction>');
+/* the right hand of bar i as four quarters with the wedge marks (or anything) put in after the quarter k: marks = {k: [raw, ...]} */
+const rhWith = (i, marks) => { const out = []; rhOf(i).forEach((n, k) => { out.push(n); (marks[k] || []).forEach(m => out.push(m)); }); return out; };
+const grandWith = (i, marks, extra) => Object.assign({ items: rhWith(i, marks).concat([back(4)], lhOf(i)), staved: true }, extra);
+/* what the reader finds of the rests and wedges of one bar */
+const restsOf = (xml, bar) => read(xml).parts[0].bars[bar].notes.filter(n => n.rest).map(n => n.staff + ':' + n.dur).join(',');
+/* directions that hold no direction-type (invalid MusicXML) */
+const emptyDirections = xml => { let n = 0; const walk = e => { if (e.name === 'direction' && !e.kids.some(k => k.name === 'direction-type')) n++; e.kids.forEach(walk); }; walk(L.XML.parse(xml).root); return n; };
+const wedgesOf = xml => {
+  const out = [];
+  L.XML.parse(xml).root.kids.filter(k => k.name === 'part')[0].kids.filter(k => k.name === 'measure').forEach(m => {
+    const w = [];
+    m.kids.filter(k => k.name === 'direction').forEach(d => d.kids.filter(k => k.name === 'direction-type').forEach(t => t.kids.filter(k => k.name === 'wedge').forEach(x => w.push(x.attrs.type + (x.attrs.number ? '#' + x.attrs.number : '')))));
+    out.push(w.join(','));
+  });
+  return out.join(' | ');
+};
+
+S.zeroRest = {
+  why: 'a whole-bar rest written with <duration>0</duration> lasts the bar (the ScoreGraph importer refuses a note of length 0), counted and flagged',
+  pages: () => [doc([part('P1', [grandBar(0, grandFirst()), zeroRestGrand(), grandBar(2)], { div: 2, staved: true })])],
+  expect: () => { const t = truth(0, 3); return { bars: 3, sigs: [t.sigs[0], '', t.sigs[2]], rests: '1:4,2:4', repaired: 2, left: 0, flags: ['duration-repaired'] }; }
+};
+S.zeroRestPair = {
+  why: 'the same in a grand staff read as two parts: each part\'s own whole-bar rest lasts the bar',
+  pages: () => [doc([part('P1', [rhBar(0, first({ clefs: ['G'] })), zeroRestBar(), rhBar(2)], { div: 2 }), part('P2', [lhBar(0, first({ clefs: ['F'] })), zeroRestBar(), lhBar(2)], { div: 2 })])],
+  expect: () => { const t = truth(0, 3); return { bars: 3, sigs: [t.sigs[0], '', t.sigs[2]], rests: '1:4,2:4', repaired: 2, left: 0, flags: ['pair-merged', 'duration-repaired'] }; }
+};
+S.zeroRestCompound = {
+  why: 'the length of the bar is the time signature\'s: a whole-bar rest in 6/8 lasts three quarters, not six',
+  pages: () => [doc([part('P1', [
+    { items: [note('C5', 1.5, { s: 1, dot: true }), note('D5', 1.5, { s: 1, dot: true }), back(3), note('C3', 3, { s: 2, v: 5, type: 'half', dot: true })], staved: true, div: 2, key: 0, time: [6, 8], staves: 2, clefs: ['G', 'F'] },
+    { items: [rest(0, { measure: true, noType: true, s: 1 }), rest(0, { measure: true, noType: true, s: 2, v: 5 })], staved: true }], { div: 2, staved: true })])],
+  expect: () => ({ bars: 2, sigs: ['1 0 1.5 C5 | 1 1.5 1.5 D5 | 2 0 3 C3', ''], rests: '1:3,2:3', repaired: 2, left: 0, flags: ['duration-repaired'] })
+};
+S.zeroRestTyped = {
+  why: 'a rest of length 0 that is not a whole-bar rest lasts what its <type> says',
+  pages: () => [doc([part('P1', [{ items: [note('C3', 4, { s: 2, v: 5, type: 'whole' }), back(4), note('C5', 1, { s: 1 }), note('D5', 1, { s: 1 }), rest(0, { type: 'half', s: 1 })], staved: true, div: 2, key: 0, time: [4, 4], staves: 2, clefs: ['G', 'F'] }], { div: 2, staved: true })])],
+  expect: () => ({ bars: 1, sigs: ['1 0 1 C5 | 1 1 1 D5 | 2 0 4 C3'], rests: '1:2', repaired: 1, left: 0, flags: ['duration-repaired'] })
+};
+S.zeroRestLeft = {
+  why: 'a zero-length rest with nothing to read its length from (a rest that is no whole-bar rest and has no type) is left as it was and counted, never guessed',
+  pages: () => [doc([part('P1', [{ items: [note('C3', 4, { s: 2, v: 5, type: 'whole' }), back(4), note('C5', 1, { s: 1 }), note('D5', 1, { s: 1 }), rest(0, { noType: true, s: 1 })], staved: true, div: 2, key: 0, time: [4, 4], staves: 2, clefs: ['G', 'F'] }], { div: 2, staved: true })])],
+  expect: () => ({ bars: 1, sigs: ['1 0 1 C5 | 1 1 1 D5 | 2 0 4 C3'], rests: '1:0', repaired: 0, left: 1, flags: ['duration-zero'] })
+};
+
+/* Audiveris reads a crescendo and a diminuendo that meet as start, start, stop, stop with no note between the middle two; a hairpin elsewhere is fine */
+const ex2 = [grandWith(1, { 1: [wedge('crescendo')], 2: [wedge('diminuendo'), wedge('stop')], 3: [wedge('stop')] }), grandWith(2, { 0: [wedge('crescendo')], 2: [wedge('stop')] })];
+S.wedges = {
+  why: 'a hairpin written to end where it starts (start, start, stop, stop) is removed with the marks that cannot pair, a hairpin of positive length elsewhere stays, counted and flagged',
+  pages: () => [doc([part('P1', [grandBar(0, grandFirst())].concat(ex2.map(b => Object.assign({}, b))).concat([grandBar(3)]), { div: 2, staved: true })])],
+  expect: () => ({ bars: 4, wedges: ' |  | crescendo,stop | ', dropped: 4, degenerate: 1, emptyDirections: 0, flags: { 2: ['wedge-dropped'] } })
+};
+S.wedgesNumbered = {
+  why: 'wedges pair by their number: a degenerate pair of number 2 inside a hairpin of number 1 takes only itself away',
+  pages: () => [doc([part('P1', [grandBar(0, grandFirst()), grandWith(1, { 0: [wedge('crescendo', 1)], 1: [wedge('diminuendo', 2), wedge('stop', 2)], 3: [wedge('stop', 1)] }), grandBar(2)], { div: 2, staved: true })])],
+  expect: () => ({ bars: 3, wedges: ' | crescendo#1,stop#1 | ', dropped: 2, degenerate: 1, emptyDirections: 0, flags: { 2: ['wedge-dropped'] } })
+};
+S.wedgesAcrossBars = {
+  why: 'a hairpin from one bar to the next is a pair of positive length; one whose stop comes first in the next bar is judged by bar and place, not by place alone',
+  pages: () => [doc([part('P1', [grandWith(0, { 3: [wedge('crescendo')] }), grandWith(1, { 0: [wedge('stop')] }), grandWith(2, { 1: [wedge('diminuendo'), wedge('stop')] }), grandWith(3, { 2: [wedge('crescendo')] })], { div: 2, staved: true })])],
+  expect: () => ({ bars: 4, wedges: 'crescendo | stop |  | ', dropped: 3, degenerate: 1, emptyDirections: 0, flags: { 3: ['wedge-dropped'], 4: ['wedge-dropped'] } })
+};
+S.wedgesOffset = {
+  why: 'the place of a mark in its bar includes its <offset>: a stop put two divisions after its start by an offset ends after it starts and stays',
+  pages: () => [doc([part('P1', [grandWith(0, { 1: [wedge('crescendo'), wedge('stop', null, 2)] }, grandFirst()), grandWith(1, { 1: [wedge('diminuendo'), wedge('stop')] }), grandBar(2)], { div: 2, staved: true })])],
+  expect: () => ({ bars: 3, wedges: 'crescendo,stop |  | ', dropped: 2, degenerate: 1, emptyDirections: 0, flags: { 2: ['wedge-dropped'] } })
+};
+
 /* a bar-count check against what the page shows */
 S.barCount = {
   why: 'a page whose bar count differs from what its layout shows is reported and its bars flagged',
@@ -242,8 +315,17 @@ function probe(N, name) {
     case 'barCount': return { changes: rep.changes.filter(c => c.rule === 'bar-count'), flags: Object.keys(rep.flags).reduce((a, b) => { const f = rep.flags[b].filter(x => x === 'bar-count'); if (f.length) a[b] = f; return a; }, {}) };
     case 'divisionsZero': return { parts: s.parts, staves: s.staves, bars: s.bars, numbers: s.numbers, sigs: s.sigs };
     case 'ghost': return Object.assign({}, s, { timeBars: read(r.xml).parts[0].bars.map((b, i) => (b.timeChange !== null ? (i + 1) + ':' + b.timeChange : null)).filter(Boolean).join(',') });
+    case 'zeroRest': case 'zeroRestPair': case 'zeroRestCompound': case 'zeroRestTyped': case 'zeroRestLeft': {
+      const bi = name === 'zeroRestTyped' || name === 'zeroRestLeft' ? 0 : 1;
+      const f = rep.flags[bi + 1] || [];   /* the flags of the bar that holds the zero-length rests */
+      return { bars: s.bars, sigs: s.sigs, rests: restsOf(r.xml, bi), repaired: rep.counts.zeroDurationsRepaired, left: rep.counts.zeroDurationsLeft,
+        flags: f.filter(x => x.indexOf('duration') === 0 || x === 'pair-merged') };
+    }
+    case 'wedges': case 'wedgesNumbered': case 'wedgesAcrossBars': case 'wedgesOffset':
+      return { bars: s.bars, wedges: wedgesOf(r.xml), dropped: rep.counts.wedgesDropped, degenerate: rep.counts.wedgesDegenerate, emptyDirections: emptyDirections(r.xml),
+        flags: Object.keys(rep.flags).reduce((a, b) => { const x = rep.flags[b].filter(y => y === 'wedge-dropped'); if (x.length) a[b] = x; return a; }, {}) };
     default: return s;
   }
 }
 
-module.exports = { S, probe, summary, truth, truthDoc, truthRich, truthDocRich, P, rhOf, lhOf, rhBar, lhBar, grandBar, restBar, restGrand, richRh, richLh, richRhBar, richLhBar, richGrandBar, first, grandFirst, series };
+module.exports = { wedge, grandWith, zeroRestGrand, zeroRestBar, restsOf, wedgesOf, S, probe, summary, truth, truthDoc, truthRich, truthDocRich, P, rhOf, lhOf, rhBar, lhBar, grandBar, restBar, restGrand, richRh, richLh, richRhBar, richLhBar, richGrandBar, first, grandFirst, series };
