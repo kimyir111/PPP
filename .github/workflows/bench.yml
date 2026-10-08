@@ -32,6 +32,16 @@
 #  - the ScoreGraph tests compare package.json with the G1 base commit (`git show aff7080:package.json`): the one job that runs them
 #    (shard-c) fetches the whole history. No other step of the gate reads git history, so the other jobs take the default one commit
 #    (a step that skips quietly without history would hide a check; `npm run test:home-worker-page` and jobs-pg do, and neither is in the gate).
+#
+# THE PRACTICE JOBS (G11a-0, docs/GOALS/G11_ADAPTIVE_PRACTICE.md section 5 G11-D12) are NOT part of the gate: practice-plan, practice-suites,
+# practice-legacy and practice-perf are checks of their own, so the gate's jobs, steps and verdict are as they were (test_ci_plan.py reads only
+# plan, light, shard-* and merge-*). On a pull request practice-plan (tests/practice/plan.py, the base's copy, like the gate's) decides whether
+# the change touches the app's page, practice/ or the practice tests; if so the three jobs run: the eleven practice and playback browser suites
+# on a free port (tests/practice/run-suites.js), the legacy recorder's baseline (what the legacy player, matcher and follow gates do with every
+# catalogue piece) and the mutation check that proves the baseline notices a broken matcher, and the perf probe (matcher, plan building, press
+# to paint, long tasks) against its committed baseline. The same three jobs run every night and on a manual run. A manual run can be
+# narrowed to them with `-f only=practice` (the heavy nightly jobs below are then skipped; the gate still runs), and `-f perf_record=true`
+# makes practice-perf measure a new baseline for this kind of machine and upload it instead of checking.
 name: bench
 on:
   push:
@@ -40,6 +50,16 @@ on:
   schedule:
     - cron: '17 18 * * *'
   workflow_dispatch:
+    inputs:
+      only:
+        description: 'all = every nightly job (the default); practice = only the practice jobs (the gate runs either way)'
+        type: choice
+        options: [all, practice]
+        default: all
+      perf_record:
+        description: 'practice-perf measures and uploads a new baseline for the runner (tests/practice/baselines/perf.json) instead of checking'
+        type: boolean
+        default: false
 
 # A new push to a pull request cancels that PR's older run (its result is for a commit nobody will merge). A push to main, the
 # schedule and a manual dispatch each get a group of their own (the run id), so none of them is ever cancelled, or replaced by a
@@ -655,8 +675,109 @@ jobs:
             echo "gate passed: LIGHT $mode-only mode (the full gate is not needed: see the plan job's summary)"
           fi
 
+  # practice-plan: do the practice jobs run for this pull request? (tests/practice/plan.py; the table of paths is in tests/bench/unit/test_practice_plan.py).
+  # `run` when the change touches the app's page, practice/, a practice suite or what the suites run on; `harness` when it touches the probes
+  # themselves (then the mutation check runs too). The plan of the pull request's BASE is the one that runs, so a change to the rules does not
+  # apply to itself; a base without one (the change that adds it) runs everything. Anything it cannot read answers run.
+  practice-plan:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.plan.outputs.run }}
+      harness: ${{ steps.plan.outputs.harness }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }                 # a pull request's checkout is a merge commit: HEAD^1 is the base
+      - id: plan
+        run: |
+          if git show HEAD^1:tests/practice/plan.py > "$RUNNER_TEMP/practice_plan.py" \
+             && python3 "$RUNNER_TEMP/practice_plan.py" --event pull_request --github-output "$RUNNER_TEMP/plan.out" --summary "$GITHUB_STEP_SUMMARY"; then
+            cat "$RUNNER_TEMP/plan.out" >> "$GITHUB_OUTPUT"
+          else
+            { echo "run=true"; echo "harness=true"; } >> "$GITHUB_OUTPUT"
+            echo "### practice plan: **RUN**" >> "$GITHUB_STEP_SUMMARY"
+            echo "the base has no tests/practice/plan.py (or it failed): the practice jobs run, with the mutation check." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          grep -E '^(run|harness)=' "$GITHUB_OUTPUT"
+
+  # practice-suites: the eleven practice and playback browser suites (follow, falling-notes, memory, learning, playback-scheduler, coach, midi,
+  # interactions, lessons, course, alignment: about 500 checks) on a port the runner is given, with NODE_ENV=production and
+  # tests/engrave/tools/with-port.js (G11-D12). They had never run in CI before; a suite is green only if it exits 0, fails no check and prints
+  # about as many checks as it did when the list was written (a suite that stopped testing is not a pass). About 4 minutes of suites.
+  practice-suites:
+    needs: practice-plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.run == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci                                        # puppeteer (and its Chrome)
+      - run: node tests/practice/run-suites.js
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: practice-suites
+          path: tests/practice/out/suites
+          overwrite: true
+
+  # practice-legacy: the legacy recorder (tests/practice/record.js check: canonical digests of PianoScore.build, the matcher's verdicts for six
+  # scripted performances and follow mode's gates over the 325 catalogue pieces and the 69 committed fixtures, against
+  # tests/practice/baselines/legacy.json; about 20 s) and the mutation check (tests/practice/mutants.js: each row breaks one rule of the
+  # player, matcher or follow gates in the served page; the recorder, and for some rows the suites, must go red; the unmutated control must
+  # not; several minutes). On a pull request the mutation check runs only when the probes themselves changed.
+  practice-legacy:
+    needs: practice-plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.run == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci
+      - run: node tests/practice/record.js check
+      - if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.practice-plan.outputs.harness == 'true') }}
+        run: node tests/practice/mutants.js
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: practice-legacy
+          path: tests/practice/out
+          overwrite: true
+
+  # practice-perf: the perf probe (tests/practice/perf.js check): matcher, plan building, press to painted frame and long tasks on the
+  # 1,776-note Sonatina at CPU 1x and 4x, against the baseline of this kind of machine (profile `ci`): every limit grows with how much slower than
+  # the baseline's the runner of the day is (a calibration workload, up to 3x), the +20 % band on top, best of 3 probes. perf-selftest.js first
+  # holds the check itself (no browser): a slow runner is green, a planted 2x slowdown of the matcher or the plan build is red at any speed. A job of its own so that nothing else loads the runner while it measures. A manual run with `-f perf_record=true`
+  # measures 5 probes and uploads tests/practice/baselines/perf.json to commit, instead of checking.
+  practice-perf:
+    needs: practice-plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.run == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci
+      - run: node tests/practice/perf-selftest.js                  # the check itself: a slow machine is green, a planted 2x slowdown red at calibration ratio 1.0 and 1.4
+        if: ${{ github.event.inputs.perf_record != 'true' }}
+      - run: node tests/practice/perf.js check
+        if: ${{ github.event.inputs.perf_record != 'true' }}
+      - run: node tests/practice/perf.js record --attempts 5
+        if: ${{ github.event.inputs.perf_record == 'true' }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: practice-perf
+          path: tests/practice/baselines/perf.json
+          overwrite: true
+
   nightly:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.event.inputs.only != 'practice'
     runs-on: ubuntu-latest
     timeout-minutes: 100                 # was 45, when `full` took minutes and the job stopped at its first failing step; run to the
                                          # end it is ~42 min locally (mutation-check 11, full 7, adversarial 9, final_review 12) and
@@ -728,7 +849,7 @@ jobs:
   # count is in two places - the matrix and --shard K/4 - and merge-shards refuses a run that is not exactly the shards it was
   # told of.
   nightly-rec:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.event.inputs.only != 'practice'
     runs-on: ubuntu-latest
     # Was 90, which one slow runner from red. Measured on a runner, by workflow_dispatch of this job at 1b30342 (2026-10-05, all
     # green, 5092 s = 84.9 minutes in all):
@@ -790,7 +911,7 @@ jobs:
             tests/bench/out/rec-arrange-play/summary.md
 
   nightly-rec-shard:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.event.inputs.only != 'practice'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
@@ -815,7 +936,7 @@ jobs:
 
   nightly-rec-full:
     needs: nightly-rec-shard
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.event.inputs.only != 'practice'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
