@@ -76,7 +76,7 @@ finished, so until then it is absent, not green):
 | `light` | what runs instead of the shards for a change that is only documents or the home-PC worker's files (below). |
 | `gate` | green only if the plan succeeded and every job it asked for did, and the others were skipped; red for a failed, cancelled or *skipped* job that was wanted, a job that ran when it was not wanted, or a job of the file that `gate` does not wait for. It prints the mode it ran in (`gate passed: FULL mode, 16 shards and 2 merges succeeded`, or `LIGHT docs-only`). |
 
-**The steps.** Each of the gate's 68 steps is in exactly one shard job with its command unchanged, in the relative order the single
+**The steps.** Each of the gate's 69 steps is in exactly one shard job with its command unchanged, in the relative order the single
 job had (`tests/bench/unit/test_ci_plan.py` holds the invariants and fails if one is broken). A `run --suite X` and its `check --suite X`
 (or a `*_data.py` and its trainer's `--check`) stay in the same job, because the second reads what the first wrote. A step you add goes
 in the job with the most slack (the comments list the times; the slowest job decides the wall-clock). Nothing needs installing: the
@@ -85,6 +85,8 @@ except `shard-c`, which runs the ScoreGraph tests and `git show aff7080:package.
 One of the 64, `npm run test:practice` (G11a-1, `practice/plan.js` against the app's own player; it is in `shard-o`, one of the least loaded of the sixteen on the
 slow draw), reads `practice/`, `tests/practice/`, `scoregraph/`, `engrave/`, the page, committed score files and `tests/bench/corpus/*.json`: no path the light modes skip
 (read from its code, not traced under `strace`).
+The 69th, `npm run test:omr-normalize` (G12-1, `omr/normalize.js` and `omr/helper-output.js`: planted defects, mutants, no engine; it is in `shard-g`), reads `omr/`, `omr-service.js` (as text), `scoregraph/xml.js` and `scoregraph/index.js`
+and builds every page it normalises in memory: no committed score file, no path the light modes skip.
 
 **Two suites are cut across jobs.** `rec-core` (2,538 cases, 370 s alone) and `rec-grid` (1,410 cases, 434 s) run as
 `run --suite X --shard K/N` ("Sharded runs" below) in four and in three jobs; each shard job uploads its `shard.json` and `run.json` as a
@@ -121,7 +123,7 @@ listed file type; one other path makes the whole change `full`. The classifier t
 change to the rules never applies to itself (it is under `tests/bench/`, so `full`, and the new rules start with the next change); a
 base without one (the change that adds it) is `full`.
 
-| mode | every changed path is | `light` runs | the 68 steps |
+| mode | every changed path is | `light` runs | the 69 steps |
 |---|---|---|---|
 | `docs` | `docs/**/*.{md,txt,png,jpg,jpeg,gif,pdf}`, or a root `*.md` / `LICENSE*` / `COPYING*` / `NOTICE*` | `lint-corpus`, `make_provenance.py --check`, `node tests/i18n/gaps.js --check` (the cheap checks: they prove the checkout, the committed registry and the i18n baseline are sound) | skipped |
 | `tooling` | the above, or `tests/review/**`, `tools/home-worker/**`, `tests/home-worker/**` with a type of `.js .json .md .txt .cmd .ps1` | the three above, the bench unit tests, `npm run test:home-worker` | skipped |
