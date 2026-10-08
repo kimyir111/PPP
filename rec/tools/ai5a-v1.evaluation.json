@@ -1,6 +1,6 @@
 {
  "schema": "ppp.rec-time-skeleton-evaluation/1",
- "weights_sha256": "0d48478929fabe0ee5c9d30384669cb93cfbec3c3aa91c0ef101725be2f41c0a",
+ "weights_sha256": "d3e87131079e815494c2f4baf70c32dcb34a8d65b47ef79f8843945a43b8c9ff",
  "note": "skeleton right = metre, quarter tempo within 4 % and >= 90 % of the bar lines; reachable = some reading of the pulse tracks is right",
  "train": {
   "n": 3084,
@@ -1280,24 +1280,30 @@
  ],
  "phase": {
   "weights": [
-   1.014586,
-   0.363309,
-   4.810515
+   0.991735,
+   0.512006,
+   4.888269
   ],
+  "margin": 0.5,
+  "chordSat": 0.3,
   "fitted": 2306,
-  "loss": 0.188773,
+  "loss": 0.182659,
   "train": {
    "n": 3084,
    "rightBefore": 0.660182,
-   "rightAfter": 0.665045,
-   "moved": 53,
+   "rightAfter": 0.66537,
+   "moved": 36,
+   "broken": 2,
+   "gained": 18,
    "metreTempoRight": 2114
   },
   "trainLater": {
    "n": 1006,
    "rightBefore": 0.50497,
-   "rightAfter": 0.537773,
-   "moved": 64,
+   "rightAfter": 0.545726,
+   "moved": 48,
+   "broken": 0,
+   "gained": 41,
    "metreTempoRight": 629
   },
   "holdout": {
@@ -1305,13 +1311,17 @@
    "rightBefore": 0.650641,
    "rightAfter": 0.650641,
    "moved": 0,
+   "broken": 0,
+   "gained": 0,
    "metreTempoRight": 207
   },
   "holdoutLater": {
    "n": 294,
    "rightBefore": 0.455782,
-   "rightAfter": 0.517007,
-   "moved": 24,
+   "rightAfter": 0.5,
+   "moved": 16,
+   "broken": 1,
+   "gained": 14,
    "metreTempoRight": 176
   },
   "holdoutHelperPhaseOnly": {
@@ -1319,6 +1329,8 @@
    "rightBefore": 0.586538,
    "rightAfter": 0.605769,
    "moved": 4,
+   "broken": 0,
+   "gained": 2,
    "metreTempoRight": 63
   }
  }

@@ -1919,7 +1919,9 @@
     const lib = recLib();
     if (!lib) return null;
     /* the skeleton is read from the whole performance (an arrangement must not change the tempo or the metre) */
-    const sk = lib.skeleton(timingClustered, { weights: opts.recWeights, beats: input.beats, downbeats: input.downbeats });
+    /* G10a-1d: opts.recBeats 'oracle' marks beats whose downbeats are the score's bar lines (the benchmark's own performer); any other
+       beats (a real tracker: Beat This on the user's PC) are evidence of the bar phase only, never of the metre or the tempo */
+    const sk = lib.skeleton(timingClustered, { weights: opts.recWeights, beats: input.beats, downbeats: input.downbeats, beatsTrusted: opts.recBeats === 'oracle' });
     if (!sk) return null;
     const beats = sk.beats;
     const compound = !!sk.metre.compound;

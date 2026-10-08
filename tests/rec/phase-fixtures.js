@@ -56,13 +56,46 @@ function helperGateCheck(REC) {
   const W = REC.loadWeights();
   const notes = skeletonInput(pop(32, QPM, { jitter: 0.02, seed: 4 }).notes), att = REC.attacks.attacksOf(notes);
   const beats = beatsEvery(32 * 4 + 1, 1);
-  const steady = beats.filter((t, i) => i % 4 === 0);
+  const bars = beats.filter((t, i) => i % 4 === 0), halves = beats.filter((t, i) => i % 2 === 0), threes = beats.filter((t, i) => i % 3 === 0);
   const mixed = beats.filter((t, i) => i % 8 === 0 || i % 8 === 2 || i % 8 === 4);   /* intervals of 2, 2, 4 beats: half bars and bars */
-  const useSteady = REC.helperUse(beats, steady, att, W), useMixed = REC.helperUse(beats, mixed, att, W);
-  const none = REC.skeleton(notes, {}), m = REC.skeleton(notes, { beats: beats, downbeats: mixed });
-  const same = m.metre.key === none.metre.key && m.qpm === none.qpm && m.report.chosen.track === none.report.chosen.track && m.report.chosen.rho === none.report.chosen.rho;
-  return { name: 'steady helper beats are used as before; unsteady downbeats are phase evidence only and leave the notes\' metre and tempo', ok: useSteady === 'used' && useMixed === 'phase' && same && m.report.chosen.helperBeats === 'phase',
-    got: 'steady ' + useSteady + ', mixed ' + useMixed + ', mixed reading ' + m.metre.key + '@' + Math.round(m.qpm) + ' against ' + none.metre.key + '@' + Math.round(none.qpm), want: 'used, phase, the same reading' };
+  const none = REC.skeleton(notes, {});
+  const same = sk => sk && sk.metre.key === none.metre.key && sk.qpm === none.qpm && sk.report.chosen.track === none.report.chosen.track && sk.report.chosen.rho === none.report.chosen.rho;
+  /* a real tracker's beats (not marked trusted): steady bars, steady half bars, steady three-beat groups, a mixture - never the metre model's */
+  const real = [['bars', bars], ['half bars', halves], ['three beats', threes], ['mixed', mixed]].map(([n, d]) => [n, REC.skeleton(notes, { beats: beats, downbeats: d })]);
+  const useTrusted = REC.helperUse(beats, bars, att, W, true), useReal = REC.helperUse(beats, bars, att, W, false), useMixed = REC.helperUse(beats, mixed, att, W, true);
+  const ok = useTrusted === 'used' && useReal === 'phase' && useMixed === 'phase' && real.every(([n, sk]) => same(sk) && sk.report.chosen.helperBeats === 'phase');
+  return { name: 'a real tracker\'s beats never reach the metre model: steady bars, half bars or three-beat groups leave the notes\' 4/4 and tempo; only trusted beats are used', ok: ok,
+    got: 'trusted ' + useTrusted + ', real ' + useReal + ', trusted but unsteady ' + useMixed + '; ' + real.map(([n, sk]) => n + ' ' + (sk ? sk.metre.key + '@' + Math.round(sk.qpm) + ' ' + sk.report.chosen.helperBeats : 'none')).join(', ') + ' against ' + none.metre.key + '@' + Math.round(none.qpm),
+    want: 'used, phase; every real case the notes\' reading, phase' };
+}
+
+/* the downbeats as phase evidence reach the phase step (rec/index.js phaseDownbeats): on a piece whose notes say nothing about the phase (the
+   same chord on every quarter) a real tracker's downbeats on the second quarter of the notes' bars move the bar lines there */
+function downWiringCheck(REC) {
+  const notes = [];
+  for (let k = 0; k < 64; k++) [48, 52, 55, 60].forEach(m => notes.push({ on: Math.round((1 + k * SPQ) * 1e3) / 1e3, off: Math.round((1 + k * SPQ + 0.4) * 1e3) / 1e3, midi: m, vel: 64 }));
+  const input = skeletonInput(notes), none = REC.skeleton(input, {});
+  const per = 4, lines = none.beats.filter((t, i) => i % per === 0);
+  const downs = lines.map(t => Math.round((t + SPQ) * 1e4) / 1e4);
+  const beats = beatsEvery(64, 1);
+  const sk = REC.skeleton(input, { beats: beats, downbeats: downs });
+  const onDowns = sk.beats.filter((t, i) => i % per === 0).filter(t => downs.some(d => Math.abs(d - t) < 0.06)).length;
+  return { name: 'a real tracker\'s downbeats reach the phase step and move the bar lines of a piece whose notes cannot tell', ok: sk.metre.key === none.metre.key && onDowns >= 0.8 * downs.length,
+    got: onDowns + ' of ' + downs.length + ' bar lines on the downbeats (' + sk.metre.key + ')', want: 'at least 80 %' };
+}
+
+/* the posterior and the confidence say how sure the metre model's choice is; the phase step does not change them (a confidence that fell
+   after a phase move made the review screen say "the metre was hard to hear" on exactly the pieces the step fixed) */
+function confidenceCheck(REC) {
+  const W = REC.loadWeights(), W0 = Object.assign({}, W); delete W0.phase;
+  let moved = 0, bad = 0;
+  [[16, 1], [16, 2], [16, 3], [32, 1], [32, 2], [32, 3]].forEach(([bars, cut]) => {
+    const notes = skeletonInput(laterStart(bars, cut, 4).notes);
+    const a = REC.skeleton(notes, { weights: W }), b = REC.skeleton(notes, { weights: W0 });
+    if (a.report.chosen.phi !== b.report.chosen.phi) moved++;
+    if (a.conf !== b.conf || a.posterior !== b.posterior) bad++;
+  });
+  return { name: 'a phase move leaves the metre choice\'s posterior and confidence as they were', ok: moved > 0 && bad === 0, got: moved + ' phases moved, ' + bad + ' confidences changed', want: 'some moved, none changed' };
 }
 
 /* an audio beat track that changes its pulse level or adds beats is not one pulse; a regular one with missed beats is */
@@ -133,6 +166,6 @@ function groupCheck(REC) {
   return { name: 'the phase step\'s candidates are the phases of one pulse frame and one metre', ok: bad === 0, got: bad + ' of ' + n + ' groups wrong', want: 'none' };
 }
 
-function checks(REC) { return [decoupledCheck(REC), laterCheck(REC), helperGateCheck(REC), audioGateCheck(REC), downPhaseCheck(REC), harmonyCheck(REC), configCheck(REC), groupCheck(REC)]; }
+function checks(REC) { return [decoupledCheck(REC), laterCheck(REC), helperGateCheck(REC), audioGateCheck(REC), downPhaseCheck(REC), harmonyCheck(REC), configCheck(REC), groupCheck(REC), downWiringCheck(REC), confidenceCheck(REC)]; }
 
-module.exports = { checks, groupCheck, laterStart, laterCheck, decoupledCheck, helperGateCheck, audioGateCheck, downPhaseCheck, harmonyCheck, configCheck };
+module.exports = { checks, groupCheck, downWiringCheck, confidenceCheck, laterStart, laterCheck, decoupledCheck, helperGateCheck, audioGateCheck, downPhaseCheck, harmonyCheck, configCheck };

@@ -35,7 +35,7 @@
     "n": 846
    },
    "critical.structure": {
-    "mean": 0.513002,
+    "mean": 0.510638,
     "n": 846
    },
    "errors": {
@@ -67,15 +67,15 @@
     "n": 846
    },
    "notation.duration.accuracy": {
-    "mean": 0.684789,
+    "mean": 0.684762,
     "n": 846
    },
    "notation.duration.accuracy_ref": {
-    "mean": 0.677393,
+    "mean": 0.677366,
     "n": 846
    },
    "notation.duration.page_accuracy": {
-    "mean": 0.685053,
+    "mean": 0.685027,
     "n": 846
    },
    "notation.hand.accuracy": {
@@ -115,11 +115,11 @@
     "n": 846
    },
    "notation.onset_pos.accuracy": {
-    "mean": 0.461228,
+    "mean": 0.461443,
     "n": 846
    },
    "notation.onset_pos.accuracy_ref": {
-    "mean": 0.45582,
+    "mean": 0.455932,
     "n": 846
    },
    "notation.pedal.false_per_min": {
@@ -131,15 +131,15 @@
     "n": 846
    },
    "notation.spelling.accuracy": {
-    "mean": 0.997453,
+    "mean": 0.997476,
     "n": 846
    },
    "notation.spelling.accuracy_ref": {
-    "mean": 0.985554,
+    "mean": 0.985576,
     "n": 846
    },
    "notation.ties.extra_per_100": {
-    "mean": 6.890869,
+    "mean": 6.890231,
     "n": 846
    },
    "notation.tuplets.f1": {
@@ -199,23 +199,23 @@
     "n": 313
    },
    "nq.ned": {
-    "mean": 0.724726,
+    "mean": 0.725444,
     "n": 423
    },
    "nq.range.ledger4_rate": {
-    "mean": 9.069866,
+    "mean": 9.06939,
     "n": 423
    },
    "nq.range.ledger4_rate.delta": {
-    "mean": 4.303143,
+    "mean": 4.302666,
     "n": 423
    },
    "nq.rest.per_measure_delta": {
-    "mean": 0.896482,
+    "mean": 0.898957,
     "n": 423
    },
    "nq.rhythm.hidden_beat_rate": {
-    "mean": 0.028913,
+    "mean": 0.028912,
     "n": 423
    },
    "nq.rhythm.hidden_beat_rate.delta": {
@@ -223,7 +223,7 @@
     "n": 423
    },
    "nq.rhythm.short_rate_delta": {
-    "mean": -0.002832,
+    "mean": -0.002834,
     "n": 423
    },
    "nq.shape.tm_missing": {
@@ -287,11 +287,11 @@
     "n": 423
    },
    "nq.tie.mergeable_rate": {
-    "mean": 0.077572,
+    "mean": 0.077566,
     "n": 296
    },
    "nq.tie.mergeable_rate.delta": {
-    "mean": 0.049847,
+    "mean": 0.049817,
     "n": 58
    },
    "nq.tuplet.group_complete": {
@@ -323,11 +323,11 @@
     "n": 180
    },
    "read.accidentals_per_note": {
-    "mean": 0.017899,
+    "mean": 0.017911,
     "n": 846
    },
    "read.accidentals_per_note.delta": {
-    "mean": -0.002469,
+    "mean": -0.002458,
     "n": 846
    },
    "read.bar_completeness": {
@@ -371,27 +371,27 @@
     "n": 846
    },
    "read.rests_per_measure": {
-    "mean": 1.316671,
+    "mean": 1.317636,
     "n": 846
    },
    "read.rests_per_measure.delta": {
-    "mean": 0.909933,
+    "mean": 0.910898,
     "n": 846
    },
    "read.short_notes_rate": {
-    "mean": 0.023083,
+    "mean": 0.023079,
     "n": 846
    },
    "read.short_notes_rate.delta": {
-    "mean": -6.5e-05,
+    "mean": -6.9e-05,
     "n": 846
    },
    "read.ties_per_note": {
-    "mean": 0.055135,
+    "mean": 0.055128,
     "n": 846
    },
    "read.ties_per_note.delta": {
-    "mean": 0.050789,
+    "mean": 0.050782,
     "n": 846
    },
    "read.tuplets_per_note": {
@@ -399,7 +399,7 @@
     "n": 846
    },
    "read.tuplets_per_note.delta": {
-    "mean": 0.028745,
+    "mean": 0.028746,
     "n": 846
    },
    "rec.check.1": {
@@ -407,7 +407,7 @@
     "n": 846
    },
    "rec.check.10": {
-    "mean": 4.373674,
+    "mean": 4.379895,
     "n": 846
    },
    "rec.check.2": {
@@ -443,7 +443,7 @@
     "n": 846
    },
    "rec.hands.crossing": {
-    "mean": 0.001622,
+    "mean": 0.001621,
     "n": 846
    },
    "rec.hands.hard_per_100_bars": {
@@ -455,7 +455,7 @@
     "n": 846
    },
    "rec.harmony.agreement": {
-    "mean": 0.592266,
+    "mean": 0.593281,
     "n": 846
    },
    "rec.ledger.ge3_per_100_heads": {
@@ -463,35 +463,35 @@
     "n": 846
    },
    "rec.ledger.plain_ge3_per_100_heads": {
-    "mean": 9.689521,
+    "mean": 9.689951,
     "n": 846
    },
    "rec.metre.f1": {
-    "mean": 0.734769,
+    "mean": 0.73478,
     "n": 846
    },
    "rec.mv2h": {
-    "mean": 0.737269,
+    "mean": 0.737468,
     "n": 846
    },
    "rec.onset_f1": {
-    "mean": 0.458451,
+    "mean": 0.458613,
     "n": 846
    },
    "rec.rest.false_per_100_bars": {
-    "mean": 84.933102,
+    "mean": 84.954201,
     "n": 846
    },
    "rec.rest.precision": {
-    "mean": 0.252906,
+    "mean": 0.251752,
     "n": 846
    },
    "rec.rest.recall": {
-    "mean": 0.41504,
+    "mean": 0.417204,
     "n": 462
    },
    "rec.stability": {
-    "mean": 0.449704,
+    "mean": 0.449087,
     "n": 846
    },
    "rec.tuplet.false_per_100_beats": {
@@ -507,7 +507,7 @@
     "n": 60
    },
    "rec.usable": {
-    "mean": 0.072104,
+    "mean": 0.06974,
     "n": 846
    },
    "rec.voice.f1": {
@@ -515,7 +515,7 @@
     "n": 846
    },
    "sqi": {
-    "mean": 78.344882,
+    "mean": 78.3464,
     "n": 846
    },
    "struct.downbeat.f1": {
@@ -551,7 +551,7 @@
     "n": 846
    },
    "struct.measures.count_exact": {
-    "mean": 0.51773,
+    "mean": 0.515366,
     "n": 846
    },
    "struct.measures.count_ratio": {
@@ -591,7 +591,7 @@
     "n": 846
    },
    "struct.tempo.ratio_effective": {
-    "mean": 1.098219,
+    "mean": 1.098215,
     "n": 846
    },
    "struct.tempo.timeline_accuracy": {
@@ -651,7 +651,7 @@
      "n": 846
     },
     "critical.structure": {
-     "mean": 0.513002,
+     "mean": 0.510638,
      "n": 846
     },
     "errors": {
@@ -683,15 +683,15 @@
      "n": 846
     },
     "notation.duration.accuracy": {
-     "mean": 0.684789,
+     "mean": 0.684762,
      "n": 846
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.677393,
+     "mean": 0.677366,
      "n": 846
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.685053,
+     "mean": 0.685027,
      "n": 846
     },
     "notation.hand.accuracy": {
@@ -731,11 +731,11 @@
      "n": 846
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.461228,
+     "mean": 0.461443,
      "n": 846
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.45582,
+     "mean": 0.455932,
      "n": 846
     },
     "notation.pedal.false_per_min": {
@@ -747,15 +747,15 @@
      "n": 846
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997453,
+     "mean": 0.997476,
      "n": 846
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.985554,
+     "mean": 0.985576,
      "n": 846
     },
     "notation.ties.extra_per_100": {
-     "mean": 6.890869,
+     "mean": 6.890231,
      "n": 846
     },
     "notation.tuplets.f1": {
@@ -815,23 +815,23 @@
      "n": 313
     },
     "nq.ned": {
-     "mean": 0.724726,
+     "mean": 0.725444,
      "n": 423
     },
     "nq.range.ledger4_rate": {
-     "mean": 9.069866,
+     "mean": 9.06939,
      "n": 423
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 4.303143,
+     "mean": 4.302666,
      "n": 423
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.896482,
+     "mean": 0.898957,
      "n": 423
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.028913,
+     "mean": 0.028912,
      "n": 423
     },
     "nq.rhythm.hidden_beat_rate.delta": {
@@ -839,7 +839,7 @@
      "n": 423
     },
     "nq.rhythm.short_rate_delta": {
-     "mean": -0.002832,
+     "mean": -0.002834,
      "n": 423
     },
     "nq.shape.tm_missing": {
@@ -903,11 +903,11 @@
      "n": 423
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.077572,
+     "mean": 0.077566,
      "n": 296
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.049847,
+     "mean": 0.049817,
      "n": 58
     },
     "nq.tuplet.group_complete": {
@@ -939,11 +939,11 @@
      "n": 180
     },
     "read.accidentals_per_note": {
-     "mean": 0.017899,
+     "mean": 0.017911,
      "n": 846
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.002469,
+     "mean": -0.002458,
      "n": 846
     },
     "read.bar_completeness": {
@@ -987,27 +987,27 @@
      "n": 846
     },
     "read.rests_per_measure": {
-     "mean": 1.316671,
+     "mean": 1.317636,
      "n": 846
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.909933,
+     "mean": 0.910898,
      "n": 846
     },
     "read.short_notes_rate": {
-     "mean": 0.023083,
+     "mean": 0.023079,
      "n": 846
     },
     "read.short_notes_rate.delta": {
-     "mean": -6.5e-05,
+     "mean": -6.9e-05,
      "n": 846
     },
     "read.ties_per_note": {
-     "mean": 0.055135,
+     "mean": 0.055128,
      "n": 846
     },
     "read.ties_per_note.delta": {
-     "mean": 0.050789,
+     "mean": 0.050782,
      "n": 846
     },
     "read.tuplets_per_note": {
@@ -1015,7 +1015,7 @@
      "n": 846
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.028745,
+     "mean": 0.028746,
      "n": 846
     },
     "rec.check.1": {
@@ -1023,7 +1023,7 @@
      "n": 846
     },
     "rec.check.10": {
-     "mean": 4.373674,
+     "mean": 4.379895,
      "n": 846
     },
     "rec.check.2": {
@@ -1059,7 +1059,7 @@
      "n": 846
     },
     "rec.hands.crossing": {
-     "mean": 0.001622,
+     "mean": 0.001621,
      "n": 846
     },
     "rec.hands.hard_per_100_bars": {
@@ -1071,7 +1071,7 @@
      "n": 846
     },
     "rec.harmony.agreement": {
-     "mean": 0.592266,
+     "mean": 0.593281,
      "n": 846
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -1079,35 +1079,35 @@
      "n": 846
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 9.689521,
+     "mean": 9.689951,
      "n": 846
     },
     "rec.metre.f1": {
-     "mean": 0.734769,
+     "mean": 0.73478,
      "n": 846
     },
     "rec.mv2h": {
-     "mean": 0.737269,
+     "mean": 0.737468,
      "n": 846
     },
     "rec.onset_f1": {
-     "mean": 0.458451,
+     "mean": 0.458613,
      "n": 846
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 84.933102,
+     "mean": 84.954201,
      "n": 846
     },
     "rec.rest.precision": {
-     "mean": 0.252906,
+     "mean": 0.251752,
      "n": 846
     },
     "rec.rest.recall": {
-     "mean": 0.41504,
+     "mean": 0.417204,
      "n": 462
     },
     "rec.stability": {
-     "mean": 0.449704,
+     "mean": 0.449087,
      "n": 846
     },
     "rec.tuplet.false_per_100_beats": {
@@ -1123,7 +1123,7 @@
      "n": 60
     },
     "rec.usable": {
-     "mean": 0.072104,
+     "mean": 0.06974,
      "n": 846
     },
     "rec.voice.f1": {
@@ -1131,7 +1131,7 @@
      "n": 846
     },
     "sqi": {
-     "mean": 78.344882,
+     "mean": 78.3464,
      "n": 846
     },
     "struct.downbeat.f1": {
@@ -1167,7 +1167,7 @@
      "n": 846
     },
     "struct.measures.count_exact": {
-     "mean": 0.51773,
+     "mean": 0.515366,
      "n": 846
     },
     "struct.measures.count_ratio": {
@@ -1207,7 +1207,7 @@
      "n": 846
     },
     "struct.tempo.ratio_effective": {
-     "mean": 1.098219,
+     "mean": 1.098215,
      "n": 846
     },
     "struct.tempo.timeline_accuracy": {
@@ -1298,15 +1298,15 @@
      "n": 96
     },
     "notation.duration.accuracy": {
-     "mean": 0.695071,
+     "mean": 0.694829,
      "n": 96
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.694863,
+     "mean": 0.694621,
      "n": 96
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.695207,
+     "mean": 0.694965,
      "n": 96
     },
     "notation.hand.accuracy": {
@@ -1426,7 +1426,7 @@
      "n": 12
     },
     "nq.ned": {
-     "mean": 0.856552,
+     "mean": 0.85534,
      "n": 48
     },
     "nq.range.ledger4_rate": {
@@ -1438,7 +1438,7 @@
      "n": 48
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.264099,
+     "mean": 1.261428,
      "n": 48
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -1586,11 +1586,11 @@
      "n": 96
     },
     "read.rests_per_measure": {
-     "mean": 1.378332,
+     "mean": 1.374058,
      "n": 96
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.282016,
+     "mean": 1.277743,
      "n": 96
     },
     "read.short_notes_rate": {
@@ -1670,7 +1670,7 @@
      "n": 96
     },
     "rec.harmony.agreement": {
-     "mean": 0.571722,
+     "mean": 0.575628,
      "n": 96
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -1682,11 +1682,11 @@
      "n": 96
     },
     "rec.metre.f1": {
-     "mean": 0.798331,
+     "mean": 0.799536,
      "n": 96
     },
     "rec.mv2h": {
-     "mean": 0.756739,
+     "mean": 0.757713,
      "n": 96
     },
     "rec.onset_f1": {
@@ -1694,7 +1694,7 @@
      "n": 96
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 102.280327,
+     "mean": 101.852977,
      "n": 96
     },
     "rec.rest.precision": {
@@ -1706,7 +1706,7 @@
      "n": 36
     },
     "rec.stability": {
-     "mean": 0.312144,
+     "mean": 0.309896,
      "n": 96
     },
     "rec.tuplet.false_per_100_beats": {
@@ -1726,7 +1726,7 @@
      "n": 96
     },
     "sqi": {
-     "mean": 79.451649,
+     "mean": 79.449227,
      "n": 96
     },
     "struct.downbeat.f1": {
@@ -1766,7 +1766,7 @@
      "n": 96
     },
     "struct.measures.count_ratio": {
-     "mean": 0.965442,
+     "mean": 0.962837,
      "n": 96
     },
     "struct.measures.extra_empty_edge": {
@@ -1802,7 +1802,7 @@
      "n": 96
     },
     "struct.tempo.ratio_effective": {
-     "mean": 1.058282,
+     "mean": 1.058468,
      "n": 96
     },
     "struct.tempo.timeline_accuracy": {
@@ -3103,15 +3103,15 @@
      "n": 60
     },
     "notation.duration.accuracy": {
-     "mean": 0.442204,
+     "mean": 0.442175,
      "n": 60
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.425571,
+     "mean": 0.425542,
      "n": 60
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.442387,
+     "mean": 0.442357,
      "n": 60
     },
     "notation.hand.accuracy": {
@@ -3175,7 +3175,7 @@
      "n": 60
     },
     "notation.ties.extra_per_100": {
-     "mean": 4.945139,
+     "mean": 4.950966,
      "n": 60
     },
     "notation.tuplets.f1": {
@@ -3235,31 +3235,31 @@
      "n": 30
     },
     "nq.ned": {
-     "mean": 0.89288,
+     "mean": 0.892817,
      "n": 30
     },
     "nq.range.ledger4_rate": {
-     "mean": 53.219482,
+     "mean": 53.212765,
      "n": 30
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 16.533079,
+     "mean": 16.526362,
      "n": 30
     },
     "nq.rest.per_measure_delta": {
-     "mean": -0.016835,
+     "mean": -0.022098,
      "n": 30
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.027107,
+     "mean": 0.027099,
      "n": 30
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.027107,
+     "mean": 0.027099,
      "n": 30
     },
     "nq.rhythm.short_rate_delta": {
-     "mean": -0.115646,
+     "mean": -0.115676,
      "n": 30
     },
     "nq.shape.tm_missing": {
@@ -3323,11 +3323,11 @@
      "n": 30
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.020941,
+     "mean": 0.020883,
      "n": 30
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.042554,
+     "mean": 0.042265,
      "n": 6
     },
     "nq.tuplet.group_complete": {
@@ -3359,11 +3359,11 @@
      "n": 24
     },
     "read.accidentals_per_note": {
-     "mean": 0.025183,
+     "mean": 0.025182,
      "n": 60
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.001284,
+     "mean": 0.001283,
      "n": 60
     },
     "read.bar_completeness": {
@@ -3383,11 +3383,11 @@
      "n": 60
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.152486,
+     "mean": 0.152483,
      "n": 60
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.033547,
+     "mean": 0.033543,
      "n": 60
     },
     "read.max_chord_size": {
@@ -3407,27 +3407,27 @@
      "n": 60
     },
     "read.rests_per_measure": {
-     "mean": 1.516643,
+     "mean": 1.514011,
      "n": 60
     },
     "read.rests_per_measure.delta": {
-     "mean": -0.172103,
+     "mean": -0.174734,
      "n": 60
     },
     "read.short_notes_rate": {
-     "mean": 0.060373,
+     "mean": 0.060321,
      "n": 60
     },
     "read.short_notes_rate.delta": {
-     "mean": -0.130553,
+     "mean": -0.130606,
      "n": 60
     },
     "read.ties_per_note": {
-     "mean": 0.046348,
+     "mean": 0.0464,
      "n": 60
     },
     "read.ties_per_note.delta": {
-     "mean": 0.045802,
+     "mean": 0.045853,
      "n": 60
     },
     "read.tuplets_per_note": {
@@ -3443,7 +3443,7 @@
      "n": 60
     },
     "rec.check.10": {
-     "mean": 2.685777,
+     "mean": 2.773496,
      "n": 60
     },
     "rec.check.2": {
@@ -3479,7 +3479,7 @@
      "n": 60
     },
     "rec.hands.crossing": {
-     "mean": 0.0053,
+     "mean": 0.005297,
      "n": 60
     },
     "rec.hands.hard_per_100_bars": {
@@ -3499,7 +3499,7 @@
      "n": 60
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 26.685171,
+     "mean": 26.689619,
      "n": 60
     },
     "rec.metre.f1": {
@@ -3507,7 +3507,7 @@
      "n": 60
     },
     "rec.mv2h": {
-     "mean": 0.608762,
+     "mean": 0.608757,
      "n": 60
     },
     "rec.onset_f1": {
@@ -3515,11 +3515,11 @@
      "n": 60
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 76.926826,
+     "mean": 76.751387,
      "n": 60
     },
     "rec.rest.precision": {
-     "mean": 0.338315,
+     "mean": 0.338708,
      "n": 60
     },
     "rec.rest.recall": {
@@ -3551,7 +3551,7 @@
      "n": 60
     },
     "sqi": {
-     "mean": 63.663309,
+     "mean": 63.663022,
      "n": 60
     },
     "struct.downbeat.f1": {
@@ -3714,15 +3714,15 @@
      "n": 48
     },
     "notation.duration.accuracy": {
-     "mean": 0.637315,
+     "mean": 0.637361,
      "n": 48
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.637315,
+     "mean": 0.637361,
      "n": 48
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.636118,
+     "mean": 0.636164,
      "n": 48
     },
     "notation.hand.accuracy": {
@@ -3786,7 +3786,7 @@
      "n": 48
     },
     "notation.ties.extra_per_100": {
-     "mean": 2.474753,
+     "mean": 2.456235,
      "n": 48
     },
     "notation.tuplets.false_per_100": {
@@ -3974,11 +3974,11 @@
      "n": 48
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.025263,
+     "mean": 0.02527,
      "n": 48
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": -0.017232,
+     "mean": -0.017225,
      "n": 48
     },
     "read.max_chord_size": {
@@ -3998,11 +3998,11 @@
      "n": 48
     },
     "read.rests_per_measure": {
-     "mean": 0.661165,
+     "mean": 0.675053,
      "n": 48
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.661165,
+     "mean": 0.675053,
      "n": 48
     },
     "read.short_notes_rate": {
@@ -4014,19 +4014,19 @@
      "n": 48
     },
     "read.ties_per_note": {
-     "mean": 0.022604,
+     "mean": 0.022422,
      "n": 48
     },
     "read.ties_per_note.delta": {
-     "mean": 0.022604,
+     "mean": 0.022422,
      "n": 48
     },
     "read.tuplets_per_note": {
-     "mean": 0.202087,
+     "mean": 0.202095,
      "n": 48
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.202087,
+     "mean": 0.202095,
      "n": 48
     },
     "rec.check.1": {
@@ -4082,7 +4082,7 @@
      "n": 48
     },
     "rec.harmony.agreement": {
-     "mean": 0.12001,
+     "mean": 0.122883,
      "n": 48
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -4090,15 +4090,15 @@
      "n": 48
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 7.466437,
+     "mean": 7.46845,
      "n": 48
     },
     "rec.metre.f1": {
-     "mean": 0.410984,
+     "mean": 0.411455,
      "n": 48
     },
     "rec.mv2h": {
-     "mean": 0.569351,
+     "mean": 0.570029,
      "n": 48
     },
     "rec.onset_f1": {
@@ -4106,7 +4106,7 @@
      "n": 48
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 49.186618,
+     "mean": 49.742173,
      "n": 48
     },
     "rec.rest.precision": {
@@ -4114,7 +4114,7 @@
      "n": 48
     },
     "rec.stability": {
-     "mean": 0.904725,
+     "mean": 0.90704,
      "n": 48
     },
     "rec.tuplet.false_per_100_beats": {
@@ -4134,7 +4134,7 @@
      "n": 48
     },
     "sqi": {
-     "mean": 66.941446,
+     "mean": 66.941909,
      "n": 48
     },
     "struct.downbeat.f1": {
@@ -4721,7 +4721,7 @@
      "n": 84
     },
     "rec.stability": {
-     "mean": 0.529076,
+     "mean": 0.529014,
      "n": 84
     },
     "rec.tuplet.false_per_100_beats": {
@@ -4848,7 +4848,7 @@
      "n": 393
     },
     "critical.beat_placement": {
-     "mean": 0.409669,
+     "mean": 0.414758,
      "n": 393
     },
     "critical.hands": {
@@ -4908,15 +4908,15 @@
      "n": 393
     },
     "notation.duration.accuracy": {
-     "mean": 0.721586,
+     "mean": 0.721592,
      "n": 393
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.710212,
+     "mean": 0.710218,
      "n": 393
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.722031,
+     "mean": 0.722036,
      "n": 393
     },
     "notation.hand.accuracy": {
@@ -4956,11 +4956,11 @@
      "n": 393
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.465999,
+     "mean": 0.471088,
      "n": 393
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.458119,
+     "mean": 0.462986,
      "n": 393
     },
     "notation.pedal.false_per_min": {
@@ -4972,15 +4972,15 @@
      "n": 393
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997851,
+     "mean": 0.997899,
      "n": 393
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.981513,
+     "mean": 0.98156,
      "n": 393
     },
     "notation.ties.extra_per_100": {
-     "mean": 7.267296,
+     "mean": 7.265034,
      "n": 393
     },
     "notation.tuplets.false_per_100": {
@@ -5152,11 +5152,11 @@
      "n": 120
     },
     "read.accidentals_per_note": {
-     "mean": 0.014482,
+     "mean": 0.014507,
      "n": 393
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.004384,
+     "mean": -0.004359,
      "n": 393
     },
     "read.bar_completeness": {
@@ -5180,7 +5180,7 @@
      "n": 393
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": -0.001942,
+     "mean": -0.001941,
      "n": 393
     },
     "read.max_chord_size": {
@@ -5200,11 +5200,11 @@
      "n": 393
     },
     "read.rests_per_measure": {
-     "mean": 1.217661,
+     "mean": 1.217074,
      "n": 393
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.065461,
+     "mean": 1.064873,
      "n": 393
     },
     "read.short_notes_rate": {
@@ -5216,19 +5216,19 @@
      "n": 393
     },
     "read.ties_per_note": {
-     "mean": 0.056185,
+     "mean": 0.056162,
      "n": 393
     },
     "read.ties_per_note.delta": {
-     "mean": 0.053174,
+     "mean": 0.053152,
      "n": 393
     },
     "read.tuplets_per_note": {
-     "mean": 0.044976,
+     "mean": 0.044977,
      "n": 393
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.044976,
+     "mean": 0.044977,
      "n": 393
     },
     "rec.check.1": {
@@ -5272,7 +5272,7 @@
      "n": 393
     },
     "rec.hands.crossing": {
-     "mean": 0.000842,
+     "mean": 0.000841,
      "n": 393
     },
     "rec.hands.hard_per_100_bars": {
@@ -5284,7 +5284,7 @@
      "n": 393
     },
     "rec.harmony.agreement": {
-     "mean": 0.602191,
+     "mean": 0.605013,
      "n": 393
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -5292,35 +5292,35 @@
      "n": 393
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 6.761988,
+     "mean": 6.762234,
      "n": 393
     },
     "rec.metre.f1": {
-     "mean": 0.730291,
+     "mean": 0.732059,
      "n": 393
     },
     "rec.mv2h": {
-     "mean": 0.739575,
+     "mean": 0.740494,
      "n": 393
     },
     "rec.onset_f1": {
-     "mean": 0.461979,
+     "mean": 0.466954,
      "n": 393
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 84.809872,
+     "mean": 84.688518,
      "n": 393
     },
     "rec.rest.precision": {
-     "mean": 0.22413,
+     "mean": 0.226674,
      "n": 393
     },
     "rec.rest.recall": {
-     "mean": 0.394561,
+     "mean": 0.399689,
      "n": 195
     },
     "rec.stability": {
-     "mean": 0.357879,
+     "mean": 0.357283,
      "n": 393
     },
     "rec.tuplet.false_per_100_beats": {
@@ -5340,11 +5340,11 @@
      "n": 393
     },
     "sqi": {
-     "mean": 79.393951,
+     "mean": 79.46725,
      "n": 393
     },
     "struct.downbeat.f1": {
-     "mean": 0.619466,
+     "mean": 0.624555,
      "n": 393
     },
     "struct.form.order_exact": {
@@ -5380,7 +5380,7 @@
      "n": 393
     },
     "struct.measures.count_ratio": {
-     "mean": 1.056503,
+     "mean": 1.056185,
      "n": 393
     },
     "struct.measures.extra_empty_edge": {
@@ -5436,7 +5436,7 @@
      "n": 393
     },
     "usable": {
-     "mean": 0.307888,
+     "mean": 0.312977,
      "n": 393
     }
    },
@@ -5507,15 +5507,15 @@
      "n": 168
     },
     "notation.duration.accuracy": {
-     "mean": 0.570633,
+     "mean": 0.570622,
      "n": 168
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.563358,
+     "mean": 0.563347,
      "n": 168
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.570737,
+     "mean": 0.570726,
      "n": 168
     },
     "notation.hand.accuracy": {
@@ -5579,7 +5579,7 @@
      "n": 168
     },
     "notation.ties.extra_per_100": {
-     "mean": 5.885956,
+     "mean": 5.888038,
      "n": 168
     },
     "notation.tuplets.f1": {
@@ -5639,31 +5639,31 @@
      "n": 84
     },
     "nq.ned": {
-     "mean": 0.832076,
+     "mean": 0.832054,
      "n": 84
     },
     "nq.range.ledger4_rate": {
-     "mean": 26.861542,
+     "mean": 26.859143,
      "n": 84
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 6.269611,
+     "mean": 6.267212,
      "n": 84
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.515113,
+     "mean": 0.513234,
      "n": 84
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.02759,
+     "mean": 0.027588,
      "n": 84
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.02759,
+     "mean": 0.027588,
      "n": 84
     },
     "nq.rhythm.short_rate_delta": {
-     "mean": -0.052634,
+     "mean": -0.052645,
      "n": 84
     },
     "nq.shape.tm_missing": {
@@ -5727,11 +5727,11 @@
      "n": 84
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.082225,
+     "mean": 0.082203,
      "n": 79
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.053703,
+     "mean": 0.053631,
      "n": 24
     },
     "nq.tuplet.group_complete": {
@@ -5787,11 +5787,11 @@
      "n": 168
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.095523,
+     "mean": 0.095522,
      "n": 168
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.019304,
+     "mean": 0.019302,
      "n": 168
     },
     "read.max_chord_size": {
@@ -5811,27 +5811,27 @@
      "n": 168
     },
     "read.rests_per_measure": {
-     "mean": 1.671077,
+     "mean": 1.670137,
      "n": 168
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.465639,
+     "mean": 0.464699,
      "n": 168
     },
     "read.short_notes_rate": {
-     "mean": 0.070815,
+     "mean": 0.070796,
      "n": 168
     },
     "read.short_notes_rate.delta": {
-     "mean": -0.045755,
+     "mean": -0.045774,
      "n": 168
     },
     "read.ties_per_note": {
-     "mean": 0.052315,
+     "mean": 0.052333,
      "n": 168
     },
     "read.ties_per_note.delta": {
-     "mean": 0.049551,
+     "mean": 0.04957,
      "n": 168
     },
     "read.tuplets_per_note": {
@@ -5847,7 +5847,7 @@
      "n": 168
     },
     "rec.check.10": {
-     "mean": 4.577006,
+     "mean": 4.608334,
      "n": 168
     },
     "rec.check.2": {
@@ -5883,7 +5883,7 @@
      "n": 168
     },
     "rec.hands.crossing": {
-     "mean": 0.004898,
+     "mean": 0.004896,
      "n": 168
     },
     "rec.hands.hard_per_100_bars": {
@@ -5903,7 +5903,7 @@
      "n": 168
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 16.227157,
+     "mean": 16.228746,
      "n": 168
     },
     "rec.metre.f1": {
@@ -5911,7 +5911,7 @@
      "n": 168
     },
     "rec.mv2h": {
-     "mean": 0.689941,
+     "mean": 0.689939,
      "n": 168
     },
     "rec.onset_f1": {
@@ -5919,11 +5919,11 @@
      "n": 168
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 90.274287,
+     "mean": 90.21163,
      "n": 168
     },
     "rec.rest.precision": {
-     "mean": 0.340585,
+     "mean": 0.340725,
      "n": 168
     },
     "rec.rest.recall": {
@@ -5955,7 +5955,7 @@
      "n": 168
     },
     "sqi": {
-     "mean": 72.131445,
+     "mean": 72.131343,
      "n": 168
     },
     "struct.downbeat.f1": {
@@ -6701,15 +6701,15 @@
      "n": 48
     },
     "notation.duration.accuracy": {
-     "mean": 0.514688,
+     "mean": 0.514652,
      "n": 48
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.508547,
+     "mean": 0.508511,
      "n": 48
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.514527,
+     "mean": 0.514491,
      "n": 48
     },
     "notation.hand.accuracy": {
@@ -6773,7 +6773,7 @@
      "n": 48
     },
     "notation.ties.extra_per_100": {
-     "mean": 5.822341,
+     "mean": 5.829625,
      "n": 48
     },
     "notation.tuplets.f1": {
@@ -6833,31 +6833,31 @@
      "n": 24
     },
     "nq.ned": {
-     "mean": 0.864233,
+     "mean": 0.864155,
      "n": 24
     },
     "nq.range.ledger4_rate": {
-     "mean": 56.270001,
+     "mean": 56.261604,
      "n": 24
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 9.230448,
+     "mean": 9.222052,
      "n": 24
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.33974,
+     "mean": 0.333161,
      "n": 24
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.032022,
+     "mean": 0.032012,
      "n": 24
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.032022,
+     "mean": 0.032012,
      "n": 24
     },
     "nq.rhythm.short_rate_delta": {
-     "mean": -0.128355,
+     "mean": -0.128393,
      "n": 24
     },
     "nq.shape.tm_missing": {
@@ -6921,11 +6921,11 @@
      "n": 24
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.033662,
+     "mean": 0.03359,
      "n": 24
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.039244,
+     "mean": 0.039128,
      "n": 15
     },
     "nq.tuplet.group_complete": {
@@ -6957,11 +6957,11 @@
      "n": 15
     },
     "read.accidentals_per_note": {
-     "mean": 0.038215,
+     "mean": 0.038214,
      "n": 48
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.000741,
+     "mean": -0.000742,
      "n": 48
     },
     "read.bar_completeness": {
@@ -6981,11 +6981,11 @@
      "n": 48
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.159012,
+     "mean": 0.159008,
      "n": 48
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.032883,
+     "mean": 0.032879,
      "n": 48
     },
     "read.max_chord_size": {
@@ -7005,27 +7005,27 @@
      "n": 48
     },
     "read.rests_per_measure": {
-     "mean": 1.969282,
+     "mean": 1.965993,
      "n": 48
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.208374,
+     "mean": 0.205085,
      "n": 48
     },
     "read.short_notes_rate": {
-     "mean": 0.069494,
+     "mean": 0.069429,
      "n": 48
     },
     "read.short_notes_rate.delta": {
-     "mean": -0.147204,
+     "mean": -0.147269,
      "n": 48
     },
     "read.ties_per_note": {
-     "mean": 0.05459,
+     "mean": 0.054655,
      "n": 48
     },
     "read.ties_per_note.delta": {
-     "mean": 0.046113,
+     "mean": 0.046178,
      "n": 48
     },
     "read.tuplets_per_note": {
@@ -7041,7 +7041,7 @@
      "n": 48
     },
     "rec.check.10": {
-     "mean": 5.039165,
+     "mean": 5.148814,
      "n": 48
     },
     "rec.check.2": {
@@ -7077,7 +7077,7 @@
      "n": 48
     },
     "rec.hands.crossing": {
-     "mean": 0.007115,
+     "mean": 0.00711,
      "n": 48
     },
     "rec.hands.hard_per_100_bars": {
@@ -7097,7 +7097,7 @@
      "n": 48
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 25.596182,
+     "mean": 25.601741,
      "n": 48
     },
     "rec.metre.f1": {
@@ -7105,7 +7105,7 @@
      "n": 48
     },
     "rec.mv2h": {
-     "mean": 0.628188,
+     "mean": 0.628181,
      "n": 48
     },
     "rec.onset_f1": {
@@ -7113,11 +7113,11 @@
      "n": 48
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 100.109429,
+     "mean": 99.890131,
      "n": 48
     },
     "rec.rest.precision": {
-     "mean": 0.345446,
+     "mean": 0.345936,
      "n": 48
     },
     "rec.rest.recall": {
@@ -7149,7 +7149,7 @@
      "n": 48
     },
     "sqi": {
-     "mean": 66.935579,
+     "mean": 66.93522,
      "n": 48
     },
     "struct.downbeat.f1": {
@@ -7252,7 +7252,7 @@
      "n": 264
     },
     "critical.beat_placement": {
-     "mean": 0.450758,
+     "mean": 0.458333,
      "n": 264
     },
     "critical.hands": {
@@ -7360,11 +7360,11 @@
      "n": 264
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.511646,
+     "mean": 0.519222,
      "n": 264
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.499838,
+     "mean": 0.507083,
      "n": 264
     },
     "notation.pedal.false_per_min": {
@@ -7376,11 +7376,11 @@
      "n": 264
     },
     "notation.spelling.accuracy": {
-     "mean": 0.998419,
+     "mean": 0.998491,
      "n": 264
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.973502,
+     "mean": 0.973572,
      "n": 264
     },
     "notation.ties.extra_per_100": {
@@ -7556,11 +7556,11 @@
      "n": 120
     },
     "read.accidentals_per_note": {
-     "mean": 0.015138,
+     "mean": 0.015174,
      "n": 264
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.004304,
+     "mean": -0.004268,
      "n": 264
     },
     "read.bar_completeness": {
@@ -7604,11 +7604,11 @@
      "n": 264
     },
     "read.rests_per_measure": {
-     "mean": 1.219403,
+     "mean": 1.217072,
      "n": 264
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.038431,
+     "mean": 1.0361,
      "n": 264
     },
     "read.short_notes_rate": {
@@ -7676,7 +7676,7 @@
      "n": 264
     },
     "rec.hands.crossing": {
-     "mean": 0.000693,
+     "mean": 0.000692,
      "n": 264
     },
     "rec.hands.hard_per_100_bars": {
@@ -7688,7 +7688,7 @@
      "n": 264
     },
     "rec.harmony.agreement": {
-     "mean": 0.659741,
+     "mean": 0.662947,
      "n": 264
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -7700,27 +7700,27 @@
      "n": 264
     },
     "rec.metre.f1": {
-     "mean": 0.755918,
+     "mean": 0.758249,
      "n": 264
     },
     "rec.mv2h": {
-     "mean": 0.741368,
+     "mean": 0.742475,
      "n": 264
     },
     "rec.onset_f1": {
-     "mean": 0.50562,
+     "mean": 0.513027,
      "n": 264
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 83.636261,
+     "mean": 83.461436,
      "n": 264
     },
     "rec.rest.precision": {
-     "mean": 0.256405,
+     "mean": 0.260193,
      "n": 264
     },
     "rec.rest.recall": {
-     "mean": 0.42227,
+     "mean": 0.428017,
      "n": 174
     },
     "rec.stability": {
@@ -7744,11 +7744,11 @@
      "n": 264
     },
     "sqi": {
-     "mean": 81.315168,
+     "mean": 81.424199,
      "n": 264
     },
     "struct.downbeat.f1": {
-     "mean": 0.647932,
+     "mean": 0.655508,
      "n": 264
     },
     "struct.form.order_exact": {
@@ -7840,7 +7840,7 @@
      "n": 264
     },
     "usable": {
-     "mean": 0.348485,
+     "mean": 0.356061,
      "n": 264
     }
    },
@@ -8498,15 +8498,15 @@
      "n": 108
     },
     "notation.duration.accuracy": {
-     "mean": 0.660531,
+     "mean": 0.660515,
      "n": 108
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.653875,
+     "mean": 0.653859,
      "n": 108
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.660367,
+     "mean": 0.66035,
      "n": 108
     },
     "notation.hand.accuracy": {
@@ -8570,7 +8570,7 @@
      "n": 108
     },
     "notation.ties.extra_per_100": {
-     "mean": 5.580276,
+     "mean": 5.583513,
      "n": 108
     },
     "notation.tuplets.f1": {
@@ -8630,31 +8630,31 @@
      "n": 40
     },
     "nq.ned": {
-     "mean": 0.796298,
+     "mean": 0.796263,
      "n": 54
     },
     "nq.range.ledger4_rate": {
-     "mean": 11.844671,
+     "mean": 11.84094,
      "n": 54
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 1.959319,
+     "mean": 1.955587,
      "n": 54
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.515913,
+     "mean": 0.512989,
      "n": 54
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.037071,
+     "mean": 0.037066,
      "n": 54
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.033102,
+     "mean": 0.033098,
      "n": 54
     },
     "nq.rhythm.short_rate_delta": {
-     "mean": -0.003145,
+     "mean": -0.003162,
      "n": 54
     },
     "nq.shape.tm_missing": {
@@ -8718,11 +8718,11 @@
      "n": 54
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.050045,
+     "mean": 0.05001,
      "n": 50
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.050045,
+     "mean": 0.05001,
      "n": 50
     },
     "nq.tuplet.group_complete": {
@@ -8758,7 +8758,7 @@
      "n": 108
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.005539,
+     "mean": -0.00554,
      "n": 108
     },
     "read.bar_completeness": {
@@ -8778,11 +8778,11 @@
      "n": 108
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.066234,
+     "mean": 0.066232,
      "n": 108
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.015821,
+     "mean": 0.01582,
      "n": 108
     },
     "read.max_chord_size": {
@@ -8802,27 +8802,27 @@
      "n": 108
     },
     "read.rests_per_measure": {
-     "mean": 1.514577,
+     "mean": 1.513115,
      "n": 108
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.491868,
+     "mean": 0.490406,
      "n": 108
     },
     "read.short_notes_rate": {
-     "mean": 0.036932,
+     "mean": 0.036903,
      "n": 108
     },
     "read.short_notes_rate.delta": {
-     "mean": -0.000556,
+     "mean": -0.000585,
      "n": 108
     },
     "read.ties_per_note": {
-     "mean": 0.055939,
+     "mean": 0.055968,
      "n": 108
     },
     "read.ties_per_note.delta": {
-     "mean": 0.023988,
+     "mean": 0.024017,
      "n": 108
     },
     "read.tuplets_per_note": {
@@ -8838,7 +8838,7 @@
      "n": 108
     },
     "rec.check.10": {
-     "mean": 4.186381,
+     "mean": 4.235114,
      "n": 108
     },
     "rec.check.2": {
@@ -8874,7 +8874,7 @@
      "n": 108
     },
     "rec.hands.crossing": {
-     "mean": 0.002442,
+     "mean": 0.00244,
      "n": 108
     },
     "rec.hands.hard_per_100_bars": {
@@ -8894,7 +8894,7 @@
      "n": 108
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 12.500026,
+     "mean": 12.502497,
      "n": 108
     },
     "rec.metre.f1": {
@@ -8902,7 +8902,7 @@
      "n": 108
     },
     "rec.mv2h": {
-     "mean": 0.695861,
+     "mean": 0.695857,
      "n": 108
     },
     "rec.onset_f1": {
@@ -8910,11 +8910,11 @@
      "n": 108
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 83.756733,
+     "mean": 83.659267,
      "n": 108
     },
     "rec.rest.precision": {
-     "mean": 0.364194,
+     "mean": 0.364412,
      "n": 108
     },
     "rec.rest.recall": {
@@ -8922,7 +8922,7 @@
      "n": 108
     },
     "rec.stability": {
-     "mean": 0.523108,
+     "mean": 0.52306,
      "n": 108
     },
     "rec.tuplet.false_per_100_beats": {
@@ -8946,7 +8946,7 @@
      "n": 108
     },
     "sqi": {
-     "mean": 74.960555,
+     "mean": 74.960396,
      "n": 108
     },
     "struct.downbeat.f1": {
@@ -10152,7 +10152,7 @@
      "n": 174
     },
     "rec.stability": {
-     "mean": 0.438544,
+     "mean": 0.438443,
      "n": 312
     },
     "rec.tuplet.false_per_100_beats": {
@@ -10898,7 +10898,7 @@
      "n": 60
     },
     "critical.beat_placement": {
-     "mean": 0.3,
+     "mean": 0.266667,
      "n": 60
     },
     "critical.hands": {
@@ -10926,7 +10926,7 @@
      "n": 60
     },
     "critical.structure": {
-     "mean": 0.516667,
+     "mean": 0.483333,
      "n": 60
     },
     "errors": {
@@ -11006,11 +11006,11 @@
      "n": 60
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.438734,
+     "mean": 0.408431,
      "n": 60
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.435568,
+     "mean": 0.405265,
      "n": 60
     },
     "notation.pedal.false_per_min": {
@@ -11090,7 +11090,7 @@
      "n": 30
     },
     "nq.ned": {
-     "mean": 0.72796,
+     "mean": 0.740082,
      "n": 30
     },
     "nq.range.ledger4_rate": {
@@ -11102,7 +11102,7 @@
      "n": 30
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.357449,
+     "mean": 0.401893,
      "n": 30
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -11262,11 +11262,11 @@
      "n": 60
     },
     "read.rests_per_measure": {
-     "mean": 1.485984,
+     "mean": 1.508206,
      "n": 60
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.414456,
+     "mean": 0.436678,
      "n": 60
     },
     "read.short_notes_rate": {
@@ -11346,7 +11346,7 @@
      "n": 60
     },
     "rec.harmony.agreement": {
-     "mean": 0.633143,
+     "mean": 0.624809,
      "n": 60
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -11358,23 +11358,23 @@
      "n": 60
     },
     "rec.metre.f1": {
-     "mean": 0.729944,
+     "mean": 0.717526,
      "n": 60
     },
     "rec.mv2h": {
-     "mean": 0.71735,
+     "mean": 0.7132,
      "n": 60
     },
     "rec.onset_f1": {
-     "mean": 0.437129,
+     "mean": 0.406826,
      "n": 60
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 72.999339,
+     "mean": 74.48082,
      "n": 60
     },
     "rec.rest.precision": {
-     "mean": 0.355134,
+     "mean": 0.3218,
      "n": 60
     },
     "rec.rest.recall": {
@@ -11382,7 +11382,7 @@
      "n": 42
     },
     "rec.stability": {
-     "mean": 0.528174,
+     "mean": 0.526862,
      "n": 60
     },
     "rec.tuplet.false_per_100_beats": {
@@ -11398,7 +11398,7 @@
      "n": 6
     },
     "rec.usable": {
-     "mean": 0.1,
+     "mean": 0.066667,
      "n": 60
     },
     "rec.voice.f1": {
@@ -11406,11 +11406,11 @@
      "n": 60
     },
     "sqi": {
-     "mean": 75.044238,
+     "mean": 74.589692,
      "n": 60
     },
     "struct.downbeat.f1": {
-     "mean": 0.644459,
+     "mean": 0.611126,
      "n": 60
     },
     "struct.form.order_exact": {
@@ -11442,11 +11442,11 @@
      "n": 60
     },
     "struct.measures.count_exact": {
-     "mean": 0.516667,
+     "mean": 0.483333,
      "n": 60
     },
     "struct.measures.count_ratio": {
-     "mean": 1.058851,
+     "mean": 1.063017,
      "n": 60
     },
     "struct.measures.extra_empty_edge": {
@@ -11482,7 +11482,7 @@
      "n": 60
     },
     "struct.tempo.ratio_effective": {
-     "mean": 1.184024,
+     "mean": 1.183661,
      "n": 60
     },
     "struct.tempo.timeline_accuracy": {
@@ -11502,7 +11502,7 @@
      "n": 60
     },
     "usable": {
-     "mean": 0.183333,
+     "mean": 0.15,
      "n": 60
     }
    },
@@ -13306,7 +13306,7 @@
      "n": 384
     },
     "critical.beat_placement": {
-     "mean": 0.315104,
+     "mean": 0.320312,
      "n": 384
     },
     "critical.hands": {
@@ -13366,15 +13366,15 @@
      "n": 384
     },
     "notation.duration.accuracy": {
-     "mean": 0.663192,
+     "mean": 0.663137,
      "n": 384
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.658411,
+     "mean": 0.658356,
      "n": 384
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.66321,
+     "mean": 0.663155,
      "n": 384
     },
     "notation.hand.accuracy": {
@@ -13414,11 +13414,11 @@
      "n": 384
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.419919,
+     "mean": 0.425128,
      "n": 384
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.416502,
+     "mean": 0.421483,
      "n": 384
     },
     "notation.pedal.false_per_min": {
@@ -13430,15 +13430,15 @@
      "n": 384
     },
     "notation.spelling.accuracy": {
-     "mean": 0.998273,
+     "mean": 0.998323,
      "n": 384
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.989166,
+     "mean": 0.989214,
      "n": 384
     },
     "notation.ties.extra_per_100": {
-     "mean": 6.341273,
+     "mean": 6.338959,
      "n": 384
     },
     "notation.tuplets.f1": {
@@ -13498,7 +13498,7 @@
      "n": 138
     },
     "nq.ned": {
-     "mean": 0.76806,
+     "mean": 0.767757,
      "n": 192
     },
     "nq.range.ledger4_rate": {
@@ -13510,7 +13510,7 @@
      "n": 192
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.017567,
+     "mean": 1.0169,
      "n": 192
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -13622,11 +13622,11 @@
      "n": 33
     },
     "read.accidentals_per_note": {
-     "mean": 0.014236,
+     "mean": 0.014261,
      "n": 384
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.00033,
+     "mean": -0.000305,
      "n": 384
     },
     "read.bar_completeness": {
@@ -13650,7 +13650,7 @@
      "n": 384
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.002571,
+     "mean": 0.002572,
      "n": 384
     },
     "read.max_chord_size": {
@@ -13670,11 +13670,11 @@
      "n": 384
     },
     "read.rests_per_measure": {
-     "mean": 1.27798,
+     "mean": 1.277045,
      "n": 384
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.995141,
+     "mean": 0.994206,
      "n": 384
     },
     "read.short_notes_rate": {
@@ -13686,19 +13686,19 @@
      "n": 384
     },
     "read.ties_per_note": {
-     "mean": 0.051888,
+     "mean": 0.051865,
      "n": 384
     },
     "read.ties_per_note.delta": {
-     "mean": 0.047468,
+     "mean": 0.047446,
      "n": 384
     },
     "read.tuplets_per_note": {
-     "mean": 0.097862,
+     "mean": 0.097863,
      "n": 384
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.051179,
+     "mean": 0.05118,
      "n": 384
     },
     "rec.check.1": {
@@ -13742,7 +13742,7 @@
      "n": 384
     },
     "rec.hands.crossing": {
-     "mean": 0.001957,
+     "mean": 0.001956,
      "n": 384
     },
     "rec.hands.hard_per_100_bars": {
@@ -13754,7 +13754,7 @@
      "n": 384
     },
     "rec.harmony.agreement": {
-     "mean": 0.574997,
+     "mean": 0.578537,
      "n": 384
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -13762,35 +13762,35 @@
      "n": 384
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 13.597431,
+     "mean": 13.597682,
      "n": 384
     },
     "rec.metre.f1": {
-     "mean": 0.7195,
+     "mean": 0.721463,
      "n": 384
     },
     "rec.mv2h": {
-     "mean": 0.732124,
+     "mean": 0.733213,
      "n": 384
     },
     "rec.onset_f1": {
-     "mean": 0.418134,
+     "mean": 0.423226,
      "n": 384
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 87.595536,
+     "mean": 87.43795,
      "n": 384
     },
     "rec.rest.precision": {
-     "mean": 0.199075,
+     "mean": 0.201679,
      "n": 384
     },
     "rec.rest.recall": {
-     "mean": 0.418802,
+     "mean": 0.425468,
      "n": 150
     },
     "rec.stability": {
-     "mean": 0.5283,
+     "mean": 0.527159,
      "n": 384
     },
     "rec.tuplet.false_per_100_beats": {
@@ -13814,11 +13814,11 @@
      "n": 384
     },
     "sqi": {
-     "mean": 77.365953,
+     "mean": 77.440365,
      "n": 384
     },
     "struct.downbeat.f1": {
-     "mean": 0.601812,
+     "mean": 0.60702,
      "n": 384
     },
     "struct.form.order_exact": {
@@ -13854,7 +13854,7 @@
      "n": 384
     },
     "struct.measures.count_ratio": {
-     "mean": 0.958118,
+     "mean": 0.957467,
      "n": 384
     },
     "struct.measures.extra_empty_edge": {
@@ -13890,7 +13890,7 @@
      "n": 384
     },
     "struct.tempo.ratio_effective": {
-     "mean": 1.0857,
+     "mean": 1.085747,
      "n": 384
     },
     "struct.tempo.timeline_accuracy": {
@@ -13910,7 +13910,7 @@
      "n": 384
     },
     "usable": {
-     "mean": 0.203125,
+     "mean": 0.208333,
      "n": 384
     }
    },
@@ -13981,15 +13981,15 @@
      "n": 144
     },
     "notation.duration.accuracy": {
-     "mean": 0.683138,
+     "mean": 0.683126,
      "n": 144
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.672182,
+     "mean": 0.67217,
      "n": 144
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.683276,
+     "mean": 0.683264,
      "n": 144
     },
     "notation.hand.accuracy": {
@@ -14053,7 +14053,7 @@
      "n": 144
     },
     "notation.ties.extra_per_100": {
-     "mean": 9.519541,
+     "mean": 9.521969,
      "n": 144
     },
     "notation.tuplets.f1": {
@@ -14113,31 +14113,31 @@
      "n": 54
     },
     "nq.ned": {
-     "mean": 0.673426,
+     "mean": 0.6734,
      "n": 72
     },
     "nq.range.ledger4_rate": {
-     "mean": 3.736756,
+     "mean": 3.733958,
      "n": 72
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 0.630914,
+     "mean": 0.628116,
      "n": 72
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.852843,
+     "mean": 0.85065,
      "n": 72
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.03031,
+     "mean": 0.030306,
      "n": 72
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.03031,
+     "mean": 0.030306,
      "n": 72
     },
     "nq.rhythm.short_rate_delta": {
-     "mean": -0.003417,
+     "mean": -0.00343,
      "n": 72
     },
     "nq.shape.tm_missing": {
@@ -14201,11 +14201,11 @@
      "n": 72
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.118992,
+     "mean": 0.118955,
      "n": 47
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.062813,
+     "mean": 0.062668,
      "n": 12
     },
     "nq.tuplet.group_complete": {
@@ -14261,11 +14261,11 @@
      "n": 144
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.026205,
+     "mean": 0.026203,
      "n": 144
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.008105,
+     "mean": 0.008104,
      "n": 144
     },
     "read.max_chord_size": {
@@ -14285,27 +14285,27 @@
      "n": 144
     },
     "read.rests_per_measure": {
-     "mean": 1.397222,
+     "mean": 1.396125,
      "n": 144
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.927823,
+     "mean": 0.926726,
      "n": 144
     },
     "read.short_notes_rate": {
-     "mean": 0.024071,
+     "mean": 0.024049,
      "n": 144
     },
     "read.short_notes_rate.delta": {
-     "mean": -0.004045,
+     "mean": -0.004067,
      "n": 144
     },
     "read.ties_per_note": {
-     "mean": 0.0706,
+     "mean": 0.070622,
      "n": 144
     },
     "read.ties_per_note.delta": {
-     "mean": 0.064791,
+     "mean": 0.064812,
      "n": 144
     },
     "read.tuplets_per_note": {
@@ -14321,7 +14321,7 @@
      "n": 144
     },
     "rec.check.10": {
-     "mean": 4.558125,
+     "mean": 4.594675,
      "n": 144
     },
     "rec.check.2": {
@@ -14357,7 +14357,7 @@
      "n": 144
     },
     "rec.hands.crossing": {
-     "mean": 0.001599,
+     "mean": 0.001598,
      "n": 144
     },
     "rec.hands.hard_per_100_bars": {
@@ -14377,7 +14377,7 @@
      "n": 144
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 5.245532,
+     "mean": 5.247385,
      "n": 144
     },
     "rec.metre.f1": {
@@ -14385,7 +14385,7 @@
      "n": 144
     },
     "rec.mv2h": {
-     "mean": 0.743919,
+     "mean": 0.743917,
      "n": 144
     },
     "rec.onset_f1": {
@@ -14393,11 +14393,11 @@
      "n": 144
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 89.051207,
+     "mean": 88.978108,
      "n": 144
     },
     "rec.rest.precision": {
-     "mean": 0.311966,
+     "mean": 0.31213,
      "n": 144
     },
     "rec.rest.recall": {
@@ -14429,7 +14429,7 @@
      "n": 144
     },
     "sqi": {
-     "mean": 80.910254,
+     "mean": 80.910134,
      "n": 144
     },
     "struct.downbeat.f1": {
@@ -15008,7 +15008,7 @@
      "n": 48
     },
     "rec.stability": {
-     "mean": 0.301071,
+     "mean": 0.300992,
      "n": 66
     },
     "rec.tuplet.false_per_100_beats": {
@@ -16369,15 +16369,15 @@
      "n": 96
     },
     "notation.duration.accuracy": {
-     "mean": 0.68372,
+     "mean": 0.683701,
      "n": 96
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.679284,
+     "mean": 0.679266,
      "n": 96
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.684325,
+     "mean": 0.684306,
      "n": 96
     },
     "notation.hand.accuracy": {
@@ -16441,7 +16441,7 @@
      "n": 96
     },
     "notation.ties.extra_per_100": {
-     "mean": 7.667601,
+     "mean": 7.671243,
      "n": 96
     },
     "notation.tuplets.f1": {
@@ -16501,31 +16501,31 @@
      "n": 46
     },
     "nq.ned": {
-     "mean": 0.613885,
+     "mean": 0.613846,
      "n": 48
     },
     "nq.range.ledger4_rate": {
-     "mean": 15.02242,
+     "mean": 15.018222,
      "n": 48
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 7.627657,
+     "mean": 7.623459,
      "n": 48
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.661535,
+     "mean": 0.658245,
      "n": 48
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.026725,
+     "mean": 0.02672,
      "n": 48
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.026391,
+     "mean": 0.026386,
      "n": 48
     },
     "nq.rhythm.short_rate_delta": {
-     "mean": 0.003023,
+     "mean": 0.003004,
      "n": 48
     },
     "nq.shape.tm_missing": {
@@ -16589,11 +16589,11 @@
      "n": 48
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.133633,
+     "mean": 0.133586,
      "n": 37
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.086393,
+     "mean": 0.086291,
      "n": 17
     },
     "nq.tuplet.group_complete": {
@@ -16629,7 +16629,7 @@
      "n": 96
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.004472,
+     "mean": -0.004473,
      "n": 96
     },
     "read.bar_completeness": {
@@ -16649,11 +16649,11 @@
      "n": 96
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.054198,
+     "mean": 0.054195,
      "n": 96
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.00938,
+     "mean": 0.009378,
      "n": 96
     },
     "read.max_chord_size": {
@@ -16673,27 +16673,27 @@
      "n": 96
     },
     "read.rests_per_measure": {
-     "mean": 1.265534,
+     "mean": 1.263889,
      "n": 96
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.665126,
+     "mean": 0.663481,
      "n": 96
     },
     "read.short_notes_rate": {
-     "mean": 0.046146,
+     "mean": 0.046113,
      "n": 96
     },
     "read.short_notes_rate.delta": {
-     "mean": 0.003972,
+     "mean": 0.003939,
      "n": 96
     },
     "read.ties_per_note": {
-     "mean": 0.064093,
+     "mean": 0.064125,
      "n": 96
     },
     "read.ties_per_note.delta": {
-     "mean": 0.056356,
+     "mean": 0.056389,
      "n": 96
     },
     "read.tuplets_per_note": {
@@ -16709,7 +16709,7 @@
      "n": 96
     },
     "rec.check.10": {
-     "mean": 6.134002,
+     "mean": 6.188827,
      "n": 96
     },
     "rec.check.2": {
@@ -16745,7 +16745,7 @@
      "n": 96
     },
     "rec.hands.crossing": {
-     "mean": 0.001156,
+     "mean": 0.001153,
      "n": 96
     },
     "rec.hands.hard_per_100_bars": {
@@ -16765,7 +16765,7 @@
      "n": 96
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 11.453782,
+     "mean": 11.456562,
      "n": 96
     },
     "rec.metre.f1": {
@@ -16773,7 +16773,7 @@
      "n": 96
     },
     "rec.mv2h": {
-     "mean": 0.746199,
+     "mean": 0.746196,
      "n": 96
     },
     "rec.onset_f1": {
@@ -16781,11 +16781,11 @@
      "n": 96
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 79.230038,
+     "mean": 79.120389,
      "n": 96
     },
     "rec.rest.precision": {
-     "mean": 0.374354,
+     "mean": 0.374599,
      "n": 96
     },
     "rec.rest.recall": {
@@ -16793,7 +16793,7 @@
      "n": 66
     },
     "rec.stability": {
-     "mean": 0.486827,
+     "mean": 0.486773,
      "n": 96
     },
     "rec.tuplet.false_per_100_beats": {
@@ -16817,7 +16817,7 @@
      "n": 96
     },
     "sqi": {
-     "mean": 76.699052,
+     "mean": 76.698873,
      "n": 96
     },
     "struct.downbeat.f1": {
@@ -17995,7 +17995,7 @@
      "n": 42
     },
     "rec.stability": {
-     "mean": 0.524249,
+     "mean": 0.518077,
      "n": 54
     },
     "rec.tuplet.false_per_100_beats": {
@@ -19372,15 +19372,15 @@
      "n": 168
     },
     "notation.duration.accuracy": {
-     "mean": 0.669051,
+     "mean": 0.669064,
      "n": 168
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.664119,
+     "mean": 0.664132,
      "n": 168
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.668751,
+     "mean": 0.668764,
      "n": 168
     },
     "notation.hand.accuracy": {
@@ -19444,7 +19444,7 @@
      "n": 168
     },
     "notation.ties.extra_per_100": {
-     "mean": 4.645969,
+     "mean": 4.640678,
      "n": 168
     },
     "notation.tuplets.f1": {
@@ -19652,11 +19652,11 @@
      "n": 168
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.045097,
+     "mean": 0.045099,
      "n": 168
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": -0.003629,
+     "mean": -0.003627,
      "n": 168
     },
     "read.max_chord_size": {
@@ -19676,11 +19676,11 @@
      "n": 168
     },
     "read.rests_per_measure": {
-     "mean": 1.288071,
+     "mean": 1.292039,
      "n": 168
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.845218,
+     "mean": 0.849186,
      "n": 168
     },
     "read.short_notes_rate": {
@@ -19692,19 +19692,19 @@
      "n": 168
     },
     "read.ties_per_note": {
-     "mean": 0.039479,
+     "mean": 0.039428,
      "n": 168
     },
     "read.ties_per_note.delta": {
-     "mean": 0.039183,
+     "mean": 0.039131,
      "n": 168
     },
     "read.tuplets_per_note": {
-     "mean": 0.14443,
+     "mean": 0.144433,
      "n": 168
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.070697,
+     "mean": 0.070699,
      "n": 168
     },
     "rec.check.1": {
@@ -19760,7 +19760,7 @@
      "n": 168
     },
     "rec.harmony.agreement": {
-     "mean": 0.318333,
+     "mean": 0.319154,
      "n": 168
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -19768,15 +19768,15 @@
      "n": 168
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 9.684637,
+     "mean": 9.685212,
      "n": 168
     },
     "rec.metre.f1": {
-     "mean": 0.618997,
+     "mean": 0.619132,
      "n": 168
     },
     "rec.mv2h": {
-     "mean": 0.659996,
+     "mean": 0.66019,
      "n": 168
     },
     "rec.onset_f1": {
@@ -19784,7 +19784,7 @@
      "n": 168
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 86.392319,
+     "mean": 86.551049,
      "n": 168
     },
     "rec.rest.precision": {
@@ -19796,7 +19796,7 @@
      "n": 78
     },
     "rec.stability": {
-     "mean": 0.623004,
+     "mean": 0.623665,
      "n": 168
     },
     "rec.tuplet.false_per_100_beats": {
@@ -19820,7 +19820,7 @@
      "n": 168
     },
     "sqi": {
-     "mean": 69.888951,
+     "mean": 69.889084,
      "n": 168
     },
     "struct.downbeat.f1": {
@@ -19955,7 +19955,7 @@
      "n": 330
     },
     "critical.structure": {
-     "mean": 0.690909,
+     "mean": 0.684848,
      "n": 330
     },
     "errors": {
@@ -20035,11 +20035,11 @@
      "n": 330
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.62552,
+     "mean": 0.626071,
      "n": 330
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.617477,
+     "mean": 0.617763,
      "n": 330
     },
     "notation.pedal.false_per_min": {
@@ -20051,11 +20051,11 @@
      "n": 330
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997049,
+     "mean": 0.997107,
      "n": 330
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.982302,
+     "mean": 0.982358,
      "n": 330
     },
     "notation.ties.extra_per_100": {
@@ -20119,7 +20119,7 @@
      "n": 114
     },
     "nq.ned": {
-     "mean": 0.582727,
+     "mean": 0.584931,
      "n": 165
     },
     "nq.range.ledger4_rate": {
@@ -20131,7 +20131,7 @@
      "n": 165
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.860596,
+     "mean": 0.868677,
      "n": 165
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -20243,11 +20243,11 @@
      "n": 75
     },
     "read.accidentals_per_note": {
-     "mean": 0.017552,
+     "mean": 0.017581,
      "n": 330
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.002298,
+     "mean": -0.002269,
      "n": 330
     },
     "read.bar_completeness": {
@@ -20291,11 +20291,11 @@
      "n": 330
     },
     "read.rests_per_measure": {
-     "mean": 1.347983,
+     "mean": 1.350159,
      "n": 330
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.910477,
+     "mean": 0.912653,
      "n": 330
     },
     "read.short_notes_rate": {
@@ -20363,7 +20363,7 @@
      "n": 330
     },
     "rec.hands.crossing": {
-     "mean": 0.002318,
+     "mean": 0.002317,
      "n": 330
     },
     "rec.hands.hard_per_100_bars": {
@@ -20375,7 +20375,7 @@
      "n": 330
     },
     "rec.harmony.agreement": {
-     "mean": 0.739867,
+     "mean": 0.740916,
      "n": 330
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -20387,31 +20387,31 @@
      "n": 330
     },
     "rec.metre.f1": {
-     "mean": 0.803362,
+     "mean": 0.802969,
      "n": 330
     },
     "rec.mv2h": {
-     "mean": 0.773077,
+     "mean": 0.773208,
      "n": 330
     },
     "rec.onset_f1": {
-     "mean": 0.621379,
+     "mean": 0.621795,
      "n": 330
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 84.018389,
+     "mean": 84.147889,
      "n": 330
     },
     "rec.rest.precision": {
-     "mean": 0.292694,
+     "mean": 0.289664,
      "n": 330
     },
     "rec.rest.recall": {
-     "mean": 0.512758,
+     "mean": 0.518711,
      "n": 168
     },
     "rec.stability": {
-     "mean": 0.420692,
+     "mean": 0.420454,
      "n": 330
     },
     "rec.tuplet.false_per_100_beats": {
@@ -20427,7 +20427,7 @@
      "n": 24
     },
     "rec.usable": {
-     "mean": 0.10303,
+     "mean": 0.09697,
      "n": 330
     },
     "rec.voice.f1": {
@@ -20435,7 +20435,7 @@
      "n": 330
     },
     "sqi": {
-     "mean": 84.850866,
+     "mean": 84.855446,
      "n": 330
     },
     "struct.downbeat.f1": {
@@ -20471,11 +20471,11 @@
      "n": 330
     },
     "struct.measures.count_exact": {
-     "mean": 0.690909,
+     "mean": 0.684848,
      "n": 330
     },
     "struct.measures.count_ratio": {
-     "mean": 1.119322,
+     "mean": 1.12008,
      "n": 330
     },
     "struct.measures.extra_empty_edge": {
@@ -20511,7 +20511,7 @@
      "n": 330
     },
     "struct.tempo.ratio_effective": {
-     "mean": 1.041796,
+     "mean": 1.04173,
      "n": 330
     },
     "struct.tempo.timeline_accuracy": {
@@ -20602,15 +20602,15 @@
      "n": 168
     },
     "notation.duration.accuracy": {
-     "mean": 0.709394,
+     "mean": 0.709256,
      "n": 168
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.700236,
+     "mean": 0.700097,
      "n": 168
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.709524,
+     "mean": 0.709386,
      "n": 168
     },
     "notation.hand.accuracy": {
@@ -20734,7 +20734,7 @@
      "n": 45
     },
     "nq.ned": {
-     "mean": 0.653677,
+     "mean": 0.652985,
      "n": 84
     },
     "nq.range.ledger4_rate": {
@@ -20746,7 +20746,7 @@
      "n": 84
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.122277,
+     "mean": 1.120751,
      "n": 84
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -20906,11 +20906,11 @@
      "n": 168
     },
     "read.rests_per_measure": {
-     "mean": 1.332442,
+     "mean": 1.33,
      "n": 168
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.160822,
+     "mean": 1.15838,
      "n": 168
     },
     "read.short_notes_rate": {
@@ -20990,7 +20990,7 @@
      "n": 168
     },
     "rec.harmony.agreement": {
-     "mean": 0.62664,
+     "mean": 0.628872,
      "n": 168
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -21002,11 +21002,11 @@
      "n": 168
     },
     "rec.metre.f1": {
-     "mean": 0.753548,
+     "mean": 0.754236,
      "n": 168
     },
     "rec.mv2h": {
-     "mean": 0.74963,
+     "mean": 0.750187,
      "n": 168
     },
     "rec.onset_f1": {
@@ -21014,7 +21014,7 @@
      "n": 168
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 87.731601,
+     "mean": 87.487401,
      "n": 168
     },
     "rec.rest.precision": {
@@ -21026,7 +21026,7 @@
      "n": 90
     },
     "rec.stability": {
-     "mean": 0.324772,
+     "mean": 0.323488,
      "n": 168
     },
     "rec.tuplet.false_per_100_beats": {
@@ -21050,7 +21050,7 @@
      "n": 168
     },
     "sqi": {
-     "mean": 78.606084,
+     "mean": 78.604699,
      "n": 168
     },
     "struct.downbeat.f1": {
@@ -21090,7 +21090,7 @@
      "n": 168
     },
     "struct.measures.count_ratio": {
-     "mean": 1.095965,
+     "mean": 1.094477,
      "n": 168
     },
     "struct.measures.extra_empty_edge": {
@@ -21126,7 +21126,7 @@
      "n": 168
     },
     "struct.tempo.ratio_effective": {
-     "mean": 1.137281,
+     "mean": 1.137387,
      "n": 168
     },
     "struct.tempo.timeline_accuracy": {
@@ -22415,15 +22415,15 @@
      "n": 144
     },
     "notation.duration.accuracy": {
-     "mean": 0.66661,
+     "mean": 0.666625,
      "n": 144
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.664632,
+     "mean": 0.664648,
      "n": 144
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.66626,
+     "mean": 0.666276,
      "n": 144
     },
     "notation.hand.accuracy": {
@@ -22487,7 +22487,7 @@
      "n": 144
     },
     "notation.ties.extra_per_100": {
-     "mean": 4.608749,
+     "mean": 4.602576,
      "n": 144
     },
     "notation.tuplets.f1": {
@@ -22695,11 +22695,11 @@
      "n": 144
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.050009,
+     "mean": 0.050012,
      "n": 144
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": -0.003738,
+     "mean": -0.003735,
      "n": 144
     },
     "read.max_chord_size": {
@@ -22719,11 +22719,11 @@
      "n": 144
     },
     "read.rests_per_measure": {
-     "mean": 1.303962,
+     "mean": 1.308592,
      "n": 144
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.891467,
+     "mean": 0.896096,
      "n": 144
     },
     "read.short_notes_rate": {
@@ -22735,19 +22735,19 @@
      "n": 144
     },
     "read.ties_per_note": {
-     "mean": 0.038843,
+     "mean": 0.038783,
      "n": 144
     },
     "read.ties_per_note.delta": {
-     "mean": 0.038497,
+     "mean": 0.038437,
      "n": 144
     },
     "read.tuplets_per_note": {
-     "mean": 0.143412,
+     "mean": 0.143415,
      "n": 144
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.085468,
+     "mean": 0.08547,
      "n": 144
     },
     "rec.check.1": {
@@ -22803,7 +22803,7 @@
      "n": 144
     },
     "rec.harmony.agreement": {
-     "mean": 0.26201,
+     "mean": 0.262968,
      "n": 144
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -22811,15 +22811,15 @@
      "n": 144
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 10.39772,
+     "mean": 10.398391,
      "n": 144
     },
     "rec.metre.f1": {
-     "mean": 0.603014,
+     "mean": 0.603171,
      "n": 144
     },
     "rec.mv2h": {
-     "mean": 0.650737,
+     "mean": 0.650963,
      "n": 144
     },
     "rec.onset_f1": {
@@ -22827,7 +22827,7 @@
      "n": 144
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 89.522191,
+     "mean": 89.707376,
      "n": 144
     },
     "rec.rest.precision": {
@@ -22839,7 +22839,7 @@
      "n": 66
     },
     "rec.stability": {
-     "mean": 0.660778,
+     "mean": 0.66155,
      "n": 144
     },
     "rec.tuplet.false_per_100_beats": {
@@ -22863,7 +22863,7 @@
      "n": 144
     },
     "sqi": {
-     "mean": 68.645869,
+     "mean": 68.646023,
      "n": 144
     },
     "struct.downbeat.f1": {
@@ -23617,15 +23617,15 @@
      "n": 162
     },
     "notation.duration.accuracy": {
-     "mean": 0.705175,
+     "mean": 0.705032,
      "n": 162
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.696406,
+     "mean": 0.696262,
      "n": 162
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.70531,
+     "mean": 0.705166,
      "n": 162
     },
     "notation.hand.accuracy": {
@@ -23749,7 +23749,7 @@
      "n": 45
     },
     "nq.ned": {
-     "mean": 0.649118,
+     "mean": 0.6484,
      "n": 81
     },
     "nq.range.ledger4_rate": {
@@ -23761,7 +23761,7 @@
      "n": 81
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.12372,
+     "mean": 1.122137,
      "n": 81
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -23921,11 +23921,11 @@
      "n": 162
     },
     "read.rests_per_measure": {
-     "mean": 1.343211,
+     "mean": 1.340679,
      "n": 162
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.165235,
+     "mean": 1.162703,
      "n": 162
     },
     "read.short_notes_rate": {
@@ -24005,7 +24005,7 @@
      "n": 162
     },
     "rec.harmony.agreement": {
-     "mean": 0.623342,
+     "mean": 0.625657,
      "n": 162
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -24017,11 +24017,11 @@
      "n": 162
     },
     "rec.metre.f1": {
-     "mean": 0.76447,
+     "mean": 0.765184,
      "n": 162
     },
     "rec.mv2h": {
-     "mean": 0.750594,
+     "mean": 0.751171,
      "n": 162
     },
     "rec.onset_f1": {
@@ -24029,7 +24029,7 @@
      "n": 162
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 88.460344,
+     "mean": 88.207099,
      "n": 162
     },
     "rec.rest.precision": {
@@ -24041,7 +24041,7 @@
      "n": 90
     },
     "rec.stability": {
-     "mean": 0.328485,
+     "mean": 0.327152,
      "n": 162
     },
     "rec.tuplet.false_per_100_beats": {
@@ -24065,7 +24065,7 @@
      "n": 162
     },
     "sqi": {
-     "mean": 78.906488,
+     "mean": 78.905052,
      "n": 162
     },
     "struct.downbeat.f1": {
@@ -24105,7 +24105,7 @@
      "n": 162
     },
     "struct.measures.count_ratio": {
-     "mean": 1.084269,
+     "mean": 1.082725,
      "n": 162
     },
     "struct.measures.extra_empty_edge": {
@@ -24141,7 +24141,7 @@
      "n": 162
     },
     "struct.tempo.ratio_effective": {
-     "mean": 1.142453,
+     "mean": 1.142563,
      "n": 162
     },
     "struct.tempo.timeline_accuracy": {
@@ -24656,7 +24656,7 @@
      "n": 42
     },
     "rec.stability": {
-     "mean": 0.524249,
+     "mean": 0.518077,
      "n": 54
     },
     "rec.tuplet.false_per_100_beats": {
@@ -24815,7 +24815,7 @@
      "n": 330
     },
     "critical.structure": {
-     "mean": 0.690909,
+     "mean": 0.684848,
      "n": 330
     },
     "errors": {
@@ -24895,11 +24895,11 @@
      "n": 330
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.62552,
+     "mean": 0.626071,
      "n": 330
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.617477,
+     "mean": 0.617763,
      "n": 330
     },
     "notation.pedal.false_per_min": {
@@ -24911,11 +24911,11 @@
      "n": 330
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997049,
+     "mean": 0.997107,
      "n": 330
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.982302,
+     "mean": 0.982358,
      "n": 330
     },
     "notation.ties.extra_per_100": {
@@ -24979,7 +24979,7 @@
      "n": 114
     },
     "nq.ned": {
-     "mean": 0.582727,
+     "mean": 0.584931,
      "n": 165
     },
     "nq.range.ledger4_rate": {
@@ -24991,7 +24991,7 @@
      "n": 165
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.860596,
+     "mean": 0.868677,
      "n": 165
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -25103,11 +25103,11 @@
      "n": 75
     },
     "read.accidentals_per_note": {
-     "mean": 0.017552,
+     "mean": 0.017581,
      "n": 330
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.002298,
+     "mean": -0.002269,
      "n": 330
     },
     "read.bar_completeness": {
@@ -25151,11 +25151,11 @@
      "n": 330
     },
     "read.rests_per_measure": {
-     "mean": 1.347983,
+     "mean": 1.350159,
      "n": 330
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.910477,
+     "mean": 0.912653,
      "n": 330
     },
     "read.short_notes_rate": {
@@ -25223,7 +25223,7 @@
      "n": 330
     },
     "rec.hands.crossing": {
-     "mean": 0.002318,
+     "mean": 0.002317,
      "n": 330
     },
     "rec.hands.hard_per_100_bars": {
@@ -25235,7 +25235,7 @@
      "n": 330
     },
     "rec.harmony.agreement": {
-     "mean": 0.739867,
+     "mean": 0.740916,
      "n": 330
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -25247,31 +25247,31 @@
      "n": 330
     },
     "rec.metre.f1": {
-     "mean": 0.803362,
+     "mean": 0.802969,
      "n": 330
     },
     "rec.mv2h": {
-     "mean": 0.773077,
+     "mean": 0.773208,
      "n": 330
     },
     "rec.onset_f1": {
-     "mean": 0.621379,
+     "mean": 0.621795,
      "n": 330
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 84.018389,
+     "mean": 84.147889,
      "n": 330
     },
     "rec.rest.precision": {
-     "mean": 0.292694,
+     "mean": 0.289664,
      "n": 330
     },
     "rec.rest.recall": {
-     "mean": 0.512758,
+     "mean": 0.518711,
      "n": 168
     },
     "rec.stability": {
-     "mean": 0.420692,
+     "mean": 0.420454,
      "n": 330
     },
     "rec.tuplet.false_per_100_beats": {
@@ -25287,7 +25287,7 @@
      "n": 24
     },
     "rec.usable": {
-     "mean": 0.10303,
+     "mean": 0.09697,
      "n": 330
     },
     "rec.voice.f1": {
@@ -25295,7 +25295,7 @@
      "n": 330
     },
     "sqi": {
-     "mean": 84.850866,
+     "mean": 84.855446,
      "n": 330
     },
     "struct.downbeat.f1": {
@@ -25331,11 +25331,11 @@
      "n": 330
     },
     "struct.measures.count_exact": {
-     "mean": 0.690909,
+     "mean": 0.684848,
      "n": 330
     },
     "struct.measures.count_ratio": {
-     "mean": 1.119322,
+     "mean": 1.12008,
      "n": 330
     },
     "struct.measures.extra_empty_edge": {
@@ -25371,7 +25371,7 @@
      "n": 330
     },
     "struct.tempo.ratio_effective": {
-     "mean": 1.041796,
+     "mean": 1.04173,
      "n": 330
     },
     "struct.tempo.timeline_accuracy": {
@@ -26632,15 +26632,15 @@
      "n": 96
     },
     "notation.duration.accuracy": {
-     "mean": 0.68372,
+     "mean": 0.683701,
      "n": 96
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.679284,
+     "mean": 0.679266,
      "n": 96
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.684325,
+     "mean": 0.684306,
      "n": 96
     },
     "notation.hand.accuracy": {
@@ -26704,7 +26704,7 @@
      "n": 96
     },
     "notation.ties.extra_per_100": {
-     "mean": 7.667601,
+     "mean": 7.671243,
      "n": 96
     },
     "notation.tuplets.f1": {
@@ -26764,31 +26764,31 @@
      "n": 46
     },
     "nq.ned": {
-     "mean": 0.613885,
+     "mean": 0.613846,
      "n": 48
     },
     "nq.range.ledger4_rate": {
-     "mean": 15.02242,
+     "mean": 15.018222,
      "n": 48
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 7.627657,
+     "mean": 7.623459,
      "n": 48
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.661535,
+     "mean": 0.658245,
      "n": 48
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.026725,
+     "mean": 0.02672,
      "n": 48
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.026391,
+     "mean": 0.026386,
      "n": 48
     },
     "nq.rhythm.short_rate_delta": {
-     "mean": 0.003023,
+     "mean": 0.003004,
      "n": 48
     },
     "nq.shape.tm_missing": {
@@ -26852,11 +26852,11 @@
      "n": 48
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.133633,
+     "mean": 0.133586,
      "n": 37
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.086393,
+     "mean": 0.086291,
      "n": 17
     },
     "nq.tuplet.group_complete": {
@@ -26892,7 +26892,7 @@
      "n": 96
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.004472,
+     "mean": -0.004473,
      "n": 96
     },
     "read.bar_completeness": {
@@ -26912,11 +26912,11 @@
      "n": 96
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.054198,
+     "mean": 0.054195,
      "n": 96
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.00938,
+     "mean": 0.009378,
      "n": 96
     },
     "read.max_chord_size": {
@@ -26936,27 +26936,27 @@
      "n": 96
     },
     "read.rests_per_measure": {
-     "mean": 1.265534,
+     "mean": 1.263889,
      "n": 96
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.665126,
+     "mean": 0.663481,
      "n": 96
     },
     "read.short_notes_rate": {
-     "mean": 0.046146,
+     "mean": 0.046113,
      "n": 96
     },
     "read.short_notes_rate.delta": {
-     "mean": 0.003972,
+     "mean": 0.003939,
      "n": 96
     },
     "read.ties_per_note": {
-     "mean": 0.064093,
+     "mean": 0.064125,
      "n": 96
     },
     "read.ties_per_note.delta": {
-     "mean": 0.056356,
+     "mean": 0.056389,
      "n": 96
     },
     "read.tuplets_per_note": {
@@ -26972,7 +26972,7 @@
      "n": 96
     },
     "rec.check.10": {
-     "mean": 6.134002,
+     "mean": 6.188827,
      "n": 96
     },
     "rec.check.2": {
@@ -27008,7 +27008,7 @@
      "n": 96
     },
     "rec.hands.crossing": {
-     "mean": 0.001156,
+     "mean": 0.001153,
      "n": 96
     },
     "rec.hands.hard_per_100_bars": {
@@ -27028,7 +27028,7 @@
      "n": 96
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 11.453782,
+     "mean": 11.456562,
      "n": 96
     },
     "rec.metre.f1": {
@@ -27036,7 +27036,7 @@
      "n": 96
     },
     "rec.mv2h": {
-     "mean": 0.746199,
+     "mean": 0.746196,
      "n": 96
     },
     "rec.onset_f1": {
@@ -27044,11 +27044,11 @@
      "n": 96
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 79.230038,
+     "mean": 79.120389,
      "n": 96
     },
     "rec.rest.precision": {
-     "mean": 0.374354,
+     "mean": 0.374599,
      "n": 96
     },
     "rec.rest.recall": {
@@ -27056,7 +27056,7 @@
      "n": 66
     },
     "rec.stability": {
-     "mean": 0.486827,
+     "mean": 0.486773,
      "n": 96
     },
     "rec.tuplet.false_per_100_beats": {
@@ -27080,7 +27080,7 @@
      "n": 96
     },
     "sqi": {
-     "mean": 76.699052,
+     "mean": 76.698873,
      "n": 96
     },
     "struct.downbeat.f1": {
@@ -27802,7 +27802,7 @@
      "n": 594
     },
     "critical.structure": {
-     "mean": 0.56734,
+     "mean": 0.563973,
      "n": 594
     },
     "errors": {
@@ -27834,15 +27834,15 @@
      "n": 594
     },
     "notation.duration.accuracy": {
-     "mean": 0.714044,
+     "mean": 0.714005,
      "n": 594
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.705859,
+     "mean": 0.70582,
      "n": 594
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.714449,
+     "mean": 0.71441,
      "n": 594
     },
     "notation.hand.accuracy": {
@@ -27882,11 +27882,11 @@
      "n": 594
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.52832,
+     "mean": 0.528626,
      "n": 594
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.522721,
+     "mean": 0.522881,
      "n": 594
     },
     "notation.pedal.false_per_min": {
@@ -27898,11 +27898,11 @@
      "n": 594
     },
     "notation.spelling.accuracy": {
-     "mean": 0.998131,
+     "mean": 0.998164,
      "n": 594
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.986244,
+     "mean": 0.986275,
      "n": 594
     },
     "notation.ties.extra_per_100": {
@@ -27966,7 +27966,7 @@
      "n": 193
     },
     "nq.ned": {
-     "mean": 0.667219,
+     "mean": 0.668247,
      "n": 297
     },
     "nq.range.ledger4_rate": {
@@ -27978,7 +27978,7 @@
      "n": 297
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.019132,
+     "mean": 1.02319,
      "n": 297
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -28090,11 +28090,11 @@
      "n": 135
     },
     "read.accidentals_per_note": {
-     "mean": 0.011383,
+     "mean": 0.011399,
      "n": 594
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.003079,
+     "mean": -0.003063,
      "n": 594
     },
     "read.bar_completeness": {
@@ -28138,11 +28138,11 @@
      "n": 594
     },
     "read.rests_per_measure": {
-     "mean": 1.270862,
+     "mean": 1.27138,
      "n": 594
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.071472,
+     "mean": 1.07199,
      "n": 594
     },
     "read.short_notes_rate": {
@@ -28210,7 +28210,7 @@
      "n": 594
     },
     "rec.hands.crossing": {
-     "mean": 0.001049,
+     "mean": 0.001048,
      "n": 594
     },
     "rec.hands.hard_per_100_bars": {
@@ -28222,7 +28222,7 @@
      "n": 594
     },
     "rec.harmony.agreement": {
-     "mean": 0.65295,
+     "mean": 0.654164,
      "n": 594
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -28234,31 +28234,31 @@
      "n": 594
     },
     "rec.metre.f1": {
-     "mean": 0.775786,
+     "mean": 0.775762,
      "n": 594
     },
     "rec.mv2h": {
-     "mean": 0.764357,
+     "mean": 0.764587,
      "n": 594
     },
     "rec.onset_f1": {
-     "mean": 0.525464,
+     "mean": 0.525695,
      "n": 594
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 86.953616,
+     "mean": 86.956494,
      "n": 594
     },
     "rec.rest.precision": {
-     "mean": 0.236532,
+     "mean": 0.234849,
      "n": 594
     },
     "rec.rest.recall": {
-     "mean": 0.43049,
+     "mean": 0.434113,
      "n": 276
     },
     "rec.stability": {
-     "mean": 0.350283,
+     "mean": 0.349787,
      "n": 594
     },
     "rec.tuplet.false_per_100_beats": {
@@ -28274,7 +28274,7 @@
      "n": 6
     },
     "rec.usable": {
-     "mean": 0.085859,
+     "mean": 0.082492,
      "n": 594
     },
     "rec.voice.f1": {
@@ -28282,7 +28282,7 @@
      "n": 594
     },
     "sqi": {
-     "mean": 81.115335,
+     "mean": 81.117489,
      "n": 594
     },
     "struct.downbeat.f1": {
@@ -28318,7 +28318,7 @@
      "n": 594
     },
     "struct.measures.count_exact": {
-     "mean": 0.570707,
+     "mean": 0.56734,
      "n": 594
     },
     "struct.measures.count_ratio": {
@@ -28358,7 +28358,7 @@
      "n": 594
     },
     "struct.tempo.ratio_effective": {
-     "mean": 1.081402,
+     "mean": 1.081395,
      "n": 594
     },
     "struct.tempo.timeline_accuracy": {
@@ -28857,7 +28857,7 @@
      "n": 12
     },
     "rec.stability": {
-     "mean": 0.378064,
+     "mean": 0.366953,
      "n": 30
     },
     "rec.tuplet.false_per_100_beats": {
@@ -29044,15 +29044,15 @@
      "n": 222
     },
     "notation.duration.accuracy": {
-     "mean": 0.598737,
+     "mean": 0.598739,
      "n": 222
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.592476,
+     "mean": 0.592478,
      "n": 222
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.598499,
+     "mean": 0.598501,
      "n": 222
     },
     "notation.hand.accuracy": {
@@ -29116,7 +29116,7 @@
      "n": 222
     },
     "notation.ties.extra_per_100": {
-     "mean": 5.211991,
+     "mean": 5.209562,
      "n": 222
     },
     "notation.tuplets.f1": {
@@ -29176,31 +29176,31 @@
      "n": 111
     },
     "nq.ned": {
-     "mean": 0.879494,
+     "mean": 0.879477,
      "n": 111
     },
     "nq.range.ledger4_rate": {
-     "mean": 17.62566,
+     "mean": 17.623844,
      "n": 111
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 5.672547,
+     "mean": 5.670732,
      "n": 111
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.605514,
+     "mean": 0.604091,
      "n": 111
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.029564,
+     "mean": 0.029561,
      "n": 111
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.029564,
+     "mean": 0.029561,
      "n": 111
     },
     "nq.rhythm.short_rate_delta": {
-     "mean": -0.016344,
+     "mean": -0.016352,
      "n": 111
     },
     "nq.shape.tm_missing": {
@@ -29264,11 +29264,11 @@
      "n": 111
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.064856,
+     "mean": 0.064839,
      "n": 102
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.041306,
+     "mean": 0.041262,
      "n": 39
     },
     "nq.tuplet.group_complete": {
@@ -29324,7 +29324,7 @@
      "n": 222
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.07238,
+     "mean": 0.072381,
      "n": 222
     },
     "read.ledger_lines.heavy_rate.delta": {
@@ -29348,35 +29348,35 @@
      "n": 222
     },
     "read.rests_per_measure": {
-     "mean": 1.413318,
+     "mean": 1.41561,
      "n": 222
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.489914,
+     "mean": 0.492206,
      "n": 222
     },
     "read.short_notes_rate": {
-     "mean": 0.036458,
+     "mean": 0.036444,
      "n": 222
     },
     "read.short_notes_rate.delta": {
-     "mean": -0.015859,
+     "mean": -0.015873,
      "n": 222
     },
     "read.ties_per_note": {
-     "mean": 0.046487,
+     "mean": 0.046462,
      "n": 222
     },
     "read.ties_per_note.delta": {
-     "mean": 0.043756,
+     "mean": 0.043731,
      "n": 222
     },
     "read.tuplets_per_note": {
-     "mean": 0.189758,
+     "mean": 0.18976,
      "n": 222
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.037227,
+     "mean": 0.037228,
      "n": 222
     },
     "rec.check.1": {
@@ -29384,7 +29384,7 @@
      "n": 222
     },
     "rec.check.10": {
-     "mean": 3.876826,
+     "mean": 3.900534,
      "n": 222
     },
     "rec.check.2": {
@@ -29420,7 +29420,7 @@
      "n": 222
     },
     "rec.hands.crossing": {
-     "mean": 0.003008,
+     "mean": 0.003007,
      "n": 222
     },
     "rec.hands.hard_per_100_bars": {
@@ -29432,7 +29432,7 @@
      "n": 222
     },
     "rec.harmony.agreement": {
-     "mean": 0.429099,
+     "mean": 0.429721,
      "n": 222
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -29440,15 +29440,15 @@
      "n": 222
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 14.292385,
+     "mean": 14.294022,
      "n": 222
     },
     "rec.metre.f1": {
-     "mean": 0.628669,
+     "mean": 0.62877,
      "n": 222
     },
     "rec.mv2h": {
-     "mean": 0.660169,
+     "mean": 0.660314,
      "n": 222
     },
     "rec.onset_f1": {
@@ -29456,11 +29456,11 @@
      "n": 222
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 77.63603,
+     "mean": 77.708734,
      "n": 222
     },
     "rec.rest.precision": {
-     "mean": 0.297923,
+     "mean": 0.298029,
      "n": 222
     },
     "rec.rest.recall": {
@@ -29468,7 +29468,7 @@
      "n": 174
     },
     "rec.stability": {
-     "mean": 0.725403,
+     "mean": 0.72588,
      "n": 222
     },
     "rec.tuplet.false_per_100_beats": {
@@ -29492,7 +29492,7 @@
      "n": 222
     },
     "sqi": {
-     "mean": 70.921318,
+     "mean": 70.921341,
      "n": 222
     },
     "struct.downbeat.f1": {
@@ -30238,7 +30238,7 @@
      "n": 282
     },
     "critical.structure": {
-     "mean": 0.641844,
+     "mean": 0.638298,
      "n": 282
     },
     "errors": {
@@ -30270,15 +30270,15 @@
      "n": 282
     },
     "notation.duration.accuracy": {
-     "mean": 0.835995,
+     "mean": 0.836003,
      "n": 282
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.83082,
+     "mean": 0.830827,
      "n": 282
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.835995,
+     "mean": 0.836003,
      "n": 282
     },
     "notation.hand.accuracy": {
@@ -30318,11 +30318,11 @@
      "n": 282
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.615017,
+     "mean": 0.615339,
      "n": 282
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.61058,
+     "mean": 0.610788,
      "n": 282
     },
     "notation.pedal.false_per_min": {
@@ -30334,15 +30334,15 @@
      "n": 282
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997474,
+     "mean": 0.997508,
      "n": 282
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.990453,
+     "mean": 0.990486,
      "n": 282
     },
     "notation.ties.extra_per_100": {
-     "mean": 2.013861,
+     "mean": 2.012285,
      "n": 282
     },
     "notation.tuplets.f1": {
@@ -30402,7 +30402,7 @@
      "n": 104
     },
     "nq.ned": {
-     "mean": 0.482736,
+     "mean": 0.483696,
      "n": 141
     },
     "nq.range.ledger4_rate": {
@@ -30414,7 +30414,7 @@
      "n": 141
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.112503,
+     "mean": 0.116231,
      "n": 141
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -30526,11 +30526,11 @@
      "n": 60
     },
     "read.accidentals_per_note": {
-     "mean": 0.01778,
+     "mean": 0.017797,
      "n": 282
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.002589,
+     "mean": -0.002572,
      "n": 282
     },
     "read.bar_completeness": {
@@ -30554,7 +30554,7 @@
      "n": 282
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.023697,
+     "mean": 0.023698,
      "n": 282
     },
     "read.max_chord_size": {
@@ -30574,11 +30574,11 @@
      "n": 282
     },
     "read.rests_per_measure": {
-     "mean": 0.453067,
+     "mean": 0.454758,
      "n": 282
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.04633,
+     "mean": 0.048021,
      "n": 282
     },
     "read.short_notes_rate": {
@@ -30590,19 +30590,19 @@
      "n": 282
     },
     "read.ties_per_note": {
-     "mean": 0.018883,
+     "mean": 0.018868,
      "n": 282
     },
     "read.ties_per_note.delta": {
-     "mean": 0.014537,
+     "mean": 0.014522,
      "n": 282
     },
     "read.tuplets_per_note": {
-     "mean": 0.057438,
+     "mean": 0.057439,
      "n": 282
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.010865,
+     "mean": 0.010866,
      "n": 282
     },
     "rec.check.1": {
@@ -30658,7 +30658,7 @@
      "n": 282
     },
     "rec.harmony.agreement": {
-     "mean": 0.675854,
+     "mean": 0.677514,
      "n": 282
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -30666,27 +30666,27 @@
      "n": 282
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 12.055449,
+     "mean": 12.055621,
      "n": 282
     },
     "rec.metre.f1": {
-     "mean": 0.844045,
+     "mean": 0.84406,
      "n": 282
     },
     "rec.mv2h": {
-     "mean": 0.827159,
+     "mean": 0.827496,
      "n": 282
     },
     "rec.onset_f1": {
-     "mean": 0.612741,
+     "mean": 0.613006,
      "n": 282
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 18.421124,
+     "mean": 18.471437,
      "n": 282
     },
     "rec.rest.precision": {
-     "mean": 0.412769,
+     "mean": 0.410996,
      "n": 282
     },
     "rec.rest.recall": {
@@ -30694,7 +30694,7 @@
      "n": 154
     },
     "rec.stability": {
-     "mean": 0.269256,
+     "mean": 0.267944,
      "n": 282
     },
     "rec.tuplet.false_per_100_beats": {
@@ -30710,7 +30710,7 @@
      "n": 20
     },
     "rec.usable": {
-     "mean": 0.14539,
+     "mean": 0.141844,
      "n": 282
     },
     "rec.voice.f1": {
@@ -30718,7 +30718,7 @@
      "n": 282
     },
     "sqi": {
-     "mean": 85.665707,
+     "mean": 85.669076,
      "n": 282
     },
     "struct.downbeat.f1": {
@@ -30754,7 +30754,7 @@
      "n": 282
     },
     "struct.measures.count_exact": {
-     "mean": 0.641844,
+     "mean": 0.638298,
      "n": 282
     },
     "struct.measures.count_ratio": {
@@ -30794,7 +30794,7 @@
      "n": 282
     },
     "struct.tempo.ratio_effective": {
-     "mean": 1.05242,
+     "mean": 1.052413,
      "n": 282
     },
     "struct.tempo.timeline_accuracy": {
@@ -30853,7 +30853,7 @@
      "n": 282
     },
     "critical.structure": {
-     "mean": 0.641844,
+     "mean": 0.638298,
      "n": 282
     },
     "errors": {
@@ -30885,15 +30885,15 @@
      "n": 282
     },
     "notation.duration.accuracy": {
-     "mean": 0.829073,
+     "mean": 0.828984,
      "n": 282
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.817768,
+     "mean": 0.817679,
      "n": 282
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.829073,
+     "mean": 0.828984,
      "n": 282
     },
     "notation.hand.accuracy": {
@@ -30933,11 +30933,11 @@
      "n": 282
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.614587,
+     "mean": 0.614909,
      "n": 282
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.60538,
+     "mean": 0.605507,
      "n": 282
     },
     "notation.pedal.false_per_min": {
@@ -30949,15 +30949,15 @@
      "n": 282
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997519,
+     "mean": 0.997553,
      "n": 282
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.983601,
+     "mean": 0.983634,
      "n": 282
     },
     "notation.ties.extra_per_100": {
-     "mean": 2.090015,
+     "mean": 2.089679,
      "n": 282
     },
     "notation.tuplets.f1": {
@@ -31017,31 +31017,31 @@
      "n": 104
     },
     "nq.ned": {
-     "mean": 0.6116,
+     "mean": 0.612794,
      "n": 141
     },
     "nq.range.ledger4_rate": {
-     "mean": 5.748702,
+     "mean": 5.747273,
      "n": 141
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 0.981979,
+     "mean": 0.98055,
      "n": 141
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.213725,
+     "mean": 0.217424,
      "n": 141
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.011095,
+     "mean": 0.011093,
      "n": 141
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.005747,
+     "mean": 0.005746,
      "n": 141
     },
     "nq.rhythm.short_rate_delta": {
-     "mean": -0.010755,
+     "mean": -0.010761,
      "n": 141
     },
     "nq.shape.tm_missing": {
@@ -31105,11 +31105,11 @@
      "n": 141
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.048592,
+     "mean": 0.048573,
      "n": 89
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.016057,
+     "mean": 0.015961,
      "n": 18
     },
     "nq.tuplet.group_complete": {
@@ -31141,11 +31141,11 @@
      "n": 60
     },
     "read.accidentals_per_note": {
-     "mean": 0.017774,
+     "mean": 0.017791,
      "n": 282
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.002594,
+     "mean": -0.002577,
      "n": 282
     },
     "read.bar_completeness": {
@@ -31189,35 +31189,35 @@
      "n": 282
     },
     "read.rests_per_measure": {
-     "mean": 0.551976,
+     "mean": 0.55318,
      "n": 282
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.145238,
+     "mean": 0.146442,
      "n": 282
     },
     "read.short_notes_rate": {
-     "mean": 0.01247,
+     "mean": 0.012459,
      "n": 282
     },
     "read.short_notes_rate.delta": {
-     "mean": -0.010679,
+     "mean": -0.01069,
      "n": 282
     },
     "read.ties_per_note": {
-     "mean": 0.019828,
+     "mean": 0.019824,
      "n": 282
     },
     "read.ties_per_note.delta": {
-     "mean": 0.015482,
+     "mean": 0.015478,
      "n": 282
     },
     "read.tuplets_per_note": {
-     "mean": 0.057247,
+     "mean": 0.057248,
      "n": 282
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.010674,
+     "mean": 0.010675,
      "n": 282
     },
     "rec.check.1": {
@@ -31225,7 +31225,7 @@
      "n": 282
     },
     "rec.check.10": {
-     "mean": 0.574319,
+     "mean": 0.592983,
      "n": 282
     },
     "rec.check.2": {
@@ -31261,7 +31261,7 @@
      "n": 282
     },
     "rec.hands.crossing": {
-     "mean": 0.001158,
+     "mean": 0.001156,
      "n": 282
     },
     "rec.hands.hard_per_100_bars": {
@@ -31273,7 +31273,7 @@
      "n": 282
     },
     "rec.harmony.agreement": {
-     "mean": 0.678689,
+     "mean": 0.680076,
      "n": 282
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -31281,35 +31281,35 @@
      "n": 282
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 8.481452,
+     "mean": 8.48257,
      "n": 282
     },
     "rec.metre.f1": {
-     "mean": 0.844045,
+     "mean": 0.84406,
      "n": 282
     },
     "rec.mv2h": {
-     "mean": 0.809591,
+     "mean": 0.809854,
      "n": 282
     },
     "rec.onset_f1": {
-     "mean": 0.609866,
+     "mean": 0.610088,
      "n": 282
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 28.669846,
+     "mean": 28.682831,
      "n": 282
     },
     "rec.rest.precision": {
-     "mean": 0.28113,
+     "mean": 0.27944,
      "n": 282
     },
     "rec.rest.recall": {
-     "mean": 0.443036,
+     "mean": 0.44953,
      "n": 154
     },
     "rec.stability": {
-     "mean": 0.26202,
+     "mean": 0.261482,
      "n": 282
     },
     "rec.tuplet.false_per_100_beats": {
@@ -31325,7 +31325,7 @@
      "n": 20
     },
     "rec.usable": {
-     "mean": 0.070922,
+     "mean": 0.067376,
      "n": 282
     },
     "rec.voice.f1": {
@@ -31333,7 +31333,7 @@
      "n": 282
     },
     "sqi": {
-     "mean": 84.967034,
+     "mean": 84.968219,
      "n": 282
     },
     "struct.downbeat.f1": {
@@ -31369,7 +31369,7 @@
      "n": 282
     },
     "struct.measures.count_exact": {
-     "mean": 0.641844,
+     "mean": 0.638298,
      "n": 282
     },
     "struct.measures.count_ratio": {
@@ -31409,7 +31409,7 @@
      "n": 282
     },
     "struct.tempo.ratio_effective": {
-     "mean": 1.05242,
+     "mean": 1.052413,
      "n": 282
     },
     "struct.tempo.timeline_accuracy": {
@@ -31468,7 +31468,7 @@
      "n": 846
     },
     "critical.structure": {
-     "mean": 0.513002,
+     "mean": 0.510638,
      "n": 846
     },
     "errors": {
@@ -31500,15 +31500,15 @@
      "n": 846
     },
     "notation.duration.accuracy": {
-     "mean": 0.684789,
+     "mean": 0.684762,
      "n": 846
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.677393,
+     "mean": 0.677366,
      "n": 846
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.685053,
+     "mean": 0.685027,
      "n": 846
     },
     "notation.hand.accuracy": {
@@ -31548,11 +31548,11 @@
      "n": 846
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.461228,
+     "mean": 0.461443,
      "n": 846
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.45582,
+     "mean": 0.455932,
      "n": 846
     },
     "notation.pedal.false_per_min": {
@@ -31564,15 +31564,15 @@
      "n": 846
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997453,
+     "mean": 0.997476,
      "n": 846
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.985554,
+     "mean": 0.985576,
      "n": 846
     },
     "notation.ties.extra_per_100": {
-     "mean": 6.890869,
+     "mean": 6.890231,
      "n": 846
     },
     "notation.tuplets.f1": {
@@ -31632,23 +31632,23 @@
      "n": 313
     },
     "nq.ned": {
-     "mean": 0.724726,
+     "mean": 0.725444,
      "n": 423
     },
     "nq.range.ledger4_rate": {
-     "mean": 9.069866,
+     "mean": 9.06939,
      "n": 423
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 4.303143,
+     "mean": 4.302666,
      "n": 423
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.896482,
+     "mean": 0.898957,
      "n": 423
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.028913,
+     "mean": 0.028912,
      "n": 423
     },
     "nq.rhythm.hidden_beat_rate.delta": {
@@ -31656,7 +31656,7 @@
      "n": 423
     },
     "nq.rhythm.short_rate_delta": {
-     "mean": -0.002832,
+     "mean": -0.002834,
      "n": 423
     },
     "nq.shape.tm_missing": {
@@ -31720,11 +31720,11 @@
      "n": 423
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.077572,
+     "mean": 0.077566,
      "n": 296
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.049847,
+     "mean": 0.049817,
      "n": 58
     },
     "nq.tuplet.group_complete": {
@@ -31756,11 +31756,11 @@
      "n": 180
     },
     "read.accidentals_per_note": {
-     "mean": 0.017899,
+     "mean": 0.017911,
      "n": 846
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.002469,
+     "mean": -0.002458,
      "n": 846
     },
     "read.bar_completeness": {
@@ -31804,27 +31804,27 @@
      "n": 846
     },
     "read.rests_per_measure": {
-     "mean": 1.316671,
+     "mean": 1.317636,
      "n": 846
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.909933,
+     "mean": 0.910898,
      "n": 846
     },
     "read.short_notes_rate": {
-     "mean": 0.023083,
+     "mean": 0.023079,
      "n": 846
     },
     "read.short_notes_rate.delta": {
-     "mean": -6.5e-05,
+     "mean": -6.9e-05,
      "n": 846
     },
     "read.ties_per_note": {
-     "mean": 0.055135,
+     "mean": 0.055128,
      "n": 846
     },
     "read.ties_per_note.delta": {
-     "mean": 0.050789,
+     "mean": 0.050782,
      "n": 846
     },
     "read.tuplets_per_note": {
@@ -31832,7 +31832,7 @@
      "n": 846
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.028745,
+     "mean": 0.028746,
      "n": 846
     },
     "rec.check.1": {
@@ -31840,7 +31840,7 @@
      "n": 846
     },
     "rec.check.10": {
-     "mean": 4.373674,
+     "mean": 4.379895,
      "n": 846
     },
     "rec.check.2": {
@@ -31876,7 +31876,7 @@
      "n": 846
     },
     "rec.hands.crossing": {
-     "mean": 0.001622,
+     "mean": 0.001621,
      "n": 846
     },
     "rec.hands.hard_per_100_bars": {
@@ -31888,7 +31888,7 @@
      "n": 846
     },
     "rec.harmony.agreement": {
-     "mean": 0.592266,
+     "mean": 0.593281,
      "n": 846
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -31896,35 +31896,35 @@
      "n": 846
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 9.689521,
+     "mean": 9.689951,
      "n": 846
     },
     "rec.metre.f1": {
-     "mean": 0.734769,
+     "mean": 0.73478,
      "n": 846
     },
     "rec.mv2h": {
-     "mean": 0.737269,
+     "mean": 0.737468,
      "n": 846
     },
     "rec.onset_f1": {
-     "mean": 0.458451,
+     "mean": 0.458613,
      "n": 846
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 84.933102,
+     "mean": 84.954201,
      "n": 846
     },
     "rec.rest.precision": {
-     "mean": 0.252906,
+     "mean": 0.251752,
      "n": 846
     },
     "rec.rest.recall": {
-     "mean": 0.41504,
+     "mean": 0.417204,
      "n": 462
     },
     "rec.stability": {
-     "mean": 0.449704,
+     "mean": 0.449087,
      "n": 846
     },
     "rec.tuplet.false_per_100_beats": {
@@ -31940,7 +31940,7 @@
      "n": 60
     },
     "rec.usable": {
-     "mean": 0.072104,
+     "mean": 0.06974,
      "n": 846
     },
     "rec.voice.f1": {
@@ -31948,7 +31948,7 @@
      "n": 846
     },
     "sqi": {
-     "mean": 78.344882,
+     "mean": 78.3464,
      "n": 846
     },
     "struct.downbeat.f1": {
@@ -31984,7 +31984,7 @@
      "n": 846
     },
     "struct.measures.count_exact": {
-     "mean": 0.51773,
+     "mean": 0.515366,
      "n": 846
     },
     "struct.measures.count_ratio": {
@@ -32024,7 +32024,7 @@
      "n": 846
     },
     "struct.tempo.ratio_effective": {
-     "mean": 1.098219,
+     "mean": 1.098215,
      "n": 846
     },
     "struct.tempo.timeline_accuracy": {
@@ -32083,7 +32083,7 @@
      "n": 846
     },
     "critical.structure": {
-     "mean": 0.513002,
+     "mean": 0.510638,
      "n": 846
     },
     "errors": {
@@ -32115,15 +32115,15 @@
      "n": 846
     },
     "notation.duration.accuracy": {
-     "mean": 0.684789,
+     "mean": 0.684762,
      "n": 846
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.677393,
+     "mean": 0.677366,
      "n": 846
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.685053,
+     "mean": 0.685027,
      "n": 846
     },
     "notation.hand.accuracy": {
@@ -32163,11 +32163,11 @@
      "n": 846
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.461228,
+     "mean": 0.461443,
      "n": 846
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.45582,
+     "mean": 0.455932,
      "n": 846
     },
     "notation.pedal.false_per_min": {
@@ -32179,15 +32179,15 @@
      "n": 846
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997453,
+     "mean": 0.997476,
      "n": 846
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.985554,
+     "mean": 0.985576,
      "n": 846
     },
     "notation.ties.extra_per_100": {
-     "mean": 6.890869,
+     "mean": 6.890231,
      "n": 846
     },
     "notation.tuplets.f1": {
@@ -32247,23 +32247,23 @@
      "n": 313
     },
     "nq.ned": {
-     "mean": 0.724726,
+     "mean": 0.725444,
      "n": 423
     },
     "nq.range.ledger4_rate": {
-     "mean": 9.069866,
+     "mean": 9.06939,
      "n": 423
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 4.303143,
+     "mean": 4.302666,
      "n": 423
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.896482,
+     "mean": 0.898957,
      "n": 423
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.028913,
+     "mean": 0.028912,
      "n": 423
     },
     "nq.rhythm.hidden_beat_rate.delta": {
@@ -32271,7 +32271,7 @@
      "n": 423
     },
     "nq.rhythm.short_rate_delta": {
-     "mean": -0.002832,
+     "mean": -0.002834,
      "n": 423
     },
     "nq.shape.tm_missing": {
@@ -32335,11 +32335,11 @@
      "n": 423
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.077572,
+     "mean": 0.077566,
      "n": 296
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.049847,
+     "mean": 0.049817,
      "n": 58
     },
     "nq.tuplet.group_complete": {
@@ -32371,11 +32371,11 @@
      "n": 180
     },
     "read.accidentals_per_note": {
-     "mean": 0.017899,
+     "mean": 0.017911,
      "n": 846
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.002469,
+     "mean": -0.002458,
      "n": 846
     },
     "read.bar_completeness": {
@@ -32419,27 +32419,27 @@
      "n": 846
     },
     "read.rests_per_measure": {
-     "mean": 1.316671,
+     "mean": 1.317636,
      "n": 846
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.909933,
+     "mean": 0.910898,
      "n": 846
     },
     "read.short_notes_rate": {
-     "mean": 0.023083,
+     "mean": 0.023079,
      "n": 846
     },
     "read.short_notes_rate.delta": {
-     "mean": -6.5e-05,
+     "mean": -6.9e-05,
      "n": 846
     },
     "read.ties_per_note": {
-     "mean": 0.055135,
+     "mean": 0.055128,
      "n": 846
     },
     "read.ties_per_note.delta": {
-     "mean": 0.050789,
+     "mean": 0.050782,
      "n": 846
     },
     "read.tuplets_per_note": {
@@ -32447,7 +32447,7 @@
      "n": 846
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.028745,
+     "mean": 0.028746,
      "n": 846
     },
     "rec.check.1": {
@@ -32455,7 +32455,7 @@
      "n": 846
     },
     "rec.check.10": {
-     "mean": 4.373674,
+     "mean": 4.379895,
      "n": 846
     },
     "rec.check.2": {
@@ -32491,7 +32491,7 @@
      "n": 846
     },
     "rec.hands.crossing": {
-     "mean": 0.001622,
+     "mean": 0.001621,
      "n": 846
     },
     "rec.hands.hard_per_100_bars": {
@@ -32503,7 +32503,7 @@
      "n": 846
     },
     "rec.harmony.agreement": {
-     "mean": 0.592266,
+     "mean": 0.593281,
      "n": 846
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -32511,35 +32511,35 @@
      "n": 846
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 9.689521,
+     "mean": 9.689951,
      "n": 846
     },
     "rec.metre.f1": {
-     "mean": 0.734769,
+     "mean": 0.73478,
      "n": 846
     },
     "rec.mv2h": {
-     "mean": 0.737269,
+     "mean": 0.737468,
      "n": 846
     },
     "rec.onset_f1": {
-     "mean": 0.458451,
+     "mean": 0.458613,
      "n": 846
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 84.933102,
+     "mean": 84.954201,
      "n": 846
     },
     "rec.rest.precision": {
-     "mean": 0.252906,
+     "mean": 0.251752,
      "n": 846
     },
     "rec.rest.recall": {
-     "mean": 0.41504,
+     "mean": 0.417204,
      "n": 462
     },
     "rec.stability": {
-     "mean": 0.449704,
+     "mean": 0.449087,
      "n": 846
     },
     "rec.tuplet.false_per_100_beats": {
@@ -32555,7 +32555,7 @@
      "n": 60
     },
     "rec.usable": {
-     "mean": 0.072104,
+     "mean": 0.06974,
      "n": 846
     },
     "rec.voice.f1": {
@@ -32563,7 +32563,7 @@
      "n": 846
     },
     "sqi": {
-     "mean": 78.344882,
+     "mean": 78.3464,
      "n": 846
     },
     "struct.downbeat.f1": {
@@ -32599,7 +32599,7 @@
      "n": 846
     },
     "struct.measures.count_exact": {
-     "mean": 0.51773,
+     "mean": 0.515366,
      "n": 846
     },
     "struct.measures.count_ratio": {
@@ -32639,7 +32639,7 @@
      "n": 846
     },
     "struct.tempo.ratio_effective": {
-     "mean": 1.098219,
+     "mean": 1.098215,
      "n": 846
     },
     "struct.tempo.timeline_accuracy": {
@@ -33126,7 +33126,7 @@
      "n": 18
     },
     "rec.stability": {
-     "mean": 0.287318,
+     "mean": 0.268799,
      "n": 18
     },
     "rec.tuplet.false_per_100_beats": {
@@ -33253,7 +33253,7 @@
      "n": 240
     },
     "critical.beat_placement": {
-     "mean": 0.441667,
+     "mean": 0.45,
      "n": 240
     },
     "critical.hands": {
@@ -33361,11 +33361,11 @@
      "n": 240
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.506853,
+     "mean": 0.515186,
      "n": 240
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.494318,
+     "mean": 0.502289,
      "n": 240
     },
     "notation.pedal.false_per_min": {
@@ -33377,11 +33377,11 @@
      "n": 240
     },
     "notation.spelling.accuracy": {
-     "mean": 0.99826,
+     "mean": 0.99834,
      "n": 240
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.971604,
+     "mean": 0.971681,
      "n": 240
     },
     "notation.ties.extra_per_100": {
@@ -33557,11 +33557,11 @@
      "n": 120
     },
     "read.accidentals_per_note": {
-     "mean": 0.016651,
+     "mean": 0.016691,
      "n": 240
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.004735,
+     "mean": -0.004695,
      "n": 240
     },
     "read.bar_completeness": {
@@ -33605,11 +33605,11 @@
      "n": 240
     },
     "read.rests_per_measure": {
-     "mean": 1.211393,
+     "mean": 1.208829,
      "n": 240
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.029338,
+     "mean": 1.026774,
      "n": 240
     },
     "read.short_notes_rate": {
@@ -33677,7 +33677,7 @@
      "n": 240
     },
     "rec.hands.crossing": {
-     "mean": 0.000762,
+     "mean": 0.000761,
      "n": 240
     },
     "rec.hands.hard_per_100_bars": {
@@ -33689,7 +33689,7 @@
      "n": 240
     },
     "rec.harmony.agreement": {
-     "mean": 0.665415,
+     "mean": 0.66894,
      "n": 240
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -33701,27 +33701,27 @@
      "n": 240
     },
     "rec.metre.f1": {
-     "mean": 0.755043,
+     "mean": 0.757607,
      "n": 240
     },
     "rec.mv2h": {
-     "mean": 0.739583,
+     "mean": 0.740801,
      "n": 240
     },
     "rec.onset_f1": {
-     "mean": 0.500456,
+     "mean": 0.508603,
      "n": 240
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 81.563108,
+     "mean": 81.370801,
      "n": 240
     },
     "rec.rest.precision": {
-     "mean": 0.279266,
+     "mean": 0.283433,
      "n": 240
     },
     "rec.rest.recall": {
-     "mean": 0.429833,
+     "mean": 0.4365,
      "n": 150
     },
     "rec.stability": {
@@ -33745,11 +33745,11 @@
      "n": 240
     },
     "sqi": {
-     "mean": 81.032506,
+     "mean": 81.152441,
      "n": 240
     },
     "struct.downbeat.f1": {
-     "mean": 0.647053,
+     "mean": 0.655386,
      "n": 240
     },
     "struct.form.order_exact": {
@@ -33841,7 +33841,7 @@
      "n": 240
     },
     "usable": {
-     "mean": 0.345833,
+     "mean": 0.354167,
      "n": 240
     }
    },
@@ -33912,15 +33912,15 @@
      "n": 438
     },
     "notation.duration.accuracy": {
-     "mean": 0.655632,
+     "mean": 0.65558,
      "n": 438
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.651932,
+     "mean": 0.65188,
      "n": 438
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.655623,
+     "mean": 0.655571,
      "n": 438
     },
     "notation.hand.accuracy": {
@@ -33984,7 +33984,7 @@
      "n": 438
     },
     "notation.ties.extra_per_100": {
-     "mean": 6.12988,
+     "mean": 6.128649,
      "n": 438
     },
     "notation.tuplets.f1": {
@@ -34044,31 +34044,31 @@
      "n": 174
     },
     "nq.ned": {
-     "mean": 0.8103,
+     "mean": 0.810026,
      "n": 219
     },
     "nq.range.ledger4_rate": {
-     "mean": 17.488978,
+     "mean": 17.488057,
      "n": 219
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 8.282018,
+     "mean": 8.281098,
      "n": 219
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.806489,
+     "mean": 0.805182,
      "n": 219
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.027276,
+     "mean": 0.027275,
      "n": 219
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.027203,
+     "mean": 0.027202,
      "n": 219
     },
     "nq.rhythm.short_rate_delta": {
-     "mean": -0.00186,
+     "mean": -0.001864,
      "n": 219
     },
     "nq.shape.tm_missing": {
@@ -34132,11 +34132,11 @@
      "n": 219
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.063747,
+     "mean": 0.063737,
      "n": 177
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.045971,
+     "mean": 0.045931,
      "n": 44
     },
     "nq.tuplet.group_complete": {
@@ -34196,7 +34196,7 @@
      "n": 438
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.007188,
+     "mean": 0.007189,
      "n": 438
     },
     "read.max_chord_size": {
@@ -34216,35 +34216,35 @@
      "n": 438
     },
     "read.rests_per_measure": {
-     "mean": 1.41495,
+     "mean": 1.415175,
      "n": 438
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.771517,
+     "mean": 0.771742,
      "n": 438
     },
     "read.short_notes_rate": {
-     "mean": 0.025696,
+     "mean": 0.025689,
      "n": 438
     },
     "read.short_notes_rate.delta": {
-     "mean": -0.000821,
+     "mean": -0.000828,
      "n": 438
     },
     "read.ties_per_note": {
-     "mean": 0.05134,
+     "mean": 0.051327,
      "n": 438
     },
     "read.ties_per_note.delta": {
-     "mean": 0.047357,
+     "mean": 0.047344,
      "n": 438
     },
     "read.tuplets_per_note": {
-     "mean": 0.117364,
+     "mean": 0.117365,
      "n": 438
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.040054,
+     "mean": 0.040055,
      "n": 438
     },
     "rec.check.1": {
@@ -34252,7 +34252,7 @@
      "n": 438
     },
     "rec.check.10": {
-     "mean": 4.343905,
+     "mean": 4.355921,
      "n": 438
     },
     "rec.check.2": {
@@ -34300,7 +34300,7 @@
      "n": 438
     },
     "rec.harmony.agreement": {
-     "mean": 0.518811,
+     "mean": 0.519982,
      "n": 438
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -34308,15 +34308,15 @@
      "n": 438
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 14.392881,
+     "mean": 14.393711,
      "n": 438
     },
     "rec.metre.f1": {
-     "mean": 0.712103,
+     "mean": 0.712419,
      "n": 438
     },
     "rec.mv2h": {
-     "mean": 0.71899,
+     "mean": 0.719277,
      "n": 438
     },
     "rec.onset_f1": {
@@ -34324,11 +34324,11 @@
      "n": 438
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 85.635467,
+     "mean": 85.578651,
      "n": 438
     },
     "rec.rest.precision": {
-     "mean": 0.251209,
+     "mean": 0.251263,
      "n": 438
     },
     "rec.rest.recall": {
@@ -34336,7 +34336,7 @@
      "n": 264
     },
     "rec.stability": {
-     "mean": 0.553901,
+     "mean": 0.55365,
      "n": 438
     },
     "rec.tuplet.false_per_100_beats": {
@@ -34360,7 +34360,7 @@
      "n": 438
     },
     "sqi": {
-     "mean": 75.82127,
+     "mean": 75.82075,
      "n": 438
     },
     "struct.downbeat.f1": {
@@ -34400,7 +34400,7 @@
      "n": 438
     },
     "struct.measures.count_ratio": {
-     "mean": 0.93881,
+     "mean": 0.938239,
      "n": 438
     },
     "struct.measures.extra_empty_edge": {
@@ -34436,7 +34436,7 @@
      "n": 438
     },
     "struct.tempo.ratio_effective": {
-     "mean": 1.097179,
+     "mean": 1.09722,
      "n": 438
     },
     "struct.tempo.timeline_accuracy": {
@@ -34467,7 +34467,7 @@
      "n": 144
     },
     "critical.beat_placement": {
-     "mean": 0.409722,
+     "mean": 0.395833,
      "n": 144
     },
     "critical.hands": {
@@ -34495,7 +34495,7 @@
      "n": 144
     },
     "critical.structure": {
-     "mean": 0.534722,
+     "mean": 0.520833,
      "n": 144
     },
     "errors": {
@@ -34575,11 +34575,11 @@
      "n": 144
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.523146,
+     "mean": 0.51052,
      "n": 144
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.523042,
+     "mean": 0.510416,
      "n": 144
     },
     "notation.pedal.false_per_min": {
@@ -34659,7 +34659,7 @@
      "n": 39
     },
     "nq.ned": {
-     "mean": 0.621963,
+     "mean": 0.627014,
      "n": 72
     },
     "nq.range.ledger4_rate": {
@@ -34671,7 +34671,7 @@
      "n": 72
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.009298,
+     "mean": 1.027816,
      "n": 72
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -34831,11 +34831,11 @@
      "n": 144
     },
     "read.rests_per_measure": {
-     "mean": 1.17388,
+     "mean": 1.183139,
      "n": 144
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.138579,
+     "mean": 1.147838,
      "n": 144
     },
     "read.short_notes_rate": {
@@ -34915,7 +34915,7 @@
      "n": 144
     },
     "rec.harmony.agreement": {
-     "mean": 0.675299,
+     "mean": 0.671827,
      "n": 144
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -34927,23 +34927,23 @@
      "n": 144
     },
     "rec.metre.f1": {
-     "mean": 0.767521,
+     "mean": 0.762347,
      "n": 144
     },
     "rec.mv2h": {
-     "mean": 0.780934,
+     "mean": 0.779205,
      "n": 144
     },
     "rec.onset_f1": {
-     "mean": 0.523094,
+     "mean": 0.510467,
      "n": 144
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 89.524409,
+     "mean": 90.141693,
      "n": 144
     },
     "rec.rest.precision": {
-     "mean": 0.195782,
+     "mean": 0.181893,
      "n": 144
     },
     "rec.rest.recall": {
@@ -34951,7 +34951,7 @@
      "n": 24
     },
     "rec.stability": {
-     "mean": 0.396938,
+     "mean": 0.396392,
      "n": 144
     },
     "rec.tuplet.false_per_100_beats": {
@@ -34967,7 +34967,7 @@
      "n": 6
     },
     "rec.usable": {
-     "mean": 0.097222,
+     "mean": 0.083333,
      "n": 144
     },
     "rec.voice.f1": {
@@ -34975,11 +34975,11 @@
      "n": 144
     },
     "sqi": {
-     "mean": 81.144669,
+     "mean": 80.955275,
      "n": 144
     },
     "struct.downbeat.f1": {
-     "mean": 0.670116,
+     "mean": 0.656227,
      "n": 144
     },
     "struct.form.order_exact": {
@@ -35011,11 +35011,11 @@
      "n": 144
     },
     "struct.measures.count_exact": {
-     "mean": 0.534722,
+     "mean": 0.520833,
      "n": 144
     },
     "struct.measures.count_ratio": {
-     "mean": 1.258005,
+     "mean": 1.259742,
      "n": 144
     },
     "struct.measures.extra_empty_edge": {
@@ -35051,7 +35051,7 @@
      "n": 144
     },
     "struct.tempo.ratio_effective": {
-     "mean": 1.052444,
+     "mean": 1.052293,
      "n": 144
     },
     "struct.tempo.timeline_accuracy": {
@@ -35071,7 +35071,7 @@
      "n": 144
     },
     "usable": {
-     "mean": 0.298611,
+     "mean": 0.284722,
      "n": 144
     }
    },
@@ -35729,15 +35729,15 @@
      "n": 225
     },
     "notation.duration.accuracy": {
-     "mean": 0.600091,
+     "mean": 0.600093,
      "n": 225
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.594264,
+     "mean": 0.594266,
      "n": 225
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.599935,
+     "mean": 0.599937,
      "n": 225
     },
     "notation.hand.accuracy": {
@@ -35801,7 +35801,7 @@
      "n": 225
     },
     "notation.ties.extra_per_100": {
-     "mean": 4.99098,
+     "mean": 4.988583,
      "n": 225
     },
     "notation.tuplets.f1": {
@@ -35861,31 +35861,31 @@
      "n": 96
     },
     "nq.ned": {
-     "mean": 0.914158,
+     "mean": 0.914138,
      "n": 96
     },
     "nq.range.ledger4_rate": {
-     "mean": 19.540155,
+     "mean": 19.538056,
      "n": 96
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 6.282911,
+     "mean": 6.280812,
      "n": 96
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.633006,
+     "mean": 0.631362,
      "n": 96
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.028845,
+     "mean": 0.028843,
      "n": 96
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.028678,
+     "mean": 0.028676,
      "n": 96
     },
     "nq.rhythm.short_rate_delta": {
-     "mean": -0.020365,
+     "mean": -0.020374,
      "n": 96
     },
     "nq.shape.tm_missing": {
@@ -35949,11 +35949,11 @@
      "n": 96
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.070295,
+     "mean": 0.070275,
      "n": 90
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.042037,
+     "mean": 0.041972,
      "n": 27
     },
     "nq.tuplet.group_complete": {
@@ -35989,7 +35989,7 @@
      "n": 225
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.001601,
+     "mean": -0.001602,
      "n": 225
     },
     "read.bar_completeness": {
@@ -36009,11 +36009,11 @@
      "n": 225
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.082125,
+     "mean": 0.082126,
      "n": 225
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.014012,
+     "mean": 0.014013,
      "n": 225
     },
     "read.max_chord_size": {
@@ -36033,35 +36033,35 @@
      "n": 225
     },
     "read.rests_per_measure": {
-     "mean": 1.444977,
+     "mean": 1.447238,
      "n": 225
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.484351,
+     "mean": 0.486612,
      "n": 225
     },
     "read.short_notes_rate": {
-     "mean": 0.036343,
+     "mean": 0.036329,
      "n": 225
     },
     "read.short_notes_rate.delta": {
-     "mean": -0.015277,
+     "mean": -0.015291,
      "n": 225
     },
     "read.ties_per_note": {
-     "mean": 0.044829,
+     "mean": 0.044804,
      "n": 225
     },
     "read.ties_per_note.delta": {
-     "mean": 0.042396,
+     "mean": 0.042371,
      "n": 225
     },
     "read.tuplets_per_note": {
-     "mean": 0.189543,
+     "mean": 0.189544,
      "n": 225
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.060773,
+     "mean": 0.060775,
      "n": 225
     },
     "rec.check.1": {
@@ -36069,7 +36069,7 @@
      "n": 225
     },
     "rec.check.10": {
-     "mean": 3.784511,
+     "mean": 3.807903,
      "n": 225
     },
     "rec.check.2": {
@@ -36105,7 +36105,7 @@
      "n": 225
     },
     "rec.hands.crossing": {
-     "mean": 0.003215,
+     "mean": 0.003214,
      "n": 225
     },
     "rec.hands.hard_per_100_bars": {
@@ -36117,7 +36117,7 @@
      "n": 225
     },
     "rec.harmony.agreement": {
-     "mean": 0.423745,
+     "mean": 0.424358,
      "n": 225
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -36125,15 +36125,15 @@
      "n": 225
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 15.400923,
+     "mean": 15.402539,
      "n": 225
     },
     "rec.metre.f1": {
-     "mean": 0.633376,
+     "mean": 0.633477,
      "n": 225
     },
     "rec.mv2h": {
-     "mean": 0.659251,
+     "mean": 0.659394,
      "n": 225
     },
     "rec.onset_f1": {
@@ -36141,11 +36141,11 @@
      "n": 225
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 78.618834,
+     "mean": 78.690569,
      "n": 225
     },
     "rec.rest.precision": {
-     "mean": 0.300302,
+     "mean": 0.300406,
      "n": 225
     },
     "rec.rest.recall": {
@@ -36153,7 +36153,7 @@
      "n": 177
     },
     "rec.stability": {
-     "mean": 0.731606,
+     "mean": 0.732077,
      "n": 225
     },
     "rec.tuplet.false_per_100_beats": {
@@ -36177,7 +36177,7 @@
      "n": 225
     },
     "sqi": {
-     "mean": 70.797031,
+     "mean": 70.797054,
      "n": 225
     },
     "struct.downbeat.f1": {
@@ -36284,7 +36284,7 @@
      "n": 486
     },
     "critical.beat_placement": {
-     "mean": 0.467078,
+     "mean": 0.471193,
      "n": 486
     },
     "critical.hands": {
@@ -36392,11 +36392,11 @@
      "n": 486
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.532515,
+     "mean": 0.53663,
      "n": 486
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.525511,
+     "mean": 0.529447,
      "n": 486
     },
     "notation.pedal.false_per_min": {
@@ -36408,11 +36408,11 @@
      "n": 486
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997307,
+     "mean": 0.997347,
      "n": 486
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.98281,
+     "mean": 0.982848,
      "n": 486
     },
     "notation.ties.extra_per_100": {
@@ -36600,11 +36600,11 @@
      "n": 141
     },
     "read.accidentals_per_note": {
-     "mean": 0.014543,
+     "mean": 0.014562,
      "n": 486
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.004076,
+     "mean": -0.004056,
      "n": 486
     },
     "read.bar_completeness": {
@@ -36648,11 +36648,11 @@
      "n": 486
     },
     "read.rests_per_measure": {
-     "mean": 1.247389,
+     "mean": 1.245543,
      "n": 486
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.032753,
+     "mean": 1.030906,
      "n": 486
     },
     "read.short_notes_rate": {
@@ -36720,7 +36720,7 @@
      "n": 486
     },
     "rec.hands.crossing": {
-     "mean": 0.000367,
+     "mean": 0.000366,
      "n": 486
     },
     "rec.hands.hard_per_100_bars": {
@@ -36732,7 +36732,7 @@
      "n": 486
     },
     "rec.harmony.agreement": {
-     "mean": 0.660092,
+     "mean": 0.66209,
      "n": 486
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -36744,31 +36744,31 @@
      "n": 486
     },
     "rec.metre.f1": {
-     "mean": 0.777005,
+     "mean": 0.778389,
      "n": 486
     },
     "rec.mv2h": {
-     "mean": 0.766987,
+     "mean": 0.767664,
      "n": 486
     },
     "rec.onset_f1": {
-     "mean": 0.528928,
+     "mean": 0.532952,
      "n": 486
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 84.431767,
+     "mean": 84.278765,
      "n": 486
     },
     "rec.rest.precision": {
-     "mean": 0.24714,
+     "mean": 0.249197,
      "n": 486
     },
     "rec.rest.recall": {
-     "mean": 0.427565,
+     "mean": 0.431951,
      "n": 228
     },
     "rec.stability": {
-     "mean": 0.34758,
+     "mean": 0.34687,
      "n": 486
     },
     "rec.tuplet.false_per_100_beats": {
@@ -36792,11 +36792,11 @@
      "n": 486
     },
     "sqi": {
-     "mean": 81.789579,
+     "mean": 81.848806,
      "n": 486
     },
     "struct.downbeat.f1": {
-     "mean": 0.678769,
+     "mean": 0.682884,
      "n": 486
     },
     "struct.form.order_exact": {
@@ -36832,7 +36832,7 @@
      "n": 486
     },
     "struct.measures.count_ratio": {
-     "mean": 1.101916,
+     "mean": 1.101658,
      "n": 486
     },
     "struct.measures.extra_empty_edge": {
@@ -36888,7 +36888,7 @@
      "n": 486
     },
     "usable": {
-     "mean": 0.351852,
+     "mean": 0.355967,
      "n": 486
     }
    },
@@ -36899,7 +36899,7 @@
      "n": 135
     },
     "critical.beat_placement": {
-     "mean": 0.385185,
+     "mean": 0.37037,
      "n": 135
     },
     "critical.hands": {
@@ -36927,7 +36927,7 @@
      "n": 135
     },
     "critical.structure": {
-     "mean": 0.533333,
+     "mean": 0.518519,
      "n": 135
     },
     "errors": {
@@ -36959,15 +36959,15 @@
      "n": 135
     },
     "notation.duration.accuracy": {
-     "mean": 0.665146,
+     "mean": 0.664974,
      "n": 135
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.664197,
+     "mean": 0.664025,
      "n": 135
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.665378,
+     "mean": 0.665206,
      "n": 135
     },
     "notation.hand.accuracy": {
@@ -37007,11 +37007,11 @@
      "n": 135
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.500531,
+     "mean": 0.487063,
      "n": 135
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.499696,
+     "mean": 0.486228,
      "n": 135
     },
     "notation.pedal.false_per_min": {
@@ -37091,7 +37091,7 @@
      "n": 39
     },
     "nq.ned": {
-     "mean": 0.743762,
+     "mean": 0.747156,
      "n": 90
     },
     "nq.range.ledger4_rate": {
@@ -37103,7 +37103,7 @@
      "n": 90
     },
     "nq.rest.per_measure_delta": {
-     "mean": 1.105593,
+     "mean": 1.118984,
      "n": 90
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -37259,11 +37259,11 @@
      "n": 135
     },
     "read.rests_per_measure": {
-     "mean": 1.352242,
+     "mean": 1.361168,
      "n": 135
     },
     "read.rests_per_measure.delta": {
-     "mean": 1.177087,
+     "mean": 1.186014,
      "n": 135
     },
     "read.short_notes_rate": {
@@ -37343,7 +37343,7 @@
      "n": 135
     },
     "rec.harmony.agreement": {
-     "mean": 0.628961,
+     "mean": 0.627109,
      "n": 135
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -37355,23 +37355,23 @@
      "n": 135
     },
     "rec.metre.f1": {
-     "mean": 0.751708,
+     "mean": 0.746625,
      "n": 135
     },
     "rec.mv2h": {
-     "mean": 0.760312,
+     "mean": 0.758891,
      "n": 135
     },
     "rec.onset_f1": {
-     "mean": 0.500106,
+     "mean": 0.486638,
      "n": 135
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 97.261691,
+     "mean": 97.825161,
      "n": 135
     },
     "rec.rest.precision": {
-     "mean": 0.194671,
+     "mean": 0.179856,
      "n": 135
     },
     "rec.rest.recall": {
@@ -37379,7 +37379,7 @@
      "n": 57
     },
     "rec.stability": {
-     "mean": 0.347513,
+     "mean": 0.345419,
      "n": 135
     },
     "rec.tuplet.false_per_100_beats": {
@@ -37395,7 +37395,7 @@
      "n": 3
     },
     "rec.usable": {
-     "mean": 0.059259,
+     "mean": 0.044444,
      "n": 135
     },
     "rec.voice.f1": {
@@ -37403,11 +37403,11 @@
      "n": 135
     },
     "sqi": {
-     "mean": 78.523727,
+     "mean": 78.319985,
      "n": 135
     },
     "struct.downbeat.f1": {
-     "mean": 0.654046,
+     "mean": 0.639231,
      "n": 135
     },
     "struct.form.order_exact": {
@@ -37439,11 +37439,11 @@
      "n": 135
     },
     "struct.measures.count_exact": {
-     "mean": 0.533333,
+     "mean": 0.518519,
      "n": 135
     },
     "struct.measures.count_ratio": {
-     "mean": 1.161934,
+     "mean": 1.16286,
      "n": 135
     },
     "struct.measures.extra_empty_edge": {
@@ -37479,7 +37479,7 @@
      "n": 135
     },
     "struct.tempo.ratio_effective": {
-     "mean": 1.061913,
+     "mean": 1.061884,
      "n": 135
     },
     "struct.tempo.timeline_accuracy": {
@@ -37499,7 +37499,7 @@
      "n": 135
     },
     "usable": {
-     "mean": 0.222222,
+     "mean": 0.207407,
      "n": 135
     }
    },
@@ -37538,7 +37538,7 @@
      "n": 846
     },
     "critical.structure": {
-     "mean": 0.513002,
+     "mean": 0.510638,
      "n": 846
     },
     "errors": {
@@ -37570,15 +37570,15 @@
      "n": 846
     },
     "notation.duration.accuracy": {
-     "mean": 0.684789,
+     "mean": 0.684762,
      "n": 846
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.677393,
+     "mean": 0.677366,
      "n": 846
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.685053,
+     "mean": 0.685027,
      "n": 846
     },
     "notation.hand.accuracy": {
@@ -37618,11 +37618,11 @@
      "n": 846
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.461228,
+     "mean": 0.461443,
      "n": 846
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.45582,
+     "mean": 0.455932,
      "n": 846
     },
     "notation.pedal.false_per_min": {
@@ -37634,15 +37634,15 @@
      "n": 846
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997453,
+     "mean": 0.997476,
      "n": 846
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.985554,
+     "mean": 0.985576,
      "n": 846
     },
     "notation.ties.extra_per_100": {
-     "mean": 6.890869,
+     "mean": 6.890231,
      "n": 846
     },
     "notation.tuplets.f1": {
@@ -37702,23 +37702,23 @@
      "n": 313
     },
     "nq.ned": {
-     "mean": 0.724726,
+     "mean": 0.725444,
      "n": 423
     },
     "nq.range.ledger4_rate": {
-     "mean": 9.069866,
+     "mean": 9.06939,
      "n": 423
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 4.303143,
+     "mean": 4.302666,
      "n": 423
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.896482,
+     "mean": 0.898957,
      "n": 423
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.028913,
+     "mean": 0.028912,
      "n": 423
     },
     "nq.rhythm.hidden_beat_rate.delta": {
@@ -37726,7 +37726,7 @@
      "n": 423
     },
     "nq.rhythm.short_rate_delta": {
-     "mean": -0.002832,
+     "mean": -0.002834,
      "n": 423
     },
     "nq.shape.tm_missing": {
@@ -37790,11 +37790,11 @@
      "n": 423
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.077572,
+     "mean": 0.077566,
      "n": 296
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.049847,
+     "mean": 0.049817,
      "n": 58
     },
     "nq.tuplet.group_complete": {
@@ -37826,11 +37826,11 @@
      "n": 180
     },
     "read.accidentals_per_note": {
-     "mean": 0.017899,
+     "mean": 0.017911,
      "n": 846
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.002469,
+     "mean": -0.002458,
      "n": 846
     },
     "read.bar_completeness": {
@@ -37874,27 +37874,27 @@
      "n": 846
     },
     "read.rests_per_measure": {
-     "mean": 1.316671,
+     "mean": 1.317636,
      "n": 846
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.909933,
+     "mean": 0.910898,
      "n": 846
     },
     "read.short_notes_rate": {
-     "mean": 0.023083,
+     "mean": 0.023079,
      "n": 846
     },
     "read.short_notes_rate.delta": {
-     "mean": -6.5e-05,
+     "mean": -6.9e-05,
      "n": 846
     },
     "read.ties_per_note": {
-     "mean": 0.055135,
+     "mean": 0.055128,
      "n": 846
     },
     "read.ties_per_note.delta": {
-     "mean": 0.050789,
+     "mean": 0.050782,
      "n": 846
     },
     "read.tuplets_per_note": {
@@ -37902,7 +37902,7 @@
      "n": 846
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.028745,
+     "mean": 0.028746,
      "n": 846
     },
     "rec.check.1": {
@@ -37910,7 +37910,7 @@
      "n": 846
     },
     "rec.check.10": {
-     "mean": 4.373674,
+     "mean": 4.379895,
      "n": 846
     },
     "rec.check.2": {
@@ -37946,7 +37946,7 @@
      "n": 846
     },
     "rec.hands.crossing": {
-     "mean": 0.001622,
+     "mean": 0.001621,
      "n": 846
     },
     "rec.hands.hard_per_100_bars": {
@@ -37958,7 +37958,7 @@
      "n": 846
     },
     "rec.harmony.agreement": {
-     "mean": 0.592266,
+     "mean": 0.593281,
      "n": 846
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -37966,35 +37966,35 @@
      "n": 846
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 9.689521,
+     "mean": 9.689951,
      "n": 846
     },
     "rec.metre.f1": {
-     "mean": 0.734769,
+     "mean": 0.73478,
      "n": 846
     },
     "rec.mv2h": {
-     "mean": 0.737269,
+     "mean": 0.737468,
      "n": 846
     },
     "rec.onset_f1": {
-     "mean": 0.458451,
+     "mean": 0.458613,
      "n": 846
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 84.933102,
+     "mean": 84.954201,
      "n": 846
     },
     "rec.rest.precision": {
-     "mean": 0.252906,
+     "mean": 0.251752,
      "n": 846
     },
     "rec.rest.recall": {
-     "mean": 0.41504,
+     "mean": 0.417204,
      "n": 462
     },
     "rec.stability": {
-     "mean": 0.449704,
+     "mean": 0.449087,
      "n": 846
     },
     "rec.tuplet.false_per_100_beats": {
@@ -38010,7 +38010,7 @@
      "n": 60
     },
     "rec.usable": {
-     "mean": 0.072104,
+     "mean": 0.06974,
      "n": 846
     },
     "rec.voice.f1": {
@@ -38018,7 +38018,7 @@
      "n": 846
     },
     "sqi": {
-     "mean": 78.344882,
+     "mean": 78.3464,
      "n": 846
     },
     "struct.downbeat.f1": {
@@ -38054,7 +38054,7 @@
      "n": 846
     },
     "struct.measures.count_exact": {
-     "mean": 0.51773,
+     "mean": 0.515366,
      "n": 846
     },
     "struct.measures.count_ratio": {
@@ -38094,7 +38094,7 @@
      "n": 846
     },
     "struct.tempo.ratio_effective": {
-     "mean": 1.098219,
+     "mean": 1.098215,
      "n": 846
     },
     "struct.tempo.timeline_accuracy": {
@@ -38125,7 +38125,7 @@
      "n": 423
     },
     "critical.beat_placement": {
-     "mean": 0.387707,
+     "mean": 0.392435,
      "n": 423
     },
     "critical.hands": {
@@ -38185,15 +38185,15 @@
      "n": 423
     },
     "notation.duration.accuracy": {
-     "mean": 0.68748,
+     "mean": 0.687485,
      "n": 423
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.679828,
+     "mean": 0.679833,
      "n": 423
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.687677,
+     "mean": 0.687682,
      "n": 423
     },
     "notation.hand.accuracy": {
@@ -38233,11 +38233,11 @@
      "n": 423
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.473327,
+     "mean": 0.478055,
      "n": 423
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.467558,
+     "mean": 0.47208,
      "n": 423
     },
     "notation.pedal.false_per_min": {
@@ -38249,15 +38249,15 @@
      "n": 423
     },
     "notation.spelling.accuracy": {
-     "mean": 0.997545,
+     "mean": 0.997591,
      "n": 423
     },
     "notation.spelling.accuracy_ref": {
-     "mean": 0.985997,
+     "mean": 0.98604,
      "n": 423
     },
     "notation.ties.extra_per_100": {
-     "mean": 6.37176,
+     "mean": 6.369658,
      "n": 423
     },
     "notation.tuplets.f1": {
@@ -38301,11 +38301,11 @@
      "n": 423
     },
     "read.accidentals_per_note": {
-     "mean": 0.01808,
+     "mean": 0.018103,
      "n": 423
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.002696,
+     "mean": -0.002674,
      "n": 423
     },
     "read.bar_completeness": {
@@ -38325,11 +38325,11 @@
      "n": 423
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.08561,
+     "mean": 0.085611,
      "n": 423
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.00715,
+     "mean": 0.007151,
      "n": 423
     },
     "read.max_chord_size": {
@@ -38349,11 +38349,11 @@
      "n": 423
     },
     "read.rests_per_measure": {
-     "mean": 1.330123,
+     "mean": 1.329577,
      "n": 423
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.923385,
+     "mean": 0.92284,
      "n": 423
     },
     "read.short_notes_rate": {
@@ -38365,19 +38365,19 @@
      "n": 423
     },
     "read.ties_per_note": {
-     "mean": 0.05157,
+     "mean": 0.051549,
      "n": 423
     },
     "read.ties_per_note.delta": {
-     "mean": 0.047114,
+     "mean": 0.047094,
      "n": 423
     },
     "read.tuplets_per_note": {
-     "mean": 0.075426,
+     "mean": 0.075427,
      "n": 423
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.027513,
+     "mean": 0.027514,
      "n": 423
     },
     "rec.check.1": {
@@ -38421,7 +38421,7 @@
      "n": 423
     },
     "rec.hands.crossing": {
-     "mean": 0.002733,
+     "mean": 0.002732,
      "n": 423
     },
     "rec.hands.hard_per_100_bars": {
@@ -38433,7 +38433,7 @@
      "n": 423
     },
     "rec.harmony.agreement": {
-     "mean": 0.594071,
+     "mean": 0.596693,
      "n": 423
     },
     "rec.ledger.ge3_per_100_heads": {
@@ -38441,35 +38441,35 @@
      "n": 423
     },
     "rec.ledger.plain_ge3_per_100_heads": {
-     "mean": 15.731433,
+     "mean": 15.731661,
      "n": 423
     },
     "rec.metre.f1": {
-     "mean": 0.741785,
+     "mean": 0.743428,
      "n": 423
     },
     "rec.mv2h": {
-     "mean": 0.738675,
+     "mean": 0.739529,
      "n": 423
     },
     "rec.onset_f1": {
-     "mean": 0.470379,
+     "mean": 0.475002,
      "n": 423
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 86.558788,
+     "mean": 86.44604,
      "n": 423
     },
     "rec.rest.precision": {
-     "mean": 0.259242,
+     "mean": 0.261606,
      "n": 423
     },
     "rec.rest.recall": {
-     "mean": 0.384566,
+     "mean": 0.388895,
      "n": 231
     },
     "rec.stability": {
-     "mean": 0.460691,
+     "mean": 0.460138,
      "n": 423
     },
     "rec.tuplet.false_per_100_beats": {
@@ -38493,11 +38493,11 @@
      "n": 423
     },
     "sqi": {
-     "mean": 78.802139,
+     "mean": 78.87024,
      "n": 423
     },
     "struct.downbeat.f1": {
-     "mean": 0.641407,
+     "mean": 0.646135,
      "n": 423
     },
     "struct.form.order_exact": {
@@ -38533,7 +38533,7 @@
      "n": 423
     },
     "struct.measures.count_ratio": {
-     "mean": 1.045375,
+     "mean": 1.045079,
      "n": 423
     },
     "struct.measures.extra_empty_edge": {
@@ -38589,7 +38589,7 @@
      "n": 423
     },
     "usable": {
-     "mean": 0.250591,
+     "mean": 0.255319,
      "n": 423
     }
    }
@@ -39413,7 +39413,7 @@
     "rec.rest.false_per_100_bars": 66.666667,
     "rec.rest.precision": 0.5,
     "rec.rest.recall": 0.5,
-    "rec.stability": 0.333333,
+    "rec.stability": 0.0,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
@@ -57538,7 +57538,7 @@
    "error_code": null,
    "metrics": {
     "critical.accidentals": 1.0,
-    "critical.beat_placement": 0.0,
+    "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
     "critical.key": 1.0,
     "critical.meter": 1.0,
@@ -57556,11 +57556,11 @@
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
     "notation.note_shape.mismatches": 0.0,
-    "notation.onset_pos.accuracy": 0.0,
-    "notation.onset_pos.accuracy_ref": 0.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.onset_pos.accuracy_ref": 0.944954,
     "notation.pedal.f1": null,
-    "notation.spelling.accuracy": 0.990291,
-    "notation.spelling.accuracy_ref": 0.93578,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.944954,
     "notation.ties.extra_per_100": 0.0,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
@@ -57575,24 +57575,24 @@
     "rec.check.5": 0.0,
     "rec.check.6": 0.0,
     "rec.check.7": 0.0,
-    "rec.hands.crossing": 0.018519,
+    "rec.hands.crossing": 0.018182,
     "rec.hands.hard_per_100_bars": 0.0,
     "rec.hands.line_velocity_per_100_bars": 0.0,
-    "rec.harmony.agreement": 0.615385,
-    "rec.metre.f1": 0.646865,
-    "rec.mv2h": 0.710229,
-    "rec.onset_f1": 0.0,
-    "rec.rest.false_per_100_bars": 46.153846,
-    "rec.rest.precision": 0.0,
-    "rec.rest.recall": 0.0,
+    "rec.harmony.agreement": 1.0,
+    "rec.metre.f1": 0.954557,
+    "rec.mv2h": 0.84869,
+    "rec.onset_f1": 0.971698,
+    "rec.rest.false_per_100_bars": 15.384615,
+    "rec.rest.precision": 0.5,
+    "rec.rest.recall": 1.0,
     "rec.stability": 0.051282,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.468571,
-    "sqi": 80.443137,
-    "struct.downbeat.f1": 0.0,
+    "sqi": 94.66332,
+    "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
@@ -57605,17 +57605,17 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "7c22b4eb40a2c42d",
-   "sqi": 80.443137,
+   "semantic": "fbbd248aa738b380",
+   "sqi": 94.66332,
    "status": "ok"
   },
   "hymns/my-hope-is-built|cover|none|s1|opt:v2|tex:octaves": {
    "error_code": null,
    "metrics": {
     "critical.accidentals": 1.0,
-    "critical.beat_placement": 0.0,
+    "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
     "critical.key": 1.0,
     "critical.meter": 1.0,
@@ -57633,11 +57633,11 @@
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
     "notation.note_shape.mismatches": 0.0,
-    "notation.onset_pos.accuracy": 0.0,
-    "notation.onset_pos.accuracy_ref": 0.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.onset_pos.accuracy_ref": 0.96789,
     "notation.pedal.f1": null,
-    "notation.spelling.accuracy": 0.990521,
-    "notation.spelling.accuracy_ref": 0.958716,
+    "notation.spelling.accuracy": 1.0,
+    "notation.spelling.accuracy_ref": 0.96789,
     "notation.ties.extra_per_100": 0.0,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
@@ -57655,12 +57655,12 @@
     "rec.hands.crossing": 0.018182,
     "rec.hands.hard_per_100_bars": 46.153846,
     "rec.hands.line_velocity_per_100_bars": 0.0,
-    "rec.harmony.agreement": 0.538462,
-    "rec.metre.f1": 0.646865,
-    "rec.mv2h": 0.767091,
-    "rec.onset_f1": 0.0,
-    "rec.rest.false_per_100_bars": 30.769231,
-    "rec.rest.precision": 0.0,
+    "rec.harmony.agreement": 1.0,
+    "rec.metre.f1": 0.954557,
+    "rec.mv2h": 0.920938,
+    "rec.onset_f1": 0.983683,
+    "rec.rest.false_per_100_bars": 15.384615,
+    "rec.rest.precision": 0.5,
     "rec.rest.recall": 1.0,
     "rec.stability": 0.076923,
     "rec.tuplet.false_per_100_beats": 0.0,
@@ -57668,8 +57668,8 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.785714,
-    "sqi": 82.76999,
-    "struct.downbeat.f1": 0.0,
+    "sqi": 97.33421,
+    "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
@@ -57682,10 +57682,10 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "400011e0efee1d1d",
-   "sqi": 82.76999,
+   "semantic": "210d9d4325481fe9",
+   "sqi": 97.33421,
    "status": "ok"
   },
   "hymns/nearer-my-god|cover|none|s1|opt:app": {
@@ -74056,14 +74056,14 @@
     "rec.hands.crossing": 0.0,
     "rec.hands.hard_per_100_bars": 0.0,
     "rec.hands.line_velocity_per_100_bars": 0.0,
-    "rec.harmony.agreement": 0.1875,
-    "rec.metre.f1": 0.718621,
-    "rec.mv2h": 0.748666,
+    "rec.harmony.agreement": 0.3125,
+    "rec.metre.f1": 0.748016,
+    "rec.mv2h": 0.779545,
     "rec.onset_f1": 0.069767,
-    "rec.rest.false_per_100_bars": 30.769231,
+    "rec.rest.false_per_100_bars": 16.666667,
     "rec.rest.precision": 0.0,
     "rec.rest.recall": null,
-    "rec.stability": 0.384615,
+    "rec.stability": 0.472222,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
@@ -74085,7 +74085,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "5b2c9d844c27ce6b",
+   "semantic": "17511cda0617c1fe",
    "sqi": 63.93134,
    "status": "ok"
   },
@@ -74103,9 +74103,9 @@
     "critical.playback_tempo": 1.0,
     "critical.structure": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.883721,
-    "notation.duration.accuracy_ref": 0.883721,
-    "notation.duration.page_accuracy": 0.883721,
+    "notation.duration.accuracy": 0.860465,
+    "notation.duration.accuracy_ref": 0.860465,
+    "notation.duration.page_accuracy": 0.860465,
     "notation.hand.accuracy": 0.5,
     "notation.hand.accuracy_ref": 0.5,
     "notation.ioi.accuracy": 0.904762,
@@ -74133,11 +74133,11 @@
     "rec.hands.crossing": 0.0,
     "rec.hands.hard_per_100_bars": 0.0,
     "rec.hands.line_velocity_per_100_bars": 0.0,
-    "rec.harmony.agreement": 0.1875,
-    "rec.metre.f1": 0.718621,
-    "rec.mv2h": 0.681999,
+    "rec.harmony.agreement": 0.3125,
+    "rec.metre.f1": 0.748016,
+    "rec.mv2h": 0.708227,
     "rec.onset_f1": 0.069767,
-    "rec.rest.false_per_100_bars": 115.384615,
+    "rec.rest.false_per_100_bars": 116.666667,
     "rec.rest.precision": 0.0,
     "rec.rest.recall": null,
     "rec.stability": 0.333333,
@@ -74146,7 +74146,7 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.666667,
-    "sqi": 58.93134,
+    "sqi": 58.698782,
     "struct.downbeat.f1": 0.285714,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 0.0,
@@ -74162,8 +74162,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "3a15c4c4ddc8c8e9",
-   "sqi": 58.93134,
+   "semantic": "2b95d7d4b3f65937",
+   "sqi": 58.698782,
    "status": "ok"
   },
   "method/beyer/033|cover|none|s1|opt:v2-handslegacy|tex:octaves": {
@@ -74210,14 +74210,14 @@
     "rec.hands.crossing": 0.0,
     "rec.hands.hard_per_100_bars": 0.0,
     "rec.hands.line_velocity_per_100_bars": 0.0,
-    "rec.harmony.agreement": 0.1875,
-    "rec.metre.f1": 0.695287,
-    "rec.mv2h": 0.74865,
+    "rec.harmony.agreement": 0.25,
+    "rec.metre.f1": 0.72371,
+    "rec.mv2h": 0.766835,
     "rec.onset_f1": 0.069767,
-    "rec.rest.false_per_100_bars": 30.769231,
+    "rec.rest.false_per_100_bars": 16.666667,
     "rec.rest.precision": 0.0,
     "rec.rest.recall": null,
-    "rec.stability": 0.333333,
+    "rec.stability": 0.0,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
@@ -74239,7 +74239,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "fc5bb56ee64706b0",
+   "semantic": "094a48795036976f",
    "sqi": 64.872647,
    "status": "ok"
   },
@@ -74287,14 +74287,14 @@
     "rec.hands.crossing": 0.0,
     "rec.hands.hard_per_100_bars": 0.0,
     "rec.hands.line_velocity_per_100_bars": 0.0,
-    "rec.harmony.agreement": 0.1875,
-    "rec.metre.f1": 0.695287,
-    "rec.mv2h": 0.74865,
+    "rec.harmony.agreement": 0.25,
+    "rec.metre.f1": 0.72371,
+    "rec.mv2h": 0.766835,
     "rec.onset_f1": 0.069767,
-    "rec.rest.false_per_100_bars": 30.769231,
+    "rec.rest.false_per_100_bars": 16.666667,
     "rec.rest.precision": 0.0,
     "rec.rest.recall": null,
-    "rec.stability": 0.025641,
+    "rec.stability": 0.055556,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
@@ -74316,7 +74316,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "fc5bb56ee64706b0",
+   "semantic": "094a48795036976f",
    "sqi": 64.872647,
    "status": "ok"
   },
@@ -101361,9 +101361,9 @@
     "critical.playback_tempo": 0.0,
     "critical.structure": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.575175,
-    "notation.duration.accuracy_ref": 0.566265,
-    "notation.duration.page_accuracy": 0.575175,
+    "notation.duration.accuracy": 0.573427,
+    "notation.duration.accuracy_ref": 0.564544,
+    "notation.duration.page_accuracy": 0.573427,
     "notation.hand.accuracy": 0.923077,
     "notation.hand.accuracy_ref": 0.908778,
     "notation.ioi.accuracy": 0.580247,
@@ -101374,7 +101374,7 @@
     "notation.pedal.f1": null,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 0.984509,
-    "notation.ties.extra_per_100": 5.769231,
+    "notation.ties.extra_per_100": 6.118881,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 0.0,
     "notes.identity.f1": 0.992194,
@@ -101388,15 +101388,15 @@
     "rec.check.5": 0.0,
     "rec.check.6": 0.0,
     "rec.check.7": 0.0,
-    "rec.hands.crossing": 0.006173,
+    "rec.hands.crossing": 0.00597,
     "rec.hands.hard_per_100_bars": 5.263158,
     "rec.hands.line_velocity_per_100_bars": 5.263158,
     "rec.harmony.agreement": 0.35,
     "rec.metre.f1": 0.261622,
-    "rec.mv2h": 0.553366,
+    "rec.mv2h": 0.553021,
     "rec.onset_f1": 0.020815,
-    "rec.rest.false_per_100_bars": 73.684211,
-    "rec.rest.precision": 0.176471,
+    "rec.rest.false_per_100_bars": 63.157895,
+    "rec.rest.precision": 0.2,
     "rec.rest.recall": 0.466667,
     "rec.stability": 1.0,
     "rec.tuplet.false_per_100_beats": 0.0,
@@ -101404,7 +101404,7 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.758065,
-    "sqi": 55.629143,
+    "sqi": 55.611931,
     "struct.downbeat.f1": 0.102564,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -101420,8 +101420,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "d18f2fe93cbdc02d",
-   "sqi": 55.629143,
+   "semantic": "cda6263934b3ef53",
+   "sqi": 55.611931,
    "status": "ok"
   },
   "method/czerny849/011|cover|none|s1|opt:v2-handslegacy|tex:octaves": {
@@ -107019,7 +107019,7 @@
     "rec.rest.false_per_100_bars": 26.666667,
     "rec.rest.precision": 0.0,
     "rec.rest.recall": null,
-    "rec.stability": 0.6,
+    "rec.stability": 0.711111,
     "rec.tuplet.false_per_100_beats": 1.666667,
     "rec.tuplet.precision": 0.0,
     "rec.tuplet.recall": null,
@@ -107919,7 +107919,7 @@
     "notation.pedal.f1": null,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
-    "notation.ties.extra_per_100": 1.333333,
+    "notation.ties.extra_per_100": 0.888889,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 4.444444,
     "notes.identity.f1": 1.0,
@@ -107936,14 +107936,14 @@
     "rec.hands.crossing": 0.0,
     "rec.hands.hard_per_100_bars": 26.666667,
     "rec.hands.line_velocity_per_100_bars": 0.0,
-    "rec.harmony.agreement": 0.034483,
-    "rec.metre.f1": 0.440678,
-    "rec.mv2h": 0.661196,
+    "rec.harmony.agreement": 0.103448,
+    "rec.metre.f1": 0.451977,
+    "rec.mv2h": 0.677249,
     "rec.onset_f1": 0.0,
-    "rec.rest.false_per_100_bars": 13.333333,
+    "rec.rest.false_per_100_bars": 26.666667,
     "rec.rest.precision": 0.0,
     "rec.rest.recall": null,
-    "rec.stability": 0.822222,
+    "rec.stability": 0.911111,
     "rec.tuplet.false_per_100_beats": 3.333333,
     "rec.tuplet.precision": 0.0,
     "rec.tuplet.recall": null,
@@ -107965,7 +107965,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "c52c31b5de89ef58",
+   "semantic": "ac4fd236cc4f4739",
    "sqi": 78.797222,
    "status": "ok"
   },
@@ -107983,9 +107983,9 @@
     "critical.playback_tempo": 1.0,
     "critical.structure": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.942222,
-    "notation.duration.accuracy_ref": 0.942222,
-    "notation.duration.page_accuracy": 0.942222,
+    "notation.duration.accuracy": 0.944444,
+    "notation.duration.accuracy_ref": 0.944444,
+    "notation.duration.page_accuracy": 0.944444,
     "notation.hand.accuracy": 1.0,
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 0.9375,
@@ -107996,7 +107996,7 @@
     "notation.pedal.f1": null,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
-    "notation.ties.extra_per_100": 1.333333,
+    "notation.ties.extra_per_100": 0.888889,
     "notation.tuplets.f1": null,
     "notation.tuplets.false_per_100": 4.444444,
     "notes.identity.f1": 1.0,
@@ -108013,20 +108013,20 @@
     "rec.hands.crossing": 0.0,
     "rec.hands.hard_per_100_bars": 26.666667,
     "rec.hands.line_velocity_per_100_bars": 0.0,
-    "rec.harmony.agreement": 0.034483,
-    "rec.metre.f1": 0.440678,
-    "rec.mv2h": 0.595894,
+    "rec.harmony.agreement": 0.103448,
+    "rec.metre.f1": 0.451977,
+    "rec.mv2h": 0.612391,
     "rec.onset_f1": 0.0,
-    "rec.rest.false_per_100_bars": 13.333333,
+    "rec.rest.false_per_100_bars": 26.666667,
     "rec.rest.precision": 0.0,
     "rec.rest.recall": null,
-    "rec.stability": 1.0,
+    "rec.stability": 0.911111,
     "rec.tuplet.false_per_100_beats": 3.333333,
     "rec.tuplet.precision": 0.0,
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 0.658754,
-    "sqi": 78.797222,
+    "sqi": 78.819444,
     "struct.downbeat.f1": 0.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -108042,8 +108042,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "c8913574a7aa40f6",
-   "sqi": 78.797222,
+   "semantic": "e084378224ed8f52",
+   "sqi": 78.819444,
    "status": "ok"
   },
   "method/hanon/012|cover|none|s11|opt:app": {
@@ -110561,7 +110561,7 @@
     "rec.rest.false_per_100_bars": 54.761905,
     "rec.rest.precision": 0.115385,
     "rec.rest.recall": 0.4,
-    "rec.stability": 0.111111,
+    "rec.stability": 0.095238,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
@@ -110638,7 +110638,7 @@
     "rec.rest.false_per_100_bars": 54.761905,
     "rec.rest.precision": 0.08,
     "rec.rest.recall": 0.4,
-    "rec.stability": 0.174603,
+    "rec.stability": 0.15873,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
@@ -113795,7 +113795,7 @@
     "rec.rest.false_per_100_bars": 12.5,
     "rec.rest.precision": 0.783784,
     "rec.rest.recall": 0.725,
-    "rec.stability": 0.276042,
+    "rec.stability": 0.270833,
     "rec.tuplet.false_per_100_beats": 1.041667,
     "rec.tuplet.precision": 0.0,
     "rec.tuplet.recall": null,
@@ -121140,7 +121140,7 @@
    "error_code": null,
    "metrics": {
     "critical.accidentals": 1.0,
-    "critical.beat_placement": 1.0,
+    "critical.beat_placement": 0.0,
     "critical.hands": 1.0,
     "critical.key": 1.0,
     "critical.meter": 1.0,
@@ -121148,7 +121148,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.818182,
     "notation.duration.accuracy_ref": 0.818182,
@@ -121158,8 +121158,8 @@
     "notation.ioi.accuracy": 0.709091,
     "notation.note_shape.consistency": 1.0,
     "notation.note_shape.mismatches": 0.0,
-    "notation.onset_pos.accuracy": 0.909091,
-    "notation.onset_pos.accuracy_ref": 0.909091,
+    "notation.onset_pos.accuracy": 0.0,
+    "notation.onset_pos.accuracy_ref": 0.0,
     "notation.pedal.f1": null,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
@@ -121180,44 +121180,44 @@
     "rec.hands.crossing": 0.0,
     "rec.hands.hard_per_100_bars": 0.0,
     "rec.hands.line_velocity_per_100_bars": 0.0,
-    "rec.harmony.agreement": 1.0,
-    "rec.metre.f1": 1.0,
-    "rec.mv2h": 0.925,
-    "rec.onset_f1": 0.909091,
-    "rec.rest.false_per_100_bars": 0.0,
-    "rec.rest.precision": 1.0,
+    "rec.harmony.agreement": 0.75,
+    "rec.metre.f1": 0.627451,
+    "rec.mv2h": 0.80049,
+    "rec.onset_f1": 0.0,
+    "rec.rest.false_per_100_bars": 44.444444,
+    "rec.rest.precision": 0.0,
     "rec.rest.recall": null,
-    "rec.stability": 0.166667,
+    "rec.stability": 0.148148,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
-    "rec.usable": 1.0,
+    "rec.usable": 0.0,
     "rec.voice.f1": 1.0,
-    "sqi": 93.909091,
-    "struct.downbeat.f1": 1.0,
+    "sqi": 80.272727,
+    "struct.downbeat.f1": 0.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
-    "struct.measures.count_exact": 1.0,
+    "struct.measures.count_exact": 0.0,
     "struct.stats_consistent": 1.0,
     "struct.tempo.ok_effective": 1.0,
     "struct.tempo.timeline_accuracy": 1.0,
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 1.0
+    "usable": 0.0
    },
-   "semantic": "5ca0cb56aa0232c6",
-   "sqi": 93.909091,
+   "semantic": "0dfde77feac53bf1",
+   "sqi": 80.272727,
    "status": "ok"
   },
   "micro/M10-dotted|cover|none|s1|opt:v2-handslegacy": {
    "error_code": null,
    "metrics": {
     "critical.accidentals": 1.0,
-    "critical.beat_placement": 1.0,
+    "critical.beat_placement": 0.0,
     "critical.hands": 1.0,
     "critical.key": 1.0,
     "critical.meter": 1.0,
@@ -121225,7 +121225,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 1.0,
+    "critical.structure": 0.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.818182,
     "notation.duration.accuracy_ref": 0.818182,
@@ -121235,8 +121235,8 @@
     "notation.ioi.accuracy": 0.709091,
     "notation.note_shape.consistency": 1.0,
     "notation.note_shape.mismatches": 0.0,
-    "notation.onset_pos.accuracy": 0.909091,
-    "notation.onset_pos.accuracy_ref": 0.909091,
+    "notation.onset_pos.accuracy": 0.0,
+    "notation.onset_pos.accuracy_ref": 0.0,
     "notation.pedal.f1": null,
     "notation.spelling.accuracy": 1.0,
     "notation.spelling.accuracy_ref": 1.0,
@@ -121257,37 +121257,37 @@
     "rec.hands.crossing": 0.0,
     "rec.hands.hard_per_100_bars": 0.0,
     "rec.hands.line_velocity_per_100_bars": 0.0,
-    "rec.harmony.agreement": 1.0,
-    "rec.metre.f1": 1.0,
-    "rec.mv2h": 0.925,
-    "rec.onset_f1": 0.909091,
-    "rec.rest.false_per_100_bars": 0.0,
-    "rec.rest.precision": 1.0,
+    "rec.harmony.agreement": 0.75,
+    "rec.metre.f1": 0.627451,
+    "rec.mv2h": 0.80049,
+    "rec.onset_f1": 0.0,
+    "rec.rest.false_per_100_bars": 44.444444,
+    "rec.rest.precision": 0.0,
     "rec.rest.recall": null,
-    "rec.stability": 0.166667,
+    "rec.stability": 0.148148,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
-    "rec.usable": 1.0,
+    "rec.usable": 0.0,
     "rec.voice.f1": 1.0,
-    "sqi": 93.909091,
-    "struct.downbeat.f1": 1.0,
+    "sqi": 80.272727,
+    "struct.downbeat.f1": 0.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
-    "struct.measures.count_exact": 1.0,
+    "struct.measures.count_exact": 0.0,
     "struct.stats_consistent": 1.0,
     "struct.tempo.ok_effective": 1.0,
     "struct.tempo.timeline_accuracy": 1.0,
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 1.0
+    "usable": 0.0
    },
-   "semantic": "5ca0cb56aa0232c6",
-   "sqi": 93.909091,
+   "semantic": "0dfde77feac53bf1",
+   "sqi": 80.272727,
    "status": "ok"
   },
   "micro/M10-dotted|cover|none|s1|opt:v2-handslegacy|tex:octaves": {
@@ -121418,7 +121418,7 @@
     "rec.rest.false_per_100_bars": 12.5,
     "rec.rest.precision": 0.0,
     "rec.rest.recall": null,
-    "rec.stability": 0.5,
+    "rec.stability": 0.458333,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
@@ -128415,6 +128415,14 @@
    "reason": "G10a-1d: a phase step after the unchanged metre model; metre and tempo identical (G10 section 36)",
    "sqi_all": 78.344882,
    "usable_all": 0.256501
+  },
+  {
+   "audio_score_sha256": "cdb9125f08ce64c162d07036e743935b0f012f77db70e8d7efc865ec210ce424",
+   "date": "2026-10-08",
+   "git_sha": "025238b07bfbee1a882c8470eddbcec266f8073f",
+   "reason": "G10a-1d review round: phase step with chord share and margin, real beats phase-only; metre and tempo identical (G10 section 36)",
+   "sqi_all": 78.3464,
+   "usable_all": 0.256501
   }
  ],
  "known_failures": {
@@ -128760,10 +128768,10 @@
  },
  "lock_sha256": "a01b9e4c35ecaa9f1faf54c639e5a87dffd38b5527b5c1e3e9534e8e80c91086",
  "recorded": {
-  "audio_score_sha256": "0ec12b46d05331531a89d070d0688f29f6604cc3290bcfae2b586459dfab2c84",
+  "audio_score_sha256": "cdb9125f08ce64c162d07036e743935b0f012f77db70e8d7efc865ec210ce424",
   "date": "2026-10-08",
   "git_dirty": true,
-  "git_sha": "276c2c0e88e3f468356fa0f8feecc3b06c1e1db2",
+  "git_sha": "025238b07bfbee1a882c8470eddbcec266f8073f",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"

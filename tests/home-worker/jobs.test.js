@@ -70,7 +70,8 @@ async function resultRules() {
   const withBeats = Object.assign({}, good, { beats: [0.5, 1, 1.5000004, 2], downbeats: [0.5, 2] });
   const vbt = R.validateResult(withBeats);
   ok('beats and downbeats are kept (rounded to 0.1 ms)', vbt.ok && JSON.stringify(vbt.result.beats) === '[0.5,1,1.5,2]' && JSON.stringify(vbt.result.downbeats) === '[0.5,2]', vbt.ok ? JSON.stringify(vbt.result.beats) : vbt.error);
-  const badBeats = (name, extra) => { const r = R.validateResult(Object.assign({}, good, extra)); ok(name, !r.ok && r.code === 'bad-beats', r.ok ? 'accepted' : r.code); };
+  /* never a failed result because of beats: malformed ones are left out and the notes kept (beatsLeftOut) */
+  const badBeats = (name, extra) => { const r = R.validateResult(Object.assign({}, good, extra)); ok(name.replace('are refused', 'are left out, the notes kept'), r.ok && !('beats' in r.result) && !('downbeats' in r.result) && r.result.beatsLeftOut === 'malformed' && r.result.notes.length === good.notes.length, r.ok ? JSON.stringify(r.result.beatsLeftOut) : r.code); };
   badBeats('beats that do not rise are refused', { beats: [1, 2, 2, 3] });
   badBeats('a beat that is not a number is refused', { beats: [1, '2', 3] });
   badBeats('a beat that is not finite is refused', { beats: [1, 2, Infinity] });
@@ -80,6 +81,13 @@ async function resultRules() {
   badBeats('more than 20,000 beats are refused', { beats: Array.from({ length: 20001 }, (x, i) => i * 0.01) });
   badBeats('downbeats without beats are refused', { downbeats: [1, 2] });
   badBeats('downbeats that do not rise are refused', { beats: [1, 2, 3, 4], downbeats: [3, 1] });
+  {
+    /* beats that would take a result past its size cap are left out first (a small cap makes the notes alone fit, notes and beats not) */
+    const many = Array.from({ length: 20000 }, (x, i) => Math.round(i * 0.004 * 1e4) / 1e4).filter(t => t <= good.duration);
+    const plain = R.validateResult(good), cap = plain.bytes + 200;
+    const r = R.validateResult(Object.assign({}, good, { beats: many, downbeats: many.filter((t, i) => i % 4 === 0) }), { RESULT_MAX_BYTES: cap });
+    ok('beats that would pass the size cap are left out, the notes kept', r.ok && !('beats' in r.result) && r.result.beatsLeftOut === 'size', r.ok ? r.result.beatsLeftOut : r.code);
+  }
   const bad = (name, mut, code) => {
     const b = JSON.parse(JSON.stringify(good)); mut(b);
     const r = R.validateResult(b);

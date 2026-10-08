@@ -136,7 +136,7 @@ function pipelinePieces() {
   fs.readFileSync(perfsPath, 'utf8').split('\n').filter(Boolean).forEach(line => {
     const r = JSON.parse(line);
     cap = null;
-    try { A.toMusicXml(r.input, { closeGaps: true, exactBars: true, recording: 'v2' }); } catch (e) { cap = null; }
+    try { A.toMusicXml(r.input, Object.assign({ closeGaps: true, exactBars: true, recording: 'v2' }, r.input.beats ? { recBeats: 'oracle' } : {})); } catch (e) { cap = null; }
     if (!cap) return;                                   /* the legacy path ran (no v2 skeleton): S4 v2 never sees it */
     const byKey = new Map();
     r.input.notes.forEach((n, i) => {

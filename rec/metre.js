@@ -107,15 +107,19 @@
     /* G10a-1d: the phase step (a model with `phase`): the reading's metre, pulse and tempo stay; its bar phase is chosen again among the
        phases of the same pulse frame and metre, with the harmonic rhythm and the helper's downbeats as evidence (G10 section 36) */
     let phase = null;
-    if (W.phase && W.phase.weights && opts.phaseStep !== false) {
+    const bi0 = bi;
+    if (W.phase && Array.isArray(W.phase.weights) && W.phase.weights.length === 3 && W.phase.weights.every(x => typeof x === 'number' && isFinite(x)) && opts.phaseStep !== false) {
       const g = phaseGroup(H, bi);
       const rows = phaseFeatures(H, g, sc, bi, att, tracks, W, opts.phaseDownbeats || null);
-      const pw = W.phase.weights;
+      const pw = W.phase.weights, margin = W.phase.margin || 0;
+      const z = rows.map(r => pw[0] * r[0] + pw[1] * r[1] + pw[2] * r[2]);
+      const z0 = z[g.indexOf(bi)];
       let best = -Infinity, nb = bi;
       g.forEach((i, j) => {
-        const z = pw[0] * rows[j][0] + pw[1] * rows[j][1] + pw[2] * rows[j][2];
-        if (z > best + 1e-12 || (Math.abs(z - best) <= 1e-12 && i === bi)) { best = z; nb = i; }
+        if (z[j] > best + 1e-12 || (Math.abs(z[j] - best) <= 1e-12 && i === bi)) { best = z[j]; nb = i; }
       });
+      /* the metre model's own phase stands unless another phase scores at least the learned margin more */
+      if (best - z0 < margin) nb = bi;
       phase = { from: H.list[bi].phi, to: H.list[nb].phi, readings: g.length, downbeats: !!(opts.phaseDownbeats && opts.phaseDownbeats.length) };
       bi = nb;
     }
@@ -126,14 +130,16 @@
     const fv = new Float64Array(F);
     const slots = model.features(H.frames[best.fr], best.mi, best.phi, W.tables, fv, true);
     /* the confidence of the reading: the share of the posterior on readings that agree with it (the same metre, the
-       same quarter tempo within 4 %, bar lines at the same times) */
+       same quarter tempo within 4 %, bar lines at the same times). G10a-1d: of the metre model's own reading (bi0): the posterior and
+       the confidence say how sure the metre choice is, which the phase step does not change */
+    const r0 = H.list[bi0];
     let agree = 0;
     H.list.forEach((h, i) => {
-      if (h.mi !== best.mi || Math.abs(Math.log(h.qpm / best.qpm)) > 0.04) return;
-      if (sameBars(h, best, tracks, att)) agree += p[i];
+      if (h.mi !== r0.mi || Math.abs(Math.log(h.qpm / r0.qpm)) > 0.04) return;
+      if (sameBars(h, r0, tracks, att)) agree += p[i];
     });
     for (const k in metrePost) metrePost[k] = Math.round(metrePost[k] * 1e4) / 1e4;
-    return { best: Object.assign({}, best, { features: Array.from(scaledRow(H, bi, W.alpha, row, cap)), score: sc[bi] }), posterior: p[bi],
+    return { best: Object.assign({}, best, { features: Array.from(scaledRow(H, bi, W.alpha, row, cap)), score: sc[bi] }), posterior: p[bi0],
       confidence: agree, metrePosterior: metrePost, slots: slots, count: H.list.length, phase: phase };
   }
 
@@ -148,10 +154,11 @@
   function phaseFeatures(H, g, sc, bi, att, tracks, W, downs) {
     const b = H.list[bi], m = model.METRES[b.mi], fv = new Float64Array(F), cap = W.beatCap || 100;
     const sh = downs && downs.length ? model.phaseShares(tracks[b.track], b.rho, m, downs) : null;
+    const chords = Math.min(1, model.chordShare(att) / ((W.phase && W.phase.chordSat) || 1));
     return g.map(i => {
       const h = H.list[i];
       const slots = model.features(H.frames[h.fr], h.mi, h.phi, W.tables, fv, true);
-      const hb = model.harmonicContrast(m, slots, att, att.length) * Math.sqrt(Math.min(Math.max(1, H.nBeats[i]), cap));
+      const hb = model.harmonicContrast(m, slots, att, att.length) * Math.sqrt(Math.min(Math.max(1, H.nBeats[i]), cap)) * chords;
       const dn = sh ? model.phaseDown(sh, Math.round(h.phi / model.PHASE_STEP_Q), m) : 0;
       return [sc[i] - sc[bi], hb, dn];
     });

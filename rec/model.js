@@ -548,6 +548,15 @@
     }
     return cnt ? sum / cnt : 0;
   }
+  /* G10a-1d: the share of a piece's attacks that sound two or more different pitch classes at once (a chord, or a melody note over its
+     bass): how much harmony there is to read. A melody alone or in octaves has none, and its harmonic contrast is the melody's own
+     steps, noise for the phase; the phase step weighs the harmonic rhythm by this share */
+  function chordShare(att) {
+    if (!att.length) return 0;
+    let c = 0;
+    for (let i = 0; i < att.length; i++) { const x = att[i].pcs; if (x & (x - 1)) c++; }
+    return c / att.length;
+  }
   /* the share of the helper's downbeats on the bar lines of every phase (PHASE_STEP_Q apart) of one pulse (track, rho) and metre, within
      a quarter of a quarter */
   function phaseShares(track, rho, m, downbeats) {
@@ -582,5 +591,5 @@
 
   return Object.freeze({ R, SCHEMA, METRES, BY_KEY, FAMILIES, FEATURES, PER_ATTACK, PER_BEAT, NLEV, PHASE_STEP_Q, buildTables, prepared,
     frame, features, scaled, score, log2, lgamma, logBB, countSlots, fillCounts, beatEvidence, beatScan, swingHeard, swingWritten,
-    harmonicContrast, phaseShares, phaseDown });
+    harmonicContrast, chordShare, phaseShares, phaseDown });
 });

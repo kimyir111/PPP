@@ -139,23 +139,30 @@ function validateResult(body, limits) {
   }
 
   /* G10a-1d: the helper's audio beats and downbeats (Beat This, beat_track.py), optional. The page passes them to the recording conversion
-     v2 as EVIDENCE of the bar phase (rec/: never bar lines); strict: each a list of at most MAX_BEATS finite seconds, rising, from 0 to the
-     duration + 1 s; downbeats only with beats. Anything else in the body is still stripped. */
-  for (const key of ['beats', 'downbeats']) {
-    if (body[key] == null) continue;
-    const xs = body[key];
-    if (!Array.isArray(xs) || xs.length > L.MAX_BEATS) return bad('The ' + key + ' are not usable.', 'bad-beats');
+     v2 as EVIDENCE of the bar phase (rec/: never bar lines); kept only when well formed: each a list of at most MAX_BEATS finite seconds,
+     rising, from 0 to the duration + 1 s, downbeats only with beats. They never fail a result: malformed ones, or ones that would take the
+     result past its size cap, are left out and the notes are kept (result.beatsLeftOut says why). Anything else in the body is stripped. */
+  const beatList = xs => {
+    if (!Array.isArray(xs) || xs.length > L.MAX_BEATS) return null;
     const out = new Array(xs.length);
     for (let i = 0; i < xs.length; i++) {
       const t = xs[i];
-      if (!isNum(t) || t < 0 || t > duration + 1) return bad('The ' + key + ' are not usable.', 'bad-beats');
+      if (!isNum(t) || t < 0 || t > duration + 1) return null;
       out[i] = r4(t);
-      if (i && !(out[i] > out[i - 1])) return bad('The ' + key + ' are not usable.', 'bad-beats');
+      if (i && !(out[i] > out[i - 1])) return null;
     }
-    result[key] = out;
+    return out;
+  };
+  if (body.beats != null || body.downbeats != null) {
+    const b = body.beats != null ? beatList(body.beats) : null, d = body.downbeats != null ? beatList(body.downbeats) : null;
+    if (!b || (body.downbeats != null && !d)) result.beatsLeftOut = 'malformed';
+    else { result.beats = b; if (d) result.downbeats = d; }
   }
-  if (result.downbeats && !result.beats) return bad('Downbeats came without beats.', 'bad-beats');
-  const bytes = Buffer.byteLength(JSON.stringify(result));
+  let bytes = Buffer.byteLength(JSON.stringify(result));
+  if (bytes > L.RESULT_MAX_BYTES && result.beats) {
+    delete result.beats; delete result.downbeats; result.beatsLeftOut = 'size';
+    bytes = Buffer.byteLength(JSON.stringify(result));
+  }
   if (bytes > L.RESULT_MAX_BYTES) return bad('The result is larger than ' + Math.round(L.RESULT_MAX_BYTES / 1048576) + ' MB.', 'too-large');
   return { ok: true, result: result, bytes: bytes };
 }

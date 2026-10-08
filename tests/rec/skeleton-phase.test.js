@@ -10,7 +10,7 @@ const P = require('./phase-fixtures.js');
 const { REPO } = require('./helpers.js');
 
 for (const [name, fn] of [['decoupledCheck', P.decoupledCheck], ['laterCheck', P.laterCheck], ['helperGateCheck', P.helperGateCheck], ['audioGateCheck', P.audioGateCheck],
-  ['downPhaseCheck', P.downPhaseCheck], ['harmonyCheck', P.harmonyCheck], ['configCheck', P.configCheck], ['groupCheck', P.groupCheck]]) {
+  ['downPhaseCheck', P.downPhaseCheck], ['harmonyCheck', P.harmonyCheck], ['configCheck', P.configCheck], ['groupCheck', P.groupCheck], ['downWiringCheck', P.downWiringCheck], ['confidenceCheck', P.confidenceCheck]]) {
   const x = fn(REC);
   test(x.name, () => assert.ok(x.ok, name + ': ' + x.got + ' (want ' + x.want + ')'));
 }
