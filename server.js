@@ -556,6 +556,7 @@ const GUEST_LOCK_KEY = 727001;
    makes the store fail can be sent over and over. */
 const storeLog = { t: 0, n: 0, dropped: 0 };
 function logStoreError(e) {
+  serverStats.storeError();
   const now = Date.now();
   if (now - storeLog.t > 60000) {
     if (storeLog.dropped) console.error('Share store errors not logged in the last minute: ' + storeLog.dropped);
@@ -564,6 +565,8 @@ function logStoreError(e) {
   if (storeLog.n++ < 5) console.error('Share store error: ' + ((e && (e.code || e.name)) || 'error') + ' ' + String((e && e.message) || e).split('\n')[0].slice(0, 200));
   else storeLog.dropped++;
 }
+/* G13-7a (G13-D11): counters of requests, 5xx answers and store errors by route class, one `stats:` line an hour (server-stats.js). Counting only. */
+const serverStats = require('./server-stats');
 /* where the client address came from, said once (after a deploy, to check it against the real headers) */
 let guestSourceLogged = false;
 const DATA_DIR = process.env.PPP_DATA_DIR ? path.resolve(process.env.PPP_DATA_DIR) : path.join(ROOT, 'data');
@@ -1458,6 +1461,8 @@ const server = http.createServer((req, res) => {
     if (!res.headersSent) jsonError(res, 500, 'Server error');
   });
 });
+/* G13-7a: counts every request and its answer; prependListener runs it before the handler above, so a request that handler refuses at once is counted too */
+server.prependListener('request', serverStats.track);
 
 /* The local helper (omr-service.js) is what makes PDF/photo recognition and
    high-quality piano transcription work. Forgetting to start it beside the
