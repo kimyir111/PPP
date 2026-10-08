@@ -28,6 +28,19 @@ const base = arg('--base', 'http://127.0.0.1:8777');
 const helperPort = arg('--helper-port', null);
 /* G12-1: --omr legacy|v2 opens the page with ?omr=<mode> (PPP.omr for this run only). Without the flag the page is opened as before. */
 const omrMode = arg('--omr', null);
+/* G12-2: --replay F stands the helper in for in the page with what Audiveris wrote earlier (F: {"<job id>": {"pages": [[the .mxl files of page 1 in movement order], ...]}}): the page's own
+   Import.load runs on the same engine output under any tree, with no engine and no helper; a job without an entry is read as the helper would answer when nothing could be read. */
+const replayFile = arg('--replay', null);
+const replay = replayFile ? JSON.parse(fs.readFileSync(replayFile, 'utf8')) : null;
+const { readMxl } = require('../../omr/node/normalize-cli.js');
+/* the helper's answer for a recorded job (omr-service.js recognisePage / the /omr route): per page every movement, and `musicxml` the newest single file */
+function recorded(job) {
+  const e = replay[job.id];
+  if (!e) return { ok: false, code: 'recognition-failed', error: 'no engine output was recorded for this page' };
+  const movements = e.pages.map(files => files.map(f => { try { return readMxl(f); } catch (err) { return null; } }).filter(Boolean));
+  if (!movements.some(m => m.length)) return { ok: false, code: 'recognition-failed', error: 'Audiveris wrote nothing for these pages' };
+  return { ok: true, engine: 'Audiveris 5.11.0', pages: movements.map((m, i) => ({ index: i, ok: m.length > 0 })), musicxml: movements.map(m => (m.length ? m[m.length - 1] : null)), movements: movements };
+}
 
 (async () => {
   const jobs = fs.readFileSync(arg('--in'), 'utf8').split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
@@ -52,8 +65,17 @@ const omrMode = arg('--omr', null);
     for (const job of jobs) {
       const b64 = fs.readFileSync(job.path).toString('base64');
       const t0 = Date.now();
-      const row = await page.evaluate(async (b64, name, type, id) => {
+      const body = replay ? recorded(job) : null;
+      const row = await page.evaluate(async (b64, name, type, id, body) => {
         try {
+          if (body) {
+            const I = window.PPP.Import;
+            I.health = async () => ({ ok: true, audiveris: true });
+            I.recognise = async () => {
+              if (!body.ok) { const e = new Error(body.error); e.code = body.code; throw e; }
+              return JSON.parse(JSON.stringify(body));
+            };
+          }
           const bin = atob(b64);
           const bytes = new Uint8Array(bin.length);
           for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
@@ -63,8 +85,14 @@ const omrMode = arg('--omr', null);
           const index = {};
           s.measures.forEach((m, i) => { index[m.number] = i; });
           const rep = r.report || {};
+          /* G12-2: does the graph the engraver draws agree with the Score (via 'live'), or is it a projection of it; and what v2 did with the page's own lines */
+          let via = null, agree = null;
+          try { const q = window.PPPEngrave && window.PPPEngrave.app.resolveSync(s); via = q ? q.via : null; agree = q && q.agree ? !!q.agree.ok : null; } catch (e) { via = 'threw'; }
           return {
             id: id, ok: true, engine: (r.source && (r.source.engine || r.source.kind)) || null,
+            graph: { kept: !!r.graph, via: via, agree: agree, failed: rep.graphFailed || null, findings: rep.graph && rep.graph.findings ? rep.graph.findings.total : null,
+              skipped: rep.graph && rep.graph.skipped ? rep.graph.skipped.length : null, normalizeFailed: rep.normalizeFailed || null,
+              normalize: rep.normalize ? rep.normalize.counts : null },
             pages: (r.pageImages || []).length,
             report: { confidence: rep.confidence == null ? null : rep.confidence, level: rep.level || null,
               suspectMeasures: (rep.suspectMeasures || []).map(x => typeof x === 'object' ? x.m || x.number : x),
@@ -82,7 +110,7 @@ const omrMode = arg('--omr', null);
         } catch (e) {
           return { id: id, ok: false, error: String(e && e.message || e), code: (e && e.code) || null };
         }
-      }, b64, path.basename(job.path), job.type, job.id);
+      }, b64, path.basename(job.path), job.type, job.id, body);
       row.ms = Date.now() - t0;
       fs.writeSync(out, JSON.stringify(row) + '\n');
     }

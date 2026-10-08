@@ -393,7 +393,7 @@
       if (cur && sameJson(cur, want)) return;
       d.doc.ext = Object.assign({}, d.doc.ext || {}, { 'ppp.omr': want });
       d.touch();
-    }, { source: SOURCE });
+    }, { source: SOURCE, validate: false });   /* a namespace in ext cannot make a valid graph invalid: the (second) validation of a whole page is skipped */
     return { graph: r.graph, changed: r.changed };
   }
 

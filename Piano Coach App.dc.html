@@ -7621,7 +7621,7 @@ const Import = {
       if (!A) { omr.graphFailed = 'apply-not-loaded'; return null; }
       const got = await importToGraph(new TextEncoder().encode(xml), name, 'musicxml');
       let graph = A.markOmr(got.graph, { engine: String(omr.engine || 'omr') }).graph;
-      let fromPdf = null, applied = null;
+      let fromPdf = null, applied = { findings: A.count(A.emptyFindings()), applied: {}, already: 0, skipped: [], conflicts: 0 };   /* a photo or a scan has no lines of its own: nothing to apply */
       if (layers && layers.some(Boolean)) {
         try {
           const scratch = Score.finalize(PPPScoreGraph.legacy.toScore(graph, { name: name, ids: true }));
