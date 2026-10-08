@@ -416,6 +416,9 @@
     height: 100% !important; width: 100% !important;
   }
   .ppp-staffwrap[data-whole="true"] { max-height: 62vh; overflow-y: auto !important; }
+  /* the score view is the page: the score takes the screen below its toolbar and scrolls inside it, so the playhead can be followed */
+  .ppp-scorepage { height: calc(100vh - 200px); height: calc(100dvh - 200px); min-height: 360px; overflow: auto; }
+  @media (max-width: 720px) { .ppp-scorepage { height: calc(100dvh - 240px); } }
   .ppp-shell[data-focus="true"] .ppp-staffwrap[data-whole="true"],
   .ppp-shell[data-focus="true"] .ppp-focus-grow[data-whole="true"] {
     max-height: none;
@@ -1611,6 +1614,32 @@
             </section>
           </sc-if>
           </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isScoreView }}" hint-placeholder-val="{{ false }}">
+        <!-- A song opened from My Songs: the whole piece on a page, to read and
+             listen to. Practice is one button away; the keyboard and the hand
+             guide are not here taking half the screen. -->
+        <div class="ppp-scoreview" style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <button type="button" class="ppp-playbtn" data-score-play onClick="{{ togglePlay }}" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; min-width: 104px; justify-content: center;">{{ playLabel }}</button>
+            <sc-if value="{{ showAsRecorded }}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{ toggleAsRecorded }}" data-as-recorded title="{{ asRecordedHint }}" style="{{ asRecordedStyle }}">{{ asRecordedLabel }}</button>
+            </sc-if>
+            <button onClick="{{ restart }}" style="padding: 10px 14px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 13px; cursor: pointer;" style-hover="border-color: var(--ink3);">Restart</button>
+            <div style="display: flex; align-items: center; gap: 10px; min-width: 200px; flex: 0 1 260px;">
+              <span style="font-size: 12px; color: var(--ink3);">Tempo</span>
+              <input type="range" min="30" max="200" step="1" value="{{ tempo }}" onChange="{{ setTempo }}" style="flex: 1; accent-color: var(--accent); height: 4px; cursor: pointer;" />
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; width: 58px; text-align: right;">{{ tempoLabel }}</span>
+            </div>
+            <span style="font-size: 12px; color: var(--ink3); flex: 1 1 160px; min-width: 0;">{{ scoreViewHint }}</span>
+            <sc-if value="{{ scoreViewCanPrint }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ printScore }}" style="{{ printBtnStyle }}" title="{{ printHint }}">{{ printLabel }}</button>
+            </sc-if>
+            <button type="button" data-score-practice onClick="{{ goPlayer }}" style="padding: 10px 20px; border-radius: 11px; border: 0; background: var(--ink); color: var(--bg); font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;">{{ scoreViewPracticeLabel }}</button>
+          </div>
+          <div class="ppp-staffwrap ppp-scorepage" ref="{{ staffRef }}" data-score-view style="border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); padding: 22px 20px 28px; background: {{ paperBg }};">{{ scoreViewStaff }}</div>
         </div>
       </sc-if>
 
@@ -12490,7 +12519,7 @@ class Component extends DCLogic {
      when the bar being played has actually left the view, so it does not creep
      under you while you are reading a line you can already see. */
   followStaff() {
-    if (!this.state.wholeScore) { this._lastBar = null; return; }
+    if (!this.state.wholeScore && this.state.screen !== 'score') { this._lastBar = null; return; }
     /* Arriving on the page, or switching between start-to-finish, loop and
        memorize, is a new view: show where the work is, even if the bar is the
        one it was before. */
@@ -13601,8 +13630,13 @@ class Component extends DCLogic {
      played this way never counts as evidence that you can play it at tempo. */
   following(state) {
     const S = state || this.state;
-    return this.liveMidi() && S.toggles.follow !== false;
+    return S.screen !== 'score' && this.liveMidi() && S.toggles.follow !== false;
   }
+  /* The score view is for listening: Play there is the whole piece once, both
+     hands, whatever the practice page was last set to (its passage loop, one
+     hand). */
+  looping(S) { S = S || this.state; return !!S.loop && S.screen !== 'score'; }
+  playHands(S) { S = S || this.state; return S.screen === 'score' ? 'both' : S.hands; }
 
   /* Every onset in the loop range, hand-filtered, in playing order — sounding
      notes, written rests (including in one hand while the other holds), and
@@ -13926,6 +13960,7 @@ class Component extends DCLogic {
     S = S || this.state;
     /* Memorizing is always of a passage; otherwise the tab decides — start to
        finish plays the whole piece, loop plays the passage. */
+    if (S.screen === 'score') return [Score.first(S.score), Score.last(S.score)];
     if (S.practiceMode === 'memory') return [S.loopFrom, S.loopTo];
     return S.loop ? [S.loopFrom, S.loopTo] : [Score.first(S.score), Score.last(S.score)];
   }
@@ -13966,7 +14001,7 @@ class Component extends DCLogic {
   transportKey(S) {
     const [from, to] = this.range(S);
     /* liveMidi is not in the key: a USB blip would panic the sounding score. */
-    return [S.score.id, from, to, S.loop ? 1 : 0, S.tempo, S.hands,
+    return [S.score.id, from, to, this.looping(S) ? 1 : 0, S.tempo, this.playHands(S),
       this.midiOutLive() ? 1 : 0, this.midiOutId() || '',
       S.toggles.notes ? 1 : 0, S.metro && S.toggles.sound ? 1 : 0].join('|');
   }
@@ -14117,8 +14152,9 @@ class Component extends DCLogic {
         this._perf.advanceTo(nowMs() + this._perf.timing.window + 1);
         result = this._perf.result();
       }
-      Object.assign(patch, this.completeLap(S, hit, tot, result));
-      if (S.loop) {
+      /* listening on the score view is not a practice run: no lap, no progress */
+      if (S.screen !== 'score') Object.assign(patch, this.completeLap(S, hit, tot, result));
+      if (this.looping(S)) {
         /* The next lap starts exactly when this one ended, not when a tick
            happened to notice — the notes for it are already on that time. */
         const lapEnd = tp.t0 + PianoScore.msAt(plan, endB, scale) - PianoScore.msAt(plan, tp.b0, scale);
@@ -14194,8 +14230,8 @@ class Component extends DCLogic {
             if (n.q >= endB - 1e-9) break;
             const t = T(n.q);
             if (t >= horizon) break;
-            if (t < from || n.q <= skip || !this.handOk(n.note, S.hands)) continue;
-            const up = S.loop ? Math.min(T(n.upQ), lapEnd) : T(n.upQ);
+            if (t < from || n.q <= skip || !this.handOk(n.note, this.playHands(S))) continue;
+            const up = this.looping(S) ? Math.min(T(n.upQ), lapEnd) : T(n.upQ);
             /* Duck only after a strike in this run. Listen-only Play keeps
                the written dynamic even if a keyboard is plugged in. */
             const vel = this._playAlong ? Math.max(1, Math.round(n.vel * 0.55)) : n.vel;
@@ -14229,7 +14265,7 @@ class Component extends DCLogic {
           }
         }
       }
-      if (!S.loop || endB < 1e-6) break;
+      if (!this.looping(S) || endB < 1e-6) break;
       lapB = 0; lapT = lapEnd; skip = -Infinity;
     }
   }
@@ -14249,7 +14285,7 @@ class Component extends DCLogic {
     for (let i = firstAtOrAfter(list, a, 'q'); i < list.length; i++) {
       const s = list[i];
       if (s.q >= b) break;
-      if (!this.handOk(s.note, S.hands)) continue;
+      if (!this.handOk(s.note, this.playHands(S))) continue;
       out.tot++;
       const n = s.note;
       const mb = this._sim ? this.simBucket(n.m) : null;   /* not "b" — that is the span end */
@@ -14448,7 +14484,8 @@ class Component extends DCLogic {
     if (k === 'escape' && this.state.sidebarOpen) { this.setState({ sidebarOpen: false }); return; }
     /* Escape is what everyone tries first to get out of a full screen. */
     if (k === 'escape' && this.state.focus) { this.toggleFocus(); return; }
-    if (k === 'f') { e.preventDefault(); this.toggleFocus(); return; }
+    /* focus mode is the practice page's; the score view has no keyboard to focus on */
+    if (k === 'f' && this.state.screen !== 'score') { e.preventDefault(); this.toggleFocus(); return; }
     if (k === ' ') { e.preventDefault(); this.togglePlay(); }
     else if (k === 'r') this.setState({ beat: Score.startQ(this.state.score, this.range()[0]), runHit: 0, runTot: 0, wrongNotes: [] });
     else if (k === 'l') this.setState(s => ({ loop: !s.loop }));
@@ -14584,18 +14621,7 @@ class Component extends DCLogic {
      from here — setup is off the screen. */
   onScorePick(e) {
     const tap = (!e.phase || e.phase === 'end') && e.from === e.to;
-    if (this.state.focus && tap) {
-      const sc = this.state.score;
-      const q = e.q != null ? e.q : Score.startQ(sc, e.from);
-      const m = Score.at(sc, q);
-      const barStart = Score.startQ(sc, m);
-      let at = barStart;
-      Score.notesIn(sc, m, m).forEach(n => {
-        if (n.abs <= q + 0.06 && n.abs >= at) at = n.abs;
-      });
-      this.playFromBeat(at);
-      return;
-    }
+    if (this.state.focus && tap) { this.playFromTap(e); return; }
     if (this.practiceTab() !== 'whole') {
       this.selectBars(e);
       return;
@@ -14605,6 +14631,15 @@ class Component extends DCLogic {
       return;
     }
     if (e.phase && e.phase !== 'end') return;
+    this.playFromTap(e);
+  }
+  /* The score view is for reading and listening: a tap plays from there, a
+     drag does nothing (picking a passage is the practice page's job). */
+  onScoreViewPick(e) {
+    if ((e.phase && e.phase !== 'end') || e.from !== e.to) return;
+    this.playFromTap(e);
+  }
+  playFromTap(e) {
     const sc = this.state.score;
     const q = e.q != null ? e.q : Score.startQ(sc, e.from);
     /* Land on the note under the pointer, or the start of the bar if the
@@ -15568,7 +15603,7 @@ class Component extends DCLogic {
     if (!ar) return;
     const S = this.state, p = this._piano, now = nowMs();
     /* the page is gone, another song is open, or a screen that does not show this one: it is over */
-    if (this._dead || S.score !== ar.score || (S.screen !== 'review' && S.screen !== 'player')) return this.stopAsRecorded();
+    if (this._dead || S.score !== ar.score || (S.screen !== 'review' && S.screen !== 'player' && S.screen !== 'score')) return this.stopAsRecorded();
     /* the first Play of a visit starts the sound, which takes the browser a moment: the first note waits for it, briefly */
     if (ar.waiting) {
       if (p && p.running()) { ar.waiting = false; ar.t0 = now + this.leadMs(now); }
@@ -16339,7 +16374,8 @@ class Component extends DCLogic {
   openSong(id, opts) {
     opts = opts || {};
     const S = this.state;
-    if (id === (S.songId || 'demo')) { if (!opts.stay) this.go('player')(); return; }
+    const view = opts.view || 'player';
+    if (id === (S.songId || 'demo')) { if (!opts.stay) this.go(view)(); return; }
     const data = this.readSong(id);
     let score = null;
     if (id === 'demo') score = buildDemoScore();
@@ -16398,7 +16434,7 @@ class Component extends DCLogic {
     /* the saved state follows the switch at once */
     this.setState({}, () => this.saveNow());
     setTimeout(() => this.requestPlan(), 0);
-    if (!opts.stay) this.go('player')();
+    if (!opts.stay) this.go(view)();
     if (!opts.quiet) this.say(tx('Opened {{title}}.', { title: score.title }));
   }
   /* Everything on the shelf, the sample first: { id, title, composer, kind,
@@ -17754,7 +17790,7 @@ class Component extends DCLogic {
       const transportScale = tp.scale || 1;
       let elapsed = PianoScore.msAt(plan, tp.b0 || 0, transportScale) + Math.max(0, nowMs() - tp.t0);
       const total = PianoScore.msAt(plan, plan.soundLengthQ || 0, transportScale);
-      if (S.loop && total > 0 && elapsed >= total) elapsed = elapsed % total;
+      if (this.looping(S) && total > 0 && elapsed >= total) elapsed = elapsed % total;
       soundQ = PianoScore.qAt(plan, elapsed, transportScale);
     } else {
       soundQ = PianoScore.soundAtWritten(plan, S.beat || 0);
@@ -18451,6 +18487,7 @@ class Component extends DCLogic {
       player: [tx('Practice'), score.title + ' · ' + (tab === 'whole' ? tx('Start to finish')
         : tab === 'loop' ? tx('Loop a passage') + ' · ' + passage : tx('Memorize') + ' · ' + passage)],
       progress: [tx('Progress'), score.title],
+      score: [tx('Score'), score.title],
       songs: [tx('My Songs'), tx('{{n}} songs in your library', { n: this.shelfSongs().length })], basics: [tx('Sight Reading'), tx('Remember the Basics')],
       learn: [tx('Piano Basics'), tx('Step by step from Do Re Mi')],
       course: [tx('Method Books'), tx('Beyer to Czerny, a piece a day')],
@@ -18477,9 +18514,11 @@ class Component extends DCLogic {
     ];
     /* A recognition review only exists while there is something to review. */
     if (S.importReport || sc === 'review') navList.splice(navList.findIndex(x => x[1] === 'analysis') + 1, 0, ['Check recognition', 'review', 'Compare with the page']);
+    /* a song's score view is reached from My Songs, so that is where you are */
+    const navAt = sc === 'score' ? 'songs' : sc;
     const nav = navList.map(([label, id, sub]) => ({
-      label: tx(label), sub: tx(sub), style: this.navBtn(sc === id), markStyle: this.markStyle(sc === id),
-      subStyle: 'font-size:11px;font-weight:400;line-height:1.3;color:' + (sc === id ? 'var(--accent)' : 'var(--ink3)') + ';opacity:' + (sc === id ? 0.85 : 1) + ';',
+      label: tx(label), sub: tx(sub), style: this.navBtn(navAt === id), markStyle: this.markStyle(navAt === id),
+      subStyle: 'font-size:11px;font-weight:400;line-height:1.3;color:' + (navAt === id ? 'var(--accent)' : 'var(--ink3)') + ';opacity:' + (navAt === id ? 0.85 : 1) + ';',
       on: this.go(id)
     }));
     /* The design file's own showcase pages are for development, not navigation. */
@@ -18737,7 +18776,7 @@ class Component extends DCLogic {
             numbers: false, guidance: false, fluid: true, grand: thumbScore.staves > 1
           }) : null,
           openLabel: x.isCur ? tx('Continue') : tx('Open'),
-          on: () => this.openSong(x.s.id),
+          on: () => this.openSong(x.s.id, { view: 'score' }),
           arrangeLabel: tx('Arrange'),
           arrange: () => this.openSongArranger(x.s.id),
           canRemove: x.s.id !== 'demo',
@@ -18833,7 +18872,7 @@ class Component extends DCLogic {
       notifyOn: () => this.say(tx('No new notifications.')),
 
       isHome: sc === 'home', isUpload: sc === 'upload', isAnalysis: sc === 'analysis',
-      isPlayer: sc === 'player', isProgress: sc === 'progress',
+      isPlayer: sc === 'player', isProgress: sc === 'progress', isScoreView: sc === 'score',
       isSongs: sc === 'songs', isLearn: sc === 'learn', isBasics: sc === 'basics', isSettings: sc === 'settings', isEmpty: sc === 'empty', isStates: sc === 'states',
       isReview: sc === 'review',
       goUpload: this.go('upload'), goAnalysis: this.go('analysis'), goPlayer: this.go('player'),
@@ -19560,6 +19599,18 @@ class Component extends DCLogic {
         grand: score.staves > 1
       }),
       keyboard: this.keyboard(),
+
+      /* ---- score view (a song opened from My Songs) ---- */
+      scoreViewStaff: sc === 'score' ? this.sv({
+        startM: this.firstM(), count: Score.count(score), perRow: this.barsPerLine(),
+        fluid: true, heading: true, pick: e => this.onScoreViewPick(e),
+        mW: this.barsPerLine() >= 4 ? 236 : 180, zoom: 1, currentM: cur,
+        playX: S.beat, beat: S.beat, hands: 'both', wrong: S.wrongNotes, guidance: false,
+        grand: score.staves > 1
+      }) : null,
+      scoreViewHint: tx('Click a bar to listen from there.'),
+      scoreViewPracticeLabel: tx('Practice'),
+      scoreViewCanPrint: engraveDrew(S.score),
 
       /* ---- coach ---- */
       coachPlanGoal: S.coachPlan ? S.coachPlan.todayGoal : (rec ? rec.action : ''),

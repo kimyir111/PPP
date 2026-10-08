@@ -740,6 +740,8 @@
     "Answer off": "正解オフ",
     "When you miss, name the note you should have played": "間違えたとき、弾くべき音の名前を出します",
     "Hide everything except the score and the keyboard (F)": "楽譜と鍵盤以外をすべて隠します (F)",
+    "Score": "楽譜",
+    "Click a bar to listen from there.": "小節をクリックするとそこから再生します。",
     "Whole score": "全体を表示",
     "This part": "この部分だけ",
     "See the whole piece at once, with the weak bars shaded": "曲全体を一度に表示。弱い小節に色が付きます",
