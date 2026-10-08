@@ -740,6 +740,8 @@
     "Answer off": "隐藏正确答案",
     "When you miss, name the note you should have played": "弹错时立刻说出该弹的音",
     "Hide everything except the score and the keyboard (F)": "只留下乐谱和键盘，其余全部隐藏 (F)",
+    "Score": "乐谱",
+    "Click a bar to listen from there.": "点击小节即可从那里播放。",
     "Whole score": "整首乐谱",
     "This part": "仅此段",
     "See the whole piece at once, with the weak bars shaded": "一次看完整首，薄弱小节会标色",
