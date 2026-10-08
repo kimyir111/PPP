@@ -591,6 +591,95 @@ practice entry's long tasks (132-841 ms) are the engraver's. Plan: G11a-0 (CI + 
 evidence + export → G11b-2 model/policy (Opus) → G11b-3 → H-11; G11c-0 splice benchmark → G11c-1 UI. Can
 start now without the user: G11a-0, a1, a2, b0, c0 (and a3, b1 behind off switches). User decisions U1-U9.
 
+## 18. G11b-0: synthetic learners, the simulator and the legacy baseline (2026-10-08; implementer on Opus; Node only)
+
+**What was built.** `practice/sim.js` (UMD, pure, seeded 32-bit LCG, Irwin-Hall normals: no `Math.random`, no libm in
+any draw) holds the learners; `tests/practice-sim/` holds the runner, the pieces, the baselines and `test:practice-sim`.
+No change to the app file or `server.js`.
+
+**The legacy policy is the app's own code, not a copy.** §7.4 says "in the page"; the gate installs no puppeteer, so the
+runner cuts the page's script out of `Piano Coach App.dc.html` at run time: the 55 top-level declarations the practice
+engines need (`PianoScore`, `Score`, `PerformanceEngine`, `Learning`, `Memory`, `Coach` and their constants, found by a
+transitive name scan), the component's lap, coach and card methods (`completeLap`, `advanceCoach`, `maybeReplan`,
+`requestPlan`, `coachContext`, `recommendation`, `applyRecommendation`, `recordRecall`, `seq`, `setLoop`, `beginRun`, ...),
+its initial state and the home card's `startToday`, all as written, into one bare vm. Stand-ins, each one line: a MIDI
+keyboard is connected (`liveMidi`), Play turned Follow off (as `togglePlay` does), timers are a queue, `setState` applies
+at once. A test changes `LEARN.weakAt` in a copy of the app file and the learner's results change. Every lap goes through
+the app's `PerformanceEngine` (`beginRun` → `noteOn` per key → `advanceTo` → `result` → `completeLap`, as `tick()` ends a lap).
+
+**Learners** (assumptions, not data; parameters drawn per learner from type ranges): per measure × hand a skill `s`;
+`P(hit) = σ(s − d·ρ^1.5 − χ·[both hands] − λ·fatigue)` × a memory factor when notes are hidden (`MEMORY.hideFraction`);
+`d` from G6's per-measure, per-hand hotspot map of the real piece; timing `bias·ρ^1.5·(…) + σ0·(…)·N(0,1)`; a miss is
+silence or a near key; practice `s += η(1−P)·min(1, P/0.35)` (κ of it for one hand alone); forgetting toward the starting
+skill with half-life `h`, `h ×(1+φ)` per further practice day; fatigue after 10 minutes. Types: even, weak-left, rushing,
+slow, forgetter, beginner. Sessions: 20 minutes on days 0-22, a 7-day break, retention on day 30. Pieces: beyer 050/060,
+czerny599 010/050, burgmuller 001/002, hymn amazing-grace, and G0 golden G01 (a converted recording) arranged by the app's
+one-note glue from its lead sheet (a frozen fixture). Split, fixed before any run: `tune` = beyer 050, czerny599 010,
+burgmuller 001, the hymn; `holdout` = the other four; seeds k < 100 tune, k ≥ 100 hold-out. The one fitted constant (G6
+score → log-odds, `d = 1.6 + 0.5·score`) was set on the tune pieces only (first reading at the score tempo: even 0.65,
+beginner 0.32; hold-out, not looked at to set it: 0.59, 0.27).
+
+**Arms.** `coach`: "Start today's plan" (the deterministic plan through `Coach.plan`/`validate`, tasks with repetitions,
+replans by `shouldReplan`; a new plan on each day's page load). `card`: the recommendation card (`Memory.nextTask` over
+`Learning.recommend`) and the Loop panel's drill steps. `oracle`: NOT a policy - every lap the truly weakest measure and
+the next, through `applyRecommendation`; it is there to show that mastery is reachable and the metrics separate policies.
+
+**Legacy baseline, full scale** (`tests/practice-sim/baselines/legacy-full.json`: 200 learners × 6 types × 8 pieces × 3
+arms = 28,800 runs, 47 minutes on 14 threads; the gate checks `legacy-gate.json`, k = 0, 144 runs, per learner).
+Mastery = every measure ≥ 0.9 at 0.95 × tempo (truth); minutes are session minutes (all arms ~463 in 23 days).
+
+| arm · type | reached mastery | min to mastery (capped) | mastered bars, day 22 | retention day 30 | bars retained | time on weakest ¼ | time on mastered bars | flips / session | longest streak (laps) | Brier recentAcc (oracle floor) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| coach · even | 0 % | 463 | 0.32 | 0.76 | 0.32 | 0.021 | 0.59 | 9.0 | 112 | 0.008 (0.007) |
+| coach · weak-left | 0 % | 463 | 0.31 | 0.68 | 0.30 | 0.032 | 0.56 | 8.3 | 110 | 0.011 (0.009) |
+| coach · rushing | 0 % | 463 | 0.32 | 0.76 | 0.32 | 0.020 | 0.60 | 9.4 | 111 | 0.008 (0.007) |
+| coach · slow | 0 % | 463 | 0.31 | 0.75 | 0.30 | 0.030 | 0.48 | 9.8 | 103 | 0.012 (0.010) |
+| coach · forgetter | 0 % | 463 | 0.28 | 0.72 | 0.15 | 0.020 | 0.54 | 10.4 | 106 | 0.011 (0.009) |
+| coach · beginner | 0 % | 463 | 0.30 | 0.54 | 0.29 | 0.043 | 0.50 | 8.3 | 105 | 0.014 (0.010) |
+| card · even | 0 % | 462 | 0.30 | 0.75 | 0.29 | 0.036 | 0.58 | 10.8 | 123 | 0.007 (0.005) |
+| card · weak-left | 0 % | 463 | 0.31 | 0.66 | 0.30 | 0.037 | 0.58 | 11.8 | 121 | 0.010 (0.008) |
+| card · rushing | 0 % | 463 | 0.30 | 0.75 | 0.29 | 0.035 | 0.59 | 10.8 | 121 | 0.007 (0.005) |
+| card · slow | 0 % | 463 | 0.30 | 0.74 | 0.29 | 0.041 | 0.50 | 14.5 | 120 | 0.010 (0.008) |
+| card · forgetter | 0 % | 463 | 0.25 | 0.72 | 0.15 | 0.034 | 0.56 | 13.8 | 119 | 0.010 (0.008) |
+| card · beginner | 0 % | 463 | 0.30 | 0.53 | 0.29 | 0.041 | 0.52 | 13.4 | 121 | 0.011 (0.008) |
+| oracle · even (reference) | 99.6 % | 189 | 1.00 | 0.93 | 0.95 | 0.58 | 0.62 | 87 | 4 | 0.014 (0.012) |
+| oracle · beginner (reference) | 80 % | 332 | 0.83 | 0.88 | 0.53 | 0.59 | 0.29 | 86 | 4 | 0.022 (0.018) |
+
+(All cells per type, per split and per piece are in the file; `node tests/practice-sim/baseline.js --full --table`.)
+
+**What the legacy policy does to these learners, and why (read from the app's code, then measured).**
+1. *A bar at 60-75 % is never drilled.* `Learning.weakRanges` flags a bar only at `weakness ≥ 0.30`; a bar at 70 % recent
+   accuracy with steady timing and even hands scores `(1−0.70)·0.6 = 0.18` (+0.08 after three failing runs), so it is
+   never a weak range, although `measureView` labels it `weak` on the map. With no weak range and nothing unplayed,
+   `Learning.recommend` sends the player to memory work on the first eight memory-ready or played bars - the start of
+   the piece. Measured: 2-4 % of the time on the truly weakest quarter (uniform would be 25 %), over half on bars already
+   mastered, no learner of any type reaches whole-piece mastery in 23 days (the oracle reference: 45-100 % by type).
+2. *It loops.* The plan rebuilt after each task is the same plan: on average a session's longest run on one passage is
+   100-120 laps.
+3. *A loop that starts on a second-ending bar does not play it* (`Score.form` takes the first pass; burgmuller 002 bar
+   28; found by the oracle arm, not counted for the legacy arms). G11a's parity harness should know it.
+4. *Recall laps count as practice evidence*: `completeLap` folds every measured lap into `Learning.record`, memory laps
+   with hidden notes included (read in the code).
+The Brier of `recentAcc` (0.007-0.014) is close to the simulator's own floor (0.005-0.010): the next-run prediction is not
+where the legacy loses; where it sends the player is.
+
+**Determinism.** Three runs, the reversed order and two threads give the same rows (test); the committed files were
+written on Windows (Node 24.17) and the gate set is identical in a Linux container (Node 24.21) on an LF checkout made by
+`git archive`, all three `--part`s, and `test:practice-sim` passes there.
+
+**What the simulator cannot say.** Every number above is a consequence of assumed formulas and ranges: real learning
+rates, forgetting, the value of hands-separate or slow practice, fatigue and how timing errors behave are not known for
+any real pupil (G11-D9). The simulated person always does exactly what the app says, practises 20 minutes every day, never
+uses Follow or Demo Input, never picks a passage. `d` is G6's ranker (trained to order method-book pieces), not an error
+model. Eight pieces, one recording arrangement. What does not depend on the assumptions: the mechanisms of findings 1-4
+are arithmetic of the legacy code; their size (2-4 %, 0 % mastery) is the simulator's. Needs the user's week (H-11, §10.1): whether the advice makes sense to a teacher, whether tempo steps feel
+right, the real Brier of the next-run prediction on ≥ 300 logged measure-attempts, session lengths, the device's MIDI
+latency, and whether any of the simulator's parameter ranges is plausible at all.
+
+**For G11b-2.** Fit only on tune pieces and seeds k < 100; report hold-out. Compare at equal session minutes; `reached`
+is 0 for legacy, so "time to mastery −20 %" should be read on the capped minutes (463 for every legacy learner) together
+with `masteredShareEnd`; "no type worse than legacy by > 5 %" per type from `byArmType`.
+
 ## Appendix A. Measurement commands (Lead's scratchpad)
 
 ```
