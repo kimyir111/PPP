@@ -50,3 +50,6 @@ tests/bench/.cache/
 __pycache__/
 # Local experiments; holds copyrighted audio and PDFs that must never be committed.
 tmp/
+
+# omr-live-2 (tests/omr): rendered page images, engine output and run results are local, never committed
+tests/omr/out/

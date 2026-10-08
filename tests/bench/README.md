@@ -49,6 +49,7 @@ python tests/bench/run.py legacy --manifest PATH      # a tests/golden_benchmark
 python tests/bench/run.py run --suite-file PATH       # a private suite (outputs stay beside it)
 python tests/bench/run.py conformance                 # T1: parser parity with the app
 python tests/bench/run.py omr-live                    # T1: PDF/PNG/JPG through the app's OMR import
+python tests/bench/run.py omr-live-2 run|check|baseline|determinism|...   # G12-0: OMR with exact truth, 60 excerpts x clean/scan/photo (tests/omr/README.md; local)
 python tests/bench/run.py record-replay               # T2: record helper /transcribe fixtures
 python tests/bench/run.py run --suite replay-public   # replay recorded helper results
 python tests/bench/review/adversarial.py              # the independent review's checks (nightly)
@@ -741,6 +742,7 @@ generalisation to unseen pieces, not to real playing.
 | T0-R replay | `run --suite replay-public` | Node | – (fixtures are committed) |
 | T1-C parser parity | `conformance` | `npm start`, network (the page loads React/Babel from unpkg), puppeteer | `SKIPPED: <reason>`, exit 0 (`--require-env` → 2) |
 | T1-O OMR live | `omr-live` | the above + `npm run omr` with Audiveris | SKIPPED |
+| T1-O2 OMR with exact truth (G12-0) | `omr-live-2` (`tests/omr/README.md`) | Audiveris 5.11, Verovio, NumPy + OpenCV, puppeteer; the app path: the network (pdf.js); a quiet PC | SKIPPED; **not a gate step** (the gate runs its pure parts: `unit/test_omr2_*.py`) |
 | T2 replay recording | `record-replay` | the helper with transcription, the transcribe venv (numpy), ffmpeg | SKIPPED |
 
 puppeteer is found in the repository's `node_modules` or in `PPP_BENCH_NODE_MODULES` (for example a
@@ -878,7 +880,7 @@ pppbench/         reader (musicxml.py), canonical score, corpus + lint, perform 
                   pedal, critical, composite), semantic, suite + locks, runner, aggregate, compare
                   (gate), report, golden, mutation, correctness, known_defects, legacy, private,
                   tiers (T1/T2), projection
-node/             notate.js (SUT adapter), conformance.js, omr-live.js (puppeteer, T1 only)
+node/             notate.js (SUT adapter), conformance.js, omr-live.js (puppeteer, T1 only; `--helper-port` for omr-live-2)
 tools/            make_micro.py, make_provenance.py, make_omr_reference.py, render_piano.py, record_replay.py
 corpus/           references.json, excluded.json, provenance.json, micro/, omr/, correctness/
 suites/           suite definitions and input locks
