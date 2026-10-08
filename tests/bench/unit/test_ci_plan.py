@@ -423,8 +423,11 @@ class GateShape(unittest.TestCase):
     # (trace the gate's steps as the README says), instead of letting a light mode skip a step that has begun to read the path.
     NAMES_TESTS_REVIEW = {"package.json", "tests/bench/tools/ci_plan.py", "tests/bench/unit/test_ci_plan.py"}
     NAMES_HOME_WORKER = {"Piano Coach App.dc.html", "package.json", "tests/bench/tools/ci_plan.py", "tests/bench/unit/test_ci_plan.py"}
+    # tools/release/*.js (G13-7a): the release script appends a row to docs/RELEASES.md and the issue reporter names a doc in its text; the
+    # gate's step `npm run test:monitoring` runs them only on in-memory files and a fake gh, and opens nothing under docs/ (read, not traced).
     NAMES_DOCS = {"review/h10/packet.js", "tests/bench/tools/ci_plan.py", "tests/bench/unit/test_ci_plan.py", "tests/engrave/corpus.json",
-                  "tests/engrave/tools/make-corpus.js", "tests/scoregraph/tools/make-fixtures.js"}
+                  "tests/engrave/tools/make-corpus.js", "tests/scoregraph/tools/make-fixtures.js",
+                  "tools/release/release.js", "tools/release/smoke-issue.js"}
 
     def test_nothing_new_names_the_paths_the_light_modes_skip(self):
         listed = subprocess.run(["git", "ls-files", "-z"], cwd=util.repo_root(), capture_output=True, check=True).stdout.decode("utf-8")
