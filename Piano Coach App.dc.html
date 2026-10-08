@@ -1460,11 +1460,11 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
             <!-- G11b-1 (PPP.learner 'typed' only): one tap to say how the run just finished felt. Shown while nothing is playing, never in the way of a loop. -->
             <sc-if value="{{ showRunRating }}" hint-placeholder-val="{{ false }}">
               <div data-run-rating style="margin-top: 10px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                <span style="font-size: 12px; color: var(--ink3);">{{ runRatingLabel }}</span>
+                <span style="flex: 1 0 100%; font-size: 12px; color: var(--ink3);">{{ runRatingLabel }}</span>
                 <sc-for list="{{ runRatingChoices }}" as="rc" hint-placeholder-count="3">
                   <button onClick="{{ rc.on }}" data-run-rating-v="{{ rc.v }}" style="padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink2); font-family: inherit; font-size: 12px; cursor: pointer;" style-hover="border-color: var(--ink3);">{{ rc.label }}</button>
                 </sc-for>
-                <button onClick="{{ skipRunRating }}" data-run-rating-skip aria-label="{{ runRatingSkip }}" title="{{ runRatingSkip }}" style="padding: 3px 8px; border: 0; background: transparent; color: var(--ink3); font-family: inherit; font-size: 14px; cursor: pointer;">×</button>
+                <button onClick="{{ skipRunRating }}" data-run-rating-skip aria-label="{{ runRatingSkip }}" title="{{ runRatingSkip }}" style="margin-left: auto; padding: 3px 8px; border: 0; background: transparent; color: var(--ink3); font-family: inherit; font-size: 14px; cursor: pointer;">×</button>
               </div>
             </sc-if>
 
