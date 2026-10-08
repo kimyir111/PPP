@@ -743,8 +743,8 @@ async function budgetSection(browser) {
     const idle = performance.now() - t1;
     const share = PPP.runLog.laps.map(l => l.ms);
     const log = PPP.runLog.log;
-    const hash = (await log.epochs()).epochs[0].hash;
-    const stored = (await log.read(A.state.songId, hash)).runs.map(r => r.run);
+    const eps = (await log.epochs()).epochs;   /* none when every run was refused (too large): the checks below say so, the page does not crash */
+    const stored = eps.length ? (await log.read(A.state.songId, eps[0].hash)).runs.map(r => r.run) : [];
     return { live: live, notes: perf.expected.length, measures: A.state.score.measures.length, whole: runs, share: share.slice(-60), idle: idle,
       bytes: stored.map(r => JSON.stringify(r).length), g: stored.map(r => r.g), tr: stored.filter(r => r.tr).length, ex: stored.length ? stored[0].ex : 0, degraded: log.degraded, failed: log.stats.refused };
   }, 'catalog/method/sonatina/020.mxl');
