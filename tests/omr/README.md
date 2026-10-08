@@ -34,6 +34,8 @@ python tests/bench/run.py omr-live-2 baseline --reason "..."          # record t
 
 python tests/bench/run.py omr-live-2 run --mode app                   # the same pages through Import.load with the helper (Audiveris), 6 pieces
 python tests/bench/run.py omr-live-2 run --mode app-nohelper          # ... with no helper: the browser draft reader, i.e. what the live site does today
+python tests/bench/run.py omr-live-2 run --mode app --omr v2          # ... with PPP.omr = 'v2' (G12-1: omr/normalize.js keeps what the engine read); results in out/app-v2/
+python tests/bench/run.py omr-live-2 run --normalize --cases s1       # engine alone, each case's files read through omr/normalize.js (diagnostic; never a baseline)
 python tests/bench/run.py omr-live-2 fetch-real --check               # the real-scan tier (offline); see below
 ```
 
@@ -87,7 +89,9 @@ Each is proven by a planted defect in `tests/bench/unit/test_omr2_metrics.py` (a
 wrong pitch, fragmented parts, a misread metre and key, divisions 0).
 
 Options of `run` that change how the engine's file is read, for diagnosis (not for baselines): `--divisions repair` (infer a zero `divisions` from
-`<type>`, the G12-1 fix) and `--movements last` (one file per page, as the local helper keeps it today, E7).
+`<type>`, the G12-1 fix) and `--movements last` (one file per page, as the local helper keeps it today, E7). `--normalize` (G12-1) reads each case's
+files through `omr/normalize.js` (`tests/omr/node/normalize-cli.js`: movements joined, divisions repaired, the grand staff the engine split rebuilt, the
+PDF's systems folded), which is what the app does under `PPP.omr = 'v2'`; `--mode app --omr v2` runs the page itself in that mode.
 
 ## Baselines (`tests/omr/baselines/`)
 

@@ -131,6 +131,25 @@ class Stand(unittest.TestCase):
         self.assertIsNone(SU.read_pages([self.run_page("none")]))
         self.assertIsNone(SU.read_pages([]))
 
+    def test_normalize_units_reads_the_engines_files_through_omr_normalize(self):
+        """G12-1 `run --normalize`: two parts of one staff (the issue 11 shape) written for a page come back as ONE part of two staves, every bar kept;
+        the same files read as the engine wrote them are two parts. (Node only; the CLI reads a plain file as text too.)"""
+        import shutil
+        if not shutil.which("node"):
+            self.skipTest("node is not installed")
+        split = os.path.join(self.dir, "split.xml")
+        with open(split, "w", encoding="utf-8") as h:
+            h.write(S.piano(S.BARS[:3], parts="split"))
+        got = SU.normalize_units({"case|tier": [[split]], "gone|tier": [[]]})
+        self.assertTrue(got["case|tier"]["ok"])
+        self.assertFalse(got["gone|tier"]["ok"])
+        raw = X.parse_score(S.piano(S.BARS[:3], parts="split"))
+        fixed = X.parse_score(got["case|tier"]["xml"])
+        self.assertEqual([p.staves for p in raw.parts], [1, 1])
+        self.assertEqual([p.staves for p in fixed.parts], [2])
+        self.assertEqual(len(fixed.bars), 3)
+        self.assertEqual(sorted(n.midi for b in fixed.bars for n in b.notes if not n.rest), sorted(n.midi for b in raw.bars for n in b.notes if not n.rest))
+
     def test_a_file_that_is_not_a_score_is_skipped_not_fatal(self):
         bad = os.path.join(self.dir, "bad.mxl")
         with open(bad, "wb") as h:

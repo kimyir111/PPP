@@ -40,6 +40,8 @@ const RULES = [
   /^practice\/plan\.js$/,
   /* the trained weights the stages read (rec/weights/*.json, difficulty/weights/g6a-v1.json) */
   /^(?:rec|difficulty)\/weights\/[\w.-]+\.json$/,
+  /* G12-1: the OMR normaliser, fetched by the page when PPP.omr = 'v2' needs it. Only this file of omr/: omr/helper-output.js is the local helper's (Node only) */
+  /^omr\/normalize\.js$/,
   /* the one training table the arranger's real bands need (loadArrangerReference) - the only file of a tools/ folder the page asks for */
   /^difficulty\/tools\/dataset\/method-books\.json$/,
   /* the four language files */
