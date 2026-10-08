@@ -73,7 +73,7 @@ function expectedServed(rel) {
     if (parts.length === 3 && parts[1] === 'weights') return ext === '.json' && (top === 'rec' || top === 'difficulty');
     return rel === 'difficulty/tools/dataset/method-books.json';
   }
-  if (top === 'omr') return rel === 'omr/normalize.js';           /* G12-1: the page's lazy normaliser; omr/helper-output.js is the local helper's */
+  if (top === 'omr') return rel === 'omr/normalize.js' || rel === 'omr/apply.js';           /* G12-1, G12-2: the page's lazy normaliser and findings module; omr/helper-output.js is the local helper's */
   if (top === 'i18n') return parts.length === 2 && ext === '.json';
   if (top === 'audio') return parts.length === 3 && parts[1] === 'piano' && ext === '.mp3';
   if (top === 'assets') return ext === '.png';
@@ -98,7 +98,7 @@ test('isServed: the examples that matter', () => {
     'difficulty/tools/dataset/method-books.json', 'i18n/ko-KR.json', 'audio/piano/A0.mp3', 'assets/hands/hand-right-black.png',
     'catalog/index.json', 'catalog/method/index.json', 'catalog/hymns/index.json', 'catalog/hymns/all-creatures.musicxml', 'catalog/method/beyer/001.mxl',
     'samples/prelude-fragment.musicxml', 'vendor/vexflow-4.2.3.js', 'vendor/LICENSE-vexflow.txt', 'vendor/react-18.3.1/react.production.min.js',
-    'vendor/react-18.3.1/LICENSE-react.txt', 'THIRD_PARTY_NOTICES.md', 'omr/normalize.js'].forEach(rel => assert.equal(allow.isServed(rel), true, rel));
+    'vendor/react-18.3.1/LICENSE-react.txt', 'THIRD_PARTY_NOTICES.md', 'omr/normalize.js', 'omr/apply.js'].forEach(rel => assert.equal(allow.isServed(rel), true, rel));
   ['server.js', 'render.yaml', 'package.json', 'package-lock.json', 'Dockerfile', 'README.md', 'index.html', 'static-allow.js', 'home-jobs.js', 'share-guest.js', 'omr-service.js',
     'arrange_score.py', 'transcribe.py', 'omr/helper-output.js', 'omr/normalize.js.map', 'omr/README.md', DOCS + '/PPP_MASTER_ROADMAP.md', WORKER_DIR + '/worker.js', 'tests/boot.js', 'tools/anything', 'rec/tools/train.js', 'rec/tools/key-eval.js', 'scoregraph/README.md',
     'scoregraph/tools/notation-check.js', 'difficulty/tools/train.js', 'audio/piano/README.md', 'catalog/shared-seeds.json', 'catalog/build-shared-seeds.js',
