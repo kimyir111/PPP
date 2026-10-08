@@ -75,48 +75,40 @@ const user = (i, ip, ageMs) => ({ id: 'seed-' + i, email: 'seed' + i + '@example
 /* ---- the rules themselves (signup-limit.js), with no server ---- */
 const SL = require(path.join(REPO, 'signup-limit.js'));
 
-test('signup-limit: the numbers, and what a count of recent accounts allows', () => {
+test('signup-limit: the numbers, what a count of recent accounts allows, and how long a refused person is told to wait', () => {
   assert.deepEqual(SL.SIGNUP, { ATTEMPTS: 20, ATTEMPT_MS: 900000, PER_ADDRESS_HOUR: 10, PER_ADDRESS_DAY: 30, SITE_HOUR: 100, HOUR_MS: 3600000, DAY_MS: 86400000 });
-  const none = { site: 0, tag: 0 };
-  assert.equal(SL.refusal({ siteHour: 0, addrHour: 9, addrDay: 29 }, none, false), null);
-  assert.equal(SL.refusal({ siteHour: 0, addrHour: 10, addrDay: 10 }, none, false), 'address');
-  assert.equal(SL.refusal({ siteHour: 0, addrHour: 3, addrDay: 30 }, none, false), 'address');
-  assert.equal(SL.refusal({ siteHour: 99, addrHour: 0, addrDay: 0 }, none, false), null);
-  assert.equal(SL.refusal({ siteHour: 100, addrHour: 0, addrDay: 0 }, none, false), 'site');
-  assert.equal(SL.refusal({ siteHour: 100, addrHour: 10, addrDay: 30 }, none, false), 'site', 'the site first');
-  /* the places held by other requests count as accounts */
-  assert.equal(SL.refusal({ siteHour: 0, addrHour: 8, addrDay: 8 }, { site: 1, tag: 1 }, false), null);
-  assert.equal(SL.refusal({ siteHour: 0, addrHour: 8, addrDay: 8 }, { site: 2, tag: 2 }, false), 'address');
-  assert.equal(SL.refusal({ siteHour: 98, addrHour: 0, addrDay: 0 }, { site: 2, tag: 0 }, false), 'site');
-  assert.equal(SL.refusal({ siteHour: 98, addrHour: 0, addrDay: 0 }, { site: 1, tag: 0 }, false), null);
+  assert.equal(SL.refusal({ siteHour: 0, addrHour: 9, addrDay: 29 }, false), null);
+  assert.equal(SL.refusal({ siteHour: 0, addrHour: 10, addrDay: 10 }, false), 'hour');
+  assert.equal(SL.refusal({ siteHour: 0, addrHour: 3, addrDay: 30 }, false), 'day');
+  assert.equal(SL.refusal({ siteHour: 0, addrHour: 10, addrDay: 30 }, false), 'day', 'the day is the longer wait: it is named first');
+  assert.equal(SL.refusal({ siteHour: 99, addrHour: 0, addrDay: 0 }, false), null);
+  assert.equal(SL.refusal({ siteHour: 100, addrHour: 0, addrDay: 0 }, false), 'site');
+  assert.equal(SL.refusal({ siteHour: 100, addrHour: 10, addrDay: 30 }, false), 'site', 'the site first');
   /* the machine itself is not limited per address, the site's cap is the site's */
-  assert.equal(SL.refusal({ siteHour: 0, addrHour: 500, addrDay: 500 }, { site: 0, tag: 500 }, true), null);
-  assert.equal(SL.refusal({ siteHour: 100, addrHour: 0, addrDay: 0 }, none, true), 'site');
+  assert.equal(SL.refusal({ siteHour: 0, addrHour: 500, addrDay: 500 }, true), null);
+  assert.equal(SL.refusal({ siteHour: 100, addrHour: 0, addrDay: 0 }, true), 'site');
+  assert.equal(SL.retryAfter('hour'), 3600);
+  assert.equal(SL.retryAfter('site'), 3600);
+  assert.equal(SL.retryAfter('day'), 86400);
+  assert.equal(SL.retryAfter('attempts'), 900);
   ['127.0.0.1', '127.1.2.3', '::1', '::ffff:127.0.0.1'].forEach(ip => assert.ok(SL.LOOPBACK.test(ip), ip));
   ['128.0.0.1', '10.0.0.1', '1127.0.0.1', '::2', '::ffff:10.0.0.1', '', '127.0.0.1.evil', 'x127.0.0.1'].forEach(ip => assert.ok(!SL.LOOPBACK.test(ip), ip));
 });
 
-test('signup-limit: the places held, whatever order the requests end in', () => {
-  const g = SL.inflight();
-  const a = g.take('x'), b = g.take('x'), c = g.take('y');
-  assert.deepEqual(a.before, { site: 0, tag: 0 });
-  assert.deepEqual(b.before, { site: 1, tag: 1 }, 'b sees a');
-  assert.deepEqual(c.before, { site: 2, tag: 0 }, 'c sees both of them for the site and none for its own address');
-  a.release(); /* the first to take is the first to leave: b still holds a place for x */
-  assert.deepEqual(g.held(), { site: 2, tags: 2 });
-  const d = g.take('x');
-  assert.deepEqual(d.before, { site: 2, tag: 1 }, 'd sees b (x) and c (y) for the site and b for its own');
-  b.release(); b.release(); /* a second release changes nothing */
-  assert.deepEqual(g.held(), { site: 2, tags: 2 });
-  const e = g.take('x');
-  assert.deepEqual(e.before, { site: 2, tag: 1 }, 'only d holds x now');
-  d.release(); e.release(); c.release();
-  assert.deepEqual(g.held(), { site: 0, tags: 0 }, 'nothing is left held, and the table is empty');
-  /* the last of three to leave, and the first to leave, in a ring */
-  const [p, q, r] = [g.take('z'), g.take('z'), g.take('z')];
-  q.release(); p.release();
-  assert.deepEqual(g.take('z').before, { site: 1, tag: 1 }, 'only r is held');
-  r.release();
+test('signup-limit: serial() runs one at a time, in order, and a failure does not stop the next', async () => {
+  const run = SL.serial();
+  const log = [];
+  const task = (name, ms, fail) => () => new Promise((resolve, reject) => {
+    log.push('start ' + name);
+    setTimeout(() => { log.push('end ' + name); if (fail) reject(new Error(name)); else resolve(name); }, ms);
+  });
+  const results = await Promise.allSettled([run(task('a', 30)), run(task('b', 1, true)), run(task('c', 5)), run(() => 'sync')]);
+  assert.deepEqual(log, ['start a', 'end a', 'start b', 'end b', 'start c', 'end c']);
+  assert.deepEqual(results.map(r => r.status), ['fulfilled', 'rejected', 'fulfilled', 'fulfilled']);
+  assert.equal(results[0].value, 'a');
+  assert.equal(results[1].reason.message, 'b');
+  assert.equal(results[3].value, 'sync');
+  assert.equal(await run(() => 42), 42, 'and it is free again afterwards');
 });
 
 test('signup: 10 accounts an hour from one address, then 429; another address is unaffected', async () => {
@@ -129,6 +121,7 @@ test('signup: 10 accounts an hour from one address, then 429; another address is
     assert.equal(eleventh.status, 429);
     assert.equal(eleventh.body.code, 'too-many');
     assert.match(eleventh.body.error, /Too many accounts were made from here/);
+    assert.equal(eleventh.headers['retry-after'], '3600', 'the hour cap: wait an hour at most');
     assert.equal((await signup(srv.port, '203.0.113.8')).status, 201, 'a neighbour address is another address');
     /* an IPv6 address counts as its /48: other /64s of the same /48 are the same address, another /48 is not */
     for (let i = 0; i < 10; i++) assert.equal((await signup(srv.port, '2001:db8:aaaa:' + (i + 1) + '::1')).status, 201, 'v6 #' + i);
@@ -172,7 +165,9 @@ test('signup: 30 a day from one address, and an account older than a day is forg
   fs.writeFileSync(path.join(dir, 'store.json'), JSON.stringify({ users: users, progress: {} }));
   const srv = await boot(dir);
   try {
-    assert.equal((await signup(srv.port, '192.0.2.50')).status, 429, 'the 31st of the day');
+    const day = await signup(srv.port, '192.0.2.50');
+    assert.equal(day.status, 429, 'the 31st of the day');
+    assert.equal(day.headers['retry-after'], '86400', 'the day cap: up to a day');
     assert.equal((await signup(srv.port, '192.0.2.51')).status, 201, 'a day-old crowd is not counted');
   } finally { await srv.close(); rm(dir); }
 });
@@ -188,6 +183,7 @@ test('signup: 100 accounts an hour for the whole site, then 429 for everybody', 
     const no = await signup(srv.port, '192.0.2.78');
     assert.equal(no.status, 429);
     assert.match(no.body.error, /making a lot of accounts/);
+    assert.equal(no.headers['retry-after'], '3600');
     /* a developer's own machine is not limited per address, but the site's cap is the site's */
     assert.equal((await signup(srv.port, null)).status, 429);
   } finally { await srv.close(); rm(dir); }
@@ -202,6 +198,8 @@ test('signup: every request is counted - 20 in 15 minutes from one address, vali
     const next = await signup(srv.port, '203.0.113.99', { email: 'ok@example.com' });
     assert.equal(next.status, 429, 'the 21st request, though it is a good one');
     assert.equal(next.body.code, 'too-many');
+    assert.equal(next.body.error, 'Too many attempts. Try again later.');
+    assert.equal(next.headers['retry-after'], '900', 'the request limit: 15 minutes at most');
     /* the same address cannot get round it by changing its X-Forwarded-For text: only the entry from the right counts, and 1 proxy is the default */
     assert.equal((await req(srv.port, 'POST', '/api/auth/signup', { ip: '1.2.3.4, 203.0.113.99', body: { email: 'z@example.com', password: 'practice-ok' } })).status, 429);
     /* the existing errors are what they were */
@@ -223,13 +221,67 @@ test('signup: a request from this machine itself (no proxy header) is not limite
   } finally { await srv.close(); rm(dir); }
 });
 
-test('signup: concurrent requests from one address cannot pass the limit together', async () => {
+test('signup: 16 requests at once from one address make exactly 10 accounts, and 5 at once at 99 for the site make exactly 1', async () => {
   const dir = tmp(); const srv = await boot(dir);
   try {
     const all = await Promise.all(Array.from({ length: 16 }, () => signup(srv.port, '198.51.100.200')));
-    const made = all.filter(r => r.status === 201).length;
-    assert.ok(made <= 10 && made >= 9, made + ' made');
-    assert.equal(all.filter(r => r.status === 429).length, 16 - made);
+    assert.equal(all.filter(r => r.status === 201).length, 10, all.map(r => r.status).join());
+    assert.equal(all.filter(r => r.status === 429).length, 6);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'store.json'), 'utf8')).users.filter(u => u.ipTag === tagOf('198.51.100.200')).length, 10, 'and ten rows');
+  } finally { await srv.close(); rm(dir); }
+  const dir2 = tmp();
+  const users = [];
+  for (let i = 0; i < 99; i++) users.push(user(i, '10.' + (i % 250) + '.0.1', 10 * 60e3));
+  fs.writeFileSync(path.join(dir2, 'store.json'), JSON.stringify({ users: users, progress: {} }));
+  const srv2 = await boot(dir2);
+  try {
+    const five = await Promise.all(['192.0.2.1', '192.0.2.2', '192.0.2.3', '192.0.2.4', '192.0.2.5'].map(ip => signup(srv2.port, ip)));
+    assert.equal(five.filter(r => r.status === 201).length, 1, five.map(r => r.status).join());
+    assert.equal(five.filter(r => r.status === 429).length, 4);
+  } finally { await srv2.close(); rm(dir2); }
+});
+
+test('signup: the limit is checked BEFORE the password is hashed (scrypt is never run for a refused or an invalid request)', async () => {
+  const dir = tmp();
+  const preload = path.join(dir, 'count-scrypt.js');
+  fs.writeFileSync(preload, "const c = require('crypto'); const o = c.scryptSync; c.scryptSync = function () { process.stderr.write('SCRYPT-CALL\\n'); return o.apply(this, arguments); };\n");
+  const users = [];
+  for (let i = 0; i < 10; i++) users.push(user(i, '198.51.100.30', 5 * 60e3));
+  fs.writeFileSync(path.join(dir, 'store.json'), JSON.stringify({ users: users, progress: {} }));
+  const srv = await boot(dir, { NODE_OPTIONS: '--require ' + JSON.stringify(preload.replace(/\\/g, '/')) });
+  const scrypts = () => (srv.log().match(/SCRYPT-CALL/g) || []).length;
+  try {
+    assert.equal(scrypts(), 0, 'the server itself runs none at boot');
+    assert.equal((await signup(srv.port, '198.51.100.30')).status, 429, 'the address cap');
+    await new Promise(r => setTimeout(r, 100));
+    assert.equal(scrypts(), 0, 'a refused signup is not hashed');
+    assert.equal((await signup(srv.port, '198.51.100.31', { email: 'nope' })).status, 422);
+    assert.equal((await signup(srv.port, '198.51.100.31', { password: 'short' })).status, 422);
+    await new Promise(r => setTimeout(r, 100));
+    assert.equal(scrypts(), 0, 'an invalid one is not hashed');
+    for (let i = 0; i < 20; i++) await signup(srv.port, '198.51.100.32', { email: 'x' });
+    assert.equal((await signup(srv.port, '198.51.100.32')).status, 429, 'the request limit (20 counted)');
+    await new Promise(r => setTimeout(r, 100));
+    assert.equal(scrypts(), 0, 'a request over the request limit is not hashed');
+    assert.equal((await signup(srv.port, '198.51.100.33')).status, 201);
+    await new Promise(r => setTimeout(r, 100));
+    assert.equal(scrypts(), 1, 'one account, one hash');
+  } finally { await srv.close(); rm(dir); }
+});
+
+test('signup: the keyed address hash of an account is forgotten after two days, the account is not', async () => {
+  const dir = tmp();
+  const H = 3600e3;
+  const users = [user(1, '198.51.100.40', 3 * 24 * H), user(2, '198.51.100.40', 47 * H), user(3, '198.51.100.40', 5 * 60e3), user(4, null, 9 * 24 * H)];
+  fs.writeFileSync(path.join(dir, 'store.json'), JSON.stringify({ users: users, progress: {} }));
+  const srv = await boot(dir); /* the sweep runs before it listens */
+  try {
+    const now = JSON.parse(fs.readFileSync(path.join(dir, 'store.json'), 'utf8')).users;
+    assert.ok(['seed-1', 'seed-2', 'seed-3', 'seed-4'].every(id => now.some(u => u.id === id)), 'every account is still there');
+    assert.equal(now.find(u => u.id === 'seed-1').ipTag, undefined, 'three days old: forgotten');
+    assert.equal(now.find(u => u.id === 'seed-2').ipTag, tagOf('198.51.100.40'), '47 hours old: kept (the limit looks back a day)');
+    assert.equal(now.find(u => u.id === 'seed-3').ipTag, tagOf('198.51.100.40'));
+    assert.equal(now.find(u => u.id === 'seed-1').email, 'seed1@example.com');
   } finally { await srv.close(); rm(dir); }
 });
 
@@ -316,6 +368,44 @@ test('shares: 24 a page, a cursor for the next, genres on the first page, the ol
       assert.equal((await req(srv.port, 'GET', '/api/shares?cursor=' + encodeURIComponent(bad))).status, 400, bad.slice(0, 20));
     }
     assert.equal((await req(srv.port, 'GET', '/api/shares?mine=1')).status, 401, 'mine still needs an account');
+  } finally { await srv.close(); rm(dir); }
+});
+
+test('shares: a hostile genre or search is only a string - no error, no more rows, nothing from other genres', async () => {
+  const dir = tmp();
+  const rows = [];
+  for (let i = 0; i < 12; i++) rows.push(row('g' + String(i).padStart(2, '0'), new Date(Date.parse('2026-02-01T00:00:00.000Z') + i * 1000).toISOString(), { genre: i % 2 ? 'Jazz' : 'Classical', title: i === 3 ? '100% Swing_ok' : 'Tune ' + i }));
+  fs.writeFileSync(path.join(dir, 'shares.json'), JSON.stringify({ shares: rows }));
+  const srv = await boot(dir);
+  try {
+    const total = (await req(srv.port, 'GET', '/api/shares?limit=100')).body.shares.length;
+    const asked = async qs => req(srv.port, 'GET', '/api/shares?' + qs);
+    const jazz = (await asked('genre=Jazz&limit=100')).body.shares;
+    assert.ok(jazz.length >= 6 && jazz.every(s => s.genre === 'Jazz'));
+    for (const g of ["' OR 1=1 --", "Jazz' OR genre <> '", 'Jazz"; DROP TABLE ppp_shares; --', 'Jazz%', '%', '_azz', 'J_zz', '\\', 'x'.repeat(5000), '\u00e9\u{1F3B9}', 'jazz', 'JAZZ']) {
+      const r = await asked('genre=' + encodeURIComponent(g) + '&limit=100');
+      assert.equal(r.status, 200, JSON.stringify(g.slice(0, 20)));
+      assert.deepEqual(r.body.shares, [], 'no row has the genre ' + JSON.stringify(g.slice(0, 20)) + ': it is matched whole, as it is');
+    }
+    /* a NUL is dropped (Postgres cannot hold it): the rest is the genre */
+    for (const g of ['Jazz%00', '%00Jazz', 'Ja%00zz']) {
+      const r = await asked('genre=' + g + '&limit=100');
+      assert.equal(r.status, 200, g);
+      assert.ok(r.body.shares.length === jazz.length && r.body.shares.every(s => s.genre === 'Jazz'), g);
+    }
+    assert.equal((await asked('genre=Jazz&genre=Classical&limit=100')).body.shares.length, jazz.length, 'two genre fields: the first');
+    assert.equal((await asked('genre=&limit=100')).body.shares.length, total, 'an empty genre is no genre');
+    /* the search: % and _ are letters, not wildcards; a backslash and a NUL are fine */
+    assert.deepEqual((await asked('q=' + encodeURIComponent('100%'))).body.shares.map(s => s.id), ['g03']);
+    assert.deepEqual((await asked('q=' + encodeURIComponent('Swing_ok'))).body.shares.map(s => s.id), ['g03']);
+    assert.deepEqual((await asked('q=' + encodeURIComponent('Swing_o'))).body.shares.map(s => s.id), ['g03']);
+    assert.deepEqual((await asked('q=' + encodeURIComponent('Swing.ok'))).body.shares, [], '_ is not a wildcard');
+    assert.deepEqual((await asked('q=' + encodeURIComponent('%'))).body.shares.map(s => s.id), ['g03'], '% alone is only the one title that has one');
+    for (const q of ["' OR 1=1 --", '\\', '%00', 'Tune%00%205', 'x'.repeat(5000)]) {
+      const r = await asked('q=' + (q.indexOf('%') >= 0 ? q : encodeURIComponent(q)));
+      assert.equal(r.status, 200, JSON.stringify(q.slice(0, 20)));
+    }
+    assert.deepEqual((await asked('q=Tune%00%205')).body.shares.map(s => s.id), ['g05'], 'a NUL in the search is dropped');
   } finally { await srv.close(); rm(dir); }
 });
 

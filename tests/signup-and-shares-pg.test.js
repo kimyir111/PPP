@@ -123,13 +123,18 @@ const tagOf = ip => {
     ok('the tag is the keyed hash of the address (16 hex), and the address itself is nowhere', rows.length === 10 && /^[0-9a-f]{16}$/.test(rows[0].created_ip_tag)
       && (await one(`SELECT count(*)::int AS n FROM ppp_users WHERE display_name LIKE '%203.0.113%' OR email LIKE '%203.0.113%' OR created_ip_tag LIKE '%203.0.113%'`))[0].n === 0);
     ok('created_at is the time of the signup', rows.every(r => Math.abs(Date.now() - new Date(r.created_at).getTime()) < 120000));
+    /* the keyed address hash of an account is forgotten after two days (at boot and every six hours), the account is not */
+    await db.query(`INSERT INTO ppp_users (id, email, display_name, password_hash, created_ip_tag, created_at) VALUES ('tag-old', 'tagold@example.com', 'T', 'x', 'aaaaaaaaaaaaaaaa', now() - interval '3 days'), ('tag-47h', 'tag47@example.com', 'T', 'x', 'bbbbbbbbbbbbbbbb', now() - interval '47 hours')`);
     await srv.close();
     srv = await start();
+    ok('the address hash of an account three days old is gone, the account stays; 47 hours old: kept',
+      (await one(`SELECT id, created_ip_tag FROM ppp_users WHERE id IN ('tag-old', 'tag-47h') ORDER BY id`)).map(r => r.id + ':' + r.created_ip_tag).join() === 'tag-47h:bbbbbbbbbbbbbbbb,tag-old:null');
     ok('after a restart the 11th is still refused (nothing in memory)', (await signup(P(), '203.0.113.7')).status === 429);
     ok('an IPv6 address counts as its /48', (await (async () => { for (let i = 0; i < 10; i++) await signup(P(), '2001:db8:1:' + (i + 1) + '::1'); return signup(P(), '2001:db8:1:ffff::1'); })()).status === 429);
     const all = await Promise.all(Array.from({ length: 16 }, () => signup(P(), '198.51.100.200')));
     const made = all.filter(r => r.status === 201).length;
-    ok('16 at once from one address make at most 10', made <= 10 && made >= 9, made + ' made');
+    ok('16 at once from one address make exactly 10 and refuse 6', made === 10 && all.filter(r => r.status === 429).length === 6, all.map(r => r.status).join());
+    ok('and ten rows are in the table', (await one('SELECT count(*)::int AS n FROM ppp_users WHERE created_ip_tag = $1', [tagOf('198.51.100.200')]))[0].n === 10);
     await db.query(`DELETE FROM ppp_users WHERE created_ip_tag IS NOT NULL`);
     /* 9 in the last hour and 4 an hour and a half old: 13 in the day, 9 in the hour - the 10th of the hour is made, the 11th is not */
     const T = tagOf('203.0.113.55');
@@ -179,6 +184,27 @@ const tagOf = ip => {
     const q = await req(P(), 'GET', '/api/shares?q=amazing');
     ok('the search is asked of the database', q.body.shares.length >= 1 && q.body.shares.every(s => /amazing/i.test(s.title + s.composer + s.owner)));
     ok('a cursor that is not ours is a 400', (await req(P(), 'GET', '/api/shares?cursor=garbage')).status === 400);
+    /* a hostile genre or search is only a string, whatever Postgres would make of it */
+    const hostile = [];
+    for (const g of ["' OR 1=1 --", "Jazz' OR genre <> '", 'Jazz"; DROP TABLE ppp_shares; --', 'Jazz%', '%', '_azz', 'jazz', 'x'.repeat(5000), '\\']) {
+      const r = await req(P(), 'GET', '/api/shares?limit=100&genre=' + encodeURIComponent(g));
+      if (r.status !== 200 || r.body.shares.length !== 0) hostile.push(g.slice(0, 12) + ' -> ' + r.status + '/' + (r.body && r.body.shares && r.body.shares.length));
+    }
+    ok('a hostile genre is a 200 with no row', hostile.length === 0, hostile.join('; '));
+    const nul = [];
+    for (const g of ['Jazz%00', '%00Jazz', 'Ja%00zz']) {
+      const r = await req(P(), 'GET', '/api/shares?limit=100&genre=' + g);
+      if (r.status !== 200 || r.body.shares.length < 20 || !r.body.shares.every(s => s.genre === 'Jazz')) nul.push(g + ' -> ' + r.status);
+    }
+    ok('a NUL in the genre is dropped (Postgres cannot hold it): a 200, the Jazz rows', nul.length === 0, nul.join('; '));
+    const qs = [];
+    for (const q of ["' OR 1=1 --", '%', '_', '%00', 'Song%00%201', 'x'.repeat(5000), '\\']) {
+      const r = await req(P(), 'GET', '/api/shares?limit=100&q=' + (q.indexOf('%') >= 0 && q.length > 1 ? q : encodeURIComponent(q)));
+      if (r.status !== 200) qs.push(q.slice(0, 12) + ' -> ' + r.status);
+    }
+    ok('a hostile search is a 200', qs.length === 0, qs.join('; '));
+    ok('% and _ in the search are letters, not wildcards', (await req(P(), 'GET', '/api/shares?q=' + encodeURIComponent('%'))).body.shares.length === 0
+      && (await req(P(), 'GET', '/api/shares?q=' + encodeURIComponent('_'))).body.shares.length === 0);
     ok('the genres are those of listed rows only', JSON.stringify(page1.body.genres) === JSON.stringify((await one(`SELECT DISTINCT genre FROM ppp_shares WHERE listed AND genre <> '' ORDER BY genre`)).map(r => r.genre)));
   } catch (e) {
     errors.push('crashed: ' + (e && e.stack || e));

@@ -582,7 +582,7 @@ const GUEST_LOCK_KEY = 727001;
 const signupLimit = require('./signup-limit');
 const SIGNUP = signupLimit.SIGNUP;
 const signupAttempts = guestShare.slidingWindow(SIGNUP.ATTEMPTS, SIGNUP.ATTEMPT_MS);
-const signupInflight = signupLimit.inflight();
+const signupSerial = signupLimit.serial();
 const signupKey = crypto.createHmac('sha256', SECRET).update('ppp-signup-address').digest();
 const signupTagOf = ip => crypto.createHmac('sha256', signupKey).update(homeJobs.addrKey(ip)).digest('hex').slice(0, 16);
 
@@ -682,6 +682,14 @@ function fileStore() {
         if (u.ipTag === tag) { made.addrDay++; if (hour) made.addrHour++; }
       });
       return made;
+    },
+    /* the keyed hash of the address an account was made from is kept for the limit's day, and two days at most (privacy: an address, even hashed, is not kept for good) */
+    async purgeSignupTags(nowMs) {
+      const db = load();
+      let n = 0;
+      db.users.forEach(u => { if (u.ipTag && !(Date.parse(u.createdAt) > nowMs - 2 * SIGNUP.DAY_MS)) { delete u.ipTag; n++; } });
+      if (n) save(db);
+      return n;
     },
     async getProgress(userId) {
       const db = load();
@@ -884,6 +892,10 @@ function postgresStore(url) {
         + 'FROM ppp_users WHERE created_ip_tag IS NOT NULL AND created_at > $2',
         [new Date(nowMs - SIGNUP.HOUR_MS).toISOString(), new Date(nowMs - SIGNUP.DAY_MS).toISOString(), tag]);
       return r.rows[0];
+    },
+    async purgeSignupTags(nowMs) {
+      const r = await q('UPDATE ppp_users SET created_ip_tag = NULL WHERE created_ip_tag IS NOT NULL AND created_at < $1', [new Date(nowMs - 2 * SIGNUP.DAY_MS).toISOString()]);
+      return r.rowCount || 0;
     },
     async getProgress(userId) {
       const r = await q('SELECT payload, updated_at AS "updatedAt" FROM ppp_progress WHERE user_id = $1', [userId]);
@@ -1184,7 +1196,9 @@ async function handleApi(req, res, url) {
     const who = guestShare.clientAddress(req);
     const local = who.source === 'socket' && signupLimit.LOOPBACK.test(who.ip);
     const tag = signupTagOf(who.ip);
-    if (!local && !signupAttempts.take(tag)) return jsonError(res, 429, 'Too many attempts. Try again later.', { code: 'too-many' });
+    /* a limiter's refusal: 429 with code 'too-many' (the page shows it and stops; any other 429 it takes for a busy edge and tries again) and how long to wait at most */
+    const refuse = (message, reason) => send(res, 429, { error: message, code: 'too-many' }, { 'Retry-After': String(signupLimit.retryAfter(reason)) });
+    if (!local && !signupAttempts.take(tag)) return refuse('Too many attempts. Try again later.', 'attempts');
     let body;
     try { body = JSON.parse((await readBody(req)).toString('utf8') || '{}'); }
     catch (e) { return jsonError(res, 400, 'Invalid JSON'); }
@@ -1192,16 +1206,12 @@ async function handleApi(req, res, url) {
     const password = String(body.password || '');
     if (!email) return jsonError(res, 422, 'Enter a valid email.');
     if (password.length < 8) return jsonError(res, 422, 'Password must be at least 8 characters.');
-    /* this request holds a place from here to the end: another that reads the table in the same moment sees it as one more account */
-    const slot = signupInflight.take(tag);
-    try {
-      let refusal = null;
-      try { refusal = signupLimit.refusal(await store.countSignups(tag, Date.now()), slot.before, local); }
-      catch (e) { logStoreError(e); return jsonError(res, 500, 'Could not create account.'); }
-      if (refusal) {
-        return jsonError(res, 429, refusal === 'site' ? 'PPP is making a lot of accounts just now. Try again in a little while.'
-          : 'Too many accounts were made from here just now. Try again later.', { code: 'too-many' });
-      }
+    /* One at a time from reading the count to writing the account (signup-limit.js serial): the count is exact, and 16 requests at once make exactly what the cap allows. */
+    const out = await signupSerial(async () => {
+      let why = null;
+      try { why = signupLimit.refusal(await store.countSignups(tag, Date.now()), local); }
+      catch (e) { logStoreError(e); return { status: 500 }; }
+      if (why) return { why: why };
       const user = {
         id: crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex'),
         email: email,
@@ -1210,18 +1220,22 @@ async function handleApi(req, res, url) {
         ipTag: tag,
         createdAt: new Date().toISOString()
       };
-      try {
-        await store.createUser(user);
-      } catch (e) {
-        if (e && e.code === 'exists') return jsonError(res, 409, 'An account with this email already exists.');
+      try { await store.createUser(user); }
+      catch (e) {
+        if (e && e.code === 'exists') return { status: 409 };
         console.error(e);
-        return jsonError(res, 500, 'Could not create account.');
+        return { status: 500 };
       }
-      setCookie(res, signSession(user.id));
-      send(res, 201, publicUser(user));
-    } finally {
-      slot.release();
+      return { user: user };
+    });
+    if (out.why) {
+      return refuse(out.why === 'site' ? 'PPP is making a lot of accounts just now. Try again in a little while.'
+        : 'Too many accounts were made from here just now. Try again later.', out.why);
     }
+    if (out.status === 409) return jsonError(res, 409, 'An account with this email already exists.');
+    if (out.status) return jsonError(res, 500, 'Could not create account.');
+    setCookie(res, signSession(out.user.id));
+    send(res, 201, publicUser(out.user));
     return;
   }
 
@@ -1303,10 +1317,12 @@ async function handleShares(req, res, url) {
     const cursor = cursorText ? readShareCursor(cursorText) : null;
     if (cursorText && !cursor) return jsonError(res, 400, 'That page marker is not one PPP gave.');
     /* one more than a page, to know whether there is a next one */
+    /* a NUL cannot be stored or compared in Postgres text: it is no part of a search */
+    const plain = (v, n) => clipText(v, n).replace(/\u0000/g, '');
     const rows = await store.listShares({
       ownerId: mine ? user.id : null,
-      q: clipText(url.searchParams.get('q'), 80),
-      genre: clipText(url.searchParams.get('genre'), 32),
+      q: plain(url.searchParams.get('q'), 80),
+      genre: plain(url.searchParams.get('genre'), 32),
       cursor: cursor,
       limit: limit + 1
     });
@@ -1629,7 +1645,9 @@ function startHelperIfMissing() {
 
 /* Expired guest links are invisible at once (a GET is 404), but their rows are kept until swept: at start, and every few hours. */
 function sweepGuestShares() {
+  /* G13-5: and the address tags of accounts older than two days (store.purgeSignupTags) */
   return Promise.resolve(store.deleteExpiredShares(Date.now()))
+    .then(() => store.purgeSignupTags(Date.now()))
     .catch(e => console.error('Guest link sweep failed:', e.message));
 }
 

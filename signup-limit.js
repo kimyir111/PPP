@@ -1,5 +1,5 @@
-/* The signup limiter's own rules, apart from the server (G13-5; docs/GOALS/G13_PRODUCTIZATION.md TD26): the numbers, what a count of recent accounts allows, and the
-   places held by requests that have passed the check and not yet written their account. server.js does the HTTP, the keyed address tag and the store. */
+/* The signup limiter's own rules, apart from the server (G13-5; docs/GOALS/G13_PRODUCTIZATION.md TD26): the numbers, what a count of recent accounts allows, how long a
+   refused person is told to wait, and the one-at-a-time section in which the table is read and the account written. server.js does the HTTP, the keyed address tag and the store. */
 'use strict';
 
 /* ATTEMPTS: every request to the route from one address (it costs a scrypt before it can be answered), in memory, per ATTEMPT_MS.
@@ -14,39 +14,31 @@ const SIGNUP = {
 /* a request from this machine itself: the socket, the loopback address, no proxy header (a developer's server; the browser suites sign up many accounts from it) */
 const LOOPBACK = /^(?:127\.\d+\.\d+\.\d+|::1|::ffff:127\.\d+\.\d+\.\d+)$/i;
 
-/* why an account may not be made now, or null. made = { siteHour, addrHour, addrDay } as the table says; before = { site, tag }: the places held at this moment by
-   other requests of the whole site and of this address (they have passed the same check and have not written yet, so each counts as one more account);
-   local: the address is the machine itself, which is not limited per address (the site's cap is the site's). */
-function refusal(made, before, local) {
-  if (made.siteHour + before.site >= SIGNUP.SITE_HOUR) return 'site';
-  if (!local && (made.addrHour + before.tag >= SIGNUP.PER_ADDRESS_HOUR || made.addrDay + before.tag >= SIGNUP.PER_ADDRESS_DAY)) return 'address';
+/* why an account may not be made now, or null: 'site' (everybody's hour is full), 'day' or 'hour' (this address's). made = { siteHour, addrHour, addrDay } as the table says;
+   local: the address is the machine itself, which is not limited per address (the site's cap is the site's). The day comes before the hour: it is the longer wait. */
+function refusal(made, local) {
+  if (made.siteHour >= SIGNUP.SITE_HOUR) return 'site';
+  if (!local && made.addrDay >= SIGNUP.PER_ADDRESS_DAY) return 'day';
+  if (!local && made.addrHour >= SIGNUP.PER_ADDRESS_HOUR) return 'hour';
   return null;
 }
 
-/* The places held. take(tag) is called BEFORE the table is read (so two requests of the same moment cannot both see an empty table); it returns the places held by
-   others at that moment ({ site, tag }) and a release() to call when the request is over, whatever it ended with. A release is idempotent. */
-function inflight() {
-  let site = 0;
-  const byTag = new Map();
-  return {
-    take(tag) {
-      const held = byTag.get(tag) || 0;
-      const before = { site: site, tag: held };
-      site++; byTag.set(tag, held + 1);
-      let done = false;
-      return {
-        before: before,
-        release() {
-          if (done) return;
-          done = true;
-          site--;
-          const left = (byTag.get(tag) || 1) - 1;
-          if (left > 0) byTag.set(tag, left); else byTag.delete(tag);
-        }
-      };
-    },
-    held() { return { site: site, tags: byTag.size }; }
+/* seconds a refused person is told to wait (Retry-After): the longest it can take for the count to fall under the cap - an upper bound, not a promise. 'attempts' is the request limit. */
+function retryAfter(reason) {
+  return reason === 'day' ? SIGNUP.DAY_MS / 1000 : reason === 'attempts' ? SIGNUP.ATTEMPT_MS / 1000 : SIGNUP.HOUR_MS / 1000;
+}
+
+/* One at a time: serial() returns run(fn), which starts fn when every earlier fn has settled and gives back fn's own result or error. A signup reads the count of accounts
+   and writes its own inside one of these, so a request that reads the table sees every account made before it, and no account is counted twice. (An earlier version held a
+   "place" for a request in flight and released it after the write: a request that read the table in between counted the row and the place.) One server process holds the queue; the
+   site is one instance (docs/GOALS/G10B_HOME_WORKER.md). A failure of one fn does not stop the next. */
+function serial() {
+  let tail = Promise.resolve();
+  return function run(fn) {
+    const p = tail.then(() => fn());
+    tail = p.then(() => undefined, () => undefined);
+    return p;
   };
 }
 
-module.exports = { SIGNUP, LOOPBACK, refusal, inflight };
+module.exports = { SIGNUP, LOOPBACK, refusal, retryAfter, serial };

@@ -12998,7 +12998,13 @@ class Component extends DCLogic {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email, password: password, displayName: displayName })
     }).then(async r => {
-      if (r.status === 502 || r.status === 503 || r.status === 429) {
+      if (r.status === 429) {
+        /* G13-5: the limiter's refusal (code 'too-many': signup, 20 requests / 10 accounts an hour ...) is an answer: it is shown at once and not asked again. Any other 429 is a busy edge, tried again below. */
+        const b = await r.json().catch(() => null);
+        if (b && b.code === 'too-many' && typeof b.error === 'string') throw new Error(tx(b.error));
+        const err = new Error(tx('Could not reach the server.')); err.transient = true; throw err;
+      }
+      if (r.status === 502 || r.status === 503) {
         const err = new Error(tx('Could not reach the server.')); err.transient = true; throw err;
       }
       const body = await r.json().catch(() => ({}));
@@ -17525,7 +17531,7 @@ class Component extends DCLogic {
       note = tx('Sign in to see the scores you have shared. Links you sent as a guest stay on their song in My Songs.');
       act = { label: tx('Sign in'), on: () => this.setState({ guest: false }) };
     } else if (!S.sharedList) note = tx('Loading shared scores…');
-    else if (!list.length) {
+    else if (!list.length && (mine || (!q && !genre))) {
       note = tx(mine ? 'You have not shared a score yet. Share one from My Songs.' : 'Nothing has been shared yet. Share one of your songs from My Songs.');
       act = { label: tx('Go to My Songs'), on: this.go('songs') };
     } else if (!shown.length) note = tx(genre ? 'No shared score in {{genre}}.' : 'No shared score matches “{{q}}”.',
