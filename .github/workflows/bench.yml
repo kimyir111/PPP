@@ -467,7 +467,7 @@ jobs:
           overwrite: true
 
   # shard-o: rec-grid 2/3, robust, test:practice
-  #   (steps ~125 s on a fast runner, ~196 s on a slow one, before test:practice, which adds 10-25 s on a runner: see this job's log)
+  #   (steps ~125 s on a fast runner, ~196 s on a slow one, before test:practice, which adds 5 s: 80 tests in 4.6 s on a slow draw, 2026-10-08, PR 225)
   shard-o:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
