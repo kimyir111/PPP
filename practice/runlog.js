@@ -10,9 +10,12 @@
      measured    a clock run judged by the matcher (a MIDI keyboard was attached)
      follow      Follow mode: the notes asked for, no timing, never evidence of tempo
      memory      a recall attempt (notes hidden, hints counted)
-     simulated   Demo Input (no keyboard): random hits drawn from the section's displayed accuracy. NOT evidence.
+     simulated   Demo Input: the lap ended with no matcher result (no MIDI keyboard connected, selected and switched on), so the page drew random hits
+                 from the section's displayed accuracy. NOT evidence.
+   A fifth thing is not a kind but is not evidence either: an IDLE lap, with a keyboard attached and nothing played (no matched, wrong or extra note
+   while notes were expected). The page counts it (`idle`) and does not log it.
    The log refuses a simulated entry (append answers {ok:false, code:'simulated'}); a simulated run only bumps a counter on the
-   epoch (`sim`), so an export tells how much of the practice had no keyboard, and the model that reads evidence() can never see it.
+   epoch (`sim`), an idle one `idle`, so an export tells how much of the practice had no keyboard or no playing, and the model that reads evidence() can never see it.
 
    ---- The log (G11-D6) ----
    Per song, per EPOCH. An epoch is one music hash of one song: a rewrite, an edit or a re-import changes the hash and starts a new
@@ -57,10 +60,10 @@
 
   const SCHEMA = Object.freeze({
     run: 'v version; id run id; at ms since 1970; src measured|follow|memory (simulated runs are not logged); md practice|memory; hd b both|l left|r right; ' +
-      'tp tempo bpm; sr tempo/score tempo; f,t first and last measure INDEX; g measures per row; hn hints in use; lv memory level; ex expected notes; ht matched notes; ' +
+      'tp tempo bpm; sr tempo/score tempo (both null for a Follow run: it has no tempo); f,t first and last measure INDEX; g measures per row; hn hints in use; lv memory level; ex expected notes; ht matched notes; ' +
       'wr wrong keys; xt extra keys; ac accuracy 0..1; R rows [measureIndex, hand(0 right,1 left), expected, matched, signedMeanMs, absMeanMs, missedNoteIds?]; ' +
       'W [measureIndex, wrong, extra]; tr 1 = rows dropped to fit 2 KB; rt (export only) the player\'s rating 1 easy|2 just right|3 hard',
-    epoch: 'songId; hash = the music hash of the song (a rewrite or an edit is a new epoch); current = the song\'s writable epoch; measures; idKind note (a missed id is an index into the Score notes); sim = runs without a keyboard (counted, not logged)'
+    epoch: 'songId; hash = the music hash of the song (a rewrite or an edit is a new epoch); current = the song\'s writable epoch; measures; idKind note (a missed id is an index into the Score notes); sim = runs without a keyboard, idle = laps with a keyboard and nothing played (counted, not logged)'
   });
 
   const isNum = v => typeof v === 'number' && isFinite(v);
@@ -92,8 +95,10 @@
     const to = isNum(input.to) ? input.to : from;
     const head = {
       v: VERSION, id: String(input.id), at: input.at, src: input.src, md: input.mode === 'memory' ? 'memory' : 'practice',
-      hd: HANDS[input.hands] || 'b', tp: isNum(input.tempo) ? Math.round(input.tempo * 10) / 10 : 0,
-      sr: input.scoreTempo > 0 ? r3(input.tempo / input.scoreTempo) : 1, f: from, t: to
+      hd: HANDS[input.hands] || 'b',
+      /* a Follow run is paced by the player: the slider's tempo says nothing about it (the legacy history puts it in the 50 % bucket whatever the slider says) */
+      tp: input.src === 'follow' ? null : isNum(input.tempo) ? Math.round(input.tempo * 10) / 10 : 0,
+      sr: input.src === 'follow' ? null : input.scoreTempo > 0 ? r3(input.tempo / input.scoreTempo) : 1, f: from, t: to
     };
     const tail = {
       hn: input.hints | 0, lv: input.level | 0, ex: input.expected | 0, ht: input.matched | 0, wr: input.wrong | 0, xt: input.extra | 0,
@@ -267,7 +272,7 @@
   function validEntry(e) {
     return isObj(e) && e.v === VERSION && typeof e.id === 'string' && e.id.length > 0 && e.id.length <= 40 && isNum(e.at) &&
       SOURCES.indexOf(e.src) >= 0 && (e.md === 'practice' || e.md === 'memory') && (e.hd === 'b' || e.hd === 'l' || e.hd === 'r') &&
-      isNum(e.tp) && isNum(e.sr) && isNum(e.f) && isNum(e.t) && isNum(e.g) && isNum(e.hn) && isNum(e.lv) && isNum(e.ex) && isNum(e.ht) &&
+      (e.src === 'follow' ? (e.tp === null || isNum(e.tp)) && (e.sr === null || isNum(e.sr)) : isNum(e.tp) && isNum(e.sr)) && isNum(e.f) && isNum(e.t) && isNum(e.g) && isNum(e.hn) && isNum(e.lv) && isNum(e.ex) && isNum(e.ht) &&
       isNum(e.wr) && isNum(e.xt) && isNum(e.ac) && Array.isArray(e.R) && e.R.every(validRow) &&
       Array.isArray(e.W) && e.W.every(w => Array.isArray(w) && w.length === 3 && w.every(isNum));
   }
@@ -286,15 +291,17 @@
     const n = info.last == null ? 1 : info.last + 1;
     const excess = Math.max(0, info.count + 1 - cap);
     const m = a.meta || {};
-    const epoch = Object.assign({ v: VERSION, ep: a.songId + '|' + a.hash, songId: a.songId, hash: a.hash, created: a.at, sim: { n: 0, last: null } },
+    const epoch = Object.assign({ v: VERSION, ep: a.songId + '|' + a.hash, songId: a.songId, hash: a.hash, created: a.at, sim: { n: 0, last: null }, idle: { n: 0, last: null } },
       old || {}, { hashV: a.hashV || null, measures: m.measures | 0, scoreTempo: isNum(m.scoreTempo) ? m.scoreTempo : 0, title: clean(m.title, CAPS.title), idKind: 'note', last: a.at });
     if (!isObj(epoch.sim) || !isNum(epoch.sim.n)) epoch.sim = { n: 0, last: null };
+    if (!isObj(epoch.idle) || !isNum(epoch.idle.n)) epoch.idle = { n: 0, last: null };
     return { n: n, excess: excess, epoch: epoch, song: { songId: a.songId, current: a.hash, at: a.at }, repaired: !!info.epoch && !old };
   }
-  /* a run without a keyboard: the epoch (made if it is new) counts it */
+  /* a run without a keyboard (a.field 'sim') or a lap with a keyboard and nothing played (a.field 'idle'): the epoch (made if it is new) counts it */
   function planSim(info, a) {
     const p = planAppend({ epoch: info.epoch, count: 0, last: null }, a, CAPS.runs);
-    p.epoch.sim = { n: (p.epoch.sim.n | 0) + 1, last: a.at };
+    const f = a.field === 'idle' ? 'idle' : 'sim';
+    p.epoch[f] = { n: (p.epoch[f].n | 0) + 1, last: a.at };
     return p;
   }
 
@@ -324,7 +331,7 @@
         const p = planSim({ epoch: epochs.get(ep) }, a);
         epochs.set(ep, p.epoch);
         songs.set(a.songId, p.song);
-        return { sim: p.epoch.sim.n };
+        return { sim: p.epoch.sim.n, idle: p.epoch.idle.n };
       },
       async rate(a) {
         guard('rate');
@@ -449,7 +456,7 @@
             const p = planSim({ epoch: ev.target.result }, a);
             t.objectStore('epochs').put(p.epoch);
             t.objectStore('songs').put(p.song);
-            set({ sim: p.epoch.sim.n });
+            set({ sim: p.epoch.sim.n, idle: p.epoch.idle.n });
           });
         });
       },
@@ -535,7 +542,7 @@
     const now = opts.now || (() => Date.now());
     const cap = (opts.caps && opts.caps.runs) || CAPS.runs;
     const timeout = (opts.caps && opts.caps.timeout) || CAPS.timeout;
-    const stats = { appended: 0, dropped: 0, simulated: 0, rated: 0, skipped: 0, refused: {}, errors: {}, corrupt: 0, repaired: 0, degraded: null, degradedAt: null, backend: backend.kind };
+    const stats = { appended: 0, dropped: 0, simulated: 0, idle: 0, rated: 0, skipped: 0, refused: {}, errors: {}, corrupt: 0, repaired: 0, degraded: null, degradedAt: null, backend: backend.kind };
     let degraded = null;
     let chain = Promise.resolve();
 
@@ -577,7 +584,8 @@
       songId: e.songId, hash: e.hash, hashV: e.hashV || null, current: current, readOnly: !current, measures: e.measures | 0,
       scoreTempo: isNum(e.scoreTempo) ? e.scoreTempo : 0, title: clean(e.title, CAPS.title), idKind: 'note',
       created: isNum(e.created) ? e.created : 0, last: isNum(e.last) ? e.last : 0,
-      sim: { n: isObj(e.sim) && isNum(e.sim.n) ? e.sim.n : 0, last: isObj(e.sim) && isNum(e.sim.last) ? e.sim.last : null }, runs: runs
+      sim: { n: isObj(e.sim) && isNum(e.sim.n) ? e.sim.n : 0, last: isObj(e.sim) && isNum(e.sim.last) ? e.sim.last : null },
+      idle: { n: isObj(e.idle) && isNum(e.idle.n) ? e.idle.n : 0, last: isObj(e.idle) && isNum(e.idle.last) ? e.idle.last : null }, runs: runs
     });
 
     const log = {
@@ -602,9 +610,18 @@
       noteSimulated(songId, hash, meta, hashV) {
         if (!idOk(songId) || !idOk(hash)) return refuse('key');
         return enqueue(async () => {
-          const r = await within(backend.noteSim({ songId: songId, hash: hash, hashV: hashV || null, meta: meta || {}, at: now() }), timeout);
+          const r = await within(backend.noteSim({ songId: songId, hash: hash, hashV: hashV || null, meta: meta || {}, at: now(), field: 'sim' }), timeout);
           stats.simulated++;
           return { ok: true, sim: r.sim };
+        });
+      },
+      /* a lap with a keyboard attached and nothing played (no matched, wrong or extra note while notes were expected): counted on the epoch, never logged, never rated */
+      noteIdle(songId, hash, meta, hashV) {
+        if (!idOk(songId) || !idOk(hash)) return refuse('key');
+        return enqueue(async () => {
+          const r = await within(backend.noteSim({ songId: songId, hash: hash, hashV: hashV || null, meta: meta || {}, at: now(), field: 'idle' }), timeout);
+          stats.idle++;
+          return { ok: true, idle: r.idle };
         });
       },
       /* the player's one-tap rating of run n (1 easy, 2 just right, 3 hard) */

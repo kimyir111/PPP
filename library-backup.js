@@ -45,7 +45,8 @@
   /* the progress that belongs to no one song */
   const STATE_FIELDS = Object.freeze(['minutes', 'xp', 'streak', 'sessions', 'skillMs', 'learnDone', 'learnLesson', 'learnStep', 'course']);
   const SLOT_PROGRESS = Object.freeze(['secs', 'history', 'memory', 'memLevel', 'blindRuns', 'mastered']);
-  const KNOWN_DBS = ['ppp-engrave', 'ppp-media'];
+  /* every database this page makes (a browser without indexedDB.databases() can only delete by name): the graphs cache, the song videos, and (PPP.learner 'typed', G11b-1) the practice log */
+  const KNOWN_DBS = ['ppp-engrave', 'ppp-media', 'ppp-runlog'];
   const RUN_KEEP = 40;
 
   const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);

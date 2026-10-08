@@ -5428,8 +5428,16 @@ function setDemoRunsMode(v) {
   try { if (c) localStorage.setItem(DEMO_RUNS_KEY, c); else localStorage.removeItem(DEMO_RUNS_KEY); } catch (e) { /* not remembered */ }
   return DEMO_RUNS_MODE;
 }
-/* what kind of run a finished lap was: no result = no keyboard judged it (Demo Input); a Follow result carries its flag; a recall is a memory lap */
-function runSource(S, result) { return !result ? 'simulated' : result.follow ? 'follow' : S.practiceMode === 'memory' ? 'memory' : 'measured'; }
+/* what kind of run a finished lap was: no result = no keyboard judged it (Demo Input: no MIDI keyboard connected, selected and switched on - the on-screen piano is Demo Input by the app's own rule);
+   a Follow result carries its flag; a lap with a keyboard that nobody played (notes expected, none matched, none wrong, none extra) is 'idle' - it is not evidence, and an unattended loop would
+   fill the log with it; a recall is a memory lap */
+function runSource(S, result) {
+  if (!result) return 'simulated';
+  if (result.follow) return 'follow';
+  const c = result.counts;
+  if (c && c.expected > 0 && !c.matched && !c.wrong && !c.extra) return 'idle';
+  return S.practiceMode === 'memory' ? 'memory' : 'measured';
+}
 const RUNLOG_SCRIPT = 'practice/runlog.js';
 const RUNLOG_FILE_V = 1; /* the ?v= of practice/runlog.js: bump it when the file changes */
 let _runLogPromise = null;
@@ -13477,7 +13485,8 @@ class Component extends DCLogic {
       bkTitle: tx('My data'),
       bkSub: tx('Your songs and practice progress are kept only in this browser. A backup file lets you keep them safe or move them to another device.'),
       bkMakeTitle: tx('Back up my songs'),
-      bkMakeNote: tx('One file with your songs and your practice progress. It holds song titles, file names, YouTube links and the names of people whose shared scores you added, so keep it private. It does not contain your PC link code, your link-sharing key or any password, and not the videos you uploaded.'),
+      bkMakeNote: tx('One file with your songs and your practice progress. It holds song titles, file names, YouTube links and the names of people whose shared scores you added, so keep it private. It does not contain your PC link code, your link-sharing key or any password, and not the videos you uploaded.')
+        + (LEARNER_MODE === 'typed' ? ' ' + tx('The practice log is not part of this file.') : ''),
       bkLast: last ? tx('Last backup: {{date}}', { date: this.bkDay(last.at) }) : tx('No backup has been made on this device yet.'),
       bkMakeLabel: tx('Back up now'), bkMakeStyle: prim + (busy ? 'opacity:.6;' : ''), backupMake: () => this.backupMake(),
       bkRestoreTitle: tx('Restore from a backup'),
@@ -15105,12 +15114,14 @@ class Component extends DCLogic {
   /* One finished lap into the log. Synchronous work only builds the (at most 2 KB) entry and queues it; IndexedDB is written in the background. Never throws: a log that fails is given up for the session (PPPRunLog's stats). */
   logRun(S, kind, result, measured, from, to, acc) {
     const L = window.PPPRunLog;
+    if (this._frozen) return;     /* G13-6: a restore or a delete is on its way to a reload: nothing may recreate 'ppp-runlog' now */
     if (!L) { this._runLogSkipped = (this._runLogSkipped || 0) + 1; return; }
     try {
       const t0 = nowMs();
       const log = L.pageLog(window);
       const key = this.runLogKey(S);
       if (kind === 'simulated') { log.noteSimulated(key.songId, key.hash, key.meta, key.hashV); this.noteRunLogTime(t0, kind); return; }
+      if (kind === 'idle') { log.noteIdle(key.songId, key.hash, key.meta, key.hashV); this.noteRunLogTime(t0, kind); return; }
       const info = key.info, perf = this._perf;
       const fromEngine = kind !== 'follow' && perf && perf.run && perf.expected && result && result.counts && perf.expected.length === result.counts.expected;
       const rr = fromEngine ? L.rowsFromEngine(perf, info) : L.rowsFromResult(result, info);
@@ -15137,7 +15148,7 @@ class Component extends DCLogic {
   rateRun(v) {
     const r = this.state.ratingRun;
     this.setState({ ratingRun: null });
-    if (!r || !window.PPPRunLog || LEARNER_MODE !== 'typed') return;
+    if (!r || !window.PPPRunLog || LEARNER_MODE !== 'typed' || this._frozen) return;
     window.PPPRunLog.pageLog(window).rate(r.songId, r.hash, r.n, v);
   }
   /* Settings: what the log holds (or why it holds nothing) */
@@ -15149,7 +15160,7 @@ class Component extends DCLogic {
         if (this._dead) return;
         if (!r.ok) { this.setState({ runLogInfo: { failed: true } }); return; }
         const songs = new Set(r.epochs.map(e => e.songId));
-        this.setState({ runLogInfo: { runs: r.epochs.reduce((a, e) => a + e.runs, 0), sim: r.epochs.reduce((a, e) => a + e.sim.n, 0), songs: songs.size } });
+        this.setState({ runLogInfo: { runs: r.epochs.reduce((a, e) => a + e.runs, 0), sim: r.epochs.reduce((a, e) => a + e.sim.n, 0), idle: r.epochs.reduce((a, e) => a + e.idle.n, 0), songs: songs.size } });
       });
     });
   }
@@ -15161,7 +15172,7 @@ class Component extends DCLogic {
     }).then(r => {
       if (!r) return;
       if (!r.ok) { this.say(tx('The practice log cannot be saved in this browser right now.')); return; }
-      if (!r.file.epochs.some(e => e.runs.length || e.sim.n)) { this.say(tx('Nothing to export yet.')); return; }
+      if (!r.file.epochs.some(e => e.runs.length || e.sim.n || e.idle.n)) { this.say(tx('Nothing to export yet.')); return; }
       const P = window.PPPRunLog;
       P.download(P.exportText(r.file), P.fileName(r.file.exportedAt));
       this.say(tx('Practice log exported.'));
@@ -15999,15 +16010,15 @@ class Component extends DCLogic {
       runRatingSkip: LEARNER_MODE === 'typed' ? tx('Skip') : '',
       showLogSettings: LEARNER_MODE === 'typed',
       runLogTitle: LEARNER_MODE === 'typed' ? tx('Practice log') : '',
-      runLogSub: LEARNER_MODE === 'typed' ? tx('Runs are kept on this device only. Press Export and send the file to whoever asked for it.') : '',
+      runLogSub: LEARNER_MODE === 'typed' ? tx('Runs are kept on this device only and are not part of a backup. The exported file holds song titles and the exact times of your practice, so send it only to whoever asked for it.') : '',
       runLogExportLabel: LEARNER_MODE === 'typed' ? tx('Export practice log') : '',
       runLogStatus: (() => {
         if (LEARNER_MODE !== 'typed') return '';
         const i = S.runLogInfo;
         if (!i) return '';
         if (i.failed) return tx('The practice log cannot be saved in this browser right now.');
-        if (!i.runs && !i.sim) return tx('No runs saved yet.');
-        return tx('Runs saved: {{runs}} · songs: {{songs}}', { runs: i.runs, songs: i.songs }) + (i.sim ? ' · ' + tx('Without a keyboard (not counted): {{n}}', { n: i.sim }) : '');
+        if (!i.runs && !i.sim && !i.idle) return tx('No runs saved yet.');
+        return tx('Runs saved: {{runs}} · songs: {{songs}}', { runs: i.runs, songs: i.songs }) + (i.sim ? ' · ' + tx('Without a keyboard (not counted): {{n}}', { n: i.sim }) : '') + (i.idle ? ' · ' + tx('Nothing played (not counted): {{n}}', { n: i.idle }) : '');
       })(),
       exportRunLog: () => this.exportRunLog(),
       /* Settings > Connect my PC: for everybody (no account), unless the site has no queue or this browser cannot keep a link */
