@@ -76,12 +76,15 @@ finished, so until then it is absent, not green):
 | `light` | what runs instead of the shards for a change that is only documents or the home-PC worker's files (below). |
 | `gate` | green only if the plan succeeded and every job it asked for did, and the others were skipped; red for a failed, cancelled or *skipped* job that was wanted, a job that ran when it was not wanted, or a job of the file that `gate` does not wait for. It prints the mode it ran in (`gate passed: FULL mode, 16 shards and 2 merges succeeded`, or `LIGHT docs-only`). |
 
-**The steps.** Each of the gate's 60 steps is in exactly one shard job with its command unchanged, in the relative order the single
+**The steps.** Each of the gate's 64 steps is in exactly one shard job with its command unchanged, in the relative order the single
 job had (`tests/bench/unit/test_ci_plan.py` holds the invariants and fails if one is broken). A `run --suite X` and its `check --suite X`
 (or a `*_data.py` and its trainer's `--check`) stay in the same job, because the second reads what the first wrote. A step you add goes
 in the job with the most slack (the comments list the times; the slowest job decides the wall-clock). Nothing needs installing: the
 jobs have Node 24 and Python 3.13 set up (every Python tool starts Node and the other way round) and the checkout is one commit,
 except `shard-c`, which runs the ScoreGraph tests and `git show aff7080:package.json` and so fetches the history.
+One of the 64, `npm run test:practice` (G11a-1, `practice/plan.js` against the app's own player; it is in `shard-o`, one of the least loaded of the sixteen on the
+slow draw), reads `practice/`, `tests/practice/`, `scoregraph/`, `engrave/`, the page, committed score files and `tests/bench/corpus/*.json`: no path the light modes skip
+(read from its code, not traced under `strace`).
 
 **Two suites are cut across jobs.** `rec-core` (2,538 cases, 370 s alone) and `rec-grid` (1,410 cases, 434 s) run as
 `run --suite X --shard K/N` ("Sharded runs" below) in four and in three jobs; each shard job uploads its `shard.json` and `run.json` as a
@@ -118,14 +121,14 @@ listed file type; one other path makes the whole change `full`. The classifier t
 change to the rules never applies to itself (it is under `tests/bench/`, so `full`, and the new rules start with the next change); a
 base without one (the change that adds it) is `full`.
 
-| mode | every changed path is | `light` runs | the 60 steps |
+| mode | every changed path is | `light` runs | the 64 steps |
 |---|---|---|---|
-| `docs` | `docs/**/*.{md,txt,png,jpg,jpeg,gif,pdf}`, or a root `*.md` / `LICENSE*` / `COPYING*` / `NOTICE*` | `lint-corpus`, `make_provenance.py --check` (the two cheapest checks: they only prove the checkout and the committed registry are sound) | skipped |
-| `tooling` | the above, or `tests/review/**`, `tools/home-worker/**`, `tests/home-worker/**` with a type of `.js .json .md .txt .cmd .ps1` | the two above, the bench unit tests, `npm run test:home-worker` | skipped |
+| `docs` | `docs/**/*.{md,txt,png,jpg,jpeg,gif,pdf}`, or a root `*.md` / `LICENSE*` / `COPYING*` / `NOTICE*` | `lint-corpus`, `make_provenance.py --check`, `node tests/i18n/gaps.js --check` (the cheap checks: they prove the checkout, the committed registry and the i18n baseline are sound) | skipped |
+| `tooling` | the above, or `tests/review/**`, `tools/home-worker/**`, `tests/home-worker/**` with a type of `.js .json .md .txt .cmd .ps1` | the three above, the bench unit tests, `npm run test:home-worker` | skipped |
 | `full` | anything else: `review/**`, `.github/**`, `package.json`, `tests/bench/**`, the engine, the page, any file of a type not listed | - | all of them (the 16 shards and the 2 merges) |
 
-**Why it can never turn a failing check green: what each skipped step reads.** All 63 command runs of the gate (the 60 steps, with
-`rec-core` and `rec-grid` as their 7 shards) were run under `strace -f -e trace=%file,%process` on a runner
+**Why it can never turn a failing check green: what each skipped step reads.** All 63 command runs of the gate as they were on 2026-10-07 (the 60 steps of then, with
+`rec-core` and `rec-grid` as their 7 shards; G13-0 added two steps since, see below) were run under `strace -f -e trace=%file,%process` on a runner
 (2026-10-07; a throwaway workflow on a throwaway branch), keeping every system call that names a path in `docs/`, `review/`,
 `tests/review/`, `tools/home-worker/`, `tests/home-worker/` or any `*.md` / `LICENSE` file, with the process that made it (`git status`,
 which the bench starts for the `git_dirty` flag of `run.json` and which `lstat`s every tracked file, is set apart: no check reads that
@@ -138,6 +141,16 @@ flag). The steps that touch these paths:
 | `tools/home-worker/**` | `npm run test:home-worker` (`worker.js`, `worker.config.example.json`, `pair.cmd`). `test:engrave` lists the directory. | `tooling`: `light` runs it |
 | `tests/home-worker/**` | `npm run test:home-worker`. `test:engrave` lists the directory. | `tooling`: `light` runs it |
 | `review/**` | `npm run test:rec` (`review/lib/appcode.js`), `npm run test:realize` (`review/lib/neutral.js`), `npm run test:home-worker` (`review/h10/helper-heard.js`); `test:engrave` lists the directory | **not light** - `full` |
+
+The two steps G13-0 added (`node tests/i18n/gaps.js --check` and its mutation test `node tests/i18n/gaps.test.js`, in `shard-p`; the first is also in `light`) were
+not traced with `strace`, they were read: they open the page `Piano Coach App.dc.html`, the shipped scripts found by walking the repository
+without `node_modules`, `.git`, `tests`, `tools`, `vendor`, `docs`, `data`, `review`, `i18n`, `catalog`, `samples`, `audio`, `assets`, the four
+catalogs `i18n/*.json` and `tests/i18n/gaps-baseline.json`; the test copies those into a temporary folder. They never open a path the light modes skip.
+
+G11c-0 added one step (`npm run test:practice-variant`, in `shard-j`; not in `light`): the checks, the mutation test and the benchmark sample of `practice/variant.js`.
+It was read, not traced: it opens the source modules (`practice/`, `scoregraph/`, `playability/`, `difficulty/`, `engrave/`), the catalogue pieces of `catalog/` through the
+importer and its own files in `tests/practice-variant/` (the arrangements its sample is spliced from are frozen in `fixtures/sample-variants.json`: the arrangers do not run).
+It opens none of the paths the light modes skip.
 
 The one step that walks the whole tree is the A48 test of `npm run test:engrave` (it imports every committed `.musicxml`, `.mxl`,
 `.mid` and score-named `.xml` file it finds, anywhere), and `tests/engrave/marks.test.js` fails on any tracked font; so a file of those
