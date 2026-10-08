@@ -81,6 +81,10 @@ const ok = (name, cond, detail) => {
     };
     click(I.tx('Sight Reading'));
     await new Promise(r => setTimeout(r, 400));
+    /* a text with curly quotes in the page: apply() once looked for its straight-quote form in the node and left it in English */
+    const quote = '“You recognize treble clef quickly, but bass clef is slowing you down.”';
+    const quoteWant = I.tx(quote);
+    const quoteHit = quoteWant !== quote && (document.body.innerText || '').indexOf(quoteWant) > -1;
     const quizWant = I.tx('Question {{n}} of 10', { n: 1 });
     const quizGot = [...document.querySelectorAll('*')].map(e => (e.childNodes.length === 1 && e.childNodes[0].nodeType === 3) ? (e.textContent || '').trim() : '')
       .find(t => t === quizWant || t === 'Question 1 of 10') || '';
@@ -94,7 +98,7 @@ const ok = (name, cond, detail) => {
     const parsedWant = I.tx('Parsed {{n}} measures in {{time}}, key of {{key}}, {{notes}} notes across {{staves}} staves.', {
       n: window.PPP.Score.count(score),
       time: m0.time.beats + '/' + m0.time.beatType,
-      key: window.PPP.keyName(m0.key.fifths, m0.key.mode),
+      key: window.PPP.keyLabel(m0.key.fifths, m0.key.mode),
       notes: score.notes.filter(n => !n.rest).length,
       staves: score.staves
     });
@@ -123,7 +127,7 @@ const ok = (name, cond, detail) => {
     const progressBody = document.body.innerText || '';
     const recHit = recParts.every(p => progressBody.indexOf(p) > -1) && progressBody.indexOf(' — measures ') === -1;
     return {
-      quizWant, quizGot, parsedWant, parsedHit: body.indexOf(parsedWant) > -1,
+      quizWant, quizGot, quoteWant, quoteHit, parsedWant, parsedHit: body.indexOf(parsedWant) > -1,
       loopWant, loopHit,
       mapWant, mapHit: progressBody.indexOf(mapWant) > -1,
       secWant, secHit: progressBody.indexOf(secWant) > -1,
@@ -137,6 +141,7 @@ const ok = (name, cond, detail) => {
   for (const loc of ['ko-KR', 'ja-JP', 'zh-CN']) {
     const r = await interpolated(loc);
     ok(loc + ' quizCount matches catalog, not English', r.quizGot === r.quizWant && r.quizWant !== 'Question 1 of 10', r.quizGot + ' vs ' + r.quizWant);
+    ok(loc + ' the coach quote (curly quotes) is on the page in ' + loc, r.quoteHit, r.quoteWant);
     ok(loc + ' analyzeSummary-done matches catalog, not English', r.parsedHit && !/^Parsed 64 measures/.test(r.parsedWant), r.parsedWant);
     ok(loc + ' coachLine1 catalog is translated, not English', r.focusWant && r.focusWant.indexOf('Let’s focus') === -1 && /\d/.test(r.focusWant), r.focusWant);
     ok(loc + ' loop tab note matches catalog, not English', r.loopHit && r.loopWant.indexOf('Repeat ') !== 0, r.loopWant);
@@ -144,6 +149,30 @@ const ok = (name, cond, detail) => {
     ok(loc + ' progress section-map subtitle matches catalog, not English', r.secHit && r.secWant.indexOf(' sections') === -1, r.secWant);
     ok(loc + ' progress tempo sub matches catalog, not English', r.tempoHit && r.tempoWant.indexOf('score says ') !== 0, r.tempoWant);
     ok(loc + ' progress recommendation matches catalog, not English', r.recHit, r.recWant);
+  }
+
+  /* a slow network: the page is drawn before the catalogs come. What PPP makes once and keeps for a history (the recommendation "Left hand at 75% tempo",
+     the drill steps, the memory reasons) was made in English then, and stayed so, until the translations' arrival dropped it. */
+  for (const loc of ['ko-KR', 'ja-JP', 'zh-CN']) {
+    const ctx = await browser.createBrowserContext();
+    const slow = await ctx.newPage();
+    await preparePage(slow);
+    await slow.evaluateOnNewDocument(l => { try { localStorage.setItem('ppp-locale', l); } catch (e) {} }, loc);
+    await slow.setRequestInterception(true);
+    slow.on('request', async r => { if (/\/i18n\/[A-Za-z-]+\.json/.test(r.url())) await sleep(1500); r.continue().catch(() => {}); });
+    await slow.setViewport({ width: 1440, height: 900 });
+    await slow.goto(URL, { waitUntil: 'networkidle2', timeout: 45000 });
+    await slow.waitForFunction(() => document.querySelectorAll('aside nav button').length >= 6, { timeout: 25000 });
+    await slow.evaluate(() => window.PPP_I18N.ready);
+    await sleep(1000);
+    const got = await slow.evaluate(() => {
+      const A = window.PPP.app, I = window.PPP_I18N;
+      const rec = A.model().rec, seq = A.seq().map(x => x.label);
+      return { action: rec.action, headline: rec.headline, seq,
+        want: [I.tx('Left hand at {{pct}}% tempo', { pct: 75 }), I.tx('Left hand accuracy: {{pct}}%', { pct: 56 })], english: ['Left hand at 75% tempo', 'Left hand accuracy: 56%'] };
+    });
+    ok(loc + ' on a slow network the recommendation is still made in ' + loc, got.action !== got.english[0] && got.headline !== got.english[1] && /\d/.test(got.action) && !/[A-Za-z]{4,}/.test(got.action + got.headline + got.seq.join(' ')), JSON.stringify(got));
+    await ctx.close();
   }
 
   await page.evaluate(() => window.PPP_I18N.setLocale('en-US'));

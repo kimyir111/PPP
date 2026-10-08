@@ -3960,6 +3960,16 @@ function keyName(fifths, mode) {
   const i = clampN((fifths | 0) + 7, 0, 14);
   return mode === 'minor' ? KEY_MINOR[i] + ' minor' : KEY_MAJOR[i] + ' major';
 }
+/* the key as a person reads it: "C major" in English, "C장조" in Korean (keyName stays the English identifier the coach context and the tests use) */
+function keyLabel(fifths, mode) {
+  const i = clampN((fifths | 0) + 7, 0, 14);
+  return mode === 'minor' ? tx('{{k}} minor', { k: KEY_MINOR[i] }) : tx('{{k}} major', { k: KEY_MAJOR[i] });
+}
+/* the engine that heard a recording, as a person reads it: the label is kept in English with the song, and the ensemble's list of models is part of it */
+function engineText(e) {
+  const m = /^Piano ensemble \((.+)\)$/.exec(e || '');
+  return m ? tx('Piano ensemble ({{models}})', { models: m[1] }) : tx(e || '');
+}
 function clampN(v, a, b) { return v < a ? a : v > b ? b : v; }
 
 /* ---------------------------------------------------------------- Score API */
@@ -5701,7 +5711,7 @@ class MidiInput {
     if (!this.access || !this.access.inputs) return [];
     const out = [];
     const ins = this.access.inputs;
-    const push = p => { if (p) out.push({ id: p.id, name: p.name || 'MIDI input', manufacturer: p.manufacturer || '', state: p.state || 'connected' }); };
+    const push = p => { if (p) out.push({ id: p.id, name: p.name || tx('MIDI input'), manufacturer: p.manufacturer || '', state: p.state || 'connected' }); };
     if (typeof ins.forEach === 'function') ins.forEach(push);
     else if (typeof ins.values === 'function') { const it = ins.values(); let n = it.next(); while (!n.done) { push(n.value); n = it.next(); } }
     return out;
@@ -6522,8 +6532,9 @@ const Learning = {
     const rAcc = accOf(agg.hands.r), lAcc = accOf(agg.hands.l);
     if (rAcc != null && lAcc != null && Math.abs(rAcc - lAcc) >= LEARN.handGap) {
       const worseIsLeft = lAcc < rAcc;
-      out.push(tx((worseIsLeft ? 'Left' : 'Right') + ' hand accuracy is {{pct}}% in measures {{from}}–{{to}}.',
-        { pct: pct(worseIsLeft ? lAcc : rAcc), from: from, to: to }));
+      const vars = { pct: pct(worseIsLeft ? lAcc : rAcc), from: from, to: to };
+      out.push(worseIsLeft ? tx('Left hand accuracy is {{pct}}% in measures {{from}}–{{to}}.', vars)
+        : tx('Right hand accuracy is {{pct}}% in measures {{from}}–{{to}}.', vars));
     }
 
     /* a bar whose chords keep getting dropped */
@@ -6628,8 +6639,8 @@ const Learning = {
       const worst = left ? lAcc : rAcc;
       const tempoPct = worst < 0.5 ? 50 : worst < 0.82 ? 75 : 100;
       return mk({ from: r.from, to: r.to, hands: left ? 'left' : 'right', tempoPct: tempoPct, kind: 'hand',
-        headline: tx((left ? 'Left' : 'Right') + ' hand accuracy: {{pct}}%', { pct: pct(worst) }),
-        action: tx((left ? 'Left' : 'Right') + ' hand at {{pct}}% tempo', { pct: tempoPct }),
+        headline: left ? tx('Left hand accuracy: {{pct}}%', { pct: pct(worst) }) : tx('Right hand accuracy: {{pct}}%', { pct: pct(worst) }),
+        action: left ? tx('Left hand at {{pct}}% tempo', { pct: tempoPct }) : tx('Right hand at {{pct}}% tempo', { pct: tempoPct }),
         reasons: reasons });
     }
 
@@ -6680,7 +6691,7 @@ const Learning = {
     const gap = (rAcc != null && lAcc != null) ? Math.abs(rAcc - lAcc) : 0;
     if (gap >= LEARN.handGap) {
       const weakHand = lAcc < rAcc ? 'left' : 'right';
-      push(tx((weakHand === 'left' ? 'Left' : 'Right') + ' hand alone'), weakHand, 75, 3);
+      push(weakHand === 'left' ? tx('Left hand alone') : tx('Right hand alone'), weakHand, 75, 3);
       push(tx('Hands together, slowly'), 'both', 75, 2);
     } else if (overall < LEARN.weak) {
       push(tx('Right hand alone'), 'right', 75, 2);
@@ -7145,7 +7156,7 @@ const Memory = {
             tempo: score.tempo, tempoPct: 100, mode: 'memory', kind: 'review',
             minutes: Math.max(2, Math.round((sec.to - sec.from + 1) * 0.4)),
             title: tx('Measures {{from}}–{{to}}', { from: sec.from, to: sec.to }),
-            headline: days > 0 ? tx('Memory review — {{n}} day' + (days === 1 ? '' : 's') + ' overdue', { n: days })
+            headline: days > 0 ? tx(days === 1 ? 'Memory review — {{n}} day overdue' : 'Memory review — {{n}} days overdue', { n: days })
               : tx('Memory review due today'),
             action: tx('Play measures {{from}}–{{to}} from memory', { from: sec.from, to: sec.to }),
             reasons: [tx('This was memorized and is due for a check before it fades.')]
@@ -7248,11 +7259,11 @@ function loadPdfJs() {
     s.src = PDFJS_URL;
     s.async = true;
     s.onload = () => {
-      if (!window.pdfjsLib) return reject(new Error('The PDF reader loaded but did not initialise.'));
+      if (!window.pdfjsLib) return reject(new Error(tx('The PDF reader loaded but did not initialise.')));
       try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER; } catch (e) {}
       resolve(window.pdfjsLib);
     };
-    s.onerror = () => reject(new Error('Could not reach the PDF reader.'));
+    s.onerror = () => reject(new Error(tx('Could not reach the PDF reader.')));
     document.head.appendChild(s);
   });
   return _pdfjs;
@@ -8010,8 +8021,8 @@ const Import = {
       if (ready()) return resolve();
       const s = document.createElement('script');
       s.src = src; s.async = true;
-      s.onload = () => ready() ? resolve() : reject(new Error('Model library did not initialise.'));
-      s.onerror = () => reject(new Error('Could not load the piano transcription model.'));
+      s.onload = () => ready() ? resolve() : reject(new Error(tx('Model library did not initialise.')));
+      s.onerror = () => reject(new Error(tx('Could not load the piano transcription model.')));
       document.head.appendChild(s);
     });
     Import.pianoAmtLib = script(
@@ -8632,7 +8643,7 @@ const Import = {
     const m0 = measures[0] || { time: { beats: 4, beatType: 4 }, key: { fifths: 0, mode: 'major' } };
     const summary = level === 'good'
       ? tx('Transcribed {{found}} from the recording: {{time}} at {{tempo}} BPM, {{key}}.', {
-        found: found, time: m0.time.beats + '/' + m0.time.beatType, tempo: stats.tempo, key: keyName(m0.key.fifths, m0.key.mode)
+        found: found, time: m0.time.beats + '/' + m0.time.beatType, tempo: stats.tempo, key: keyLabel(m0.key.fifths, m0.key.mode)
       })
       : suspectMeasures.length
         ? tx(suspectMeasures.length === 1
@@ -9350,7 +9361,7 @@ const Coach = {
       ok: true, issues: issues,
       plan: {
         summary: str(plan.summary, ''),
-        todayGoal: str(plan.todayGoal, 'Practise the weakest passage.'),
+        todayGoal: str(plan.todayGoal, tx('Practise the weakest passage.')),
         tasks: tasks,
         coachNote: str(plan.coachNote, ''),
         sessionMinutes: minutes
@@ -9389,7 +9400,7 @@ const Coach = {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ context: ctx })
         }).then(r => r.json().then(j => {
-          if (!r.ok || !j.ok) throw new Error(j && j.error ? j.error : 'The coach service failed.');
+          if (!r.ok || !j.ok) throw new Error(j && j.error ? j.error : tx('The coach service failed.'));
           /* the answer says who wrote it; trust that over what /health said */
           if (j.provider) Coach.providers.service.name = j.provider;
           return j.plan;
@@ -9417,14 +9428,14 @@ const Coach = {
         if (!checked.ok) {
           const f = fallback();
           f.issues = (checked.issues || []).concat(f.issues || []);
-          f.note = 'The coach’s plan did not pass PPP’s checks, so PPP planned the session itself.';
+          f.note = tx('The coach’s plan did not pass PPP’s checks, so PPP planned the session itself.');
           return f;
         }
         return { plan: checked.plan, source: wanted.name, ai: true, issues: checked.issues };
       })
       .catch(err => {
         const f = fallback();
-        f.note = (err && err.message ? err.message + ' ' : '') + 'PPP planned the session itself instead.';
+        f.note = err && err.message ? tx('{{reason}} PPP planned the session itself instead.', { reason: err.message }) : tx('PPP planned the session itself instead.');
         return f;
       });
   },
@@ -10412,7 +10423,7 @@ window.PPP = {
   get recordingArrange() { return RECORDING_ARRANGE_MODE; },
   set recordingArrange(v) { setRecordingArrangeMode(v); },
   arrangeSingleNoteWithLeadsheet, loadLeadsheetModule,
-  pitchToMidi, midiToFreq, keyName,
+  pitchToMidi, midiToFreq, keyName, keyLabel,
   PIANO, PianoSamples, PianoScore, PianoPlayer,
   PianoVisual: {
     defaults: PIANO_VISUALIZER_DEFAULTS,
@@ -12090,7 +12101,7 @@ class PianoVisualizerCanvas extends React.Component {
         ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(this.width, y + 0.5); ctx.stroke();
         ctx.setLineDash([]);
         ctx.fillStyle = 'rgba(255,255,255,.42)';
-        ctx.fillText('Measure ' + marker.number, 12, y - 5);
+        ctx.fillText(tx('Measure {{n}}', { n: marker.number }), 12, y - 5);
       }
     }
 
@@ -12902,6 +12913,9 @@ class Component extends DCLogic {
     const apply = () => {
       const changed = this._locale != null && this._locale !== I.getLocale();
       this._locale = I.getLocale();
+      /* what PPP learned from the history (model()), the drill sequence (seq()) and the memory eligibility (memEligible()) are kept per history, and hold
+         sentences made by tx(): made before the catalogs arrived, or in the other language, they would stay as they are */
+      this._model = null; this._seq = null; this._elig = null;
       this.setState({ locale: this._locale });
       this.applyI18n();
       /* the plan's sentences were written in the old language */
@@ -14731,7 +14745,7 @@ class Component extends DCLogic {
   addFile(f) {
     const kind = Import.kindOf(f);
     const label = {
-      musicxml: 'MusicXML', mxl: 'compressed MusicXML', pdf: 'PDF', image: 'image', audio: 'recording', video: 'video'
+      musicxml: 'MusicXML', mxl: 'compressed MusicXML', midi: 'MIDI', pdf: 'PDF', image: 'image', audio: 'recording', video: 'video'
     }[kind] || 'unsupported type';
     this.startImport({ file: f, name: f.name, meta: sizeLabel(f) + ' · ' + tx(label), kind: kind,
       mode: this.state.transcriptionMode || 'auto' });
@@ -15992,7 +16006,7 @@ class Component extends DCLogic {
         body: JSON.stringify({ context: context })
       });
       const body = await response.json().catch(() => null);
-      if (!response.ok || !(body && body.ok && body.plan)) throw new Error(body && body.error || 'AI unavailable');
+      if (!response.ok || !(body && body.ok && body.plan)) throw new Error(body && body.error || tx('AI unavailable'));
       plan = ScoreArranger.styles.indexOf(body.plan.style) > -1 && body.plan.style !== 'balanced'
         ? { level: target, style: body.plan.style, source: 'ai', reason: body.plan.reason || '' }
         : A.normaliseArrangement(Object.assign({}, body.plan, { level: target, source: 'ai' }));
@@ -16210,7 +16224,7 @@ class Component extends DCLogic {
         h('div', { style: { marginBottom: 9, fontSize: 12, fontWeight: 650, color: 'var(--ink2)' } },
           tx('Reference score · page {{n}} of {{total}}', { n: S.reviewPage + 1, total: this.reviewPages().length })),
         h('img', {
-          src: page.dataUrl, alt: 'Reference score page ' + (S.reviewPage + 1),
+          src: page.dataUrl, alt: tx('Reference score page {{n}}', { n: S.reviewPage + 1 }),
           style: { width: '100%', display: 'block', borderRadius: 8, border: '1px solid var(--line)', background: '#fff' }
         })) : null
     );
@@ -16748,8 +16762,8 @@ class Component extends DCLogic {
         body: JSON.stringify({ context: context })
       });
       const body = await response.json().catch(() => null);
-      if (!response.ok || !(body && body.ok && body.plan)) throw new Error(body && body.error || 'AI unavailable');
-      if (ScoreArranger.styles.indexOf(body.plan.style) < 0) throw new Error('Unsupported style');
+      if (!response.ok || !(body && body.ok && body.plan)) throw new Error(body && body.error || tx('AI unavailable'));
+      if (ScoreArranger.styles.indexOf(body.plan.style) < 0) throw new Error(tx('Unsupported style'));
       plan = ScoreArranger.norm({ level: d.level, style: body.plan.style, source: 'ai' });
       provider = body.provider || 'AI';
     } catch (e) {
@@ -18040,7 +18054,7 @@ class Component extends DCLogic {
      (§11 G6-L1: strong within a trained book, unresolved on a book it has never seen an example of). */
   difficultyLevelLabel(level) {
     if (!level) return null;
-    const name = a => (a ? this.courseBookName(a.book) + ' No. ' + a.no : null);
+    const name = a => (a ? tx('{{book}} No. {{n}}', { book: this.courseBookName(a.book), n: a.no }) : null);
     if (level.beyond === 'top' && level.below) {
       return tx('Harder than {{book}} — beyond what PPP has measured', { book: name(level.below) });
     }
@@ -18050,7 +18064,7 @@ class Component extends DCLogic {
     if (level.below && level.above) {
       return tx('Harder than {{a}}, easier than {{b}}', { a: name(level.below), b: name(level.above) });
     }
-    return tx('{{stage}}', { stage: level.stageName || '' });
+    return level.stageName ? tx(level.stageName) : '';
   }
 
   handsOn() { return this.state.toggles.handGuide !== false; }
@@ -18545,7 +18559,7 @@ class Component extends DCLogic {
     const mkTask = (day, i, label, time, start) => {
       const k = day + '-' + i, done = !!S.tasks[k];
       return {
-        label: tx(label), time: time, check: done ? '✓' : '', done: done,
+        label: tx(label), time: tx('{{n}} min', { n: parseInt(time, 10) }), check: done ? '✓' : '', done: done,
         tickHint: tx(done ? 'Mark as not done' : 'Mark as done'),
         rowStyle: 'display:flex;align-items:center;gap:12px;flex:1;min-width:0;padding:10px;border-radius:10px;border:0;background:transparent;cursor:pointer;font-family:inherit;color:inherit;text-align:left;',
         boxStyle: `width:19px;height:19px;flex:none;border-radius:6px;display:grid;place-items:center;font-size:11px;color:#fff;border:1.5px solid ${done ? 'var(--accent)' : 'var(--line)'};background:${done ? 'var(--accent)' : 'transparent'};`,
@@ -18649,7 +18663,7 @@ class Component extends DCLogic {
       const mv = learn.views[mm.number] || { attempts: 0, state: 'learning' };
       return {
         n: String(mm.number),
-        title: 'Measure ' + mm.number + (mv.attempts ? ' · ' + STATE_LABEL[mv.state] + ' · ' + R0((mv.recentAcc || 0) * 100) + '%' : ' · not played yet'),
+        title: mv.attempts ? tx('Measure {{n}} · {{state}} · {{pct}}%', { n: mm.number, state: tx(STATE_LABEL[mv.state]), pct: R0((mv.recentAcc || 0) * 100) }) : tx('Measure {{n}} · not played yet', { n: mm.number }),
         style: `flex:1;min-width:3px;height:32px;padding:0;border-radius:4px;cursor:ew-resize;border:1px solid ${mm.number === cur ? 'var(--accent)' : 'transparent'};background:${inLoop ? 'var(--accent)' : STATE_TONE[mv.state]};opacity:${inLoop ? 1 : mv.attempts ? 0.55 : 0.3};`,
         on: () => this.pickMeasure(mm.number)
       };
@@ -18750,7 +18764,7 @@ class Component extends DCLogic {
     const curId = S.songId || 'demo';
     const shelf = this.shelfSongs();
     const KIND_LABEL = {
-      'built-in': 'Built-in sample', musicxml: 'MusicXML', mxl: 'MusicXML', pdf: 'From a PDF', image: 'From a photo',
+      'built-in': 'Built-in sample', musicxml: 'MusicXML', mxl: 'MusicXML', midi: 'MIDI', pdf: 'From a PDF', image: 'From a photo',
       audio: 'From a recording', video: 'From a video', youtube: 'From YouTube', shared: 'Shared score', course: 'Method book',
       arrangement: 'Arrangement'
     };
@@ -18878,7 +18892,7 @@ class Component extends DCLogic {
       dailyGoal: tx('{{n}} / 25 min', { n: S.minutes }),
       dailyBarStyle: this.bar((S.minutes / 25) * 100),
       streakLabel: tx('{{n}} day streak', { n: S.streak }),
-      memLevelLabel: 'Memory Lv ' + (this.memLevel() + 1),
+      memLevelLabel: tx('Memory Lv {{n}}', { n: this.memLevel() + 1 }),
       notifyOn: () => this.say(tx('No new notifications.')),
 
       isHome: sc === 'home', isUpload: sc === 'upload', isAnalysis: sc === 'analysis',
@@ -19035,14 +19049,14 @@ class Component extends DCLogic {
           const heard = Import.isRecording(src.kind);
           const mmss = s => Math.floor(s / 60) + ':' + String(R0(s % 60)).padStart(2, '0');
           const kindLabel = {
-            'built-in': 'built-in sample', musicxml: 'MusicXML', mxl: 'compressed MusicXML', pdf: 'PDF', image: 'image',
+            'built-in': 'built-in sample', musicxml: 'MusicXML', mxl: 'compressed MusicXML', midi: 'MIDI', pdf: 'PDF', image: 'image',
             audio: 'recording', video: 'video', youtube: 'YouTube', course: 'method book'
           }[src.kind] || src.kind || 'file';
           const rows = heard
             ? [
               ['Source', tx(kindLabel)],
               ['Recording', src.seconds ? mmss(src.seconds) + (src.truncated ? ' · ' + tx('cut') : '') : '—'],
-              ['Engine', tx(src.engine || 'Piano transcription')],
+              ['Engine', engineText(src.engine || 'Piano transcription')],
               ['Tempo', (src.tempo || score.tempo) + ' BPM'],
               ['Measures', String(Score.count(score))],
               ['Notes', String(sounding.length)]
@@ -19259,7 +19273,7 @@ class Component extends DCLogic {
          .concat(src.retrieved ? [{ k: 'Score', v: tx('catalog') }] : [])
          .concat(src.taskMode ? [{ k: 'Mode', v: src.taskMode === 'piano-arrangement'
            ? tx('playable arrangement') : tx('faithful solo piano') }] : [])
-         .concat(src.amt && !src.referenceScore ? [{ k: 'Engine', v: src.engine || src.amt }] : [])
+         .concat(src.amt && !src.referenceScore ? [{ k: 'Engine', v: engineText(src.engine || src.amt) }] : [])
          .concat(src.beatSource === 'audio' ? [{ k: 'Beat', v: tx('from the recording') }] : [])
          .concat(src.quantizer === 'pm2s' ? [{ k: 'Rhythm', v: 'PM2S' }] : []);
         return [
@@ -19290,7 +19304,7 @@ class Component extends DCLogic {
         if (!p) return h('div', { style: { padding: '34px', textAlign: 'center', color: 'var(--ink3)', fontSize: 13 } },
           tx('No page image — this score was read from MusicXML rather than a picture.'));
         return h('img', {
-          src: p.dataUrl, alt: 'Uploaded page ' + (S.reviewPage + 1),
+          src: p.dataUrl, alt: tx('Uploaded page {{n}}', { n: S.reviewPage + 1 }),
           style: { width: '100%', display: 'block', borderRadius: 8, border: '1px solid var(--line)', background: '#fff' }
         });
       })(),
@@ -19331,7 +19345,7 @@ class Component extends DCLogic {
           ? tx('Parsed {{n}} measures in {{time}}, key of {{key}}, {{notes}} notes across {{staves}} staves.', {
             n: Score.count(score),
             time: m0.time.beats + '/' + m0.time.beatType,
-            key: keyName(m0.key.fifths, m0.key.mode),
+            key: keyLabel(m0.key.fifths, m0.key.mode),
             notes: sounding.length,
             staves: score.staves
           })
@@ -19353,7 +19367,7 @@ class Component extends DCLogic {
       /* ---- analysis ---- */
       facts: [
         { k: tx('Difficulty'), v: this.difficultyLabel() },
-        { k: tx('Key'), v: keyName(m0.key.fifths, m0.key.mode) },
+        { k: tx('Key'), v: keyLabel(m0.key.fifths, m0.key.mode) },
         { k: tx('Time'), v: m0.time.beats + '/' + m0.time.beatType },
         { k: tx('Tempo'), v: score.tempo + ' BPM' },
         { k: tx('Measures'), v: String(Score.count(score)) },
@@ -19377,7 +19391,7 @@ class Component extends DCLogic {
         }))
         : g6Hot
           ? g6Hot.map(hs => ({
-            range: hs.hand === 'both' ? tx('Measure {{n}}', { n: hs.number }) : tx('Measure {{n}} ({{hand}})', { n: hs.number, hand: hs.hand }),
+            range: hs.hand === 'both' ? tx('Measure {{n}}', { n: hs.number }) : tx('Measure {{n}} ({{hand}})', { n: hs.number, hand: tx(hs.hand === 'LH' ? 'Left hand' : 'Right hand') }),
             reason: hs.reasons[0] || tx('Above the method-book average here.'),
             cta: tx('Loop it'), on: this.drill(hs.number, hs.number)
           }))
