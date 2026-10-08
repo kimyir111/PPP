@@ -282,7 +282,7 @@ jobs:
           overwrite: true
 
   # shard-h: the rests trainer check, test:home-worker, test:server-hygiene, the key check, replay-public
-  #   (steps ~166 s on a fast runner, ~193 s on a slow one, before test:server-hygiene (G13-5): that step took 5 s on a runner)
+  #   (steps ~166 s on a fast runner, ~193 s on a slow one, before test:server-hygiene (G13-5): that step took 5 s on a runner; test:backup (G13-6) adds about 10 s)
   shard-h:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
@@ -301,6 +301,7 @@ jobs:
       - run: node tests/bench/tools/train_rests.js --check         # G10a-3 (AI-5b, S6): the silence classifier's weights and evaluation are what the training makes (G10 section 22; ~30-60 s)
       - run: python tests/bench/run.py run --suite replay-public   # exits with the replay verdict
       - run: npm run test:home-worker                              # G10b-1: the home-PC queue, its worker and server.js with it (Node only, ~40 s; the Postgres part skips without PPP_TEST_PG_URL)
+      - run: npm run test:backup                                   # G13-6: Settings > My data, its module alone (library-backup.js against a fake storage and a fake IndexedDB): six safety properties and 15 mutants that each break one of them (Node only)
       - run: npm run test:server-hygiene                           # G13-5: the served-path allowlist (a lazy module the page loads must be on it), the security headers, the signup limit, the paged Shared Scores list (Node only; the Postgres part skips without PPP_TEST_PG_URL)
       - if: always()
         uses: actions/upload-artifact@v4
@@ -833,6 +834,22 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
       - run: node tests/practice/parity-mutants.js --shard ${{ matrix.part }}/4
         if: ${{ github.event_name != 'pull_request' }}
+
+  # backup-suite (G13-6): the browser suite of Settings > My data (tests/backup-ui.test.js: back up, restore, refuse, delete everything, on fresh profiles, in
+  # Korean, with mutants of library-backup.js served to the page). Like the practice suites it needs puppeteer (npm ci), serves this tree on a free port itself
+  # (tests/serve-free.js) and is a check of its own: NOT a job the gate waits for (test_ci_plan.py reads only plan, light, shard-* and merge-*). It runs whenever the
+  # gate runs in full mode and every night. Its Node-only half (npm run test:backup) is a step of shard-h and is in the gate.
+  backup-suite:
+    needs: plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || needs.plan.outputs.mode == 'full') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci                                        # puppeteer (and its Chrome)
+      - run: node tests/backup-ui.test.js
 
   nightly:
     if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.event.inputs.only != 'practice'

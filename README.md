@@ -51,6 +51,7 @@ https (`PPP_HSTS=0` turns it off).
 | `support.js` | Generated `dc-runtime` — parses `<x-dc>`, renders through React. Do not edit. |
 | `lessons.js` | Piano Basics: the beginner course as data, the checks for each exercise, and the keyboard, staff, rhythm and hand drawings it teaches with. |
 | `course.js` | Method Books: the academy path (Beyer → Czerny 100 → Czerny 30 → Czerny 40, with Hanon, Burgmüller and sonatinas beside them), today's plan, the practice circles, passing and the streak. Pure functions over the saved course state. |
+| `library-backup.js` | G13-6, Settings > My data: back up the songs and practice progress to one `.ppp-library.json.gz` file (no PC link code, sharing key, password or setting in it), restore it (it only adds and merges, never removes a song here), and delete everything on this device. No account and no server. Tested by `npm run test:backup` and `npm run test:backup-ui`. |
 | `catalog/method/` | The method-book scores as `.mxl`, `index.json` (built by `build.py` from `books.json`), and `src/` — the ABC the Beyer, Czerny 100 and other transcriptions were written in. |
 | `index.html` | Entry point; redirects to the app. |
 | `static-allow.js`, `signup-limit.js` | G13-5: which files the static server hands out, and the rules of the signup limiter (`server.js` does the HTTP). |

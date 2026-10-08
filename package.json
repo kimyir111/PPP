@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "serve": "node server.js",
-    "test": "node tests/import.test.js && node tests/memory.test.js && node tests/learning.test.js && node tests/midi.test.js && node tests/playback-scheduler.test.js && node tests/musicxml.test.js && node tests/falling-notes.test.js && node tests/interactions.test.js && node tests/import-and-persistence.test.js && node tests/coach.test.js && node tests/i18n-and-auth.test.js && node tests/follow.test.js && node tests/layout.test.js && node tests/alignment.test.js && node tests/engraving.test.js && node tests/pdf-layer.test.js && node tests/library.test.js && node tests/transcription.test.js && node tests/score-search.test.js && node tests/fingering.test.js && node tests/video.test.js && node tests/auth-ui.test.js && node tests/share.test.js && node tests/guest-share.test.js && node tests/guest-share-pg.test.js && node tests/lessons.test.js && node tests/hymns-share.test.js && node tests/course.test.js && node tests/learner-log.test.js && npm run test:home-worker && npm run test:home-worker-page && npm run test:recording-leadsheet-app && npm run test:server-hygiene && npm run test:signup-ui",
+    "test": "node tests/import.test.js && node tests/memory.test.js && node tests/learning.test.js && node tests/midi.test.js && node tests/playback-scheduler.test.js && node tests/musicxml.test.js && node tests/falling-notes.test.js && node tests/interactions.test.js && node tests/import-and-persistence.test.js && node tests/coach.test.js && node tests/i18n-and-auth.test.js && node tests/follow.test.js && node tests/layout.test.js && node tests/alignment.test.js && node tests/engraving.test.js && node tests/pdf-layer.test.js && node tests/library.test.js && node tests/transcription.test.js && node tests/score-search.test.js && node tests/fingering.test.js && node tests/video.test.js && node tests/auth-ui.test.js && node tests/share.test.js && node tests/guest-share.test.js && node tests/guest-share-pg.test.js && node tests/lessons.test.js && node tests/hymns-share.test.js && node tests/course.test.js && node tests/learner-log.test.js && npm run test:home-worker && npm run test:home-worker-page && npm run test:recording-leadsheet-app && npm run test:server-hygiene && npm run test:signup-ui && npm run test:backup && npm run test:backup-ui",
     "test:transcription-core": "python tests/transcription_ensemble_test.py && python tests/evaluation_test.py",
     "bench": "python tests/bench/run.py run --suite core && python tests/bench/run.py check --suite core",
     "bench:smoke": "python tests/bench/run.py run --suite smoke && python tests/bench/run.py check --suite smoke",
@@ -36,6 +36,8 @@
     "test:home-worker-mutants": "node tests/home-worker/mutants.js",
     "test:server-hygiene": "node tests/static-allow.test.js && node tests/signup-and-shares.test.js && node tests/signup-and-shares-pg.test.js",
     "test:signup-ui": "node tests/signup-limit-ui.test.js",
+    "test:backup": "node --test \"tests/backup/**/*.test.js\"",
+    "test:backup-ui": "node tests/backup-ui.test.js",
     "test:single-note-app": "node tests/single-note-app.test.js",
     "test:recording-v2-app": "node tests/recording-v2-app.test.js && node tests/recording-v2-play.test.js && node tests/recording-v2-ottava.test.js",
     "test:recording-leadsheet-app": "node tests/recording-leadsheet-app.test.js",

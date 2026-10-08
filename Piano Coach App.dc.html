@@ -35,6 +35,7 @@
 </script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231b1a18'/%3E%3Crect x='9' y='13' width='4' height='11' rx='2' fill='%23fffefc'/%3E%3Crect x='14' y='7' width='4' height='17' rx='2' fill='%237c5cd6'/%3E%3Crect x='19' y='16' width='4' height='8' rx='2' fill='%23fffefc'/%3E%3C/svg%3E">
 <script src="./i18n.js"></script>
+<script src="./library-backup.js?v=1"></script>
 <script src="./scoregraph/rational.js?v=8"></script>
 <script src="./scoregraph/schema.js?v=8"></script>
 <script src="./scoregraph/pitch.js?v=8"></script>
@@ -802,6 +803,12 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
             <button onClick="{{ closePairNote }}" data-pair-note-close style="padding: 4px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12px; cursor: pointer;">{{ closePairLabel }}</button>
           </sc-if>
         </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ hasTabNote }}" hint-placeholder-val="{{ false }}">
+      <div data-tab-note role="alert" style="position: sticky; top: env(safe-area-inset-top, 0px); z-index: 96; box-sizing: border-box; width: min(560px, calc(100% - 32px)); margin: 12px auto 0; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 12px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow); font-size: 13px; line-height: 1.5; border: 1px solid var(--bad); flex: none;">
+        <div data-tab-note-text style="flex: 1 1 240px; min-width: 0;">{{ tabNoteText }}</div>
+        <button onClick="{{ tabReload }}" data-tab-note-reload style="padding: 6px 12px; border-radius: 8px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">{{ tabReloadLabel }}</button>
       </div>
     </sc-if>
     <header class="ppp-header">
@@ -2400,6 +2407,99 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
               </sc-for>
             </div>
           </div>
+          <sc-if value="{{ bkOn }}" hint-placeholder-val="{{ true }}">
+            <div data-backup-section style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px 22px; display: flex; flex-direction: column; gap: 14px;">
+              <div>
+                <div style="font-size: 14.5px; font-weight: 600;">{{ bkTitle }}</div>
+                <div style="font-size: 12.5px; line-height: 1.5; color: var(--ink3); margin-top: 3px;">{{ bkSub }}</div>
+              </div>
+              <div data-backup-row style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--line);">
+                <div style="min-width: 0; flex: 1; flex-basis: 260px;">
+                  <div style="font-size: 13.5px; font-weight: 500;">{{ bkMakeTitle }}</div>
+                  <div style="font-size: 12px; line-height: 1.5; color: var(--ink3); margin-top: 2px;">{{ bkMakeNote }}</div>
+                  <div data-backup-last style="font-size: 12px; color: var(--ink2); margin-top: 4px;">{{ bkLast }}</div>
+                </div>
+                <button type="button" onClick="{{ backupMake }}" data-backup-make style="{{ bkMakeStyle }}">{{ bkMakeLabel }}</button>
+              </div>
+              <div data-restore-row style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--line);">
+                <div style="min-width: 0; flex: 1; flex-basis: 260px;">
+                  <div style="font-size: 13.5px; font-weight: 500;">{{ bkRestoreTitle }}</div>
+                  <div style="font-size: 12px; line-height: 1.5; color: var(--ink3); margin-top: 2px;">{{ bkRestoreNote }}</div>
+                </div>
+                <label data-backup-pick style="{{ bkPickStyle }}">
+                  <span style="pointer-events: none;">{{ bkPickLabel }}</span>
+                  <input type="file" class="ppp-file" data-backup-file onChange="{{ backupFileChosen }}" />
+                </label>
+              </div>
+              <div data-backup-live role="status" aria-live="polite" aria-atomic="true">
+                <sc-if value="{{ bkHasMsg }}" hint-placeholder-val="{{ false }}">
+                  <div data-backup-msg data-kind="{{ bkMsgKind }}" style="{{ bkMsgStyle }}">{{ bkMsg }}</div>
+                </sc-if>
+              </div>
+              <sc-if value="{{ bkHasPlan }}" hint-placeholder-val="{{ false }}">
+                <div data-backup-plan role="alertdialog" aria-label="{{ bkPlanLabel }}" onKeyDown="{{ bkKey }}" style="{{ bkBoxStyle }}">
+                  <div data-backup-plan-date style="font-size: 12.5px; color: var(--ink2);">{{ bkPlanDate }}</div>
+                  <div data-backup-plan-counts style="font-size: 12.5px; font-weight: 600; line-height: 1.5;">{{ bkPlanCounts }}</div>
+                  <sc-if value="{{ bkPlanHasSkipped }}" hint-placeholder-val="{{ false }}">
+                    <div data-backup-plan-skipped style="font-size: 12.5px; color: var(--bad);">{{ bkPlanSkipped }}</div>
+                  </sc-if>
+                  <sc-if value="{{ bkPlanHasBlanked }}" hint-placeholder-val="{{ false }}">
+                    <div data-backup-plan-blanked style="font-size: 12.5px; color: var(--bad);">{{ bkPlanBlanked }}</div>
+                  </sc-if>
+                  <div style="font-size: 12.5px; line-height: 1.5;">{{ bkPlanAsk }}</div>
+                  <div data-backup-tabs-note style="font-size: 12px; line-height: 1.5; color: var(--ink3);">{{ bkTabsNote }}</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" onClick="{{ backupApply }}" data-backup-restore-yes style="{{ bkPrimStyle }}">{{ bkRestoreYes }}</button>
+                    <button type="button" onClick="{{ backupCancel }}" data-backup-restore-no style="{{ bkSecStyle }}">{{ bkRestoreNo }}</button>
+                  </div>
+                </div>
+              </sc-if>
+              <div data-wipe-row style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--line);">
+                <div style="min-width: 0; flex: 1; flex-basis: 260px;">
+                  <div style="font-size: 13.5px; font-weight: 500;">{{ wipeTitle }}</div>
+                  <div style="font-size: 12px; line-height: 1.5; color: var(--ink3); margin-top: 2px;">{{ wipeNote }}</div>
+                  <sc-if value="{{ wipeAccountOn }}" hint-placeholder-val="{{ false }}">
+                    <div data-wipe-account style="font-size: 12px; line-height: 1.5; color: var(--ink2); margin-top: 4px;">{{ wipeAccountText }}</div>
+                  </sc-if>
+                </div>
+                <button type="button" onClick="{{ wipeAsk }}" data-wipe-start style="{{ wipeStartStyle }}">{{ wipeStartLabel }}</button>
+              </div>
+              <sc-if value="{{ wipeStep1 }}" hint-placeholder-val="{{ false }}">
+                <div data-wipe-step1 role="alertdialog" aria-label="{{ wipeBoxLabel }}" onKeyDown="{{ bkKey }}" style="{{ wipeBoxStyle }}">
+                  <div style="font-size: 12.5px; line-height: 1.5;">{{ wipeStep1Text }}</div>
+                  <sc-if value="{{ wipeAccountOn }}" hint-placeholder-val="{{ false }}">
+                    <div data-wipe-account1 style="font-size: 12.5px; line-height: 1.5;">{{ wipeAccountText }}</div>
+                  </sc-if>
+                  <div style="font-size: 12px; line-height: 1.5; color: var(--ink3);">{{ bkTabsNote }}</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" onClick="{{ wipeBackupFirst }}" data-wipe-backup style="{{ bkPrimStyle }}">{{ wipeBackupLabel }}</button>
+                    <button type="button" onClick="{{ wipeNext }}" data-wipe-next style="{{ bkSecStyle }}">{{ wipeNextLabel }}</button>
+                    <button type="button" onClick="{{ wipeCancel }}" data-wipe-cancel style="{{ bkSecStyle }}">{{ wipeCancelLabel }}</button>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ wipeStep2 }}" hint-placeholder-val="{{ false }}">
+                <div data-wipe-step2 role="alertdialog" aria-label="{{ wipeBoxLabel }}" onKeyDown="{{ bkKey }}" style="{{ wipeBoxStyle }}">
+                  <div style="font-size: 12.5px; line-height: 1.5; font-weight: 600;">{{ wipeStep2Text }}</div>
+                  <sc-if value="{{ wipeAccountOn }}" hint-placeholder-val="{{ false }}">
+                    <div data-wipe-account2 style="font-size: 12.5px; line-height: 1.5;">{{ wipeAccountText }}</div>
+                  </sc-if>
+                  <input type="text" data-wipe-input aria-label="{{ wipeInputLabel }}" placeholder="{{ wipePlaceholder }}" onChange="{{ wipeType }}" autocomplete="off" autocapitalize="off" spellcheck="false" style="min-width: 0; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px; outline: none;" />
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" onClick="{{ wipeBackupFirst }}" data-wipe-backup2 style="{{ bkPrimStyle }}">{{ wipeBackupLabel }}</button>
+                    <button type="button" onClick="{{ wipeGo }}" data-wipe-go disabled="{{ wipeGoDisabled }}" aria-disabled="{{ wipeGoDisabled }}" style="{{ wipeGoStyle }}">{{ wipeGoLabel }}</button>
+                    <button type="button" onClick="{{ wipeCancel }}" data-wipe-cancel2 style="{{ bkSecStyle }}">{{ wipeCancelLabel }}</button>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ wipeFailed }}" hint-placeholder-val="{{ false }}">
+                <div data-wipe-failed style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button type="button" onClick="{{ wipeRetry }}" data-wipe-retry style="{{ bkPrimStyle }}">{{ wipeRetryLabel }}</button>
+                  <button type="button" onClick="{{ wipeReload }}" data-wipe-reload style="{{ bkSecStyle }}">{{ wipeReloadLabel }}</button>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
           <div style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px 22px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
             <div style="min-width: 0;">
               <div style="font-size: 13.5px; font-weight: 500;">Reset practice progress</div>
@@ -9055,11 +9155,19 @@ const MediaStore = {
       let req;
       try { req = indexedDB.open('ppp-media', 1); } catch (e) { return reject(e); }
       req.onupgradeneeded = () => { req.result.createObjectStore('videos'); };
-      req.onsuccess = () => resolve(req.result);
+      /* G13-6: a delete of this database (Settings > My data > Delete everything, or another tab's) is never held up by this connection */
+      req.onsuccess = () => { const d = req.result; d.onversionchange = () => { try { d.close(); } catch (e) { /* closed */ } this._db = null; }; d.onclose = () => { this._db = null; }; resolve(d); };
       req.onerror = () => reject(req.error);
     });
     this._db.catch(() => { this._db = null; });
     return this._db;
+  },
+  /* G13-6: let go of the connection (Delete everything closes it before it deletes the database) */
+  async close() {
+    const p = this._db;
+    this._db = null;
+    if (!p) return;
+    try { (await p).close(); } catch (e) { /* it never opened */ }
   },
   run(mode, fn) {
     return this.open().then(db => new Promise((resolve, reject) => {
@@ -12821,6 +12929,8 @@ class Component extends DCLogic {
     if (window.PPP) window.PPP.app = this;
     this.applyTheme();
     this.restore();
+    this.backupBoot();
+    this.tabSignalOpen();
     this.warmMidiIfAllowed();
     if (this.props.startScreen) this.setState({ screen: this.props.startScreen });
     if (this.props.theme === 'dark') this.setState({ theme: 'dark' });
@@ -12910,6 +13020,7 @@ class Component extends DCLogic {
   }
   componentWillUnmount() {
     this._dead = true;
+    this.tabSignalClose();
     this.unwatchShared();
     clearInterval(this._iv);
     if (this._i18nRaf) cancelAnimationFrame(this._i18nRaf);
@@ -12965,6 +13076,7 @@ class Component extends DCLogic {
     this._save = setTimeout(() => { this._persistDue = null; this.writeState(); }, wait);
   }
   writeState() {
+    if (this._frozen) return;     /* G13-6: after a restore or a delete nothing is written until the page reloads */
     {
       const S = this.state;
       try {
@@ -13089,6 +13201,325 @@ class Component extends DCLogic {
       }
     }
     this.setState(patch);
+  }
+  /* ============================ my data: back up, restore, delete everything (G13-6) ============================
+     Settings > My data. library-backup.js does the work on the storage; this is the page around it: what is asked, what is said, and the things that must
+     not happen after a restore or a delete:
+       - this page writing its own, older copy of the data back (it saves when it is left, and a reload leaves it): it is frozen first;
+       - ANOTHER open tab doing the same (it saves when it is left too): the tab that acts tells the others (tabSignal*), which freeze at once and reload;
+       - a database being kept from deleting by a connection of this very page (MediaStore.close);
+       - a signed-in person's account handing the old progress back at the next load (pullProgress): a restore puts the merged state to the account before it
+         reloads; a delete clears this device only and says that what the account keeps comes back;
+       - a song being read, or a recording waiting to be checked, being lost to the reload: both are asked about first (bkBusyWork).
+     No account and no server is needed; a signed-in person's progress is the one place the server is touched, and only by a restore. */
+  bkSet(patch) { this.setState(st => ({ bk: Object.assign({}, st.bk || {}, patch) })); }
+  /* nothing is written by this page from here on: it is about to reload over what a restore merged or a delete removed */
+  freezeStorage() {
+    this._frozen = true;
+    clearTimeout(this._save);
+    this._persistDue = null;
+    if (this._onLeave) { window.removeEventListener('pagehide', this._onLeave); document.removeEventListener('visibilitychange', this._onLeave); }
+  }
+  /* the other tab that asked us to stop gave up (a restore that wrote nothing): saving goes on */
+  thawStorage() {
+    this._frozen = false;
+    if (this._onLeave) { window.addEventListener('pagehide', this._onLeave); document.addEventListener('visibilitychange', this._onLeave); }
+  }
+  /* a song is being read (a conversion, a recording on its way), or a recording is waiting to be checked: a reload would lose it */
+  bkBusyWork() { return !!(this._importCtl || this._recording); }
+  bkBusyText() { return tx('A song is being read or a recording is waiting to be checked. Finish or cancel that first, then try again.'); }
+  /* ---- the other tabs of this page (BroadcastChannel; the storage event where a browser has none) ---- */
+  tabSignalOpen() {
+    this._tabId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    try {
+      if (typeof BroadcastChannel === 'function') {
+        this._tabCh = new BroadcastChannel('ppp-library');
+        this._tabCh.onmessage = e => this.tabSignalGot(e && e.data);
+        return;
+      }
+    } catch (e) { /* the storage event below */ }
+    this._tabStorage = e => {
+      if (e.key !== 'ppp.signal.v1' || !e.newValue) return;
+      let m = null;
+      try { m = JSON.parse(e.newValue); } catch (x) { m = null; }
+      this.tabSignalGot(m);
+    };
+    window.addEventListener('storage', this._tabStorage);
+  }
+  tabSignalClose() {
+    try { if (this._tabCh) this._tabCh.close(); } catch (e) { /* closed */ }
+    this._tabCh = null;
+    if (this._tabStorage) window.removeEventListener('storage', this._tabStorage);
+    this._tabStorage = null;
+  }
+  /* kind: 'freeze' (about to change the data: stop writing), 'abort' (it did not happen), 'replaced' (it happened: reload) */
+  tabSignalSend(kind) {
+    const msg = { app: 'ppp-library', from: this._tabId, kind: kind, at: Date.now() };
+    try { if (this._tabCh) { this._tabCh.postMessage(msg); return; } } catch (e) { /* the storage event below */ }
+    try { localStorage.setItem('ppp.signal.v1', JSON.stringify(msg)); localStorage.removeItem('ppp.signal.v1'); } catch (e) { /* no other tab can be told */ }
+  }
+  tabSignalGot(m) {
+    if (!m || m.app !== 'ppp-library' || m.from === this._tabId || this._dead) return;
+    if (m.kind === 'freeze') {
+      if (!this._frozen) { this._frozenByTab = true; this.freezeStorage(); }
+      this.setState({ tabNote: 'busy' });
+    } else if (m.kind === 'abort') {
+      if (this._frozenByTab) { this._frozenByTab = false; this.thawStorage(); this.setState({ tabNote: null }); }
+    } else if (m.kind === 'replaced') {
+      if (!this._frozen) this.freezeStorage();
+      this.setState({ tabNote: 'reload' });
+      /* a song being read here is not thrown away: the person reloads when ready */
+      if (!this.bkBusyWork()) setTimeout(() => { try { location.reload(); } catch (e) { /* the banner has the button */ } }, 400);
+    }
+  }
+  tabVals() {
+    const n = this.state.tabNote;
+    return {
+      hasTabNote: !!n,
+      tabNoteText: n === 'reload' ? tx('Your data was changed in another tab. Reload this page to see it.') : tx('Another tab of PPP is changing your data. Wait a moment, or reload this page.'),
+      tabReloadLabel: tx('Reload page'), tabReload: () => { try { location.reload(); } catch (e) { /* closed */ } }
+    };
+  }
+  /* a signed-in person's progress lives in the account, and the account's copy wins at every load: a restore puts the merged state there before the page reloads.
+     -> null (nobody is signed in), true (the account has it), false (it could not be put) */
+  async bkPutProgress() {
+    if (!this.state.user) return null;
+    let payload = null;
+    try { payload = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (e) { payload = null; }
+    if (!payload) return true;
+    const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+    const t = setTimeout(() => { try { if (ctl) ctl.abort(); } catch (e) { /* done */ } }, 8000);
+    try {
+      const r = await fetch('/api/progress', { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ payload: payload }), signal: ctl ? ctl.signal : undefined });
+      return !!r.ok;
+    } catch (e) { return false; } finally { clearTimeout(t); }
+  }
+  bkLastBackup() {
+    try { const v = JSON.parse(localStorage.getItem('ppp.backup.v1') || 'null'); return v && typeof v.at === 'number' ? v : null; } catch (e) { return null; }
+  }
+  bkDay(t) { const d = new Date(t), p = n => (n < 10 ? '0' : '') + n; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
+  bkError(code, size) {
+    if (code === 'file-too-big') return tx('That file is too large to be a PPP backup ({{mb}} MB). Nothing was changed.', { mb: Math.max(1, Math.round((size || 0) / 1048576)) });
+    if (code === 'too-big-inflated') return tx('That file expands to far more than a backup can hold, so it was not opened. Nothing was changed.');
+    if (code === 'newer') return tx('That backup was made by a newer version of PPP. Update PPP and try again. Nothing was changed.');
+    if (code === 'no-gunzip') return tx('This browser cannot open compressed backup files. Try another browser. Nothing was changed.');
+    if (code === 'quota') return tx('This browser has no room left to restore the backup. Nothing was changed. Remove a song from My Songs and try again.');
+    if (code === 'write') return tx('The backup could not be written to this browser’s storage. Nothing was changed.');
+    if (code === 'unreadable') return tx('The file could not be read. Nothing was changed.');
+    return tx('That file is not a PPP backup, or it is damaged. Nothing was changed.');
+  }
+  bkDownload(out) {
+    /* octet-stream: Safari would unpack a .gz it is told is gzip, and the person would be handed the inside */
+    const url = URL.createObjectURL(new Blob([out.bytes], { type: 'application/octet-stream' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = out.name; a.rel = 'noopener'; a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { try { URL.revokeObjectURL(url); a.remove(); } catch (e) { /* gone */ } }, 15000);
+  }
+  /* focus goes into a question when it opens and back to what opened it when it closes */
+  bkFocus(sel) { setTimeout(() => { try { const e = document.querySelector(sel); if (e && e.focus) e.focus(); } catch (x) { /* no element */ } }, 60); }
+  bkKey(e) {
+    if (!e || e.key !== 'Escape') return;
+    const bk = this.state.bk || {};
+    if (bk.busy) return;
+    if (bk.plan) { e.stopPropagation(); this.backupCancel(); }
+    else if (bk.phase === 'wipe1' || bk.phase === 'wipe2') { e.stopPropagation(); this.wipeCancel(); }
+  }
+  async backupMake() {
+    const B = window.PPPBackup, cur = this.state.bk || {};
+    if (!B || cur.busy || cur.phase === 'wiping' || this._frozen) return;
+    this.bkSet({ busy: true, msg: tx('Backing up…'), msgKind: 'info', plan: null });
+    try {
+      this.saveNow();                                           /* what is on the screen is in the storage first */
+      const now = new Date();
+      const file = B.build(localStorage, { now: now, build: window.PPP_BUILD || null });
+      const out = await B.encode(file, {}, now);
+      this.bkDownload(out);
+      try { localStorage.setItem('ppp.backup.v1', JSON.stringify({ at: now.getTime(), songs: file.counts.songs })); } catch (e) { /* the date is only a convenience */ }
+      const left = file.counts.skipped | 0;
+      this.bkSet({
+        busy: false, msgKind: left ? 'bad' : 'ok',
+        msg: left ? tx('Backup saved as {{file}}. Songs in it: {{n}}. Songs left out because they could not be read: {{skipped}}.', { file: out.name, n: file.counts.songs, skipped: left })
+          : tx('Backup saved as {{file}}. Songs in it: {{n}}.', { file: out.name, n: file.counts.songs })
+      });
+    } catch (e) {
+      this.bkSet({ busy: false, msg: tx('The backup could not be made, so nothing was saved.'), msgKind: 'bad' });
+    }
+  }
+  async backupFileChosen(e) {
+    const B = window.PPPBackup;
+    const f = e && e.target && e.target.files && e.target.files[0];
+    try { if (e && e.target) e.target.value = ''; } catch (err) { /* the same file can be chosen again */ }
+    if (!B || !f || this._frozen) return;
+    this._bkFile = null;
+    this.bkSet({ busy: true, msg: tx('Reading the file…'), msgKind: 'info', plan: null });
+    if (f.size > B.LIMITS.file) { this.bkSet({ busy: false, msg: this.bkError('file-too-big', f.size), msgKind: 'bad' }); return; }
+    let bytes;
+    try { bytes = new Uint8Array(await f.arrayBuffer()); } catch (err) { this.bkSet({ busy: false, msg: this.bkError('unreadable'), msgKind: 'bad' }); return; }
+    const d = await B.decode(bytes, {});
+    if (!d.ok) { this.bkSet({ busy: false, msg: this.bkError(d.code, bytes.length), msgKind: 'bad' }); return; }
+    this.saveNow();                                             /* the summary is made against what the storage holds now */
+    const p = B.summary(B.plan(d.backup, localStorage, {}));
+    this._bkFile = d.backup;
+    this._bkBlanked = d.blanked | 0;
+    const day = /^\d{4}-\d{2}-\d{2}/.test(String(d.backup.exportedAt || '')) ? String(d.backup.exportedAt).slice(0, 10) : '';
+    this.bkSet({ busy: false, msg: '', plan: { total: p.total, fresh: p.fresh, same: p.same, copies: p.copies, skipped: p.skipped, blanked: d.blanked | 0, date: day } });
+    this.bkFocus('[data-backup-restore-no]');
+  }
+  backupCancel() { this._bkFile = null; this.bkSet({ plan: null, msg: '' }); this.bkFocus('[data-backup-file]'); }
+  /* asked once, by the summary: restore only adds and merges, then the page reloads to read what it merged */
+  async backupApply() {
+    const B = window.PPPBackup, bk = this._bkFile, cur = this.state.bk || {};
+    if (!B || !bk || cur.busy || this._frozen) return;
+    if (this.bkBusyWork()) { this.bkSet({ msg: this.bkBusyText(), msgKind: 'bad' }); return; }
+    this.bkSet({ busy: true });
+    this.tabSignalSend('freeze');                               /* the other tabs stop writing before this one reads what is stored */
+    await new Promise(r => setTimeout(r, 250));
+    if (this._frozen) { this.bkSet({ busy: false }); return; }  /* another tab got there first */
+    this.saveNow();
+    const date = /^\d{4}-\d{2}-\d{2}/.test(String(bk.exportedAt || '')) ? String(bk.exportedAt).slice(0, 10) : '';
+    const r = B.apply(bk, localStorage, { copyTitle: (title, day) => tx('{{title}} (from backup {{date}})', { title: title, date: day || date }) });
+    this._bkFile = null;
+    if (!r.ok || !r.written) {
+      this.tabSignalSend('abort');
+      this.bkSet(r.ok ? { plan: null, busy: false, msg: tx('Everything in this backup is already here. Nothing was changed.'), msgKind: 'ok' } : { plan: null, busy: false, msg: this.bkError(r.code), msgKind: 'bad' });
+      this.bkFocus('[data-backup-file]');
+      return;
+    }
+    this.freezeStorage();
+    const account = await this.bkPutProgress();
+    B.flashSet(window.sessionStorage, { fresh: r.fresh, same: r.same, copies: r.copies, skipped: r.skipped | 0, blanked: this._bkBlanked | 0, account: account });
+    this.tabSignalSend('replaced');
+    this.bkSet({
+      plan: null, busy: true, msgKind: account === false ? 'bad' : 'ok',
+      msg: account === false ? tx('Restored. The page reloads now.') + ' ' + tx('Your account could not be updated, so progress kept in your account may come back as it was.') : tx('Restored. The page reloads now.')
+    });
+    setTimeout(() => { try { location.reload(); } catch (e) { /* the restored data is read the next time */ } }, account === false ? 3000 : 700);
+  }
+  /* after the reload that follows a restore: say what it did, once, in the language the page is in by then */
+  backupBoot() {
+    const B = window.PPPBackup;
+    let f = null;
+    try { f = B && B.flashTake(window.sessionStorage); } catch (e) { f = null; }
+    if (!f) return;
+    const I = window.PPP_I18N, ready = I && I.ready && I.ready.then ? I.ready : Promise.resolve();
+    ready.then(() => {
+      if (this._dead) return;
+      const parts = [tx('Restored: {{fresh}} new, {{same}} merged, {{copies}} kept as copies.', { fresh: f.fresh | 0, same: f.same | 0, copies: f.copies | 0 })];
+      if (f.skipped) parts.push(tx('Songs that could not be read and were skipped: {{n}}.', { n: f.skipped | 0 }));
+      if (f.blanked) parts.push(tx('Links that were not web addresses were left out: {{n}}.', { n: f.blanked | 0 }));
+      if (f.account === false) parts.push(tx('Your account could not be updated, so progress kept in your account may come back as it was.'));
+      this.say(parts.join(' '));
+    });
+  }
+  wipeAsk() {
+    if (this.bkBusyWork()) { this.bkSet({ phase: 'idle', msg: this.bkBusyText(), msgKind: 'bad' }); return; }
+    this.bkSet({ phase: 'wipe1', word: '', msg: '', plan: null });
+    this.bkFocus('[data-wipe-cancel]');
+  }
+  wipeNext() { this.bkSet({ phase: 'wipe2', word: '' }); this.bkFocus('[data-wipe-input]'); }
+  wipeCancel() { this.bkSet({ phase: 'idle', word: '', msg: '' }); this.bkFocus('[data-wipe-start]'); }
+  wipeType(e) { this.bkSet({ word: e && e.target ? e.target.value : '' }); }
+  /* the connections this page itself holds to the databases it is about to delete */
+  async closeDataHandles() {
+    try { await MediaStore.close(); } catch (e) { /* not open */ }
+  }
+  async wipeGo() {
+    const B = window.PPPBackup, cur = this.state.bk || {};
+    const typed = String(cur.word || '').trim().toLowerCase();
+    if (!B || cur.phase === 'wiping' || typed === '' || typed !== tx('delete').toLowerCase()) return;
+    if (this.bkBusyWork()) { this.bkSet({ phase: 'idle', word: '', msg: this.bkBusyText(), msgKind: 'bad' }); return; }
+    const signedIn = !!this.state.user;
+    this.bkSet({ phase: 'wiping', busy: true, msg: tx('Deleting…'), msgKind: 'info', plan: null });
+    this.tabSignalSend('freeze');                               /* the other tabs stop writing before anything is removed */
+    await new Promise(r => setTimeout(r, 250));
+    this.freezeStorage();                                       /* before anything is removed: nothing of this page is written back */
+    const env = { closeHandles: () => this.closeDataHandles() };
+    let rep = await B.wipe(env);
+    if (rep.ok) {                                               /* a write that was already on its way can bring a name back: one more look, then reload */
+      await new Promise(r => setTimeout(r, 400));
+      rep = await B.wipe(env);
+    }
+    this._wipeReport = rep;
+    if (rep.ok) {
+      this.tabSignalSend('replaced');
+      this.bkSet({
+        phase: 'wiped', busy: true, msgKind: 'ok',
+        msg: signedIn ? tx('Everything on this device was deleted. Progress kept in your account stays, and comes back when the page reloads. The page reloads now.') : tx('Everything on this device was deleted. The page reloads now.')
+      });
+      setTimeout(() => { try { location.reload(); } catch (e) { /* the next visit starts empty */ } }, 1200);
+    } else {
+      const what = rep.failed.map(f => f.name).concat(rep.left.keys, rep.left.dbs).filter((n, i, a) => a.indexOf(n) === i).join(', ');
+      this.bkSet({ phase: 'wipe-failed', busy: false, msg: tx('Some data could not be removed ({{what}}). Close other PPP tabs and try again.', { what: what }), msgKind: 'bad' });
+    }
+  }
+  backupVals() {
+    const S = this.state, bk = S.bk || {}, B = window.PPPBackup;
+    const phase = bk.phase || 'idle';
+    const busy = !!bk.busy;
+    let songs = 0;
+    try { songs = this.libraryRead().songs.length; } catch (e) { songs = 0; }
+    const last = this.bkLastBackup();
+    const word = tx('delete');
+    const typed = String(bk.word || '').trim().toLowerCase();
+    const canDelete = typed !== '' && typed === word.toLowerCase();
+    const plan = bk.plan || null;
+    const signedIn = !!S.user;
+    const base = 'padding:10px 16px;border-radius:10px;font-family:inherit;font-size:12.5px;font-weight:600;white-space:nowrap;';
+    const prim = base + 'border:0;background:var(--accent);color:#fff;cursor:pointer;';
+    const sec = base + 'border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;';
+    const danger = base + 'border:1px solid var(--line);background:var(--bg);color:var(--bad);cursor:pointer;';
+    const solid = on => base + 'border:0;background:var(--bad);color:#fff;' + (on ? 'cursor:pointer;' : 'opacity:.45;cursor:not-allowed;');
+    const box = bad => 'display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:12px;background:var(--bg);border:1px solid ' + (bad ? 'var(--bad)' : 'var(--accent-2)') + ';';
+    return {
+      bkOn: !!B,
+      bkTitle: tx('My data'),
+      bkSub: tx('Your songs and practice progress are kept only in this browser. A backup file lets you keep them safe or move them to another device.'),
+      bkMakeTitle: tx('Back up my songs'),
+      bkMakeNote: tx('One file with your songs and your practice progress. It holds song titles, file names, YouTube links and the names of people whose shared scores you added, so keep it private. It does not contain your PC link code, your link-sharing key or any password, and not the videos you uploaded.'),
+      bkLast: last ? tx('Last backup: {{date}}', { date: this.bkDay(last.at) }) : tx('No backup has been made on this device yet.'),
+      bkMakeLabel: tx('Back up now'), bkMakeStyle: prim + (busy ? 'opacity:.6;' : ''), backupMake: () => this.backupMake(),
+      bkRestoreTitle: tx('Restore from a backup'),
+      bkRestoreNote: tx('Choose a backup file. Nothing here is removed or overwritten: practice progress is merged, and a song whose score is different is kept as a separate copy.'),
+      bkPickLabel: tx('Choose a backup file'), bkPickStyle: sec + 'position:relative;overflow:hidden;display:inline-block;',
+      backupFileChosen: e => this.backupFileChosen(e),
+      bkHasMsg: !!bk.msg, bkMsg: bk.msg || '', bkMsgKind: bk.msgKind || 'info',
+      bkMsgStyle: 'font-size:12.5px;line-height:1.5;color:' + (bk.msgKind === 'bad' ? 'var(--bad)' : bk.msgKind === 'ok' ? 'var(--good)' : 'var(--ink2)') + ';',
+      bkHasPlan: !!plan,
+      bkPlanDate: plan && plan.date ? tx('Backup made on {{date}}.', { date: plan.date }) : '',
+      bkPlanCounts: plan ? tx('Songs in the file: {{total}}. New here: {{fresh}}. Already here: {{same}}. Kept as separate copies: {{copies}}.', { total: plan.total, fresh: plan.fresh, same: plan.same, copies: plan.copies }) : '',
+      bkPlanSkipped: plan && plan.skipped ? tx('Songs that could not be read and were skipped: {{n}}.', { n: plan.skipped }) : '',
+      bkPlanHasSkipped: !!(plan && plan.skipped),
+      bkPlanBlanked: plan && plan.blanked ? tx('Links that were not web addresses were left out: {{n}}.', { n: plan.blanked }) : '',
+      bkPlanHasBlanked: !!(plan && plan.blanked),
+      bkPlanAsk: tx('Add these to this device? Nothing here will be removed.'),
+      bkTabsNote: tx('Other open PPP tabs of this browser reload when this is done, so finish what you are doing in them first.'),
+      bkPlanLabel: tx('Restore from a backup'),
+      bkRestoreYes: tx('Restore'), bkRestoreNo: tx('Cancel'), bkPrimStyle: prim, bkSecStyle: sec,
+      backupApply: () => this.backupApply(), backupCancel: () => this.backupCancel(), bkKey: e => this.bkKey(e),
+      bkBoxStyle: box(false),
+      wipeTitle: tx('Delete everything on this device'),
+      wipeNote: tx('Removes your songs, practice progress, settings, PC link and sharing key from this browser. Links you already shared stay online, and your account is not touched. This cannot be undone.'),
+      wipeAccountOn: signedIn,
+      wipeAccountText: tx('You are signed in. Progress kept in your account stays there and comes back here after the reload; only this device is cleared.'),
+      wipeStartLabel: tx('Delete everything…'), wipeStartStyle: danger, wipeAsk: () => this.wipeAsk(),
+      wipeBoxLabel: tx('Delete everything on this device'),
+      wipeStep1: phase === 'wipe1',
+      wipeStep1Text: tx('This removes all your songs, your practice progress and your settings from this device. Songs on this device: {{n}}. Make a backup first if you want to keep them.', { n: songs }),
+      wipeBackupLabel: tx('Back up first'), wipeBackupFirst: () => this.backupMake(),
+      wipeNextLabel: tx('Go on to the last check'), wipeNext: () => this.wipeNext(),
+      wipeCancelLabel: tx('Cancel'), wipeCancel: () => this.wipeCancel(),
+      wipeBoxStyle: box(true),
+      wipeStep2: phase === 'wipe2',
+      wipeStep2Text: tx('Last check. Everything on this device will be lost for good, including your songs ({{n}}). Have you made a backup? To confirm, type {{word}} below.', { n: songs, word: word }),
+      wipePlaceholder: tx('Type here'), wipeInputLabel: tx('Type the word to confirm'), wipeType: e => this.wipeType(e),
+      wipeGoLabel: tx('Delete everything'), wipeGo: () => this.wipeGo(), wipeGoStyle: solid(canDelete), wipeGoDisabled: !canDelete,
+      wipeFailed: phase === 'wipe-failed',
+      wipeRetryLabel: tx('Try again'), wipeRetry: () => this.wipeGo(),
+      wipeReloadLabel: tx('Reload page'), wipeReload: () => { try { location.reload(); } catch (e) { /* closed */ } },
+      bkBusy: busy
+    };
   }
   resetProgress() {
     const score = this.state.score;
@@ -16622,6 +17053,7 @@ class Component extends DCLogic {
     return { songs: [], current: 'demo', demo: null };
   }
   libraryWrite(lib) {
+    if (this._frozen) return true;
     try { localStorage.setItem(LIBRARY_KEY, JSON.stringify(lib)); } catch (e) { return false; }
     this.setState({ library: lib.songs, libraryDemo: lib.demo || null });
     return true;
@@ -16647,6 +17079,7 @@ class Component extends DCLogic {
   }
   /* The open song, score and progress, into its own slot. */
   writeSlot() {
+    if (this._frozen) return true;
     const S = this.state;
     const id = S.songId || 'demo';
     const rep = S.importReport;
@@ -20401,7 +20834,7 @@ class Component extends DCLogic {
       stateTabs: ['Loading', 'Error', 'Offline'].map(label => ({ label: tx(label), style: this.pill(S.stateTab === label), on: () => this.setState({ stateTab: label }) })),
       stateLoading: S.stateTab === 'Loading', stateError: S.stateTab === 'Error', stateOffline: S.stateTab === 'Offline',
       skeletons: [1, 2, 3]
-    }, sc === 'shared' ? this.sharedVals() : null, sc === 'learn' ? this.learnVals() : null, sc === 'course' ? this.courseVals() : null, this.shareDialogVals());
+    }, sc === 'shared' ? this.sharedVals() : null, sc === 'learn' ? this.learnVals() : null, sc === 'course' ? this.courseVals() : null, sc === 'settings' ? this.backupVals() : null, this.tabVals(), this.shareDialogVals());
   }
 
   /* ============================ piano basics ============================
