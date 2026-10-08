@@ -402,8 +402,13 @@ NOTE_MIN_S = 0.09      # a tracked note shorter than this is a glide or a conson
 SPLIT_MIN_S = 0.06     # an onset splits a held pitch only when both pieces are at least this long
 PITCH_TOL = 0.6        # semitones a frame may stray from the note's median and still belong to it
 JOIN_GAP_S = 0.04      # two pieces of the same pitch closer than this (no onset between them) are one note
+DIP_RATIO = 0.6        # a held pitch is struck again only where the level fell under this share of the note's own level just before an onset
+DIP_LOOK_S = 0.05      # how far back that fall is looked for
+OCTAVE_SLIP_S = 0.2    # a piece an octave off the note before it, shorter than this and not struck again, is the pitch tracker slipping
 LAYER_MIN = 0.08       # a stem quieter than this share of the mix (95th-percentile frame level) is not there at all
 DOUBLE_TOL_S = 0.06    # an accompaniment note on the same key as a melody or bass note this close is the same sound heard twice
+LEAD_STEMS = ('other', 'guitar', 'piano')   # where an instrumental's tune can be
+LEAD_MIN_SHARE = 0.15  # a lead line holds one clear pitch for at least this share of the song, or there is no tune to follow
 
 
 def separate(wav, device, lib):
@@ -457,27 +462,41 @@ def track_notes(mono, sr, fmin, fmax, gate):
     on_frames = set(int(i) for i in librosa.onset.onset_detect(y=y, sr=PT_SR, hop_length=PT_HOP, backtrack=False))
     dt = PT_HOP / float(PT_SR)
     split_min = int(round(SPLIT_MIN_S / dt))
+    look = int(round(DIP_LOOK_S / dt))
+
+    def dipped(i, ref):
+        """the level fell under DIP_RATIO of `ref` just before frame i: the sound was articulated again (an onset alone may be a drum bleeding into the stem)"""
+        return ref > 0 and float(np.min(level[max(0, i - look):i + 1])) < DIP_RATIO * ref
+
     segs = []
     cur = None
+    prev_ok, prev_ref = False, 0.0
     for i in range(n):
         ok = bool(voiced[i]) and not np.isnan(f0[i]) and level[i] >= gate
         if ok and cur is not None:
             med = float(np.median(cur['m']))
-            if abs(midi[i] - med) <= PITCH_TOL and not (i in on_frames and i - cur['a'] >= split_min):
+            again = i in on_frames and i - cur['a'] >= split_min and dipped(i, float(np.median(cur['lv'])))
+            if abs(midi[i] - med) <= PITCH_TOL and not again:
                 cur['m'].append(midi[i]); cur['lv'].append(level[i]); cur['b'] = i + 1
+                prev_ok = True
                 continue
         if cur is not None:
+            prev_ref = float(np.median(cur['lv']))
             segs.append(cur)
             cur = None
         if ok:
-            cur = {'a': i, 'b': i + 1, 'm': [midi[i]], 'lv': [level[i]], 'onset': i in on_frames}
+            # articulated: after silence, or after a dip of the level (not merely where the pitch tracker changed its mind)
+            cur = {'a': i, 'b': i + 1, 'm': [midi[i]], 'lv': [level[i]], 'onset': (not prev_ok) or dipped(i, prev_ref)}
+        prev_ok = ok
     if cur is not None:
         segs.append(cur)
     notes = []
     for s in segs:
         key = int(round(float(np.median(s['m']))))
         on, off = s['a'] * dt, s['b'] * dt
-        if notes and notes[-1]['midi'] == key and on - notes[-1]['off'] <= JOIN_GAP_S and not s['onset']:
+        joins = notes and on - notes[-1]['off'] <= JOIN_GAP_S and not s['onset']
+        # the same key again, or a moment an octave off (the pitch tracker's octave slip inside one held note): the note goes on
+        if joins and (notes[-1]['midi'] == key or (abs(notes[-1]['midi'] - key) == 12 and off - on < OCTAVE_SLIP_S)):
             notes[-1]['off'] = off
             notes[-1]['_lv'] = max(notes[-1]['_lv'], max(s['lv']))
             continue
@@ -531,6 +550,22 @@ def run_song(a, device, duration, t0):
         melody = track_notes(mono['vocals'], sr, librosa.note_to_hz('C2'), librosa.note_to_hz('C6'), gate=0.1 * p95['vocals'])
         for n in melody:
             n['track'] = SONG_TRACK['melody']
+    melody_from = 'vocals' if melody else None
+    if not present.get('vocals'):
+        # no voice (an instrumental): the tune is played by an instrument - a synth, a guitar, a piano - that the piano models hear badly (a synth lead:
+        # 43-55% of its notes on a synthetic piece with a known answer). The line of the stem that holds one clear pitch for the longest is the melody.
+        lines = []
+        for k in LEAD_STEMS:
+            if present.get(k):
+                say('ENGINE lead-line ' + k)
+                line = track_notes(mono[k], sr, librosa.note_to_hz('C3'), librosa.note_to_hz('C7'), gate=0.1 * p95[k])
+                lines.append((sum(n['off'] - n['on'] for n in line), k, line))
+        if lines:
+            held, k, line = max(lines)
+            if held >= LEAD_MIN_SHARE * duration:
+                melody, melody_from = line, k
+                for n in melody:
+                    n['track'] = SONG_TRACK['melody']
     say('PROGRESS 0.400')
     if present.get('bass'):
         say('ENGINE bass-line')
@@ -577,7 +612,7 @@ def run_song(a, device, duration, t0):
         'uncertainNotes': merged['uncertainNotes'] if merged else [],
         'ensemble': ens,
         'song': {
-            'separation': SONG_MODEL, 'melody': len(melody), 'bass': len(bass), 'accomp': len(accomp), 'doublesDropped': doubles,
+            'separation': SONG_MODEL, 'melody': len(melody), 'melodyFrom': melody_from, 'bass': len(bass), 'accomp': len(accomp), 'doublesDropped': doubles,
             'layers': {k: round(p95[k] / mix_p95, 3) for k in sorted(p95)}
         },
         'modelFailures': failures
