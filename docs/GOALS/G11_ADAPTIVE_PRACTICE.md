@@ -25,6 +25,8 @@ recording lead sheet as generators and a new, verified measure-aligned splice.
 
 **G11c-0 is built** (2026-10-08): `practice/variant.js` and its benchmark; the record, with the table of what the splice accepts and refuses on the 325 pieces and the covers, is §10.2.
 
+**G11a-2 is built** (2026-10-08): the event-parity harness `tests/practice/parity.js` (+ `parity-core.js`, `parity-mutants.js`, 12 new fixtures); compat mode equals the legacy player on all 418 files and every fix difference is booked to its cause; the record, the counts per cause against the expectations of the design and the five (and twenty) mutants are §10.3.
+
 ## 1. What was measured before designing (evidence)
 
 All numbers were measured for this document at `3567e27` in an independent server of this worktree
@@ -492,6 +494,61 @@ now) and requires the same outcome digests as this full run for the same pieces 
 pedal not clipped, a clef not put back, no widening, a seam violation ignored, no judge margin, identical bars accepted, the last bar kept, an off-by-one range, another meter accepted, the
 checker not asked, ...) each fail at least one of 25 checks (`variant-mutation.test.js`).
 Re-run the full table: `node tests/practice-variant/variant-bench.js --full --shard I/8 --engrave --idempotent --determinism --out sI.json` for I in 0..7 (about 12 minutes on 8 cores), then `--merge`.
+
+### 10.3 G11a-2 record (2026-10-08, Sonnet; branch `g11a-2-parity`)
+
+`tests/practice/parity.js` (Node driver, puppeteer, a free port through `tests/serve-free.js`; practice/plan.js is added to the page with `addScriptTag`, the app file is not touched), its rule table
+`tests/practice/parity-core.js` (a plain script, also a Node module, so the rules are unit-tested against planted errors in `parity-core.test.js`, 14 tests, part of `npm run test:practice`), the mutation runner
+`tests/practice/parity-mutants.js`, the summary baseline `tests/practice/baselines/parity.json` and 12 new hand-written fixtures in `tests/practice/fixtures/parity/` (each one's first comment says what it holds).
+`practice/plan.js` was **not** changed: the harness found no difference.
+
+**What is compared** (418 files: 310 open catalogue files, 15 licence-quarantined ones that are measured and only counted, the 40 engraving fixtures, the 29 ScoreGraph reader fixtures, the 12 G11a-1 fixtures and the 12 new ones;
+5,499 ranges = every piece whole + up to 20 seeded four-bar windows, the ones that end on a backward repeat and start in a volta first, as `record.js` picks them; 423,035 strikes):
+
+| What | Compared | Count | Result |
+| --- | --- | --- | --- |
+| plan (compat = the default options) | `PianoScore.build` against `PPPPractice.plan.build`: visits (bar index, number, pass, places), strikes, controller events and kinds, beats, tempo map, pedal spans, one string per side from the same `canon.js` function; the rolled-chord flag; `msAt/qAt/writtenAtSound/soundAtWritten/sostSpans` | 5,499 ranges | **0 differences** |
+| ids | every strike's event and head is the one `PPPEngrave` `identity` gives its Score note; every visit names its measure | 162,965 | 0 |
+| begin | `PerformanceEngine.begin` expected lists, every range x hands (both, right, left) x tempo (1, 0.5), the engine reading the new plan through the page's own `PianoScore.of` swapped for one synchronous run | 32,994 | 0 |
+| matcher | six scripted performances (perfect, +80 ms, a wrong key every 7th note, 10 % missed, chords rolled 60 ms, an arpeggio 300 ms late), every result object and every note's verdict and signed timing | 65,858 runs | 0 |
+| follow gates | the app's `followGates` against `PPPPractice.plan.followGates`, every range x hands | 16,497 lists | 0 |
+| scheduler | the real `startTransport` + `schedule` on a fake piano and a fake MIDI output at 8x the written tempo (every note on/off, CC64/66/67, metronome click), legacy against new plan, both hands / right / left, audio and MIDI, two looped windows; 12 pieces | 84 runs, 15,515 queued events | identical |
+| fix options on | `jumps:'once'`, `graces:'play'`, `followGates` `repeats` and `ties`, each alone and all together; every difference booked to a cause | see below | **0 UNEXPLAINED** |
+
+**The cause rules** (`parity-core.js`; anything they do not cover is UNEXPLAINED and fails). JUMP: N's first leg is a prefix of the old visit order and equal to it to the bit (controller events, beats, tempo map, strikes); each way-back visit sounds, relative to its own start, what
+the old plan plays for the same bar. GRACE: extra strikes (marked `grace`) only in a bar that holds a grace note; any other strike is the old one with the same bar, place, pitch, hand and loudness, moved *later* or with its release *cut*, only in or next to a bar with a grace note; nothing else moves
+(the tempo map, controller events, beats and length are the old ones). FOLLOW_REPEAT: the gates are the legacy gates of each contiguous stretch of the play order, in order; **the oracle is the app's own `followGates` called once per stretch**, not a second copy of the rule.
+FOLLOW_TIE: the legacy gates plus exactly the notes a tie leads into from nowhere (taken from the legacy plan's own tie map), the rest gate at such an onset replaced, a rest gate that one falls into cut short.
+
+**Counts per cause on the catalogue** (the 325 files, open + quarantined; the quarantined 15 only as a total) against the expectation of §10:
+
+| Cause | Expected (§10) | Measured | Of which licence-quarantined (total only) |
+| --- | --- | --- | --- |
+| JUMP | 8 files | **8 files**, 160 way-back visits, 1,839 strikes | 1 file |
+| GRACE | 17 files / 244 events | **17 files / 244 events** (384 strikes played in the old order; 91 notes moved later, 149 cut) | 1 file / 6 events |
+| FOLLOW_REPEAT | 168 | **168 files** (+29,359 gates) | 6 files |
+| FOLLOW_TIE | 6 files / 20 notes | **6 files / 20 notes** | 0 |
+
+There is no difference to explain: the measured numbers of the design (§1) are the harness's numbers. In all 418 files (the 93 fixtures included) the causes act in 15 JUMP files, 21 GRACE files (264 events), 192 FOLLOW_REPEAT files and 10 FOLLOW_TIE files (26 notes).
+
+**Time**: the whole corpus 51 s on a developer's laptop (browser start and server included; 418 files); `--sample 5` (every 5th catalogue file + every fixture + every file the baseline gives a JUMP, GRACE or FOLLOW_TIE: 158 files) 21 s.
+CI (PR 235, ubuntu-latest): `practice-parity` runs the sample (180 files) on a pull request that touches the app or practice/ - 31 s of check, 45 s the job with `npm ci` - and the whole corpus every night and on a manual run - 82 s the job. `practice-parity-mutants` (four shards) runs the five core rows when the probes themselves change (52-76 s a shard) and all 25 every night (a row is 17-27 s on a runner; with three shards the longest took 268 s, which is why there are four). Counts and mutants are the same on Linux CI and on the Windows laptop (the same first problem of each mutant, the same numbers).
+
+**Mutants** (`node tests/practice/parity-mutants.js`: a copy of plan.js with one line broken is added to the page in place of the real one and the whole check runs on the sample; the unmutated control is clean):
+the five the design names are **all killed** - PM1 the pedal change lift dropped (29 problems, first: E17), PM2 one visit shifted (1,136), PM3 ties keyed by pitch only (224), PM4 the hand filter ignored (28, first: E35 voice-and-piano: the cue part's notes appear in the gates), PM5 a volta pass off by one (155).
+Of 20 more, 18 are killed (the loop-start target, the compat default, tempo carried over a repeat, soft pedal, marcato, hold chain, sostenuto, pedal copied to one visit only, pickup beats, the rolled-chord flag, a pedal-held release, a D.C. over a volta, a Fine that does not end, a To Coda not taken, jumps on by default, a grace that does not cut, a grace that does not delay,
+follow mode that still skips a dangling tie) and two are marked "not seen by parity" with the reason: the `visit`/`q` an `repeats` gate carries (the app's gates have none, so there is nothing to compare; `plan.test.js` reads it) and the order in which two graces sound (the cause table limits where and how much a grace may move a note, not which grace comes first; `plan.test.js` reads it).
+The mutants of the graph rules (`legacyCompat:false`: half-pedal release, ties by head, beats by groups) are not in this table: parity is the compat mode's contract, and `plan.test.js` / `parity.test.js` hold those rules.
+
+**Where this differs from the words of §6.2.** (1) Six scripted performances, not five (the arpeggio 300 ms late of `canon.js` is the sixth). (2) The scheduler is driven by the real `startTransport` and `schedule` called in steps of half the look-ahead on a controlled clock, not through `togglePlay` (which also renders the page); the code that places notes, pedal events and clicks is the app's. (3) With the fix options on the matcher
+is not run against a second oracle (there is none); the check is that the engine, fed the plan without its grace strikes, expects exactly the plan's other strikes and a perfect performance matches all of them (178 runs). (4) The harness reads the graph `PPPEngrave.app.resolveSync(score)` hands back and counts a song whose graph is not `live` with a good `link` as a fallback (0 on the catalogue and the fixtures).
+
+**Findings and limits.**
+(a) A tie is kept or broken by the *note*, not by the visit: a bar that the way back reaches from another bar than its written predecessor (the segno bar after a D.S., the coda after a To Coda) starts with its tied-to notes **silent**. The cause table cannot flag it (the bar sounds what the old plan plays for that bar, as JUMP promises). It does not occur on the catalogue (the harness counts it: `silentTies` 0 on all 325 files)
+and does in one of the new fixtures (`ds-al-coda-repeat-volta`: the coda's first note is tied from the bar before it on the page). Whether the way back should re-strike such a note is a choice for G11a-4 (U2), not a parity matter.
+(b) The nested-repeat fixture records an old-player quirk (a first ending whose repeat sign is skipped on the second time leaves the inner start on the stack, so an outer `times=3` goes back to the inner start); the graph plan keeps it in both modes, as E4 says kept quirks are kept.
+(c) Windows exist only for pieces of more than four bars; the 12 tiny fixtures with four bars or fewer are checked whole.
+(d) `PM24`/`PM25` above are the only parts of the plan's contract that parity does not read; both are read by `plan.test.js`.
 
 ## 11. Performance budgets
 
