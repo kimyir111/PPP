@@ -47,6 +47,11 @@ tests/engrave/out/
 !rec/tools/
 tests/realize/out/
 tests/bench/.cache/
+# the practice probes' run output (G11a-0): suite logs, mutation-check logs; the committed baselines are tests/practice/baselines/
+tests/practice/out/
 __pycache__/
 # Local experiments; holds copyrighted audio and PDFs that must never be committed.
 tmp/
+
+# omr-live-2 (tests/omr): rendered page images, engine output and run results are local, never committed
+tests/omr/out/

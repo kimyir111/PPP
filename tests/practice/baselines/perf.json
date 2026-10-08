@@ -1,0 +1,1048 @@
+{
+ "schema": 1,
+ "piece": "catalog/method/sonatina/020.mxl",
+ "tolerance": 0.2,
+ "profiles": {
+  "ci": {
+   "machine": {
+    "cpu": "AMD EPYC 9V45 96-Core Processor",
+    "cores": 4,
+    "platform": "linux",
+    "node": "v24.21.0"
+   },
+   "calib": {
+    "r1": 108.2,
+    "r4": 107.6
+   },
+   "metrics": {
+    "r1.unit.import": {
+     "v": 68,
+     "spread": [
+      68,
+      109.3
+     ]
+    },
+    "r1.unit.toScore": {
+     "v": 6.6,
+     "spread": [
+      6.6,
+      17.4
+     ]
+    },
+    "r1.unit.link": {
+     "v": 11.8,
+     "spread": [
+      11.8,
+      26.2
+     ]
+    },
+    "r1.unit.agree": {
+     "v": 14.8,
+     "spread": [
+      14.8,
+      33.8
+     ]
+    },
+    "r1.unit.build": {
+     "v": 7,
+     "spread": [
+      7,
+      9.1
+     ]
+    },
+    "r1.unit.buildMean": {
+     "v": 3.485,
+     "spread": [
+      3.485,
+      5.48
+     ]
+    },
+    "r1.unit.unroll": {
+     "v": 0,
+     "spread": [
+      0,
+      0
+     ]
+    },
+    "r1.unit.tempoMap": {
+     "v": 0.1,
+     "spread": [
+      0.1,
+      0.2
+     ]
+    },
+    "r1.unit.begin": {
+     "v": 6.6,
+     "spread": [
+      6.6,
+      11.9
+     ]
+    },
+    "r1.unit.beginMean": {
+     "v": 0.6,
+     "spread": [
+      0.6,
+      0.652
+     ]
+    },
+    "r1.matcher.noteOnMean": {
+     "v": 0.007,
+     "spread": [
+      0.007,
+      0.009
+     ]
+    },
+    "r1.matcher.noteOnP95": {
+     "v": 0.1,
+     "spread": [
+      0.1,
+      0.1
+     ]
+    },
+    "r1.matcher.noteOnMax": {
+     "v": 0.4,
+     "spread": [
+      0.4,
+      0.5
+     ]
+    },
+    "r1.matcher.wrongMean": {
+     "v": 0.016,
+     "spread": [
+      0.016,
+      0.017
+     ]
+    },
+    "r1.matcher.wrongP95": {
+     "v": 0.1,
+     "spread": [
+      0.1,
+      0.1
+     ]
+    },
+    "r1.matcher.resultMean": {
+     "v": 0.28,
+     "spread": [
+      0.28,
+      0.31
+     ]
+    },
+    "r1.live.handlerP95": {
+     "v": 0.1,
+     "spread": [
+      0.1,
+      0.2
+     ]
+    },
+    "r1.live.handlerMax": {
+     "v": 0.3,
+     "spread": [
+      0.3,
+      0.4
+     ]
+    },
+    "r1.live.paintMed": {
+     "v": 25,
+     "spread": [
+      25,
+      26.8
+     ]
+    },
+    "r1.live.paintP95": {
+     "v": 32.1,
+     "spread": [
+      32.1,
+      33.1
+     ]
+    },
+    "r1.live.paintMax": {
+     "v": 32.9,
+     "spread": [
+      32.9,
+      37.5
+     ]
+    },
+    "r1.long.play": {
+     "v": 0,
+     "spread": [
+      0,
+      0
+     ]
+    },
+    "r1.long.entry": {
+     "v": 0,
+     "spread": [
+      0,
+      0
+     ]
+    },
+    "r4.unit.import": {
+     "v": 260.3,
+     "spread": [
+      260.3,
+      303.3
+     ]
+    },
+    "r4.unit.toScore": {
+     "v": 26.9,
+     "spread": [
+      26.9,
+      33.6
+     ]
+    },
+    "r4.unit.link": {
+     "v": 55.5,
+     "spread": [
+      55.5,
+      69.6
+     ]
+    },
+    "r4.unit.agree": {
+     "v": 56.9,
+     "spread": [
+      56.9,
+      86.9
+     ]
+    },
+    "r4.unit.build": {
+     "v": 24.5,
+     "spread": [
+      24.5,
+      36.3
+     ]
+    },
+    "r4.unit.buildMean": {
+     "v": 13.7,
+     "spread": [
+      13.7,
+      15.9
+     ]
+    },
+    "r4.unit.unroll": {
+     "v": 0,
+     "spread": [
+      0,
+      0.8
+     ]
+    },
+    "r4.unit.tempoMap": {
+     "v": 0.3,
+     "spread": [
+      0.3,
+      1.1
+     ]
+    },
+    "r4.unit.begin": {
+     "v": 30.4,
+     "spread": [
+      30.4,
+      41.3
+     ]
+    },
+    "r4.unit.beginMean": {
+     "v": 2.487,
+     "spread": [
+      2.487,
+      3.14
+     ]
+    },
+    "r4.matcher.noteOnMean": {
+     "v": 0.029,
+     "spread": [
+      0.029,
+      0.037
+     ]
+    },
+    "r4.matcher.noteOnP95": {
+     "v": 0.1,
+     "spread": [
+      0.1,
+      0.2
+     ]
+    },
+    "r4.matcher.noteOnMax": {
+     "v": 1.8,
+     "spread": [
+      1.8,
+      2.6
+     ]
+    },
+    "r4.matcher.wrongMean": {
+     "v": 0.056,
+     "spread": [
+      0.056,
+      0.067
+     ]
+    },
+    "r4.matcher.wrongP95": {
+     "v": 0.5,
+     "spread": [
+      0.5,
+      0.5
+     ]
+    },
+    "r4.matcher.resultMean": {
+     "v": 1.085,
+     "spread": [
+      1.085,
+      1.235
+     ]
+    },
+    "r4.live.handlerP95": {
+     "v": 0.6,
+     "spread": [
+      0.6,
+      0.8
+     ]
+    },
+    "r4.live.handlerMax": {
+     "v": 0.8,
+     "spread": [
+      0.8,
+      2.1
+     ]
+    },
+    "r4.live.paintMed": {
+     "v": 35.4,
+     "spread": [
+      35.4,
+      42.5
+     ]
+    },
+    "r4.live.paintP95": {
+     "v": 45.7,
+     "spread": [
+      45.7,
+      51.8
+     ]
+    },
+    "r4.live.paintMax": {
+     "v": 49,
+     "spread": [
+      49,
+      69.3
+     ]
+    },
+    "r4.long.play": {
+     "v": 0,
+     "spread": [
+      0,
+      1
+     ]
+    },
+    "r4.long.entry": {
+     "v": 1,
+     "spread": [
+      1,
+      2
+     ]
+    }
+   },
+   "exact": {
+    "r1.strikes": 1763,
+    "r1.expected": 1763,
+    "r1.measures": 158,
+    "r1.linkOk": true,
+    "r1.agreeOk": true,
+    "r1.presses": 86,
+    "r1.paintSamples": 70,
+    "r1.events": 172,
+    "r1.live": true,
+    "r4.strikes": 1763,
+    "r4.expected": 1763,
+    "r4.measures": 158,
+    "r4.linkOk": true,
+    "r4.agreeOk": true,
+    "r4.presses": 86,
+    "r4.paintSamples": 71,
+    "r4.events": 172,
+    "r4.live": true
+   },
+   "long": {
+    "r1.play": [
+     [],
+     [],
+     [],
+     [],
+     []
+    ],
+    "r1.entry": [
+     [],
+     [],
+     [],
+     [],
+     []
+    ],
+    "r4.play": [
+     [
+      57
+     ],
+     [
+      51
+     ],
+     [],
+     [
+      52
+     ],
+     []
+    ],
+    "r4.entry": [
+     [
+      189
+     ],
+     [
+      187,
+      51
+     ],
+     [
+      187,
+      51
+     ],
+     [
+      184
+     ],
+     [
+      180
+     ]
+    ]
+   },
+   "throttle": {
+    "r4": [
+     [
+      4.139,
+      4.143
+     ],
+     [
+      4.289,
+      4.157
+     ],
+     [
+      4.107,
+      4.201
+     ],
+     [
+      4.143,
+      4.262
+     ],
+     [
+      4.127,
+      4.047
+     ]
+    ]
+   }
+  },
+  "local": {
+   "machine": {
+    "cpu": "AMD Ryzen 7 9800X3D 8-Core Processor",
+    "cores": 16,
+    "platform": "win32",
+    "node": "v24.17.0"
+   },
+   "calib": {
+    "r1": 122.9,
+    "r4": 118.6
+   },
+   "metrics": {
+    "r1.unit.import": {
+     "v": 100.1,
+     "spread": [
+      100.1,
+      113
+     ]
+    },
+    "r1.unit.toScore": {
+     "v": 9.1,
+     "spread": [
+      9.1,
+      25.6
+     ]
+    },
+    "r1.unit.link": {
+     "v": 20.5,
+     "spread": [
+      20.5,
+      26.9
+     ]
+    },
+    "r1.unit.agree": {
+     "v": 20.9,
+     "spread": [
+      20.9,
+      30.2
+     ]
+    },
+    "r1.unit.build": {
+     "v": 8.9,
+     "spread": [
+      8.9,
+      15
+     ]
+    },
+    "r1.unit.buildMean": {
+     "v": 4.57,
+     "spread": [
+      4.57,
+      5.79
+     ]
+    },
+    "r1.unit.unroll": {
+     "v": 0,
+     "spread": [
+      0,
+      0.1
+     ]
+    },
+    "r1.unit.tempoMap": {
+     "v": 0.1,
+     "spread": [
+      0.1,
+      0.2
+     ]
+    },
+    "r1.unit.begin": {
+     "v": 12.2,
+     "spread": [
+      12.2,
+      15.6
+     ]
+    },
+    "r1.unit.beginMean": {
+     "v": 0.76,
+     "spread": [
+      0.76,
+      1.048
+     ]
+    },
+    "r1.matcher.noteOnMean": {
+     "v": 0.01,
+     "spread": [
+      0.01,
+      0.012
+     ]
+    },
+    "r1.matcher.noteOnP95": {
+     "v": 0.1,
+     "spread": [
+      0.1,
+      0.1
+     ]
+    },
+    "r1.matcher.noteOnMax": {
+     "v": 0.5,
+     "spread": [
+      0.5,
+      2.4
+     ]
+    },
+    "r1.matcher.wrongMean": {
+     "v": 0.022,
+     "spread": [
+      0.022,
+      0.032
+     ]
+    },
+    "r1.matcher.wrongP95": {
+     "v": 0.1,
+     "spread": [
+      0.1,
+      0.1
+     ]
+    },
+    "r1.matcher.resultMean": {
+     "v": 0.335,
+     "spread": [
+      0.335,
+      0.44
+     ]
+    },
+    "r1.live.handlerP95": {
+     "v": 0.1,
+     "spread": [
+      0.1,
+      0.2
+     ]
+    },
+    "r1.live.handlerMax": {
+     "v": 0.3,
+     "spread": [
+      0.3,
+      0.4
+     ]
+    },
+    "r1.live.paintMed": {
+     "v": 13.3,
+     "spread": [
+      13.3,
+      13.7
+     ]
+    },
+    "r1.live.paintP95": {
+     "v": 15.8,
+     "spread": [
+      15.8,
+      20.2
+     ]
+    },
+    "r1.live.paintMax": {
+     "v": 16.9,
+     "spread": [
+      16.9,
+      50.8
+     ]
+    },
+    "r1.long.play": {
+     "v": 0,
+     "spread": [
+      0,
+      0
+     ]
+    },
+    "r1.long.entry": {
+     "v": 1,
+     "spread": [
+      1,
+      1
+     ]
+    },
+    "r4.unit.import": {
+     "v": 458,
+     "spread": [
+      458,
+      527.7
+     ]
+    },
+    "r4.unit.toScore": {
+     "v": 51,
+     "spread": [
+      51,
+      80.2
+     ]
+    },
+    "r4.unit.link": {
+     "v": 112.4,
+     "spread": [
+      112.4,
+      236.2
+     ]
+    },
+    "r4.unit.agree": {
+     "v": 127.9,
+     "spread": [
+      127.9,
+      186.1
+     ]
+    },
+    "r4.unit.build": {
+     "v": 34.9,
+     "spread": [
+      34.9,
+      105.1
+     ]
+    },
+    "r4.unit.buildMean": {
+     "v": 22.1,
+     "spread": [
+      22.1,
+      34.6
+     ]
+    },
+    "r4.unit.unroll": {
+     "v": 0.2,
+     "spread": [
+      0.2,
+      0.5
+     ]
+    },
+    "r4.unit.tempoMap": {
+     "v": 0.9,
+     "spread": [
+      0.9,
+      2.9
+     ]
+    },
+    "r4.unit.begin": {
+     "v": 25.1,
+     "spread": [
+      25.1,
+      117.1
+     ]
+    },
+    "r4.unit.beginMean": {
+     "v": 3.788,
+     "spread": [
+      3.788,
+      7.312
+     ]
+    },
+    "r4.matcher.noteOnMean": {
+     "v": 0.039,
+     "spread": [
+      0.039,
+      0.08
+     ]
+    },
+    "r4.matcher.noteOnP95": {
+     "v": 0.2,
+     "spread": [
+      0.2,
+      0.2
+     ]
+    },
+    "r4.matcher.noteOnMax": {
+     "v": 2.2,
+     "spread": [
+      2.2,
+      10.2
+     ]
+    },
+    "r4.matcher.wrongMean": {
+     "v": 0.093,
+     "spread": [
+      0.093,
+      0.173
+     ]
+    },
+    "r4.matcher.wrongP95": {
+     "v": 0.3,
+     "spread": [
+      0.3,
+      0.4
+     ]
+    },
+    "r4.matcher.resultMean": {
+     "v": 1.35,
+     "spread": [
+      1.35,
+      2.69
+     ]
+    },
+    "r4.live.handlerP95": {
+     "v": 0.6,
+     "spread": [
+      0.6,
+      2
+     ]
+    },
+    "r4.live.handlerMax": {
+     "v": 4.4,
+     "spread": [
+      4.4,
+      22.9
+     ]
+    },
+    "r4.live.paintMed": {
+     "v": 59.1,
+     "spread": [
+      59.1,
+      77
+     ]
+    },
+    "r4.live.paintP95": {
+     "v": 85.7,
+     "spread": [
+      85.7,
+      181.2
+     ]
+    },
+    "r4.live.paintMax": {
+     "v": 100.3,
+     "spread": [
+      100.3,
+      256.1
+     ]
+    },
+    "r4.long.play": {
+     "v": 2,
+     "spread": [
+      2,
+      32
+     ]
+    },
+    "r4.long.entry": {
+     "v": 3,
+     "spread": [
+      3,
+      5
+     ]
+    }
+   },
+   "exact": {
+    "r1.strikes": 1763,
+    "r1.expected": 1763,
+    "r1.measures": 158,
+    "r1.linkOk": true,
+    "r1.agreeOk": true,
+    "r1.presses": 86,
+    "r1.paintSamples": 71,
+    "r1.events": 172,
+    "r1.live": true,
+    "r4.strikes": 1763,
+    "r4.expected": 1763,
+    "r4.measures": 158,
+    "r4.linkOk": true,
+    "r4.agreeOk": true,
+    "r4.presses": 86,
+    "r4.paintSamples": 71,
+    "r4.events": 172,
+    "r4.live": true
+   },
+   "long": {
+    "r1.play": [
+     [],
+     [],
+     [],
+     [],
+     []
+    ],
+    "r1.entry": [
+     [
+      58
+     ],
+     [
+      68
+     ],
+     [
+      63
+     ],
+     [
+      73
+     ],
+     [
+      67
+     ]
+    ],
+    "r4.play": [
+     [
+      65,
+      56,
+      71,
+      76,
+      68,
+      54,
+      60,
+      96,
+      58,
+      53
+     ],
+     [
+      52,
+      57,
+      56,
+      54,
+      81,
+      78,
+      60,
+      142,
+      93,
+      137,
+      52,
+      51,
+      53
+     ],
+     [
+      89,
+      53
+     ],
+     [
+      51,
+      58,
+      52,
+      105,
+      75,
+      75,
+      50,
+      55,
+      51,
+      59,
+      51,
+      50,
+      59
+     ],
+     [
+      110,
+      83,
+      76,
+      81,
+      63,
+      118,
+      72,
+      69,
+      58,
+      109,
+      77,
+      57,
+      100,
+      209,
+      139,
+      99,
+      70,
+      64,
+      96,
+      75,
+      52,
+      58,
+      59,
+      54,
+      53,
+      73,
+      51,
+      92,
+      52,
+      54,
+      113,
+      103
+     ]
+    ],
+    "r4.entry": [
+     [
+      344,
+      74,
+      65,
+      70,
+      74
+     ],
+     [
+      337,
+      78,
+      50
+     ],
+     [
+      306,
+      88,
+      63,
+      58
+     ],
+     [
+      370,
+      96,
+      90
+     ],
+     [
+      360,
+      134,
+      97,
+      53
+     ]
+    ]
+   },
+   "throttle": {
+    "r4": [
+     [
+      4.567,
+      3.918
+     ],
+     [
+      4.509,
+      4.514
+     ],
+     [
+      4.051,
+      4.593
+     ],
+     [
+      4.549,
+      4.595
+     ],
+     [
+      5.771,
+      5.512
+     ]
+    ]
+   }
+  }
+ },
+ "doc": {
+  "unit.import": {
+   "1x": 76,
+   "4x": 353
+  },
+  "unit.toScore": {
+   "1x": 7,
+   "4x": 44
+  },
+  "unit.link": {
+   "1x": 15,
+   "4x": 81
+  },
+  "unit.agree": {
+   "1x": 19,
+   "4x": 99
+  },
+  "unit.build": {
+   "1x": 7,
+   "4x": 35
+  },
+  "unit.buildMean": {
+   "1x": null,
+   "4x": null
+  },
+  "unit.unroll": {
+   "1x": 0.1,
+   "4x": 0.2
+  },
+  "unit.tempoMap": {
+   "1x": 0.1,
+   "4x": 1
+  },
+  "unit.begin": {
+   "1x": 8,
+   "4x": 30
+  },
+  "unit.beginMean": {
+   "1x": null,
+   "4x": null
+  },
+  "matcher.noteOnMean": {
+   "1x": null,
+   "4x": null
+  },
+  "matcher.noteOnP95": {
+   "1x": 0.1,
+   "4x": 0.2
+  },
+  "matcher.noteOnMax": {
+   "1x": 0.3,
+   "4x": 1.7
+  },
+  "matcher.wrongMean": {
+   "1x": null,
+   "4x": null
+  },
+  "matcher.wrongP95": {
+   "1x": 0.2,
+   "4x": null
+  },
+  "matcher.resultMean": {
+   "1x": null,
+   "4x": null
+  },
+  "live.handlerP95": {
+   "1x": 0.1,
+   "4x": 0.4
+  },
+  "live.handlerMax": {
+   "1x": null,
+   "4x": null
+  },
+  "live.paintMed": {
+   "1x": null,
+   "4x": 31
+  },
+  "live.paintP95": {
+   "1x": null,
+   "4x": 55
+  },
+  "live.paintMax": {
+   "1x": null,
+   "4x": 64
+  },
+  "long.play": {
+   "1x": 0,
+   "4x": 1
+  },
+  "long.entry": {
+   "1x": 2,
+   "4x": 3
+  }
+ }
+}
