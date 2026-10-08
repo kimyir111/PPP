@@ -5,20 +5,19 @@ npm run test:scoregraph                              # node --test: the library 
 python -m unittest discover -s tests/bench/unit -t tests/bench -p "test_scoregraph*.py"   # Python interop, round trip, A40, A42
 python tests/bench/run.py sg-roundtrip               # every committed MusicXML through ScoreGraph and back (A32-A34)
 python tests/scoregraph/tools/graph_check.py --suite core      # every core case's graph has no error (A40)
-python tests/scoregraph/tools/shadow_compare.py      # buildXml and the ScoreGraph writer read back the same (Step 7)
 python tests/bench/run.py ab --suite core --a git:aff7080 --b worktree && python tests/scoregraph/tools/ab_identical.py --suite core   # A36
 ```
 
 | path | what |
 | --- | --- |
-| `*.test.js` | `node --test` suites: rational, schema, browser loading, validator, serialization, determinism, time, provenance, ops, MusicXML; `vertical-slice` (the graphs `toMusicXml` writes from, their performance layer and warnings, the legacy path, the app's script order) and `server` (the server hands out `scoregraph/`) |
+| `*.test.js` | `node --test` suites: rational, schema, browser loading, validator, serialization, determinism, time, provenance, ops, MusicXML; `vertical-slice` (the graphs `toMusicXml` writes from, their performance layer and warnings, the app's script order, the import door) and `server` (the server hands out `scoregraph/`) |
 | `fixtures/invalid/*.json` | one ERROR each; the sidecar `*.expect.json` names it (A5) |
 | `fixtures/valid/*.sg.json` | canonical graphs: one fixture per WARNING code (`warn-*`, A6) and the topics of G01 §16.3 (A7) |
 | `fixtures/xml/*.musicxml` | MusicXML fixtures with sidecars: tuplets, tempo/metre/key changes, pickup, six repeat forms, voices, cross-staff, ties and slurs, piano marks, transposing parts, percussion (refused), dropped elements, and the allowlist's reproductions |
 | `migrations/` | the test-only v0 → v1 migration (A13) |
 | `roundtrip-allowlist.json` | the corpus files that may fail `sg-roundtrip` (at most three), each with its reason and a fixture |
 | `golden/` | the graphs `toMusicXml` makes for the 17 G0 golden inputs (`<key>.sg.json`, canonical) and their warning and note counts (`<key>.issues.json`) (A40, A42); `tools/make-golden.js` writes them |
-| `tools/` | `make-fixtures.js` and `make_repeat_fixtures.py` write the fixtures; `make-golden.js` the golden graphs; `shadow_compare.py` runs both writers on every bench input; `graph_check.py` checks a suite's graphs through `notate.js --emit-graph`; `ab_identical.py` compares two A/B runs case by case (A36) |
+| `tools/` | `make-fixtures.js` and `make_repeat_fixtures.py` write the fixtures; `make-golden.js` the golden graphs; `shadow_compare.py` lists the bench suites' inputs as `toMusicXml` jobs (`jobs_for`; the old-writer comparison it used to run went with `buildXml`, MX-3); `graph_check.py` checks a suite's graphs through `notate.js --emit-graph`; `ab_identical.py` compares two A/B runs case by case (A36) |
 
 **How the expectations were written.** A sidecar states what the specification says the code must report,
 written by hand next to the edit that causes it (`tools/make-fixtures.js`); nothing is recorded by running

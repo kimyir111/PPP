@@ -9,7 +9,7 @@
      .musicxml / .mxl   the same Score as parseMusicXML, through the graph
      .mid               a Score with bars and notes, marked as PPP's reading
      a broken file      a message, not a crash
-     PPP.legacyImport   the way back still works
+     parseMusicXML     the old reader (no import door reaches it any more; S4 producers still do) gives the same Score
 
    Needs `npm start` and puppeteer. */
 'use strict';
@@ -100,16 +100,15 @@ const ok = (what, cond, detail) => {
         JSON.stringify(r.importReport && r.importReport.midi));
     } else {
       ok('the Score does not claim to be inferred', r.sgFrom && r.sgFrom.inferred === false, JSON.stringify(r.sgFrom));
-      /* and it is the same Score the old reader built */
+      /* and it is the same Score the old reader builds (parseMusicXML is called directly: no switch puts it behind the door) */
       const same = await page.evaluate(async (name, data) => {
         const f = window.fileOf(name, data);
-        PPP.legacyImport = true;
-        const old = await PPP.Import.load(f);
-        PPP.legacyImport = false;
+        const xml = /\.mxl$/i.test(name) ? await PPP.readMxl(await f.arrayBuffer()) : await f.text();
+        const old = PPP.parseMusicXML(xml, name);
         const now = await PPP.Import.load(f);
-        return PPPScoreGraph.legacy.compare(old.score, now.score).map(d => d.field);
+        return PPPScoreGraph.legacy.compare(old, now.score).map(d => d.field);
       }, c.name, b64(path.join(repoRoot, c.file)));
-      ok('the way back gives the same Score', same.length === 0, same.join(', '));
+      ok('the old reader gives the same Score', same.length === 0, same.join(', '));
     }
   }
 
@@ -128,6 +127,6 @@ const ok = (what, cond, detail) => {
 
   ok('the page raised no error of its own', errors.length === 0, errors.slice(0, 2).join(' | '));
   await browser.close();
-  process.stdout.write('\n' + (failures ? failures + ' failed\n' : 'the import boundary is on the graph, and the way back works\n'));
+  process.stdout.write('\n' + (failures ? failures + ' failed\n' : 'the import boundary is on the graph\n'));
   process.exit(failures ? 1 : 0);
 })();
