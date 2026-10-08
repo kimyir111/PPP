@@ -1,0 +1,9225 @@
+{
+ "schema": "ppp.practice-sim-baseline/1",
+ "tool": "tests/practice-sim/baseline.js",
+ "simVersion": "1.0.0",
+ "set": "full",
+ "note": "Synthetic learners are assumptions, not data (practice/sim.js). coach and card are what the LEGACY policy - the app's own Learning, Memory and Coach, run from the app file - does with them; oracle reads the simulator's ground truth and is a reference, not a policy. None of it says how a real pupil learns (that is H-11).",
+ "config": {
+  "cfg": {
+   "t0": 1767636000000,
+   "practiceDays": 23,
+   "breakDays": 7,
+   "retentionDay": 30,
+   "sessionMinutes": 20,
+   "lapOverheadMs": 4000,
+   "taskChangeMs": 6000,
+   "masteryAcc": 0.9,
+   "masteryRatio": 0.95,
+   "maxLapsPerSession": 400
+  },
+  "arms": [
+   "coach",
+   "card",
+   "oracle"
+  ],
+  "legacyArms": [
+   "coach",
+   "card"
+  ],
+  "seeds": "k = 0..199 (tuning k < 100, hold-out k >= 100)",
+  "types": [
+   {
+    "type": "even",
+    "ranges": {
+     "mu": [
+      2,
+      2.6
+     ],
+     "spread": [
+      0.25,
+      0.4
+     ],
+     "leftOffset": [
+      0,
+      0
+     ],
+     "c": [
+      0,
+      0
+     ],
+     "chi": [
+      0.35,
+      0.6
+     ],
+     "lambda": [
+      0.2,
+      0.4
+     ],
+     "eta": [
+      0.1,
+      0.15
+     ],
+     "kappa": [
+      0.5,
+      0.7
+     ],
+     "etaR": [
+      0.25,
+      0.4
+     ],
+     "r0": [
+      -3,
+      -2.5
+     ],
+     "bias": [
+      -12,
+      12
+     ],
+     "sigma0": [
+      28,
+      40
+     ],
+     "slip": [
+      0.005,
+      0.015
+     ],
+     "wrongKey": [
+      0.25,
+      0.4
+     ],
+     "halfLife": [
+      6,
+      10
+     ],
+     "phi": [
+      0.25,
+      0.45
+     ],
+     "hMax": [
+      40,
+      60
+     ]
+    }
+   },
+   {
+    "type": "weak-left",
+    "ranges": {
+     "mu": [
+      2,
+      2.6
+     ],
+     "spread": [
+      0.25,
+      0.4
+     ],
+     "leftOffset": [
+      -1.5,
+      -0.9
+     ],
+     "c": [
+      0,
+      0
+     ],
+     "chi": [
+      0.35,
+      0.6
+     ],
+     "lambda": [
+      0.2,
+      0.4
+     ],
+     "eta": [
+      0.1,
+      0.15
+     ],
+     "kappa": [
+      0.5,
+      0.7
+     ],
+     "etaR": [
+      0.25,
+      0.4
+     ],
+     "r0": [
+      -3,
+      -2.5
+     ],
+     "bias": [
+      -12,
+      12
+     ],
+     "sigma0": [
+      28,
+      40
+     ],
+     "slip": [
+      0.005,
+      0.015
+     ],
+     "wrongKey": [
+      0.25,
+      0.4
+     ],
+     "halfLife": [
+      6,
+      10
+     ],
+     "phi": [
+      0.25,
+      0.45
+     ],
+     "hMax": [
+      40,
+      60
+     ]
+    }
+   },
+   {
+    "type": "rushing",
+    "ranges": {
+     "mu": [
+      2,
+      2.6
+     ],
+     "spread": [
+      0.25,
+      0.4
+     ],
+     "leftOffset": [
+      0,
+      0
+     ],
+     "c": [
+      0,
+      0
+     ],
+     "chi": [
+      0.35,
+      0.6
+     ],
+     "lambda": [
+      0.2,
+      0.4
+     ],
+     "eta": [
+      0.1,
+      0.15
+     ],
+     "kappa": [
+      0.5,
+      0.7
+     ],
+     "etaR": [
+      0.25,
+      0.4
+     ],
+     "r0": [
+      -3,
+      -2.5
+     ],
+     "bias": [
+      -115,
+      -75
+     ],
+     "sigma0": [
+      45,
+      60
+     ],
+     "slip": [
+      0.005,
+      0.015
+     ],
+     "wrongKey": [
+      0.25,
+      0.4
+     ],
+     "halfLife": [
+      6,
+      10
+     ],
+     "phi": [
+      0.25,
+      0.45
+     ],
+     "hMax": [
+      40,
+      60
+     ]
+    }
+   },
+   {
+    "type": "slow",
+    "ranges": {
+     "mu": [
+      2,
+      2.6
+     ],
+     "spread": [
+      0.25,
+      0.4
+     ],
+     "leftOffset": [
+      0,
+      0
+     ],
+     "c": [
+      0,
+      0
+     ],
+     "chi": [
+      0.35,
+      0.6
+     ],
+     "lambda": [
+      0.2,
+      0.4
+     ],
+     "eta": [
+      0.035,
+      0.06
+     ],
+     "kappa": [
+      0.5,
+      0.7
+     ],
+     "etaR": [
+      0.1,
+      0.18
+     ],
+     "r0": [
+      -3,
+      -2.5
+     ],
+     "bias": [
+      -12,
+      12
+     ],
+     "sigma0": [
+      28,
+      40
+     ],
+     "slip": [
+      0.005,
+      0.015
+     ],
+     "wrongKey": [
+      0.25,
+      0.4
+     ],
+     "halfLife": [
+      6,
+      10
+     ],
+     "phi": [
+      0.25,
+      0.45
+     ],
+     "hMax": [
+      40,
+      60
+     ]
+    }
+   },
+   {
+    "type": "forgetter",
+    "ranges": {
+     "mu": [
+      2,
+      2.6
+     ],
+     "spread": [
+      0.25,
+      0.4
+     ],
+     "leftOffset": [
+      0,
+      0
+     ],
+     "c": [
+      0,
+      0
+     ],
+     "chi": [
+      0.35,
+      0.6
+     ],
+     "lambda": [
+      0.2,
+      0.4
+     ],
+     "eta": [
+      0.1,
+      0.15
+     ],
+     "kappa": [
+      0.5,
+      0.7
+     ],
+     "etaR": [
+      0.25,
+      0.4
+     ],
+     "r0": [
+      -3,
+      -2.5
+     ],
+     "bias": [
+      -12,
+      12
+     ],
+     "sigma0": [
+      28,
+      40
+     ],
+     "slip": [
+      0.005,
+      0.015
+     ],
+     "wrongKey": [
+      0.25,
+      0.4
+     ],
+     "halfLife": [
+      1.5,
+      3
+     ],
+     "phi": [
+      0.08,
+      0.18
+     ],
+     "hMax": [
+      8,
+      14
+     ]
+    }
+   },
+   {
+    "type": "beginner",
+    "ranges": {
+     "mu": [
+      1,
+      1.6
+     ],
+     "spread": [
+      0.25,
+      0.4
+     ],
+     "leftOffset": [
+      0,
+      0
+     ],
+     "c": [
+      0,
+      0
+     ],
+     "chi": [
+      0.8,
+      1.1
+     ],
+     "lambda": [
+      0.5,
+      0.8
+     ],
+     "eta": [
+      0.08,
+      0.12
+     ],
+     "kappa": [
+      0.5,
+      0.7
+     ],
+     "etaR": [
+      0.25,
+      0.4
+     ],
+     "r0": [
+      -3,
+      -2.5
+     ],
+     "bias": [
+      -12,
+      12
+     ],
+     "sigma0": [
+      50,
+      70
+     ],
+     "slip": [
+      0.015,
+      0.03
+     ],
+     "wrongKey": [
+      0.4,
+      0.6
+     ],
+     "halfLife": [
+      6,
+      10
+     ],
+     "phi": [
+      0.25,
+      0.45
+     ],
+     "hMax": [
+      40,
+      60
+     ]
+    }
+   }
+  ],
+  "pieces": [
+   {
+    "id": "beyer-050",
+    "family": "beyer",
+    "split": "tune",
+    "file": "catalog/method/beyer/050.mxl",
+    "sha256": "563f1747965a9cf21f5c42051bb61ad43c769e292b32c247fa808b947f77ffed"
+   },
+   {
+    "id": "beyer-060",
+    "family": "beyer",
+    "split": "holdout",
+    "file": "catalog/method/beyer/060.mxl",
+    "sha256": "e0650dbcb8f5b4a9f20def4c92a8935b44fe6700ec0ef5d6f5793d97f3680247"
+   },
+   {
+    "id": "czerny599-010",
+    "family": "czerny599",
+    "split": "tune",
+    "file": "catalog/method/czerny599/010.mxl",
+    "sha256": "29def8b1a502ae9de65d1b6aeb03e4ec7758cf12a15535624852f92a62950ef0"
+   },
+   {
+    "id": "czerny599-050",
+    "family": "czerny599",
+    "split": "holdout",
+    "file": "catalog/method/czerny599/050.mxl",
+    "sha256": "df0e20bbc2e7d83325253ef01bd180eaf28ee8e1f52bf5a1d091b186e3f52b8d"
+   },
+   {
+    "id": "burgmuller-001",
+    "family": "burgmuller25",
+    "split": "tune",
+    "file": "catalog/method/burgmuller25/001.mxl",
+    "sha256": "02463d6e3fa3f67b94a3794a65cbfc5e5d754558061b7a540e1937bd4fc110fd"
+   },
+   {
+    "id": "burgmuller-002",
+    "family": "burgmuller25",
+    "split": "holdout",
+    "file": "catalog/method/burgmuller25/002.mxl",
+    "sha256": "d9e809660670057cc97a27c636f368cd922ded158e7a4c464b56304cdbe2a833"
+   },
+   {
+    "id": "hymn-amazing-grace",
+    "family": "hymn",
+    "split": "tune",
+    "file": "catalog/hymns/amazing-grace.musicxml",
+    "sha256": "f9eb5e1a06b56e46726b867dafeb333fdcf08b40f3d4056c5911d759f27aa107"
+   },
+   {
+    "id": "rec-g01-leadsheet",
+    "family": "recording",
+    "split": "holdout",
+    "file": "tests/practice-sim/fixtures/rec-g01-leadsheet.sg.json",
+    "sha256": "7b5083bf95377f2e4875ab988ebea120388062e9147a85279c69200ca4d7c35a"
+   }
+  ],
+  "difficultyMap": {
+   "base": 1.6,
+   "slope": 0.5,
+   "min": 0.4,
+   "max": 3.5
+  }
+ },
+ "appCode": {
+  "declarations": [
+   "PIANO",
+   "DYN_VEL",
+   "PEDAL_CC",
+   "PianoScore",
+   "PIANO_VISUALIZER_DEFAULTS",
+   "tx",
+   "STEP_SEMI",
+   "PITCH_RE",
+   "pitchToMidi",
+   "shiftPitchOctave",
+   "ottavaSemitones",
+   "KEY_MAJOR",
+   "KEY_MINOR",
+   "keyName",
+   "clampN",
+   "Score",
+   "DEMO_SEED",
+   "DEMO_SECTIONS",
+   "buildDemoScore",
+   "DIFFICULTY_MODE",
+   "DIFFICULTY_WEIGHTS",
+   "_difficultyWeightsPromise",
+   "loadDifficultyWeights",
+   "nowMs",
+   "TIMING_DEFAULTS",
+   "PerformanceEngine",
+   "LEARN",
+   "emptyStat",
+   "emptyTempo",
+   "accOf",
+   "pct",
+   "Learning",
+   "Clock",
+   "DAY",
+   "MEMORY",
+   "HINTS",
+   "onsetKey",
+   "emptyRec",
+   "Memory",
+   "DIRECT_HELPER",
+   "LOCAL_HELPER",
+   "helperUrl",
+   "OMR_URL",
+   "COACH",
+   "COACH_URL",
+   "pctOf",
+   "Coach",
+   "clamp",
+   "R0",
+   "MEM_LEVELS",
+   "ANALYSIS_STEPS",
+   "DEMO_PROFILE",
+   "seedDemoHistory",
+   "seedSecs",
+   "sharedParam"
+  ],
+  "methods": [
+   "adoptScore",
+   "completeLap",
+   "advanceCoach",
+   "coachOwnsLoop",
+   "maybeReplan",
+   "requestPlan",
+   "coachContext",
+   "coachProvider",
+   "runCoachTask",
+   "taskLabel",
+   "model",
+   "seq",
+   "recommendation",
+   "applyRecommendation",
+   "recordRecall",
+   "sectionOf",
+   "sections",
+   "range",
+   "songProgress",
+   "songMemory",
+   "weighted",
+   "setLoop",
+   "beginRun",
+   "perf",
+   "looping",
+   "following",
+   "say",
+   "difficultyAssessment",
+   "memSection",
+   "memRec",
+   "memLevel",
+   "startToday (render values)",
+   "state (class field)"
+  ]
+ },
+ "aggregates": {
+  "byArm": {
+   "card": {
+    "n": 9600,
+    "reached": {
+     "n": 9600,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 9600,
+     "mean": 462.5861,
+     "median": 462.9809
+    },
+    "masteredShareEnd": {
+     "n": 9600,
+     "mean": 0.2912,
+     "median": 0.3636
+    },
+    "retention30": {
+     "n": 9600,
+     "mean": 0.6902,
+     "median": 0.7121
+    },
+    "retainedShare30": {
+     "n": 9600,
+     "mean": 0.2683,
+     "median": 0.2188
+    },
+    "weakQuartileShare": {
+     "n": 9600,
+     "mean": 0.0373,
+     "median": 0.0155
+    },
+    "masteredTimeShare": {
+     "n": 9600,
+     "mean": 0.5548,
+     "median": 0.7341
+    },
+    "flipsPerSession": {
+     "n": 9600,
+     "mean": 12.4977,
+     "median": 8.8261
+    },
+    "flipsPerLap": {
+     "n": 9600,
+     "mean": 0.1625,
+     "median": 0.1035
+    },
+    "longestStreak": {
+     "n": 9600,
+     "mean": 120.891,
+     "median": 102
+    },
+    "brier": {
+     "n": 9600,
+     "mean": 0.0188,
+     "median": 0.0103
+    },
+    "brierOracle": {
+     "n": 9600,
+     "mean": 0.0134,
+     "median": 0.0084
+    },
+    "laps": {
+     "n": 9600,
+     "mean": 2751.5042,
+     "median": 2156
+    },
+    "minutes": {
+     "n": 9600,
+     "mean": 462.5861,
+     "median": 462.9809
+    },
+    "leftShare": {
+     "n": 9600,
+     "mean": 0.0176,
+     "median": 0.0074
+    },
+    "rightShare": {
+     "n": 9600,
+     "mean": 0.0028,
+     "median": 0.0007
+    },
+    "memoryLapShare": {
+     "n": 9600,
+     "mean": 0.2501,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 9600,
+     "mean": 0.8973,
+     "median": 0.9664
+    },
+    "memorizedShare": {
+     "n": 9600,
+     "mean": 0.2071,
+     "median": 0
+    },
+    "brierPooled": 0.009137,
+    "brierOraclePooled": 0.007342,
+    "brierN": 50384903
+   },
+   "coach": {
+    "n": 9600,
+    "reached": {
+     "n": 9600,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 9600,
+     "mean": 462.8652,
+     "median": 463.1667
+    },
+    "masteredShareEnd": {
+     "n": 9600,
+     "mean": 0.3059,
+     "median": 0.4
+    },
+    "retention30": {
+     "n": 9600,
+     "mean": 0.7007,
+     "median": 0.724
+    },
+    "retainedShare30": {
+     "n": 9600,
+     "mean": 0.2795,
+     "median": 0.35
+    },
+    "weakQuartileShare": {
+     "n": 9600,
+     "mean": 0.0276,
+     "median": 0.0153
+    },
+    "masteredTimeShare": {
+     "n": 9600,
+     "mean": 0.5436,
+     "median": 0.7055
+    },
+    "flipsPerSession": {
+     "n": 9600,
+     "mean": 9.1915,
+     "median": 8.8696
+    },
+    "flipsPerLap": {
+     "n": 9600,
+     "mean": 0.1133,
+     "median": 0.1087
+    },
+    "longestStreak": {
+     "n": 9600,
+     "mean": 108.018,
+     "median": 102
+    },
+    "brier": {
+     "n": 9600,
+     "mean": 0.0162,
+     "median": 0.0111
+    },
+    "brierOracle": {
+     "n": 9600,
+     "mean": 0.0126,
+     "median": 0.0091
+    },
+    "laps": {
+     "n": 9600,
+     "mean": 2256.4299,
+     "median": 1990
+    },
+    "minutes": {
+     "n": 9600,
+     "mean": 462.8652,
+     "median": 463.1667
+    },
+    "leftShare": {
+     "n": 9600,
+     "mean": 0.0165,
+     "median": 0.0078
+    },
+    "rightShare": {
+     "n": 9600,
+     "mean": 0.0024,
+     "median": 0.0015
+    },
+    "memoryLapShare": {
+     "n": 9600,
+     "mean": 0.2179,
+     "median": 0.038
+    },
+    "meanTempoRatio": {
+     "n": 9600,
+     "mean": 0.8999,
+     "median": 0.9664
+    },
+    "memorizedShare": {
+     "n": 9600,
+     "mean": 0.2093,
+     "median": 0
+    },
+    "brierPooled": 0.0107,
+    "brierOraclePooled": 0.008683,
+    "brierN": 44873703
+   },
+   "oracle": {
+    "n": 9600,
+    "reached": {
+     "n": 9600,
+     "mean": 0.8074,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 7751,
+     "mean": 246.1387,
+     "median": 228.72
+    },
+    "minutesCapped": {
+     "n": 9600,
+     "mean": 287.7981,
+     "median": 269.2635
+    },
+    "masteredShareEnd": {
+     "n": 9600,
+     "mean": 0.8422,
+     "median": 1
+    },
+    "retention30": {
+     "n": 9600,
+     "mean": 0.894,
+     "median": 0.9058
+    },
+    "retainedShare30": {
+     "n": 9600,
+     "mean": 0.6087,
+     "median": 1
+    },
+    "weakQuartileShare": {
+     "n": 9600,
+     "mean": 0.5806,
+     "median": 0.5788
+    },
+    "masteredTimeShare": {
+     "n": 9600,
+     "mean": 0.4022,
+     "median": 0.4443
+    },
+    "flipsPerSession": {
+     "n": 9600,
+     "mean": 86.88,
+     "median": 87.2174
+    },
+    "flipsPerLap": {
+     "n": 9600,
+     "mean": 0.9977,
+     "median": 0.999
+    },
+    "longestStreak": {
+     "n": 9600,
+     "mean": 5.5671,
+     "median": 3
+    },
+    "brier": {
+     "n": 9600,
+     "mean": 0.0174,
+     "median": 0.0166
+    },
+    "brierOracle": {
+     "n": 9600,
+     "mean": 0.015,
+     "median": 0.0144
+    },
+    "laps": {
+     "n": 9600,
+     "mean": 2025.8917,
+     "median": 2033
+    },
+    "minutes": {
+     "n": 9600,
+     "mean": 462.3631,
+     "median": 462.3898
+    },
+    "leftShare": {
+     "n": 9600,
+     "mean": 0.0003,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 9600,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 9600,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 9600,
+     "mean": 0.9912,
+     "median": 0.9984
+    },
+    "memorizedShare": {
+     "n": 9600,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.017522,
+    "brierOraclePooled": 0.015098,
+    "brierN": 38003284
+   }
+  },
+  "byArmType": {
+   "card|beginner": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 462.6411,
+     "median": 462.8942
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.299,
+     "median": 0.3818
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.5263,
+     "median": 0.5753
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.2877,
+     "median": 0.3636
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.0414,
+     "median": 0.0269
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.5214,
+     "median": 0.668
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 13.3883,
+     "median": 12.913
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.1682,
+     "median": 0.1624
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 120.6025,
+     "median": 102
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.0197,
+     "median": 0.0121
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.0139,
+     "median": 0.0091
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2597.0544,
+     "median": 2145.5
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 462.6411,
+     "median": 462.8942
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0.0162,
+     "median": 0.0152
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0.0081,
+     "median": 0.0028
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0.1388,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.8838,
+     "median": 0.9484
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0.176,
+     "median": 0
+    },
+    "brierPooled": 0.010999,
+    "brierOraclePooled": 0.008355,
+    "brierN": 8788745
+   },
+   "card|even": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 462.4779,
+     "median": 462.9954
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.2957,
+     "median": 0.3818
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.745,
+     "median": 0.753
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.2919,
+     "median": 0.3636
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.0359,
+     "median": 0.01
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.5822,
+     "median": 0.8112
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 10.7934,
+     "median": 6.7391
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.1391,
+     "median": 0.0816
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 123.3275,
+     "median": 104
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.0173,
+     "median": 0.008
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.0119,
+     "median": 0.0064
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2859.2844,
+     "median": 2144
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 462.4779,
+     "median": 462.9954
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0.0059,
+     "median": 0.0034
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0.0017,
+     "median": 0.0007
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0.3609,
+     "median": 0.3686
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.9009,
+     "median": 0.9901
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0.2365,
+     "median": 0.3333
+    },
+    "brierPooled": 0.006771,
+    "brierOraclePooled": 0.005458,
+    "brierN": 7721428
+   },
+   "card|forgetter": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 462.685,
+     "median": 463.1482
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.2528,
+     "median": 0.2188
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.7175,
+     "median": 0.7247
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.1511,
+     "median": 0.0833
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.0341,
+     "median": 0.0091
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.5552,
+     "median": 0.7471
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 13.7705,
+     "median": 9.0435
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.1889,
+     "median": 0.0933
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 118.9988,
+     "median": 100
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.019,
+     "median": 0.0106
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.0133,
+     "median": 0.0089
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2813.935,
+     "median": 2169.5
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 462.685,
+     "median": 463.1482
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0.0064,
+     "median": 0.0036
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0.0018,
+     "median": 0.0006
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0.2125,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.9013,
+     "median": 0.9897
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0.1923,
+     "median": 0
+    },
+    "brierPooled": 0.009714,
+    "brierOraclePooled": 0.007905,
+    "brierN": 8739894
+   },
+   "card|rushing": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 462.5191,
+     "median": 463.0183
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.2961,
+     "median": 0.3818
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.7464,
+     "median": 0.7555
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.2929,
+     "median": 0.3636
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.0351,
+     "median": 0.0101
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.5911,
+     "median": 0.8124
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 10.8167,
+     "median": 6.9565
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.1394,
+     "median": 0.0813
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 121.315,
+     "median": 102
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.0167,
+     "median": 0.0078
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.0114,
+     "median": 0.0063
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2826.575,
+     "median": 2145
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 462.5191,
+     "median": 463.0183
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0.0059,
+     "median": 0.0035
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0.0016,
+     "median": 0.0007
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0.3616,
+     "median": 0.3594
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.9052,
+     "median": 0.991
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0.2362,
+     "median": 0.3333
+    },
+    "brierPooled": 0.006759,
+    "brierOraclePooled": 0.005449,
+    "brierN": 7786159
+   },
+   "card|slow": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 462.6918,
+     "median": 462.9839
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.297,
+     "median": 0.3818
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.7415,
+     "median": 0.7507
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.2907,
+     "median": 0.3636
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.0406,
+     "median": 0.015
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.5032,
+     "median": 0.676
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 14.4623,
+     "median": 14.4783
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.1954,
+     "median": 0.1914
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 119.9681,
+     "median": 94
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.0196,
+     "median": 0.011
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.0142,
+     "median": 0.0092
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2765.95,
+     "median": 1943.5
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 462.6918,
+     "median": 462.9839
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0.0125,
+     "median": 0.0065
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0.0033,
+     "median": 0.0013
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0.1348,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.8935,
+     "median": 0.9775
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0.1552,
+     "median": 0
+    },
+    "brierPooled": 0.010298,
+    "brierOraclePooled": 0.00848,
+    "brierN": 9142401
+   },
+   "card|weak-left": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 462.5015,
+     "median": 462.8747
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.3065,
+     "median": 0.3636
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.6642,
+     "median": 0.6871
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.2957,
+     "median": 0.3636
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.0366,
+     "median": 0.0224
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.5759,
+     "median": 0.7446
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 11.755,
+     "median": 9.1739
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.1442,
+     "median": 0.1044
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 121.1344,
+     "median": 104
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.0202,
+     "median": 0.01
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.016,
+     "median": 0.0082
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2646.2263,
+     "median": 2194
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 462.5015,
+     "median": 462.8747
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0.0585,
+     "median": 0.0449
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0.0001,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0.2921,
+     "median": 0.2515
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.899,
+     "median": 0.9688
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0.2465,
+     "median": 0.3333
+    },
+    "brierPooled": 0.009716,
+    "brierOraclePooled": 0.007961,
+    "brierN": 8206276
+   },
+   "coach|beginner": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 462.8497,
+     "median": 463.1341
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.2974,
+     "median": 0.3818
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.5402,
+     "median": 0.585
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.2848,
+     "median": 0.3636
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.0427,
+     "median": 0.0328
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.4958,
+     "median": 0.6424
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 8.2777,
+     "median": 7.8696
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.1021,
+     "median": 0.1038
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 105.1038,
+     "median": 101
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.0197,
+     "median": 0.0136
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.0141,
+     "median": 0.0105
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2196.1244,
+     "median": 1975
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 462.8497,
+     "median": 463.1341
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0.0118,
+     "median": 0.0091
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0.0038,
+     "median": 0.0026
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0.0734,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.8943,
+     "median": 0.9546
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0.1402,
+     "median": 0
+    },
+    "brierPooled": 0.013754,
+    "brierOraclePooled": 0.010344,
+    "brierN": 7497134
+   },
+   "coach|even": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 462.748,
+     "median": 463.05
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.319,
+     "median": 0.4
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.7588,
+     "median": 0.7602
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.3159,
+     "median": 0.4
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.0212,
+     "median": 0.0103
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.5903,
+     "median": 0.8113
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 9.0145,
+     "median": 8.6957
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.1061,
+     "median": 0.1027
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 112.3381,
+     "median": 102
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.0138,
+     "median": 0.0085
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.0107,
+     "median": 0.007
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2343.6325,
+     "median": 2050
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 462.748,
+     "median": 463.05
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0.0103,
+     "median": 0.0044
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0.0022,
+     "median": 0.0016
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0.3482,
+     "median": 0.4213
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.9006,
+     "median": 0.9796
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0.2698,
+     "median": 0.3333
+    },
+    "brierPooled": 0.008087,
+    "brierOraclePooled": 0.00668,
+    "brierN": 7258793
+   },
+   "coach|forgetter": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 462.973,
+     "median": 463.3229
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.2793,
+     "median": 0.3333
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.7213,
+     "median": 0.7277
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.152,
+     "median": 0.0833
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.02,
+     "median": 0.0101
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.5365,
+     "median": 0.6987
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 10.3757,
+     "median": 10.9348
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.134,
+     "median": 0.1485
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 106.045,
+     "median": 101
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.0158,
+     "median": 0.0117
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.0124,
+     "median": 0.0096
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2225.1188,
+     "median": 1897
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 462.973,
+     "median": 463.3229
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0.0112,
+     "median": 0.0047
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0.0025,
+     "median": 0.0017
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0.1903,
+     "median": 0.0056
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.898,
+     "median": 0.976
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0.1853,
+     "median": 0
+    },
+    "brierPooled": 0.011079,
+    "brierOraclePooled": 0.009185,
+    "brierN": 7590837
+   },
+   "coach|rushing": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 462.7621,
+     "median": 463.0239
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.3225,
+     "median": 0.4
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.7612,
+     "median": 0.7604
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.3197,
+     "median": 0.4
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.0197,
+     "median": 0.0103
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.6028,
+     "median": 0.8136
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 9.399,
+     "median": 9.3478
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.1108,
+     "median": 0.11
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 111.0269,
+     "median": 102
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.0132,
+     "median": 0.0084
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.0104,
+     "median": 0.0069
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2317.2281,
+     "median": 2038.5
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 462.7621,
+     "median": 463.0239
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0.0103,
+     "median": 0.0043
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0.0023,
+     "median": 0.0016
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0.3526,
+     "median": 0.4157
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.9056,
+     "median": 0.9811
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0.2703,
+     "median": 0.3333
+    },
+    "brierPooled": 0.008056,
+    "brierOraclePooled": 0.006666,
+    "brierN": 7387180
+   },
+   "coach|slow": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 463.1045,
+     "median": 463.385
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.3061,
+     "median": 0.3818
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.7465,
+     "median": 0.7549
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.3012,
+     "median": 0.3636
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.0297,
+     "median": 0.0172
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.4804,
+     "median": 0.6265
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 9.7876,
+     "median": 11.3478
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.13,
+     "median": 0.1641
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 103.4925,
+     "median": 95
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.0174,
+     "median": 0.0124
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.0141,
+     "median": 0.0104
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2161.2813,
+     "median": 1869.5
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 463.1045,
+     "median": 463.385
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0.0129,
+     "median": 0.0066
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0.0035,
+     "median": 0.0018
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0.0999,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.8993,
+     "median": 0.9732
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0.1347,
+     "median": 0
+    },
+    "brierPooled": 0.012001,
+    "brierOraclePooled": 0.010118,
+    "brierN": 7858055
+   },
+   "coach|weak-left": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 462.7541,
+     "median": 463.0147
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.3113,
+     "median": 0.4
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.6764,
+     "median": 0.6983
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.3036,
+     "median": 0.3636
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.0322,
+     "median": 0.0221
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.5557,
+     "median": 0.7296
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 8.2943,
+     "median": 7.587
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.0966,
+     "median": 0.0889
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 110.1019,
+     "median": 102
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.0175,
+     "median": 0.0109
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.0139,
+     "median": 0.0089
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2295.1944,
+     "median": 2075
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 462.7541,
+     "median": 463.0147
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0.0424,
+     "median": 0.0349
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0.0001,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0.2431,
+     "median": 0.1542
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.9019,
+     "median": 0.9672
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0.2558,
+     "median": 0.3333
+    },
+    "brierPooled": 0.011041,
+    "brierOraclePooled": 0.008943,
+    "brierN": 7281704
+   },
+   "oracle|beginner": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0.8,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 1280,
+     "mean": 299.4439,
+     "median": 289.7358
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 332.0618,
+     "median": 314.6
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.8303,
+     "median": 1
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.8844,
+     "median": 0.8946
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.5281,
+     "median": 0.625
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.5865,
+     "median": 0.5852
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.2931,
+     "median": 0.3333
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 86.2742,
+     "median": 86.6522
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.9986,
+     "median": 0.9995
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 4.4013,
+     "median": 3
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.0216,
+     "median": 0.0209
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.0184,
+     "median": 0.0178
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2010.0969,
+     "median": 2018
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 462.3918,
+     "median": 462.4074
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0.0003,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.9698,
+     "median": 0.9761
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.021708,
+    "brierOraclePooled": 0.018479,
+    "brierN": 6307917
+   },
+   "oracle|even": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0.9956,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 1593,
+     "mean": 187.6226,
+     "median": 167.2579
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 188.826,
+     "median": 167.3622
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.9991,
+     "median": 1
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.9324,
+     "median": 0.9371
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.9543,
+     "median": 1
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.5835,
+     "median": 0.5829
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.616,
+     "median": 0.6549
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 87.059,
+     "median": 87.3478
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.9986,
+     "median": 0.9995
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 4.375,
+     "median": 3
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.0139,
+     "median": 0.0134
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.0119,
+     "median": 0.0115
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2028.1175,
+     "median": 2034.5
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 462.3271,
+     "median": 462.3503
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0.0002,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.9976,
+     "median": 1
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.013981,
+    "brierOraclePooled": 0.012034,
+    "brierN": 6350718
+   },
+   "oracle|forgetter": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0.6506,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 1041,
+     "mean": 315.2143,
+     "median": 316.5
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 366.6711,
+     "median": 378.7083
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.723,
+     "median": 1
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.8257,
+     "median": 0.837
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.042,
+     "median": 0
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.5769,
+     "median": 0.5724
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.2365,
+     "median": 0.213
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 87.1417,
+     "median": 87.3478
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.9968,
+     "median": 0.9994
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 4.5656,
+     "median": 3
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.0185,
+     "median": 0.018
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.0161,
+     "median": 0.0157
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2033.6569,
+     "median": 2042
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 462.4393,
+     "median": 462.4735
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0.0002,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.9972,
+     "median": 1
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.018608,
+    "brierOraclePooled": 0.01617,
+    "brierN": 6341703
+   },
+   "oracle|rushing": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0.9956,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 1593,
+     "mean": 187.3947,
+     "median": 165.975
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 188.6003,
+     "median": 166.2655
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.9995,
+     "median": 1
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.9324,
+     "median": 0.9373
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.9585,
+     "median": 1
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.583,
+     "median": 0.5824
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.6167,
+     "median": 0.6611
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 87.0641,
+     "median": 87.3478
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.9986,
+     "median": 0.9995
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 4.3769,
+     "median": 3
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.014,
+     "median": 0.0133
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.012,
+     "median": 0.0115
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2028.1938,
+     "median": 2034
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 462.3264,
+     "median": 462.3605
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0.0002,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.9977,
+     "median": 1
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.014071,
+    "brierOraclePooled": 0.01211,
+    "brierN": 6349842
+   },
+   "oracle|slow": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0.445,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 712,
+     "mean": 370.4595,
+     "median": 375.6248
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 421.4489,
+     "median": 461.6126
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.5246,
+     "median": 0.375
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.8687,
+     "median": 0.8794
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.2864,
+     "median": 0.087
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.5691,
+     "median": 0.5641
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.1282,
+     "median": 0.0638
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 86.7968,
+     "median": 87.087
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.9948,
+     "median": 0.997
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 11.5681,
+     "median": 8
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.0205,
+     "median": 0.02
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.0178,
+     "median": 0.0175
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2029.8481,
+     "median": 2038
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 462.3527,
+     "median": 462.3326
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0.0008,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.9935,
+     "median": 1
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.020655,
+    "brierOraclePooled": 0.017957,
+    "brierN": 6331172
+   },
+   "oracle|weak-left": {
+    "n": 1600,
+    "reached": {
+     "n": 1600,
+     "mean": 0.9575,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 1532,
+     "mean": 218.8152,
+     "median": 198.2569
+    },
+    "minutesCapped": {
+     "n": 1600,
+     "mean": 229.1804,
+     "median": 200.3697
+    },
+    "masteredShareEnd": {
+     "n": 1600,
+     "mean": 0.9766,
+     "median": 1
+    },
+    "retention30": {
+     "n": 1600,
+     "mean": 0.9201,
+     "median": 0.9265
+    },
+    "retainedShare30": {
+     "n": 1600,
+     "mean": 0.883,
+     "median": 1
+    },
+    "weakQuartileShare": {
+     "n": 1600,
+     "mean": 0.5848,
+     "median": 0.5838
+    },
+    "masteredTimeShare": {
+     "n": 1600,
+     "mean": 0.5229,
+     "median": 0.5727
+    },
+    "flipsPerSession": {
+     "n": 1600,
+     "mean": 86.9443,
+     "median": 87.3478
+    },
+    "flipsPerLap": {
+     "n": 1600,
+     "mean": 0.9987,
+     "median": 0.9994
+    },
+    "longestStreak": {
+     "n": 1600,
+     "mean": 4.1156,
+     "median": 3
+    },
+    "brier": {
+     "n": 1600,
+     "mean": 0.016,
+     "median": 0.0152
+    },
+    "brierOracle": {
+     "n": 1600,
+     "mean": 0.0138,
+     "median": 0.0131
+    },
+    "laps": {
+     "n": 1600,
+     "mean": 2025.4369,
+     "median": 2034
+    },
+    "minutes": {
+     "n": 1600,
+     "mean": 462.3413,
+     "median": 462.3917
+    },
+    "leftShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1600,
+     "mean": 0.9911,
+     "median": 0.9964
+    },
+    "memorizedShare": {
+     "n": 1600,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.016142,
+    "brierOraclePooled": 0.013862,
+    "brierN": 6321932
+   }
+  },
+  "byArmTypeSplit": {
+   "card|beginner|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.5248,
+     "median": 462.8033
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.3096,
+     "median": 0.3594
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.5293,
+     "median": 0.5519
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.3095,
+     "median": 0.3281
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0243,
+     "median": 0.023
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.6292,
+     "median": 0.7063
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 13.9836,
+     "median": 10.3261
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.17,
+     "median": 0.0957
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 95.0675,
+     "median": 93
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0145,
+     "median": 0.0126
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0108,
+     "median": 0.0094
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2178.19,
+     "median": 2155
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.5248,
+     "median": 462.8033
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0185,
+     "median": 0.0167
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0039,
+     "median": 0.0028
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.1585,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.8965,
+     "median": 0.9525
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.2356,
+     "median": 0
+    },
+    "brierPooled": 0.010218,
+    "brierOraclePooled": 0.007918,
+    "brierN": 5837207
+   },
+   "card|beginner|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.7575,
+     "median": 463.0708
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.2884,
+     "median": 0.3818
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.5233,
+     "median": 0.5788
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.2659,
+     "median": 0.3636
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0585,
+     "median": 0.0305
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.4135,
+     "median": 0.6195
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 12.7929,
+     "median": 12.913
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.1663,
+     "median": 0.1631
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 146.1375,
+     "median": 135
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.025,
+     "median": 0.012
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0169,
+     "median": 0.0091
+    },
+    "laps": {
+     "n": 800,
+     "mean": 3015.9188,
+     "median": 1943.5
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.7575,
+     "median": 463.0708
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0139,
+     "median": 0.0124
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0123,
+     "median": 0.003
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.1191,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.8711,
+     "median": 0.9422
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.1165,
+     "median": 0
+    },
+    "brierPooled": 0.012543,
+    "brierOraclePooled": 0.00922,
+    "brierN": 2951538
+   },
+   "card|even|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.6023,
+     "median": 463.1307
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.3087,
+     "median": 0.3594
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.7443,
+     "median": 0.7491
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.3087,
+     "median": 0.3594
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0105,
+     "median": 0.0086
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.6862,
+     "median": 0.8583
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 11.1891,
+     "median": 6.1739
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.1403,
+     "median": 0.0628
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 98.4413,
+     "median": 94
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0136,
+     "median": 0.006
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0097,
+     "median": 0.0046
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2389.6313,
+     "median": 2167
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.6023,
+     "median": 463.1307
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0085,
+     "median": 0.0056
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0014,
+     "median": 0.0007
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.3693,
+     "median": 0.1935
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.914,
+     "median": 0.9893
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.25,
+     "median": 0.25
+    },
+    "brierPooled": 0.006221,
+    "brierOraclePooled": 0.005055,
+    "brierN": 5415132
+   },
+   "card|even|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.3534,
+     "median": 462.6946
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.2827,
+     "median": 0.3818
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.7457,
+     "median": 0.7671
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.275,
+     "median": 0.3636
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0612,
+     "median": 0.013
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.4783,
+     "median": 0.7898
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 10.3978,
+     "median": 6.7391
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.1378,
+     "median": 0.0816
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 148.2138,
+     "median": 136
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0211,
+     "median": 0.0085
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.014,
+     "median": 0.0067
+    },
+    "laps": {
+     "n": 800,
+     "mean": 3328.9375,
+     "median": 2004
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.3534,
+     "median": 462.6946
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0034,
+     "median": 0.0025
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0019,
+     "median": 0.0007
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.3525,
+     "median": 0.3686
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.8879,
+     "median": 0.9911
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.2229,
+     "median": 0.3333
+    },
+    "brierPooled": 0.008062,
+    "brierOraclePooled": 0.006406,
+    "brierN": 2306296
+   },
+   "card|forgetter|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.8147,
+     "median": 463.2055
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.3085,
+     "median": 0.2188
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.7173,
+     "median": 0.7233
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.1821,
+     "median": 0.125
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.009,
+     "median": 0.0077
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.67,
+     "median": 0.8132
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 15.6799,
+     "median": 9.7609
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.2136,
+     "median": 0.0875
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 86.2638,
+     "median": 93
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0154,
+     "median": 0.008
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0114,
+     "median": 0.0065
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2274.5488,
+     "median": 2161
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.8147,
+     "median": 463.2055
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0093,
+     "median": 0.0063
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0018,
+     "median": 0.0005
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.2379,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9153,
+     "median": 0.989
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.2413,
+     "median": 0
+    },
+    "brierPooled": 0.009335,
+    "brierOraclePooled": 0.007668,
+    "brierN": 5967438
+   },
+   "card|forgetter|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.5554,
+     "median": 462.9168
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.1971,
+     "median": 0.0833
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.7177,
+     "median": 0.7268
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.1201,
+     "median": 0.0833
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0593,
+     "median": 0.0121
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.4403,
+     "median": 0.6293
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 11.861,
+     "median": 9.0435
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.1642,
+     "median": 0.0933
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 151.7337,
+     "median": 136
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0227,
+     "median": 0.0112
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0152,
+     "median": 0.0094
+    },
+    "laps": {
+     "n": 800,
+     "mean": 3353.3213,
+     "median": 2270.5
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.5554,
+     "median": 462.9168
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0035,
+     "median": 0.0026
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0019,
+     "median": 0.0007
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.1872,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.8873,
+     "median": 0.991
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.1433,
+     "median": 0
+    },
+    "brierPooled": 0.010528,
+    "brierOraclePooled": 0.008414,
+    "brierN": 2772456
+   },
+   "card|rushing|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.6726,
+     "median": 463.1657
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.3101,
+     "median": 0.3594
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.7459,
+     "median": 0.7517
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.31,
+     "median": 0.3594
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0107,
+     "median": 0.0085
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.703,
+     "median": 0.8623
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 11.2803,
+     "median": 5.3696
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.1415,
+     "median": 0.0552
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 94.4863,
+     "median": 94
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.012,
+     "median": 0.0059
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0088,
+     "median": 0.0045
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2322.4125,
+     "median": 2166.5
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.6726,
+     "median": 463.1657
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0084,
+     "median": 0.006
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0016,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.3713,
+     "median": 0.1954
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9224,
+     "median": 0.9906
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.25,
+     "median": 0.25
+    },
+    "brierPooled": 0.006221,
+    "brierOraclePooled": 0.005051,
+    "brierN": 5487062
+   },
+   "card|rushing|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.3655,
+     "median": 462.7344
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.282,
+     "median": 0.3818
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.7469,
+     "median": 0.7737
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.2757,
+     "median": 0.3636
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0595,
+     "median": 0.0135
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.4793,
+     "median": 0.788
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 10.3531,
+     "median": 6.9565
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.1372,
+     "median": 0.0829
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 148.1438,
+     "median": 136
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0213,
+     "median": 0.0085
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.014,
+     "median": 0.0067
+    },
+    "laps": {
+     "n": 800,
+     "mean": 3330.7375,
+     "median": 2026.5
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.3655,
+     "median": 462.7344
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0034,
+     "median": 0.0026
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0017,
+     "median": 0.0007
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.3519,
+     "median": 0.3594
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.888,
+     "median": 0.9914
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.2225,
+     "median": 0.3333
+    },
+    "brierPooled": 0.008043,
+    "brierOraclePooled": 0.0064,
+    "brierN": 2299097
+   },
+   "card|slow|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.6015,
+     "median": 462.9037
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.3083,
+     "median": 0.3594
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.739,
+     "median": 0.7492
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.3083,
+     "median": 0.3594
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0141,
+     "median": 0.0133
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.5907,
+     "median": 0.7105
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 15.6752,
+     "median": 11.1304
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.2052,
+     "median": 0.1107
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 92.1238,
+     "median": 93
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0168,
+     "median": 0.0098
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0125,
+     "median": 0.0079
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2342.0875,
+     "median": 2162
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.6015,
+     "median": 462.9037
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0175,
+     "median": 0.0107
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0024,
+     "median": 0.0007
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.1455,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.8989,
+     "median": 0.9762
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.2031,
+     "median": 0
+    },
+    "brierPooled": 0.010075,
+    "brierOraclePooled": 0.008302,
+    "brierN": 6072789
+   },
+   "card|slow|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.7822,
+     "median": 463.1573
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.2857,
+     "median": 0.3818
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.744,
+     "median": 0.7616
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.2732,
+     "median": 0.3636
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0672,
+     "median": 0.0189
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.4156,
+     "median": 0.6093
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 13.2494,
+     "median": 14.4783
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.1857,
+     "median": 0.1924
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 147.8125,
+     "median": 134.5
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0225,
+     "median": 0.0113
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0158,
+     "median": 0.0095
+    },
+    "laps": {
+     "n": 800,
+     "mean": 3189.8125,
+     "median": 1836.5
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.7822,
+     "median": 463.1573
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0075,
+     "median": 0.0043
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0043,
+     "median": 0.0015
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.1241,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.8881,
+     "median": 0.9804
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.1073,
+     "median": 0
+    },
+    "brierPooled": 0.010739,
+    "brierOraclePooled": 0.008832,
+    "brierN": 3069612
+   },
+   "card|weak-left|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.4723,
+     "median": 462.851
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.3089,
+     "median": 0.3594
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.6557,
+     "median": 0.682
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.3079,
+     "median": 0.2656
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0214,
+     "median": 0.0198
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.6443,
+     "median": 0.7797
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 11.9549,
+     "median": 6.7826
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.1424,
+     "median": 0.0622
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 104.8025,
+     "median": 94
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0165,
+     "median": 0.0098
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0133,
+     "median": 0.0079
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2359.6825,
+     "median": 2206.5
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.4723,
+     "median": 462.851
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0754,
+     "median": 0.0643
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0001,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.2818,
+     "median": 0.0506
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.8994,
+     "median": 0.9661
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.25,
+     "median": 0.25
+    },
+    "brierPooled": 0.009114,
+    "brierOraclePooled": 0.007494,
+    "brierN": 5432477
+   },
+   "card|weak-left|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.5308,
+     "median": 462.9096
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.3042,
+     "median": 0.3636
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.6727,
+     "median": 0.7077
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.2835,
+     "median": 0.3636
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0518,
+     "median": 0.0256
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.5075,
+     "median": 0.7311
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 11.555,
+     "median": 9.1739
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.1461,
+     "median": 0.108
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 137.4663,
+     "median": 136
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0239,
+     "median": 0.0102
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0187,
+     "median": 0.0084
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2932.77,
+     "median": 2055
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.5308,
+     "median": 462.9096
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0416,
+     "median": 0.0313
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0001,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.3025,
+     "median": 0.2674
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.8987,
+     "median": 0.972
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.2429,
+     "median": 0.3333
+    },
+    "brierPooled": 0.010895,
+    "brierOraclePooled": 0.008875,
+    "brierN": 2773799
+   },
+   "coach|beginner|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.7838,
+     "median": 462.9494
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.3127,
+     "median": 0.4063
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.5454,
+     "median": 0.5529
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.3086,
+     "median": 0.3281
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0281,
+     "median": 0.0257
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.5936,
+     "median": 0.6846
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 8.9365,
+     "median": 9.6739
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.106,
+     "median": 0.1075
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 98.5475,
+     "median": 100
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0163,
+     "median": 0.0141
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0122,
+     "median": 0.0109
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2078.2263,
+     "median": 1981
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.7838,
+     "median": 462.9494
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0139,
+     "median": 0.0111
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0029,
+     "median": 0.0022
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.086,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9107,
+     "median": 0.9579
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.1903,
+     "median": 0
+    },
+    "brierPooled": 0.013472,
+    "brierOraclePooled": 0.010182,
+    "brierN": 4736456
+   },
+   "coach|beginner|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.9156,
+     "median": 463.3033
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.2822,
+     "median": 0.3818
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.535,
+     "median": 0.5876
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.2611,
+     "median": 0.3636
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0574,
+     "median": 0.0404
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.3981,
+     "median": 0.5902
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 7.6188,
+     "median": 7.4348
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.0982,
+     "median": 0.1033
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 111.66,
+     "median": 102
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.023,
+     "median": 0.0132
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0159,
+     "median": 0.0102
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2314.0225,
+     "median": 1904.5
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.9156,
+     "median": 463.3033
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0096,
+     "median": 0.0071
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0047,
+     "median": 0.0028
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.0608,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.8778,
+     "median": 0.9502
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.09,
+     "median": 0
+    },
+    "brierPooled": 0.014238,
+    "brierOraclePooled": 0.010621,
+    "brierN": 2760678
+   },
+   "coach|even|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.6471,
+     "median": 462.784
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.3487,
+     "median": 0.4844
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.7642,
+     "median": 0.7582
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.3445,
+     "median": 0.4688
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0102,
+     "median": 0.0094
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.6675,
+     "median": 0.8266
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 10.2644,
+     "median": 11.3913
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.117,
+     "median": 0.1248
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 107.5475,
+     "median": 102
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0122,
+     "median": 0.0086
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0097,
+     "median": 0.0072
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2219.5837,
+     "median": 2044
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.6471,
+     "median": 462.784
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0129,
+     "median": 0.006
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0018,
+     "median": 0.0015
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.3638,
+     "median": 0.2814
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9065,
+     "median": 0.9799
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.3119,
+     "median": 0.5
+    },
+    "brierPooled": 0.008168,
+    "brierOraclePooled": 0.006729,
+    "brierN": 4644213
+   },
+   "coach|even|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.8489,
+     "median": 463.3467
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.2892,
+     "median": 0.3818
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.7534,
+     "median": 0.7684
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.2873,
+     "median": 0.3818
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0321,
+     "median": 0.0121
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.5131,
+     "median": 0.7916
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 7.7646,
+     "median": 7.087
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.0951,
+     "median": 0.0813
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 117.1288,
+     "median": 125
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0154,
+     "median": 0.0082
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0118,
+     "median": 0.0068
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2467.6813,
+     "median": 2111
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.8489,
+     "median": 463.3467
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0078,
+     "median": 0.0033
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0026,
+     "median": 0.0017
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.3325,
+     "median": 0.4311
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.8946,
+     "median": 0.9793
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.2277,
+     "median": 0.3333
+    },
+    "brierPooled": 0.007945,
+    "brierOraclePooled": 0.006593,
+    "brierN": 2614580
+   },
+   "coach|forgetter|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.9351,
+     "median": 463.164
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.3179,
+     "median": 0.4219
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.7195,
+     "median": 0.7243
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.1766,
+     "median": 0.0625
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0098,
+     "median": 0.0093
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.6125,
+     "median": 0.7482
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 12.259,
+     "median": 16
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.1547,
+     "median": 0.1967
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 98.84,
+     "median": 98
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0148,
+     "median": 0.0125
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0119,
+     "median": 0.0102
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2072.0138,
+     "median": 1906
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.9351,
+     "median": 463.164
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0144,
+     "median": 0.0076
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.002,
+     "median": 0.0016
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.2237,
+     "median": 0.1231
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9023,
+     "median": 0.9747
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.2518,
+     "median": 0.25
+    },
+    "brierPooled": 0.011383,
+    "brierOraclePooled": 0.009417,
+    "brierN": 4824938
+   },
+   "coach|forgetter|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 463.0109,
+     "median": 463.4133
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.2407,
+     "median": 0.2727
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.7232,
+     "median": 0.7423
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.1273,
+     "median": 0.0833
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0302,
+     "median": 0.0125
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.4604,
+     "median": 0.621
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 8.4924,
+     "median": 8.3043
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.1134,
+     "median": 0.1083
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 113.25,
+     "median": 102
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0168,
+     "median": 0.011
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.013,
+     "median": 0.0093
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2378.2238,
+     "median": 1855
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 463.0109,
+     "median": 463.4133
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.008,
+     "median": 0.0034
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.003,
+     "median": 0.0019
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.1569,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.8937,
+     "median": 0.9773
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.1187,
+     "median": 0
+    },
+    "brierPooled": 0.01055,
+    "brierOraclePooled": 0.008779,
+    "brierN": 2765899
+   },
+   "coach|rushing|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.6431,
+     "median": 462.7823
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.3496,
+     "median": 0.4844
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.7659,
+     "median": 0.7574
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.3463,
+     "median": 0.4688
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0105,
+     "median": 0.0093
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.6805,
+     "median": 0.8282
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 10.8091,
+     "median": 12.1739
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.1238,
+     "median": 0.1329
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 105.9463,
+     "median": 102
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0115,
+     "median": 0.0086
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0092,
+     "median": 0.0071
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2199.285,
+     "median": 2041
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.6431,
+     "median": 462.7823
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0125,
+     "median": 0.006
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0019,
+     "median": 0.0015
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.366,
+     "median": 0.3064
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9123,
+     "median": 0.9815
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.3065,
+     "median": 0.5
+    },
+    "brierPooled": 0.008178,
+    "brierOraclePooled": 0.006748,
+    "brierN": 4698265
+   },
+   "coach|rushing|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.8812,
+     "median": 463.33
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.2954,
+     "median": 0.4
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.7564,
+     "median": 0.7827
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.2931,
+     "median": 0.4
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0288,
+     "median": 0.0128
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.525,
+     "median": 0.7885
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 7.9889,
+     "median": 7.413
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.0979,
+     "median": 0.0882
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 116.1075,
+     "median": 124.5
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0149,
+     "median": 0.0082
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0115,
+     "median": 0.0068
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2435.1713,
+     "median": 2017.5
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.8812,
+     "median": 463.33
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.008,
+     "median": 0.0034
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0027,
+     "median": 0.0017
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.3391,
+     "median": 0.4224
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.8988,
+     "median": 0.9807
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.2342,
+     "median": 0.3333
+    },
+    "brierPooled": 0.007841,
+    "brierOraclePooled": 0.006521,
+    "brierN": 2688915
+   },
+   "coach|slow|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.9784,
+     "median": 463.2268
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.3139,
+     "median": 0.4022
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.7437,
+     "median": 0.7506
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.3117,
+     "median": 0.4022
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0171,
+     "median": 0.0161
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.5469,
+     "median": 0.6561
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 10.7217,
+     "median": 13.9565
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.1364,
+     "median": 0.1765
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 98.9388,
+     "median": 99
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0162,
+     "median": 0.0132
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0134,
+     "median": 0.0109
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2054.6025,
+     "median": 1900
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.9784,
+     "median": 463.2268
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0172,
+     "median": 0.0106
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0023,
+     "median": 0.0016
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.111,
+     "median": 0.0005
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9035,
+     "median": 0.9725
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.1782,
+     "median": 0
+    },
+    "brierPooled": 0.01238,
+    "brierOraclePooled": 0.010402,
+    "brierN": 4850463
+   },
+   "coach|slow|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 463.2306,
+     "median": 463.4733
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.2983,
+     "median": 0.3818
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.7494,
+     "median": 0.7683
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.2907,
+     "median": 0.3636
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0423,
+     "median": 0.0188
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.4138,
+     "median": 0.592
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 8.8534,
+     "median": 10.7391
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.1236,
+     "median": 0.1588
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 108.0463,
+     "median": 91
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0186,
+     "median": 0.0118
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0148,
+     "median": 0.0101
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2267.96,
+     "median": 1774.5
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 463.2306,
+     "median": 463.4733
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0086,
+     "median": 0.0045
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0047,
+     "median": 0.0022
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.0887,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.8951,
+     "median": 0.9739
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.0912,
+     "median": 0
+    },
+    "brierPooled": 0.011391,
+    "brierOraclePooled": 0.009659,
+    "brierN": 3007592
+   },
+   "coach|weak-left|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.6194,
+     "median": 462.768
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.3212,
+     "median": 0.4688
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.6727,
+     "median": 0.6926
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.315,
+     "median": 0.375
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0225,
+     "median": 0.0188
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.6129,
+     "median": 0.7446
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 8.7785,
+     "median": 8.6522
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.0986,
+     "median": 0.0906
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 106.6475,
+     "median": 102
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.016,
+     "median": 0.0113
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0128,
+     "median": 0.0092
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2226.3325,
+     "median": 2077.5
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.6194,
+     "median": 462.768
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0529,
+     "median": 0.0433
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0001,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.2425,
+     "median": 0.1048
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9026,
+     "median": 0.9654
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.2844,
+     "median": 0.3333
+    },
+    "brierPooled": 0.011237,
+    "brierOraclePooled": 0.009049,
+    "brierN": 4474789
+   },
+   "coach|weak-left|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 462.8888,
+     "median": 463.28
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.3014,
+     "median": 0.3818
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.6802,
+     "median": 0.7134
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.2922,
+     "median": 0.3636
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.0419,
+     "median": 0.0266
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.4984,
+     "median": 0.7141
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 7.8102,
+     "median": 6.9783
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.0947,
+     "median": 0.0856
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 113.5563,
+     "median": 115
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0191,
+     "median": 0.0104
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0149,
+     "median": 0.0086
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2364.0563,
+     "median": 2053.5
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.8888,
+     "median": 463.28
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.032,
+     "median": 0.0294
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0.0001,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0.2437,
+     "median": 0.1933
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9012,
+     "median": 0.9691
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0.2273,
+     "median": 0.3333
+    },
+    "brierPooled": 0.010729,
+    "brierOraclePooled": 0.008773,
+    "brierN": 2806915
+   },
+   "oracle|beginner|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0.7,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 560,
+     "mean": 300.6734,
+     "median": 292.1085
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 349.2296,
+     "median": 336.2235
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.7285,
+     "median": 1
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.8745,
+     "median": 0.8897
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.4638,
+     "median": 0.2337
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.598,
+     "median": 0.5981
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.2574,
+     "median": 0.2887
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 89.5376,
+     "median": 86.8696
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.9982,
+     "median": 0.9995
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 5.2162,
+     "median": 3
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0242,
+     "median": 0.0258
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0206,
+     "median": 0.022
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2085.9788,
+     "median": 2026
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.4221,
+     "median": 462.4333
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0004,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.965,
+     "median": 0.9734
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.024156,
+    "brierOraclePooled": 0.020567,
+    "brierN": 3252025
+   },
+   "oracle|beginner|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0.9,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 720,
+     "mean": 298.4876,
+     "median": 281.0271
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 314.8939,
+     "median": 295.5833
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.9321,
+     "median": 1
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.8944,
+     "median": 0.8985
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.5925,
+     "median": 0.95
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.5749,
+     "median": 0.5669
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.3288,
+     "median": 0.3681
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 83.0107,
+     "median": 86.3043
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.999,
+     "median": 0.9995
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 3.5863,
+     "median": 3
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.019,
+     "median": 0.0188
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0161,
+     "median": 0.016
+    },
+    "laps": {
+     "n": 800,
+     "mean": 1934.215,
+     "median": 2010
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.3615,
+     "median": 462.3572
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0002,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9746,
+     "median": 0.9768
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.019102,
+    "brierOraclePooled": 0.016257,
+    "brierN": 3055892
+   },
+   "oracle|even|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0.9913,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 793,
+     "mean": 204.4404,
+     "median": 172.1417
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 206.7002,
+     "median": 172.8833
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.9983,
+     "median": 1
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.9277,
+     "median": 0.9353
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.9089,
+     "median": 1
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.5952,
+     "median": 0.6013
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.5869,
+     "median": 0.6466
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 90.3122,
+     "median": 87.4348
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.9982,
+     "median": 0.9991
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 5.1938,
+     "median": 4
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0156,
+     "median": 0.0166
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0134,
+     "median": 0.0143
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2103.8388,
+     "median": 2040.5
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.3344,
+     "median": 462.3928
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0003,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9959,
+     "median": 0.9998
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.015645,
+    "brierOraclePooled": 0.013445,
+    "brierN": 3272913
+   },
+   "oracle|even|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 1,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 800,
+     "mean": 170.9519,
+     "median": 158.5758
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 170.9519,
+     "median": 158.5758
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 1,
+     "median": 1
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.9372,
+     "median": 0.9394
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.9997,
+     "median": 1
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.5718,
+     "median": 0.5649
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.6452,
+     "median": 0.6652
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 83.8058,
+     "median": 87.2174
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.999,
+     "median": 0.9995
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 3.5563,
+     "median": 3
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0121,
+     "median": 0.0121
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0105,
+     "median": 0.0104
+    },
+    "laps": {
+     "n": 800,
+     "mean": 1952.3963,
+     "median": 2032
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.3197,
+     "median": 462.2894
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0001,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9994,
+     "median": 1
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.012213,
+    "brierOraclePooled": 0.010534,
+    "brierN": 3077805
+   },
+   "oracle|forgetter|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0.5888,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 471,
+     "mean": 313.2833,
+     "median": 316.5877
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 374.6461,
+     "median": 408.8917
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.6551,
+     "median": 1
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.8151,
+     "median": 0.8312
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.0426,
+     "median": 0
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.5917,
+     "median": 0.5942
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.2158,
+     "median": 0.1738
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 90.2466,
+     "median": 87.3478
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.9958,
+     "median": 0.9991
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 5.3475,
+     "median": 3
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0206,
+     "median": 0.0219
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0179,
+     "median": 0.0191
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2107.2263,
+     "median": 2047
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.4521,
+     "median": 462.4735
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0004,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9951,
+     "median": 0.9997
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.020604,
+    "brierOraclePooled": 0.017873,
+    "brierN": 3271968
+   },
+   "oracle|forgetter|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0.7125,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 570,
+     "mean": 316.8098,
+     "median": 316.19
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 358.696,
+     "median": 358.2871
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.7909,
+     "median": 1
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.8363,
+     "median": 0.8404
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.0414,
+     "median": 0
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.562,
+     "median": 0.5511
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.2572,
+     "median": 0.2474
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 84.0367,
+     "median": 87.3696
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.9978,
+     "median": 0.9994
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 3.7838,
+     "median": 3
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0164,
+     "median": 0.016
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0143,
+     "median": 0.0139
+    },
+    "laps": {
+     "n": 800,
+     "mean": 1960.0875,
+     "median": 2037
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.4264,
+     "median": 462.4735
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0001,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9994,
+     "median": 1
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.016481,
+    "brierOraclePooled": 0.014355,
+    "brierN": 3069735
+   },
+   "oracle|rushing|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0.9913,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 793,
+     "mean": 204.5709,
+     "median": 173.4848
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 206.8317,
+     "median": 174.192
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.9991,
+     "median": 1
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.9277,
+     "median": 0.9353
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.918,
+     "median": 1
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.5944,
+     "median": 0.5988
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.5872,
+     "median": 0.6482
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 90.3233,
+     "median": 87.4348
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.9983,
+     "median": 0.9991
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 5.115,
+     "median": 4
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0157,
+     "median": 0.0168
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0135,
+     "median": 0.0145
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2103.8988,
+     "median": 2040
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.3331,
+     "median": 462.3505
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0003,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9961,
+     "median": 0.9997
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.015755,
+    "brierOraclePooled": 0.013532,
+    "brierN": 3273830
+   },
+   "oracle|rushing|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 1,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 800,
+     "mean": 170.3688,
+     "median": 156.8929
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 170.3688,
+     "median": 156.8929
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 1,
+     "median": 1
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.9372,
+     "median": 0.9396
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.999,
+     "median": 1
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.5717,
+     "median": 0.5644
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.6462,
+     "median": 0.6696
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 83.8049,
+     "median": 87.3043
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.999,
+     "median": 0.9995
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 3.6388,
+     "median": 3
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0122,
+     "median": 0.0121
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0105,
+     "median": 0.0104
+    },
+    "laps": {
+     "n": 800,
+     "mean": 1952.4888,
+     "median": 2032.5
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.3198,
+     "median": 462.3667
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0001,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9994,
+     "median": 1
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.01228,
+    "brierOraclePooled": 0.010597,
+    "brierN": 3076012
+   },
+   "oracle|slow|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0.41,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 328,
+     "mean": 364.5926,
+     "median": 374.8762
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 422.2207,
+     "median": 461.7115
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.4785,
+     "median": 0.2174
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.8596,
+     "median": 0.8769
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.2644,
+     "median": 0.0625
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.5809,
+     "median": 0.5811
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.1204,
+     "median": 0.0471
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 89.8385,
+     "median": 87.087
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.9938,
+     "median": 0.9963
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 13.5325,
+     "median": 9
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0227,
+     "median": 0.0243
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0198,
+     "median": 0.0212
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2102.1638,
+     "median": 2039
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.3091,
+     "median": 462.3228
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0012,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9886,
+     "median": 0.9987
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.022757,
+    "brierOraclePooled": 0.019757,
+    "brierN": 3264977
+   },
+   "oracle|slow|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0.48,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 384,
+     "mean": 375.4708,
+     "median": 376.27
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 420.6771,
+     "median": 461.3796
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.5707,
+     "median": 0.7864
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.8778,
+     "median": 0.8818
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.3084,
+     "median": 0.1
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.5572,
+     "median": 0.5471
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.1361,
+     "median": 0.0794
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 83.7552,
+     "median": 87.1304
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.9958,
+     "median": 0.9975
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 9.6038,
+     "median": 7
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0183,
+     "median": 0.0178
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0159,
+     "median": 0.0154
+    },
+    "laps": {
+     "n": 800,
+     "mean": 1957.5325,
+     "median": 2036
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.3963,
+     "median": 462.3553
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0.0005,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9983,
+     "median": 1
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.018417,
+    "brierOraclePooled": 0.01604,
+    "brierN": 3066195
+   },
+   "oracle|weak-left|holdout": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 0.915,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 732,
+     "mean": 236.5524,
+     "median": 210.9074
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 255.7752,
+     "median": 215.7921
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 0.9532,
+     "median": 1
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.9127,
+     "median": 0.9227
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.7887,
+     "median": 1
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.594,
+     "median": 0.597
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.4737,
+     "median": 0.5432
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 90.1202,
+     "median": 87.3913
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.9983,
+     "median": 0.9991
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 4.8063,
+     "median": 3
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0183,
+     "median": 0.0197
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0157,
+     "median": 0.0169
+    },
+    "laps": {
+     "n": 800,
+     "mean": 2099.2638,
+     "median": 2037.5
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.2575,
+     "median": 462.2913
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9868,
+     "median": 0.9943
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.018245,
+    "brierOraclePooled": 0.015647,
+    "brierN": 3255903
+   },
+   "oracle|weak-left|tune": {
+    "n": 800,
+    "reached": {
+     "n": 800,
+     "mean": 1,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 800,
+     "mean": 202.5857,
+     "median": 191.4281
+    },
+    "minutesCapped": {
+     "n": 800,
+     "mean": 202.5857,
+     "median": 191.4281
+    },
+    "masteredShareEnd": {
+     "n": 800,
+     "mean": 1,
+     "median": 1
+    },
+    "retention30": {
+     "n": 800,
+     "mean": 0.9275,
+     "median": 0.9298
+    },
+    "retainedShare30": {
+     "n": 800,
+     "mean": 0.9773,
+     "median": 1
+    },
+    "weakQuartileShare": {
+     "n": 800,
+     "mean": 0.5755,
+     "median": 0.57
+    },
+    "masteredTimeShare": {
+     "n": 800,
+     "mean": 0.5722,
+     "median": 0.5954
+    },
+    "flipsPerSession": {
+     "n": 800,
+     "mean": 83.7685,
+     "median": 87.3043
+    },
+    "flipsPerLap": {
+     "n": 800,
+     "mean": 0.999,
+     "median": 0.9995
+    },
+    "longestStreak": {
+     "n": 800,
+     "mean": 3.425,
+     "median": 3
+    },
+    "brier": {
+     "n": 800,
+     "mean": 0.0138,
+     "median": 0.0138
+    },
+    "brierOracle": {
+     "n": 800,
+     "mean": 0.0119,
+     "median": 0.0119
+    },
+    "laps": {
+     "n": 800,
+     "mean": 1951.61,
+     "median": 2033
+    },
+    "minutes": {
+     "n": 800,
+     "mean": 462.4251,
+     "median": 462.4684
+    },
+    "leftShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 800,
+     "mean": 0.9954,
+     "median": 0.9967
+    },
+    "memorizedShare": {
+     "n": 800,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.013908,
+    "brierOraclePooled": 0.011967,
+    "brierN": 3066029
+   }
+  },
+  "byArmPiece": {
+   "card|beyer-050": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 463.5907,
+     "median": 463.5708
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.4,
+     "median": 0.4
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.7682,
+     "median": 0.7906
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.3881,
+     "median": 0.4
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.0132,
+     "median": 0.0105
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.8466,
+     "median": 0.8672
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 29.803,
+     "median": 29.8696
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.4129,
+     "median": 0.4106
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 41.4542,
+     "median": 40
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0094,
+     "median": 0.0099
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0078,
+     "median": 0.0082
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 1686.7275,
+     "median": 1707
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 463.5907,
+     "median": 463.5708
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0147,
+     "median": 0.0065
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0.005,
+     "median": 0.0032
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0.6383,
+     "median": 0.6852
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.985,
+     "median": 0.9924
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0.3333,
+     "median": 0.3333
+    },
+    "brierPooled": 0.00949,
+    "brierOraclePooled": 0.007913,
+    "brierN": 8527364
+   },
+   "card|beyer-060": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 461.2721,
+     "median": 460.9375
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.0208,
+     "median": 0
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.6725,
+     "median": 0.7178
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.0206,
+     "median": 0
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.0175,
+     "median": 0.013
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.1849,
+     "median": 0
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 1.0963,
+     "median": 0.8696
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.0087,
+     "median": 0.0065
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 148.25,
+     "median": 184
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0325,
+     "median": 0.0381
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0226,
+     "median": 0.0243
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 3333.7308,
+     "median": 4010
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 461.2721,
+     "median": 460.9375
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0128,
+     "median": 0.0034
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0.0025,
+     "median": 0.0007
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.8461,
+     "median": 0.7523
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.014282,
+    "brierOraclePooled": 0.010762,
+    "brierN": 1498542
+   },
+   "card|burgmuller-001": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 461.5164,
+     "median": 460.8623
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.0887,
+     "median": 0
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.5989,
+     "median": 0.6265
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.0817,
+     "median": 0
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.1841,
+     "median": 0.2294
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.2492,
+     "median": 0
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 4.2526,
+     "median": 1.2174
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.0445,
+     "median": 0.0047
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 238.6258,
+     "median": 299
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0232,
+     "median": 0.0267
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0153,
+     "median": 0.0159
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 5096.1608,
+     "median": 6518
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 461.5164,
+     "median": 460.8623
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0135,
+     "median": 0.0027
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0.0074,
+     "median": 0.0009
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0.0968,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.8268,
+     "median": 0.7508
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0.0703,
+     "median": 0
+    },
+    "brierPooled": 0.009973,
+    "brierOraclePooled": 0.007346,
+    "brierN": 2245978
+   },
+   "card|burgmuller-002": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 462.0604,
+     "median": 462.7638
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.2159,
+     "median": 0.2188
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.5544,
+     "median": 0.5877
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.1975,
+     "median": 0.2188
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.01,
+     "median": 0.0078
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.8407,
+     "median": 0.8559
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 2.2621,
+     "median": 2.1304
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.0238,
+     "median": 0.0224
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 94.3492,
+     "median": 94
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0067,
+     "median": 0.0068
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0054,
+     "median": 0.0055
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 2202.2733,
+     "median": 2186
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 462.0604,
+     "median": 462.7638
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0426,
+     "median": 0.023
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0.0011,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.8163,
+     "median": 0.8409
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.006596,
+    "brierOraclePooled": 0.005313,
+    "brierN": 17218131
+   },
+   "card|czerny599-010": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 464.0028,
+     "median": 463.92
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.6047,
+     "median": 0.6667
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.8207,
+     "median": 0.8326
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.5258,
+     "median": 0.6667
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.0273,
+     "median": 0.0253
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.7272,
+     "median": 0.7375
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 11.8696,
+     "median": 11.6087
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.1626,
+     "median": 0.153
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 119.2583,
+     "median": 131
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0095,
+     "median": 0.0093
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0073,
+     "median": 0.0072
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 1783.405,
+     "median": 1760
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 464.0028,
+     "median": 463.92
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0155,
+     "median": 0.0085
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0.0016,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0.2231,
+     "median": 0.1121
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.9856,
+     "median": 0.9925
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0.3,
+     "median": 0.5
+    },
+    "brierPooled": 0.009596,
+    "brierOraclePooled": 0.007446,
+    "brierN": 5122939
+   },
+   "card|czerny599-050": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 463.7112,
+     "median": 463.6417
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.4993,
+     "median": 0.5
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.7144,
+     "median": 0.7291
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.4454,
+     "median": 0.5
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.0207,
+     "median": 0.0198
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.7373,
+     "median": 0.7408
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 20.3335,
+     "median": 19.5435
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.2525,
+     "median": 0.2364
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 104.9625,
+     "median": 104
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0069,
+     "median": 0.0069
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0053,
+     "median": 0.0054
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 1942.365,
+     "median": 1920.5
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 463.7112,
+     "median": 463.6417
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0227,
+     "median": 0.0129
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0.002,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0.3947,
+     "median": 0.4021
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.9799,
+     "median": 0.9864
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0.4533,
+     "median": 0.5
+    },
+    "brierPooled": 0.006942,
+    "brierOraclePooled": 0.005335,
+    "brierN": 7483904
+   },
+   "card|hymn-amazing-grace": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 461.12,
+     "median": 461.0967
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.5791,
+     "median": 0.6205
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.0138,
+     "median": 0.0107
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 0.8808,
+     "median": 0.7826
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.0049,
+     "median": 0.0043
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 187,
+     "median": 187
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0489,
+     "median": 0.0483
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0327,
+     "median": 0.0317
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 4201.3717,
+     "median": 4228
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 461.12,
+     "median": 461.0967
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0052,
+     "median": 0.0022
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0.0007,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.75,
+     "median": 0.751
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.050596,
+    "brierOraclePooled": 0.034861,
+    "brierN": 276517
+   },
+   "card|rec-g01-leadsheet": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 463.415,
+     "median": 463.4032
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.5001,
+     "median": 0.5
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.8131,
+     "median": 0.8336
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.4875,
+     "median": 0.5
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.0118,
+     "median": 0.0096
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.8528,
+     "median": 0.8703
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 29.4836,
+     "median": 28.7826
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.3903,
+     "median": 0.3721
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 33.2283,
+     "median": 32
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0131,
+     "median": 0.0139
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0111,
+     "median": 0.0116
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 1765.9992,
+     "median": 1772
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 463.415,
+     "median": 463.4032
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0136,
+     "median": 0.0054
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0.0018,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0.6481,
+     "median": 0.6762
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.9887,
+     "median": 0.9952
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0.5,
+     "median": 0.5
+    },
+    "brierPooled": 0.013348,
+    "brierOraclePooled": 0.011316,
+    "brierN": 8011528
+   },
+   "coach|beyer-050": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 463.2555,
+     "median": 463.2531
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.4004,
+     "median": 0.4
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.7739,
+     "median": 0.7949
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.3906,
+     "median": 0.4
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.013,
+     "median": 0.0102
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.8191,
+     "median": 0.8332
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 19.575,
+     "median": 19.6522
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.2485,
+     "median": 0.2469
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 84.2158,
+     "median": 85
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0093,
+     "median": 0.0096
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0078,
+     "median": 0.0081
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 1837.5467,
+     "median": 1859.5
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 463.2555,
+     "median": 463.2531
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0151,
+     "median": 0.0068
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0.0053,
+     "median": 0.0046
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0.5095,
+     "median": 0.5582
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.9799,
+     "median": 0.9822
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0.3292,
+     "median": 0.3333
+    },
+    "brierPooled": 0.00928,
+    "brierOraclePooled": 0.007823,
+    "brierN": 8591760
+   },
+   "coach|beyer-060": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 461.6065,
+     "median": 461.4417
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.0285,
+     "median": 0
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.6765,
+     "median": 0.7188
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.0262,
+     "median": 0
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.0159,
+     "median": 0.013
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.1518,
+     "median": 0.0261
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 1.2086,
+     "median": 0.3913
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.0125,
+     "median": 0.0035
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 117.4117,
+     "median": 126
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.027,
+     "median": 0.027
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0209,
+     "median": 0.0211
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 2594.725,
+     "median": 2755
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 461.6065,
+     "median": 461.4417
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0101,
+     "median": 0.005
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0.0018,
+     "median": 0.0011
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0.0039,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.8343,
+     "median": 0.7664
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0.0114,
+     "median": 0
+    },
+    "brierPooled": 0.018573,
+    "brierOraclePooled": 0.014617,
+    "brierN": 1473940
+   },
+   "coach|burgmuller-001": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 461.2435,
+     "median": 460.6035
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.1028,
+     "median": 0
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.6076,
+     "median": 0.6377
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.0919,
+     "median": 0
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.0949,
+     "median": 0.083
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.3262,
+     "median": 0.1417
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 3.4002,
+     "median": 0.5652
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.0359,
+     "median": 0.0039
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 149.2108,
+     "median": 171
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0175,
+     "median": 0.0177
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0131,
+     "median": 0.0133
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 3124.7242,
+     "median": 3501.5
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 461.2435,
+     "median": 460.6035
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0112,
+     "median": 0.0041
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0.0035,
+     "median": 0.0016
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0.0823,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.8545,
+     "median": 0.7653
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0.0686,
+     "median": 0
+    },
+    "brierPooled": 0.010866,
+    "brierOraclePooled": 0.008297,
+    "brierN": 2575801
+   },
+   "coach|burgmuller-002": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 463.037,
+     "median": 463.1118
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.2807,
+     "median": 0.25
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.5908,
+     "median": 0.6113
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.2344,
+     "median": 0.2188
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.0147,
+     "median": 0.0128
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.7424,
+     "median": 0.7562
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 6.4403,
+     "median": 5.087
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.0777,
+     "median": 0.0577
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 102.5642,
+     "median": 101
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0104,
+     "median": 0.0103
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0081,
+     "median": 0.0081
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 1971.4717,
+     "median": 1940
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 463.037,
+     "median": 463.1118
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0408,
+     "median": 0.0278
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0.0016,
+     "median": 0.0015
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0.0539,
+     "median": 0.0291
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.8278,
+     "median": 0.8274
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0.1219,
+     "median": 0
+    },
+    "brierPooled": 0.010168,
+    "brierOraclePooled": 0.008009,
+    "brierN": 11567468
+   },
+   "coach|czerny599-010": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 463.9268,
+     "median": 463.8533
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.6349,
+     "median": 0.6667
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.8317,
+     "median": 0.8419
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.5521,
+     "median": 0.6667
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.0321,
+     "median": 0.0297
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.7204,
+     "median": 0.7246
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 8.9547,
+     "median": 8.8043
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.1274,
+     "median": 0.1225
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 91.7392,
+     "median": 96
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0097,
+     "median": 0.0096
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.008,
+     "median": 0.008
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 1679.4758,
+     "median": 1681.5
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 463.9268,
+     "median": 463.8533
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0157,
+     "median": 0.0086
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0.002,
+     "median": 0.0016
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0.2226,
+     "median": 0.0891
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.9817,
+     "median": 0.9843
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0.2617,
+     "median": 0.5
+    },
+    "brierPooled": 0.009762,
+    "brierOraclePooled": 0.008023,
+    "brierN": 4957756
+   },
+   "coach|czerny599-050": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 463.2957,
+     "median": 463.2545
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.5001,
+     "median": 0.5
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.722,
+     "median": 0.7345
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.4491,
+     "median": 0.5
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.0228,
+     "median": 0.018
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.7435,
+     "median": 0.7523
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 13.613,
+     "median": 13.4348
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.1587,
+     "median": 0.1525
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 108.1017,
+     "median": 95
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0078,
+     "median": 0.0077
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0062,
+     "median": 0.0062
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 2076.0217,
+     "median": 2059
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 463.2957,
+     "median": 463.2545
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.017,
+     "median": 0.0094
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0.0017,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0.3248,
+     "median": 0.321
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.9786,
+     "median": 0.9818
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0.3854,
+     "median": 0.5
+    },
+    "brierPooled": 0.007835,
+    "brierOraclePooled": 0.006188,
+    "brierN": 6959647
+   },
+   "coach|hymn-amazing-grace": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 463.425,
+     "median": 463.4333
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.5851,
+     "median": 0.6245
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.0152,
+     "median": 0.0104
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.0068,
+     "median": 0.0022
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 0.4223,
+     "median": 0.3043
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.0035,
+     "median": 0.0025
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 128,
+     "median": 128
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0354,
+     "median": 0.0339
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0258,
+     "median": 0.0253
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 2842.9967,
+     "median": 2857
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 463.425,
+     "median": 463.4333
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0072,
+     "median": 0.0035
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0.0011,
+     "median": 0.001
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.7581,
+     "median": 0.7573
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.035821,
+    "brierOraclePooled": 0.026358,
+    "brierN": 519262
+   },
+   "coach|rec-g01-leadsheet": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 0,
+     "mean": null,
+     "median": null
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 463.1319,
+     "median": 463.0967
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.5001,
+     "median": 0.5
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.8182,
+     "median": 0.8374
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.492,
+     "median": 0.5
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.012,
+     "median": 0.0095
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.8384,
+     "median": 0.8527
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 19.9175,
+     "median": 19.5217
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.242,
+     "median": 0.2331
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 82.9008,
+     "median": 84
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0128,
+     "median": 0.0133
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.011,
+     "median": 0.0113
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 1924.4775,
+     "median": 1934
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 463.1319,
+     "median": 463.0967
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0147,
+     "median": 0.007
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0.0023,
+     "median": 0.0016
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0.5461,
+     "median": 0.5884
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.9847,
+     "median": 0.9863
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0.4967,
+     "median": 0.5
+    },
+    "brierPooled": 0.012869,
+    "brierOraclePooled": 0.010976,
+    "brierN": 8228069
+   },
+   "oracle|beyer-050": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0.8858,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 1063,
+     "mean": 247.6287,
+     "median": 216.5563
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 272.1472,
+     "median": 248.6292
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.8967,
+     "median": 1
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.9039,
+     "median": 0.9112
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.628,
+     "median": 1
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.6269,
+     "median": 0.6304
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.4158,
+     "median": 0.4699
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 86.6703,
+     "median": 86.6957
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.9987,
+     "median": 0.9995
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 3.9142,
+     "median": 3
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0153,
+     "median": 0.0149
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0132,
+     "median": 0.0129
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 2018.9217,
+     "median": 2019
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 462.3169,
+     "median": 462.3125
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.9967,
+     "median": 1
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.015286,
+    "brierOraclePooled": 0.013201,
+    "brierN": 4728717
+   },
+   "oracle|beyer-060": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0.7925,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 951,
+     "mean": 269.1304,
+     "median": 238.1479
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 309.1412,
+     "median": 295.5406
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.827,
+     "median": 1
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.898,
+     "median": 0.9012
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.5567,
+     "median": 0.9565
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.6271,
+     "median": 0.629
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.3434,
+     "median": 0.3689
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 87.034,
+     "median": 87.087
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.9986,
+     "median": 0.9995
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 4.1875,
+     "median": 3
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0238,
+     "median": 0.0231
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0206,
+     "median": 0.02
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 2027.6058,
+     "median": 2028
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 461.872,
+     "median": 461.85
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.9967,
+     "median": 1
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.023834,
+    "brierOraclePooled": 0.020596,
+    "brierN": 4552694
+   },
+   "oracle|burgmuller-001": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0.6225,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 747,
+     "mean": 276.4784,
+     "median": 255.2789
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 346.7292,
+     "median": 341.7535
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.7066,
+     "median": 1
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.8794,
+     "median": 0.8908
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.5117,
+     "median": 0.3636
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.5473,
+     "median": 0.5459
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.277,
+     "median": 0.2819
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 87.4766,
+     "median": 87.6087
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.9979,
+     "median": 0.999
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 5.4925,
+     "median": 4
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.015,
+     "median": 0.0147
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0129,
+     "median": 0.0126
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 2039.2167,
+     "median": 2041
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 462.6155,
+     "median": 462.6421
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0003,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.9899,
+     "median": 0.9966
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.014987,
+    "brierOraclePooled": 0.012863,
+    "brierN": 4866459
+   },
+   "oracle|burgmuller-002": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0.4317,
+     "median": 0
+    },
+    "minutesToMastery": {
+     "n": 518,
+     "mean": 360.439,
+     "median": 356.7555
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 418.491,
+     "median": 462.1848
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.491,
+     "median": 0.1875
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.8298,
+     "median": 0.8409
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.2518,
+     "median": 0.0313
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.5864,
+     "median": 0.587
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.1413,
+     "median": 0.0359
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 99.1729,
+     "median": 99.3478
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.9982,
+     "median": 0.9991
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 5.2783,
+     "median": 4
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0229,
+     "median": 0.0229
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0195,
+     "median": 0.0196
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 2308.01,
+     "median": 2311.5
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 462.6361,
+     "median": 462.6566
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0003,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.9689,
+     "median": 0.9773
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.022862,
+    "brierOraclePooled": 0.019513,
+    "brierN": 5396888
+   },
+   "oracle|czerny599-010": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0.9675,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 1161,
+     "mean": 214.3075,
+     "median": 185.9733
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 222.3861,
+     "median": 192.17
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.9845,
+     "median": 1
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.9167,
+     "median": 0.9301
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.7742,
+     "median": 1
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.5304,
+     "median": 0.5245
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.5613,
+     "median": 0.6127
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 72.5477,
+     "median": 72.5652
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.9979,
+     "median": 0.9994
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 4.495,
+     "median": 3
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0124,
+     "median": 0.0119
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0107,
+     "median": 0.0103
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 1695.0858,
+     "median": 1694
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 462.8593,
+     "median": 462.8733
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0001,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.9958,
+     "median": 0.9999
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.012359,
+    "brierOraclePooled": 0.010688,
+    "brierN": 4049199
+   },
+   "oracle|czerny599-050": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0.8608,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 1033,
+     "mean": 245.1494,
+     "median": 210.4061
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 275.3927,
+     "median": 237.2955
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.9076,
+     "median": 1
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.8972,
+     "median": 0.9148
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.6607,
+     "median": 1
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.5351,
+     "median": 0.5316
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.4536,
+     "median": 0.5088
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 87.5997,
+     "median": 87.7391
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.993,
+     "median": 0.9956
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 12.735,
+     "median": 10
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.012,
+     "median": 0.0118
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0102,
+     "median": 0.0102
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 2051.9775,
+     "median": 2052.5
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 462.3922,
+     "median": 462.3871
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0013,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.988,
+     "median": 0.9932
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.011961,
+    "brierOraclePooled": 0.010246,
+    "brierN": 4905547
+   },
+   "oracle|hymn-amazing-grace": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0.9192,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 1103,
+     "mean": 232.3018,
+     "median": 197.42
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 250.8531,
+     "median": 216.7467
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.9414,
+     "median": 1
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.907,
+     "median": 0.9209
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.6984,
+     "median": 1
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.5708,
+     "median": 0.5724
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.4696,
+     "median": 0.5353
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 88.0932,
+     "median": 88.1739
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.9984,
+     "median": 0.9995
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 4.4942,
+     "median": 3
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0185,
+     "median": 0.018
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.016,
+     "median": 0.0157
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 2052.3292,
+     "median": 2053
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 461.7075,
+     "median": 461.66
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0.0001,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.9951,
+     "median": 0.9994
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.018496,
+    "brierOraclePooled": 0.016012,
+    "brierN": 4767293
+   },
+   "oracle|rec-g01-leadsheet": {
+    "n": 1200,
+    "reached": {
+     "n": 1200,
+     "mean": 0.9792,
+     "median": 1
+    },
+    "minutesToMastery": {
+     "n": 1175,
+     "mean": 201.8147,
+     "median": 178.7377
+    },
+    "minutesCapped": {
+     "n": 1200,
+     "mean": 207.2441,
+     "median": 188.5649
+    },
+    "masteredShareEnd": {
+     "n": 1200,
+     "mean": 0.9829,
+     "median": 1
+    },
+    "retention30": {
+     "n": 1200,
+     "mean": 0.9199,
+     "median": 0.9271
+    },
+    "retainedShare30": {
+     "n": 1200,
+     "mean": 0.7884,
+     "median": 1
+    },
+    "weakQuartileShare": {
+     "n": 1200,
+     "mean": 0.6208,
+     "median": 0.6239
+    },
+    "masteredTimeShare": {
+     "n": 1200,
+     "mean": 0.5559,
+     "median": 0.5983
+    },
+    "flipsPerSession": {
+     "n": 1200,
+     "mean": 86.4456,
+     "median": 86.3913
+    },
+    "flipsPerLap": {
+     "n": 1200,
+     "mean": 0.9986,
+     "median": 0.9995
+    },
+    "longestStreak": {
+     "n": 1200,
+     "mean": 3.94,
+     "median": 3
+    },
+    "brier": {
+     "n": 1200,
+     "mean": 0.0194,
+     "median": 0.0189
+    },
+    "brierOracle": {
+     "n": 1200,
+     "mean": 0.0169,
+     "median": 0.0164
+    },
+    "laps": {
+     "n": 1200,
+     "mean": 2013.9867,
+     "median": 2011
+    },
+    "minutes": {
+     "n": 1200,
+     "mean": 462.5052,
+     "median": 462.4807
+    },
+    "leftShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "rightShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "memoryLapShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "meanTempoRatio": {
+     "n": 1200,
+     "mean": 0.998,
+     "median": 1
+    },
+    "memorizedShare": {
+     "n": 1200,
+     "mean": 0,
+     "median": 0
+    },
+    "brierPooled": 0.019402,
+    "brierOraclePooled": 0.016845,
+    "brierN": 4736487
+   }
+  }
+ }
+}

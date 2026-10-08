@@ -1,6 +1,6 @@
 # G0 score-quality benchmark (tests/bench/README.md).
 # The gate is the regression gate on every push/PR. It is a small job `plan` (which checks does this change need?), sixteen parallel
-# shard jobs (shard-a .. shard-p) that run its 64 steps, two merge jobs (merge-rec-core, merge-rec-grid) that join the shards of the two
+# shard jobs (shard-a .. shard-p) that run its 68 steps, two merge jobs (merge-rec-core, merge-rec-grid) that join the shards of the two
 # suites that are cut across several shard jobs and check them, a job `light` (for a change that is only documents or the home-PC
 # worker's files), and the job named `gate`, which passes only when every job the plan asked for passed (TD22, TD22b). The nightly jobs
 # (full suite, gate sensitivity, the independent review's adversarial checks, the recording suites) run on a schedule or by hand and
@@ -424,8 +424,8 @@ jobs:
       - run: python tests/bench/run.py run --suite smoke
       - run: python tests/bench/run.py check --suite smoke
 
-  # shard-m: rec-core 4/4, the difficulty trainer check, layout hashes
-  #   (steps ~136 s on a fast runner, ~195 s on a slow one)
+  # shard-m: rec-core 4/4, the difficulty trainer check, layout hashes, test:practice-sim
+  #   (steps ~136 s on a fast runner, ~195 s on a slow one; G11b-0's test:practice-sim adds ~18 s / ~30 s, estimated from a local run)
   shard-m:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
@@ -451,9 +451,11 @@ jobs:
           overwrite: true
       - run: node tests/engrave/tools/layout-hashes.js             # G4b: the committed layout hashes, on Linux too (A27)
       - run: node difficulty/tools/train.js --check                # G6a: the committed leave-one-book-out and hold-out evaluation reproduces (G06 §11)
+      - run: npm run test:practice-sim                             # G11b-0: the synthetic learners (practice/sim.js), the legacy-policy runner on the app's own code, determinism (G11 section 7.4)
 
-  # shard-n: rec-grid 1/3, robust-app
-  #   (steps ~128 s on a fast runner, ~197 s on a slow one)
+  # shard-n: rec-grid 1/3, robust-app, the practice-sim baseline 1/3
+  #   (steps ~128 s on a fast runner, ~197 s on a slow one; G11b-0's baseline part adds ~12 s / ~20 s, estimated: 42 CPU-s for the
+  #   three parts in a Linux container on 4 threads)
   shard-n:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
@@ -479,6 +481,7 @@ jobs:
           overwrite: true
       - run: python tests/bench/run.py run --suite robust-app
       - run: python tests/bench/run.py check --suite robust-app
+      - run: node tests/practice-sim/baseline.js --check --part 1/3   # G11b-0: the LEGACY practice baseline (the app's Learning/Memory/Coach on synthetic learners), a third of its runs, plus the whole file's consistency
       - if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -487,8 +490,9 @@ jobs:
             tests/bench/out/robust-app/summary.md
           overwrite: true
 
-  # shard-o: rec-grid 2/3, robust, test:practice
-  #   (steps ~125 s on a fast runner, ~196 s on a slow one, before test:practice, which adds 5 s: 80 tests in 4.6 s on a slow draw, 2026-10-08, PR 225)
+  # shard-o: rec-grid 2/3, robust, test:practice, the practice-sim baseline 2/3
+  #   (steps ~125 s on a fast runner, ~196 s on a slow one, before test:practice, which adds 5 s: 80 tests in 4.6 s on a slow draw, 2026-10-08, PR 225;
+  #   G11b-0's baseline part adds ~12 s / ~20 s, estimated: 42 CPU-s for the three parts in a Linux container on 4 threads)
   shard-o:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
@@ -505,6 +509,7 @@ jobs:
         with: { python-version: '3.13' }
       - run: python tests/bench/run.py run --suite robust
       - run: python tests/bench/run.py check --suite robust
+      - run: node tests/practice-sim/baseline.js --check --part 2/3   # G11b-0: the legacy practice baseline, the second third
       - run: python tests/bench/run.py run --suite rec-grid --shard 2/3   # G10a-2: v2 with and without its grid stage (rec/grid.js), oracle beats and swing included
       - uses: actions/upload-artifact@v4
         with:
@@ -523,8 +528,8 @@ jobs:
             tests/bench/out/robust/summary.md
           overwrite: true
 
-  # shard-p: rec-grid 3/3, sg-roundtrip, lint-corpus, the i18n gaps check and its mutation test
-  #   (steps ~127 s on a fast runner, ~194 s on a slow one, before the two i18n steps; they add about 2 s)
+  # shard-p: rec-grid 3/3, sg-roundtrip, lint-corpus, the i18n gaps check and its mutation test, the practice-sim baseline 3/3
+  #   (steps ~127 s on a fast runner, ~194 s on a slow one, before the two i18n steps; they add about 2 s; G11b-0's baseline part adds ~12 s / ~20 s, estimated)
   shard-p:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
@@ -552,6 +557,7 @@ jobs:
       - run: python tests/bench/run.py sg-roundtrip                # every committed MusicXML through ScoreGraph and back (G01)
       - run: node tests/i18n/gaps.js --check                       # G13-0: no English string of the page lacks a ko/ja/zh translation unless tests/i18n/gaps-baseline.json lists it
       - run: node tests/i18n/gaps.test.js                          # G13-0: that checker fails on a planted untranslated tx() / label / one-locale string / parity gap (mutation test)
+      - run: node tests/practice-sim/baseline.js --check --part 3/3   # G11b-0: the legacy practice baseline, the last third
 
   # merge-rec-core: the 4 shards of rec-core (2,538 cases) joined into the run's results.json, then the gate's check of that run. Exactly what the
   # unsharded `run` + `check` did: merge-shards refuses anything but the 4 shards of this commit (tests/bench/README.md, "Sharded runs"),
