@@ -24,7 +24,8 @@
     2 take the variant's events of the range; ties and slurs that cross a seam are cut (the note keeps its written value inside the
       range); the base's pedal, 8va and wedge spans are clipped at the seams (a span over the whole range becomes two) and the
       variant's are clipped to the range; the clef of each staff is carried in at the left seam and put back at the right seam.
-      The base's own directions (dynamics, words, chords) stay; the variant's are added where the base has none of that kind.
+      The base's own directions (dynamics, words, chords) stay; the variant's are added where the base has none of that kind. The base's
+      lyrics stay with the tune: a syllable goes to the variant's note that starts where it was, on the same top pitch, if exactly one does.
     3 seams: G5 judges the first attack of each hand after each seam (the hand must reach it in time); a hard violation widens the
       range by one bar on that side, at most twice, then VARIANT_SEAM.
     4 verify: the validator (no ERROR, no warning that neither source had), notation-check classes 1-7 (no hit that neither source had, in
@@ -144,6 +145,8 @@
     out.forEach(l => l.sort());
     return out;
   }
+  /* the highest sounding pitch of an event (what the tune is, in a chord) */
+  const topMidi = e => arr(e.heads).reduce((m, h) => (h.pitch ? Math.max(m, P.midi(h.pitch)) : m), -1);
   const sameList = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
 
   /* the first reason the two graphs cannot share a bar index, or null (step 1) */
@@ -240,12 +243,21 @@
       const doc = d.doc;
       const part = doc.parts.find(p => p.id === c.bPart.id);
       const info = { removedEvents: 0, addedEvents: 0, tiesCut: 0, slursCut: 0, otherCut: 0, variantTiesCut: 0, variantSlursCut: 0,
-        pedalClipped: 0, ottavaClipped: 0, wedgeClipped: 0, clefsAdded: 0, clefsRemoved: 0, voicesAdded: 0, directionsCopied: 0, directionsKept: 0 };
+        pedalClipped: 0, ottavaClipped: 0, wedgeClipped: 0, clefsAdded: 0, clefsRemoved: 0, voicesAdded: 0, directionsCopied: 0, directionsKept: 0, lyricsKept: 0 };
       const inRange = new Set(bm.slice(lo, hi + 1));
 
-      /* ---- 1. what the base had in the range goes */
-      const goneEv = new Set(), goneHd = new Set();
-      part.events.forEach(e => { if (inRange.has(e.m)) { goneEv.add(e.id); arr(e.heads).forEach(h => goneHd.add(h.id)); } });
+      /* ---- 1. what the base had in the range goes. Its words stay with the tune: a syllable is kept for the variant's note that starts where it was, on the
+         same top pitch (the arrangers keep the melody verbatim), when exactly one note does */
+      const goneEv = new Set(), goneHd = new Set(), words = new Map();
+      part.events.forEach(e => {
+        if (!inRange.has(e.m)) return;
+        goneEv.add(e.id);
+        arr(e.heads).forEach(h => goneHd.add(h.id));
+        if (e.kind === 'note' && !e.grace && arr(e.lyrics).length) {
+          const k = bIdx.get(e.m) + '|' + e.at + '|' + topMidi(e);
+          words.set(k, words.has(k) ? null : clone(e.lyrics));
+        }
+      });
       part.spanners.slice().forEach(sp => {
         if (POSITION_SPANS.has(sp.type)) return;
         const r = refsOf(sp);
@@ -332,7 +344,8 @@
       const vRank = new Map(c.vPart.voices.map((v, i) => [v.id, i]));
       const evs = c.vPart.events.map((e, i) => ({ e: e, i: i })).filter(x => { const k = vIdx.get(x.e.m); return k >= lo && k <= hi; })
         .sort((a, b) => (vIdx.get(a.e.m) - vIdx.get(b.e.m)) || R.cmp(R.parse(a.e.at), R.parse(b.e.at)) || (vRank.get(a.e.voice) - vRank.get(b.e.voice)) || (a.i - b.i));
-      const evMap = new Map(), hdMap = new Map();
+      const evMap = new Map(), hdMap = new Map(), voiceCount = new Map();
+      evs.forEach(({ e }) => { if (e.kind === 'note' && !e.grace) { const k = vIdx.get(e.m) + '|' + e.at + '|' + topMidi(e); voiceCount.set(k, (voiceCount.get(k) || 0) + 1); } });
       evs.forEach(({ e }) => {
         const x = clone(e);
         delete x.id;
@@ -341,6 +354,10 @@
         x.staff = c.staffMap.get(e.staff);
         if (x.heads) x.heads = x.heads.map(h => { const y = clone(h); delete y.id; if (y.staff !== undefined) y.staff = c.staffMap.get(y.staff); y.prov = provOf(h.prov); return y; });
         x.prov = provOf(e.prov);
+        if (e.kind === 'note' && !e.grace && !arr(e.lyrics).length) {
+          const k = vIdx.get(e.m) + '|' + e.at + '|' + topMidi(e);
+          if (voiceCount.get(k) === 1 && words.get(k)) { x.lyrics = clone(words.get(k)); info.lyricsKept++; }
+        }
         const id = d.addEvent(part, x);
         evMap.set(e.id, id);
         const ne = d.ev.get(id).e;
@@ -582,7 +599,7 @@
         pedalClipped: info.pedalClipped, ottavaClipped: info.ottavaClipped, wedgeClipped: info.wedgeClipped,
         clefsAdded: info.clefsAdded, clefsRemoved: info.clefsRemoved
       },
-      stats: { removedEvents: info.removedEvents, addedEvents: info.addedEvents, voicesAdded: info.voicesAdded, directionsKept: info.directionsKept, directionsCopied: info.directionsCopied }
+      stats: { removedEvents: info.removedEvents, addedEvents: info.addedEvents, voicesAdded: info.voicesAdded, directionsKept: info.directionsKept, directionsCopied: info.directionsCopied, lyricsKept: info.lyricsKept }
     };
   }
 

@@ -319,6 +319,24 @@ check('directions: the base\'s stay (a link to a gone event is dropped), the var
   clean(base, variant, res, null, o);
 });
 
+check('the words stay with the tune: a syllable goes to the note of the variant that starts where it was on the same top pitch', V => {
+  const base = F.mapEvents(piece('busy'), (e, h) => {
+    const i = h.bars.indexOf(e.m), mel = e.staff === h.staves[0] && e.kind === 'note';
+    if (mel && i === 2 && e.at === '0') e.lyrics = [{ verse: 1, text: 'glo', syllabic: 'begin' }];          /* E5 on the first beat: the variant has E5 there */
+    if (mel && i === 3 && e.at === '1/8') e.lyrics = [{ verse: 1, text: 'ry', syllabic: 'end' }];            /* an eighth the variant does not have */
+    if (mel && i === 1 && e.at === '0') e.lyrics = [{ verse: 1, text: 'out', syllabic: 'single' }];         /* outside the range: untouched */
+  });
+  const variant = piece('plain'), o = { from: 2, to: 5 };
+  const res = ok(V.splice(base, variant, o));
+  const p = res.graph.parts[0], bar = i => res.graph.timeline.measures[i].id;
+  const at = (i, a) => p.events.find(e => e.m === bar(i) && e.at === a && e.staff === p.staves[0].id && e.kind === 'note');
+  assert.deepEqual(at(2, '0').lyrics, [{ text: 'glo', syllabic: 'begin' }], 'verse 1 is the default and is not written');
+  assert.equal(at(3, '1/2').lyrics, undefined);
+  assert.equal(res.stats.lyricsKept, 1);
+  assert.ok(at(1, '0').lyrics && at(1, '0').lyrics[0].text === 'out');
+  clean(base, variant, res, null, o);
+});
+
 check('voices: a variant voice takes the base voice of its staff, a second voice adds one', V => {
   const base = piece('busy');
   const variant = custom(PLAIN, PLAIN_L, { rh2: bars(['G4:w'], 8).join(' | ') });

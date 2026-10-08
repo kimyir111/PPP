@@ -50,7 +50,8 @@ const MUTANTS = [
   ['M33', 'the staff of a note does not count for "the same notes"', "sIdx.get(h.staff || e.staff) + '|'", "'0|'"],
   ['M34', 'the judge looks at the whole request, not the bars that differ', 'const jf = applied.from, jt = applied.to;', 'const jf = lo0, jt = hi0;'],
   ['M35', 'a multi-measure rest over the passage is accepted', "if (bm[i].multiRest && i + bm[i].multiRest - 1 >= lo) return", 'if (false) return'],
-  ['M36', 'a refusal has no alternative', 'if (!NO_ALTERNATIVE.has(reason)) {', 'if (false) {']
+  ['M36', 'the words of the tune are lost', 'x.lyrics = clone(words.get(k)); info.lyricsKept++;', 'void 0;'],
+  ['M37', 'a refusal has no alternative', 'if (!NO_ALTERNATIVE.has(reason)) {', 'if (false) {']
 ];
 
 /* a copy of the module with one edit (found exactly once), its requires made absolute */
