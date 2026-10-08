@@ -277,14 +277,16 @@ All of this at $0 on the existing free tiers.
 
 **G13-D11 and G13-D12 as built (G13-7a).**
 - *Counters:* `server-stats.js`, three hook lines in `server.js`. Per route class (`static`, `api-auth`, `api-shares`, `api-jobs` = the home-PC queue, `health`, `other`): requests,
-  answers with a 5xx status, and store errors (every call of `logStoreError`, which itself logs at most 5 lines a minute). One log line `stats: {...}` after an hour of the process
+  answers with a 4xx status (`tooMany` = the 429s among them, so a limiter that misfires is not lost among scanner 404s), answers with a 5xx status, and store errors (every call of
+  `logStoreError` for a request; it itself logs at most 5 lines a minute); apart, `idlePoolErrors` for the pool's own error event (a dropped idle connection). One log line `stats: {...}` after an hour of the process
   being awake and one more (`"final":true`) when it is told to stop (SIGTERM): Render spins the free instance down after 15 idle minutes, so most processes live less than an hour and an
   hourly line alone would almost never print. Only numbers; no address, id, path or header; nothing over HTTP; the timer is `unref`'d; booting prints nothing new.
   Read it with `render logs -r srv-dalt5s6k1f9s739cuetg --limit 500 -o text --confirm | grep stats:`.
 - *Daily smoke:* `.github/workflows/live-smoke.yml`, 06:05 KST (21:05 UTC) and by hand, read-only, `issues: write` only; a failure opens the issue "Live smoke failed" or comments on the open one
   (`tools/release/smoke-issue.js`). It wakes the site once a day (about 16 min awake, about 8 h of the 750 a month) and is not part of the `gate`.
 - *Release script:* `tools/release/release.js <sha> [--confirm]`, local, never called by a workflow; the steps are in `docs/RELEASE_CHECKLIST.md` section 2. The gate it reads is the
-  check run named `gate` of the commit through `gh api` (a missing one is pending, a red one refuses; the newest run of that name decides).
+  check run named exactly `gate` of the commit, made by GitHub Actions, through `gh api` (`filter=all`; a missing one is pending, a red one refuses; the highest id decides). A commit that is not in
+  the history of `main` refuses unless `--allow-unmerged`; every `gh` call names `kimyir111/PPP`.
   Tests: `npm run test:monitoring` (in the gate, shard-g).
 
 ---

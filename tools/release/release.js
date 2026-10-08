@@ -8,14 +8,18 @@
    <sha> is 7 to 40 hex characters of a commit of the repository; the Render CLI needs the full 40, so it is resolved through the GitHub API (gh).
 
    1. refuses unless the check run named `gate` of that commit concluded `success` (read with `gh api`; no `gate` yet = pending = refused; red = refused)
+      and refuses a commit that is not in the history of main (GitHub's compare says identical or behind; anything else, or no answer, refuses),
+      unless --allow-unmerged is given (a loud warning, for the rare exception)
    2. prints the plan and the ROLLBACK command, built from the commit that is live now (window.PPP_BUILD of the page)
    3. --confirm: render deploys create srv-dalt5s6k1f9s739cuetg --commit <40-char sha> --confirm
-   4. waits until the page's PPP_BUILD starts with the sha (polls every 15 s, gives up after --timeout-min, 20 by default; a failed deploy ends it at once)
+   4. waits until the page's PPP_BUILD starts with the sha (polls every 15 s, gives up after --timeout-min, 20 by default; a failed deploy ends it at once);
+      with --redeploy the page cannot tell, so it waits for the status `live` of the deploy it created
    5. node tests/live/smoke.js --sha <sha> --logs [--pc-code-file <file>]: any FAIL makes this exit 1 and prints the rollback command again
    6. adds one row to the top of the table in RELEASES.md (docs/, the columns it has), to be committed by the person
 
-   Options: --site <url>  --service <srv-id>  --repo <owner/name> (default: the repository of the current directory, as gh reads it)
-            --rollback <sha> (when the live page cannot be read)  --redeploy (the commit is already live)  --what "<text>" (the row's "What changed")
+   Options: --site <url>  --service <srv-id>  --repo <owner/name> (default kimyir111/PPP: every gh call names it, whatever the directory)
+            --rollback <sha> (when the live page cannot be read)  --allow-unmerged (deploy a commit that is not in main)
+            --redeploy (the commit is already live: waits until Render says the new deploy is live)  --what "<text>" (the row's "What changed")
             --pc-code-file <file> (passed to the smoke check)  --timeout-min <n>
 
    Exit: 0 released and verified; 1 refused, failed, or the smoke check failed; 2 wrong usage.
@@ -32,19 +36,21 @@ const SITE = 'https://ppp-web-2o99.onrender.com';
 const GATE_CHECK = 'gate';
 const POLL_MS = 15000, FIRST_WAIT_MS = 20000;
 const BAD_DEPLOY = /failed|cancel/i;
+const DEFAULT_REPO = 'kimyir111/PPP';
 
 class UsageError extends Error {}
 class Refusal extends Error {}
 
-const USAGE = 'usage: node tools/release/release.js <sha> [--confirm] [--site URL] [--service ID] [--repo owner/name] [--rollback SHA] [--redeploy] [--what TEXT] [--pc-code-file FILE] [--timeout-min N]';
+const USAGE = 'usage: node tools/release/release.js <sha> [--confirm] [--site URL] [--service ID] [--repo owner/name] [--rollback SHA] [--allow-unmerged] [--redeploy] [--what TEXT] [--pc-code-file FILE] [--timeout-min N]';
 
 function parseArgs(argv) {
-  const o = { sha: '', confirm: false, redeploy: false, help: false, repo: '', service: SERVICE_ID, site: SITE, pcCodeFile: '', rollback: '', what: '', timeoutMin: 20, releasesFile: '' };
+  const o = { sha: '', confirm: false, redeploy: false, allowUnmerged: false, help: false, repo: DEFAULT_REPO, service: SERVICE_ID, site: SITE, pcCodeFile: '', rollback: '', what: '', timeoutMin: 20, releasesFile: '' };
   const takes = { '--repo': 'repo', '--service': 'service', '--site': 'site', '--pc-code-file': 'pcCodeFile', '--rollback': 'rollback', '--what': 'what', '--timeout-min': 'timeoutMin', '--releases-file': 'releasesFile' };
   for (let i = 0; i < argv.length; i++) {
     const a = String(argv[i]);
     if (a === '--confirm') o.confirm = true;
     else if (a === '--redeploy') o.redeploy = true;
+    else if (a === '--allow-unmerged') o.allowUnmerged = true;
     else if (a === '-h' || a === '--help') o.help = true;
     else if (takes[a]) {
       const v = argv[++i];
@@ -57,10 +63,11 @@ function parseArgs(argv) {
   o.timeoutMin = Number(o.timeoutMin);
   if (!(o.timeoutMin > 0)) throw new UsageError('--timeout-min must be a number above 0');
   o.site = o.site.replace(/\/+$/, '');
+  if (!/^[\w.-]+\/[\w.-]+$/.test(o.repo)) throw new UsageError('--repo is owner/name');
   return o;
 }
 
-const repoBase = o => 'repos/' + (o.repo || '{owner}/{repo}');
+const repoBase = o => 'repos/' + o.repo;
 const ghJson = (io, apiPath) => JSON.parse(io.gh(['api', apiPath]));
 const short = sha => String(sha).slice(0, 7);
 const utcMinute = d => new Date(d).toISOString().slice(0, 16).replace('T', ' ');
@@ -74,12 +81,12 @@ function resolveCommit(io, o, ref) {
   return { sha: j.sha, message: String((j.commit && j.commit.message) || '') };
 }
 
-/* the gate of a commit: ok only when its newest check run named `gate` is completed with the conclusion success */
+/* the gate of a commit: ok only when its newest check run named exactly `gate` (made by GitHub Actions, when GitHub says which app made it) is completed with the conclusion success */
 function readGate(io, o, sha) {
   let j;
-  try { j = ghJson(io, repoBase(o) + '/commits/' + sha + '/check-runs?check_name=' + GATE_CHECK + '&per_page=100'); }
+  try { j = ghJson(io, repoBase(o) + '/commits/' + sha + '/check-runs?check_name=' + GATE_CHECK + '&filter=all&per_page=100'); }
   catch (e) { return { ok: false, state: 'unreadable', why: 'the checks of ' + short(sha) + ' could not be read with gh: ' + errText(e) }; }
-  const runs = ((j && j.check_runs) || []).filter(r => r && r.name === GATE_CHECK);
+  const runs = ((j && j.check_runs) || []).filter(r => r && r.name === GATE_CHECK && (!r.app || r.app.slug === 'github-actions'));
   if (!runs.length) return { ok: false, state: 'missing', why: 'commit ' + short(sha) + ' has no check run named gate (not started, or never ran): that is pending, not green' };
   const run = runs.reduce((a, b) => (Number(b.id) > Number(a.id) ? b : a));
   if (run.status !== 'completed') return { ok: false, state: 'pending', why: 'the gate of ' + short(sha) + ' is ' + run.status + ' (pending): wait for it, and read its result', run };
@@ -103,15 +110,19 @@ function whatChanged(message, override) {
 
 /* one row of the table in RELEASES.md: Date (UTC) | Commit | Deploy | What changed | Rollback to | Smoke / verified | Phone cold */
 function formatRow(r) {
-  const cell = s => String(s).replace(/\r?\n/g, ' ').trim();
+  /* every cell: one line, a | escaped (a bare one would start another column), and an odd number of backticks (a code span that never closes) turned into quotes */
+  const cell = s => {
+    const one = String(s).replace(/\s+/g, ' ').trim().replace(/\\?\|/g, '\\|');
+    return (one.match(/`/g) || []).length % 2 ? one.replace(/`/g, "'") : one;
+  };
   return '| ' + [
-    r.date,
+    cell(r.date),
     '`' + short(r.sha) + '`',
-    r.deployId ? '`' + r.deployId + '`' : '(not read)',
+    r.deployId ? '`' + cell(r.deployId) + '`' : '(not read)',
     cell(r.what),
-    r.rollback ? (/^[0-9a-f]{7}/.test(r.rollback) ? '`' + short(r.rollback) + '`' : r.rollback) : '-',
+    r.rollback ? (/^[0-9a-f]{7}/.test(r.rollback) ? '`' + short(r.rollback) + '`' : cell(r.rollback)) : '-',
     cell(r.smoke),
-    r.phone || '-'
+    cell(r.phone || '-')
   ].join(' | ') + ' |';
 }
 
@@ -132,7 +143,8 @@ function smokeText(sha, args, res, date) {
   const pass = /SMOKE PASSED: (\d+) checks/.exec(res.out || '');
   const fail = /SMOKE FAILED: (\d+) of (\d+)/.exec(res.out || '');
   if (res.code === 0 && pass) return shown + ': ' + pass[1] + ' checks passed (release.js, ' + date + ')';
-  const firstFail = String(res.out || '').split(/\r?\n/).find(l => l.startsWith('FAIL '));
+  /* the detail is the smoke check's own text (URLs, error messages): nothing in it may be a table or code mark */
+  const firstFail = (String(res.out || '').split(/\r?\n/).find(l => l.startsWith('FAIL ')) || '').replace(/`/g, "'").replace(/\\?\|/g, '\\|');
   if (fail) return shown + ': **FAILED** ' + fail[1] + ' of ' + fail[2] + ' checks' + (firstFail ? ' - ' + firstFail.slice(5, 90) : '') + ' (release.js, ' + date + ')';
   return shown + ': **did not finish** (exit ' + res.code + ') (release.js, ' + date + ')';
 }
@@ -150,21 +162,26 @@ function findDeploy(list, sha, since) {
     .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0] || null;
 }
 
-async function waitForLive(io, o, sha, since, say) {
+/* wait until the page shows the build. statusLive (a redeploy of the build that is already live: the page cannot tell old from new) also waits until Render
+   says that the deploy it created, deployId, is `live`; Render is then asked at every poll, otherwise at every third one (a failed build never becomes live). */
+async function waitForLive(io, o, sha, since, say, statusLive, deployId) {
   const want = short(sha);
   const deadline = io.now().getTime() + o.timeoutMin * 60000;
   let polls = 0, build = null;
   await io.sleep(FIRST_WAIT_MS);
   for (;;) {
     build = await io.fetchBuild(o.site);
-    if (build && build.startsWith(want)) return { live: true, build: build };
+    const same = !!(build && build.startsWith(want));
     polls++;
-    if (polls % 3 === 0) {                      /* now and then ask Render too: a failed build never becomes live */
-      const d = findDeploy(listDeploys(io, o), sha, since);
-      if (d && BAD_DEPLOY.test(String(d.status))) return { live: false, why: 'failed', status: d.status, deployId: d.id, createdAt: d.createdAt };
+    let d = null;
+    if (statusLive || (!same && polls % 3 === 0)) {
+      const list = listDeploys(io, o);
+      d = (deployId && (list || []).find(x => x && x.id === deployId)) || findDeploy(list, sha, since);
     }
-    if (io.now().getTime() >= deadline) return { live: false, why: 'timeout', build: build };
-    say('  ... the live build is ' + (build || '(unreadable)') + ', waiting for ' + want);
+    if (d && BAD_DEPLOY.test(String(d.status))) return { live: false, why: 'failed', status: d.status, deployId: d.id, createdAt: d.createdAt };
+    if (same && (!statusLive || (d && d.status === 'live'))) return { live: true, build: build };
+    if (io.now().getTime() >= deadline) return { live: false, why: 'timeout', build: build, status: d && d.status };
+    say('  ... the live build is ' + (build || '(unreadable)') + (statusLive ? ', the deploy is ' + ((d && d.status) || '(not listed yet)') : '') + ', waiting for ' + want);
     await io.sleep(POLL_MS);
   }
 }
@@ -186,6 +203,12 @@ async function main(argv, io) {
     const gate = readGate(io, o, target.sha);
     if (!gate.ok) throw new Refusal(gate.why);
 
+    /* 1b. only what is merged: GitHub compares main with the commit (identical or behind = in main's history); anything else, or no answer, refuses */
+    let compare = null;
+    try { compare = ghJson(io, repoBase(o) + '/compare/main...' + target.sha).status; } catch (e) { compare = null; }
+    const onMain = compare === 'identical' || compare === 'behind';
+    if (!onMain && !o.allowUnmerged) throw new Refusal('commit ' + short(target.sha) + ' is not in the history of main (' + (compare ? 'compare says ' + compare : 'GitHub did not say') + '): only merged commits are deployed. --allow-unmerged is for the rare exception');
+
     /* 2. the live build, the rollback, the plan */
     const liveBuild = await io.fetchBuild(o.site);
     let rollbackSha = null;
@@ -200,17 +223,11 @@ async function main(argv, io) {
     rollbackFull = rollbackSha;
     if (liveBuild && liveBuild.startsWith(short(target.sha)) && !o.redeploy) throw new Refusal(short(target.sha) + ' is already live: nothing to release (--redeploy to deploy the same commit again)');
 
-    let onMain = '';
-    try {
-      const st = ghJson(io, repoBase(o) + '/compare/main...' + target.sha).status;
-      onMain = st === 'identical' || st === 'behind' ? 'in the history of main' : 'WARNING: NOT in the history of main (compare says ' + st + '): this commit is not merged';
-    } catch (e) { onMain = 'could not tell whether it is merged'; }
-
     const what = whatChanged(target.message, o.what);
     const smokeArgs = ['--sha', target.sha, '--logs', '--site', o.site].concat(o.pcCodeFile ? ['--pc-code-file', o.pcCodeFile] : []);
     say('release plan for ' + o.service + ' (' + o.site + ')');
     say('  commit    ' + target.sha + '  ' + what);
-    say('  merged    ' + onMain);
+    say('  merged    ' + (onMain ? 'in the history of main' : '!!! NOT IN MAIN (' + (compare || 'no answer') + '): shown only because --allow-unmerged was given !!!'));
     say('  gate      success' + (gate.run && gate.run.id ? ' (check run ' + gate.run.id + (gate.run.completed_at ? ', ' + gate.run.completed_at : '') + ')' : ''));
     say('  live now  ' + (liveBuild || '(unreadable)') + '  rollback target ' + rollbackSha);
     say('  deploy    ' + deployCommand(o, target.sha));
@@ -222,6 +239,7 @@ async function main(argv, io) {
     }
 
     /* 3. deploy */
+    if (!onMain) say('\n!!! WARNING: ' + short(target.sha) + ' is NOT in the history of main. It is deployed only because of --allow-unmerged; get it merged, or the next deploy of main removes it. !!!');
     say('\n--confirm given: deploying ' + short(target.sha) + ' now.');
     const since = io.now().getTime();
     let createOut = '', createErr = null;
@@ -235,7 +253,7 @@ async function main(argv, io) {
     say('deploy created' + (deployId ? ': ' + deployId : '') + (createErr ? ' (the render command ended with an error after it started: ' + errText(createErr) + ')' : ''));
 
     /* 4. wait */
-    const waited = await waitForLive(io, o, target.sha, since, say);
+    const waited = await waitForLive(io, o, target.sha, since, say, !!(liveBuild && liveBuild.startsWith(short(target.sha))), deployId);
     deploy = findDeploy(listDeploys(io, o), target.sha, since) || deploy;
     const row = extra => Object.assign({ date: utcMinute((deploy && deploy.createdAt) || io.now()), sha: target.sha, deployId: deployId, what: what, rollback: rollbackSha }, extra);
     if (!waited.live) {
@@ -319,7 +337,7 @@ function realIo(root) {
     out: l => console.log(l),
     now: () => new Date(),
     sleep: ms => new Promise(r => setTimeout(r, ms)),
-    gh: args => execFileSync('gh', args, { encoding: 'utf8', timeout: 60000, maxBuffer: 50 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] }),
+    gh: args => execFileSync('gh', args, { cwd: root, encoding: 'utf8', timeout: 60000, maxBuffer: 50 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] }),
     render: args => execFileSync('render', args, { encoding: 'utf8', timeout: 15 * 60000, maxBuffer: 50 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] }),
     fetchBuild: fetchBuild,
     smoke: args => new Promise(resolve => {

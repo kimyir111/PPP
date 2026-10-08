@@ -5,7 +5,8 @@
 
    PPP_STATS_MODULE: the module under test (default: the repository's server-stats.js); the mutation runner points it at a copy with one rule broken.
 
-   Part 1, on fake requests: the route classes; a 5xx is counted when the answer is sent (not before, not for an aborted request); a store error is counted for the
+   Part 1, on fake requests: the route classes; a 5xx (and a 4xx, and a 429 apart) is counted when the answer is sent (not before, not for an aborted request); an idle
+   pool error is its own number; a store error is counted for the
    request it happened in and for `other` outside one; the line is only numbers (no address, id, path, header); a window with nothing prints nothing and the
    counters start again after a line; the hourly timer and the SIGTERM line (a child process) - the timer must not keep a process alive.
    Part 2, the real server: a 503 planted through /helper (a production host without the helper answers 503 there) is in the line; the line holds no address;
@@ -65,15 +66,17 @@ async function unitPart() {
   heading('counting');
   {
     const { stats, lines } = rig();
-    const answers = [['/', 200], ['/x.js', 404], ['/health', 200], ['/api/shares', 500], ['/api/shares', 200], ['/api/jobs', 401], ['/helper/a', 503], ['/api/auth/me', 200], ['/', 502]];
+    const answers = [['/', 200], ['/x.js', 404], ['/health', 200], ['/api/shares', 500], ['/api/shares', 200], ['/api/jobs', 401], ['/helper/a', 503], ['/api/auth/me', 200], ['/', 502], ['/api/auth/signup', 429], ['/api/auth/login', 429], ['/x.css', 404], ['/', 399], ['/', 599]];
     answers.forEach(([u, s]) => { const p = pair(u); stats.track(p.req, p.res); p.res.answer(s); });
     const line = stats.flush();
     const d = line && parse(line);
     ok('one line for the window, starting `stats: `', !!line && lines.length === 1 && lines[0] === line && line.startsWith('stats: '), String(line).slice(0, 80));
-    ok('the totals: 9 requests, 3 answers with a 5xx status (500, 502, 503), no store error', d && d.requests === 9 && d['5xx'] === 3 && d.storeErrors === 0, JSON.stringify(d && [d.requests, d['5xx'], d.storeErrors]));
-    ok('by class (requests/5xx): static 3/1 (two pages and a missing file; one page was a 502), api-shares 2/1, other 1/1, health 1/0, api-jobs 1/0, api-auth 1/0',
-      d && ['static:3:1', 'api-shares:2:1', 'other:1:1', 'health:1:0', 'api-jobs:1:0', 'api-auth:1:0'].every(x => { const [k, r, f] = x.split(':'); return d.by[k].requests === +r && d.by[k]['5xx'] === +f; }),
+    ok('the totals: 14 requests; 5xx 4 (500, 502, 503, 599); 4xx 5 (404, 401, 429, 429, 404; 399 is not one); 429 2; no store error, no idle pool error',
+      d && d.requests === 14 && d['5xx'] === 4 && d['4xx'] === 5 && d.tooMany === 2 && d.storeErrors === 0 && d.idlePoolErrors === 0, JSON.stringify(d && [d.requests, d['5xx'], d['4xx'], d.tooMany, d.storeErrors, d.idlePoolErrors]));
+    ok('by class (requests/4xx/429/5xx): static 6/2/0/2, api-shares 2/0/0/1, other 1/0/0/1, health 1/0/0/0, api-jobs 1/1/0/0, api-auth 3/2/2/0',
+      d && ['static:6:2:0:2', 'api-shares:2:0:0:1', 'other:1:0:0:1', 'health:1:0:0:0', 'api-jobs:1:1:0:0', 'api-auth:3:2:2:0'].every(x => { const [k, r, f4, f429, f5] = x.split(':'); return d.by[k].requests === +r && d.by[k]['4xx'] === +f4 && d.by[k].tooMany === +f429 && d.by[k]['5xx'] === +f5; }),
       JSON.stringify(d && d.by));
+    ok('the 4xx, 429 and 5xx of the classes add up to the totals', d && ['4xx', 'tooMany'].every(k => Object.keys(d.by).reduce((n, c) => n + d.by[c][k], 0) === d[k]));
     ok('the 5xx of the classes add up to the total', d && Object.keys(d.by).reduce((n, k) => n + d.by[k]['5xx'], 0) === d['5xx']);
     ok('a second flush right after has nothing to say: no line, and nothing logged', stats.flush() === null && lines.length === 1);
   }
@@ -128,6 +131,22 @@ async function unitPart() {
     ok('a store error alone (no request at all) is a window worth a line', lines.length === 0 && stats.flush() !== null);
   }
 
+  heading('idle pool errors are a number of their own');
+  {
+    const { stats, lines } = rig();
+    await later(async () => {
+      const p = pair('/api/shares'); stats.track(p.req, p.res);
+      await sleep(2); stats.storeError('idle'); stats.storeError('idle');       /* even inside a request's context: the caller says it is the pool's */
+      stats.storeError();
+      p.res.answer(200);
+    });
+    await later(async () => { stats.storeError('idle'); });
+    const d = parse(stats.flush());
+    ok('three idle pool errors are in idlePoolErrors, and not in storeErrors (the one real store error is, under api-shares)', d.idlePoolErrors === 3 && d.storeErrors === 1 && d.by['api-shares'].storeErrors === 1 && d.by.other.storeErrors === 0, JSON.stringify([d.idlePoolErrors, d.storeErrors, d.by]));
+    await later(async () => { stats.storeError('idle'); });
+    ok('a window with only an idle pool error is worth a line, and the counter starts again after it', stats.flush() !== null && lines.length === 2 && stats.flush() === null);
+  }
+
   heading('the line holds numbers only');
   {
     const { stats } = rig();
@@ -141,8 +160,8 @@ async function unitPart() {
     const line = stats.flush();
     const d = parse(line);
     const keys = o => Object.keys(o).sort().join();
-    ok('the keys are fixed: v, windowS, upS, requests, 5xx, storeErrors, by', keys(d) === '5xx,by,requests,storeErrors,upS,v,windowS', keys(d));
-    ok('by has the six classes and each has three counts', keys(d.by) === 'api-auth,api-jobs,api-shares,health,other,static' && Object.values(d.by).every(v => keys(v) === '5xx,requests,storeErrors'));
+    ok('the keys are fixed: v, windowS, upS, requests, 4xx, tooMany, 5xx, storeErrors, idlePoolErrors, by', keys(d) === '4xx,5xx,by,idlePoolErrors,requests,storeErrors,tooMany,upS,v,windowS', keys(d));
+    ok('by has the six classes and each has five counts', keys(d.by) === 'api-auth,api-jobs,api-shares,health,other,static' && Object.values(d.by).every(v => keys(v) === '4xx,5xx,requests,storeErrors,tooMany'));
     const strings = []; (function walk(x) { if (x && typeof x === 'object') Object.values(x).forEach(walk); else if (typeof x === 'string') strings.push(x); })(d);
     ok('there is no string value in it at all, and no number is fractional or negative', strings.length === 0 && !/\d\.\d|-\d/.test(line));
     ok('no address, id, token, cookie, email or path of the requests is in it', !/203\.0\.113|198\.51\.100|SHAREID|SECRET|SESSIONCOOKIE|WORKERTOKEN|job-9f|example\.com|someone|aaaa|bbbb|\/api/.test(line), line);
@@ -261,22 +280,30 @@ async function serverPart() {
     ok('the requests were answered as they are today (page 200, health 200, auth/me 200, shares 200, jobs 401, /helper 503, POST to a page 405)',
       [r.page.status, r.health.status, r.me.status, r.shares.status, r.jobs.status, r.planted.status, r.post.status].join() === '200,200,200,200,401,503,405',
       [r.page.status, r.health.status, r.me.status, r.shares.status, r.jobs.status, r.planted.status, r.post.status].join());
+    /* a planted 429: the signup limiter refuses the 21st request of one address in 15 minutes (the first 20 are answered 422: no email) */
+    const signups = [];
+    for (let i = 0; i < 21; i++) signups.push((await get(srv.port, 'POST', '/api/auth/signup', { 'X-Forwarded-For': '203.0.113.50' })).status);
+    ok('21 signup requests from one address: 20 answered 422 and the 21st 429 (the limiter, as it is today)', signups.slice(0, 20).every(x => x === 422) && signups[20] === 429, signups.join());
     /* wait for the interval to print what was counted (the windows may split it across lines: add them up) */
     const sum = () => srv.statsLines().map(l => JSON.parse(l.slice(7))).reduce((a, d) => {
-      a.requests += d.requests; a['5xx'] += d['5xx'];
-      Object.keys(d.by).forEach(k => { a.by[k] = a.by[k] || { requests: 0, '5xx': 0 }; a.by[k].requests += d.by[k].requests; a.by[k]['5xx'] += d.by[k]['5xx']; });
+      a.requests += d.requests; a['5xx'] += d['5xx']; a['4xx'] += d['4xx']; a.tooMany += d.tooMany;
+      Object.keys(d.by).forEach(k => {
+        const b = a.by[k] = a.by[k] || { requests: 0, '4xx': 0, tooMany: 0, '5xx': 0 };
+        ['requests', '4xx', 'tooMany', '5xx'].forEach(f => { b[f] += d.by[k][f]; });
+      });
       return a;
-    }, { requests: 0, '5xx': 0, by: {} });
+    }, { requests: 0, '4xx': 0, tooMany: 0, '5xx': 0, by: {} });
     const t0 = Date.now();
-    while (sum().requests < 7 && Date.now() - t0 < 8000) await sleep(100);
+    while (sum().requests < 28 && Date.now() - t0 < 8000) await sleep(100);
     const s = sum();
-    const by = k => s.by[k] || { requests: 0, '5xx': 0 };
-    ok('the lines add up to the 7 requests (the readiness probe is only booting, before the first count, and is not in them)', s.requests >= 7, JSON.stringify(s));
+    const by = k => s.by[k] || { requests: 0, '4xx': 0, tooMany: 0, '5xx': 0 };
+    ok('the lines add up to the 28 requests (the readiness probe is only booting, before the first count, and is not in them)', s.requests === 28, JSON.stringify(s));
     ok('the planted 503 is in the line: 1 answer with a 5xx, under `other` (the /helper route)', s['5xx'] === 1 && by('other')['5xx'] === 1 && by('other').requests === 1, JSON.stringify(s));
-    ok('static 2 (the page and the POST), health 1, api-auth 1, api-shares 1, api-jobs 1', by('static').requests === 2 && by('health').requests === 1 && by('api-auth').requests === 1 && by('api-shares').requests === 1 && by('api-jobs').requests === 1, JSON.stringify(s.by));
+    ok('the planted 429 is in the line, under api-auth, and among its 4xx: 21 (the twenty 422s and the 429)', s.tooMany === 1 && by('api-auth').tooMany === 1 && by('api-auth')['4xx'] === 21 && by('api-auth').requests === 22, JSON.stringify(by('api-auth')));
+    ok('static 2 requests with 1 4xx (the page; the POST to a page, 405), health 1, api-shares 1, api-jobs 1 (a 401, so 1 4xx)', by('static').requests === 2 && by('static')['4xx'] === 1 && by('health').requests === 1 && by('api-shares').requests === 1 && by('api-jobs').requests === 1 && by('api-jobs')['4xx'] === 1, JSON.stringify(s.by));
     const lines = srv.statsLines();
-    ok('every line is the strict shape, and none holds an address, the query of the planted request, or a header value', lines.length >= 1 && lines.every(l => /^stats: \{[\d",:{}a-zA-Z\-]+\}$/.test(l)) && !/127\.0\.0\.1|1234567890abcdef|planted|ppp_|stats-test-secret/.test(lines.join('\n')), lines[0]);
-    ok('lines come at the interval and not per request: 7 requests made at most a few lines', lines.length <= 4, lines.length + ' lines');
+    ok('every line is the strict shape, and none holds an address, the query of the planted request, or a header value', lines.length >= 1 && lines.every(l => /^stats: \{[\d",:{}a-zA-Z\-]+\}$/.test(l)) && !/127\.0\.0\.1|203\.0\.113|1234567890abcdef|planted|ppp_|stats-test-secret/.test(lines.join('\n')), lines[0]);
+    ok('lines come at the interval and not per request: 28 requests made at most a few lines', lines.length <= 6, lines.length + ' lines');
     const probes = {};
     for (const p of ['/stats', '/api/stats', '/api/metrics', '/metrics', '/__stats', '/health/stats', '/api/health/stats']) probes[p] = await get(srv.port, 'GET', p);
     ok('no route serves the numbers (each of seven guesses is a 404, and none has a stats document in its body)', Object.values(probes).every(x => x.status === 404 && !/"5xx"|storeErrors/.test(x.text)), Object.keys(probes).map(p => p + ' ' + probes[p].status).join(', '));

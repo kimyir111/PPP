@@ -589,8 +589,8 @@ const signupTagOf = ip => crypto.createHmac('sha256', signupKey).update(homeJobs
 /* A store failure is one line in the log, and at most a few lines a minute, not a stack per request: a request that
    makes the store fail can be sent over and over. */
 const storeLog = { t: 0, n: 0, dropped: 0 };
-function logStoreError(e) {
-  serverStats.storeError();
+function logStoreError(e, kind) {
+  serverStats.storeError(kind);
   const now = Date.now();
   if (now - storeLog.t > 60000) {
     if (storeLog.dropped) console.error('Share store errors not logged in the last minute: ' + storeLog.dropped);
@@ -789,7 +789,7 @@ function postgresStore(url) {
         max: 5
       });
       /* a backend that goes away while idle (a restart, a killed session) must not take the server down */
-      pool.on('error', e => logStoreError(e));
+      pool.on('error', e => logStoreError(e, 'idle'));
     }
     return pool;
   }

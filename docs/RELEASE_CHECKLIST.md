@@ -27,13 +27,15 @@ Every deploy gets a row in `docs/RELEASES.md`.
 4. **Plan** (changes nothing): `node tools/release/release.js <sha>` - any sha of 7 to 40 characters.
    It resolves the full 40-character sha, reads the check run named `gate` of that commit with `gh api` and **refuses unless it concluded `success`**
    (red, cancelled, still running and "no gate yet" all refuse), reads the live `PPP_BUILD`, and prints the plan, the deploy command and the rollback command
-   (with the full sha that is live now). A commit that is not in the history of `main` is printed as a WARNING.
+   (with the full sha that is live now). **A commit that is not in the history of `main` is refused** (GitHub's compare must say identical or behind; no answer refuses too);
+   `--allow-unmerged` is for the rare exception and prints a loud warning.
 5. **Deploy, wait, smoke, row** (after the user said yes): `node tools/release/release.js <sha> --confirm [--pc-code-file <file>]`.
    It runs `render deploys create srv-dalt5s6k1f9s739cuetg --commit <40-char sha> --confirm`, waits until the page shows the new `PPP_BUILD` (polls every 15 s,
    gives up after 20 minutes; a deploy Render marks failed stops it at once; a build takes about 40 s, a slow one up to 16 minutes), then runs
    `node tests/live/smoke.js --sha <sha> --logs` (about a minute, read-only: `/health`, the build, anonymous routes, a fresh profile with no page error and no failed
    request, the defaults of the app switches, and the Render log without an error line since the deploy; a `/health` that answers is not enough, the page has to load).
-   Exit 1 = refused, failed, or the smoke check failed - it then prints the rollback command again.
+   Exit 1 = refused, failed, or the smoke check failed - it then prints the rollback command again. A redeploy of the commit that is already live (`--redeploy`) waits for Render to
+   report the new deploy `live`, since the page cannot tell the new build from the old.
 6. **The row.** The script adds it at the top of the table of `docs/RELEASES.md` (date, commit, deploy id, what changed, the rollback commit, the smoke result);
    commit it in a pull request. By hand (the script is not available): `render deploys create srv-dalt5s6k1f9s739cuetg --commit <40-char sha> --confirm`, wait for
    `render deploys list srv-dalt5s6k1f9s739cuetg -o json --confirm` to say `live`, `node tests/live/smoke.js --sha <sha> --logs`, write the row.
@@ -81,7 +83,8 @@ Every deploy gets a row in `docs/RELEASES.md`.
   which is why there is no uptime pinger). A failure opens the issue "Live smoke failed" (or comments on the open one) with the tail of the output; read the issue, then the run.
   It is not part of the `gate`. "Run workflow" starts it by hand.
 - **In the server's log**, once an hour of being awake and once when the instance stops, one line of numbers: `render logs -r srv-dalt5s6k1f9s739cuetg --limit 500 -o text --confirm | grep stats:`
-  (`requests`, `5xx`, `storeErrors`, each by route class; no address or id). Look at it after a deploy: a `5xx` or `storeErrors` above 0 where the line before had none is the thing to explain.
+  (`requests`, `4xx`, `tooMany` = the 429s among them, `5xx`, `storeErrors`, each by route class, and `idlePoolErrors` for dropped idle database connections; no address or id).
+  Look at it after a deploy: a `5xx` or `storeErrors` above 0 where the line before had none, or a `tooMany` where a limiter should not have fired, is the thing to explain.
 
 ## Rollback
 

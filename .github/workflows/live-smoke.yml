@@ -29,6 +29,8 @@ concurrency:
 
 jobs:
   smoke:
+    # a fork has no production to check and must never wake this one
+    if: ${{ github.repository == 'kimyir111/PPP' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -53,6 +55,8 @@ jobs:
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
       - name: smoke check of the live site
         id: smoke
+        # a hang (a page that never settles, a site that never answers) ends as an ordinary failure here, before the job's own 15 minutes would cancel everything
+        timeout-minutes: 12
         shell: bash
         run: |
           {
@@ -61,7 +65,7 @@ jobs:
             NODE_PATH="$RUNNER_TEMP/smoke-deps/node_modules" node tests/live/smoke.js --site "$SITE"
           } 2>&1 | tee "$RUNNER_TEMP/smoke.log"
       - name: open or update the issue "Live smoke failed"
-        if: ${{ failure() }}
+        if: ${{ failure() || cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: node tools/release/smoke-issue.js "$RUNNER_TEMP/smoke.log"
