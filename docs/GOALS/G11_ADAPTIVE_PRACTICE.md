@@ -23,6 +23,8 @@ validated on synthetic learners first and on the user's own week of practice (H-
 teacher ask for an easier or harder version of one passage, using the existing one-note arranger and the
 recording lead sheet as generators and a new, verified measure-aligned splice.
 
+**G11c-0 is built** (2026-10-08): `practice/variant.js` and its benchmark; the record, with the table of what the splice accepts and refuses on the 325 pieces and the covers, is §10.2.
+
 ## 1. What was measured before designing (evidence)
 
 All numbers were measured for this document at `3567e27` in an independent server of this worktree
@@ -432,6 +434,64 @@ plus reviews (about 5 full reviews for the app phases).
   (accuracy at tempo, `cleanTempo`) is **reported**, not a pass condition: one week of one person has no
   control group.
 - **Fail**: the switch stays off; the log tells which part failed (advice, tempo steps, hands, stability).
+
+### 10.2 G11c-0 record (2026-10-08, Sonnet; branch `g11c-0-variant`)
+
+`practice/variant.js` (UMD, Node + browser, no change to the app file, `server.js` or any arranger module) and its benchmark. `splice(base, variant, {from, to, direction, ...})`
+does the six steps of §8.2 and returns `{ok, graph, range, applied, final, widened, seams, judge, variantOf, stats}` or `{ok: false, reason, message (Korean), alternative, detail}`; the
+reasons are `VARIANT_ARGS, _NOT_LOADED, _TIMELINE, _PARTS, _STAVES, _IDENTICAL, _NOT_EASIER, _NOT_HARDER, _SEAM, _INVALID, _NOTATION, _HARD`. Runs unchanged as `window.PPPPracticeVariant`
+(`tests/practice-variant/variant.test.js` loads it in a bare vm context and gets byte for byte the graph Node makes). Test: `npm run test:practice-variant` (a step of the gate, `shard-o`).
+
+**Where it differs from the words of §8.2, and why.**
+
+| §8.2 says | G11c-0 does | Why |
+| --- | --- | --- |
+| `from`, `to` | 0-based bar **indexes**, both included | G11-D4: the key is the index, numbers repeat and skip |
+| notation-check classes 1-7 = 0 on the range and its neighbours | no hit that **neither source had** (`strictNotation: true`: none at all) | the classes fire on printed music and on the arrangers' own output: on a 55-piece sample the originals have 75/34/98/3 hits of classes 1/3/5/6, the beginner arrangements 64/144/92/207. A rule of "0" would refuse for what the sources already are, not for what the splice did |
+| `realize/clefs.js` and `realize/ottava.js` re-run on the range | the **variant's own** clef changes and 8va lines (those modules wrote them for it), clipped to the range; the base's clef is carried in at the left seam and put back at the right one | a re-run on four bars alone loses the hysteresis the whole-piece run had; the copied lines are the ones the arranger chose |
+| G6 features of "the range" | the G6 **local score** (the model's per-measure sum, weight x z) of the bars that differ, whole-graph features of both graphs; margin `JUDGE_MARGIN = 0.25` | bars that sound the same at the ends of the request are left alone (`applied`) and would only dilute the mean; 0.25 is below the 10th percentile of the accepted changes (0.43) |
+| (nothing) | the base's lyrics stay with the tune (a syllable goes to the variant's note that starts where it was, on the same top pitch, when exactly one does) | an easier hymn passage would otherwise lose its words |
+
+**The benchmark** (`tests/practice-variant/variant-bench.js --full`): the 325 catalogue pieces and the 8 synthetic covers of the G10 tests (`tests/rec/*fixtures.js`), 10 seeded 4-bar
+windows each (3,203), in three directions, 9,609 results; the arranger is the app's own glue (`tests/realize/app-single-extract.js`). *easier*: base = the piece, variant =
+`arrangeSingleNote` one level below its G6 stage (a cover: the lead sheet, `recordingArrange: 'leadsheet'`, beginner); *harder*: base = that arrangement, variant = the piece as written;
+*up*: base = that arrangement, variant = the arrangement one level up. Every accepted splice (3,301) is read by `variant-verify.js` (own code: validator, canonical round trip, every
+event/head/direction/bar/key/meter/tempo/section/performance note outside the range byte for byte, spans and ties not crossing a seam, clef states, the sound of every bar, coverage of
+every staff-bar, checker hits, G5 hard violations, provenance, the G6 judgement again, the engraver's plan, ledger audit and layout, a second call giving the same bytes, splicing the result
+again giving `VARIANT_IDENTICAL`).
+
+| result, share of the 3,203 windows | easier | harder (as written) | up (one level) |
+| --- | --- | --- | --- |
+| accepted | **1,672 (52.2%)** | 1,260 (39.3%) | 369 (11.5%) |
+| identical (the bars sound the same) | 816 (25.5%) | 836 (26.1%) | 2,598 (81.1%) |
+| not easier / not harder (G6) | 553 (17.3%) | 485 (15.1%) | 96 (3.0%) |
+| hard violation (G5) in the variant's own bars | 0 | 477 (14.9%) | 0 |
+| staves (one-staff piece, two-staff arrangement) | 20 (0.6%) | 0 | 0 |
+| notation (a hit neither source had) | 2 | 4 | 0 |
+| seam (a hand cannot cross, even widened) | 0 | 1 | 0 |
+| timeline / parts / invalid / other | 0 | 0 | 0 |
+| no variant (the arranger refused the piece: 8 `UNREACHABLE`, 6 `ALL_CANDIDATES_HAVE_HARD_VIOLATIONS`) | 140 (4.4%) | 140 | 140 |
+| **verification failures** | **0** | **0** | **0** |
+
+By kind of piece, easier: hymns 83.3% accepted, 0% identical, 12.5% not easier; method books 36.6% accepted, **37.8% identical**, 19.9% not easier, 0.9% staves (Beyer 1 and 2 are one staff);
+covers 94.9% accepted. Harder as written: hymns 44.0% accepted and **41.7% hard** (the printed hymn's left hand spans more than 14 semitones in those bars: G5 `SPAN`, the reason the
+arranger exists), covers 43.0% accepted and 49.4% hard. Up one level: 81% identical (the arranger gives the same bars one level up).
+The accepted splices needed little mending: 8 widened a bar (4 once, 4 twice), none of the other 3,293; they cut 94 ties and 429 slurs of the base and 76 and 431 of the variants, clipped
+611 8va lines, 207 wedges and 6 pedals, carried 1,816 clefs in and removed 706. G6 local change of the accepted passages: median 1.30, 10th percentile 0.43, 90th 3.21.
+Time of `splice` (verification not counted), on a shared, loaded machine: median 5-9 ms, 95th percentile 46-72 ms, 0.7% of the calls over 100 ms, the largest pieces (1,500 events) 56-98 ms
+warm and alone: the §11 budget (100 ms on top of the arranger) holds for the typical call and not for the largest pieces; the cost there is the validator and canonical seal (22-31 ms),
+the G6 features of the result (24-26 ms) and G5 (3-7 ms).
+
+**What this says for G11c-1.** (1) On method-book pieces **a third of the requests will be refused as identical** and a fifth as not easier: the refusal and its alternative (70% tempo, the harder hand)
+is half the feature, not an edge case. (2) Hymns and covers get a real easier passage in 83-95% of the windows. (3) "Back to the original" by splicing is refused for 42% of hymn windows by G5; the
+Loop-panel button of §8.3 ("원래대로 연습하기" opens the source song) does not splice and is not affected. (4) A copy one level up is nearly always the same bars.
+
+**Frozen sample in the gate.** The gate cannot run the arrangers for a benchmark (0.2-4 s a piece), so `npm run test:practice-variant` splices the 8 pieces of `variant-bench.baseline.json` `sample`
+on their arrangements frozen in `tests/practice-variant/fixtures/sample-variants.json` (a changed arranger does not move them; `--freeze` rewrites them, `--check --live` runs the arranger as it is
+now) and requires the same outcome digests as this full run for the same pieces and no verification failure. **Mutation:** 37 planted defects in `practice/variant.js` (a tie kept across a seam, a
+pedal not clipped, a clef not put back, no widening, a seam violation ignored, no judge margin, identical bars accepted, the last bar kept, an off-by-one range, another meter accepted, the
+checker not asked, ...) each fail at least one of 25 checks (`variant-mutation.test.js`).
+Re-run the full table: `node tests/practice-variant/variant-bench.js --full --shard I/8 --engrave --idempotent --determinism --out sI.json` for I in 0..7 (about 12 minutes on 8 cores), then `--merge`.
 
 ## 11. Performance budgets
 
