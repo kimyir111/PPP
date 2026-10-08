@@ -12,6 +12,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const FX = require('./covers-fixtures.js');
+const PX = require('./phase-fixtures.js');
 
 const REC_DIR = path.join(FX.REPO, 'rec');
 const FILES = ['attacks.js', 'beats.js', 'model.js', 'metre.js', 'hands.js', 'index.js'];
@@ -54,13 +55,30 @@ const MUTATIONS = [
     find: '      if (conv) sc[i] += conv[H.list[i].mi];', replace: '' },
   { id: 'CONVENTION-PRIOR-WITH-DOWNBEATS', why: 'the preference also overrides heard downbeats', file: 'metre.js',
     find: 'const conv = !opts.downbeats && W.conventionPrior ?', replace: 'const conv = W.conventionPrior ?' },
+  /* G10a-1d (G10 section 36): the phase step and the helper's beats */
+  { id: 'NO-PHASE-STEP', why: 'the phase step does not run (the first onset decides beat 1 again)', file: 'metre.js',
+    find: ' && opts.phaseStep !== false) {', replace: ' && opts.phaseStep !== false && false) {' },
+  { id: 'NO-HARMONIC-RHYTHM', why: 'the harmonic rhythm says nothing', file: 'model.js',
+    find: '    if (n < 2) return 0;', replace: '    return 0;' },
+  { id: 'PHASE-STEP-OTHER-METRE', why: 'the phase step may move to another metre (the group is every reading of the pulse frame)', file: 'metre.js',
+    find: 'if (h.fr === b.fr && h.mi === b.mi) g.push(i);', replace: 'if (h.fr === b.fr) g.push(i);' },
+  { id: 'PHASE-DOWNBEATS-UNWIRED', why: 'a real tracker\'s downbeats do not reach the phase step', file: 'index.js',
+    find: 'phaseDownbeats: phaseOk(W) && downs && helper ? downs : null,', replace: 'phaseDownbeats: null,' },
+  { id: 'REAL-BEATS-USED', why: 'a real tracker\'s steady beats reach the metre model (regular half-bar downbeats make 4/4 into 2/4)', file: 'index.js',
+    find: '    if (!trusted || !gateOk(g)) return \'phase\';', replace: '    if (!gateOk(g)) return \'phase\';' },
+  { id: 'CONFIDENCE-AFTER-MOVE', why: 'the confidence is of the moved phase, not of the metre choice', file: 'metre.js',
+    find: '    const r0 = H.list[bi0];', replace: '    const r0 = H.list[bi];' },
+  { id: 'NO-HELPER-GATE', why: 'unsteady helper downbeats choose the metre again', file: 'index.js',
+    find: '    if (downs && downs.length - 1 >= g.minDownbeats && beats.steadyShare(downs) < g.minSteady) return \'phase\';', replace: '' },
+  { id: 'NO-EXTRA-BEAT-GATE', why: 'an audio beat track with beats too many is one pulse', file: 'beats.js',
+    find: '      if (opts.maxExtra != null && extra > opts.maxExtra * (out.length - 1)) return null;', replace: '' },
   { id: 'BEAT-CAP-30', why: 'the committed cap is not the one the trainer chose (30 instead of 100)', weights: W => { W.beatCap = 30; } },
   { id: 'SWING-POINT-0.58', why: 'the committed swing point is not the one the trainer chose (0.58 instead of 0.64)', weights: W => { W.swing = [0.58]; } }
 ];
 
 function run(dir) {
   const REC = require(path.join(dir, 'index.js'));
-  return FX.check(REC).concat([FX.phaseCheck(REC), FX.windowCheck(REC), FX.priorCheck(REC), FX.configCheck(REC)]);
+  return FX.check(REC).concat([FX.phaseCheck(REC), FX.windowCheck(REC), FX.priorCheck(REC), FX.configCheck(REC)], PX.checks(REC));
 }
 
 test('the copy of rec/ without a defect passes every cover-shaped case', () => {

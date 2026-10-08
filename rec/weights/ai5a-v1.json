@@ -1,8 +1,8 @@
 {
- "sha256": "25b41bfbb7bddb17bdbadbec60564cab58bd3237668e2873936fbb21e94a7c3f",
+ "sha256": "d3e87131079e815494c2f4baf70c32dcb34a8d65b47ef79f8843945a43b8c9ff",
  "schema": "ppp.rec-time-skeleton/1",
  "name": "ai5a",
- "version": "v1.1",
+ "version": "v1.2",
  "features": [
   "kern",
   "fill",
@@ -72,6 +72,27 @@
  ],
  "conventionPrior": {
   "2/4": -0.75
+ },
+ "phase": {
+  "weights": [
+   0.991735,
+   0.512006,
+   4.888269
+  ],
+  "margin": 0.5,
+  "chordSat": 0.3,
+  "features": [
+   "score",
+   "harmony x chord share",
+   "downbeats"
+  ],
+  "helperGate": {
+   "maxIrregular": 0.15,
+   "maxExtra": 0.03,
+   "minSteady": 0.8,
+   "minBeats": 64,
+   "minDownbeats": 24
+  }
  },
  "tables": {
   "families": {

@@ -79,15 +79,15 @@
     "n": 6
    },
    "notation.duration.accuracy": {
-    "mean": 0.821999,
+    "mean": 0.824524,
     "n": 6
    },
    "notation.duration.accuracy_ref": {
-    "mean": 0.804674,
+    "mean": 0.8072,
     "n": 6
    },
    "notation.duration.page_accuracy": {
-    "mean": 0.821999,
+    "mean": 0.824524,
     "n": 6
    },
    "notation.hand.accuracy": {
@@ -207,7 +207,7 @@
     "n": 4
    },
    "nq.ned": {
-    "mean": 0.472292,
+    "mean": 0.468019,
     "n": 6
    },
    "nq.range.ledger4_rate": {
@@ -219,7 +219,7 @@
     "n": 6
    },
    "nq.rest.per_measure_delta": {
-    "mean": 0.132306,
+    "mean": 0.121889,
     "n": 6
    },
    "nq.rhythm.hidden_beat_rate": {
@@ -363,11 +363,11 @@
     "n": 6
    },
    "read.rests_per_measure": {
-    "mean": 0.236472,
+    "mean": 0.226056,
     "n": 6
    },
    "read.rests_per_measure.delta": {
-    "mean": 0.132306,
+    "mean": 0.121889,
     "n": 6
    },
    "read.short_notes_rate": {
@@ -379,11 +379,11 @@
     "n": 6
    },
    "read.ties_per_note": {
-    "mean": 0.092621,
+    "mean": 0.094657,
     "n": 6
    },
    "read.ties_per_note.delta": {
-    "mean": 0.062594,
+    "mean": 0.06463,
     "n": 6
    },
    "read.tuplets_per_note": {
@@ -395,7 +395,7 @@
     "n": 6
    },
    "sqi": {
-    "mean": 81.741531,
+    "mean": 81.766784,
     "n": 6
    },
    "struct.downbeat.f1": {
@@ -575,15 +575,15 @@
      "n": 6
     },
     "notation.duration.accuracy": {
-     "mean": 0.821999,
+     "mean": 0.824524,
      "n": 6
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.804674,
+     "mean": 0.8072,
      "n": 6
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.821999,
+     "mean": 0.824524,
      "n": 6
     },
     "notation.hand.accuracy": {
@@ -703,7 +703,7 @@
      "n": 4
     },
     "nq.ned": {
-     "mean": 0.472292,
+     "mean": 0.468019,
      "n": 6
     },
     "nq.range.ledger4_rate": {
@@ -715,7 +715,7 @@
      "n": 6
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.132306,
+     "mean": 0.121889,
      "n": 6
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -859,11 +859,11 @@
      "n": 6
     },
     "read.rests_per_measure": {
-     "mean": 0.236472,
+     "mean": 0.226056,
      "n": 6
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.132306,
+     "mean": 0.121889,
      "n": 6
     },
     "read.short_notes_rate": {
@@ -875,11 +875,11 @@
      "n": 6
     },
     "read.ties_per_note": {
-     "mean": 0.092621,
+     "mean": 0.094657,
      "n": 6
     },
     "read.ties_per_note.delta": {
-     "mean": 0.062594,
+     "mean": 0.06463,
      "n": 6
     },
     "read.tuplets_per_note": {
@@ -891,7 +891,7 @@
      "n": 6
     },
     "sqi": {
-     "mean": 81.741531,
+     "mean": 81.766784,
      "n": 6
     },
     "struct.downbeat.f1": {
@@ -1070,15 +1070,15 @@
      "n": 6
     },
     "notation.duration.accuracy": {
-     "mean": 0.821999,
+     "mean": 0.824524,
      "n": 6
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.804674,
+     "mean": 0.8072,
      "n": 6
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.821999,
+     "mean": 0.824524,
      "n": 6
     },
     "notation.hand.accuracy": {
@@ -1198,7 +1198,7 @@
      "n": 4
     },
     "nq.ned": {
-     "mean": 0.472292,
+     "mean": 0.468019,
      "n": 6
     },
     "nq.range.ledger4_rate": {
@@ -1210,7 +1210,7 @@
      "n": 6
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.132306,
+     "mean": 0.121889,
      "n": 6
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -1354,11 +1354,11 @@
      "n": 6
     },
     "read.rests_per_measure": {
-     "mean": 0.236472,
+     "mean": 0.226056,
      "n": 6
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.132306,
+     "mean": 0.121889,
      "n": 6
     },
     "read.short_notes_rate": {
@@ -1370,11 +1370,11 @@
      "n": 6
     },
     "read.ties_per_note": {
-     "mean": 0.092621,
+     "mean": 0.094657,
      "n": 6
     },
     "read.ties_per_note.delta": {
-     "mean": 0.062594,
+     "mean": 0.06463,
      "n": 6
     },
     "read.tuplets_per_note": {
@@ -1386,7 +1386,7 @@
      "n": 6
     },
     "sqi": {
-     "mean": 81.741531,
+     "mean": 81.766784,
      "n": 6
     },
     "struct.downbeat.f1": {
@@ -2124,9 +2124,9 @@
     "critical.structure": 1.0,
     "notation.accidentals.courtesy_per_100": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.909091,
-    "notation.duration.accuracy_ref": 0.909091,
-    "notation.duration.page_accuracy": 0.909091,
+    "notation.duration.accuracy": 0.924242,
+    "notation.duration.accuracy_ref": 0.924242,
+    "notation.duration.page_accuracy": 0.924242,
     "notation.hand.accuracy": 1.0,
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
@@ -2146,7 +2146,7 @@
     "read.bar_completeness": 1.0,
     "read.bar_integrity": 1.0,
     "read.ledger_lines.heavy_rate": 0.0,
-    "sqi": 99.090909,
+    "sqi": 99.242424,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -2165,8 +2165,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "299cdcb63fecda70",
-   "sqi": 99.090909,
+   "semantic": "5e5e3e11ba4dab88",
+   "sqi": 99.242424,
    "status": "ok"
   },
   "replay/micro/M02-alberti-4-4|salamander-v1|human|s1": {
@@ -2421,6 +2421,14 @@
    "git_sha": "2cd4f0e09807458b49e30bef45b0175271ae0693",
    "reason": "G10a-1b: the time skeleton on real covers (ai5a v1.1: a beat cap of 100 on the accent evidence, swung frames of the simple metres, the swing family in the training data, after the review a 0.75-nat preference for 4/4 over 2/4 when no downbeats are heard; S6 refitted on the new skeleton with its threshold held at main's training precision). Mixed on the catalogue suites, see docs/GOALS/G10_AUDIO_TO_SCORE.md section 28",
    "sqi_all": 81.741531,
+   "usable_all": 0.5
+  },
+  {
+   "audio_score_sha256": "0ec12b46d05331531a89d070d0688f29f6604cc3290bcfae2b586459dfab2c84",
+   "date": "2026-10-08",
+   "git_sha": "286abe741c44eb5a3b4283c1ff6313efabc03fe0",
+   "reason": "G10a-1d: a phase step after the unchanged metre model (harmonic rhythm, later-start training, the helper's unsteady downbeats as phase evidence only); metre and tempo identical (G10 section 36)",
+   "sqi_all": 81.766784,
    "usable_all": 0.5
   }
  ],
@@ -2767,10 +2775,10 @@
  },
  "lock_sha256": "811c66d96224b4cd065ddc92c78219cb550794947450b9f1099cd10804e49c05",
  "recorded": {
-  "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
-  "date": "2026-10-05",
+  "audio_score_sha256": "0ec12b46d05331531a89d070d0688f29f6604cc3290bcfae2b586459dfab2c84",
+  "date": "2026-10-08",
   "git_dirty": true,
-  "git_sha": "2cd4f0e09807458b49e30bef45b0175271ae0693",
+  "git_sha": "286abe741c44eb5a3b4283c1ff6313efabc03fe0",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"

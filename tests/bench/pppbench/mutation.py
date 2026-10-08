@@ -565,7 +565,7 @@ REC_V2_MUTATIONS: List[Dict[str, Any]] = [
      "expect": "REGRESSION", "metrics": ["critical.playback_tempo", "struct.tempo.ok_effective"]},
     {"id": "REC-V2-NO-AUDIO-BEATS", "v2": True,       # the helper's beats and downbeats are not read (the human/oracle rows)
      "file": "rec/index.js",
-     "find": "    const audio = opts.beats ? beats.audioTrack(opts.beats, att) : null;",
+     "find": "    const audio = helper === 'used' ? beats.audioTrack(opts.beats, att) : null;",   # G10a-1d: behind the helper gate
      "replace": "    const audio = null;",
      "expect": "REGRESSION", "metrics": ["critical.meter", "critical.beat_placement", "struct.downbeat.f1"]},
     # G10a-2: v2's onsets are placed by rec/grid.js (S3), so the floor slip G10a-1 fixed in quantize() is guarded where v2 now
