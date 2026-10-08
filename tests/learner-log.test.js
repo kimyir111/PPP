@@ -5,7 +5,7 @@
    Real pages (headless Chrome against the tree's server), a fake MIDI keyboard, real laps. Sections (LL_ONLY=a,b runs some):
      switch    PPP.learner: default 'legacy', ?learner=, the remembered choice, garbage, a throwing storage, the setter (PPP.recording's idiom)
      identity  under 'legacy' a scripted practice session writes the localStorage aggregates byte for byte as the golden dump of the page before
-               this phase (tests/practice/baselines/learner-legacy.json; node tests/learner-log.test.js --record writes it from a commit), and
+               this phase (tests/practice/baselines/learner-legacy.json; node tests/practice/learner-record.js --rev COMMIT writes it from that commit), and
                nothing new: no request for practice/runlog.js, no IndexedDB 'ppp-runlog'; under 'typed' the same session differs only by the
                `source` key of each run summary
      kinds     a measured lap, a Follow lap, a recall lap and a Demo Input lap are logged as what they are; a simulated run never reaches evidence
@@ -24,7 +24,6 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 const { preparePage } = require('./boot');
 
-const PAGE = 'Piano Coach App.dc.html';
 const BASE = 'http://127.0.0.1:8777/Piano%20Coach%20App.dc.html';
 const GOLDEN = path.join(__dirname, 'practice', 'baselines', 'learner-legacy.json');
 const errors = [];
