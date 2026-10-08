@@ -77,21 +77,37 @@ const loneKept = Nn => SC.wedgesOf(Nn.normalize([doc([part('P1', [SC.grandWith(0
 const pitchedZero = Nn => {
   const one = (extra) => doc([part('P1', [{ items: [note('C5', 1, { s: 1 }), note('D5', 0, Object.assign({ s: 1, type: 'quarter' }, extra)), note('E5', 1, { s: 1 })], staved: true, div: 2, key: 0, time: [4, 4], staves: 1, clefs: ['G'] }], { div: 2, staved: true })]);
   const a = Nn.normalize([one()]), b = Nn.normalize([one({ dot: true })]);
-  return [a.report.counts.zeroDurationsRepaired, a.report.counts.zeroDurationsLeft, b.report.counts.zeroDurationsRepaired, b.report.counts.zeroDurationsLeft].join();
+  return [a.report.counts.zeroNotesRepaired, a.report.counts.zeroRestsRepaired, a.report.counts.zeroDurationsLeft, b.report.counts.zeroNotesRepaired, b.report.counts.zeroNotesLeft].join();
 };
 
 /* id, the mutation, the scenario that must see it (or a probe and what the real module answers) */
 const MUTATIONS = [
   { id: 'MUT-ZERO-UNREPAIRED', why: 'a note of length 0 is found and counted but not given a length: the importer refuses the file (E-DURATION)',
-    edits: [["if (len) { d.text = String(len); fx.repaired++; fx.how[how] = (fx.how[how] || 0) + 1; }", "if (len) { fx.repaired++; fx.how[how] = (fx.how[how] || 0) + 1; }"]], scenario: 'zeroRest', also: ['zeroRestPair', 'zeroRestCompound', 'zeroRestTyped'] },
+    edits: [["      d.text = String(len);\n      fx.repaired++;", "      fx.repaired++;"]], scenario: 'zeroRest', also: ['zeroRestPair', 'zeroRestCompound', 'zeroRestTyped'] },
   { id: 'MUT-ZERO-BAR-IN-QUARTERS', why: 'the length of a whole-bar rest ignores the beat type: a bar of 6/8 lasts six quarters',
     edits: [["const len = (beats * 4 / bt) * dOut;", "const len = beats * dOut;"]], scenario: 'zeroRestCompound' },
   { id: 'MUT-ZERO-TYPE-IGNORED', why: 'a zero-length note that is no whole-bar rest is not read from its type',
     edits: [["if (ty && TYPE_Q[ty] && !kid(c, 'dot') && !kid(c, 'time-modification') && !kid(c, 'grace')) {", "if (false) {"]], scenario: 'zeroRestTyped' },
   { id: 'MUT-ZERO-DOTTED-GUESSED', why: 'a dotted note of length 0 is read as if it were not dotted (a length the page does not give)',
-    edits: [["if (ty && TYPE_Q[ty] && !kid(c, 'dot') && !kid(c, 'time-modification') && !kid(c, 'grace')) {", "if (ty && TYPE_Q[ty] && !kid(c, 'grace')) {"]], probe: pitchedZero, clean: '1,0,0,1' },
+    edits: [["if (ty && TYPE_Q[ty] && !kid(c, 'dot') && !kid(c, 'time-modification') && !kid(c, 'grace')) {", "if (ty && TYPE_Q[ty] && !kid(c, 'grace')) {"]], probe: pitchedZero, clean: '1,0,0,0,1' },
+  { id: 'MUT-ZERO-SPLIT-SWAPPED', why: 'a repaired pitched note is counted as a rest (and a rest as a note)',
+    edits: [["if (r) fx.rests++; else fx.notes++;", "if (r) fx.notes++; else fx.rests++;"]], scenario: 'zeroRest', also: ['zeroRestCompound'] },
+  { id: 'MUT-ZERO-LEFT-SPLIT-SWAPPED', why: 'a zero length left is counted under the wrong kind',
+    edits: [["fx.left++; if (r) fx.leftRests++; else fx.leftNotes++;", "fx.left++; if (r) fx.leftNotes++; else fx.leftRests++;"]], scenario: 'zeroRestLeft' },
+  { id: 'MUT-ZERO-NO-BACKUP', why: 'a repaired whole-bar rest gets its length and no <backup>: the rest of the other staff starts where it ends and the bar is twice as long (every later bar plays a bar late)',
+    edits: [["        body.splice(at + 1, 0, mk('backup', {}, [mk('duration', {}, String(r.len))]));\n        fx.backups++;", "        fx.backups++;"]], scenario: 'zeroRest', also: ['zeroRestCompound'] },
+  { id: 'MUT-ZERO-BACKUP-WRONG-LENGTH', why: 'the <backup> after a repaired rest goes back by one division, not by the length of the rest',
+    edits: [["mk('backup', {}, [mk('duration', {}, String(r.len))])", "mk('backup', {}, [mk('duration', {}, '1')])"]], scenario: 'zeroRest', also: ['zeroRestCompound'] },
+  { id: 'MUT-ZERO-BACKUP-ALWAYS', why: 'a <backup> is written after every repaired whole-bar rest, also when nothing follows it',
+    edits: [["if (later.some(e => e.name === 'note' || e.name === 'forward')) {", "if (true) {"]], scenario: 'zeroRestPair', also: ['zeroRest', 'zeroRestCompound'] },
+  { id: 'MUT-ZERO-OWN-VOICE-REPAIRED', why: 'a whole-bar rest of length 0 followed by a note of its own voice is given the bar (it plays with the note)',
+    edits: [["if (later.some(e => e.name === 'note' && key(e) === key(r.el))) {", "if (false) {"]], scenario: 'zeroRestOwnVoice' },
+  { id: 'MUT-ZERO-OWN-VOICE-ANY-VOICE', why: 'a note of ANY voice after the rest withdraws the repair (the other staff\'s rest too)',
+    edits: [["if (later.some(e => e.name === 'note' && key(e) === key(r.el))) {", "if (later.some(e => e.name === 'note')) {"]], scenario: 'zeroRest', also: ['zeroRestCompound'] },
+  { id: 'MUT-ZERO-REFUSED-UNCOUNTED', why: 'a repair withdrawn is not counted as left or as refused',
+    edits: [["fx.repaired--; fx.rests--; fx.left++; fx.leftRests++; fx.refused++;", "fx.repaired--; fx.rests--;"]], scenario: 'zeroRestOwnVoice' },
   { id: 'MUT-ZERO-GUESSED', why: 'a zero length with nothing to read it from is given one division and not reported as left',
-    edits: [["    else fx.left++;\n  }\n  const newFixes", "    else { d.text = '1'; fx.repaired++; }\n  }\n  const newFixes"]], scenario: 'zeroRestLeft' },
+    edits: [["    } else { fx.left++; if (r) fx.leftRests++; else fx.leftNotes++; }", "    } else { d.text = '1'; fx.repaired++; fx.rests++; }"]], scenario: 'zeroRestLeft' },
   { id: 'MUT-ZERO-REPAIRS-UNCOUNTED', why: 'the repairs are made but not counted',
     edits: [["ctx.counts.zeroDurationsRepaired += fx.repaired;", "ctx.counts.zeroDurationsRepaired += 0;"]], scenario: 'zeroRest', also: ['zeroRestPair', 'zeroRestCompound', 'zeroRestTyped'] },
   { id: 'MUT-ZERO-LEFT-UNCOUNTED', why: 'a zero length that is left is not counted: the import will refuse and nobody can say why',

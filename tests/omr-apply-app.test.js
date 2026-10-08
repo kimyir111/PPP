@@ -148,6 +148,8 @@ const IN_PAGE = `
     ok('the engraver draws the import\'s own graph: via live, it agrees with the Score, nothing is projected', v2.via === 'live' && v2.agree === true && v2.graphSame && v2.producer === 'omr', short([v2.via, v2.agree, v2.graphSame, v2.producer]));
     ok('PdfLayer.apply saw the same page as for legacy (the same counts of findings)', JSON.stringify(v2.fromPdf) === JSON.stringify(legacy.fromPdf), short([v2.fromPdf, legacy.fromPdf]));
     ok('the findings were applied as graph edits, none skipped', v2.reportGraph && v2.reportGraph.skipped.length === 0 && v2.reportGraph.conflicts === 0 && v2.reportGraph.findings.total >= 12, short(v2.reportGraph));
+    ok('report.graph lists what the page took away (the phantom note) and what the work cost (one validation)', v2.reportGraph.removed && v2.reportGraph.removed.events === 1 && v2.reportGraph.removed.heads === 1 && v2.reportGraph.removed.list[0].pitches.join() === 'E5'
+      && v2.reportGraph.work && v2.reportGraph.work.validations === 1, short([v2.reportGraph.removed, v2.reportGraph.work]));
     ok('the edited entities carry provenance (events moved by a finding are inferred)', v2.inferred >= 2, String(v2.inferred));
     ok('report.normalize is there, the import report is kept for the song', v2.normalize && v2.importReport && v2.importReport.format === 'musicxml' && v2.importReport.counts.measures === 3, short(v2.importReport));
     for (const k of ['notes', 'rests', 'chords', 'marks', 'ottavas', 'under']) {
@@ -172,19 +174,21 @@ const IN_PAGE = `
       const beamed = new Set(); beams.forEach(b => { if (b.source === 'graph' && !b.deferred) b.events.forEach(e => beamed.add(e)); });
       return { bars: r.score.measures.length, via: src.via, agree: src.agree && src.agree.ok, graphBeams: src.graph ? src.graph.parts.reduce((s, p) => s + p.spanners.filter(x => x.type === 'beam').length, 0) : 0,
         drawn: beams.filter(b => b.source === 'graph').length, beamedEvents: beamed.size, normalize: r.report.normalize && r.report.normalize.counts,
-        rests: r.score.notes.filter(n => n.rest && n.m === 2).map(n => n.staff + ':' + n.dur), wedges: src.graph ? src.graph.parts.reduce((s, p) => s + p.spanners.filter(x => x.type === 'wedge').length, 0) : -1,
+        rests: r.score.notes.filter(n => n.rest && n.m === 2).map(n => n.staff + ':' + n.dur), lens: r.score.measures.map(m => m.lenQ).join(), restAt: r.score.notes.filter(n => n.rest && n.m === 2).map(n => n.staff + ':' + n.b + ':' + n.dur).join(), wedges: src.graph ? src.graph.parts.reduce((s, p) => s + p.spanners.filter(x => x.type === 'wedge').length, 0) : -1,
         failed: r.report.graphFailed || null, hands: Array.from(new Set(r.score.notes.map(n => n.hand))).sort().join() };
     }, BEAMED, mode, PNG);
     const v2 = await run('v2');
     ok('v2 imports a page with a zero-length rest and a hairpin that ends where it starts (the importer refused both before the normaliser mended them)', !v2.error && v2.bars === 3 && !v2.failed, short(v2));
     ok('the normaliser says what it did', v2.normalize && v2.normalize.zeroDurationsRepaired === 2 && v2.normalize.wedgesDegenerate === 1 && v2.normalize.wedgesDropped === 4, short(v2.normalize));
-    ok('both whole-bar rests last the bar (2/4 = 2 quarters)', v2.rests.join() === '1:2,2:2', v2.rests.join());
+    ok('both whole-bar rests last the bar (2/4 = 2 quarters) and start with it: no bar is doubled, no later bar plays a bar late', v2.rests.join() === '1:2,2:2' && v2.restAt === '1:0:2,2:0:2' && v2.lens === '2,2,2', short([v2.rests, v2.restAt, v2.lens]));
+    ok('the normaliser counts rests and pitched notes apart, and the <backup> it wrote', v2.normalize.zeroRestsRepaired === 2 && v2.normalize.zeroNotesRepaired === 0 && v2.normalize.zeroRestBackups === 1 && v2.normalize.zeroRestsRefused === 0, short(v2.normalize));
     ok('no hairpin is left', v2.wedges === 0);
     ok('the beams Audiveris wrote are in the graph and drawn from it (2 beams over 4 eighths)', v2.graphBeams === 2 && v2.drawn === 2 && v2.beamedEvents === 4, short([v2.graphBeams, v2.drawn, v2.beamedEvents]));
     ok('the graph agrees with the Score', v2.via === 'live' && v2.agree === true, short([v2.via, v2.agree]));
     ok('no staff is silent', v2.hands === 'l,r', v2.hands);
     const legacy = await run('legacy');
     ok('legacy reads the same page (the control)', !legacy.error && legacy.bars === 3, short(legacy));
+    ok('and has the same bar lengths as v2 (a zero-length bar falls back to the time signature in the legacy reader)', legacy.lens === v2.lens, short([legacy.lens, v2.lens]));
     await page.close();
   }
 
@@ -223,6 +227,15 @@ const IN_PAGE = `
       return { bars: r.score.measures.length, graph: !!r.graph, reportGraph: r.report.graph, via: src.via, fromPdf: r.source.fromPdf || null, flat: r.score.notes.filter(n => n.acc === 'flat').length };
     }, pdf, FX.XML);
     ok('a PdfLayer.apply that throws leaves the recognised graph as it is, and says so', !thrown.error && thrown.bars === 3 && thrown.graph && thrown.reportGraph && /boom/.test(thrown.reportGraph.error || '') && thrown.via === 'live' && thrown.flat === 0, short(thrown));
+    /* the layers are asked for inside the fallback: a page that cannot give them is a fallback, not an exception */
+    const guard = await c.page.evaluate(async xml => {
+      window.PPP.omr = 'v2';
+      const omr = { normalize: {}, engine: 'Audiveris' };
+      let r, threw = false;
+      try { r = await window.PPP.Import.omrS4(omr, xml, 'n.png', () => { throw new Error('no layers'); }, null); } catch (e) { threw = true; }
+      return { r: r === null, threw: threw, failed: omr.graphFailed || null };
+    }, FX.XML);
+    ok('a page that cannot give its layers is a fallback, not an exception (omrS4 returns null and says why)', !guard.threw && guard.r === true && /no layers/.test(guard.failed || ''), short(guard));
     await c.page.close();
   }
 

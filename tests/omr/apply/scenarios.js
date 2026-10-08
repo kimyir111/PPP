@@ -339,6 +339,94 @@ S.movedDynamic = {
   }
 };
 
+/* a finding with a NaN, an Infinity, a null or a missing field is one refused edit: the others are made (the page's lines are never all lost for one bad item) */
+S.badItems = {
+  why: 'a finding with a NaN, an Infinity, a null or a missing field is one refused edit, named; the good findings beside it are made',
+  run: A => {
+    const g = graphOf();
+    const sc = scoreOf(g);
+    const n1 = noteAt(sc, 2, 1, 2), n2 = noteAt(sc, 3, 1, 1);
+    const f = A.emptyFindings();
+    f.pitches.push({ head: n1.sgHead, event: n1.sgEvent, pitch: { step: 'F', alter: 1, oct: 5 }, acc: 'sharp' });                       /* good */
+    f.pitches.push(null, { head: n2.sgHead, pitch: { step: 'B', alter: NaN, oct: 5 } }, { head: n2.sgHead, pitch: { step: 'B', oct: Infinity } }, { head: undefined });
+    f.moves.push({ event: noteAt(sc, 1, 1, 0).sgEvent, b: NaN }, { event: noteAt(sc, 1, 1, 1).sgEvent, b: Infinity }, { event: noteAt(sc, 1, 1, 2).sgEvent, b: null }, null);
+    f.chordsIn.push({ m: 1, b: 0, text: 'C' }, { m: 1, b: NaN, text: 'D' }, { m: 1, b: Infinity, text: 'E' }, { m: NaN, b: 0, text: 'F' }, { m: 1, b: 0, text: null }, null);   /* the first is good */
+    f.ottavas.push({ staff: 1, m: 2, b: NaN, endM: 2, endB: 3.001, dir: 1, size: 8 }, { staff: 1, m: 2, b: 0, endM: 2, endB: Infinity, dir: 1, size: 8 }, null, {});
+    f.arps.push(null, { heads: null }, { heads: [1, 2] });
+    f.drops.push(null);
+    f.marksIn.push(null, { m: 3, kind: 'segno', text: null });                                                                         /* the second is good */
+    f.heading = { title: 'X', tempo: NaN };                                                                                           /* the title is good, the NaN tempo is no tempo */
+    let r;
+    try { r = A.apply(g, f); } catch (e) { return { ok: false, detail: 'apply threw: ' + e.message }; }
+    const sc2 = scoreOf(r.graph);
+    return { ok: r.appliedTotal === 4 && r.work.validations === 1 && r.skipped.length >= 15 && r.skipped.every(s => typeof s.why === 'string' && s.why.length) && SG.validate(r.graph).ok
+      && noteAt(sc2, 2, 1, 2).p === 'F#5' && sc2.chords.map(c => c.text).join() === 'C' && sc2.marks.length === 1 && sc2.title === 'X',
+      detail: { applied: r.appliedTotal, skipped: r.skipped.map(s => s.group + ': ' + s.why.slice(0, 60)) } };
+  }
+};
+
+/* the cost of a refusal: the first try is the whole list, a refusal takes out the entries the validator names and tries them one by one, and a budget bounds it */
+const bigGraph = () => graphOf(0, 24);
+function bigFindings(A, g, badMoves) {
+  const sc = scoreOf(g);
+  const f = A.emptyFindings();
+  const rh = sc.notes.filter(n => !n.rest && (n.staff || 1) === 1 && n.voice === 1);
+  rh.slice(0, 100).forEach((n, i) => { if (i % 2 === 0) f.pitches.push({ head: n.sgHead, event: n.sgEvent, pitch: { step: n.p[0], alter: 1, oct: +n.p.slice(-1) }, acc: 'sharp' }); });
+  /* 100 findings in all: 50 pitches (made), then moves of the left hand: the second half note of a bar onto the first one's place is the refused kind (two events at one place in a voice), the others move to where they are (already) */
+  const lh = sc.notes.filter(n => !n.rest && (n.staff || 1) === 2);
+  lh.forEach((n, i) => {
+    if (f.pitches.length + f.moves.length >= 100) return;
+    if (i % 2 === 1 && badMoves > 0) { badMoves--; f.moves.push({ event: n.sgEvent, m: n.m, b: n.b - 2 }); }                       /* onto the first half note of the bar */
+    else f.moves.push({ event: n.sgEvent, m: n.m, b: n.b });                                                                          /* where it is */
+  });
+  return f;
+}
+S.refusalCost = {
+  why: 'five refused edits among a hundred cost a handful of validations, not log2 of the list for each',
+  run: A => {
+    const g = bigGraph();
+    const f = bigFindings(A, g, 5);
+    const r = A.apply(g, f);
+    const total = A.count(f).total;
+    return { ok: r.skipped.length === 5 && r.skipped.every(s => s.group === 'moves') && r.appliedTotal + r.already + r.skipped.length === total && r.work.validations <= 14 && SG.validate(r.graph).ok && !r.work.budgetSpent,
+      detail: { total: total, applied: r.appliedTotal, already: r.already, skipped: r.skipped.length, work: r.work } };
+  }
+};
+S.budget = {
+  why: 'when the budget is spent what is unresolved is refused, named budget, and never applied unchecked',
+  run: A => {
+    const g = bigGraph();
+    const f = bigFindings(A, g, 10);
+    const none = A.apply(g, f, { maxValidations: 0 });
+    const free = A.apply(g, bigFindings(A, g, 0), { maxValidations: 0 });                                                              /* nothing refused: the first try is free, the budget is not touched */
+    const some = A.apply(g, f, { maxValidations: 4 });
+    const total = A.count(f).total;
+    const budgetOnly = x => x.skipped.filter(s => /^budget/.test(s.why)).length;
+    return { ok: free.appliedTotal > 0 && !free.skipped.length && !free.work.budgetSpent && none.graph === g && none.skipped.length === total && none.skipped.every(s => /^budget/.test(s.why)) && none.work.budgetSpent
+      && some.work.budgetSpent && budgetOnly(some) > 0 && some.appliedTotal + some.already + some.skipped.length === total && SG.validate(some.graph).ok && some.work.validations <= 6,
+      detail: { total: total, none: [none.appliedTotal, none.skipped.length], some: [some.appliedTotal, some.already, some.skipped.length, budgetOnly(some), some.work] } };
+  }
+};
+S.removed = {
+  why: 'what the edits took away is listed: a phantom chord (its pitches and bar), a chord name, a mark',
+  run: A => {
+    const g0 = rich();
+    const g1 = A.apply(g0, Object.assign(A.emptyFindings(), { chordsIn: [{ m: 1, b: 0, text: 'F' }], marksIn: [{ m: 2, kind: 'coda', text: null }] })).graph;
+    const { before, after } = runDouble(g1, (s, P) => {
+      P.phantom(s, notesAt(s, 1, 1, 0));
+      P.chords(s, [1], []);
+      P.marks(s, [2], []);
+    });
+    const f = A.diff(before, after);
+    f.moves.push({ event: noteAt(scoreOf(g1), 3, 1, 1).sgEvent, m: 3, b: 0 });                                                        /* one edit the validator refuses (two events at one place) beside them: the tries that fail must leave nothing in the list */
+    const r = A.apply(g1, f);
+    const t = r.removed;
+    return { ok: r.skipped.length === 1 && r.skipped[0].group === 'moves' && t.events === 1 && t.heads === 2 && t.chords === 1 && t.marks === 1 && t.list.length === 3
+      && t.list.filter(x => x.kind === 'event')[0].pitches.length === 2 && t.list.filter(x => x.kind === 'event')[0].bar === '1' && t.list.filter(x => x.kind === 'chord')[0].text === 'F',
+      detail: { removed: t, skipped: r.skipped } };
+  }
+};
+
 /* the hand rule for an OMR page */
 const twoParts = () => {
   const SCN = L.SC;

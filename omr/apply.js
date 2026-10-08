@@ -25,7 +25,10 @@
      - Idempotent: applying findings that are already true of the graph changes nothing and returns the same graph (`already` counts them).
      - Nothing is lost silently: a removed note is a phantom the page's arpeggio line explains (a whole chord at once; a partial chord is skipped, named), counted;
        a move keeps the event, its heads and its ties; a beam or tuplet over events only some of which move goes (the passes that own groups regroup).
-     - Every edited entity carries prov {asp: {<aspect>: {src: <omr/pdflayer source>, op: 'inferred'}}}.
+     - Provenance, exactly: a head whose pitch or accidental the page changed carries prov.asp.pitch / .spelling {src: <omr/pdflayer source>, op: 'inferred'}; an event
+       that moved carries prov.asp.rhythm; a new arpeggio, 8va or chord name carries prov {src, op}. The schema has no provenance field for a jump (segno, coda, D.S.), a
+       tempo or the title and composer: those edits carry none (the result's `applied` counts them). A note, chord name or mark the page took away leaves no entity to
+       carry anything: the result's `removed` lists them (counts, and the first 100 with bar, place and pitches). The source itself is in provenance.sources.
    ========================================================================== */
 (function (root, factory) {
   'use strict';
@@ -46,6 +49,12 @@
   const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const close = (a, b) => Math.abs(a - b) < 1e-6;
   class Skip extends Error { constructor(why) { super(why); this.name = 'Skip'; this.why = why; } }
+  /* what a finding must be before an edit is made from it: a number is finite, a pitch has a letter, a whole octave and a whole alteration */
+  const fin = x => typeof x === 'number' && isFinite(x);
+  const need = (ok, why) => { if (!ok) throw new Skip(why); };
+  const ACCIDENTALS = ['sharp', 'flat', 'natural', 'double-sharp', 'flat-flat', 'sharp-sharp', 'natural-sharp', 'natural-flat', 'quarter-sharp', 'quarter-flat'];
+  const validPitch = p => !!p && typeof p === 'object' && 'CDEFGAB'.indexOf(p.step) >= 0 && typeof p.step === 'string' && p.step.length === 1 && Number.isInteger(p.oct) && p.oct >= 0 && p.oct <= 9
+    && (p.alter === undefined || (Number.isInteger(p.alter) && p.alter >= -3 && p.alter <= 3));
 
   /* ------------------------------------------------------------------ findings */
   function emptyFindings() {
@@ -148,6 +157,7 @@
     return ctx.byNumber.get(number) || null;
   }
   const provOf = d => d.provRefOf({ source: SOURCE, op: 'inferred' });
+  const pitchName = p => (p && p.step ? p.step + (p.alter > 0 ? '#'.repeat(p.alter) : p.alter < 0 ? 'b'.repeat(-p.alter) : '') + p.oct : '?');
 
   const HANDLERS = {
     /* a note the page's lines say is not there: the whole event goes */
@@ -158,14 +168,17 @@
       if (it.of !== undefined && it.of !== have) throw new Skip('the event changed since the finding was made');
       if (it.heads !== undefined && it.heads.length < have) throw new Skip('only some heads of a chord are phantoms: not removed');
       if ((it.heads || []).length && !(x.e.heads || []).every(h => it.heads.indexOf(h.id) >= 0)) throw new Skip('the heads are not the event\'s');
+      const gone = { kind: 'event', event: it.event, bar: (d.doc.timeline.measures[d.mIdx.get(x.e.m)] || {}).number, at: x.e.at, pitches: (x.e.heads || []).map(h => pitchName(h.pitch)) };
       d.removeEvents([it.event]);
+      if (ctx.trace) ctx.trace.push(gone);
       return 'applied';
     },
     /* a head's pitch (an accidental carried through the bar, an octave under a bracket) and the accidental printed with it */
     pitches(ctx, it) {
       const d = ctx.d, x = d.hd.get(it.head);
       if (!x) throw new Skip('no such note');
-      if (!it.pitch) throw new Skip('no pitch');
+      need(validPitch(it.pitch), 'not a pitch');
+      need(it.acc === undefined || it.acc === null || ACCIDENTALS.indexOf(it.acc) >= 0, 'not an accidental');
       const want = it.pitch.alter ? { step: it.pitch.step, alter: it.pitch.alter, oct: it.pitch.oct } : { step: it.pitch.step, oct: it.pitch.oct };
       const aspects = [];
       if (!sameJson(x.h.pitch, want)) { x.h.pitch = want; aspects.push('pitch'); }
@@ -185,6 +198,7 @@
     moves(ctx, it) {
       const d = ctx.d, x = d.ev.get(it.event);
       if (!x) throw new Skip('no such event');
+      need(it.at === undefined ? fin(it.b) : typeof it.at === 'string', 'no place to move to');
       const at = it.at !== undefined ? R.parse(it.at) : L.ratQ(it.b);
       if (it.b !== undefined && !close(R.toNumber(at) * 4, it.b)) throw new Skip('the place is not an exact fraction of a whole note');
       const text = R.format(at);
@@ -212,7 +226,9 @@
     },
     /* an 8va, 15ma, 8vb bracket: the notes under it were already given their sounding pitch (pitches) */
     ottavas(ctx, it) {
-      const d = ctx.d, st = staffRef(d.doc, it.staff);
+      const d = ctx.d;
+      need(fin(it.staff) && fin(it.m) && fin(it.b) && fin(it.endM) && fin(it.endB) && (it.dir === 1 || it.dir === -1), 'a bracket needs a staff, two places and a direction');
+      const st = staffRef(d.doc, it.staff);
       if (!st || !st.staff) throw new Skip('no such staff');
       const m1 = measureIdOf(ctx, it.m), m2 = measureIdOf(ctx, it.endM);
       if (!m1 || !m2) throw new Skip('no such bar');
@@ -238,6 +254,7 @@
     },
     /* chord names the page did not print are taken out, those it printed put in (the first part carries them, as toScore reads them) */
     chordsOut(ctx, it) {
+      need(fin(it.m) && fin(it.b) && typeof it.text === 'string', 'a chord name needs a bar, a place and a text');
       const d = ctx.d, m = measureIdOf(ctx, it.m);
       if (!m) return 'already';
       const part = d.doc.parts[0];
@@ -245,10 +262,12 @@
       const before = part.directions.length;
       part.directions = part.directions.filter(x => !(x.kind === 'chord' && x.m === m.id && R.eq(R.parse(x.at), at) && L.chordText(x) === it.text));
       if (part.directions.length === before) return 'already';
+      if (ctx.trace) ctx.trace.push({ kind: 'chord', bar: it.m, b: it.b, text: it.text });
       d.touch();
       return 'applied';
     },
     chordsIn(ctx, it) {
+      need(fin(it.m) && fin(it.b) && typeof it.text === 'string', 'a chord name needs a bar, a place and a text');
       const d = ctx.d, m = measureIdOf(ctx, it.m);
       if (!m) throw new Skip('no such bar');
       const part = d.doc.parts[0];
@@ -262,16 +281,19 @@
       return 'applied';
     },
     marksOut(ctx, it) {
+      need(fin(it.m) && typeof it.kind === 'string', 'a mark needs a bar and a kind');
       const d = ctx.d, m = measureIdOf(ctx, it.m), kind = JUMP_OF[it.kind];
       const tl = d.doc.timeline;
       if (!m || !kind || !tl.jumps) return 'already';
       const before = tl.jumps.length;
       tl.jumps = tl.jumps.filter(j => !(j.m === m.id && j.kind === kind && (j.text === undefined ? null : j.text) === (it.text === undefined ? null : it.text)));
       if (tl.jumps.length === before) return 'already';
+      if (ctx.trace) ctx.trace.push({ kind: 'mark', bar: it.m, mark: it.kind, text: it.text === undefined ? null : it.text });
       d.touch();
       return 'applied';
     },
     marksIn(ctx, it) {
+      need(fin(it.m) && typeof it.kind === 'string', 'a mark needs a bar and a kind');
       const d = ctx.d, m = measureIdOf(ctx, it.m), kind = JUMP_OF[it.kind];
       if (!m) throw new Skip('no such bar');
       if (!kind) throw new Skip('a mark PPP cannot keep: ' + it.kind);
@@ -288,11 +310,12 @@
     heading(ctx, it) {
       const d = ctx.d, meta = d.doc.meta, tl = d.doc.timeline;
       let changed = false;
+      need((it.title === undefined || typeof it.title === 'string') && (it.composer === undefined || typeof it.composer === 'string'), 'a title and a composer are text');
+      const qpm = it.tempo >= 20 && it.tempo <= 300 ? R.format(R.make(Math.round(it.tempo), 1)) : null;   /* (what can throw is done before anything is written) */
       if (it.title && meta.title !== it.title) { meta.title = it.title; changed = true; }
       if (it.composer && meta.composer !== it.composer) { meta.composer = it.composer; changed = true; }
-      if (it.tempo >= 20 && it.tempo <= 300) {
+      if (qpm !== null) {
         const first = tl.measures[0];
-        const qpm = R.format(R.make(Math.round(it.tempo), 1));
         tl.tempos = tl.tempos || [];
         const t = tl.tempos.find(x => x.m === first.id && R.isZero(R.parse(x.at)));
         if (t) { if (t.qpm !== qpm) { t.qpm = qpm; changed = true; } }
@@ -319,32 +342,71 @@
   }
 
   function runAll(graph, entries, opts) {
-    return OPS.edit(graph, d => {
-      const ctx = { d: d, moved: new Set(), byNumber: null };
-      const status = entries.map(en => HANDLERS[en.group](ctx, en.item));
+    const trace = [];
+    const r = OPS.edit(graph, d => {
+      const ctx = { d: d, moved: new Set(), byNumber: null, trace: trace };
+      /* an edit that cannot be made (a NaN, a null, a missing note, whatever the handler throws) is that edit's refusal, not the transaction's: the others go on */
+      const status = entries.map(en => {
+        try { return HANDLERS[en.group](ctx, en.item); } catch (err) { return { refused: reasonOf(err) }; }
+      });
       retireStraddling(d, ctx.moved);
       return status;
     }, Object.assign({ source: SOURCE }, opts || {}));
+    return { r: r, trace: trace };
   }
 
-  /* All of the entries in one transaction; when the graph would be invalid (or an entry cannot be made) the list is halved, so a bad edit costs only itself. */
-  function attempt(graph, entries, opts) {
-    if (!entries.length) return { graph: graph, applied: [], already: [], skipped: [] };
+  /* why an edit was not made: the module's own reason, the validator's, or whatever else it threw (a finding with a NaN, a null, a missing field is one refused edit, never the page's whole lot) */
+  const reasonOf = e => (e instanceof Skip ? e.why : String((e && e.message) || e).slice(0, 240));
+  /* the ids a finding names: what the validator's issues are matched against */
+  function namedIds(en) {
+    const it = en && en.item && typeof en.item === 'object' ? en.item : {};
+    const ids = [];
+    ['event', 'head'].forEach(k => { if (typeof it[k] === 'string') ids.push(it[k]); });
+    if (Array.isArray(it.heads)) it.heads.forEach(h => { if (typeof h === 'string') ids.push(h); });
+    return ids;
+  }
+  const merged = (a, b) => ({ graph: b.graph, applied: a.applied.concat(b.applied), already: a.already.concat(b.already), skipped: a.skipped.concat(b.skipped), trace: a.trace.concat(b.trace) });
+  const refused = (graph, entries, why) => ({ graph: graph, applied: [], already: [], trace: [], skipped: entries.map(en => ({ group: en.group, item: en.item, why: why })) });
+
+  /* The budget of the work a refusal may cost. Every try is a validation of the whole graph. The first try (all the entries in one transaction) is free; once something has been
+     refused the clock and the count start, and when either is spent what is still unresolved is refused, named `budget` - never applied unchecked. */
+  function makeBudget(opts) {
+    const o = opts || {};
+    return { n: 0, max: o.maxValidations === undefined ? 64 : o.maxValidations, ms: o.maxMs === undefined ? 400 : o.maxMs, t0: null, hit: false,
+      start() { if (this.t0 === null) this.t0 = Date.now(); },
+      spent() { const s = this.n >= this.max || (this.t0 !== null && Date.now() - this.t0 > this.ms); if (s) this.hit = true; return s; } };
+  }
+
+  /* All of the entries in one transaction. When the graph would be invalid (or an edit cannot be made) the entries the validator's issues name are taken out and tried again
+     without them, then each of them alone on the result (so a valid edit that stood next to an invalid one is still made); when the issues name none of the entries the
+     list is halved. A bad edit costs about as many validations as there are suspects, not the length of the list. */
+  function attempt(graph, entries, opts, budget) {
+    if (!entries.length) return { graph: graph, applied: [], already: [], skipped: [], trace: [] };
+    if (budget.t0 !== null && budget.spent()) return refused(graph, entries, 'budget: too many refused edits to try every one of the remaining ones');
+    budget.n++;
     try {
-      const r = runAll(graph, entries, opts);
-      const applied = [], already = [];
-      entries.forEach((en, i) => (r.result[i] === 'applied' ? applied : already).push(en));
-      return { graph: r.graph, applied: applied, already: already, skipped: [] };
+      const x = runAll(graph, entries, opts);
+      const applied = [], already = [], skipped = [];
+      entries.forEach((en, i) => {
+        const s = x.r.result[i];
+        if (s && typeof s === 'object') skipped.push({ group: en.group, item: en.item, why: s.refused });
+        else (s === 'applied' ? applied : already).push(en);
+      });
+      return { graph: x.r.graph, applied: applied, already: already, skipped: skipped, trace: x.trace };
     } catch (e) {
-      if (!(e instanceof Skip) && !(e && (e.name === 'OpError' || e.name === 'RationalOverflow' || e.code === 'E-OP-TARGET' || e.code === 'E-OP-RESULT'))) throw e;
-      if (entries.length === 1) {
-        const why = e instanceof Skip ? e.why : String(e.message || e).slice(0, 240);
-        return { graph: graph, applied: [], already: [], skipped: [{ group: entries[0].group, item: entries[0].item, why: why }] };
+      budget.start();
+      if (entries.length === 1) return refused(graph, entries, reasonOf(e));
+      const named = new Set();
+      ((e && e.issues) || []).forEach(i => ((i && i.ids) || []).forEach(id => named.add(id)));
+      const suspects = entries.filter(en => namedIds(en).some(id => named.has(id)));
+      if (suspects.length && suspects.length < entries.length) {
+        let acc = attempt(graph, entries.filter(en => suspects.indexOf(en) < 0), opts, budget);
+        suspects.forEach(en => { acc = merged(acc, attempt(acc.graph, [en], opts, budget)); });
+        return acc;
       }
       const mid = entries.length >> 1;
-      const a = attempt(graph, entries.slice(0, mid), opts);
-      const b = attempt(a.graph, entries.slice(mid), opts);
-      return { graph: b.graph, applied: a.applied.concat(b.applied), already: a.already.concat(b.already), skipped: a.skipped.concat(b.skipped) };
+      const a = attempt(graph, entries.slice(0, mid), opts, budget);
+      return merged(a, attempt(a.graph, entries.slice(mid), opts, budget));
     }
   }
 
@@ -353,14 +415,24 @@
     const entries = [];
     GROUPS.forEach(g => {
       if (g === 'heading') { if (f.heading) entries.push({ group: g, item: f.heading }); return; }
-      (f[g] || []).forEach(item => entries.push({ group: g, item: item }));
+      if (Array.isArray(f[g])) f[g].forEach(item => entries.push({ group: g, item: item }));
     });
-    const r = attempt(graph, entries, opts);
+    const budget = makeBudget(opts);
+    const t0 = Date.now();
+    const r = attempt(graph, entries, opts, budget);
     const applied = {};
     GROUPS.forEach(g => { applied[g] = 0; });
     r.applied.forEach(en => { applied[en.group]++; });
+    /* what the edits took away, since a removed note, chord name or mark leaves no entity to carry a provenance */
+    const removed = { events: 0, heads: 0, chords: 0, marks: 0, list: r.trace.slice(0, 100) };
+    r.trace.forEach(t => {
+      if (t.kind === 'event') { removed.events++; removed.heads += t.pitches.length; }
+      else if (t.kind === 'chord') removed.chords++;
+      else if (t.kind === 'mark') removed.marks++;
+    });
     return { ok: true, graph: r.graph, changed: r.graph !== graph, applied: applied, appliedTotal: r.applied.length, already: r.already.length,
-      skipped: r.skipped, conflicts: (f.conflicts || []).slice(), src: SOURCE, from: graph.rev, to: r.graph.rev };
+      skipped: r.skipped, removed: removed, conflicts: (f.conflicts || []).slice(), src: SOURCE, from: graph.rev, to: r.graph.rev,
+      work: { validations: budget.n, ms: Date.now() - t0, budgetSpent: budget.hit } };
   }
 
   /* one kind of edit on its own */

@@ -179,7 +179,7 @@ test('a part more than one page long that a later page does not have is padded w
 
 test('idempotent: normalising a normalised file changes no note, no bar and no staff', () => {
   for (const name of Object.keys(S)) {
-    if (name === 'divisionsUnknown' || name === 'trio' || name === 'zeroRestLeft') continue;   /* a zero length that cannot be repaired is reported again, as it should be */
+    if (name === 'divisionsUnknown' || name === 'trio' || name === 'zeroRestLeft' || name === 'zeroRestOwnVoice') continue;   /* a zero length that cannot be repaired is reported again, as it should be */
     const r1 = N.normalize(S[name].pages(), S[name].opts ? S[name].opts() : undefined);
     const r2 = N.normalize([r1.xml]);
     assert.deepEqual(SC.summary(r2.xml), SC.summary(r1.xml), name);
@@ -283,6 +283,7 @@ test('the output is well formed for the page\'s DOM parser and the ScoreGraph\'s
 
 /* ---- G12-2: the two things the ScoreGraph importer refused in 15 of the 415 files of G12-0's benchmark ---- */
 const importOf = xml => require(require('path').join(L.REPO, 'scoregraph', 'index.js')).musicxml.import(xml, { scoreId: 'n' });
+const SG_LEGACY = g => require(require('path').join(L.REPO, 'scoregraph', 'index.js')).legacy.toScore(g, { name: 'n' });
 
 test('zero length: the importer refuses the pages as the engine wrote them (E-DURATION) and takes the normalised document, with the rests as long as their bars', () => {
   const pages = S.zeroRest.pages();
@@ -294,8 +295,59 @@ test('zero length: the importer refuses the pages as the engine wrote them (E-DU
   assert.equal(g.ok, true, g.message);
   const rests = g.graph.parts[0].events.filter(e => e.kind === 'rest' && e.m === g.graph.timeline.measures[1].id);
   assert.deepEqual(rests.map(e => e.dur), ['1', '1'], 'both whole-bar rests last the bar (1 whole note)');
-  assert.deepEqual(r.report.notes.filter(n => n.kind === 'zero-duration'), [{ kind: 'zero-duration', n: 2 }]);
-  assert.deepEqual(r.report.changes.filter(c => c.rule === 'zero-duration').map(c => [c.bar, c.repaired, c.left, c.how]), [[2, 2, 0, { 'measure-rest': 2 }]]);
+  assert.deepEqual(rests.map(e => e.at), ['0', '0'], 'and both begin with it: the second does not begin where the first ends');
+  assert.deepEqual(g.graph.timeline.measures.map(m => m.dur), ['1', '1', '1'], 'no bar is doubled (a bar of 2 would play every later bar one bar late)');
+  assert.deepEqual(r.report.notes.filter(n => n.kind === 'zero-rests'), [{ kind: 'zero-rests', n: 2 }]);
+  assert.deepEqual(r.report.notes.filter(n => n.kind === 'zero-notes'), [], 'no pitched note was touched');
+  assert.deepEqual(r.report.changes.filter(c => c.rule === 'zero-duration').map(c => [c.bar, c.repaired, c.left, c.how, c.rests, c.notes, c.backups, c.refused]), [[2, 2, 0, { 'measure-rest': 2 }, 2, 0, 1, 0]]);
+});
+
+test('zero length: both staves of one part empty (the shape of all three repaired documents of the benchmark): a rest of length 0 on each staff, no <backup> between them: the bar keeps its length and the rests start together', () => {
+  /* Audiveris: <rest measure="yes"/> <duration>0</duration> staff 1, then the same on staff 2, in one part. Repaired with no <backup>, the second rest would start where the first ends. */
+  const pages = [doc([part('P1', [SC.grandBar(0, SC.grandFirst()), SC.zeroRestGrand(), SC.zeroRestGrand(), SC.grandBar(3)], { div: 2, staved: true })])];
+  const r = N.normalize(pages);
+  assert.deepEqual(L.barProblems(r.xml), []);
+  assert.match(r.xml, /<backup><duration>8<\/duration><\/backup>/, 'a <backup> of the bar (4 quarters in divisions 2) after the first rest');
+  const g = importOf(r.xml);
+  assert.equal(g.ok, true, g.message);
+  assert.deepEqual(g.graph.timeline.measures.map(m => m.dur), ['1', '1', '1', '1']);
+  const score = SG_LEGACY(g.graph);
+  assert.deepEqual(score.measures.map(m => m.lenQ), [4, 4, 4, 4], 'the Score the app plays has four bars of four quarters');
+  assert.deepEqual(score.notes.filter(n => n.rest && n.m === 2).map(n => n.staff + ':' + n.b + ':' + n.dur), ['1:0:4', '2:0:4']);
+  /* the control: the same repair with no <backup> doubles the bar */
+  const naive = r.xml.replace(/(<rest measure="yes"\/><duration>8<\/duration>[^]*?<\/note>)<backup><duration>8<\/duration><\/backup>/g, '$1');
+  const bad = importOf(naive);
+  assert.equal(bad.ok, true);
+  assert.deepEqual(bad.graph.timeline.measures.map(m => m.dur).slice(1, 3), ['2', '2'], 'the control: without the <backup> a bar of 4/4 is two bars long');
+});
+
+test('zero length: a whole-bar rest of length 0 followed by a note of its own voice and staff is not repaired (it would play with the note): left at 0, counted as refused, and the importer refuses the document by name', () => {
+  const pages = S.zeroRestOwnVoice.pages();
+  const r = N.normalize(pages);
+  assert.equal(r.report.counts.zeroRestsRefused, 1);
+  assert.equal(r.report.counts.zeroRestsLeft, 1);
+  assert.equal(r.report.counts.zeroRestsRepaired, 0);
+  assert.deepEqual(r.report.changes.filter(c => c.rule === 'zero-duration').map(c => [c.bar, c.repaired, c.left, c.refused]), [[1, 0, 1, 1]]);
+  assert.deepEqual(r.report.flags[1], ['duration-zero']);
+  const g = importOf(r.xml);
+  assert.equal(g.ok, false);
+  assert.match(g.message, /E-DURATION/, 'and the page then says why (graphFailed) and imports what legacy imports');
+});
+
+test('measure lengths: after normalisation every bar of every scenario ends where its time signature says (a repaired rest that doubled its bar, a lost <backup>, a wrong divisions scaling are all this)', () => {
+  for (const name of Object.keys(S)) {
+    const r = N.normalize(S[name].pages(), S[name].opts ? S[name].opts() : undefined);
+    assert.equal(r.ok, true, name);
+    assert.deepEqual(L.barProblems(r.xml), [], name + ': a bar is not as long as its time signature');
+  }
+  /* and the three real shapes the benchmark's repaired documents have, in 4/4, 2/2 and 6/8, with two staves empty in a bar */
+  [[4, 4], [2, 2], [6, 8], [3, 4]].forEach(time => {
+    const q = time[0] * 4 / time[1];
+    const mkBar = (extra) => Object.assign({ items: [note('C5', q, { s: 1, type: 'whole' }), L.back(q), note('C3', q, { s: 2, v: 5, type: 'whole' })], staved: true }, extra);
+    const x = doc([part('P1', [mkBar({ div: 2, key: 0, time: time, staves: 2, clefs: ['G', 'F'] }), SC.zeroRestGrand(), SC.zeroRestGrand(), mkBar()], { div: 2, staved: true })]);
+    const r = N.normalize([x]);
+    assert.deepEqual(L.barProblems(r.xml), [], time.join('/'));
+  });
 });
 
 test('zero length: a whole-bar rest lasts the bar of the time signature in force at that bar, also after a change of metre and in a part with other divisions', () => {
@@ -329,6 +381,8 @@ test('zero length: a PITCHED note of length 0 with a plain type lasts its type, 
   const x = doc([part('P1', [{ items: [note('C5', 1, { s: 1 }), note('D5', 0, { s: 1, type: 'quarter' }), note('E5', 1, { s: 1 })], staved: true, div: 2, key: 0, time: [4, 4], staves: 1, clefs: ['G'] }], { div: 2, staved: true })]);
   const r = N.normalize([x]);
   assert.equal(r.report.counts.zeroDurationsRepaired, 1);
+  assert.deepEqual([r.report.counts.zeroNotesRepaired, r.report.counts.zeroRestsRepaired], [1, 0], 'the pitched note is counted as a note, not as a rest');
+  assert.deepEqual(r.report.notes.filter(n => /^zero/.test(n.kind)), [{ kind: 'zero-notes', n: 1 }]);
   assert.deepEqual(r.report.changes.filter(c => c.rule === 'zero-duration').map(c => c.how), [{ type: 1 }]);
   const notes = read(r.xml).parts[0].bars[0].notes;
   assert.equal(notes.length, 3, 'no pitched note is lost');
@@ -337,6 +391,7 @@ test('zero length: a PITCHED note of length 0 with a plain type lasts its type, 
   const dotted = doc([part('P1', [{ items: [note('C5', 1, { s: 1 }), note('D5', 0, { s: 1, type: 'quarter', dot: true }), note('E5', 1, { s: 1 })], staved: true, div: 2, key: 0, time: [4, 4], staves: 1, clefs: ['G'] }], { div: 2, staved: true })]);
   const d = N.normalize([dotted]);
   assert.equal(d.report.counts.zeroDurationsLeft, 1);
+  assert.deepEqual([d.report.counts.zeroNotesLeft, d.report.counts.zeroRestsLeft], [1, 0]);
   assert.equal(read(d.xml).parts[0].bars[0].notes.length, 3);
 });
 

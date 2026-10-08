@@ -34,9 +34,13 @@
                    joins): the pairs are folded to two staves, so 16 bars of one staff become 8 bars of two (issue 12)
      zero length   a note whose <duration> is 0 (Audiveris writes <rest measure="yes"/> with <duration>0</duration> for the whole-bar rest of a bar
                    it read nothing in: the ScoreGraph importer refuses such a file, E-DURATION) lasts what it should: a whole-bar rest the bar (beats
-                   x 4 / beat-type quarters of the time signature in force), any other note its own <type> (a plain, undotted note). Counted
-                   (zeroDurationsRepaired, flag duration-repaired) and reported. A zero note with neither is left as it was and counted
-                   (zeroDurationsLeft, flag duration-zero). No pitched note is dropped
+                   x 4 / beat-type quarters of the time signature in force), any other note its own <type> (a plain, undotted note). A rest of
+                   length 0 did not move the cursor, so what follows it in the bar (the other staff's whole-bar rest, which Audiveris writes with
+                   no <backup> between) begins where the rest began: a repaired whole-bar rest that is followed by other content of the bar gets a
+                   <backup> of its own length, so the bar is not doubled; one followed by a note of its own voice and staff (a bar the engine
+                   read as empty and as full at once) is not repaired. Counted apart for rests and for pitched notes (zeroRestsRepaired,
+                   zeroNotesRepaired; flag duration-repaired) and reported. A zero note with no length to be read is left as it was and counted
+                   (zeroRestsLeft, zeroNotesLeft; flag duration-zero). No pitched note is dropped
      wedges        a hairpin the engine wrote with its start and stop at one place (a crescendo and a diminuendo read as one mark: start, start,
                    stop, stop) is a wedge that ends where it starts, which the importer refuses (E-SPAN-ORDER). The wedges that do not pair into
                    a wedge of positive length, in a part that has such a pair, are removed (the importer would drop the unpaired ones itself,
@@ -275,13 +279,41 @@
         if (q >= 1 && Math.abs(q - Math.round(q)) < 1e-9) { len = Math.round(q); how = 'type'; }
       }
     }
-    if (len) { d.text = String(len); fx.repaired++; fx.how[how] = (fx.how[how] || 0) + 1; }
-    else fx.left++;
+    if (len) {
+      d.text = String(len);
+      fx.repaired++;
+      if (r) fx.rests++; else fx.notes++;
+      fx.how[how] = (fx.how[how] || 0) + 1;
+      if (how === 'measure-rest') fx.list.push({ el: c, d: d, len: len });
+    } else { fx.left++; if (r) fx.leftRests++; else fx.leftNotes++; }
   }
-  const newFixes = () => ({ repaired: 0, left: 0, how: {} });
+  /* The whole-bar rests repaired in a bar, once the bar's elements are all in (body). A rest of length 0 had not moved the cursor; with its length it does:
+     whatever the bar holds after it would start a bar late. A <backup> of the rest's length restores the place the elements after it always had. Notes of the
+     rest's own voice and staff after it would play at the same time as the rest (a bar that is empty and full at once): the repair is withdrawn, the zero stays,
+     counted as left and said (fx.refused) - the importer will refuse the document and say so. */
+  function settleMeasureRests(body, fx) {
+    const key = e => (textOf(e, 'voice') || '') + '|' + (textOf(e, 'staff') || '');
+    fx.list.forEach(r => {
+      const at = body.indexOf(r.el);
+      if (at < 0) return;
+      const later = body.slice(at + 1);
+      if (later.some(e => e.name === 'note' && key(e) === key(r.el))) {
+        r.d.text = '0';
+        fx.repaired--; fx.rests--; fx.left++; fx.leftRests++; fx.refused++;
+        fx.how['measure-rest']--;
+        if (!fx.how['measure-rest']) delete fx.how['measure-rest'];
+        return;
+      }
+      if (later.some(e => e.name === 'note' || e.name === 'forward')) {
+        body.splice(at + 1, 0, mk('backup', {}, [mk('duration', {}, String(r.len))]));
+        fx.backups++;
+      }
+    });
+  }
+  const newFixes = () => ({ repaired: 0, left: 0, rests: 0, notes: 0, leftRests: 0, leftNotes: 0, backups: 0, refused: 0, how: {}, list: [] });
   function addFixes(a, b) {
     if (!b) return a;
-    a.repaired += b.repaired; a.left += b.left;
+    ['repaired', 'left', 'rests', 'notes', 'leftRests', 'leftNotes', 'backups', 'refused'].forEach(k => { a[k] += b[k]; });
     Object.keys(b.how).forEach(k => { a.how[k] = (a.how[k] || 0) + b.how[k]; });
     return a;
   }
@@ -332,6 +364,7 @@
       if ((n === 'direction' || n === 'harmony' || n === 'figured-bass') && staffNo === 2) setKid(c, 'staff', '2', ['sound']);
       body.push(c);
     });
+    settleMeasureRests(body, fixes);
     return { pre: pre, body: body, barlines: barlines, attrs: attrs, fixes: fixes };
   }
   /* how far an element of a bar moves the cursor: a note by its duration (a chord note and a grace note do not move it), a <forward> on, a <backup> back */
@@ -506,6 +539,7 @@
     opts = opts || {};
     const ctx = { changes: [], counts: { pages: 0, pagesRead: 0, movements: 0, movementsJoined: 0, divisionsRepaired: 0, divisionsUnknown: 0,
       ghostParts: 0, partsMerged: 0, partsKept: 0, systemsFolded: 0, droppedNotes: 0, overlapBars: 0, unreadable: 0, barCountMismatch: 0,
+      zeroRestsRepaired: 0, zeroNotesRepaired: 0, zeroRestsLeft: 0, zeroNotesLeft: 0, zeroRestBackups: 0, zeroRestsRefused: 0,
       zeroDurationsRepaired: 0, zeroDurationsLeft: 0, wedgesDropped: 0, wedgesDegenerate: 0 } };
     const list = Array.isArray(pagesIn) ? pagesIn : [];
     ctx.counts.pages = list.length;
@@ -585,10 +619,17 @@
       c.bars.forEach((bo, i) => {
         const fx = bo.fixes;
         if (!fx || (!fx.repaired && !fx.left)) return;
-        ctx.counts.zeroDurationsRepaired += fx.repaired;
+        ctx.counts.zeroRestsRepaired += fx.rests;
+        ctx.counts.zeroNotesRepaired += fx.notes;
+        ctx.counts.zeroRestsLeft += fx.leftRests;
+        ctx.counts.zeroNotesLeft += fx.leftNotes;
+        ctx.counts.zeroRestBackups += fx.backups;
+        ctx.counts.zeroRestsRefused += fx.refused;
+        ctx.counts.zeroDurationsRepaired += fx.repaired;      /* the sums of the rests and the pitched notes */
         ctx.counts.zeroDurationsLeft += fx.left;
         flagFixes(bo);
-        ctx.changes.push({ rule: 'zero-duration', bar: i + 1, page: bo.page, movement: bo.mv, repaired: fx.repaired, left: fx.left, how: fx.how });
+        ctx.changes.push({ rule: 'zero-duration', bar: i + 1, page: bo.page, movement: bo.mv, repaired: fx.repaired, left: fx.left, rests: fx.rests, notes: fx.notes,
+          backups: fx.backups, refused: fx.refused, how: fx.how });
       });
       dropBadWedges(c, ctx);
     });
@@ -723,8 +764,10 @@
     if (c.partsKept) n.push({ kind: 'parts-kept', n: c.partsKept });
     if (c.unreadable) n.push({ kind: 'unreadable', n: c.unreadable });
     if (c.barCountMismatch) n.push({ kind: 'bar-count', n: c.barCountMismatch });
-    if (c.zeroDurationsRepaired) n.push({ kind: 'zero-duration', n: c.zeroDurationsRepaired });
-    if (c.zeroDurationsLeft) n.push({ kind: 'zero-duration-left', n: c.zeroDurationsLeft });
+    if (c.zeroRestsRepaired) n.push({ kind: 'zero-rests', n: c.zeroRestsRepaired });
+    if (c.zeroNotesRepaired) n.push({ kind: 'zero-notes', n: c.zeroNotesRepaired });
+    if (c.zeroRestsLeft) n.push({ kind: 'zero-rests-left', n: c.zeroRestsLeft });
+    if (c.zeroNotesLeft) n.push({ kind: 'zero-notes-left', n: c.zeroNotesLeft });
     if (c.wedgesDropped) n.push({ kind: 'wedges', n: c.wedgesDropped });
     return n;
   }

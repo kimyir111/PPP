@@ -87,7 +87,7 @@ slow draw), reads `practice/`, `tests/practice/`, `scoregraph/`, `engrave/`, the
 (read from its code, not traced under `strace`).
 One of the 75, `npm run test:omr-normalize` (G12-1, `omr/normalize.js` and `omr/helper-output.js`: planted defects, mutants, no engine; it is in `shard-g`), reads `omr/`, `omr-service.js` (as text), `scoregraph/xml.js` and `scoregraph/index.js`
 and builds every page it normalises in memory: no committed score file, no path the light modes skip.
-Another of the 75, `npm run test:omr-apply` (G12-2, `omr/apply.js`: each kind of edit, idempotence, provenance, the hand rule of a graph from an OMR page, and 35 mutants of the module; it is in `shard-g`), reads `omr/apply.js`, `omr/normalize.js` (the normaliser's own tests), `scoregraph/` and `tests/omr/normalize/` (the pages it builds in memory); no committed score file, no path the light modes skip.
+Another of the 75, `npm run test:omr-apply` (G12-2, `omr/apply.js`: each kind of edit, idempotence, provenance, the hand rule of a graph from an OMR page, and 43 mutants of the module; it is in `shard-g`), reads `omr/apply.js`, `omr/normalize.js` (the normaliser's own tests), `scoregraph/` and `tests/omr/normalize/` (the pages it builds in memory); no committed score file, no path the light modes skip.
 
 **Two suites are cut across jobs.** `rec-core` (2,538 cases, 370 s alone) and `rec-grid` (1,410 cases, 434 s) run as
 `run --suite X --shard K/N` ("Sharded runs" below) in four and in three jobs; each shard job uploads its `shard.json` and `run.json` as a

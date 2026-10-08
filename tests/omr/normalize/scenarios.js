@@ -177,8 +177,8 @@ S.changes = {
   pages: () => [
     doc([part('P1', series(0, 2, grandBar, grandFirst({ key: 2 })), { div: 2, staved: true })]),
     doc([part('P1', series(2, 4, grandBar, grandFirst({ key: 2 })), { div: 2, staved: true })]),
-    doc([part('P1', [grandBar(4, grandFirst({ key: -1, time: [3, 4] })), grandBar(5)], { div: 2, staved: true })])],
-  expect: () => ({ keyBars: '1:2,5:-1', timeBars: '1:4/4,5:3/4' })
+    doc([part('P1', [grandBar(4, grandFirst({ key: -1, time: [2, 2] })), grandBar(5)], { div: 2, staved: true })])],
+  expect: () => ({ keyBars: '1:2,5:-1', timeBars: '1:4/4,5:2/2' })
 };
 
 /* the same four paths with rich bars (chords, grace notes, ties, <forward>): the pair, one piano read system by system, the PDF's systems, and pages of other divisions */
@@ -236,29 +236,36 @@ const wedgesOf = xml => {
 S.zeroRest = {
   why: 'a whole-bar rest written with <duration>0</duration> lasts the bar (the ScoreGraph importer refuses a note of length 0), counted and flagged',
   pages: () => [doc([part('P1', [grandBar(0, grandFirst()), zeroRestGrand(), grandBar(2)], { div: 2, staved: true })])],
-  expect: () => { const t = truth(0, 3); return { bars: 3, sigs: [t.sigs[0], '', t.sigs[2]], rests: '1:4,2:4', repaired: 2, left: 0, flags: ['duration-repaired'] }; }
+  expect: () => { const t = truth(0, 3); return { bars: 3, sigs: [t.sigs[0], '', t.sigs[2]], rests: '1:4,2:4', ends: '4,4,4', repaired: 2, left: 0, split: '2,0,0,0', backups: 1, refused: 0, flags: ['duration-repaired'] }; }
 };
 S.zeroRestPair = {
   why: 'the same in a grand staff read as two parts: each part\'s own whole-bar rest lasts the bar',
   pages: () => [doc([part('P1', [rhBar(0, first({ clefs: ['G'] })), zeroRestBar(), rhBar(2)], { div: 2 }), part('P2', [lhBar(0, first({ clefs: ['F'] })), zeroRestBar(), lhBar(2)], { div: 2 })])],
-  expect: () => { const t = truth(0, 3); return { bars: 3, sigs: [t.sigs[0], '', t.sigs[2]], rests: '1:4,2:4', repaired: 2, left: 0, flags: ['pair-merged', 'duration-repaired'] }; }
+  expect: () => { const t = truth(0, 3); return { bars: 3, sigs: [t.sigs[0], '', t.sigs[2]], rests: '1:4,2:4', ends: '4,4,4', repaired: 2, left: 0, split: '2,0,0,0', backups: 0, refused: 0, flags: ['pair-merged', 'duration-repaired'] }; }
 };
 S.zeroRestCompound = {
   why: 'the length of the bar is the time signature\'s: a whole-bar rest in 6/8 lasts three quarters, not six',
   pages: () => [doc([part('P1', [
     { items: [note('C5', 1.5, { s: 1, dot: true }), note('D5', 1.5, { s: 1, dot: true }), back(3), note('C3', 3, { s: 2, v: 5, type: 'half', dot: true })], staved: true, div: 2, key: 0, time: [6, 8], staves: 2, clefs: ['G', 'F'] },
     { items: [rest(0, { measure: true, noType: true, s: 1 }), rest(0, { measure: true, noType: true, s: 2, v: 5 })], staved: true }], { div: 2, staved: true })])],
-  expect: () => ({ bars: 2, sigs: ['1 0 1.5 C5 | 1 1.5 1.5 D5 | 2 0 3 C3', ''], rests: '1:3,2:3', repaired: 2, left: 0, flags: ['duration-repaired'] })
+  expect: () => ({ bars: 2, sigs: ['1 0 1.5 C5 | 1 1.5 1.5 D5 | 2 0 3 C3', ''], rests: '1:3,2:3', ends: '3,3', repaired: 2, left: 0, split: '2,0,0,0', backups: 1, refused: 0, flags: ['duration-repaired'] })
 };
 S.zeroRestTyped = {
   why: 'a rest of length 0 that is not a whole-bar rest lasts what its <type> says',
   pages: () => [doc([part('P1', [{ items: [note('C3', 4, { s: 2, v: 5, type: 'whole' }), back(4), note('C5', 1, { s: 1 }), note('D5', 1, { s: 1 }), rest(0, { type: 'half', s: 1 })], staved: true, div: 2, key: 0, time: [4, 4], staves: 2, clefs: ['G', 'F'] }], { div: 2, staved: true })])],
-  expect: () => ({ bars: 1, sigs: ['1 0 1 C5 | 1 1 1 D5 | 2 0 4 C3'], rests: '1:2', repaired: 1, left: 0, flags: ['duration-repaired'] })
+  expect: () => ({ bars: 1, sigs: ['1 0 1 C5 | 1 1 1 D5 | 2 0 4 C3'], rests: '1:2', ends: '4', repaired: 1, left: 0, split: '1,0,0,0', backups: 0, refused: 0, flags: ['duration-repaired'] })
 };
 S.zeroRestLeft = {
   why: 'a zero-length rest with nothing to read its length from (a rest that is no whole-bar rest and has no type) is left as it was and counted, never guessed',
   pages: () => [doc([part('P1', [{ items: [note('C3', 4, { s: 2, v: 5, type: 'whole' }), back(4), note('C5', 1, { s: 1 }), note('D5', 1, { s: 1 }), rest(0, { noType: true, s: 1 })], staved: true, div: 2, key: 0, time: [4, 4], staves: 2, clefs: ['G', 'F'] }], { div: 2, staved: true })])],
-  expect: () => ({ bars: 1, sigs: ['1 0 1 C5 | 1 1 1 D5 | 2 0 4 C3'], rests: '1:0', repaired: 0, left: 1, flags: ['duration-zero'] })
+  expect: () => ({ bars: 1, sigs: ['1 0 1 C5 | 1 1 1 D5 | 2 0 4 C3'], rests: '1:0', ends: '4', repaired: 0, left: 1, split: '0,0,1,0', backups: 0, refused: 0, flags: ['duration-zero'] })
+};
+/* a whole-bar rest of length 0 and a note of its own voice and staff in the same bar: the engine read the bar as empty and as full. Repaired, the rest would play with the note (or
+   double the bar): it is left at 0, counted, said (refused) and the importer will refuse the document by name */
+S.zeroRestOwnVoice = {
+  why: 'a whole-bar rest of length 0 followed by a note of its own voice is not repaired: it stays at 0, counted as left and as refused, never given a length that doubles or overlaps the bar',
+  pages: () => [doc([part('P1', [{ items: [rest(0, { measure: true, noType: true }), note('C5', 4, { type: 'whole' })], div: 2, key: 0, time: [4, 4], clefs: ['G'] }], { div: 2 })])],
+  expect: () => ({ bars: 1, sigs: ['1 0 4 C5'], rests: '1:0', ends: '4', repaired: 0, left: 1, split: '0,0,1,0', backups: 0, refused: 1, flags: ['duration-zero'] })
 };
 
 /* Audiveris reads a crescendo and a diminuendo that meet as start, start, stop, stop with no note between the middle two; a hairpin elsewhere is fine */
@@ -315,10 +322,12 @@ function probe(N, name) {
     case 'barCount': return { changes: rep.changes.filter(c => c.rule === 'bar-count'), flags: Object.keys(rep.flags).reduce((a, b) => { const f = rep.flags[b].filter(x => x === 'bar-count'); if (f.length) a[b] = f; return a; }, {}) };
     case 'divisionsZero': return { parts: s.parts, staves: s.staves, bars: s.bars, numbers: s.numbers, sigs: s.sigs };
     case 'ghost': return Object.assign({}, s, { timeBars: read(r.xml).parts[0].bars.map((b, i) => (b.timeChange !== null ? (i + 1) + ':' + b.timeChange : null)).filter(Boolean).join(',') });
-    case 'zeroRest': case 'zeroRestPair': case 'zeroRestCompound': case 'zeroRestTyped': case 'zeroRestLeft': {
-      const bi = name === 'zeroRestTyped' || name === 'zeroRestLeft' ? 0 : 1;
+    case 'zeroRest': case 'zeroRestPair': case 'zeroRestCompound': case 'zeroRestTyped': case 'zeroRestLeft': case 'zeroRestOwnVoice': {
+      const bi = name === 'zeroRestTyped' || name === 'zeroRestLeft' || name === 'zeroRestOwnVoice' ? 0 : 1;
       const f = rep.flags[bi + 1] || [];   /* the flags of the bar that holds the zero-length rests */
-      return { bars: s.bars, sigs: s.sigs, rests: restsOf(r.xml, bi), repaired: rep.counts.zeroDurationsRepaired, left: rep.counts.zeroDurationsLeft,
+      const c = rep.counts;
+      return { bars: s.bars, sigs: s.sigs, rests: restsOf(r.xml, bi), ends: read(r.xml).parts[0].bars.map(b => b.end).join(), repaired: c.zeroDurationsRepaired, left: c.zeroDurationsLeft,
+        split: [c.zeroRestsRepaired, c.zeroNotesRepaired, c.zeroRestsLeft, c.zeroNotesLeft].join(), backups: c.zeroRestBackups, refused: c.zeroRestsRefused,
         flags: f.filter(x => x.indexOf('duration') === 0 || x === 'pair-merged') };
     }
     case 'wedges': case 'wedgesNumbered': case 'wedgesAcrossBars': case 'wedgesOffset':

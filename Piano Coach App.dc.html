@@ -7713,10 +7713,12 @@ const Import = {
      (PdfLayer.apply: accidentals, phantom arpeggio notes, a late voice, 8va, chord names, segno and coda, title and tempo) are edits of that graph (omr/apply.js, op 'inferred', source omr / pdflayer);
      and the Score is made from the edited graph (toScore), so the graph the renderer draws, the Score the player plays and the checks read are one thing and the engine's beams are drawn.
      PdfLayer.apply runs on a scratch copy of the Score, never on the one kept. Returns {score, graph, fromPdf, applied, importReport}, or null when this is not a v2 import or anything failed (omr.graphFailed
-     says why): the caller then does what legacy does with the same document. layers: one per page (a PDF's), or null; docs: omr.musicxml (each page's bar count). */
-  async omrS4(omr, xml, name, layers, docs) {
+     says why): the caller then does what legacy does with the same document. layersOf: a function that gives the layers, one per page (a PDF's), or null - called here, inside the try, so a page
+     that cannot give them is a fallback and not an exception; docs: omr.musicxml (each page's bar count). */
+  async omrS4(omr, xml, name, layersOf, docs) {
     if (OMR_MODE !== 'v2' || !omr || !omr.normalize) return null;
     try {
+      const layers = typeof layersOf === 'function' ? layersOf() : layersOf;
       const A = await loadOmrApply();
       if (!A) { omr.graphFailed = 'apply-not-loaded'; return null; }
       const got = await importToGraph(new TextEncoder().encode(xml), name, 'musicxml');
@@ -7730,7 +7732,7 @@ const Import = {
           const f = A.diff(before, scratch);
           const r = A.apply(graph, f);
           graph = r.graph;
-          applied = { findings: A.count(f), applied: r.applied, already: r.already, skipped: r.skipped.map(s => ({ group: s.group, why: s.why })), conflicts: f.conflicts.length };
+          applied = { findings: A.count(f), applied: r.applied, already: r.already, skipped: r.skipped.map(s => ({ group: s.group, why: s.why })), removed: r.removed, work: r.work, conflicts: f.conflicts.length };
         } catch (e) { applied = { error: String(e && e.message || e).slice(0, 160) }; }   /* the page's lines could not be read: the recognised graph stands as it is */
       }
       graph = graphForScore(graph);
@@ -9008,7 +9010,7 @@ const Import = {
     let score;
     let scoreXml = xml;
     const handOpts = omr && omr.normalize ? { omrPiano: true } : undefined;   /* G12-1: PPP.omr = 'v2' */
-    let s4 = await Import.omrS4(omr, xml, file.name, kind === 'pdf' ? pages.map(p => p.layer || null) : null, omr && omr.musicxml);   /* G12-2: null unless a v2 import; then the graph, the Score made from it, PdfLayer's findings as its edits */
+    let s4 = await Import.omrS4(omr, xml, file.name, () => (kind === 'pdf' ? pages.map(p => p.layer || null) : null), omr && omr.musicxml);   /* G12-2: null unless a v2 import; then the graph, the Score made from it, PdfLayer's findings as its edits */
     try {
       score = s4 ? s4.score : parseMusicXML(xml, file.name, handOpts);
     } catch (e) {
@@ -9045,7 +9047,7 @@ const Import = {
         const omr2 = await Import.recognise(pages2, onStage);
         const xml2 = await Import.omrXml(omr2);
         stage('parse', {});
-        const s42 = await Import.omrS4(omr2, xml2, file.name, pages2.map(p => p.layer || null), omr2.musicxml);
+        const s42 = await Import.omrS4(omr2, xml2, file.name, () => pages2.map(p => p.layer || null), omr2.musicxml);
         const score2 = s42 ? s42.score : parseMusicXML(xml2, file.name, handOpts);
         const fromPdf2 = s42 ? s42.fromPdf : PdfLayer.apply(score2, pages2.map(p => p.layer || null), omr2.musicxml, file.name);
         pages2.forEach(p => { delete p.layer; });
@@ -9055,7 +9057,7 @@ const Import = {
         stage('merge', { pages: pages.length });
         const mergedXml = Import.mergeMeasuresWhereBetter(xml, xml2, f1, f2);
         if (mergedXml && mergedXml !== xml) {
-          const s4M = await Import.omrS4(omr, mergedXml, file.name, pages.map(p => p.layer || null), omr.musicxml);
+          const s4M = await Import.omrS4(omr, mergedXml, file.name, () => pages.map(p => p.layer || null), omr.musicxml);
           const scoreM = s4M ? s4M.score : parseMusicXML(mergedXml, file.name, handOpts);
           const fromPdfM = s4M ? s4M.fromPdf : PdfLayer.apply(scoreM, pages.map(p => p.layer || null), omr.musicxml, file.name);
           const reportM = Import.validate(scoreM, { pageCount: pages.length, pages: omr.pages, missing: fromPdfM.missing });
