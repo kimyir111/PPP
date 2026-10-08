@@ -74,6 +74,8 @@ const DEFAULTS = {
   transcribePy: path.join(REPO, 'transcribe.py'),
   kongCheckpoint: '',
   ariaCheckpoint: '',
+  /* G10d song mode: the folder that holds the source separation (demucs), when it is not installed in the Python itself (pip install --target <folder> demucs ...) */
+  songLib: '',
   ffmpegPath: 'ffmpeg',
   ytdlpPath: '',
   audioBase: '',
@@ -123,6 +125,7 @@ function loadConfig(file, env) {
   if (!cfg.pythonPath) {
     cfg.pythonPath = firstExisting([env.PPP_TRANSCRIBE_PYTHON, path.join(REPO, 'tools', 'transcribe-venv', 'Scripts', 'python.exe'), path.join(REPO, 'tools', 'transcribe-venv', 'bin', 'python')]);
   }
+  if (!cfg.songLib) cfg.songLib = firstExisting([path.join(path.dirname(cfg.transcribePy), 'tools', 'song-lib'), path.join(REPO, 'tools', 'song-lib')]);
   if (!cfg.kongCheckpoint) cfg.kongCheckpoint = env.PPP_TRANSCRIBE_CHECKPOINT || findKongCheckpoint(path.join(path.dirname(cfg.transcribePy), 'tools', 'piano-transcription')) || findKongCheckpoint(path.join(REPO, 'tools', 'piano-transcription'));
   cfg.maxSeconds = Math.max(30, Math.min(Result.LIMITS.MAX_SECONDS, +cfg.maxSeconds || Result.LIMITS.MAX_SECONDS));
   cfg.idlePollSeconds = Math.max(0, Math.min(86400, +cfg.idlePollSeconds || 0));
@@ -356,6 +359,8 @@ function downloadTo(url, dest, o) {
 
 /* ---------------- one job ---------------- */
 const YT_RE = /^https:\/\/www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}$/;
+/* G10d: a job of kind 'youtube-song' is a song that is not a piano recording (home-jobs.js JOB_KINDS); every other kind, and none, is a piano recording */
+const isSong = job => !!job && job.kind === 'youtube-song';
 class JobError extends Error {
   constructor(message, retry) { super(message); this.retry = !!retry; }
 }
@@ -463,6 +468,7 @@ function createWorker(cfg, deps) {
     const argv = [cfg.transcribePy, '--wav', wavs.master, '--kong-wav', wavs.kong, '--out', out, '--engine', 'auto'];
     if (cfg.kongCheckpoint) argv.push('--checkpoint', cfg.kongCheckpoint);
     if (cfg.ariaCheckpoint) argv.push('--aria-checkpoint', cfg.ariaCheckpoint);
+    if (isSong(job)) { argv.push('--mode', 'song'); if (cfg.songLib) argv.push('--song-lib', cfg.songLib); }
     let engines = '';
     const r = await run(cfg.pythonPath, argv, {
       cwd: dir, timeoutMs: Math.max(10 * 60 * 1000, wavs.seconds * 8000), onChild: c => { ctl.child = c; },
@@ -478,6 +484,10 @@ function createWorker(cfg, deps) {
     try { raw = JSON.parse(fs.readFileSync(out, 'utf8')); } catch (e) { raw = null; }
     if (r.code !== 0 || !raw) {
       log.warn('transcribe.py failed (exit ' + r.code + (r.timedOut ? ', timed out' : '') + '):\n' + String(r.tail || '').slice(-1200));
+      /* song mode on a PC without the separation: trying again cannot help, and the person has to know what to install */
+      if (/SONG_SEPARATION_MISSING/.test(String(r.tail || ''))) throw new JobError('Song mode needs the source separation (demucs) on this PC; see tools/home-worker/README.md, "Song mode".', false);
+      if (/SONG_NO_NOTES/.test(String(r.tail || ''))) throw new JobError('No melody, bass or accompaniment was heard in this recording.', false);
+      if (r.timedOut && isSong(job)) throw new JobError('Song mode took too long on this PC.', false);   /* the same song takes as long the next time */
       throw new JobError(r.timedOut ? 'The piano models took too long on this PC.' : 'The piano models failed on this PC' + (r.spawnError ? ' (Python could not be started).' : '.'), !r.spawnError);
     }
     return raw;
@@ -489,11 +499,13 @@ function createWorker(cfg, deps) {
     try { c = convertHelperNotes(raw); } catch (e) { throw new JobError(/at least/.test(e.message) ? 'No piano notes were heard in this recording.' : 'The piano models gave nothing usable.', false); }
     const h = c.heard, hh = h.helper || {};
     const cut = cfg.maxSeconds + 1;
-    const notes = h.notes.filter(n => n.on < cut).map(n => (n.off > cut ? { on: n.on, off: cut, midi: n.midi, vel: n.vel } : n));
+    const notes = h.notes.filter(n => n.on < cut).map(n => (n.off > cut ? Object.assign({}, n, { off: cut }) : n));
     const result = {
       notes: notes, duration: Math.min(h.duration, cut), engine: h.engine, model: hh.model || null, device: hh.device || null,
       ensemble: { models: hh.models || [], primary: hh.primary || null, agreement: hh.agreement, accepted: notes.length, uncertain: hh.uncertain || 0 }
     };
+    /* G10d song mode: the notes carry their layer (convertHelperNotes keeps it), and the result says so */
+    if (h.song) { result.mode = 'song'; result.song = { separation: h.song.separation || null }; }
     const v = Result.validateResult(result);
     if (!v.ok) throw new JobError('The notes did not pass the site\'s checks: ' + v.error, false);
     return { result: result, report: c.report, bytes: v.bytes };
@@ -524,7 +536,7 @@ function createWorker(cfg, deps) {
       if (job && typeof job.id === 'string') await postFail(job, 'The link is not a YouTube video.', false);
       return false;
     }
-    const label = job.title ? '"' + job.title + '"' : job.url;
+    const label = (job.title ? '"' + job.title + '"' : job.url) + (isSong(job) ? ' (song mode: separate, then melody, bass and accompaniment)' : '');
     log('A conversion is waiting: ' + label + (job.attempt > 1 ? ' (attempt ' + job.attempt + ' of ' + (job.maxAttempts || 3) + ')' : ''));
     fs.mkdirSync(scratchRoot, { recursive: true });
     const dir = fs.mkdtempSync(path.join(scratchRoot, 'job-'));
@@ -539,7 +551,7 @@ function createWorker(cfg, deps) {
       log('Audio ready: ' + (audio.bytes / 1048576).toFixed(1) + ' MB (' + audio.how + '). Decoding...');
       stage = 'decode'; pct = 0; await beat(job, stage, 0);
       const wavs = await decode(audio.file, dir);
-      log('Decoded ' + Math.round(wavs.seconds) + ' s of audio. Starting the piano models' + (cfg.kongCheckpoint ? '' : ' (no Kong checkpoint found: TransKun alone)') + '.');
+      log('Decoded ' + Math.round(wavs.seconds) + ' s of audio. ' + (isSong(job) ? 'Separating the song, then the models' : 'Starting the piano models') + (cfg.kongCheckpoint ? '' : ' (no Kong checkpoint found: TransKun alone)') + '.');
       stage = 'transcribe'; pct = 0;
       let lastShown = -1;
       const raw = await transcribe(job, dir, wavs, p => {
@@ -548,7 +560,10 @@ function createWorker(cfg, deps) {
         if (s > lastShown) { lastShown = s; log('  listening: ' + Math.round(p * 100) + '%'); }
       });
       const r = toResult(raw);
-      log('Heard ' + r.result.notes.length + ' notes (' + r.result.ensemble.uncertain + ' more were kept apart: the models did not agree), ' + Math.round(r.result.duration) + ' s of music, ' + Math.round((Date.now() - t0) / 1000) + ' s here. Sending them to the site...');
+      if (r.result.mode === 'song') {
+        const layer = k => r.result.notes.filter(n => n.track === Result.SONG_TRACKS[k]).length;
+        log('Heard ' + r.result.notes.length + ' notes: melody ' + layer('melody') + ', bass ' + layer('bass') + ', accompaniment ' + layer('accomp') + ' (the drums are left out), ' + Math.round(r.result.duration) + ' s of music, ' + Math.round((Date.now() - t0) / 1000) + ' s here. Sending them to the site...');
+      } else log('Heard ' + r.result.notes.length + ' notes (' + r.result.ensemble.uncertain + ' more were kept apart: the models did not agree), ' + Math.round(r.result.duration) + ' s of music, ' + Math.round((Date.now() - t0) / 1000) + ' s here. Sending them to the site...');
       stage = 'upload'; pct = 1;
       check();
       const sent = await postResult(job, r.result);
@@ -573,7 +588,8 @@ function createWorker(cfg, deps) {
 
   /* one poll: { job, nextPollSeconds } or { error } */
   async function poll(once) {
-    const r = await callSite(cfg, 'POST', '/api/worker/claim', { json: { once: !!once, waitSeconds: cfg.idlePollSeconds || 0 }, timeoutMs: 60000 });
+    /* song: this worker knows song mode (G10d), so the site may hand it song jobs (a PC without the separation fails them with what to install) */
+    const r = await callSite(cfg, 'POST', '/api/worker/claim', { json: { once: !!once, waitSeconds: cfg.idlePollSeconds || 0, song: true }, timeoutMs: 60000 });
     stats.checks++;
     if (r.status === 401) throw Object.assign(new Error('token'), { fatalToken: true });
     if (r.status === 200 && r.body) return { job: r.body.job || null, next: secs(r.body.nextPollSeconds, 0) };
@@ -702,6 +718,9 @@ async function checkSetup(cfg, log, deps) {
   if (cfg.pythonPath && fs.existsSync(cfg.pythonPath)) {
     const py = await (deps.runTool || runTool)(cfg.pythonPath, ['-c', 'import torch, soundfile, transkun; print("cuda" if torch.cuda.is_available() else "cpu")'], { timeoutMs: 60000 });
     say(py.code === 0, py.code === 0 ? 'Python has torch, soundfile and transkun; it will run on the ' + String(py.tail).trim().split(/\s+/).pop().toUpperCase() : 'Python cannot import torch, soundfile and transkun: ' + String(py.tail).trim().split('\n').pop());
+    /* song mode is optional: without the separation only song-mode conversions fail (with a message that says what to install) */
+    const sep = await (deps.runTool || runTool)(cfg.pythonPath, ['-c', 'import sys\nif sys.argv[1]: sys.path.insert(0, sys.argv[1])\nimport demucs, librosa\nprint("ok")', cfg.songLib || ''], { timeoutMs: 60000 });
+    log(sep.code === 0 ? 'ok    song mode: the source separation (demucs) is there' + (cfg.songLib ? ' (' + cfg.songLib + ')' : '') : 'note  song mode is not set up (no demucs): piano conversions work; see tools/home-worker/README.md, "Song mode"');
   }
   if (!problems.some(p => /^(siteUrl|token)/.test(p))) {
     try {

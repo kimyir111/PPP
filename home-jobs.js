@@ -37,6 +37,11 @@ const R = require('./home-result');
 
 const HOUR = 3600 * 1000;
 const DAY = 24 * HOUR;
+/* G10d: what a conversion is asked to do. 'piano' (the default, and a request that names no mode): the piano models on the recording as it is (kind 'youtube').
+   'song': a song that is not a piano recording - the PC separates it first and writes the melody, the bass and the accompaniment as layers (kind 'youtube-song').
+   An older worker that does not know the kind runs it as a piano recording; its result then has no layers and the page says so. */
+const JOB_KINDS = Object.freeze({ piano: 'youtube', song: 'youtube-song' });
+const kindOfMode = mode => (mode == null || mode === '' ? JOB_KINDS.piano : Object.prototype.hasOwnProperty.call(JOB_KINDS, mode) ? JOB_KINDS[mode] : null);
 const LIMITS = {
   /* the queue */
   PENDING_PER_USER: 5,
@@ -401,15 +406,16 @@ function create(deps) {
   function nextPollS(ownerId, t) { return isActive(ownerId, t) ? C.activePollS : C.idlePollS; }
 
   function workerSummary(ownerId, t) {
-    let has = false, seen = 0, pollS = 0;
+    let has = false, seen = 0, pollS = 0, song = null;
     tokens.forEach(k => {
       if (k.ownerId !== ownerId) return;
       has = true;
-      if (k.lastSeenAt > seen) { seen = k.lastSeenAt; pollS = k.pollS; }
+      if (k.lastSeenAt > seen) { seen = k.lastSeenAt; pollS = k.pollS; song = typeof k.song === 'boolean' ? k.song : null; }
     });
     /* alive: heard of within twice the wait it announced (a --once worker announces none: a couple of minutes) */
     const alive = seen > 0 && t - seen <= Math.max(2 * pollS, 120) * 1000 + 30000;
-    return { hasToken: has, everSeen: seen > 0, alive: alive, lastSeenAt: iso(seen), idlePollSeconds: C.idlePollS, activePollSeconds: C.activePollS, linkTag: linkTagOf(ownerId) };
+    /* songMode: what the PC's worker said at its last claim since this server started (null: not heard since) - false is a worker from before G10d, that a song job waits for in vain */
+    return { hasToken: has, everSeen: seen > 0, alive: alive, lastSeenAt: iso(seen), idlePollSeconds: C.idlePollS, activePollSeconds: C.activePollS, linkTag: linkTagOf(ownerId), songMode: song };
   }
 
   /* ----- changes that need the store: memory first (one turn of the event loop), then the database; a failed write is undone ----- */
@@ -550,11 +556,13 @@ function create(deps) {
     if (!limiters.enqueue.take(link.id)) throw httpError(429, 'Too many conversions were asked for just now. Try again in a little while.', 'too-many', { retryAfter: 600 });
     if (!limiters.enqueueIp.take(ip)) { limiters.enqueue.release(link.id); throw httpError(429, 'Too many conversions were asked for just now. Try again in a little while.', 'too-many', { retryAfter: 600 }); }
     const release = () => { limiters.enqueue.release(link.id); limiters.enqueueIp.release(ip); };
-    let body, parsed;
+    let body, parsed, kind;
     try {
       body = await readJson(req, L.JOB_BODY);
       parsed = parseYoutube(body.url);
       if (!parsed) throw httpError(422, 'That is not a link to a YouTube video.', 'bad-url');
+      kind = kindOfMode(body.mode);
+      if (!kind) throw httpError(422, 'That conversion mode is not known.', 'bad-mode');
       await ensureLoaded();
     } catch (e) { release(); throw e; }
     const t = now();
@@ -568,7 +576,7 @@ function create(deps) {
     /* From here to jobs.set below nothing is awaited: the checks and the taking of the slot are one turn of the event loop, so two requests at once cannot
        both pass the cap of waiting jobs or both add the same link, whatever the store is doing meanwhile (clearing room is a database call). */
     const mine = ownJobs(link.id);
-    const dup = mine.find(j => pending(j) && j.url === parsed.url);
+    const dup = mine.find(j => pending(j) && j.url === parsed.url && j.kind === kind);
     if (dup) {
       /* the same link asked at the same moment: it is the one job the first request is writing - say so once that is durable, or fail as the first one does */
       if (dup.writing && dup.settled && !(await dup.settled)) { release(); throw httpError(503, 'The queue is not available right now. Try again in a minute.', 'store'); }
@@ -581,7 +589,7 @@ function create(deps) {
     }
     if (storedBytes() >= C.totalResultBytes) { release(); throw httpError(503, 'The queue is full right now. Try again later.', 'busy'); }
     if (jobs.size >= L.MAX_ROWS) { release(); throw httpError(503, 'The queue is full right now. Try again later.', 'busy'); }
-    const job = { id: crypto.randomBytes(12).toString('base64url'), ownerId: link.id, kind: 'youtube', url: parsed.url,
+    const job = { id: crypto.randomBytes(12).toString('base64url'), ownerId: link.id, kind: kind, url: parsed.url,
       title: R.cleanText(body.title, 120), status: 'queued', attempts: 0, workerId: null, createdAt: t, claimedAt: 0, finishedAt: 0, error: '', bytes: 0, beatAt: 0, progress: null };
     /* the slot is taken now, before anything is awaited: it counts as waiting (the cap, the duplicate check) and as a row, and nothing claims, cancels or clears it
        until it is durable. A failure gives it back. */
@@ -812,10 +820,12 @@ function create(deps) {
     reply(res, 200, { ok: true, nextPollSeconds: nextPollS(rec.ownerId, t) });
   }
 
-  function nextQueued(ownerId) {
+  /* G10d: a song job is handed only to a worker that says it can separate a song (claim body song: true): a worker from before G10d would run it as a piano recording and
+     the person would get the piano models' notes of a song (the voice gone, the drums kept) under a "Song" label. It waits for an updated worker instead, and the list says why. */
+  function nextQueued(ownerId, canSong) {
     let best = null;
     const t = now();
-    jobs.forEach(j => { if (j.ownerId === ownerId && j.status === 'queued' && !j.writing && !(j.notBefore > t) && (!best || j.createdAt < best.createdAt)) best = j; });
+    jobs.forEach(j => { if (j.ownerId === ownerId && j.status === 'queued' && !j.writing && !(j.notBefore > t) && (canSong || j.kind !== JOB_KINDS.song) && (!best || j.createdAt < best.createdAt)) best = j; });
     return best;
   }
   function waitForJob(ownerId, ms, res) {
@@ -853,14 +863,16 @@ function create(deps) {
     touch(rec, t0, a.announced);
     if (cold) await persistSeen(rec);
 
-    let job = nextQueued(rec.ownerId);
+    const canSong = body.song === true;
+    rec.song = canSong;
+    let job = nextQueued(rec.ownerId, canSong);
     /* with a job in sight (queued, claimed, or just finished) a poll waits a little for one to arrive; an idle poll never waits */
     if (!job && !once && isActive(rec.ownerId, t0) && C.longPollMs > 0) {
       await waitForJob(rec.ownerId, Math.min(C.longPollMs, 25000), res);
       if (res.destroyed || res.writableEnded) return;
       /* the token may have been replaced, or the link removed, while it waited */
       if (!alive(rec)) throw httpError(401, 'That token is not valid.', 'bad-token');
-      job = nextQueued(rec.ownerId);
+      job = nextQueued(rec.ownerId, canSong);
     }
     if (!job) {
       a = announce();
@@ -881,7 +893,7 @@ function create(deps) {
     a = announce();
     touch(rec, t, a.announced);
     await persistSeen(rec);
-    reply(res, 200, { job: { id: job.id, url: job.url, title: job.title, attempt: job.attempts, maxAttempts: L.MAX_ATTEMPTS }, nextPollSeconds: a.next });
+    reply(res, 200, { job: { id: job.id, kind: job.kind, url: job.url, title: job.title, attempt: job.attempts, maxAttempts: L.MAX_ATTEMPTS }, nextPollSeconds: a.next });
   }
 
   /* the job named in the path, if the token's link owns it and it is still the worker's to work on */
@@ -1033,4 +1045,4 @@ function create(deps) {
   };
 }
 
-module.exports = { create, LIMITS, configFrom, newToken, parseToken, newLink, codeHash, linkIdOf, linkTagOf, addrKey, CODE_RE, PC_HEADER };
+module.exports = { create, LIMITS, JOB_KINDS, configFrom, newToken, parseToken, newLink, codeHash, linkIdOf, linkTagOf, addrKey, CODE_RE, PC_HEADER };
