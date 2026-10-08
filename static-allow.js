@@ -23,7 +23,7 @@
 /* the page, and the scripts that sit beside it */
 const ROOT_FILES = new Set([
   'Piano Coach App.dc.html',
-  'support.js', 'i18n.js', 'audio-score.js', 'score-search.js', 'lessons.js', 'course.js',
+  'support.js', 'i18n.js', 'library-backup.js', 'audio-score.js', 'score-search.js', 'lessons.js', 'course.js',
   /* G13-3 makes it: the licence notices the site shows (planned; not there yet) */
   'THIRD_PARTY_NOTICES.md'
 ]);
