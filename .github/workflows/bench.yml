@@ -258,7 +258,7 @@ jobs:
           overwrite: true
 
   # shard-h: the rests trainer check, test:home-worker, test:server-hygiene, the key check, replay-public
-  #   (steps ~166 s on a fast runner, ~193 s on a slow one, before test:server-hygiene (G13-5), which adds roughly 15-30 s)
+  #   (steps ~166 s on a fast runner, ~193 s on a slow one, before test:server-hygiene (G13-5): that step took 5 s on a runner)
   shard-h:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
