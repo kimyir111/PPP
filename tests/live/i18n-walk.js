@@ -2,17 +2,20 @@
 /* G13-0 live i18n walk: the untranslated text a person SEES on a running PPP site, per locale, over the main screens. READ-ONLY: GET requests,
    a throwaway browser profile, and clicks that only navigate (nothing is written to the site; a non-GET request to it fails the run).
 
-     node tests/live/i18n-walk.js <ko-KR|ja-JP|zh-CN>[,...]|all [--site https://ppp-web-2o99.onrender.com] [--known FILE] [--out FILE] [--write-known FILE] [--max N]
+     node tests/live/i18n-walk.js <ko-KR|ja-JP|zh-CN>[,...]|all [--site https://ppp-web-2o99.onrender.com] [--known FILE] [--out FILE] [--write-known FILE] [--max N] [--delay-catalogs MS]
 
    Why it exists: the static checker (tests/i18n/gaps.js) reads the sources, so it cannot see a text built by concatenation ("Left hand at 75%
    tempo"), a text that comes from data (a coach quote), or a tab label drawn by a component. This opens the page in the locale, visits Home,
-   every item of the side navigation and the Add Sheet Music screen, and collects every visible text node that looks like English: two or more
-   Latin words of 3+ letters, or one Latin word of 4+ letters standing alone (the walker of PPP_I18N.apply skips svg, script, style, textarea,
-   input and code, so does this). Strings that start with a proper noun (PPP, MIDI, a composer or a book) are not counted.
+   every item of the side navigation, the other views of the Practice screen (Falling Notes and Split, with their Visual settings open) and the Add
+   Sheet Music screen, and collects every visible text node and tooltip (title / aria-label / placeholder / alt) that looks like English: a Latin word
+   of 3+ letters left over once the proper nouns are taken out (PPP, MIDI, MusicXML, BPM, file types, composers and books, the demo piece, the names
+   of the transcription models and of the languages). The walker of PPP_I18N.apply skips svg, script, style, textarea, input and code, so does this.
    --known FILE  strings that are known to be untranslated today ({"ko-KR": ["text", ...], ...}; default tests/live/i18n-walk-known.json), compared with
-                 the digits ignored. The run FAILS (exit 1) on a string that is not in the file: that is "a new gap". G13-2 empties the file.
-                 The coach hints ("Left hand at 75% tempo", built in code by concatenation) show in some loads and not in others, in any
-                 locale (the demo's practice history is drawn per load): the file lists the ones seen, so run twice before believing a NEW.
+                 the digits ignored. The run FAILS (exit 1) on a string that is not in the file: that is "a new gap". G13-2 emptied the file, so any
+                 English left on a screen fails the run.
+   --delay-catalogs MS  hold the catalogs (i18n/*.json) back by that many ms, as a slow network does. A sentence PPP makes once and keeps (the coach
+                 hint "Left hand at 75% tempo") was made in English when the page was drawn before the catalogs came, and stayed so; the walk of a
+                 fast network never showed it. Try 2500.
    --write-known FILE  write this run's strings in that format (to shrink or start the known file; do not use it to hide a new gap).
    --max N       also fail when more than N strings are found, known or not.
    --out FILE    the JSON report (default: a file in the temp directory; its path is printed). */
@@ -22,7 +25,7 @@ const os = require('os');
 const path = require('path');
 
 const args = process.argv.slice(2);
-const VALUE_OPTS = ['--site', '--known', '--out', '--write-known', '--max'];
+const VALUE_OPTS = ['--site', '--known', '--out', '--write-known', '--max', '--delay-catalogs'];
 const opt = (n, d) => { const i = args.indexOf(n); return i >= 0 && args[i + 1] !== undefined ? args[i + 1] : d; };
 const positional = args.filter((a, i) => !a.startsWith('--') && !VALUE_OPTS.includes(args[i - 1]));
 const SITE = String(opt('--site', 'https://ppp-web-2o99.onrender.com')).replace(/\/+$/, '');
@@ -32,9 +35,21 @@ const wanted = (positional.join(',') || 'ko-KR').split(',').map(s => s.trim()).f
 const KNOWN_FILE = opt('--known', path.join(__dirname, 'i18n-walk-known.json'));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const siteHost = new URL(SITE).host;
+const DELAY = Math.max(0, +opt('--delay-catalogs', 0) || 0);
 
-// Strings that begin with one of these need no translation (proper nouns: the product, formats, composers, books).
-const PROPER = /^(PPP|MIDI|MusicXML|YouTube|PDF|BPM|Beyer|Czerny|Hanon|Burgm|Clementi|Bach|Mozart|Beethoven|Chopin|Satie|Debussy|Gymnop|Ludwig|Erik|Johann|Wolfgang|Fr\u00e9d\u00e9ric|Muzio|Ferdinand|Friedrich|Carl)/;
+// Text that needs no translation, taken out before a string is judged (proper nouns: the product, formats, file types, composers, books, the demo
+// piece, the names of models and languages, a command). What is left must hold no Latin word of 3+ letters, or it is English on the screen.
+const PROPER_PHRASES = ['Piano Onsets & Frames', 'Basic Pitch', 'Beat This', 'Aria-AMT', 'arr. solo piano', 'npm run omr', 'Interstellar Theme'];
+const PROPER_WORDS = ('PPP AI MIDI MusicXML MXL XML BPM PDF YouTube MP3 MP4 WAV M4A PNG JPG JPEG URL OMR USB GPU OST PM2S Transkun TransKun Kong Hanon Czerny Beyer '
+  + 'Burgm\u00fcller Clementi Bach Mozart Beethoven Chopin Satie Debussy Gymnop\u00e9die Ludwig Erik Johann Wolfgang Fr\u00e9d\u00e9ric Muzio Ferdinand Friedrich Carl Hans Zimmer '
+  + 'English').toLowerCase().split(' ');
+const escapeRe = p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const PROPER_RE = new RegExp(PROPER_PHRASES.map(escapeRe).join('|'), 'g');
+const properOnly = text => {
+  const left = String(text).replace(/^@[a-z-]+: /, '').replace(/https?:\/\/\S+/g, ' ').replace(PROPER_RE, ' ')
+    .replace(/[A-Za-z\u00c0-\u00ff][\w\u00c0-\u00ff-]*/g, w => (PROPER_WORDS.includes(w.toLowerCase()) ? ' ' : w));
+  return !/[A-Za-z]{3,}/.test(left);
+};
 
 const shape = t => t.replace(/[0-9]+/g, '#');                    // numbers do not make a new gap ("accuracy: 56%" is "accuracy: 41%" tomorrow)
 
@@ -51,6 +66,10 @@ async function walk(browser, locale) {
   const errors = [], nonGet = [];
   page.on('pageerror', e => errors.push(String(e.message).slice(0, 160)));
   page.on('request', r => { if (!['GET', 'HEAD', 'OPTIONS'].includes(r.method()) && !r.url().startsWith('data:')) nonGet.push(r.method() + ' ' + r.url().slice(0, 120)); });
+  if (DELAY > 0) {                                              // a slow network: the catalogs come late
+    await page.setRequestInterception(true);
+    page.on('request', async r => { if (/\/i18n\/[A-Za-z-]+\.json/.test(r.url())) await sleep(DELAY); r.continue().catch(() => {}); });
+  }
   await page.goto(URL_, { waitUntil: 'networkidle2', timeout: 120000 });
   await page.waitForFunction(() => document.querySelectorAll('aside nav button').length >= 6, { timeout: 60000 });
   await page.evaluate(() => window.PPP_I18N && window.PPP_I18N.ready);
@@ -67,8 +86,15 @@ async function walk(browser, locale) {
       if (!r.width || !r.height) continue;
       const cs = getComputedStyle(p); if (cs.visibility === 'hidden' || cs.display === 'none') continue;
       const s = String(n.nodeValue || '').replace(/\s+/g, ' ').trim();
-      const words = s.match(/[A-Za-z]{3,}/g) || [];
-      if (words.length >= 2 || (words.length === 1 && s.length === words[0].length && s.length >= 4)) out.push(s.slice(0, 120));
+      if (/[A-Za-z]{3,}/.test(s)) out.push(s.slice(0, 120));       // the proper nouns are taken out in properOnly()
+    }
+    for (const el of document.querySelectorAll('[title], [aria-label], [placeholder], img[alt]')) {      // tooltips and labels are text a person sees too
+      if (el.closest('svg, script, style, [data-no-i18n]')) continue;
+      const r = el.getBoundingClientRect(); if (!r.width || !r.height) continue;
+      for (const a of ['title', 'aria-label', 'placeholder', 'alt']) {
+        const v = String(el.getAttribute(a) || '').replace(/\s+/g, ' ').trim();
+        if (/[A-Za-z]{3,}/.test(v)) out.push('@' + a + ': ' + v.slice(0, 120));
+      }
     }
     return out;
   });
@@ -80,12 +106,22 @@ async function walk(browser, locale) {
     await page.evaluate(i2 => { const b = document.querySelectorAll('aside nav button')[i2]; if (b) b.click(); }, i);
     await sleep(1500);
     add(navLabels[i], await collect());
+    // the Practice screen has views (Sheet, Falling Notes, Split): the other two, with their Visual settings open, are screens too
+    const views = await page.evaluate(() => document.querySelectorAll('.ppp-staffhead [role=tablist] button').length);
+    for (let v = 1; v < views; v++) {
+      await page.evaluate(v2 => { const b = document.querySelectorAll('.ppp-staffhead [role=tablist] button')[v2]; if (b) b.click(); }, v);
+      await sleep(1200);
+      await page.evaluate(() => { const b = document.querySelector('.ppp-staffhead button[aria-expanded]'); if (b && b.getAttribute('aria-expanded') !== 'true') b.click(); });
+      await sleep(500);
+      add(navLabels[i] + ' / view ' + (v + 1), await collect());
+    }
+    if (views) await page.evaluate(() => { const b = document.querySelector('.ppp-staffhead [role=tablist] button'); if (b) b.click(); });   // back to the sheet
   }
   await page.evaluate(() => { const b = document.querySelector('aside > button'); if (b) b.click(); });   // the Add Sheet Music screen
   await sleep(1500);
   add('add', await collect());
   await ctx.close();
-  const strings = [...seen.entries()].map(([text, screen]) => ({ screen, text })).filter(x => !PROPER.test(x.text));
+  const strings = [...seen.entries()].map(([text, screen]) => ({ screen, text })).filter(x => !properOnly(x.text));
   return { locale, htmlLang: lang, navItems: navLabels.length, screens, distinct: seen.size, likelyUntranslated: strings.length, strings, errors, nonGet };
 }
 
