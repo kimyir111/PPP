@@ -1,0 +1,67 @@
+# G13-7a (docs/GOALS/G13_PRODUCTIZATION.md, G13-D11): the daily check that the live site works. Read-only: GET requests and one throwaway browser profile
+# (tests/live/smoke.js); it writes nothing to the site, holds no secret, runs no code of the home PC, deploys nothing. It is NOT part of the bench workflow's
+# `gate` (a failure of the live site must not turn a pull request red), and nothing here is a deploy trigger: deploys are manual (tools/release/release.js).
+#
+# Free-tier arithmetic: Render's 750 instance-hours of the month are shared by three services and ppp-web must not be kept awake. One run a day wakes ppp-web
+# once; it sleeps again 15 minutes after the last request, so a day costs about 16 minutes: about 8 hours a month, about 1% of 750. An uptime pinger every few
+# minutes would cost about 730 hours, which is why there is none and why this is a daily cron and nothing more frequent.
+#
+# 06:05 KST every day is 21:05 UTC of the day before. Not on the hour: GitHub delays scheduled runs at the start of an hour.
+#
+# On a failure it opens an issue "Live smoke failed" with the tail of the output (or comments on the one that is open) - tools/release/smoke-issue.js. The token has
+# `issues: write` and `contents: read`, nothing else. The first scheduled run is the first test of the Chrome start on this kind of runner: use "Run workflow" once
+# after merging to see it pass.
+name: live-smoke
+
+on:
+  schedule:
+    - cron: '5 21 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+# one at a time; a run that is still going is never cut off by the next one
+concurrency:
+  group: live-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SITE: https://ppp-web-2o99.onrender.com
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            tests/live
+            tools/release
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      # the only thing the smoke check needs is puppeteer (its version range is the repository's own); nothing else of package.json is installed
+      - name: install puppeteer only
+        run: |
+          mkdir "$RUNNER_TEMP/smoke-deps"
+          cd "$RUNNER_TEMP/smoke-deps"
+          npm init -y > /dev/null
+          npm install --no-audit --no-fund "puppeteer@$(node -p "require(process.env.GITHUB_WORKSPACE + '/package.json').devDependencies.puppeteer")"
+      # ubuntu 24.04 runners refuse the unprivileged user namespaces that Chrome's sandbox uses; smoke.js starts Chrome with its defaults
+      - name: let Chrome start its sandbox
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+      - name: smoke check of the live site
+        id: smoke
+        shell: bash
+        run: |
+          {
+            echo "wake: GET $SITE/health (a cold start of the free instance takes up to a minute or two)"
+            curl -fsS --max-time 90 --retry 5 --retry-delay 15 --retry-all-errors -o /dev/null -w 'health: HTTP %{http_code} in %{time_total}s\n' "$SITE/health"
+            NODE_PATH="$RUNNER_TEMP/smoke-deps/node_modules" node tests/live/smoke.js --site "$SITE"
+          } 2>&1 | tee "$RUNNER_TEMP/smoke.log"
+      - name: open or update the issue "Live smoke failed"
+        if: ${{ failure() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node tools/release/smoke-issue.js "$RUNNER_TEMP/smoke.log"
