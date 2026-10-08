@@ -3796,7 +3796,15 @@ family with the browser's real miss rate (about 30 % on covers against 2-4 % in 
 
 ### 36.7 Nightly suites
 
-NIGHTLY_PLACEHOLDER
+Run locally one after another, in the order of bench.yml nightly-rec, then rec-full unsharded (11,196 cases, 22 min); main -> now, v2 rows unless said:
+
+| suite | verdict | what moved |
+| --- | --- | --- |
+| mutation-check --rec | PASS after one anchor update | REC-V2-NO-AUDIO-BEATS (tests/bench/pppbench/mutation.py) now plants its defect on the gated line of rec/index.js; every harmful mutation caught, the no-op identical |
+| mutation-check --rec-arrange, --rec-arrange-lead | PASS | - |
+| rec-arrange-core, rec-arrange-full, rec-arrange-play | PASS | no gated change; not rebaselined |
+| rec-hands-play | REGRESSION -> rebaselined | usable 0.253 -> **0.257**, rec.usable 0.070 -> **0.072**, beat placement 0.368 -> **0.377**, downbeat F1 0.629 -> **0.639**, false rests 85.0 -> 84.9, metre identical; lost: one hymn in octave texture (my-hope-is-built, 2 rows) moved its bar lines off, M08 (above), the tuplet tag's rest precision -0.010 |
+| rec-full (aggregates) | REGRESSION -> rebaselined | v2 rows: usable 0.443 -> **0.448**, rec.usable 0.193 -> **0.195**, beat placement 0.643 -> **0.652**, structure 0.721 -> **0.731**, downbeat F1 0.808 -> **0.819**, onset_pos 0.687 -> **0.697**, false rests 15.77 -> **15.70**; metre and tempo identical; the oracle-noisy rows identical; lost: the irregular metre class (6/4, 5/4: 216 cases, every option set) rest precision 0.074 -> 0.056 |
 
 ### 36.8 Limits
 
