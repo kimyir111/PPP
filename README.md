@@ -61,7 +61,7 @@ and components this app is built from. It is reference material and was not pull
 
 `.dc.html` is a Design Component: an `<x-dc>` HTML template plus a
 `class Component extends DCLogic` whose `renderVals()` returns the flat object the template
-binds to. The runtime boots itself, pulls React 18 from unpkg, and mounts. Because the format
+binds to. The runtime boots itself, takes React 18 (served from `vendor/react-18.3.1/`; `?cdn=1` loads the same files from unpkg, G13-1), and mounts. Because the format
 is preserved, the app still round-trips to Claude Design.
 
 ## Importing a PDF or a photo

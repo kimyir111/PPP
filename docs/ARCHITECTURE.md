@@ -10,7 +10,7 @@
 
 | 구성 요소 | 파일 | 역할 |
 | --- | --- | --- |
-| 앱 | `Piano Coach App.dc.html` (~19k줄, 단일 파일) | 음악 모델(`Score`), `parseMusicXML`, Import(OMR·녹음), VexFlow 렌더러, 재생(`PianoScore`), 연습·follow·코치·운지, 편곡기. React와 Babel을 unpkg에서 런타임에 로드한다. |
+| 앱 | `Piano Coach App.dc.html` (~19k줄, 단일 파일) | 음악 모델(`Score`), `parseMusicXML`, Import(OMR·녹음), VexFlow 렌더러, 재생(`PianoScore`), 연습·follow·코치·운지, 편곡기. React는 `vendor/react-18.3.1/`에서 제공한다(G13-1; `?cdn=1`이면 같은 파일을 unpkg에서 받는다). Babel은 `x-import` JSX가 있을 때만 unpkg에서 받는다(앱에는 없다). |
 | 녹음 → 악보 | `audio-score.js` (UMD, 의존성 없음) | `toMusicXml(heard, opts)` → `{xml, stats}`. 모든 녹음 경로가 이곳으로 모인다. (G1 이후: `{xml, stats, graph, graphIssues}`, 아래 §2 끝) |
 | 서버 | `server.js` (8777) | 정적 서빙(`tests`, `tools`, `data` 등은 차단), 로그인, 진도, 공유 API |
 | 로컬 helper | `omr-service.js` (127.0.0.1:8788) | OMR(Audiveris), 전사(`transcribe.py`, `beat_track.py`), 코치, 편곡(`arrange_score.py`) |
