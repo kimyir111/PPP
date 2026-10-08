@@ -167,11 +167,36 @@ const ok = (name, cond, detail) => {
     await sleep(1000);
     const got = await slow.evaluate(() => {
       const A = window.PPP.app, I = window.PPP_I18N;
-      const rec = A.model().rec, seq = A.seq().map(x => x.label);
-      return { action: rec.action, headline: rec.headline, seq,
+      const rec = A.model().rec, seq = A.seq().map(x => x.label), elig = A.memEligible().reasons;
+      return { action: rec.action, headline: rec.headline, seq, elig,
         want: [I.tx('Left hand at {{pct}}% tempo', { pct: 75 }), I.tx('Left hand accuracy: {{pct}}%', { pct: 56 })], english: ['Left hand at 75% tempo', 'Left hand accuracy: 56%'] };
     });
     ok(loc + ' on a slow network the recommendation is still made in ' + loc, got.action !== got.english[0] && got.headline !== got.english[1] && /\d/.test(got.action) && !/[A-Za-z]{4,}/.test(got.action + got.headline + got.seq.join(' ')), JSON.stringify(got));
+    ok(loc + ' on a slow network the memory reasons (why Memory Mode is not open yet) are rebuilt in ' + loc, got.elig.length > 0 && !/[A-Za-z]{4,}/.test(got.elig.join(' ')), got.elig.join(' | '));
+    await ctx.close();
+  }
+
+  /* a song named like a catalog key keeps its name: the Home hero shows the title and the composer as they are (data-no-i18n), not translated.
+     A page of its own per locale: the text apply() has translated is not turned back when the language changes. */
+  for (const loc of ['ko-KR', 'ja-JP', 'zh-CN']) {
+    const ctx = await browser.createBrowserContext();
+    const named = await ctx.newPage();
+    await preparePage(named);
+    await named.evaluateOnNewDocument(l => { try { localStorage.setItem('ppp-locale', l); } catch (e) {} }, loc);
+    await named.setViewport({ width: 1440, height: 900 });
+    await named.goto(URL, { waitUntil: 'networkidle2', timeout: 45000 });
+    await named.waitForFunction(() => document.querySelectorAll('aside nav button').length >= 6, { timeout: 25000 });
+    await named.evaluate(() => window.PPP_I18N.ready);
+    await sleep(800);
+    const r = await named.evaluate(async () => {
+      const A = window.PPP.app, I = window.PPP_I18N, wait = ms => new Promise(res => setTimeout(res, ms));
+      A.state.score.title = 'Beat'; A.state.score.composer = 'Keyboard';
+      A.forceUpdate();
+      await wait(800);
+      const hero = document.querySelector('.ppp-continue');
+      return { text: hero ? hero.innerText.split('\n') : null, beat: I.tx('Beat'), keyboard: I.tx('Keyboard') };
+    });
+    ok(loc + ' a song titled "Beat" by "Keyboard" keeps both on the Home hero', !!r.text && r.text.includes('Beat') && r.text.includes('Keyboard') && r.beat !== 'Beat' && r.keyboard !== 'Keyboard', JSON.stringify(r));
     await ctx.close();
   }
 

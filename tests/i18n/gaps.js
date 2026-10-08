@@ -17,6 +17,7 @@
    --update   rewrite the baseline from the sources. It refuses when that would ADD an entry unless --allow-new is given, so the baseline
               can only shrink by accident (a new gap in the diff of the baseline file is then a deliberate act).
    --strict   with --check: also exit 1 when the baseline lists gaps that are fixed (so G13-2 shrinks it to nothing, and it stays there).
+   Also (always, no baseline): every translation carries the same {{placeholders}} as its English key (placeholderGaps).
    --list     print every current gap, not only the new ones.   --json   print the result as JSON.
    --root     the tree to read (default: this repository).      --baseline   the baseline file (default: <root>/tests/i18n/gaps-baseline.json).
 
@@ -120,6 +121,18 @@ function scan(root) {
   return { gaps, parity, where, counts: { template: ex.template.size, tx: ex.tx.size, scannedFiles: ex.files, dynamicCalls: ex.dynamicCalls, catalogs: Object.fromEntries(LOCALES.map(l => [l, cat.raw[l].size])) } };
 }
 
+/** PLACEHOLDERS: a translation must carry the same {{name}} placeholders as its English key, or tx() would show "{{n}}" or drop a number.
+    [{locale, key, value, want, got}] over every key of every catalog (no baseline: there is none to tolerate). */
+const holders = s => (String(s).match(/\{\{\w+\}\}/g) || []).sort().join(' ');
+function placeholderGaps(root) {
+  const out = [];
+  for (const l of LOCALES) {
+    const content = JSON.parse(fs.readFileSync(path.join(root, 'i18n', l + '.json'), 'utf8')).content || {};
+    for (const [key, value] of Object.entries(content)) if (holders(key) !== holders(value)) out.push({ locale: l, key, value, want: holders(key), got: holders(value) });
+  }
+  return out;
+}
+
 const flat = state => {            // the set of "cells": kind, string, locale
   const out = new Set();
   for (const kind of ['template', 'tx']) for (const [s, ls] of Object.entries(state.gaps[kind])) for (const l of ls) out.add([kind, s, l].join('\u0000'));
@@ -185,6 +198,14 @@ function main(argv) {
     return 0;
   }
 
+  const ph = placeholderGaps(root);
+  log(`  placeholders: ${ph.length} translation(s) whose {{...}} set differs from its key`);
+  if (ph.length) {
+    log(`FAIL: ${ph.length} translation(s) do not carry the placeholders of their English key:`);
+    for (const g of ph.slice(0, 20)) log(`  [placeholders] ${g.locale}: ${JSON.stringify(g.key)} wants [${g.want}] but has [${g.got}]: ${JSON.stringify(g.value)}`);
+    if (ph.length > 20) log(`  ... and ${ph.length - 20} more`);
+    return 1;
+  }
   let base;
   try { base = readBaseline(baselineFile); } catch (e) { console.log(`FAIL: cannot read the baseline ${baselineFile}: ${e.message}`); return 1; }
   const { fresh, fixed } = compare(state, base);
@@ -208,7 +229,7 @@ function main(argv) {
   return 0;
 }
 
-module.exports = { extract, catalogs, scan, compare, flat, readBaseline, baselineText, allowed, norm, LOCALES, APP, BASELINE_REL };
+module.exports = { extract, catalogs, scan, placeholderGaps, compare, flat, readBaseline, baselineText, allowed, norm, LOCALES, APP, BASELINE_REL };
 if (require.main === module) {
   try { process.exitCode = main(process.argv); } catch (e) { console.error('i18n checker error: ' + (e && e.stack || e)); process.exitCode = 2; }
 }

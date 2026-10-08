@@ -125,6 +125,27 @@ test('MUTATION: a key added to one catalog only is a parity gap', () => withTree
   assert.match(r.out, /\[parity\]/);
 }));
 
+test('MUTATION: a translation that loses, renames or adds a {{placeholder}} fails; the same ones in another order pass', () => {
+  const KEY = 'Measure {{n}} · {{state}} · {{pct}}%';
+  assert.ok(KEY in catalog('ko-KR').content, 'the key used by the mutation exists');
+  const bad = {
+    lost: '마디 {{n}} · {{state}}', renamed: '마디 {{n}} · {{state}} · {{percent}}%', added: '마디 {{n}} · {{state}} · {{pct}}% · {{extra}}'
+  };
+  for (const [what, value] of Object.entries(bad)) {
+    withTree({ catalogs: (l, content) => { if (l === 'ja-JP') content[KEY] = value; } }, dir => {
+      const r = check(dir, '--check');
+      assert.equal(r.code, 1, what + '\n' + r.out);
+      assert.match(r.out, /\[placeholders\] ja-JP/, what);
+      assert.ok(r.out.includes(KEY), what);
+    });
+  }
+  withTree({ catalogs: (l, content) => { content[KEY] = '{{pct}}% · {{state}} · {{n}}'; } }, dir => {
+    const r = check(dir, '--check');
+    assert.equal(r.code, 0, r.out);
+  });
+  assert.equal(gaps.placeholderGaps(ROOT).length, 0, 'the committed catalogs carry every placeholder of their keys');
+});
+
 test('what is fine passes: proper nouns, URLs, symbols, a translated string, curly quotes against straight ones', () => withTree({
   app: addScript(`[tx('MIDI'), tx('PPP'), tx('https://example.com/a'), tx('12 / 34'), tx('${PLANTED}'), tx('Don\\u2019t stop')]`),
   catalogs: (l, content) => { content[PLANTED] = 'x'; content["Don't stop"] = 'y'; }
