@@ -41,6 +41,9 @@ const MIME = {
 };
 
 const BLOCKED = new Set(['node_modules', 'tools', '.git', 'data', 'tests']);
+/* G13-5 (docs/GOALS/G13 D16, TD26): BLOCKED is the old lock and stays. A file is handed out only when static-allow.js names it - the page, its
+   modules, the catalogues, the piano and the language files; the server's own sources, deploy files, docs/ and the rest are a 404. */
+const staticAllow = require('./static-allow');
 
 /* G4d-2 (docs/GOALS/G04 §16; DECISIONS G4-D2-5): the engraver's files and the vendored VexFlow are kept by the browser for
    good when they are asked for by their content hash - ?h=<the first 12 hex of the sha256 of the file with CRLF read as
@@ -533,6 +536,26 @@ function publicUser(u) {
 const SHARE_MAX_BYTES = 4 * 1024 * 1024;
 const SHARES_PER_USER = 200;
 const SHARE_LIST_LIMIT = 250;
+/* G13-5: the public list comes a page at a time (it was every listed score at once: 681 KB for 110). Without ?limit a page is SHARE_PAGE rows; ?mine=1 keeps its
+   own default (SHARE_LIST_LIMIT: an account has at most SHARES_PER_USER, and the page marks its songs "shared" from that whole list). The answer is
+   { shares, next } - next is an opaque cursor for the following page, or null at the end; the first page of the public list also names the genres that have a
+   score ({ genres }), which the page's filter chips are made from. An older page reads only .shares and shows the newest SHARE_PAGE. */
+const SHARE_PAGE = 24;
+const SHARE_PAGE_MAX = 100;
+/* a cursor is where the last row of a page stands in the order (updated_at, id), base64url of [updatedAt, id] - checked on the way in, never trusted */
+function shareCursorOf(row) {
+  const t = row.updatedAt instanceof Date ? row.updatedAt.toISOString() : new Date(row.updatedAt).toISOString();
+  return Buffer.from(JSON.stringify([t, row.id]), 'utf8').toString('base64url');
+}
+function readShareCursor(text) {
+  try {
+    if (typeof text !== 'string' || text.length > 200 || !/^[A-Za-z0-9_-]+$/.test(text)) return null;
+    const a = JSON.parse(Buffer.from(text, 'base64url').toString('utf8'));
+    if (!Array.isArray(a) || a.length !== 2 || typeof a[0] !== 'string' || typeof a[1] !== 'string') return null;
+    if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z$/.test(a[0]) || !Number.isFinite(Date.parse(a[0])) || !/^[\w-]{1,40}$/.test(a[1])) return null;
+    return { t: new Date(a[0]).toISOString(), id: a[1] };
+  } catch (e) { return null; }
+}
 /* Guest link sharing (share-guest.js): the limits that keep a public write endpoint small. */
 const guestShare = require('./share-guest');
 /* G10b-1 / G10b-2: the home-PC transcription queue (home-jobs.js; docs/GOALS/G10B_HOME_WORKER.md) and where it is kept. It needs no account: a PC link is a pair of
@@ -551,6 +574,23 @@ const GUEST_DRAIN_BYTES = 16 * 1024 * 1024;
 const GUEST_TOO_BIG = 'That score is too large to share as a guest. Sign in to share larger scores.';
 /* a constant for pg_advisory_xact_lock: guest creates take turns */
 const GUEST_LOCK_KEY = 727001;
+/* G13-5 (TD26): who may make an account, and how fast. Making one costs a scrypt on the one thread, and a row for good. Three limits, each from one address
+   (an IPv6 address counts as its /48: home-jobs.js addrKey; the address is kept only as a keyed hash, like the PC links') and one for the whole site:
+   every request to the route (it costs the scrypt before it can be answered), accounts made per hour and per day from an address, and accounts made per hour by
+   everybody. The accounts are counted from the users table (created_at, created_ip_tag), so a restart does not forget them; the requests are counted in memory,
+   as the login limit is. A request from this machine itself (the socket, no proxy header) is not limited per address: that is a developer's server. */
+const SIGNUP = { ATTEMPTS: 20, ATTEMPT_MS: 15 * 60 * 1000, PER_ADDRESS_HOUR: 10, PER_ADDRESS_DAY: 30, SITE_HOUR: 100, HOUR_MS: 60 * 60 * 1000, DAY_MS: 24 * 60 * 60 * 1000 };
+const signupAttempts = guestShare.slidingWindow(SIGNUP.ATTEMPTS, SIGNUP.ATTEMPT_MS);
+const signupInflight = { site: 0, byTag: new Map() };
+const signupKey = crypto.createHmac('sha256', SECRET).update('ppp-signup-address').digest();
+const signupTagOf = ip => crypto.createHmac('sha256', signupKey).update(homeJobs.addrKey(ip)).digest('hex').slice(0, 16);
+const LOOPBACK = /^(?:127\.\d+\.\d+\.\d+|::1|::ffff:127\.\d+\.\d+\.\d+)$/i;
+/* why an account may not be made now (made = what the table says, before = requests of the same moment that have passed the check and not yet written), or null */
+function signupRefusal(made, before, local) {
+  if (made.siteHour + before.site >= SIGNUP.SITE_HOUR) return 'site';
+  if (!local && (made.addrHour + before.tag >= SIGNUP.PER_ADDRESS_HOUR || made.addrDay + before.tag >= SIGNUP.PER_ADDRESS_DAY)) return 'address';
+  return null;
+}
 
 /* A store failure is one line in the log, and at most a few lines a minute, not a stack per request: a request that
    makes the store fail can be sent over and over. */
@@ -637,6 +677,18 @@ function fileStore() {
       save(db);
       return user;
     },
+    /* accounts made through the signup route lately, for its limit: all of them in the last hour, and those of one address tag in the last hour and day */
+    async countSignups(tag, nowMs) {
+      const made = { siteHour: 0, addrHour: 0, addrDay: 0 };
+      load().users.forEach(u => {
+        const t = Date.parse(u.createdAt);
+        if (!u.ipTag || !(t > nowMs - SIGNUP.DAY_MS)) return;
+        const hour = t > nowMs - SIGNUP.HOUR_MS;
+        if (hour) made.siteHour++;
+        if (u.ipTag === tag) { made.addrDay++; if (hour) made.addrHour++; }
+      });
+      return made;
+    },
     async getProgress(userId) {
       const db = load();
       return db.progress[userId] || null;
@@ -650,10 +702,19 @@ function fileStore() {
        account file is read on every request. */
     async listShares(opts) {
       const rows = loadShares().filter(r => opts.ownerId ? r.ownerId === opts.ownerId : r.listed);
-      rows.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
+      /* newest first, the id breaks a tie: the order a cursor stands in (compared by code units here and in the cursor's test, never by the locale) */
+      const cmp = (x, y) => (x < y ? -1 : x > y ? 1 : 0);
+      rows.sort((a, b) => cmp(String(b.updatedAt), String(a.updatedAt)) || cmp(String(b.id), String(a.id)));
       const q = (opts.q || '').toLowerCase();
+      const c = opts.cursor;
       return rows.filter(r => !q || (r.title + ' ' + r.composer + ' ' + r.ownerName).toLowerCase().indexOf(q) > -1)
+        .filter(r => !opts.genre || (r.genre || '') === opts.genre)
+        .filter(r => !c || String(r.updatedAt) < c.t || (String(r.updatedAt) === c.t && String(r.id) < c.id))
         .slice(0, opts.limit);
+    },
+    /* the genres that have a listed score, for the page's filter chips */
+    async shareGenres() {
+      return Array.from(new Set(loadShares().filter(r => r.listed && r.genre).map(r => r.genre))).sort();
     },
     async getShare(id) {
       return loadShares().find(r => r.id === id) || null;
@@ -753,6 +814,8 @@ function postgresStore(url) {
           password_hash TEXT NOT NULL,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         );
+        /* G13-5: the keyed hash of the address an account was made from (the signup limit counts by it); NULL for older accounts and the library's own. Additive: the code before this boots on it. */
+        ALTER TABLE ppp_users ADD COLUMN IF NOT EXISTS created_ip_tag TEXT;
         CREATE TABLE IF NOT EXISTS ppp_progress (
           user_id TEXT PRIMARY KEY REFERENCES ppp_users(id) ON DELETE CASCADE,
           payload JSONB NOT NULL,
@@ -810,14 +873,23 @@ function postgresStore(url) {
     async createUser(user) {
       try {
         await q(
-          'INSERT INTO ppp_users (id, email, display_name, password_hash) VALUES ($1, $2, $3, $4)',
-          [user.id, user.email, user.displayName, user.passwordHash]
+          'INSERT INTO ppp_users (id, email, display_name, password_hash, created_ip_tag, created_at) VALUES ($1, $2, $3, $4, $5, COALESCE($6, now()))',
+          [user.id, user.email, user.displayName, user.passwordHash, user.ipTag || null, user.ipTag ? user.createdAt || null : null]
         );
         return user;
       } catch (e) {
         if (e && e.code === '23505') { const err = new Error('exists'); err.code = 'exists'; throw err; }
         throw e;
       }
+    },
+    /* accounts made through the signup route lately, for its limit (the library's own account has no tag and is not counted) */
+    async countSignups(tag, nowMs) {
+      const r = await q('SELECT count(*) FILTER (WHERE created_at > $1)::int AS "siteHour", '
+        + 'count(*) FILTER (WHERE created_ip_tag = $3 AND created_at > $1)::int AS "addrHour", '
+        + 'count(*) FILTER (WHERE created_ip_tag = $3)::int AS "addrDay" '
+        + 'FROM ppp_users WHERE created_ip_tag IS NOT NULL AND created_at > $2',
+        [new Date(nowMs - SIGNUP.HOUR_MS).toISOString(), new Date(nowMs - SIGNUP.DAY_MS).toISOString(), tag]);
+      return r.rows[0];
     },
     async getProgress(userId) {
       const r = await q('SELECT payload, updated_at AS "updatedAt" FROM ppp_progress WHERE user_id = $1', [userId]);
@@ -838,10 +910,21 @@ function postgresStore(url) {
         params.push('%' + opts.q.replace(/[\\%_]/g, '\\$&') + '%');
         where.push("(title || ' ' || composer || ' ' || owner_name) ILIKE $" + params.length);
       }
+      if (opts.genre) { params.push(opts.genre); where.push('genre = $' + params.length); }
+      /* the cursor carries milliseconds (a JS Date), so the order is at milliseconds too: a row with microseconds is never skipped or shown twice */
+      const ms = "date_trunc('milliseconds', updated_at)";
+      if (opts.cursor) {
+        params.push(opts.cursor.t, opts.cursor.id);
+        where.push('(' + ms + ' < $' + (params.length - 1) + ' OR (' + ms + ' = $' + (params.length - 1) + ' AND id < $' + params.length + '))');
+      }
       params.push(opts.limit);
       const r = await q('SELECT ' + SHARE_COLS + ' FROM ppp_shares WHERE ' + where.join(' AND ')
-        + ' ORDER BY updated_at DESC LIMIT $' + params.length, params);
+        + ' ORDER BY ' + ms + ' DESC, id DESC LIMIT $' + params.length, params);
       return r.rows;
+    },
+    async shareGenres() {
+      const r = await q("SELECT DISTINCT genre FROM ppp_shares WHERE listed AND genre <> '' ORDER BY genre");
+      return r.rows.map(x => x.genre);
     },
     async getShare(id) {
       const r = await q('SELECT ' + SHARE_COLS + ', score FROM ppp_shares WHERE id = $1', [id]);
@@ -978,6 +1061,18 @@ function safePath(urlPath) {
   return abs;
 }
 
+/* A file that exists and is not on the served list is either a probe (/server.js, /package.json) or a file the page needs that the list forgot. The second is what
+   to read in the log after a deploy, so the first 40 distinct such paths are named, once each. */
+const notServedSeen = new Set();
+function noteNotServed(abs, rel) {
+  if (notServedSeen.size >= 40 || notServedSeen.has(rel) || rel.indexOf(' ') >= 0) return;
+  fs.stat(abs, (err, st) => {
+    if (err || !st.isFile() || notServedSeen.size >= 40 || notServedSeen.has(rel)) return;
+    notServedSeen.add(rel);
+    console.warn('Static: ' + JSON.stringify(rel.replace(/[^ -~]/g, '?').slice(0, 120)) + ' is a file of this site that is not on the served list (static-allow.js): answered 404.');
+  });
+}
+
 const BUILD_ID = String(process.env.RENDER_GIT_COMMIT || process.env.PPP_BUILD || '').replace(/[^0-9a-f]/gi, '').slice(0, 7);
 async function serveStatic(req, res, urlPath, url) {
   if (urlPath === '/' || urlPath === '/index.html') {
@@ -1004,6 +1099,9 @@ async function serveStatic(req, res, urlPath, url) {
   }
   const abs = safePath(urlPath);
   if (!abs) return jsonError(res, 404, 'Not found');
+  /* the file this request resolves to, from the root with "/" (not the text of the request: "//a", "%2e" and a disk that ignores case all land on it) */
+  const rel = path.relative(ROOT, abs).split(path.sep).join('/');
+  if (!staticAllow.isServed(rel)) { noteNotServed(abs, rel); return jsonError(res, 404, 'Not found'); }
   fs.stat(abs, (err, st) => {
     if (err || !st.isFile()) return jsonError(res, 404, 'Not found');
     const ext = path.extname(abs).toLowerCase();
@@ -1088,6 +1186,11 @@ async function handleApi(req, res, url) {
   }
 
   if (method === 'POST' && p === '/api/auth/signup') {
+    /* G13-5 (TD26): see SIGNUP. The requests are counted before the body is read; the accounts made lately, before the password is hashed. */
+    const who = guestShare.clientAddress(req);
+    const local = who.source === 'socket' && LOOPBACK.test(who.ip);
+    const tag = signupTagOf(who.ip);
+    if (!local && !signupAttempts.take(tag)) return jsonError(res, 429, 'Too many attempts. Try again later.', { code: 'too-many' });
     let body;
     try { body = JSON.parse((await readBody(req)).toString('utf8') || '{}'); }
     catch (e) { return jsonError(res, 400, 'Invalid JSON'); }
@@ -1095,21 +1198,38 @@ async function handleApi(req, res, url) {
     const password = String(body.password || '');
     if (!email) return jsonError(res, 422, 'Enter a valid email.');
     if (password.length < 8) return jsonError(res, 422, 'Password must be at least 8 characters.');
-    const user = {
-      id: crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex'),
-      email: email,
-      displayName: clipName(body.displayName || body.name, email),
-      passwordHash: hashPassword(password)
-    };
+    /* this request holds a place from here to the end: another that reads the table in the same moment sees it as one more account */
+    const before = { site: signupInflight.site, tag: signupInflight.byTag.get(tag) || 0 };
+    signupInflight.site++; signupInflight.byTag.set(tag, before.tag + 1);
     try {
-      await store.createUser(user);
-    } catch (e) {
-      if (e && e.code === 'exists') return jsonError(res, 409, 'An account with this email already exists.');
-      console.error(e);
-      return jsonError(res, 500, 'Could not create account.');
+      let refusal = null;
+      try { refusal = signupRefusal(await store.countSignups(tag, Date.now()), before, local); }
+      catch (e) { logStoreError(e); return jsonError(res, 500, 'Could not create account.'); }
+      if (refusal) {
+        return jsonError(res, 429, refusal === 'site' ? 'PPP is making a lot of accounts just now. Try again in a little while.'
+          : 'Too many accounts were made from here just now. Try again later.', { code: 'too-many' });
+      }
+      const user = {
+        id: crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex'),
+        email: email,
+        displayName: clipName(body.displayName || body.name, email),
+        passwordHash: hashPassword(password),
+        ipTag: tag,
+        createdAt: new Date().toISOString()
+      };
+      try {
+        await store.createUser(user);
+      } catch (e) {
+        if (e && e.code === 'exists') return jsonError(res, 409, 'An account with this email already exists.');
+        console.error(e);
+        return jsonError(res, 500, 'Could not create account.');
+      }
+      setCookie(res, signSession(user.id));
+      send(res, 201, publicUser(user));
+    } finally {
+      signupInflight.site--;
+      if (before.tag) signupInflight.byTag.set(tag, signupInflight.byTag.get(tag) - 1); else signupInflight.byTag.delete(tag);
     }
-    setCookie(res, signSession(user.id));
-    send(res, 201, publicUser(user));
     return;
   }
 
@@ -1185,12 +1305,24 @@ async function handleShares(req, res, url) {
   if (p === '/api/shares' && method === 'GET') {
     const mine = url.searchParams.get('mine') === '1';
     if (mine && !user) return jsonError(res, 401, 'Sign in to see your shared scores.');
+    const asked = parseInt(url.searchParams.get('limit'), 10);
+    const limit = asked > 0 ? Math.min(asked, mine ? SHARE_LIST_LIMIT : SHARE_PAGE_MAX) : mine ? SHARE_LIST_LIMIT : SHARE_PAGE;
+    const cursorText = url.searchParams.get('cursor');
+    const cursor = cursorText ? readShareCursor(cursorText) : null;
+    if (cursorText && !cursor) return jsonError(res, 400, 'That page marker is not one PPP gave.');
+    /* one more than a page, to know whether there is a next one */
     const rows = await store.listShares({
       ownerId: mine ? user.id : null,
       q: clipText(url.searchParams.get('q'), 80),
-      limit: SHARE_LIST_LIMIT
+      genre: clipText(url.searchParams.get('genre'), 32),
+      cursor: cursor,
+      limit: limit + 1
     });
-    send(res, 200, { shares: rows.map(r => shareCard(r, viewer)) }, { 'Cache-Control': 'no-store' });
+    const more = rows.length > limit;
+    const page = more ? rows.slice(0, limit) : rows;
+    const out = { shares: page.map(r => shareCard(r, viewer)), next: more ? shareCursorOf(page[page.length - 1]) : null };
+    if (!mine && !cursor) out.genres = await store.shareGenres();
+    send(res, 200, out, { 'Cache-Control': 'no-store' });
     return;
   }
 
@@ -1430,7 +1562,20 @@ function proxyHelper(req, res, helperPath) {
   req.pipe(hreq);
 }
 
+/* G13-5 (docs/GOALS/G13 D16): headers every answer carries (set before anything is written, so the page, the API, the helper's proxy and the errors all have them).
+   Referrer-Policy and X-Frame-Options: the page keeps its address from other sites' logs and is not framed by another site. HSTS: only for a request that came
+   in over https (X-Forwarded-Proto, which Render sets; a browser ignores it over http), 180 days, no includeSubDomains and no preload, so it can be taken back;
+   PPP_HSTS=0 turns it off if the edge already sends one. No Content-Security-Policy yet: the page runs inline scripts and styles and loads from three CDNs (G13-1, G13-8). */
+function securityHeaders(req, res) {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  const proto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase();
+  if (proto === 'https' && process.env.PPP_HSTS !== '0') res.setHeader('Strict-Transport-Security', 'max-age=15552000');
+}
+
 const server = http.createServer((req, res) => {
+  securityHeaders(req, res);
   const host = req.headers.host || ('localhost:' + PORT);
   let url;
   try { url = new URL(req.url, 'http://' + host); }

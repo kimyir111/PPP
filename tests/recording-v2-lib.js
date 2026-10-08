@@ -78,9 +78,9 @@ const recReqs = page => page.__rec.requests.filter(u => REC_FILES.test(u)).map(u
 const clean = page => page.__rec.pageErrors.length === 0 && page.__rec.consoleErrors.length === 0;
 const errs = page => JSON.stringify(page.__rec.pageErrors.concat(page.__rec.consoleErrors));
 
-/* the checker of the notation, in the page (a tool, not part of the app) */
+/* the checker of the notation, in the page (a tool, not part of the app: the server does not serve it since G13-5, so its text is put in the page, as single-note-app.test.js does) */
 async function addChecker(page) {
-  await page.addScriptTag({ url: ORIGIN + '/scoregraph/tools/notation-check.js' });
+  await page.addScriptTag({ content: fs.readFileSync(path.join(REPO, 'scoregraph', 'tools', 'notation-check.js'), 'utf8') });
 }
 /* the transcription stub: the page's "AMT" returns these heard notes. A stub of the model is the one thing replaced; the import it feeds is the real one. */
 async function stubAmt(page, heard) {
