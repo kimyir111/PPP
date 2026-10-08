@@ -1,6 +1,6 @@
 # G0 score-quality benchmark (tests/bench/README.md).
 # The gate is the regression gate on every push/PR. It is a small job `plan` (which checks does this change need?), sixteen parallel
-# shard jobs (shard-a .. shard-p) that run its 68 steps, two merge jobs (merge-rec-core, merge-rec-grid) that join the shards of the two
+# shard jobs (shard-a .. shard-p) that run its 74 steps, two merge jobs (merge-rec-core, merge-rec-grid) that join the shards of the two
 # suites that are cut across several shard jobs and check them, a job `light` (for a change that is only documents or the home-PC
 # worker's files), and the job named `gate`, which passes only when every job the plan asked for passed (TD22, TD22b). The nightly jobs
 # (full suite, gate sensitivity, the independent review's adversarial checks, the recording suites) run on a schedule or by hand and
@@ -249,8 +249,8 @@ jobs:
       - run: python tests/bench/run.py run --suite replay-public-v2   # G10a-3 (S9): the helper's real pedal on rendered audio (no pedal was played), with the pedal policy
       - run: python tests/bench/tools/make_rec_suites.py --check   # the committed rec-* suites are the generator's (G10a-0)
 
-  # shard-g: the grid trainer check, core, test:difficulty, test:monitoring
-  #   (steps ~133 s on a fast runner, ~195 s on a slow one, before test:monitoring (G13-7a): 10 s on a Windows desktop, estimated 10-20 s on a runner)
+  # shard-g: the grid trainer check, core, test:difficulty, test:monitoring, test:omr-normalize
+  #   (steps ~133 s on a fast runner, ~195 s on a slow one, before test:monitoring (G13-7a: 10 s on a Windows desktop, estimated 10-20 s on a runner) and test:omr-normalize (G12-1: about 2-3 s, 93 tests in 0.9 s on Windows here and in about 2.5 s on Linux (Docker, Node 24), where the 2 that start the helper with a stand-in for Audiveris also run, 2026-10-08))
   shard-g:
     needs: plan
     if: ${{ needs.plan.outputs.mode == 'full' }}
@@ -266,6 +266,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.13' }
       - run: npm run test:difficulty                               # G6a: difficulty features, the ranker, metamorphic tests, the dataset/weights reproduce (G06)
+      - run: npm run test:omr-normalize                            # G12-1: omr/normalize.js (movements, divisions, grand staff, systems, bar count) with its planted defects and mutants; the helper's movement files (G12 section 7.1)
       - run: python tests/bench/run.py run --suite core
       - run: python tests/bench/run.py check --suite core
       - run: node tests/bench/tools/train_grid.js --check          # G10a-2 (AI-5b): the grid stage's committed weights are what the training makes (G10 section 20)

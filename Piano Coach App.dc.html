@@ -4350,7 +4350,7 @@ function chordText(el, txt) {
   return step + alter + quality + bass;
 }
 
-function parseMusicXML(xmlText, name) {
+function parseMusicXML(xmlText, name, opts) {
   const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
   const bad = doc.querySelector('parsererror');
   if (bad) throw new Error(tx('That file is not valid XML.'));
@@ -4763,6 +4763,9 @@ function parseMusicXML(xmlText, name) {
   });
   /* a single-part, single-staff score is still something you play */
   if (!notes.some(n => n.hand !== 'x')) notes.forEach(n => { n.hand = n.staff <= 1 ? 'r' : 'l'; });
+  /* G12-1 (PPP.omr = 'v2', opts.omrPiano): the engine may split a grand staff into several parts of one staff each; the last of them is not the piano, all of them are:
+     the top staff is the right hand, every other staff the left, and none is silent */
+  if (opts && opts.omrPiano && fromOmr && partSpan.length > 1 && !partSpan.some(sp => sp && sp.count >= 2)) notes.forEach(n => { n.hand = (n.staff || 1) === 1 ? 'r' : 'l'; });
 
   const measures = order.map(no => measureInfo[no]);
   const sounding = notes.filter(n => !n.rest);
@@ -5249,6 +5252,41 @@ function setRecordingArrangeMode(v) {
   RECORDING_ARRANGE_MODE = c || RECORDING_ARRANGE_DEFAULT;
   try { if (c) localStorage.setItem(RECORDING_ARRANGE_KEY, c); else localStorage.removeItem(RECORDING_ARRANGE_KEY); } catch (e) { /* not remembered */ }
   return RECORDING_ARRANGE_MODE;
+}
+/* ============================ G12-1: PPP.omr (docs/GOALS/G12_OMR.md G12-D10) ============================
+   PPP.omr = 'legacy' (default) | 'v2'. A choice is one of those two strings; anything else is no choice, and no choice is the default (PPP.recording's rule).
+   'legacy' is the import this page made before G12-1, byte for byte: the helper's `musicxml` field, Import.mergeMusicXml, the hand rule as it was. 'v2' keeps what the
+   engine read (omr/normalize.js): every movement of every page, a repaired <divisions>, one grand staff for a piano the engine split into parts, bars counted once; and
+   a piano import from the engine never has a silent staff. Layers, the first that holds a choice wins: ?omr= in the address (this visit only), the device's remembered
+   choice (localStorage 'ppp.omr.v1'), the default. omr/normalize.js is fetched when a v2 import needs it, never by a page that does not import a scan or a photo. */
+const OMR_KEY = 'ppp.omr.v1';
+const OMR_DEFAULT = 'legacy';
+function omrChoice(v) { return v === 'v2' || v === 'legacy' ? v : null; }
+let OMR_MODE = (() => {
+  let m = OMR_DEFAULT;
+  try { m = omrChoice(localStorage.getItem(OMR_KEY)) || m; } catch (e) { /* no storage: the default */ }
+  try { const u = omrChoice(new URLSearchParams(location.search).get('omr')); if (u) m = u; } catch (e) { /* no address to read */ }
+  return m;
+})();
+/* a choice is remembered; a value that is no choice puts the default back and forgets the remembered one */
+function setOmrMode(v) {
+  const c = omrChoice(v);
+  OMR_MODE = c || OMR_DEFAULT;
+  try { if (c) localStorage.setItem(OMR_KEY, c); else localStorage.removeItem(OMR_KEY); } catch (e) { /* not remembered */ }
+  return OMR_MODE;
+}
+let _omrNormalizePromise = null;
+function loadOmrNormalize() {
+  if (window.PPPOmrNormalize) return Promise.resolve(window.PPPOmrNormalize);
+  if (_omrNormalizePromise) return _omrNormalizePromise;
+  _omrNormalizePromise = new Promise(resolve => {
+    const el = document.createElement('script');
+    el.src = './omr/normalize.js?v=1';
+    el.onload = () => resolve(window.PPPOmrNormalize || null);
+    el.onerror = () => resolve(null);
+    document.head.appendChild(el);
+  }).then(m => { if (!m) _omrNormalizePromise = null; return m; });   /* a failed fetch is asked for again next time */
+  return _omrNormalizePromise;
 }
 const _recLoaded = new Set();
 const _recGlobals = new Set();
@@ -7531,6 +7569,25 @@ const Import = {
     return body;
   },
 
+  /* G12-1: the recognised pages as ONE document. 'legacy' is mergeMusicXml of the helper's `musicxml` (the newest file of each page). 'v2' (omr/normalize.js) joins every movement of
+     every page, repairs divisions, makes the grand staff the engine split, and sets omr.normalize (its report); omr.musicxml then holds, per page, a document with that page's bar
+     count, which is all PdfLayer.apply reads from it. A normaliser that could not be fetched, threw, or read nothing leaves the import what legacy makes, and says why in
+     omr.normalizeFailed (the import's report.normalizeFailed). */
+  async omrXml(omr) {
+    if (OMR_MODE !== 'v2') return Import.mergeMusicXml(omr.musicxml);
+    let r = null;
+    try {
+      const N = await loadOmrNormalize();
+      r = N ? N.normalize(N.pagesFromHelper(omr)) : null;
+      if (!r) omr.normalizeFailed = 'not-loaded';
+      else if (!r.ok) omr.normalizeFailed = String(r.error || 'not-ok') + (r.detail ? ': ' + r.detail : '');
+    } catch (e) { r = null; omr.normalizeFailed = 'threw: ' + String(e && e.message || e).slice(0, 160); }
+    if (!r || !r.ok) return Import.mergeMusicXml(omr.musicxml);
+    omr.normalize = r.report;
+    omr.musicxml = r.pages.map(p => (p.ok ? p.counting : null));
+    return r.xml;
+  },
+
   /* ---- stitch per-page MusicXML into one document ----
      Audiveris numbers every page from 1 because it cannot know what came
      before, so measures are renumbered continuously as pages are appended.
@@ -8776,7 +8833,7 @@ const Import = {
         source.engine = omr.engine;
         source.pages = omr.pages;
         stage('merge', { pages: omr.pages.filter(p => p.ok).length });
-        xml = Import.mergeMusicXml(omr.musicxml);
+        xml = await Import.omrXml(omr);
       } catch (e) { recognitionError = e; }
     }
 
@@ -8805,8 +8862,9 @@ const Import = {
     stage('parse', {});
     let score;
     let scoreXml = xml;
+    const handOpts = omr && omr.normalize ? { omrPiano: true } : undefined;   /* G12-1: PPP.omr = 'v2' */
     try {
-      score = parseMusicXML(xml, file.name);
+      score = parseMusicXML(xml, file.name, handOpts);
     } catch (e) {
       throw importError('bad-musicxml',
         tx('The notation was recognised but could not be turned into a score: {{message}}', { message: e.message }),
@@ -8839,9 +8897,9 @@ const Import = {
         const dpi2 = Math.round(IMPORT_LIMITS.dpi * 1.17);
         const pages2 = await Import.rasterisePdf(file, onStage, dpi2);
         const omr2 = await Import.recognise(pages2, onStage);
-        const xml2 = Import.mergeMusicXml(omr2.musicxml);
+        const xml2 = await Import.omrXml(omr2);
         stage('parse', {});
-        const score2 = parseMusicXML(xml2, file.name);
+        const score2 = parseMusicXML(xml2, file.name, handOpts);
         const fromPdf2 = PdfLayer.apply(score2, pages2.map(p => p.layer || null), omr2.musicxml, file.name);
         pages2.forEach(p => { delete p.layer; });
         const report2 = Import.validate(score2, { pageCount: pages2.length, pages: omr2.pages, missing: fromPdf2.missing });
@@ -8850,7 +8908,7 @@ const Import = {
         stage('merge', { pages: pages.length });
         const mergedXml = Import.mergeMeasuresWhereBetter(xml, xml2, f1, f2);
         if (mergedXml && mergedXml !== xml) {
-          const scoreM = parseMusicXML(mergedXml, file.name);
+          const scoreM = parseMusicXML(mergedXml, file.name, handOpts);
           const fromPdfM = PdfLayer.apply(scoreM, pages.map(p => p.layer || null), omr.musicxml, file.name);
           const reportM = Import.validate(scoreM, { pageCount: pages.length, pages: omr.pages, missing: fromPdfM.missing });
           /* adopt only when the merged score is strictly closer to the page */
@@ -8878,6 +8936,8 @@ const Import = {
       report.summary = tx('PPP made a draft from the page, but high-quality notation recognition was unavailable.');
       report.advice = tx('Compare every measure with the original before practising.');
     }
+    if (omr && omr.normalize) report.normalize = omr.normalize;   /* G12-1: what omr/normalize.js changed, for the review (and G12-3's flags) */
+    else if (omr && omr.normalizeFailed) report.normalizeFailed = omr.normalizeFailed;   /* PPP.omr = 'v2' but the import is the legacy one: why */
     source.status = report.level === 'poor' ? 'low-confidence' : 'recognised';
     score.source = source;
     /* page images stay in memory for the review screen; they are never persisted */
@@ -10431,6 +10491,9 @@ window.PPP = {
      Any other value is no choice: the default comes back and the remembered choice is forgotten (PPP.recording's rule). A choice is remembered on this device; ?recordingArrange= in the address is for that visit only. */
   get recordingArrange() { return RECORDING_ARRANGE_MODE; },
   set recordingArrange(v) { setRecordingArrangeMode(v); },
+  /* G12-1 (G12-D10): 'legacy' (default: the import as it was) | 'v2' (omr/normalize.js keeps what the engine read). Any other value is no choice: the default comes back and the remembered choice is forgotten. Remembered on this device; ?omr= is for that visit only. */
+  get omr() { return OMR_MODE; },
+  set omr(v) { setOmrMode(v); },
   arrangeSingleNoteWithLeadsheet, loadLeadsheetModule,
   pitchToMidi, midiToFreq, keyName,
   PIANO, PianoSamples, PianoScore, PianoPlayer,
