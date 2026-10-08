@@ -771,7 +771,6 @@
     const sost = sostenutoSpans(ccsWritten);
     const soft = ccsWritten.filter(e => e.kind === 'soft');
     const dyn = plan.dyn;
-    const L = plan.layout;
     const playable = items.filter(n => !n.rest);
     /* a rolled chord: every note of its position on that staff (the matcher's `arp`) */
     const rolled = new Set();
