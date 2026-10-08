@@ -42,7 +42,7 @@ const DELAY = Math.max(0, +opt('--delay-catalogs', 0) || 0);
 const PROPER_PHRASES = ['Piano Onsets & Frames', 'Basic Pitch', 'Beat This', 'Aria-AMT', 'arr. solo piano', 'npm run omr'];
 const PROPER_WORDS = ('PPP AI MIDI MusicXML MXL XML BPM PDF YouTube MP3 MP4 WAV M4A PNG JPG JPEG URL OMR USB GPU OST PM2S Transkun TransKun Kong Hanon Czerny Beyer '
   + 'Burgm\u00fcller Clementi Bach Mozart Beethoven Chopin Satie Debussy Gymnop\u00e9die Ludwig Erik Johann Wolfgang Fr\u00e9d\u00e9ric Muzio Ferdinand Friedrich Carl Hans Zimmer '
-  + 'Interstellar Theme English Chord Test').toLowerCase().split(' ');
+  + 'Interstellar Theme English').toLowerCase().split(' ');
 const escapeRe = p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const PROPER_RE = new RegExp(PROPER_PHRASES.map(escapeRe).join('|'), 'g');
 const properOnly = text => {
