@@ -32,7 +32,7 @@ APP_FILES = ("Piano Coach App.dc.html",)
 APP_DIRS = ("practice/", "tests/practice/")
 # The suites themselves and what they and the probes stand on (the server helper, the page boot, the port rewrite).
 SUITE_FILES = tuple("tests/%s.test.js" % n for n in (
-    "follow", "falling-notes", "memory", "learning", "playback-scheduler", "coach", "midi", "interactions", "lessons", "course", "alignment"))
+    "follow", "falling-notes", "memory", "learning", "playback-scheduler", "coach", "midi", "interactions", "lessons", "course", "alignment", "learner-log"))
 RUN_FILES = ("tests/boot.js", "tests/serve-free.js", "tests/engrave/tools/with-port.js", "package.json", "package-lock.json")
 # The probes: a change here also runs the mutation check. (A change to G11a-1's Node unit tests in tests/practice/ is a practice test, `run`,
 # and not a probe.)
@@ -41,7 +41,8 @@ HARNESS_FILES = (".github/workflows/bench.yml", "tests/engrave/tools/with-port.j
                  "tests/practice/canon.js", "tests/practice/lib.js", "tests/practice/mutants.js", "tests/practice/perf.js", "tests/practice/perf-selftest.js",
                  "tests/practice/parity.js", "tests/practice/parity-core.js", "tests/practice/parity-mutants.js",
                  "tests/practice/plan.py",
-                 "tests/practice/record.js", "tests/practice/run-suites.js")
+                 "tests/practice/record.js", "tests/practice/run-suites.js",
+                 "tests/practice/learner-mutants.js", "tests/practice/learner-proxy.js", "tests/practice/learner-record.js")
 
 
 def clean(path):

@@ -36,7 +36,7 @@
 # THE PRACTICE JOBS (G11a-0, docs/GOALS/G11_ADAPTIVE_PRACTICE.md section 5 G11-D12) are NOT part of the gate: practice-plan, practice-suites,
 # practice-legacy, practice-perf, practice-parity and practice-parity-mutants are checks of their own, so the gate's jobs, steps and verdict are as they were
 # (test_ci_plan.py reads only plan, light, shard-* and merge-*). On a pull request practice-plan (tests/practice/plan.py, the base's copy, like the gate's) decides whether
-# the change touches the app's page, practice/ or the practice tests; if so the three jobs run: the eleven practice and playback browser suites
+# the change touches the app's page, practice/ or the practice tests; if so the three jobs run: the twelve practice and playback browser suites
 # on a free port (tests/practice/run-suites.js), the legacy recorder's baseline (what the legacy player, matcher and follow gates do with every
 # catalogue piece) and the mutation check that proves the baseline notices a broken matcher, and the perf probe (matcher, plan building, press
 # to paint, long tasks) against its committed baseline. The same three jobs run every night and on a manual run. G11a-2 adds two more: practice-parity (the
@@ -705,8 +705,8 @@ jobs:
           fi
           grep -E '^(run|harness)=' "$GITHUB_OUTPUT"
 
-  # practice-suites: the eleven practice and playback browser suites (follow, falling-notes, memory, learning, playback-scheduler, coach, midi,
-  # interactions, lessons, course, alignment: about 500 checks) on a port the runner is given, with NODE_ENV=production and
+  # practice-suites: the twelve practice and playback browser suites (follow, falling-notes, memory, learning, playback-scheduler, coach, midi,
+  # interactions, lessons, course, alignment, learner-log (G11b-1: PPP.learner and the run log): about 585 checks) on a port the runner is given, with NODE_ENV=production and
   # tests/engrave/tools/with-port.js (G11-D12). They had never run in CI before; a suite is green only if it exits 0, fails no check and prints
   # about as many checks as it did when the list was written (a suite that stopped testing is not a pass). About 4 minutes of suites.
   practice-suites:
@@ -731,12 +731,13 @@ jobs:
   # scripted performances and follow mode's gates over the 325 catalogue pieces and the 69 committed fixtures, against
   # tests/practice/baselines/legacy.json; about 20 s) and the mutation check (tests/practice/mutants.js: each row breaks one rule of the
   # player, matcher or follow gates in the served page; the recorder, and for some rows the suites, must go red; the unmutated control must
-  # not; several minutes). On a pull request the mutation check runs only when the probes themselves changed.
+  # not; several minutes) and, since G11b-1, tests/practice/learner-mutants.js (the same for PPP.learner and the run log: rows break one rule of the page or of
+  # practice/runlog.js, the sections of tests/learner-log.test.js that watch it must go red; about 15 minutes). On a pull request both mutation checks run only when the probes themselves changed.
   practice-legacy:
     needs: practice-plan
     if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.run == 'true')) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 70
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -745,6 +746,8 @@ jobs:
       - run: node tests/practice/record.js check
       - if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.practice-plan.outputs.harness == 'true') }}
         run: node tests/practice/mutants.js
+      - if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.practice-plan.outputs.harness == 'true') }}
+        run: node tests/practice/learner-mutants.js          # G11b-1: the same for PPP.learner and the run log: one rule of the page or of practice/runlog.js broken at a time, the sections of tests/learner-log.test.js that watch it must go red
       - if: always()
         uses: actions/upload-artifact@v4
         with:
