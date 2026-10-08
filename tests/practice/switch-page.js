@@ -132,14 +132,23 @@
         ['both', 'right', 'left'].forEach(h => STREAMS.forEach(s => jobs.push([{ from: first, to: last }, h, 1, s])));
         STREAMS.forEach(s => jobs.push([{ from: first, to: last }, 'both', 0.5, s]));
         wins.forEach(w => STREAMS.forEach(s => jobs.push([w, 'both', 1, s])));
+        /* what the graph says each Score note is, and the bar each position is in, worked out here and not by the code under test */
+        const src = window.PPPEngrave.app.resolveSync(score);
+        const ident = window.PPPEngraveModules.source.identity(score, src);
+        const noteIdx = new Map(score.notes.map((n, i) => [n, i]));
+        const numbers = score.measures.map(m => m.number);
+        const uniqueNumbers = new Set(numbers).size === numbers.length;
+        const barAt = q => { let lo = 0, hi = score.measures.length - 1; while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (score.measures[mid].startQ <= q + 1e-9) lo = mid; else hi = mid - 1; } return lo; };
+        const snap = exp => exp.map(x => [x.evId, x.head, x.mIdx]);
         const one = (mode, r, h, sc, stream) => {
           setMode(mode);
           try {
             const eng = new PPP.PerformanceEngine(score);
             eng.begin({ from: r.from, to: r.to, hands: h, tempo: base * sc, startedAt: 0 });
             const exp = eng.expected.slice();
+            const before = snap(exp);
             const res = C.replay(eng, C.streamEvents(exp, stream));
-            return { outcome: J(C.outcomeOf(eng, res)), res: res, exp: exp, plan: eng._plan };
+            return { outcome: J(C.outcomeOf(eng, res)), res: res, exp: exp, plan: eng._plan, before: before, after: snap(exp) };
           } finally { setMode('legacy'); }
         };
         for (const [r, h, sc, stream] of jobs) {
@@ -148,9 +157,29 @@
           rec.runs++;
           if (a.outcome !== b.outcome) rec.fail.push(name + ': the verdicts differ under graph');
           if (!(b.plan && b.plan.graph)) rec.fail.push(name + ': the matcher did not run on a graph plan'); else rec.graphRuns++;
-          if (b.exp.some(x => !x.ev || !x.head || x.mIdx == null)) rec.fail.push(name + ': an expected note under graph has no ev/head/mIdx');
+          if (b.exp.some(x => !x.evId || !x.head || x.mIdx == null)) rec.fail.push(name + ': an expected note under graph has no evId/head/mIdx');
           if (a.exp.some(x => x.mIdx == null)) rec.fail.push(name + ': an expected note under legacy has no mIdx');
+          if (a.exp.some(x => x.evId !== undefined || x.head !== undefined)) rec.fail.push(name + ': an expected note under legacy carries a graph id');
           if (J(a.exp.map(x => x.mIdx)) !== J(b.exp.map(x => x.mIdx))) rec.fail.push(name + ': mIdx differs');
+          /* the ids by VALUE, before the run and after it (a match writes the key event to x.ev: the graph's event id must be somewhere else and stay what it was) */
+          const wantEv = b.exp.map(x => [ident.byNote[noteIdx.get(x.note)], (src.link.byNote[noteIdx.get(x.note)] || {}).head]);
+          const wrong = at => at.reduce((n, s, i) => n + (s[0] !== wantEv[i][0] || s[1] !== wantEv[i][1] ? 1 : 0), 0);
+          if (wrong(b.before)) rec.fail.push(name + ': ' + wrong(b.before) + ' expected note(s) name another event/head than the graph\'s identity map gives, before the run');
+          if (wrong(b.after)) rec.fail.push(name + ': ' + wrong(b.after) + ' expected note(s) name another event/head than the identity map gives, after the run');
+          if (J(b.before) !== J(b.after)) rec.fail.push(name + ': evId/head/mIdx changed while the run matched notes');
+          if (b.exp.some(x => x.matched && !(x.ev && x.ev.midi === x.midi))) rec.fail.push(name + ': a matched note does not hold the key event in ev');
+          if (stream === 'perfect' && b.exp.length && !b.exp.some(x => x.matched)) rec.fail.push(name + ': a perfect performance matched nothing');
+          /* mIdx by position (the bar that holds the note), and byMeasureIdx = byMeasure by index, bucket for bucket, stray keys included (when no two bars share a number) */
+          if (uniqueNumbers) {
+            [a, b].forEach(x => {
+              const off = x.exp.filter(e => e.mIdx !== barAt(e.absQ)).length;
+              if (off) rec.fail.push(name + ': ' + off + ' expected note(s) with an mIdx that is not the bar of their position');
+              const keys = Object.keys(x.res.byMeasure);
+              if (keys.length !== Object.keys(x.res.byMeasureIdx).length) rec.fail.push(name + ': byMeasureIdx has another number of bars than byMeasure');
+              const odd = keys.filter(k => J(x.res.byMeasure[k]) !== J(x.res.byMeasureIdx[Score.measure(score, +k).index])).length;
+              if (odd) rec.fail.push(name + ': ' + odd + ' bar(s) of byMeasureIdx differ from the same bar of byMeasure');
+            });
+          }
           if (J(Object.keys(a.res.byMeasure)) !== J(Object.keys(b.res.byMeasure))) rec.fail.push(name + ': byMeasure keys differ');
           if (!a.res.byMeasureIdx || !b.res.byMeasureIdx) { rec.fail.push(name + ': the result has no byMeasureIdx'); continue; }
           if (J(a.res.byMeasureIdx) !== J(b.res.byMeasureIdx)) rec.fail.push(name + ': byMeasureIdx differs');
@@ -216,18 +245,18 @@
         const score = await loadScore(item);
         const first = Score.first(score), last = Score.last(score);
         const wins = C.windows(score, 3, C.cyrb64(item.file)[1]);
-        const gatesOf = (mode, from, to, hands) => {
+        /* ONE object per range and hands, through the switch and back: its gates are cached under a key, and the key has to know which plan they come from */
+        const gatesIn = (fake, mode) => {
           setMode(mode);
-          try {
-            const fake = { state: { score: score, hands: hands, screen: 'practice', loop: true, loopFrom: from, loopTo: to, practiceMode: 'practice' },
-              range: proto.range, handOk: proto.handOk, _gatesKey: null, _gates: null };
-            return proto.followGates.call(fake);
-          } finally { setMode('legacy'); }
+          try { return proto.followGates.call(fake); } finally { setMode('legacy'); }
         };
         for (const r of [{ from: first, to: last }].concat(wins)) for (const h of ['both', 'right', 'left']) {
-          const a = gatesOf('legacy', r.from, r.to, h), b = gatesOf('graph', r.from, r.to, h);
+          const fake = { state: { score: score, hands: h, screen: 'practice', loop: true, loopFrom: r.from, loopTo: r.to, practiceMode: 'practice' }, range: proto.range, handOk: proto.handOk, _gatesKey: null, _gates: null };
+          const a = gatesIn(fake, 'legacy'), b = gatesIn(fake, 'graph'), c = gatesIn(fake, 'legacy');
           rec.runs++;
           const name = '[' + r.from + '..' + r.to + '] ' + h;
+          if (J(C.gatesOf(a)) !== J(C.gatesOf(c))) rec.fail.push(name + ': the gates differ once the switch is flipped back');
+          if (c.some(g => g.notes.some(n => n.ev !== undefined))) rec.fail.push(name + ': flipped back to legacy, the gates are still the graph\'s (the cache key does not know the plan)');
           if (J(C.gatesOf(a)) !== J(C.gatesOf(b))) rec.fail.push(name + ': the gates differ under graph');
           if (b.every(g => !g.notes.length)) rec.graphRuns += 0;
           else if (b.some(g => g.notes.some(n => !n.ev || !n.head))) rec.fail.push(name + ': a gate note has no ev/head under graph');
@@ -240,6 +269,34 @@
       out.push(rec);
     }
     return out;
+  }
+
+  /* ---- the falling notes asked for while practice/plan.js is still on its way ---- */
+  /* Two halves, with the module's arrival between them (the driver holds the request): the timeline is built on the legacy plan, and when the module is there it is built again, on the graph plan the
+     transport has (visualTransportFrame follows the transport only when both hold the very same plan). */
+  const late = {};
+  async function lateStart(item) {
+    const app = PPP.app, S = app.state;
+    const score = await loadScore(item);
+    late.saved = {};
+    ['score', 'tempo', 'loop', 'loopFrom', 'loopTo', 'beat', 'playing', 'hands', 'practiceMode', 'screen'].forEach(k => { late.saved[k] = S[k]; });
+    late.tp = app._tp; late.score = score;
+    Object.assign(S, { score: score, tempo: score.tempo || 84, loop: false, loopFrom: Score.first(score), loopTo: Score.last(score), beat: 0, playing: false, hands: 'both', practiceMode: 'practice', screen: 'practice' });
+    late.tl1 = app.visualTimeline(S);
+    return { graph: !!late.tl1.plan.graph, notes: late.tl1.notes.length, same: app.visualTimeline(S) === late.tl1 };
+  }
+  async function lateEnd() {
+    const app = PPP.app, S = app.state;
+    try {
+      const loaded = await PPP.loadPracticeModule();
+      const tl2 = app.visualTimeline(S);
+      app.startTransport(S, Score.startQ(late.score, Score.first(late.score)));
+      const out = { loaded: loaded, graph: !!tl2.plan.graph, rebuilt: tl2 !== late.tl1, sameAsTransport: app._tp.plan === tl2.plan, again: app.visualTimeline(S) === tl2, sameNotes: J(tl2.notes.map(n => [n.midi, n.startTime, n.endTime])) === J(late.tl1.notes.map(n => [n.midi, n.startTime, n.endTime])) };
+      return out;
+    } finally {
+      app._tp = late.tp;
+      Object.assign(S, late.saved);
+    }
   }
 
   /* ---- no call site is left on the legacy plan ---- */
@@ -267,7 +324,7 @@
       app.setState = function () {};            /* the page is not repainted by what this probe pushes through the transport */
       const c0 = calls;
       app.beginRun(S, null, null);
-      check('beginRun: the matcher expects on a graph plan (ev on its notes)', app._perf && app._perf.expected.length > 0 && app._perf.expected.every(x => x.ev) && app._perf._plan && app._perf._plan.graph, 'plan ' + !!(app._perf && app._perf._plan));
+      check('beginRun: the matcher expects on a graph plan (evId on its notes)', app._perf && app._perf.expected.length > 0 && app._perf.expected.every(x => x.evId) && app._perf._plan && app._perf._plan.graph, 'plan ' + !!(app._perf && app._perf._plan));
       app.startTransport(S, Score.startQ(score, S.loopFrom));
       const tp = app._tp;
       check('startTransport: the transport holds a graph plan', tp && tp.plan && tp.plan.graph);
@@ -279,6 +336,12 @@
       app.advance(1050);
       check('advance: a change of hands under a running transport is planned again, from the graph', app._tp && app._tp.plan && app._tp.plan.graph && app._tp.key.indexOf('right') > 0, app._tp && app._tp.key);
       void oldPlan;
+      /* a run keeps its plan: the switch flipped in the middle of a run changes neither the transport nor what the next lap expects */
+      setMode('legacy');
+      try {
+        app.beginRun(S, null, null);
+        check("beginRun: a lap of a running transport begins on the transport's own plan, whatever the switch says now", app._perf && app._perf._plan === app._tp.plan && app._perf._plan.graph && app._perf.expected.every(x => x.evId), 'plan ' + !!(app._perf && app._perf._plan && app._perf._plan.graph));
+      } finally { setMode('graph'); }
       const f = app.fire(S, 0, 8);
       check('fire: the simulation reads the graph plan', f && f.tot > 0, JSON.stringify(f));
       const tl = PPP.PianoVisual.scoreToTimeline(score, { from: first, to: last, tempo: score.tempo || 84 });
@@ -423,6 +486,7 @@
           const wins = C.windows(score, 3, C.cyrb64(item.file)[1]);
           const noteSet = new Set(score.notes);
           const ranges = [{ from: first, to: last }].concat(wins);
+          rec.ranges = ranges.length;
           for (const r of ranges) {
             const fb0 = PPP.practiceStats.practiceFallback, t0 = fb0.total, reasons0 = Object.assign({}, fb0.reasons);
             const gp = PPP.practicePlan(score, r.from, r.to), lp = PPP.PianoScore.of(score, r.from, r.to);
@@ -449,6 +513,7 @@
             /* a strike that is struck is struck, and one that is carried is not, whichever way PianoScore.struck is asked */
             if (gp.strikes.some(s => !PPP.PianoScore.struck(gp, s.note))) rec.fail.push('[' + r.from + '..' + r.to + '] PianoScore.struck says a struck note is carried');
           }
+          rec.song = JSON.parse(JSON.stringify(PPP.practiceStats.practiceFallback.bySong[String(score.id)] || null));
           if (o.projected) {
             /* the plan made from a graph the Score is projected into (the source of a song nobody has the producer's graph of) */
             const fr = SGL.fromScore(score, {});
@@ -509,5 +574,5 @@
       coldLegacy: med(cold.map(c => c[0])), coldGraph: med(cold.map(c => c[1])) };
   }
 
-  window.PPPSwitchProbe = { loadScore: loadScore, runCase: runCase, leak: leak, spies: spies, matcher: matcher, visual: visual, gates: gates, fallbacks: fallbacks, sweep: sweep, perf: perf };
+  window.PPPSwitchProbe = { loadScore: loadScore, runCase: runCase, leak: leak, lateStart: lateStart, lateEnd: lateEnd, spies: spies, matcher: matcher, visual: visual, gates: gates, fallbacks: fallbacks, sweep: sweep, perf: perf };
 })();

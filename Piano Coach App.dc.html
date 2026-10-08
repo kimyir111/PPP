@@ -3598,15 +3598,18 @@ function practiceGraphBuild(score, a, b, src0) {
   if (!tl || tl.length !== ms.length) return { reason: 'MEASURES' };
   const heads = practiceHeads(score, src.link);
   if (!heads) return { reason: 'IDENTITY' };
-  const i0 = (Score.measure(score, a) || ms[0]).index, i1 = (Score.measure(score, b) || ms[ms.length - 1]).index;
   const qpm = +score.tempo > 0 && isFinite(+score.tempo) ? +score.tempo : 84;
   let plan;
   try {
+    const i0 = (Score.measure(score, a) || ms[0]).index, i1 = (Score.measure(score, b) || ms[ms.length - 1]).index;
     plan = window.PPPPractice.plan.build(src.graph, { range: { from: i0, to: i1 }, defaultQpm: qpm, legacyCompat: true, jumps: false, graces: false });
     const strikes = plan.strikes;
     for (let i = 0; i < strikes.length; i++) {
       const n = heads.get(strikes[i].head);
       if (!n) return { reason: 'IDENTITY' };
+      /* The Score puts a note where its measure NUMBER says, the graph where the measure IS: with two measures of one number (1, 2, 2, 3) the Score has both at the later one and the
+         graph at their own places, and the highlighter and the hand guide (which read the Score) would not follow the sound. Such a song keeps the legacy plan, counted. */
+      if (Math.abs(strikes[i].abs - n.abs) > 1e-6) return { reason: 'ABS_MISMATCH' };
       strikes[i].note = n;
     }
     const holds = [], conts = [];
@@ -6333,7 +6336,7 @@ class PerformanceEngine {
     const from = run.from, to = run.to;
     const startQ = Score.startQ(score, from);
     const perQuarterMs = 60000 / Math.max(1, run.tempo);
-    const plan = practicePlan(score, from, to);
+    const plan = run.plan || practicePlan(score, from, to);
     const scale = (run.tempo || score.tempo || 84) / Math.max(1, score.tempo || run.tempo || 84);
     this._plan = plan;
     this._scale = scale;
@@ -6350,7 +6353,7 @@ class PerformanceEngine {
       .map((s, i) => ({
         id: i,
         note: s.note,
-        ev: s.ev,
+        evId: s.ev,        /* the graph's event id; `ev` is where noteOn keeps the key event that matched the note */
         head: s.head,
         mIdx: s.visit ? s.visit.index : undefined,
         midi: s.midi,
@@ -14339,16 +14342,22 @@ class Component extends DCLogic {
      lap start its clock aligned to where the playhead actually is. */
   beginRun(S, beatNow, at) {
     const [from, to] = this.range(S);
-    const plan = practicePlan(S.score, from, to);
+    /* G11a-3: a run keeps the plan it began on. A lap of a transport that is running begins on the transport's own plan, so a PPP.practice flipped in the middle of a run changes neither what is heard
+       nor what the matcher expects (under 'legacy' with a legacy plan this is the call it always was). */
+    const tp = this._tp;
+    const keep = !!(tp && tp.plan && (PRACTICE_MODE === 'graph' || tp.plan.graph) && tp.key === this.transportKey(S));
+    const plan = keep ? tp.plan : practicePlan(S.score, from, to);
     const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);
     const startQ = Score.startQ(S.score, from);
     const sq = PianoScore.soundAtWritten(plan, beatNow == null ? startQ : beatNow);
     /* `at` is when beatNow is heard; the transport starts a beat a moment
        ahead so its first notes land whole */
-    this.perf().begin({
+    const run = {
       from, to, hands: S.hands, tempo: S.tempo, practiceMode: S.practiceMode,
       startedAt: (at == null ? nowMs() : at) - PianoScore.msAt(plan, sq, scale)
-    });
+    };
+    if (keep) run.plan = plan;
+    this.perf().begin(run);
   }
 
   /* ======================== follow mode ========================
@@ -18666,9 +18675,12 @@ class Component extends DCLogic {
     const range = this.range(S), from = range[0], to = range[1];
     const tempo = +S.tempo || S.score.tempo || 84;
     const c = this._visualTimeline;
-    if (c && c.score === S.score && c.from === from && c.to === to && c.tempo === tempo) return c.timeline;
-    const timeline = scoreToVisualTimeline(S.score, { from: from, to: to, tempo: tempo });
-    this._visualTimeline = { score: S.score, from: from, to: to, tempo: tempo, timeline: timeline };
+    /* G11a-3: the plan is part of the key: a timeline built on the legacy plan while practice/plan.js was still on its way is not the one the transport (which has the graph plan by now) is on,
+       and visualTransportFrame would fall back to the 40 ms beat for want of the same plan */
+    const plan = S.score.measures && S.score.measures.length ? practicePlan(S.score, from, to) : null;
+    if (c && c.score === S.score && c.from === from && c.to === to && c.tempo === tempo && c.plan === plan) return c.timeline;
+    const timeline = scoreToVisualTimeline(S.score, { from: from, to: to, tempo: tempo, plan: plan });
+    this._visualTimeline = { score: S.score, from: from, to: to, tempo: tempo, plan: plan, timeline: timeline };
     return timeline;
   }
   /* The canvas samples this on every animation frame. During playback it reads

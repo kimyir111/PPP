@@ -6,7 +6,7 @@
      identity    under 'legacy' practicePlan IS PianoScore.of (the very object); the scheduler's queue (every note on/off, CC64/66/67, metronome click) at 8x the written tempo on the
                  12 pieces of the parity harness has the digests recorded on the tree BEFORE this phase (tests/practice/baselines/switch.json: `record` is run on a checkout of main)
      graph       the same 12 pieces under 'graph': the same queue to the bit, and the scheduler really ran on a graph plan; five scripted performances through the real
-                 PerformanceEngine give the same verdicts, results and Learning.record history, `expected` carries ev/head/mIdx and the result byMeasureIdx; the falling notes and follow
+                 PerformanceEngine give the same verdicts, results and Learning.record history, `expected` carries evId/head/mIdx (the graph's event id, by value, before and after a match: noteOn keeps the key event in `ev`) and the result byMeasureIdx; the falling notes and follow
                  mode's gates are the same
      fallback    a song whose graph does not state its music (link not ok, no graph, no identity, another measure count, a plan that cannot be built, the module not here) keeps the
                  legacy plan - the very object - and is counted by reason and by song, once per decision; nothing throws; playback is not held up; a decision made while something was
@@ -18,7 +18,7 @@
      node tests/practice/switch.js                      all of it (about 3-4 minutes; the sweep is the 418 files of the parity corpus)
      node tests/practice/switch.js --quick              3 pieces for the scheduler and the matcher, every 12th catalogue file for the sweep (about 1 minute)
      node tests/practice/switch.js --sample 5           the sweep reads every 5th catalogue file (+ every fixture)
-     node tests/practice/switch.js --only switch,spies  some sections: switch, spies, matcher, visual, gates, leak, fallbacks, sweep, perf
+     node tests/practice/switch.js --only switch,spies  some sections: switch, spies, matcher, visual, gates, leak, fallbacks, late, sweep, perf
      node tests/practice/switch.js --url URL            a page already served (the mutation check's proxy); the page of a tree from before this phase answers `record` only
      node tests/practice/switch.js record               rewrite tests/practice/baselines/switch.json: run it on a checkout of main from BEFORE G11a-3 (git archive), with --url
    Needs puppeteer (npm ci; on a developer's machine NODE_PATH may point at another tree's node_modules). Exit code 1 when a check fails. */
@@ -29,6 +29,14 @@ const L = require('./lib');
 const Parity = require('./parity');
 
 const BASELINE = path.join(__dirname, 'baselines', 'switch.json');
+/* Hand-written songs the catalogue has none of (tests/practice/fixtures/switch): measure numbers that skip, that are text, a pickup numbered 0 tied into bar 1 - planned from the graph, equal to the legacy plan -
+   and two measures that share a number (1, 2, 2, 3): the Score puts the notes of both at the later one and the graph at their own places, so the graph plan must NOT be used (ABS_MISMATCH, counted). */
+const SWITCH_FIXTURES = path.join(__dirname, 'fixtures', 'switch');
+const SWITCH_EXPECT = { 'dup-numbers.musicxml': 'ABS_MISMATCH', 'tie-dup-numbers.musicxml': 'ABS_MISMATCH' };
+function switchFixtures() {
+  return fs.readdirSync(SWITCH_FIXTURES).filter(f => /\.musicxml$/.test(f)).sort().map(f => ({
+    path: 'tests/practice/fixtures/switch/' + f, set: 'switch-fixtures', quarantined: false, text: fs.readFileSync(path.join(SWITCH_FIXTURES, f), 'utf8'), expect: SWITCH_EXPECT[f] || null }));
+}
 const PAGE_SRC = fs.readFileSync(path.join(__dirname, 'switch-page.js'), 'utf8');
 const PLAN_FILE = /\/practice\/plan\.js(\?|$)/;
 const ANY_PRACTICE = /\/practice\//;
@@ -318,10 +326,24 @@ async function sectionFallbacks(browser, url) {
   }
 }
 
+/* ---- the falling notes asked for while the module is on its way ---- */
+async function sectionLate(browser, url) {
+  head('the falling notes while practice/plan.js is still on its way');
+  const h = await openPage(browser, url, { query: '?practice=graph', hold: PLAN_FILE });
+  const first = await h.page.evaluate(() => window.PPPSwitchProbe.lateStart({ file: 'catalog/hymns/all-creatures.musicxml' }));
+  check('before the module arrives: the timeline is built on the legacy plan, and kept while nothing changes', !first.graph && first.notes > 0 && first.same, JSON.stringify(first));
+  await h.release();
+  const second = await h.page.evaluate(() => window.PPPSwitchProbe.lateEnd());
+  check('after it arrives: the timeline is built again, on the plan the transport has (visualTransportFrame follows the transport), and kept', second.loaded && second.graph && second.rebuilt && second.sameAsTransport && second.again, JSON.stringify(second));
+  check('...and shows the same notes at the same times', second.sameNotes, JSON.stringify(second));
+  check('the page ran without an error', h.errors.length === 0, h.errors.join(' | '));
+  await h.close();
+}
+
 /* ---- the sweep ---- */
 async function sectionSweep(browser, url, args) {
   head('the corpus under "graph"');
-  const corp = Parity.corpus();
+  const corp = Parity.corpus().concat(switchFixtures());
   let n = -1;
   const list = corp.filter(c => {
     if (c.set !== 'catalog') return true;
@@ -337,18 +359,28 @@ async function sectionSweep(browser, url, args) {
   const name = r => (by.get(r.file).quarantined ? 'a licence-quarantined file' : r.file);
   const count = pred => recs.filter(pred).length;
   const catalog = recs.filter(r => by.get(r.file).set === 'catalog');
-  const resolved = recs.filter(r => !r.error && r.via === 'live' && r.linkOk);
+  const expecting = recs.filter(r => by.get(r.file).expect);
+  const resolved = recs.filter(r => !r.error && r.via === 'live' && r.linkOk && !by.get(r.file).expect);
   const unresolved = recs.filter(r => !r.error && !(r.via === 'live' && r.linkOk));
   const refused = recs.filter(r => r.error);
-  const problems = [];
+  const problems = [], expectProblems = [];
   recs.forEach(r => {
     const c = by.get(r.file);
-    if (r.error) { if (c.set === 'catalog' || c.set === 'engrave-e') problems.push(name(r) + ': refused (' + r.error + ')'); return; }
+    if (r.error) { if (c.set === 'catalog' || c.set === 'engrave-e' || c.set === 'switch-fixtures') problems.push(name(r) + ': refused (' + r.error + ')'); return; }
     (r.fail || []).forEach(f => problems.push(name(r) + ': ' + f));
+    if (c.expect) {
+      /* every range falls back, with the reason, and the song's own count says so */
+      const ok = r.graph === 0 && r.fallback === r.ranges && r.reasons[c.expect] === r.ranges && r.song && r.song.total === r.ranges && r.song.reasons[c.expect] === r.ranges;
+      if (!ok) expectProblems.push(name(r) + ': wanted ' + c.expect + ' counted for each of its ' + r.ranges + ' range(s) and for the song, got ' + JSON.stringify([r.graph, r.fallback, r.reasons, r.song]));
+      return;
+    }
     if (r.via === 'live' && r.linkOk && r.fallback) problems.push(name(r) + ': the renderer resolves it and the plan fell back (' + JSON.stringify(r.reasons) + ')');
     if (r.via === 'live' && r.linkOk && !r.graph) problems.push(name(r) + ': the renderer resolves it and no plan was made from the graph');
   });
   check('every file the renderer resolves is planned from its graph, and equal to the legacy plan (' + resolved.length + ' files)', problems.length === 0, problems.slice(0, 4).join(' | ') + (problems.length > 4 ? ' ... ' + (problems.length - 4) + ' more' : ''));
+  check('songs whose measures share a number keep the legacy plan, counted as ABS_MISMATCH once per range and for the song (' + expecting.length + ' fixtures)', expecting.length >= 2 && expectProblems.length === 0, expectProblems.join(' | ') || 'no such fixture');
+  const fixtures = recs.filter(r => by.get(r.file).set === 'switch-fixtures' && !by.get(r.file).expect);
+  check('skipped, text and zero measure numbers: planned from the graph, equal to the legacy plan (' + fixtures.length + ' fixtures)', fixtures.length >= 3 && fixtures.every(r => !r.error && r.graph === r.ranges && !r.fallback && !(r.fail || []).length), fixtures.map(r => r.file.replace(/^.*\//, '') + ' ' + JSON.stringify([r.graph, r.ranges, r.fallback, r.error, r.fail])).join(' | '));
   const fbResolved = resolved.reduce((t, r) => t + r.fallback, 0);
   const fbCatalog = catalog.filter(r => !r.error && r.via === 'live' && r.linkOk).reduce((t, r) => t + r.fallback, 0);
   check('fallbacks on the catalogue: 0 (' + count(r => by.get(r.file).set === 'catalog' && !r.error) + ' catalogue files read; ' + fbCatalog + ' counted)', fbCatalog === 0 && fbResolved === 0, fbCatalog + ' / ' + fbResolved);
@@ -421,6 +453,7 @@ async function main() {
     if (want('gates')) await sectionProbe(browser, url, 'gates', "follow mode's gates", files, 3);
     if (want('leak')) await sectionLeak(browser, url);
     if (want('fallbacks')) await sectionFallbacks(browser, url);
+    if (want('late')) await sectionLate(browser, url);
     if (want('sweep')) summary.sweep = await sectionSweep(browser, url, args);
     if (want('perf')) summary.perf = await sectionPerf(browser, url);
   } finally {

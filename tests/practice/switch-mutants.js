@@ -7,6 +7,7 @@
      node tests/practice/switch-mutants.js --shard 2/3     every third row, starting at the second (the CI jobs that split the table use this)
      node tests/practice/switch-mutants.js --list
      node tests/practice/switch-mutants.js --url URL       a page already served (the proxy sits in front of it)
+   A row that names `suites:NAME` instead of sections runs the practice suites on --practice graph against the broken page (run-suites.js asserts that the graph plan was engaged).
    The rows are the ways the call-site wiring, the switch, the fallback and the adapter of the plan could be broken; the first one is the design's own: practicePlan returns the legacy plan under
    'graph'. The places that read `tp.plan || practicePlan(...)` are not mutated: tp.plan is always set where they run, so a mutant there is the same program. */
 'use strict';
@@ -18,10 +19,9 @@ const CALL_SITE = (from, to) => [from, to];
 const ROWS = [
   /* the wiring */
   ['W1', "practicePlan returns the legacy plan under 'graph'", [["  return practiceGraphPlan(score, from, to);", "  return PianoScore.of(score, from, to);"]], 'leak,spies'],
-  ['W2', 'the matcher (begin) asks PianoScore.of again', [["    const plan = practicePlan(score, from, to);", "    const plan = PianoScore.of(score, from, to);"]], 'leak'],
+  ['W2', 'the matcher (begin) asks PianoScore.of again', [["    const plan = run.plan || practicePlan(score, from, to);", "    const plan = run.plan || PianoScore.of(score, from, to);"]], 'leak'],
   ['W3', 'the falling notes ask PianoScore.of again', [["  const plan = options.plan || practicePlan(score, from, to);", "  const plan = options.plan || PianoScore.of(score, from, to);"]], 'leak'],
-  ['W4', 'beginRun asks PianoScore.of again', [CALL_SITE("    const plan = practicePlan(S.score, from, to);\n    const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);\n    const startQ = Score.startQ(S.score, from);",
-    "    const plan = PianoScore.of(S.score, from, to);\n    const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);\n    const startQ = Score.startQ(S.score, from);")], 'leak'],
+  ['W4', 'beginRun asks PianoScore.of again', [CALL_SITE("    const plan = keep ? tp.plan : practicePlan(S.score, from, to);", "    const plan = keep ? tp.plan : PianoScore.of(S.score, from, to);")], 'leak'],
   ['W5', 'startTransport asks PianoScore.of again', [CALL_SITE("    const plan = practicePlan(S.score, from, to);\n    const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);\n    const t0 = now + this.leadMs(now);",
     "    const plan = PianoScore.of(S.score, from, to);\n    const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);\n    const t0 = now + this.leadMs(now);")], 'leak,spies'],
   ['W6', 'a transport planned again (hands changed) asks PianoScore.of again', [CALL_SITE("      const plan = practicePlan(S.score, from, to);\n      const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);\n      if (sq < -0.001",
@@ -51,10 +51,30 @@ const ROWS = [
   ['W22', 'a strike names the graph\'s item, not the Score note', [["      strikes[i].note = n;", ""]], 'visual,sweep'],
   ['W23', 'a tied chain\'s length is not known for the Score note (the falling notes are cut short)', [["    holds.forEach(h => plan.hold.set(h[0], h[1]));", ""]], 'visual,sweep'],
   ['W24', 'the carried-into notes of a tie are not known for the Score note (struck again)', [["    conts.forEach(n => plan.cont.add(n));", ""]], 'sweep'],
-  ['W25', 'the matcher\'s expected notes carry no event id', [["        ev: s.ev,", ""]], 'matcher,leak'],
+  ['W25', 'the matcher\'s expected notes carry no event id', [["        evId: s.ev,", ""]], 'matcher,leak'],
+  ['W31', 'the event id is kept in expected.ev again (a match overwrites it with the key event)', [["        evId: s.ev,", "        ev: s.ev,"]], 'matcher,leak'],
+  ['W32', 'a song whose Score and graph put the notes in other places keeps the graph plan', [["      if (Math.abs(strikes[i].abs - n.abs) > 1e-6) return { reason: 'ABS_MISMATCH' };", ""]], 'sweep'],
+  ['W33', 'the falling notes\' timeline is kept whichever plan it was built on', [["c.tempo === tempo && c.plan === plan) return c.timeline;", "c.tempo === tempo) return c.timeline;"]], 'late'],
+  ['W34', 'a lap of a running transport asks for a plan again (a switch flipped in the run changes the matcher)', [["    const keep = !!(tp && tp.plan && (PRACTICE_MODE === 'graph' || tp.plan.graph) && tp.key === this.transportKey(S));", "    const keep = false;"]], 'leak'],
+  ['W35', 'a stray key (wrong) is counted in bar index 0', [["bucket(byMeasure, x.m).wrong++; const i = idxAt(x.t);", "bucket(byMeasure, x.m).wrong++; const i = 0;"]], 'matcher'],
+  ['W36', "follow mode's gate cache does not know which plan the gates come from", [["(viaGraph ? ':graph' : '')", "''"]], 'gates'],
+  ['W38', "practicePlan returns the legacy plan under 'graph': the practice suites on --practice graph say the graph plan was not engaged", [["  return practiceGraphPlan(score, from, to);", "  return PianoScore.of(score, from, to);"]], 'suites:playback-scheduler'],
+  ['W37', 'the bar index of an expected note is one bar early', [["        mIdx: s.visit ? s.visit.index : undefined,", "        mIdx: s.visit ? Math.max(0, s.visit.index - 1) : undefined,"]], 'matcher'],
   ['W26', 'the matcher\'s result has no byMeasureIdx', [["      byMeasureIdx: byMeasureIdx,", ""]], 'matcher'],
   ['W27', "the module's plan is built for the Score's tempo of 120, not the Score's", [["  const qpm = +score.tempo > 0 && isFinite(+score.tempo) ? +score.tempo : 84;", "  const qpm = 120;"]], 'spies,sweep']
 ];
+
+function runSuitesOn(port, names) {
+  return new Promise(resolve => {
+    const child = spawn(process.execPath, [path.join(__dirname, 'run-suites.js'), '--port', String(port), '--practice', 'graph', '--only', names, '--log-dir', path.join(__dirname, 'out', 'switch-mutant-suites')],
+      { cwd: L.ROOT, env: process.env, stdio: ['ignore', 'pipe', 'pipe'] });
+    let text = '';
+    child.stdout.on('data', d => { text += d; });
+    child.stderr.on('data', d => { text += d; });
+    child.on('close', code => resolve({ code, text: text.split('\n').map(l => (/FAILED|why:/.test(l) ? '\u2717 ' + l.trim() : l)).join('\n') }));
+  });
+}
+const runRow = (proxy, pageUrl, sections) => (sections.startsWith('suites:') ? runSuitesOn(proxy.port, sections.slice(7)) : runSwitch(proxy.url(pageUrl), sections));
 
 function runSwitch(url, sections) {
   return new Promise(resolve => {
@@ -90,8 +110,9 @@ async function main() {
       const t0 = Date.now();
       const proxy = await L.mutatingProxy(origin, []);
       const r = await runSwitch(proxy.url(pageUrl), 'switch,leak,gates');
+      const r2 = await runSuitesOn(proxy.port, 'playback-scheduler');
       await proxy.close();
-      const ok = r.code === 0;
+      const ok = r.code === 0 && r2.code === 0;
       console.log('control (nothing broken): ' + (ok ? 'green' : 'RED, not clean - ' + r.text.split('\n').filter(l => /✗/.test(l)).slice(0, 3).join(' | ')) + ' (' + ((Date.now() - t0) / 1000).toFixed(0) + ' s)');
       if (!ok) problems++;
     }
@@ -99,7 +120,7 @@ async function main() {
       const t0 = Date.now();
       const proxy = await L.mutatingProxy(origin, edits);
       let r;
-      try { r = await runSwitch(proxy.url(pageUrl), sections); } finally { await proxy.close(); }
+      try { r = await runRow(proxy, pageUrl, sections); } finally { await proxy.close(); }
       const counts = proxy.counts();
       const stale = !counts || counts.some(c => c !== 1);
       if (stale) { problems++; console.log(id + ' STALE - ' + what + ' - the edit applied ' + JSON.stringify(counts) + ' times'); continue; }
