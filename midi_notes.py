@@ -24,7 +24,9 @@ def _write_vlq(n):
     return bytes(reversed(parts))
 
 
-def read_notes(path):
+def read_notes(path, instruments=False):
+    """instruments=True: each note also says its channel and the program (General MIDI instrument) in force on it - what a
+    multi-instrument transcription (YourMT3) writes; channel 9 is drums."""
     with open(path, 'rb') as source:
         data = source.read()
     if data[:4] != b'MThd':
@@ -49,6 +51,7 @@ def read_notes(path):
         j = 0
         ons = {}
         pedal_on = {}
+        programs = {}
         last_sec = 0.0
         while j < len(chunk):
             dt, j = _vlq(chunk, j)
@@ -80,6 +83,8 @@ def read_notes(path):
                 continue
             kind = st & 0xF0
             if kind in (0xC0, 0xD0):
+                if kind == 0xC0:
+                    programs[st & 0x0F] = chunk[j]
                 j += 1
                 continue
             a = chunk[j]
@@ -94,7 +99,11 @@ def read_notes(path):
                 stack = ons.get((ch, a))
                 if stack:
                     on, vel = stack.pop(0)
-                    notes.append({'on': on, 'off': max(on + 0.03, sec), 'midi': a, 'vel': vel})
+                    note = {'on': on, 'off': max(on + 0.03, sec), 'midi': a, 'vel': vel}
+                    if instruments:
+                        note['channel'] = ch
+                        note['program'] = programs.get(ch, 0)
+                    notes.append(note)
             elif kind == 0xB0 and a == 64:
                 # Damper pedal (CC64). TransKun writes pedal to MIDI when its
                 # checkpoint supports it; preserving the controller here is
