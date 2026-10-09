@@ -185,7 +185,22 @@ class SongModeTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as work:
             line = transcribe.track_notes_bp(y, sr, 130.0, 2100.0, work)
         self.assertEqual([n['midi'] for n in line], [71, 69])
-        self.assertTrue(all(set(n) == {'on', 'off', 'midi', 'vel'} for n in line))
+        self.assertTrue(all(set(n) == {'on', 'off', 'midi', 'vel', '_n'} for n in line))   # '_n': notes in the attack, for choosing the lead; never written out
+        self.assertEqual([n['_n'] for n in line], [3, 3])
+
+    def test_lead_moves_to_the_instrument_that_plays_the_tune(self):
+        import numpy as np
+        tune = lambda t0, pitches: [{'on': t0 + 0.5 * i, 'off': t0 + 0.5 * i + 0.45, 'midi': m, 'vel': 80} for i, m in enumerate(pitches)]
+        strum = lambda t0, n: [{'on': t0 + 0.5 * i, 'off': t0 + 0.5 * i + 0.45, 'midi': 64, 'vel': 90, '_n': 3} for i in range(n)]
+        guitar = tune(0.0, [67, 69, 71, 72, 74, 72, 71, 69] * 2) + strum(8.0, 16)       # the tune, then a strummed accompaniment
+        synth = strum(0.0, 16) + tune(8.0, [76, 74, 72, 71, 72, 74, 76, 77] * 2)        # a pad, then the tune
+        lines = [(8.0, 'guitar', guitar, 'basic-pitch'), (8.0, 'other', synth, 'basic-pitch')]
+        levels = {'guitar': (np.full(2000, 0.4), 0.01), 'other': (np.full(2000, 0.2), 0.01)}  # the strum is LOUDER than the synth's tune
+        notes, lead, tracker = transcribe.lead_by_window(lines, levels, 16.0)
+        self.assertEqual([n['midi'] for n in notes], [67, 69, 71, 72, 74, 72, 71, 69] * 2 + [76, 74, 72, 71, 72, 74, 76, 77] * 2)
+        self.assertTrue(all('_n' not in n for n in notes))
+        self.assertEqual(tracker, 'basic-pitch')
+        self.assertIn(lead, ('guitar', 'other'))
 
 
 if __name__ == '__main__':
