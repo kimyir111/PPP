@@ -5171,6 +5171,47 @@ function graphToReviewScore(g, title) {
    NOT in the page's script list: they are fetched in the background once the page has settled (warmSingleModules), or by the
    first arrangement if that comes sooner, in this order (each file's own header says which it needs before it; all are UMD,
    none calls Node's require in the browser). Nothing is loaded while another mode (legacy, g8) is set. */
+/* A failed eager script does not stop the page from opening, but index.js then
+   cannot publish PPPScoreGraph. Retry the head's own list, in its original order.
+   Reload its consumers too: their factories may have kept a missing dependency.
+   Healthy pages make no extra requests; concurrent callers share one recovery. */
+let _scoreModulesPromise = null;
+let _scoreModulesFailed = false;
+function scoreModulesReady() {
+  return !_scoreModulesFailed && !!(window.PPPScoreGraph && window.PPPAudioScore && window.PPPSongGraph && window.PPPRealize && window.PPPEngrave);
+}
+function loadScoreModules() {
+  if (_scoreModulesPromise) return scoreModulesWait(_scoreModulesPromise);
+  if (scoreModulesReady()) return Promise.resolve(true);
+  const scripts = [...document.head.querySelectorAll('script[src]:not([data-score-recovery])')]
+    .map(el => el.getAttribute('src'))
+    .filter(src => /^\.\/(?:scoregraph|playability|difficulty|songgraph|arrangement|realize|engrave)\/|^\.\/audio-score\.js(?:\?|$)/.test(src));
+  if (!scripts.length) return Promise.resolve(false);
+  const stamp = Date.now();
+  _scoreModulesPromise = Promise.all(scripts.map(src => new Promise(resolve => {
+    const el = document.createElement('script');
+    el.setAttribute('data-score-recovery', '');
+    el.src = src + (src.includes('?') ? '&' : '?') + 'retry=' + stamp;
+    el.async = false;
+    el.onload = () => { el.remove(); resolve(true); };
+    el.onerror = () => { el.remove(); resolve(false); };
+    document.head.appendChild(el);
+  }))).then(results => {
+    _scoreModulesFailed = false;
+    const ok = results.every(Boolean) && scoreModulesReady();
+    _scoreModulesFailed = !ok;
+    return ok;
+  }).catch(() => { _scoreModulesFailed = true; return false; })
+    .then(ok => { _scoreModulesPromise = null; return ok; });
+  return scoreModulesWait(_scoreModulesPromise);
+}
+function scoreModulesWait(promise) {
+  /* A stalled request cannot hold an import forever. Keep sharing the actual
+     download after the wait expires, so a retry cannot execute a late copy twice. */
+  let timer;
+  return Promise.race([promise, new Promise(resolve => { timer = setTimeout(() => resolve(false), 15000); })])
+    .then(ok => { clearTimeout(timer); return ok; });
+}
 const SINGLE_SCRIPTS = [
   'realize/handchords.js', 'realize/clefs.js', 'realize/ottava.js',
   'critics/voice-leading.js', 'critics/register-density.js', 'critics/register-floor.js', 'critics/left-hand-jump.js',
@@ -5180,6 +5221,7 @@ const SINGLE_SCRIPTS = [
 let _singleScriptsPromise = null;
 const _singleLoaded = new Set(); /* the scripts of the list that have loaded (and so run) */
 function loadSingleModules() {
+  if (_scoreModulesPromise || !scoreModulesReady()) return loadScoreModules().then(ok => ok ? loadSingleModules() : false);
   /* ready only when EVERY script has loaded: a run where one of the twelve others failed is not ready, even though candidates and repair are there */
   if (SINGLE_SCRIPTS.every(src => _singleLoaded.has(src))) return Promise.resolve(true);
   if (_singleScriptsPromise) return _singleScriptsPromise; /* a download in flight is shared: nothing is asked for twice */
@@ -5508,6 +5550,7 @@ function recordingScriptsToLoad() {
 /* Resolves true when v2 is ready, false when a file could not be loaded (RECORDING_LOAD_ERROR names it). Never rejects. A download in flight is shared; what has loaded is not asked for again,
    and nor is it run again: a file that failed is asked for alone (with the few that read its export when they loaded, recordingScriptsToLoad). */
 function loadRecordingModules() {
+  if (_scoreModulesPromise || !scoreModulesReady()) return loadScoreModules().then(ok => ok ? loadRecordingModules() : false);
   if (recordingModulesReady()) return Promise.resolve(true);
   if (_recPromise) return _recPromise;
   _recPromise = recRaceTimeout((async () => {
@@ -5534,6 +5577,7 @@ function loadRecordingModules() {
 /* rec/app.js alone: the heard notes of a kept graph, "Play as recorded", the flags. It needs none of the stages, so a song written the classic way can play as recorded
    without the weights. */
 function loadRecApp() {
+  if (_scoreModulesPromise || !scoreModulesReady()) return loadScoreModules().then(ok => ok ? loadRecApp() : false);
   if (typeof window !== 'undefined' && window.PPPRecApp) return Promise.resolve(true);
   if (_recAppPromise) return _recAppPromise;
   _recAppPromise = recRaceTimeout(recScriptTag(REC_APP_SCRIPT).then(ok => ok && !!window.PPPRecApp)).then(ok => { _recAppPromise = null; return ok; });
@@ -5600,6 +5644,7 @@ const LEADSHEET_NEEDS = ['rec/grid.js', 'rec/writer.js'];
 const LEADSHEET_MODEL = ['PPPRecGridModel', 'rec/weights/ai5b-grid-v1.json'];
 let _leadPromise = null;
 function loadLeadsheetModule() {
+  if (_scoreModulesPromise || !scoreModulesReady()) return loadScoreModules().then(ok => ok ? loadLeadsheetModule() : false);
   /* the module AND what it reads are on the page: nothing to ask for */
   if (typeof window !== 'undefined' && window.PPPRecLeadsheet && LEADSHEET_NEEDS.every(recScriptGlobalPresent)) return Promise.resolve(true);
   if (_leadPromise) return _leadPromise;
@@ -8648,6 +8693,7 @@ const Import = {
   },
   /* v2's files, asked for before the notes are written (a no-op for the classic conversion) */
   async readyRecording(what) {
+    if (!(await loadScoreModules())) throw importError('score-not-loaded', tx('The files needed to write the score could not be loaded. Try again in a moment.'));
     if (RECORDING_MODE === 'v2' && what.mode !== 'arrange') await loadRecordingModules();
   },
 
@@ -8663,6 +8709,7 @@ const Import = {
        The old listen-first order allowed four approximate model notes to
        bypass an exact catalog match. Search by the YouTube title / filename
        before spending time on transcription. */
+    await Import.readyRecording({ mode: 'arrange' }); /* recover the notation core before any dependent lazy module runs */
     if (RECORDING_MODE === 'v2' && what.mode !== 'arrange') loadRecordingModules(); /* G10a-4: asked for now, while the person waits for the transcription */
     stage('search', {});
     let query = nameGuess;
@@ -10647,7 +10694,7 @@ window.PPP = {
   /* G10a-4/G10a-5b: 'v2' (default: the staged recording conversion, docs/GOALS/G10 section 6) | 'legacy' (the classic one). Any other value is no choice: the default comes back and the remembered choice is forgotten. A choice is remembered on this device. */
   get recording() { return RECORDING_MODE; },
   set recording(v) { setRecordingMode(v); },
-  loadRecordingModules, recordingModulesReady, recWeightsShapeOk, TRANSCRIPTION_VERSION_V2, RECORDING_SCRIPTS, RECORDING_WEIGHTS,
+  loadScoreModules, loadRecordingModules, recordingModulesReady, recWeightsShapeOk, TRANSCRIPTION_VERSION_V2, RECORDING_SCRIPTS, RECORDING_WEIGHTS,
   /* G10c-1b (docs/GOALS/G10 section 34): 'leadsheet' (the default: RECORDING_ARRANGE_DEFAULT, one line to flip) | 'reduce' (what the page did before). How a recording is arranged at the easier levels by the one-note-per-hand arranger.
      Any other value is no choice: the default comes back and the remembered choice is forgotten (PPP.recording's rule). A choice is remembered on this device; ?recordingArrange= in the address is for that visit only. */
   get recordingArrange() { return RECORDING_ARRANGE_MODE; },
@@ -11981,6 +12028,10 @@ Object.defineProperties(window.PPP, {
 });
 let _engravePromise = null;
 function loadEngrave() {
+  if (_scoreModulesPromise || !scoreModulesReady()) return loadScoreModules().then(ok => {
+    if (!ok) throw importError('score-not-loaded', tx('The files needed to write the score could not be loaded. Try again in a moment.'));
+    return loadEngrave();
+  });
   if (window.PPPEngravePage) return Promise.resolve(window.PPPEngravePage);
   if (_engravePromise) return _engravePromise;
   _engravePromise = new Promise((resolve, reject) => {

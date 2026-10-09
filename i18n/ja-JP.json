@@ -2280,6 +2280,7 @@
     "piano": "ピアノ",
     "synth / other instrument": "シンセ・その他の楽器",
     "no melody line (the lead sheet finds one)": "メロディーの線なし（リードシートが探します）",
-    "not recorded (an earlier conversion)": "記録なし（以前の変換）"
+    "not recorded (an earlier conversion)": "記録なし（以前の変換）",
+    "The files needed to write the score could not be loaded. Try again in a moment.": "楽譜を作成するためのファイルを読み込めませんでした。しばらくしてからもう一度お試しください。"
   }
 }
