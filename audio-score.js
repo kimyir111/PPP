@@ -835,6 +835,9 @@
       if (table[pc]) continue;
       const dir = dirs[(pc - key.tonic + 12) % 12] || (key.fifths < 0 ? -1 : 1);
       const from = table[(pc - dir + 12) % 12];
+      /* a double sharp or flat only when the other neighbour needs one too: F# major's D is D natural, not C double-sharp */
+      const alt = table[(pc + dir + 12) % 12];
+      if (from && Math.abs(from.alter + dir) > 1 && alt && Math.abs(alt.alter - dir) <= 1) { table[pc] = { step: alt.step, alter: alt.alter - dir }; continue; }
       table[pc] = from ? { step: from.step, alter: from.alter + dir } : { step: 'C', alter: 0 };
     }
     return table;
@@ -1255,12 +1258,92 @@
       return typeof module === 'object' && module.exports ? require('./rec/rests.js') : (global && global.PPPRecRests) || null;
     } catch (e) { return null; }
   }
+  /* A song heard in layers (opts.songLayers: the home PC's song mode, each note's `track` 1 the melody, 2 the bass, 3 the
+     accompaniment) is written as a piano part by its layers, not by the piano hand model: the hand model splits by pitch, and a
+     guitar's strums in the melody's register buried the tune in right-hand chords written as 16ths and rests. The melody is the
+     right hand, held until its next note when the silence is under a beat (a guitar or synth lead is heard short). The bass and
+     the accompaniment are the left hand: the accompaniment becomes one chord per beat - its most-heard pitches, at most
+     SONG_CHORD, folded into C3-E4 - and a chord the next beat repeats in the same bar is held instead. Returns the hands report,
+     or null when the notes carry no layers (the caller then assigns hands as usual). */
+  const SONG_CHORD = 3, SONG_LOW = 48, SONG_HIGH = 64, SONG_SPAN = 8;
+  function songHands(q, notes, beat, bar) {
+    const layerOf = new Map();
+    (notes || []).forEach(n => {
+      if (!Number.isInteger(n.track)) return;
+      const k = n.on + '|' + n.off + '|' + n.midi;
+      if (!layerOf.has(k)) layerOf.set(k, []);
+      layerOf.get(k).push(n.track);
+    });
+    const layer = q.map(n => { const l = layerOf.get(n.on + '|' + n.off + '|' + n.midi); return l && l.length ? l.shift() : 0; });
+    if (!layer.some(t => t === 1)) return null;
+    const melody = [], left = [], byBeat = new Map();
+    q.forEach((n, i) => {
+      if (layer[i] === 1) { n.staff = 1; melody.push(n); }
+      else if (layer[i] === 3) {
+        const b = Math.floor(n.tick / beat);
+        if (!byBeat.has(b)) byBeat.set(b, []);
+        byBeat.get(b).push(n);
+      } else { n.staff = layer[i] === 2 ? 2 : n.midi >= 60 ? 1 : 2; (n.staff === 1 ? melody : left).push(n); }
+    });
+    melody.sort((a, b) => a.tick - b.tick);
+    /* a note more than an octave from the tune around it (SONG_SPAN beats either side) is the same pitch heard in another
+       octave - a guitar's low string, an overtone - and is written in the tune's octave */
+    const heardPitch = melody.map(n => n.midi);
+    melody.forEach((n, i) => {
+      const near = [];
+      for (let j = 0; j < melody.length; j++) if (Math.abs(melody[j].tick - n.tick) <= SONG_SPAN * beat) near.push(heardPitch[j]);
+      const mid = median(near);
+      n.heardMidi = n.midi;
+      while (n.midi - mid > 12 && n.midi - 12 >= 21) n.midi -= 12;
+      while (mid - n.midi > 12 && n.midi + 12 <= 108) n.midi += 12;
+    });
+    melody.forEach((n, i) => {
+      const next = melody[i + 1];
+      if (next && next.tick > n.tick && next.tick - n.endTick < beat) n.endTick = Math.max(n.endTick, next.tick);
+      n.lenTicks = Math.max(1, n.endTick - n.tick);
+    });
+    const bassAt = new Set(left.map(n => n.tick + '|' + n.midi));
+    const chords = [];
+    let prev = null;
+    Array.from(byBeat.keys()).sort((a, b) => a - b).forEach(b => {
+      const weight = new Map();
+      byBeat.get(b).forEach(n => {
+        let p = n.midi;
+        while (p > SONG_HIGH) p -= 12;
+        while (p < SONG_LOW) p += 12;
+        weight.set(p, (weight.get(p) || 0) + Math.max(1, n.endTick - n.tick));
+      });
+      const tick = b * beat;
+      const pitches = Array.from(weight.keys()).sort((x, y) => weight.get(y) - weight.get(x) || x - y)
+        .slice(0, SONG_CHORD).filter(p => !bassAt.has(tick + '|' + p)).sort((x, y) => x - y);
+      if (!pitches.length) return;
+      const sig = pitches.join(',');
+      if (prev && prev.sig === sig && prev.end === tick && Math.floor(prev.tick / bar) === Math.floor(tick / bar)) {
+        prev.end = tick + beat;
+        prev.notes.forEach(n => { n.endTick = prev.end; n.lenTicks = n.endTick - n.tick; });
+        return;
+      }
+      const src = byBeat.get(b)[0];
+      const made = pitches.map(p => Object.assign({}, src, { midi: p, tick: tick, endTick: tick + beat, lenTicks: beat, staff: 2, tuplet: false, err: 0 }));
+      made.forEach(n => chords.push(n));
+      prev = { sig: sig, tick: tick, end: tick + beat, notes: made };
+    });
+    const before = q.length;
+    q.length = 0;
+    melody.concat(left, chords).sort((a, b) => a.tick - b.tick || a.midi - b.midi).forEach(n => q.push(n));
+    return { model: 'song-layers', style: 'piano', notes: q.length, heard: before, right: melody.length, left: q.length - melody.length, lowConfidence: 0 };
+  }
+
   /* The hands (docs/GOALS/G10_AUDIO_TO_SCORE.md section 8, stage S4, G10a-2): rec/'s S4 (rec/hands.js, through rec/index.js) writes the
      staff of every note for the recording conversion v2 (opts.recording 'v2'), or on any path with opts.hands 'v2' (a measurement:
      the app's path with only S4 swapped); opts.hands 'legacy' keeps assignHands under v2. Without either, the hands are assignHands'
      as always. Asked for by name and not loaded is an error (a measurement must know which ran); under v2 without the option, a
      page whose rec/ has no hand model keeps assignHands and the report says so. */
-  function writeHands(q, opts, extra) {
+  function writeHands(q, opts, extra, notes) {
+    if (opts.songLayers) {
+      const r = songHands(q, notes, extra.ticksPerBeat || Q, Math.round(extra.beatsPerBar * (4 / (extra.beatType || 4)) * Q));
+      if (r) return r;
+    }
     const mode = opts.hands || (extra.recording === 'v2' ? 'v2' : 'legacy');
     if (mode !== 'v2') { assignHands(q); return null; }
     const lib = recLib();
@@ -1573,7 +1656,7 @@
         /* a MIDI file states which track and channel a note came from; a microphone does not */
         if (Number.isInteger(n.track)) x.track = n.track;
         if (Number.isInteger(n.channel)) x.channel = n.channel;
-        const link = n.staff ? headOf.get(n.staff + '|' + n.tick + '|' + n.midi) : null;
+        const link = n.staff ? headOf.get(n.staff + '|' + n.tick + '|' + (n.written != null ? n.written : n.midi)) : null;
         if (link) x.link = link;
         b.perfNote(pf, x);
       });
@@ -1631,7 +1714,7 @@
 
     const key = estimateKey(notes);
     const table = spellingTable(key);
-    const handsReport = writeHands(q, opts, extra);
+    const handsReport = writeHands(q, opts, extra, notes);
 
     const pedals = [];
     const held = [];
@@ -1788,7 +1871,8 @@
     /* where each heard note was written: the placed note with the same onset, release and pitch */
     const placed = new Map();
     q.forEach(n => {
-      const k = n.on + '|' + n.off + '|' + n.midi;
+      /* a song's melody note written in another octave (songHands) is still the note that was heard */
+      const k = n.on + '|' + n.off + '|' + (n.heardMidi != null ? n.heardMidi : n.midi);
       if (!placed.has(k)) placed.set(k, []);
       placed.get(k).push(n);
     });
@@ -1796,6 +1880,7 @@
       const list = placed.get(n.on + '|' + n.off + '|' + n.midi);
       const p = list && list.length ? list.shift() : null;
       const out = { on: n.on, off: n.off, midi: n.midi, vel: n.vel, staff: p ? p.staff : 0, tick: p ? p.tick : 0 };
+      if (p && p.midi !== n.midi) out.written = p.midi;
       if (Number.isInteger(n.track)) out.track = n.track;
       if (Number.isInteger(n.channel)) out.channel = n.channel;
       return out;

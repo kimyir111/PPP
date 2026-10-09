@@ -8595,7 +8595,9 @@ const Import = {
       notes: heard.notes, pedals: heard.pedals,
       beats: pcClassic(v2) ? undefined : heard.beats, downbeats: pcClassic(v2) ? undefined : heard.downbeats,
       grid: heard.grid, title: title
-    }, Object.assign({ title: title, easy: what.mode === 'arrange', closeGaps: true, exactBars: true }, v2 ? { recording: 'v2' } : {}));
+    }, Object.assign({ title: title, easy: what.mode === 'arrange', closeGaps: true, exactBars: true }, v2 ? { recording: 'v2' } : {},
+      /* a song's layers are its hands: the melody above, the bass and the accompaniment (one chord a beat) below */
+      isSongHeard(heard) && what.mode !== 'arrange' ? { songLayers: true } : {}));
     try {
       built = convert(useV2);
       /* a v2 result the page cannot believe (a tempo outside what the rhythm controls accept, bars far off the length of the heard notes) is not kept: the classic conversion writes this score and the review screen says so */
@@ -12762,6 +12764,8 @@ function melodyFromLabel(layers) {
   const by = layers && layers.melody ? { 'basic-pitch': 'Basic Pitch', 'multi-instrument': 'YourMT3' }[layers.melodyTracker] : null;
   return by ? from + ' · ' + by : from;
 }
+/* audio-score.js's option for a song-mode recording written again: its layers (each heard note's track) are its hands */
+function songNotation(S, heard) { return isSongHeard(heard) || (S && S.importSource && S.importSource.songLayers) ? { songLayers: true } : {}; }
 function withSongLayers(plan, source, heard) { return isSongHeard(heard) || (source && source.songLayers) ? Object.assign({}, plan, { melodyTrack: SONG_TRACKS.melody }) : plan; }
 
 /* G10b-5: when the site does not recognise this device's PC code, the code is NOT forgotten (see Component.homeNotRecognized). It is looked at again retryAtMs after the FIRST such answer (now, +5 s, +30 s), then
@@ -16375,7 +16379,7 @@ class Component extends DCLogic {
           /* G10a-1d: as finishHeard: the home PC's beats go to v2 only (bar-phase evidence); a song reopened later has no beats (heardForSong) */
           notes: heard.notes, pedals: heard.pedals, beats: heard.homePc && !wantV2 ? undefined : heard.beats, downbeats: heard.homePc && !wantV2 ? undefined : heard.downbeats,
           grid: heard.grid, title: S.score.title
-        }, Object.assign({ title: S.score.title, closeGaps: true, exactBars: true }, wantV2 ? { recording: 'v2' } : {}));
+        }, Object.assign({ title: S.score.title, closeGaps: true, exactBars: true }, wantV2 ? { recording: 'v2' } : {}, songNotation(S, heard)));
       } catch (e) { return done((e && e.message) || tx('The rhythm could not be rewritten.')); }
       if (wantV2 && (!writtenByV2(built) || !v2Plausible(built, heard))) return done(tx('The new transcription method could not read this performance, so nothing was changed.'));
       let score;
@@ -16536,8 +16540,8 @@ class Component extends DCLogic {
       built = A.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
         beats: heard.beats, downbeats: heard.downbeats
-      }, this.recordingRewriteV2(S) ? { title: S.score.title, closeGaps: true, exactBars: true, recording: 'v2' } /* G10a-4: the same conversion that wrote this song */
-        : { title: S.score.title, lock: lock, closeGaps: true, exactBars: true });
+      }, Object.assign(this.recordingRewriteV2(S) ? { title: S.score.title, closeGaps: true, exactBars: true, recording: 'v2' } /* G10a-4: the same conversion that wrote this song */
+        : { title: S.score.title, lock: lock, closeGaps: true, exactBars: true }, songNotation(S, heard)));
       if (singleRoute(plan)) {
         /* G9e-lite: one note per hand, from the same unarranged built.graph. A refusal is NOT a silent legacy result: the
            standard arrangement below is then shown with a notice that stays on screen, and the result is marked in its source. */
@@ -16801,8 +16805,8 @@ class Component extends DCLogic {
       built = window.PPPAudioScore.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
         beats: heard.beats, downbeats: heard.downbeats
-      }, v2 ? { title: S.score.title, arrangement: arrangement, closeGaps: true, exactBars: true, recording: 'v2' }
-        : { title: S.score.title, lock: lock, arrangement: arrangement, closeGaps: true, exactBars: true });
+      }, Object.assign(v2 ? { title: S.score.title, arrangement: arrangement, closeGaps: true, exactBars: true, recording: 'v2' }
+        : { title: S.score.title, lock: lock, arrangement: arrangement, closeGaps: true, exactBars: true }, arrangement ? {} : songNotation(S, heard)));
     } catch (e) {
       this.say((e && e.message) || tx('The rhythm could not be rewritten.'));
       return;

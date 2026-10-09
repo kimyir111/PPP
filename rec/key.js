@@ -171,6 +171,9 @@
       if (table[pc]) continue;
       const dir = dirs[mod12(pc - key.tonic)] || (key.fifths < 0 ? -1 : 1);
       const from = table[mod12(pc - dir)];
+      /* a double sharp or flat only when the other neighbour needs one too: F# major's D is D natural, not C double-sharp */
+      const alt = table[mod12(pc + dir)];
+      if (from && Math.abs(from.alter + dir) > 1 && alt && Math.abs(alt.alter - dir) <= 1) { table[pc] = { step: alt.step, alter: alt.alter - dir }; continue; }
       table[pc] = from ? { step: from.step, alter: from.alter + dir } : { step: 'C', alter: 0 };
     }
     return table;
