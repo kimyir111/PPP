@@ -405,6 +405,7 @@ JOIN_GAP_S = 0.04      # two pieces of the same pitch closer than this (no onset
 DIP_RATIO = 0.6        # a held pitch is struck again only where the level fell under this share of the note's own level just before an onset
 DIP_LOOK_S = 0.05      # how far back that fall is looked for
 OCTAVE_SLIP_S = 0.2    # a piece an octave off the note before it, shorter than this and not struck again, is the pitch tracker slipping
+MELODY_GATE = 0.05     # a tracked melody frame quieter than this share of its stem's 95th-percentile level is silence (0.10 dropped the soft notes of an uneven line: recall 0.76 on a synthetic tune with known notes, 0.97 at 0.05, precision 1.00 with bleed down to -25 dB)
 LAYER_MIN = 0.08       # a stem quieter than this share of the mix (95th-percentile frame level) is not there at all
 DOUBLE_TOL_S = 0.06    # an accompaniment note on the same key as a melody or bass note this close is the same sound heard twice
 LEAD_STEMS = ('other', 'guitar', 'piano')   # where an instrumental's tune can be
@@ -547,7 +548,7 @@ def run_song(a, device, duration, t0):
     melody, bass = [], []
     if present.get('vocals'):
         say('ENGINE vocal-melody')
-        melody = track_notes(mono['vocals'], sr, librosa.note_to_hz('C2'), librosa.note_to_hz('C6'), gate=0.1 * p95['vocals'])
+        melody = track_notes(mono['vocals'], sr, librosa.note_to_hz('C2'), librosa.note_to_hz('C6'), gate=MELODY_GATE * p95['vocals'])
         for n in melody:
             n['track'] = SONG_TRACK['melody']
     melody_from = 'vocals' if melody else None
@@ -558,7 +559,7 @@ def run_song(a, device, duration, t0):
         for k in LEAD_STEMS:
             if present.get(k):
                 say('ENGINE lead-line ' + k)
-                line = track_notes(mono[k], sr, librosa.note_to_hz('C3'), librosa.note_to_hz('C7'), gate=0.1 * p95[k])
+                line = track_notes(mono[k], sr, librosa.note_to_hz('C3'), librosa.note_to_hz('C7'), gate=MELODY_GATE * p95[k])
                 lines.append((sum(n['off'] - n['on'] for n in line), k, line))
         if lines:
             held, k, line = max(lines)
