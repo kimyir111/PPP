@@ -549,9 +549,67 @@ def track_notes_bp(mono, sr, fmin, fmax, work):
         top = max(group, key=lambda n: n['midi'])
         if 21 <= top['midi'] <= 108 and top['off'] - top['on'] >= NOTE_MIN_S * 0.6:
             out.append({'on': round(top['on'], 4), 'off': round(top['off'], 4), 'midi': top['midi'],
-                        'vel': int(round(40 + 75 * min(1.0, top['amp'] ** 0.5)))})
+                        'vel': int(round(40 + 75 * min(1.0, top['amp'] ** 0.5))), '_n': len(group)})
         i = j
     return out
+
+
+LEAD_WIN_S = 4.0       # an instrumental's tune may pass from one instrument to another: the lead is chosen again every this many seconds
+                       # (synthetic tune moving from guitar to synth at half time, the guitar then strumming: one stem for the song recall 0.47,
+                       # precision 0.53 (0.39 with the strum twice as loud); per window 0.94 / 0.94 both)
+
+
+def lead_by_window(lines, levels, duration, win=LEAD_WIN_S):
+    """An instrumental's melody when the tune moves between instruments. lines: [(held, stem, notes, tracker)]; levels: {stem: (rms, dt)}.
+    In each window the stem whose line there is most like a tune wins: its level x the share of the window its line covers x how melodic it
+    is (one note at a time, and moving: 1 / the mean notes per attack x the share of distinct pitches). Level alone picks a loud strummed
+    accompaniment over a quieter lead. A single window that disagrees with both neighbours that agree is taken as theirs.
+    Returns (notes without the private '_n', the stem that leads the longest, its tracker)."""
+    if not lines:
+        return [], None, None
+    n_win = max(1, int(-(-duration // win)))
+    by_stem = {k: (line, tracker) for _held, k, line, tracker in lines}
+
+    def coverage(line, a, b):
+        return sum(max(0.0, min(n['off'], b) - max(n['on'], a)) for n in line) / (b - a)
+
+    def melodic(line, a, b):
+        inside = [n for n in line if a <= n['on'] < b]
+        if not inside:
+            return 0.0
+        per_attack = sum(n.get('_n', 1) for n in inside) / len(inside)
+        return (1.0 / per_attack) * (len({n['midi'] for n in inside}) / len(inside))
+
+    def level(k, a, b):
+        rms, dt = levels[k]
+        seg = rms[int(a / dt):max(int(a / dt) + 1, int(b / dt))]
+        return float(seg.mean()) if len(seg) else 0.0
+
+    pick = []
+    for w in range(n_win):
+        a, b = w * win, min(duration, (w + 1) * win)
+        if b <= a:
+            pick.append(None)
+            continue
+        scores = {k: level(k, a, b) * coverage(by_stem[k][0], a, b) * melodic(by_stem[k][0], a, b) for k in by_stem}
+        best = max(scores, key=lambda k: (scores[k], k))
+        pick.append(best if scores[best] > 0 else None)
+    for w in range(1, n_win - 1):
+        if pick[w - 1] is not None and pick[w - 1] == pick[w + 1] != pick[w]:
+            pick[w] = pick[w - 1]
+    notes = []
+    for k, (line, _t) in by_stem.items():
+        for n in line:
+            w = min(n_win - 1, int(n['on'] // win))
+            if pick[w] == k:
+                notes.append({key: v for key, v in n.items() if key != '_n'})
+    notes.sort(key=lambda n: (n['on'], n['midi']))
+    counts = {}
+    for k in pick:
+        if k is not None:
+            counts[k] = counts.get(k, 0) + 1
+    lead = max(counts, key=lambda k: (counts[k], k)) if counts else None
+    return notes, lead, (by_stem[lead][1] if lead else None)
 
 
 def drop_doubles(accomp, others):
@@ -621,8 +679,8 @@ def run_song(a, device, duration, t0):
             if bp_work:
                 shutil.rmtree(bp_work, ignore_errors=True)
         if lines:
-            held, k, line, tracker = max(lines, key=lambda x: (x[0], x[1]))
-            if held >= LEAD_MIN_SHARE * duration:
+            line, k, tracker = lead_by_window(lines, {name: (frame_level(mono[name]), PT_HOP / float(sr)) for _h, name, _l, _t in lines}, duration)
+            if sum(n['off'] - n['on'] for n in line) >= LEAD_MIN_SHARE * duration:
                 melody, melody_from, melody_tracker = line, k, tracker
                 for n in melody:
                     n['track'] = SONG_TRACK['melody']
