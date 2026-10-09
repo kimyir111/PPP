@@ -80,6 +80,11 @@ const DEFAULTS = {
   beatTrackPy: '',
   /* G10d song mode: the folder that holds the source separation (demucs), when it is not installed in the Python itself (pip install --target <folder> demucs ...) */
   songLib: '',
+  /* song mode, optional: YourMT3 (multi-instrument transcription) in its own Python. Found by itself in a tools folder (the one beside
+     transcribe.py, this repository's, or the one that holds the song-lib or the transcription Python): tools/yourmt3 (the code and checkpoints,
+     a clone of the Hugging Face space mimbres/YourMT3) and tools/yourmt3-venv (its Python). setup-yourmt3.cmd makes both */
+  mt3Python: '',
+  mt3Dir: '',
   ffmpegPath: 'ffmpeg',
   ytdlpPath: '',
   audioBase: '',
@@ -132,6 +137,13 @@ function loadConfig(file, env) {
   if (!cfg.beatTrackPy) cfg.beatTrackPy = path.join(path.dirname(cfg.transcribePy), 'beat_track.py');
   cfg.beats = cfg.beats !== false;
   if (!cfg.songLib) cfg.songLib = firstExisting([path.join(path.dirname(cfg.transcribePy), 'tools', 'song-lib'), path.join(REPO, 'tools', 'song-lib')]);
+  if (!cfg.mt3Dir || !cfg.mt3Python) {
+    const toolDirs = [path.join(path.dirname(cfg.transcribePy), 'tools'), path.join(REPO, 'tools')]
+      .concat(cfg.songLib ? [path.dirname(cfg.songLib)] : [])
+      .concat(cfg.pythonPath ? [path.dirname(path.dirname(path.dirname(cfg.pythonPath)))] : []);
+    if (!cfg.mt3Dir) cfg.mt3Dir = firstExisting(toolDirs.map(d => path.join(d, 'yourmt3', 'model_helper.py'))).replace(/[\\/]model_helper\.py$/, '');
+    if (!cfg.mt3Python) cfg.mt3Python = firstExisting([].concat(...toolDirs.map(d => [path.join(d, 'yourmt3-venv', 'Scripts', 'python.exe'), path.join(d, 'yourmt3-venv', 'bin', 'python')])));
+  }
   if (!cfg.kongCheckpoint) cfg.kongCheckpoint = env.PPP_TRANSCRIBE_CHECKPOINT || findKongCheckpoint(path.join(path.dirname(cfg.transcribePy), 'tools', 'piano-transcription')) || findKongCheckpoint(path.join(REPO, 'tools', 'piano-transcription'));
   cfg.maxSeconds = Math.max(30, Math.min(Result.LIMITS.MAX_SECONDS, +cfg.maxSeconds || Result.LIMITS.MAX_SECONDS));
   cfg.idlePollSeconds = Math.max(0, Math.min(86400, +cfg.idlePollSeconds || 0));
@@ -474,7 +486,11 @@ function createWorker(cfg, deps) {
     const argv = [cfg.transcribePy, '--wav', wavs.master, '--kong-wav', wavs.kong, '--out', out, '--engine', 'auto'];
     if (cfg.kongCheckpoint) argv.push('--checkpoint', cfg.kongCheckpoint);
     if (cfg.ariaCheckpoint) argv.push('--aria-checkpoint', cfg.ariaCheckpoint);
-    if (isSong(job)) { argv.push('--mode', 'song'); if (cfg.songLib) argv.push('--song-lib', cfg.songLib); }
+    if (isSong(job)) {
+      argv.push('--mode', 'song');
+      if (cfg.songLib) argv.push('--song-lib', cfg.songLib);
+      if (cfg.mt3Python && cfg.mt3Dir) argv.push('--mt3-python', cfg.mt3Python, '--mt3-dir', cfg.mt3Dir);
+    }
     let engines = '';
     const r = await run(cfg.pythonPath, argv, {
       cwd: dir, timeoutMs: Math.max(10 * 60 * 1000, wavs.seconds * 8000), onChild: c => { ctl.child = c; },
@@ -763,6 +779,8 @@ async function checkSetup(cfg, log, deps) {
     /* song mode is optional: without the separation only song-mode conversions fail (with a message that says what to install) */
     const sep = await (deps.runTool || runTool)(cfg.pythonPath, ['-c', 'import sys\nif sys.argv[1]: sys.path.insert(0, sys.argv[1])\nimport demucs, librosa\nprint("ok")', cfg.songLib || ''], { timeoutMs: 60000 });
     log(sep.code === 0 ? 'ok    song mode: the source separation (demucs) is there' + (cfg.songLib ? ' (' + cfg.songLib + ')' : '') : 'note  song mode is not set up (no demucs): piano conversions work; see tools/home-worker/README.md, "Song mode"');
+    log(cfg.mt3Python && cfg.mt3Dir ? 'ok    song mode: YourMT3 is there (' + cfg.mt3Dir + '); a song is transcribed by it first, by the separation if it fails'
+      : 'note  song mode without YourMT3 (tools/home-worker/setup-yourmt3.cmd adds it): songs use the separation; nothing to fix');
   }
   if (!problems.some(p => /^(siteUrl|token)/.test(p))) {
     try {

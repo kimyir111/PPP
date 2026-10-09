@@ -12759,7 +12759,8 @@ function melodyFromLabel(layers) {
   const from = !layers || !layers.melody ? tx('no melody line (the lead sheet finds one)')
     : f === 'vocals' ? tx('voice') : f === 'guitar' ? tx('guitar') : f === 'piano' ? tx('piano') : f === 'other' ? tx('synth / other instrument') : tx('not recorded (an earlier conversion)');
   /* the method is a name, shown as is: a person testing a new PC setup sees which one ran */
-  return layers && layers.melody && layers.melodyTracker === 'basic-pitch' ? from + ' · Basic Pitch' : from;
+  const by = layers && layers.melody ? { 'basic-pitch': 'Basic Pitch', 'multi-instrument': 'YourMT3' }[layers.melodyTracker] : null;
+  return by ? from + ' · ' + by : from;
 }
 function withSongLayers(plan, source, heard) { return isSongHeard(heard) || (source && source.songLayers) ? Object.assign({}, plan, { melodyTrack: SONG_TRACKS.melody }) : plan; }
 

@@ -612,6 +612,104 @@ def lead_by_window(lines, levels, duration, win=LEAD_WIN_S):
     return notes, lead, (by_stem[lead][1] if lead else None)
 
 
+MT3_FRAME_S = 0.01      # the level of an instrument's notes (for choosing the lead) is read on this grid
+MT3_BASS_PROGRAMS = range(32, 40)   # General MIDI basses
+
+
+def _skyline(notes, win=BP_SKY_WIN_S):
+    """The highest note of each attack (notes starting within win of the first), with '_n' = notes in the attack."""
+    ev = sorted(notes, key=lambda n: (n['on'], n['midi']))
+    out, i = [], 0
+    while i < len(ev):
+        j = i
+        while j < len(ev) and ev[j]['on'] - ev[i]['on'] <= win:
+            j += 1
+        top = max(ev[i:j], key=lambda n: n['midi'])
+        out.append({'on': top['on'], 'off': top['off'], 'midi': top['midi'], 'vel': top['vel'], '_n': j - i})
+        i = j
+    return out
+
+
+def _note_level(notes, duration, dt=MT3_FRAME_S):
+    import numpy as np
+    lv = np.zeros(max(1, int(duration / dt) + 1))
+    for n in notes:
+        lv[int(n['on'] / dt):max(int(n['on'] / dt) + 1, int(n['off'] / dt))] += n['vel'] / 127.0
+    return lv, dt
+
+
+def melody_family(program):
+    """The review's word for the instrument a tune came from (home-result.js MELODY_FROM)."""
+    return 'piano' if 0 <= program <= 7 else 'guitar' if 24 <= program <= 31 else 'other'
+
+
+def song_from_instruments(notes, duration):
+    """A song's layers from a multi-instrument transcription (notes with 'channel' and 'program'): drums (channel 9) left out, the
+    General MIDI basses are the bass, the melody is chosen every LEAD_WIN_S among the other instruments by lead_by_window (the
+    instrument's notes as its level), and everything else of those instruments is the accompaniment.
+    Returns (melody, bass, accomp, melody_from)."""
+    groups, bass = {}, []
+    for n in notes:
+        if n.get('channel') == 9:
+            continue
+        clean = {'on': round(float(n['on']), 4), 'off': round(float(n['off']), 4), 'midi': int(n['midi']), 'vel': int(n.get('vel', 80))}
+        if not (21 <= clean['midi'] <= 108) or clean['off'] <= clean['on']:
+            continue
+        prog = int(n.get('program', 0))
+        (bass if prog in MT3_BASS_PROGRAMS else groups.setdefault(prog, [])).append(clean)
+    lines = [(sum(x['off'] - x['on'] for x in sky), str(prog), sky, 'multi-instrument')
+             for prog, sky in ((prog, _skyline(g)) for prog, g in groups.items())]
+    levels = {str(prog): _note_level(g, duration) for prog, g in groups.items()}
+    melody, lead, _tracker = lead_by_window(lines, levels, duration) if lines else ([], None, None)
+    taken = {(n['on'], n['midi']) for n in melody}
+    accomp = sorted((n for g in groups.values() for n in g if (n['on'], n['midi']) not in taken), key=lambda n: (n['on'], n['midi']))
+    return melody, sorted(bass, key=lambda n: (n['on'], n['midi'])), accomp, (melody_family(int(lead)) if lead is not None else None)
+
+
+def mt3_ready(a):
+    return bool(getattr(a, 'mt3_python', '') and getattr(a, 'mt3_dir', '') and os.path.exists(a.mt3_python) and os.path.isdir(a.mt3_dir))
+
+
+def run_mt3(a, device, duration, work):
+    """YourMT3 (multi-instrument transcription) in its own Python, through yourmt3_run.py next to this file: the mix in, a MIDI with one
+    program per instrument out. Its notes, each with 'channel' and 'program'."""
+    import midi_notes
+    mid = os.path.join(work, 'mt3.mid')
+    runner = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'yourmt3_run.py')
+    cmd = [a.mt3_python, runner, '--space', a.mt3_dir, '--wav', a.wav, '--mid', mid, '--device', device]
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=max(600, int(duration * 10)))
+    if r.returncode != 0 or not os.path.exists(mid):
+        raise RuntimeError('YourMT3 failed (exit %s): %s' % (r.returncode, (r.stderr or r.stdout or '')[-400:]))
+    return midi_notes.read_notes(mid, instruments=True)['notes']
+
+
+def run_song_mt3(a, device, duration, t0):
+    say('ENGINE multi-instrument')
+    say('PROGRESS 0.050')
+    work = tempfile.mkdtemp(prefix='mt3-', dir=os.path.dirname(os.path.abspath(a.out)))
+    try:
+        heard = run_mt3(a, device, duration, work)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    say('PROGRESS 0.900')
+    melody, bass, accomp, melody_from = song_from_instruments(heard, duration)
+    accomp, doubles = drop_doubles(accomp, melody + bass)
+    for layer, name in ((melody, 'melody'), (bass, 'bass'), (accomp, 'accomp')):
+        for n in layer:
+            n['track'] = SONG_TRACK[name]
+    notes = sorted(melody + bass + accomp, key=lambda n: (n['on'], n['midi']))
+    if len(notes) < 4:
+        raise RuntimeError('YourMT3 heard almost nothing')
+    return {
+        'engine': 'song', 'mode': 'song', 'model': 'YourMT3 (multi-instrument)', 'device': device, 'duration': duration,
+        'ms': int((time.time() - t0) * 1000), 'notes': notes, 'pedals': [], 'uncertainNotes': [],
+        'ensemble': {'models': ['yourmt3'], 'primary': 'yourmt3', 'agreement': None, 'accepted': len(notes), 'uncertain': 0},
+        'song': {'separation': 'yourmt3', 'melody': len(melody), 'melodyFrom': melody_from if melody else None,
+                 'melodyTracker': 'multi-instrument' if melody else None, 'bass': len(bass), 'accomp': len(accomp), 'doublesDropped': doubles},
+        'modelFailures': []
+    }
+
+
 def drop_doubles(accomp, others):
     """Accompaniment notes that are the melody or the bass heard again (the same key, starting within DOUBLE_TOL_S) go."""
     by_key = {}
@@ -627,6 +725,11 @@ def drop_doubles(accomp, others):
 
 
 def run_song(a, device, duration, t0):
+    if mt3_ready(a):
+        try:
+            return run_song_mt3(a, device, duration, t0)
+        except Exception as e:
+            say('NOTE YourMT3 did not work, separating the stems instead: ' + str(e)[:300])
     import numpy as np
     import soundfile as sf
     say('ENGINE separation')
@@ -748,6 +851,8 @@ def main():
     ap.add_argument('--engine', default='auto')
     ap.add_argument('--mode', default='piano', choices=['piano', 'song'])
     ap.add_argument('--song-lib', default='')
+    ap.add_argument('--mt3-python', default='', help='song mode: the Python of a YourMT3 install (multi-instrument transcription)')
+    ap.add_argument('--mt3-dir', default='', help='song mode: the YourMT3 code and checkpoints (the Hugging Face space mimbres/YourMT3)')
     a = ap.parse_args()
 
     t0 = time.time()

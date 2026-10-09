@@ -34,7 +34,7 @@ const TRACK_OK = new Set([1, 2, 3]);
 /* where a song's melody layer came from: the voice, or (an instrumental) the stem whose line the PC followed */
 const MELODY_FROM = new Set(['vocals', 'other', 'guitar', 'piano']);
 /* which method followed that tune: the pitch tracker, or Basic Pitch (an instrumental's lead line, when the PC has it) */
-const MELODY_TRACKER = new Set(['pitch-tracker', 'basic-pitch']);
+const MELODY_TRACKER = new Set(['pitch-tracker', 'basic-pitch', 'multi-instrument']);   /* multi-instrument: YourMT3 heard the song */
 
 const NAME_RE = /^[a-z0-9][a-z0-9._+-]{0,39}$/;
 const DEVICE_RE = /^[a-z0-9][a-z0-9:._-]{0,15}$/;

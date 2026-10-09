@@ -203,5 +203,93 @@ class SongModeTest(unittest.TestCase):
         self.assertIn(lead, ('guitar', 'other'))
 
 
+def _write_multi_midi(path, tracks, tpq=480, bpm=120):
+    """A format-1 MIDI: tracks = [(channel, program, [(on_s, off_s, midi)])], one track each, its program set at the start."""
+    import struct
+    spt = 60.0 / bpm / tpq
+
+    def vlq(n):
+        out = [n & 0x7F]
+        n >>= 7
+        while n:
+            out.append(0x80 | (n & 0x7F))
+            n >>= 7
+        return bytes(reversed(out))
+    chunks = []
+    for ch, prog, notes in tracks:
+        ev = []
+        for on, off, m in notes:
+            ev.append((int(round(on / spt)), 1, bytes([0x90 | ch, m, 80])))
+            ev.append((int(round(off / spt)), 0, bytes([0x80 | ch, m, 0])))
+        ev.sort(key=lambda e: (e[0], e[1]))
+        body, last = bytearray(vlq(0) + bytes([0xC0 | ch, prog])), 0
+        for tick, _k, msg in ev:
+            body += vlq(tick - last) + msg
+            last = tick
+        body += vlq(0) + b'\xff\x2f\x00'
+        chunks.append(b'MTrk' + struct.pack('>I', len(body)) + bytes(body))
+    with open(path, 'wb') as f:
+        f.write(b'MThd' + struct.pack('>IHHH', 6, 1, len(chunks), tpq) + b''.join(chunks))
+
+
+class MultiInstrumentTest(unittest.TestCase):
+    """Song mode with YourMT3: its MIDI (one program per instrument) becomes melody, bass and accompaniment."""
+    TUNE_A = [67, 69, 71, 72, 74, 72, 71, 69] * 2
+    TUNE_B = [76, 74, 72, 71, 72, 74, 76, 77] * 2
+
+    def tracks(self):
+        tune = lambda t0, ps: [(t0 + 0.5 * i, t0 + 0.5 * i + 0.45, m) for i, m in enumerate(ps)]
+        strum = lambda t0, n: [(t0 + 0.5 * i, t0 + 0.5 * i + 0.45, m) for i in range(n) for m in (57, 60, 64)]
+        return [(0, 25, tune(0.0, self.TUNE_A) + strum(8.0, 16)),     # guitar: the tune, then strums
+                (1, 81, strum(0.0, 16) + tune(8.0, self.TUNE_B)),     # synth lead: a pad, then the tune
+                (2, 33, [(0.5 * i, 0.5 * i + 0.4, 40) for i in range(32)]),   # bass
+                (9, 0, [(0.5 * i, 0.5 * i + 0.1, 36) for i in range(32)])]    # drums
+
+    def test_read_notes_keeps_channel_and_program_when_asked(self):
+        with tempfile.TemporaryDirectory() as d:
+            mid = os.path.join(d, 'm.mid')
+            _write_multi_midi(mid, self.tracks())
+            plain = midi_notes.read_notes(mid)['notes']
+            rich = midi_notes.read_notes(mid, instruments=True)['notes']
+        self.assertTrue(all(set(n) == {'on', 'off', 'midi', 'vel'} for n in plain))   # unchanged for every other caller
+        self.assertEqual({(n['channel'], n['program']) for n in rich}, {(0, 25), (1, 81), (2, 33), (9, 0)})
+
+    def test_layers_follow_the_tune_across_instruments(self):
+        with tempfile.TemporaryDirectory() as d:
+            mid = os.path.join(d, 'm.mid')
+            _write_multi_midi(mid, self.tracks())
+            notes = midi_notes.read_notes(mid, instruments=True)['notes']
+        melody, bass, accomp, melody_from = transcribe.song_from_instruments(notes, 16.0)
+        self.assertEqual([n['midi'] for n in melody], self.TUNE_A + self.TUNE_B)
+        self.assertEqual({n['midi'] for n in bass}, {40})
+        self.assertNotIn(36, {n['midi'] for n in melody + bass + accomp})   # drums left out
+        self.assertEqual(len(accomp), 16 * 3 * 2 - 0)                     # every strum and pad note, no tune note
+        self.assertIn(melody_from, ('guitar', 'other'))
+        self.assertTrue(all(set(n) == {'on', 'off', 'midi', 'vel'} for n in melody + bass + accomp))
+
+    @unittest.skipIf(os.name == 'nt', 'the fake YourMT3 is a shell script')
+    def test_song_mode_runs_yourmt3_and_writes_layers(self):
+        with tempfile.TemporaryDirectory() as d:
+            src = os.path.join(d, 'answer.mid')
+            _write_multi_midi(src, self.tracks())
+            fake = os.path.join(d, 'fake-python')
+            with open(fake, 'w') as f:   # stands in for YourMT3's Python running yourmt3_run.py: copies the answer to --mid
+                f.write('#!/bin/sh\nwhile [ $# -gt 0 ]; do if [ "$1" = "--mid" ]; then cp "%s" "$2"; fi; shift; done\n' % src)
+            os.chmod(fake, 0o755)
+            space = os.path.join(d, 'space')
+            os.mkdir(space)
+            a = type('A', (), {'mt3_python': fake, 'mt3_dir': space, 'wav': os.path.join(d, 'in.wav'), 'out': os.path.join(d, 'out.json')})
+            self.assertTrue(transcribe.mt3_ready(a))
+            r = transcribe.run_song_mt3(a, 'cpu', 16.0, 0.0)
+        self.assertEqual(r['song']['melodyTracker'], 'multi-instrument')
+        self.assertEqual(r['song']['separation'], 'yourmt3')
+        self.assertEqual((r['song']['melody'], r['song']['bass']), (32, 32))
+        self.assertEqual(sorted({n['track'] for n in r['notes']}), [1, 2, 3])
+
+    def test_without_yourmt3_song_mode_is_unchanged(self):
+        a = type('A', (), {'mt3_python': '', 'mt3_dir': ''})
+        self.assertFalse(transcribe.mt3_ready(a))
+
+
 if __name__ == '__main__':
     unittest.main()
