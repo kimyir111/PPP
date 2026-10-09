@@ -77,7 +77,7 @@ tools/transcribe-venv/Scripts/python.exe -m pip install --target tools/song-lib 
 
 ### 더 좋은 모델: YourMT3 (선택)
 
-`tools\home-worker\setup-yourmt3.cmd` 를 더블클릭하면 YourMT3(여러 악기를 한 번에 받아 적는 모델)를 `tools\yourmt3`(코드와 모델, 몇 GB)와 `tools\yourmt3-venv`(전용 Python)에 설치하고, 모델이 불러와지는지 시험해요. 피아노 모델의 Python은 건드리지 않아요. 설치되어 있으면 워커가 알아서 찾아서, 일반 곡을 먼저 YourMT3로 받아 적어요(멜로디는 4초마다 가장 멜로디다운 악기, 베이스는 베이스 악기, 나머지는 반주). YourMT3가 실패하면 예전처럼 음원 분리로 받아 적어요. 결과 화면의 "멜로디 출처"에 `· YourMT3` 가 붙으면 YourMT3가 쓰인 거예요. 지우려면 두 폴더를 지우면 돼요. Git LFS가 필요해요(https://git-lfs.com).
+`tools\home-worker\setup-yourmt3.cmd` 를 더블클릭하면 YourMT3(여러 악기를 한 번에 받아 적는 모델)를 `tools\yourmt3`(코드와 모델, 몇 GB)와 `tools\yourmt3-venv`(전용 Python)에 설치하고, 모델이 불러와지는지 시험해요. 피아노 모델의 Python은 건드리지 않아요. 설치되어 있으면 워커가 알아서 찾아서, 일반 곡을 먼저 YourMT3로 받아 적어요(멜로디는 4초마다 가장 멜로디다운 악기, 베이스는 베이스 악기, 나머지는 반주). YourMT3가 실패하면 예전처럼 음원 분리로 받아 적어요. 결과 화면의 "멜로디 출처"에 `· YourMT3` 가 붙으면 YourMT3가 쓰인 거예요. 지우려면 두 폴더를 지우면 돼요. Git이나 Git LFS는 필요 없어요(파일은 huggingface_hub로 받고, 받다가 끊기면 다시 실행할 때 이어서 받아요).
 
 ## 문제 해결
 
