@@ -33,6 +33,8 @@ const SONG_TRACKS = Object.freeze({ melody: 1, bass: 2, accomp: 3 });
 const TRACK_OK = new Set([1, 2, 3]);
 /* where a song's melody layer came from: the voice, or (an instrumental) the stem whose line the PC followed */
 const MELODY_FROM = new Set(['vocals', 'other', 'guitar', 'piano']);
+/* which method followed that tune: the pitch tracker, or Basic Pitch (an instrumental's lead line, when the PC has it) */
+const MELODY_TRACKER = new Set(['pitch-tracker', 'basic-pitch']);
 
 const NAME_RE = /^[a-z0-9][a-z0-9._+-]{0,39}$/;
 const DEVICE_RE = /^[a-z0-9][a-z0-9:._-]{0,15}$/;
@@ -138,7 +140,8 @@ function validateResult(body, limits) {
     if (s.separation != null && (typeof s.separation !== 'string' || !SEPARATION_RE.test(s.separation))) return bad('The song summary is not usable.', 'bad-meta');
     result.mode = 'song';
     if (s.melodyFrom != null && !MELODY_FROM.has(s.melodyFrom)) return bad('The song summary is not usable.', 'bad-meta');
-    result.song = { separation: s.separation || null, melodyFrom: s.melodyFrom || null, melody: count('melody'), bass: count('bass'), accomp: count('accomp') };
+    if (s.melodyTracker != null && !MELODY_TRACKER.has(s.melodyTracker)) return bad('The song summary is not usable.', 'bad-meta');
+    result.song = { separation: s.separation || null, melodyFrom: s.melodyFrom || null, melodyTracker: s.melodyTracker || null, melody: count('melody'), bass: count('bass'), accomp: count('accomp') };
   }
 
   /* G10a-1d: the helper's audio beats and downbeats (Beat This, beat_track.py), optional. The page passes them to the recording conversion
