@@ -169,6 +169,24 @@ class SongModeTest(unittest.TestCase):
         self.assertEqual(dropped, 1)
         self.assertEqual([(n['on'], n['midi']) for n in kept], [(1.0, 64), (1.2, 72)])
 
+    @unittest.skipUnless(transcribe.basic_pitch_ready(), 'Basic Pitch (optional) is not installed')
+    def test_basic_pitch_lead_line_keeps_the_top_note_of_a_chord_stab(self):
+        import numpy as np
+        sr = 44100
+        t = np.arange(int(0.6 * sr)) / sr
+
+        def tone(midi):
+            f = 440.0 * 2 ** ((midi - 69) / 12.0)
+            return sum(np.sin(2 * np.pi * f * k * t) / k for k in range(1, 8)) * np.minimum(1, t / 0.01) * np.minimum(1, (0.6 - t) / 0.04)
+        y = np.zeros(int(4 * sr), dtype=np.float32)
+        for start, chord in ((0.4, (64, 68, 71)), (1.6, (62, 66, 69))):
+            i = int(start * sr)
+            y[i:i + len(t)] += (0.2 * sum(tone(m) for m in chord)).astype(np.float32)
+        with tempfile.TemporaryDirectory() as work:
+            line = transcribe.track_notes_bp(y, sr, 130.0, 2100.0, work)
+        self.assertEqual([n['midi'] for n in line], [71, 69])
+        self.assertTrue(all(set(n) == {'on', 'off', 'midi', 'vel'} for n in line))
+
 
 if __name__ == '__main__':
     unittest.main()

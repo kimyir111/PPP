@@ -512,6 +512,48 @@ def track_notes(mono, sr, fmin, fmax, gate):
     return out
 
 
+BP_AMP_MIN = 0.4       # a Basic Pitch note weaker than this is not the lead (a pad that bled into the stem: precision 0.60 -> 0.93 on a synthetic stem with a known answer)
+BP_SKY_WIN_S = 0.05    # notes starting within this of each other are one attack; the highest is the tune
+
+
+def basic_pitch_ready():
+    """Basic Pitch (Spotify, ONNX) is optional: without it the lead line is followed by the pitch tracker, as before."""
+    try:
+        import basic_pitch.inference  # noqa: F401
+        import onnxruntime  # noqa: F401
+        return True
+    except Exception:
+        return False
+
+
+def track_notes_bp(mono, sr, fmin, fmax, work):
+    """The lead line of a stem with Basic Pitch: it hears chords and stacked voices that follow-one-pitch tracking loses (chord stabs on a synthetic
+    stem: recall 0.55 -> 1.00; the line is the highest note of each attack). Same note dicts as track_notes."""
+    import contextlib
+    import soundfile as sf
+    from basic_pitch.inference import predict
+    from basic_pitch import ICASSP_2022_MODEL_PATH
+    path = os.path.join(work, 'lead.wav')
+    sf.write(path, mono.astype('float32'), sr, subtype='PCM_16')
+    with contextlib.redirect_stdout(sys.stderr):
+        _m, _midi, events = predict(path, ICASSP_2022_MODEL_PATH, onset_threshold=0.5, frame_threshold=0.3, minimum_note_length=58,
+                                    minimum_frequency=float(fmin), maximum_frequency=float(fmax))
+    ev = sorted(({'on': float(e[0]), 'off': float(e[1]), 'midi': int(e[2]), 'amp': float(e[3])} for e in events if float(e[3]) >= BP_AMP_MIN),
+                key=lambda n: (n['on'], n['midi']))
+    out, i = [], 0
+    while i < len(ev):
+        j, group = i, []
+        while j < len(ev) and ev[j]['on'] - ev[i]['on'] <= BP_SKY_WIN_S:
+            group.append(ev[j])
+            j += 1
+        top = max(group, key=lambda n: n['midi'])
+        if 21 <= top['midi'] <= 108 and top['off'] - top['on'] >= NOTE_MIN_S * 0.6:
+            out.append({'on': round(top['on'], 4), 'off': round(top['off'], 4), 'midi': top['midi'],
+                        'vel': int(round(40 + 75 * min(1.0, top['amp'] ** 0.5)))})
+        i = j
+    return out
+
+
 def drop_doubles(accomp, others):
     """Accompaniment notes that are the melody or the bass heard again (the same key, starting within DOUBLE_TOL_S) go."""
     by_key = {}
@@ -556,11 +598,26 @@ def run_song(a, device, duration, t0):
         # no voice (an instrumental): the tune is played by an instrument - a synth, a guitar, a piano - that the piano models hear badly (a synth lead:
         # 43-55% of its notes on a synthetic piece with a known answer). The line of the stem that holds one clear pitch for the longest is the melody.
         lines = []
-        for k in LEAD_STEMS:
-            if present.get(k):
-                say('ENGINE lead-line ' + k)
-                line = track_notes(mono[k], sr, librosa.note_to_hz('C3'), librosa.note_to_hz('C7'), gate=MELODY_GATE * p95[k])
-                lines.append((sum(n['off'] - n['on'] for n in line), k, line))
+        use_bp = basic_pitch_ready()
+        bp_work = tempfile.mkdtemp(prefix='lead-', dir=os.path.dirname(os.path.abspath(a.out))) if use_bp else None
+        try:
+            for k in LEAD_STEMS:
+                if present.get(k):
+                    line = None
+                    if use_bp:
+                        try:
+                            say('ENGINE lead-line-basic-pitch ' + k)
+                            line = track_notes_bp(mono[k], sr, librosa.note_to_hz('C3'), librosa.note_to_hz('C7'), bp_work)
+                        except Exception as e:
+                            say('NOTE basic pitch failed on ' + k + ', following the pitch instead: ' + str(e)[:160])
+                            line = None
+                    if line is None:
+                        say('ENGINE lead-line ' + k)
+                        line = track_notes(mono[k], sr, librosa.note_to_hz('C3'), librosa.note_to_hz('C7'), gate=MELODY_GATE * p95[k])
+                    lines.append((sum(n['off'] - n['on'] for n in line), k, line))
+        finally:
+            if bp_work:
+                shutil.rmtree(bp_work, ignore_errors=True)
         if lines:
             held, k, line = max(lines)
             if held >= LEAD_MIN_SHARE * duration:

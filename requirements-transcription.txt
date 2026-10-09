@@ -12,3 +12,6 @@ pretty-midi==0.2.11.post0
 mido==1.3.3
 torch-optimizer==0.3.0
 torchlibrosa==0.1.0
+# Optional, for song mode (G10d): Basic Pitch follows an instrumental's lead line with chords and stacked voices that the pitch tracker loses.
+# Install it WITHOUT its pinned tensorflow (the ONNX model ships in the wheel): pip install --no-deps basic-pitch onnxruntime scipy resampy pretty_midi mir_eval
+# Without it song mode follows the lead line with the pitch tracker, exactly as before.
