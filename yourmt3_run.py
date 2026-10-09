@@ -83,7 +83,17 @@ def main():
     mid = os.path.abspath(a.mid) if a.mid else ''
     model, transcribe = load(a.space, device, model_args)
     if a.selftest:
-        print('YourMT3: OK - the model loaded on ' + device)
+        if device != 'cpu':
+            # loading a model succeeds even on a GPU this torch has no kernels for (an RTX 50xx under a cu121 torch only warns);
+            # one real operation on it is what fails
+            try:
+                import torch
+                float((torch.ones(8, device=device) * 2).sum())
+            except Exception as e:
+                fail('the model loaded but the GPU cannot run it with this torch (%s: %s); install a torch built for this GPU '
+                     '(an RTX 50xx needs the CUDA 12.8 build: pip install --force-reinstall --no-deps torch torchaudio '
+                     '--index-url https://download.pytorch.org/whl/cu128)' % (type(e).__name__, str(e)[:200]))
+        print('YourMT3: OK - the model loaded and ran on ' + device)
         return
     if not wav or not os.path.isfile(wav) or not mid:
         fail('--wav (an existing file) and --mid are needed')
