@@ -594,6 +594,7 @@ def run_song(a, device, duration, t0):
         for n in melody:
             n['track'] = SONG_TRACK['melody']
     melody_from = 'vocals' if melody else None
+    melody_tracker = 'pitch-tracker' if melody else None   # which method followed the tune: shown on the review so a person can see which one ran
     if not present.get('vocals'):
         # no voice (an instrumental): the tune is played by an instrument - a synth, a guitar, a piano - that the piano models hear badly (a synth lead:
         # 43-55% of its notes on a synthetic piece with a known answer). The line of the stem that holds one clear pitch for the longest is the melody.
@@ -603,25 +604,26 @@ def run_song(a, device, duration, t0):
         try:
             for k in LEAD_STEMS:
                 if present.get(k):
-                    line = None
+                    line, tracker = None, 'pitch-tracker'
                     if use_bp:
                         try:
                             say('ENGINE lead-line-basic-pitch ' + k)
                             line = track_notes_bp(mono[k], sr, librosa.note_to_hz('C3'), librosa.note_to_hz('C7'), bp_work)
+                            tracker = 'basic-pitch'
                         except Exception as e:
                             say('NOTE basic pitch failed on ' + k + ', following the pitch instead: ' + str(e)[:160])
                             line = None
                     if line is None:
                         say('ENGINE lead-line ' + k)
                         line = track_notes(mono[k], sr, librosa.note_to_hz('C3'), librosa.note_to_hz('C7'), gate=MELODY_GATE * p95[k])
-                    lines.append((sum(n['off'] - n['on'] for n in line), k, line))
+                    lines.append((sum(n['off'] - n['on'] for n in line), k, line, tracker))
         finally:
             if bp_work:
                 shutil.rmtree(bp_work, ignore_errors=True)
         if lines:
-            held, k, line = max(lines)
+            held, k, line, tracker = max(lines, key=lambda x: (x[0], x[1]))
             if held >= LEAD_MIN_SHARE * duration:
-                melody, melody_from = line, k
+                melody, melody_from, melody_tracker = line, k, tracker
                 for n in melody:
                     n['track'] = SONG_TRACK['melody']
     say('PROGRESS 0.400')
@@ -670,7 +672,7 @@ def run_song(a, device, duration, t0):
         'uncertainNotes': merged['uncertainNotes'] if merged else [],
         'ensemble': ens,
         'song': {
-            'separation': SONG_MODEL, 'melody': len(melody), 'melodyFrom': melody_from, 'bass': len(bass), 'accomp': len(accomp), 'doublesDropped': doubles,
+            'separation': SONG_MODEL, 'melody': len(melody), 'melodyFrom': melody_from, 'melodyTracker': melody_tracker, 'bass': len(bass), 'accomp': len(accomp), 'doublesDropped': doubles,
             'layers': {k: round(p95[k] / mix_p95, 3) for k in sorted(p95)}
         },
         'modelFailures': failures
