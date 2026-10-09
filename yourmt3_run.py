@@ -90,7 +90,18 @@ def audio_info(path):
             'duration': int(info.frames / info.samplerate), 'encoding': 'pcm_s16'}
 
 
+def utf8_stdio():
+    """The space prints emoji (a '\u23f0' before its timings); a Korean Windows console (cp949) cannot encode them and the
+    print raised UnicodeEncodeError in the middle of a transcription. Write UTF-8, replacing what cannot be written."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding='utf-8', errors='replace')
+        except Exception:
+            pass
+
+
 def main():
+    utf8_stdio()
     ap = argparse.ArgumentParser()
     ap.add_argument('--space', required=True)
     ap.add_argument('--wav', default='')

@@ -678,7 +678,8 @@ def run_mt3(a, device, duration, work):
     mid = os.path.join(work, 'mt3.mid')
     runner = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'yourmt3_run.py')
     cmd = [a.mt3_python, runner, '--space', a.mt3_dir, '--wav', a.wav, '--mid', mid, '--device', device]
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=max(600, int(duration * 10)))
+    env = dict(os.environ, PYTHONIOENCODING='utf-8')   # YourMT3 prints emoji; read its output as UTF-8 whatever the console's code page
+    r = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', env=env, timeout=max(600, int(duration * 10)))
     if r.returncode != 0 or not os.path.exists(mid):
         raise RuntimeError('YourMT3 failed (exit %s): %s' % (r.returncode, (r.stderr or r.stdout or '')[-400:]))
     return midi_notes.read_notes(mid, instruments=True)['notes']
