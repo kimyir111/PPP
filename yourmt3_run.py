@@ -30,11 +30,39 @@ def fail(msg):
     raise SystemExit(2)
 
 
+def patch_torchaudio():
+    """torchaudio 2.9+ reads files only through TorchCodec (load() raises 'TorchCodec is required ...' without it, and info() is
+    gone), and TorchCodec on Windows needs FFmpeg's shared libraries. The space's code calls torchaudio.load/info, so both read
+    the file with soundfile instead (the CUDA 12.8 torch an RTX 50xx needs comes with such a torchaudio)."""
+    import types
+    import soundfile as sf
+    import torch
+    import torchaudio
+
+    def load(uri, frame_offset=0, num_frames=-1, normalize=True, channels_first=True, format=None, buffer_size=4096, backend=None):
+        frames = num_frames if num_frames is not None and num_frames > 0 else -1
+        data, sr = sf.read(uri, start=int(frame_offset or 0), frames=frames, dtype='float32', always_2d=True)
+        return torch.from_numpy((data.T if channels_first else data).copy()), sr
+
+    def info(uri, format=None, buffer_size=4096, backend=None):
+        i = sf.info(uri)
+        bits = {'PCM_16': 16, 'PCM_24': 24, 'PCM_32': 32, 'PCM_U8': 8, 'FLOAT': 32, 'DOUBLE': 64}.get(i.subtype, 16)
+        return types.SimpleNamespace(sample_rate=int(i.samplerate), num_frames=int(i.frames), num_channels=int(i.channels),
+                                     bits_per_sample=bits, encoding='PCM_S' if i.subtype.startswith('PCM') else i.subtype)
+
+    torchaudio.load = load
+    torchaudio.info = info
+
+
 def load(space, device, model_args):
     space = os.path.abspath(space)
     if not os.path.isfile(os.path.join(space, 'model_helper.py')):
         fail('model_helper.py is not in ' + space + ' (clone https://huggingface.co/spaces/mimbres/YourMT3 there, with git lfs)')
     os.chdir(space)   # the checkpoints are found relative to the space (amt/logs/...)
+    try:
+        patch_torchaudio()   # before the space's modules import torchaudio's functions
+    except Exception as e:
+        fail('could not prepare audio reading (soundfile/torch): %s: %s' % (type(e).__name__, e))
     for p in (space, os.path.join(space, 'amt', 'src')):
         if p not in sys.path:
             sys.path.insert(0, p)
