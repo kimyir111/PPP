@@ -583,7 +583,7 @@ def lead_by_window(lines, levels, duration, win=LEAD_WIN_S):
     def level(k, a, b):
         rms, dt = levels[k]
         seg = rms[int(a / dt):max(int(a / dt) + 1, int(b / dt))]
-        return float(seg.mean()) if len(seg) else 0.0
+        return float(sum(seg)) / len(seg) if len(seg) else 0.0   # a numpy array (stems) or a list (instruments)
 
     pick = []
     for w in range(n_win):
@@ -631,10 +631,11 @@ def _skyline(notes, win=BP_SKY_WIN_S):
 
 
 def _note_level(notes, duration, dt=MT3_FRAME_S):
-    import numpy as np
-    lv = np.zeros(max(1, int(duration / dt) + 1))
+    """The sum of the sounding notes' velocities on a dt grid (plain lists: this path needs no numpy)."""
+    lv = [0.0] * max(1, int(duration / dt) + 1)
     for n in notes:
-        lv[int(n['on'] / dt):max(int(n['on'] / dt) + 1, int(n['off'] / dt))] += n['vel'] / 127.0
+        for k in range(int(n['on'] / dt), min(len(lv), max(int(n['on'] / dt) + 1, int(n['off'] / dt)))):
+            lv[k] += n['vel'] / 127.0
     return lv, dt
 
 
