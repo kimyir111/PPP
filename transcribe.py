@@ -682,6 +682,12 @@ def run_mt3(a, device, duration, work):
     r = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', env=env, timeout=max(600, int(duration * 10)))
     if r.returncode != 0 or not os.path.exists(mid):
         raise RuntimeError('YourMT3 failed (exit %s): %s' % (r.returncode, (r.stderr or r.stdout or '')[-400:]))
+    # the last song's raw YourMT3 MIDI stays beside the YourMT3 folder (tools/yourmt3-last.mid), so a person can listen to what the model
+    # heard before PPP picks the melody and writes the score: is a missing tune the model's or PPP's?
+    try:
+        shutil.copyfile(mid, os.path.join(os.path.dirname(os.path.abspath(a.mt3_dir)), 'yourmt3-last.mid'))
+    except OSError:
+        pass
     return midi_notes.read_notes(mid, instruments=True)['notes']
 
 
