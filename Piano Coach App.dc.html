@@ -12761,7 +12761,7 @@ function melodyFromLabel(layers) {
   const from = !layers || !layers.melody ? tx('no melody line (the lead sheet finds one)')
     : f === 'vocals' ? tx('voice') : f === 'guitar' ? tx('guitar') : f === 'piano' ? tx('piano') : f === 'other' ? tx('synth / other instrument') : tx('not recorded (an earlier conversion)');
   /* the method is a name, shown as is: a person testing a new PC setup sees which one ran */
-  const by = layers && layers.melody ? { 'basic-pitch': 'Basic Pitch', 'multi-instrument': 'YourMT3' }[layers.melodyTracker] : null;
+  const by = layers && layers.melody ? { 'basic-pitch': 'Basic Pitch', 'multi-instrument': 'YourMT3', 'lead-sheet': 'Sheet Sage' }[layers.melodyTracker] : null;
   return by ? from + ' · ' + by : from;
 }
 /* audio-score.js's option for a song-mode recording written again: its layers (each heard note's track) are its hands */

@@ -737,12 +737,18 @@ def run_song_mt3(a, device, duration, t0):
         shutil.rmtree(work, ignore_errors=True)
     say('PROGRESS 0.900')
     melody, bass, accomp, melody_from = song_from_instruments(heard, duration)
-    try:
-        filled = fill_melody_gaps(melody, a.wav, duration)
-    except Exception as e:   # the fill is an addition: a song is written without it
-        say('NOTE the melody gaps were not filled: %s: %s' % (type(e).__name__, e))
-        filled = []
-    melody = sorted(melody + filled, key=lambda n: (n['on'], n['midi']))
+    tracker, filled = 'multi-instrument', []
+    lead = lead_sheet_melody(a, heard, duration)
+    if lead:
+        # the tune a lead sheet writes (Sheet Sage); the instrument line chosen above goes back to the accompaniment
+        accomp = sorted(accomp + melody, key=lambda n: (n['on'], n['midi']))
+        melody, tracker = lead, 'lead-sheet'
+    else:
+        try:
+            filled = fill_melody_gaps(melody, a.wav, duration)
+        except Exception as e:   # the fill is an addition: a song is written without it
+            say('NOTE the melody gaps were not filled: %s: %s' % (type(e).__name__, e))
+        melody = sorted(melody + filled, key=lambda n: (n['on'], n['midi']))
     accomp, doubles = drop_doubles(accomp, melody + bass)
     for layer, name in ((melody, 'melody'), (bass, 'bass'), (accomp, 'accomp')):
         for n in layer:
@@ -755,10 +761,65 @@ def run_song_mt3(a, device, duration, t0):
         'ms': int((time.time() - t0) * 1000), 'notes': notes, 'pedals': [], 'uncertainNotes': [],
         'ensemble': {'models': ['yourmt3'], 'primary': 'yourmt3', 'agreement': None, 'accepted': len(notes), 'uncertain': 0},
         'song': {'separation': 'yourmt3', 'melody': len(melody), 'melodyFrom': melody_from if melody else None,
-                 'melodyTracker': 'multi-instrument' if melody else None, 'melodyFilled': len(filled), 'bass': len(bass), 'accomp': len(accomp),
+                 'melodyTracker': tracker if melody else None, 'melodyFilled': len(filled), 'bass': len(bass), 'accomp': len(accomp),
                  'doublesDropped': doubles},
         'modelFailures': []
     }
+
+
+def lead_sheet_melody(a, heard, duration):
+    """The melody from Sheet Sage (sheetsage_melody.py) when its model is downloaded and Beat This is installed, each note in the
+    octave YourMT3 heard it in; [] otherwise (the song is then written from YourMT3's lines as before). Kept as
+    tools/sheetsage-last.json beside the YourMT3 MIDI."""
+    try:
+        import sheetsage_melody
+        if not sheetsage_melody.ready():
+            return []
+        import soundfile as sf
+        say('PROGRESS 0.920')
+        beats, downbeats = sheetsage_melody.beats_of(a.wav)
+        y, sr = sf.read(a.wav, dtype='float32', always_2d=True)
+        notes = sheetsage_melody.transcribe(y.mean(axis=1), sr, beats, downbeats)
+    except Exception as e:
+        say('NOTE the lead-sheet melody (Sheet Sage) did not run: %s: %s' % (type(e).__name__, str(e)[:300]))
+        return []
+    notes = melody_octaves(notes, heard)
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(a.mt3_dir)), 'sheetsage-last.json'), 'w', encoding='utf-8') as f:
+            json.dump({'notes': notes}, f)
+    except (OSError, AttributeError, TypeError):
+        pass
+    return [dict(n, vel=80) for n in notes]
+
+
+def melody_octaves(notes, heard, near_s=0.12):
+    """A lead sheet may write the tune in another octave than it sounds: each note takes the octave of a note of the same pitch
+    class YourMT3 heard starting within near_s of it (the one nearest the melody's previous note, the highest for the first); one with none is written in
+    the octave nearest the melody around it, and never below MELODY_LOW."""
+    pitched = sorted((n for n in heard if n.get('channel') != 9), key=lambda n: n['on'])
+    starts = [n['on'] for n in pitched]
+    import bisect
+    out, prev = [], None
+    for n in notes:
+        lo, hi = bisect.bisect_left(starts, n['on'] - near_s), bisect.bisect_right(starts, n['on'] + near_s)
+        same = [m['midi'] for m in pitched[lo:hi] if (m['midi'] - n['midi']) % 12 == 0 and m['midi'] >= MELODY_LOW]
+        if not same:
+            midi = n['midi']
+        elif prev is None:
+            midi = max(same)                        # the first note: the tune is usually on top
+        else:
+            midi = min(same, key=lambda p: (abs(p - prev), -p))
+        out.append(dict(n, midi=midi))
+        prev = midi
+    if out:
+        for i, n in enumerate(out):
+            near = [m['midi'] for m in out if abs(m['on'] - n['on']) <= MELODY_NEAR_S]
+            mid = statistics.median(near)
+            while n['midi'] - mid > 12:
+                n['midi'] -= 12
+            while mid - n['midi'] > 12 or n['midi'] < MELODY_LOW:
+                n['midi'] += 12
+    return out
 
 
 def melody_gaps(melody, duration, min_s=FILL_GAP_S):

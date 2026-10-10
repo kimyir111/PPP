@@ -286,6 +286,51 @@ class MultiInstrumentTest(unittest.TestCase):
         self.assertEqual((r['song']['melody'], r['song']['bass']), (32, 32))
         self.assertEqual(sorted({n['track'] for n in r['notes']}), [1, 2, 3])
 
+    def test_a_lead_sheet_note_takes_the_octave_yourmt3_heard_it_in(self):
+        heard = [{'on': 0.0, 'off': 0.4, 'midi': 76, 'channel': 0}, {'on': 0.5, 'off': 0.9, 'midi': 79, 'channel': 0},
+                 {'on': 0.5, 'off': 0.9, 'midi': 55, 'channel': 1}, {'on': 1.0, 'off': 1.4, 'midi': 36, 'channel': 9}]
+        sheet = [{'on': 0.02, 'off': 0.5, 'midi': 64}, {'on': 0.5, 'off': 1.0, 'midi': 67}, {'on': 1.0, 'off': 1.5, 'midi': 72}]
+        got = transcribe.melody_octaves(sheet, heard)
+        self.assertEqual([n['midi'] for n in got], [76, 79, 72])   # 79, not the guitar's 55; the last note: none heard, kept
+
+    @unittest.skipIf(os.name == 'nt', 'the fake YourMT3 is a shell script')
+    def test_song_mode_takes_the_lead_sheet_melody_when_sheet_sage_is_there(self):
+        import types
+        fake = types.ModuleType('sheetsage_melody')
+        fake.ready = lambda: True
+        fake.beats_of = lambda wav: ([0.5 * i for i in range(33)], [2.0 * i for i in range(9)])
+        fake.transcribe = lambda y, sr, beats, downbeats: [{'on': 8.0 + 0.5 * i, 'off': 8.45 + 0.5 * i, 'midi': m - 12}
+                                                          for i, m in enumerate(self.TUNE_B)]   # an octave low, as a lead sheet may
+        saved = sys.modules.get('sheetsage_melody')
+        sys.modules['sheetsage_melody'] = fake
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                src = os.path.join(d, 'answer.mid')
+                _write_multi_midi(src, self.tracks())
+                py = os.path.join(d, 'fake-python')
+                with open(py, 'w') as f:
+                    f.write('#!/bin/sh\nwhile [ $# -gt 0 ]; do if [ "$1" = "--mid" ]; then cp "%s" "$2"; fi; shift; done\n' % src)
+                os.chmod(py, 0o755)
+                space = os.path.join(d, 'space')
+                os.mkdir(space)
+                wav = os.path.join(d, 'in.wav')
+                import soundfile as sf
+                import numpy as np
+                sf.write(wav, np.zeros(8000, np.float32), 8000)
+                a = type('A', (), {'mt3_python': py, 'mt3_dir': space, 'wav': wav, 'out': os.path.join(d, 'out.json')})
+                r = transcribe.run_song_mt3(a, 'cpu', 16.0, 0.0)
+                kept = os.path.exists(os.path.join(d, 'sheetsage-last.json'))
+        finally:
+            if saved is None:
+                del sys.modules['sheetsage_melody']
+            else:
+                sys.modules['sheetsage_melody'] = saved
+        mel = sorted((n for n in r['notes'] if n['track'] == 1), key=lambda n: n['on'])
+        self.assertEqual([n['midi'] for n in mel], self.TUNE_B)        # in the octave the synth lead sounded
+        self.assertEqual(r['song']['melodyTracker'], 'lead-sheet')
+        self.assertIn(self.TUNE_A[0], {n['midi'] for n in r['notes'] if n['track'] == 3})   # the old melody went to the accompaniment
+        self.assertTrue(kept)
+
     def test_low_and_dipping_notes_are_not_the_tune(self):
         tune = [{'on': 0.25 * i, 'off': 0.25 * i + 0.2, 'midi': m, 'vel': 80} for i, m in enumerate([72, 74, 76, 74, 72, 74, 76, 77])]
         dip = {'on': 0.9, 'off': 1.0, 'midi': 57, 'vel': 80}       # a guitar's arpeggio dipping to its low string

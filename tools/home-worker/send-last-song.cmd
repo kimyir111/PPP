@@ -12,6 +12,8 @@ set "GIT_INDEX_FILE=%TEMP%\ppp-send-last-song.index"
 if exist "%GIT_INDEX_FILE%" del "%GIT_INDEX_FILE%"
 for /f %%h in ('git hash-object -w "tools\yourmt3-last.mid"') do git update-index --add --cacheinfo 100644,%%h,song.mid
 for /f %%h in ('git hash-object -w "tools\yourmt3-last.wav"') do git update-index --add --cacheinfo 100644,%%h,song.wav
+rem Sheet Sage's melody, when it ran
+if exist "tools\sheetsage-last.json" for /f %%h in ('git hash-object -w "tools\sheetsage-last.json"') do git update-index --add --cacheinfo 100644,%%h,sheetsage.json
 set "TREE="
 for /f %%t in ('git write-tree') do set "TREE=%%t"
 set "GIT_INDEX_FILE="
