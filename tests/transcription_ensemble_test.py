@@ -351,6 +351,10 @@ class MultiInstrumentTest(unittest.TestCase):
         self.assertEqual(len(acc), 32 * 3)
         at = lambda t: sorted(n['midi'] for n in acc if abs(n['on'] - t) < 1e-6)
         self.assertEqual([at(0.0), at(4.0), at(8.0), at(12.0)], [[48, 52, 55], [57, 60, 64], [53, 57, 64], [55, 59, 65]])
+        # the bass: the chords' roots from C2, struck at each chord and each downbeat (C C | A A | F F | G G, a bar every 2 s)
+        bass = sorted((n for n in r['notes'] if n['track'] == 2), key=lambda n: n['on'])
+        self.assertEqual([(n['on'], n['midi']) for n in bass], [(0.0, 36), (2.0, 36), (4.0, 45), (6.0, 45), (8.0, 41), (10.0, 41), (12.0, 43), (14.0, 43)])
+        self.assertEqual(r['song']['bass'], 8)
         # its beats, bar lines and key go with the notes
         self.assertEqual(len(r['beats']), 33)
         self.assertEqual(r['downbeats'][:3], [0.0, 2.0, 4.0])

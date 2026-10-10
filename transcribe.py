@@ -749,6 +749,10 @@ def run_song_mt3(a, device, duration, t0):
         from_chords = chord_accompaniment(lead['chords'], lead['beats'])
         if len(from_chords) >= 8:
             accomp, accomp_from = from_chords, 'lead-sheet'
+            # and the bass under them, the chords' roots (YourMT3's bass line, eighths that fought the chords, is left out)
+            roots = chord_bass(lead['chords'], lead['downbeats'] or lead['beats'][::4])
+            if roots:
+                bass = roots
     if tracker != 'lead-sheet':
         try:
             filled = fill_melody_gaps(melody, a.wav, duration)
@@ -916,6 +920,26 @@ def lead_key(rows):
 
 
 CHORD_LOW = 48    # the left hand's chord: its root from C3, the other tones above it within the octave
+BASS_LOW = 36     # the lead sheet's bass: the chord's root from C2 to B2
+
+
+def chord_bass(chords, downbeats):
+    """The bass as a pianist plays it from a lead sheet: the chord's root, from C2 to B2, struck where the chord changes and on
+    every downbeat, held until the next. [] without chords."""
+    if not chords:
+        return []
+    times = sorted(set([round(c[0], 4) for c in chords] + [round(t, 4) for t in downbeats if chords[0][0] <= t < chords[-1][1]]))
+    events = []
+    for t in times:
+        here = [c for c in chords if c[0] <= t + 1e-3 < c[1]]
+        if here:
+            events.append((t, BASS_LOW + here[0][2][0] % 12, here[0][1]))
+    out = []
+    for i, (t, midi, chord_end) in enumerate(events):
+        end = min(events[i + 1][0] if i + 1 < len(events) else chord_end, chord_end)
+        if end > t:
+            out.append({'on': round(t, 4), 'off': round(end, 4), 'midi': midi, 'vel': 72})
+    return out
 
 
 def chord_accompaniment(chords, beats):
