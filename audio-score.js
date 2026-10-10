@@ -2017,7 +2017,13 @@
     if (!(perBar >= 2 && perBar <= 4) || counts.filter(c => c === perBar).length < 0.6 * counts.length) return null;
     const ibi = median(b.slice(1).map((t, i) => t - b[i]));
     if (!(ibi > 0.15 && ibi < 2)) return null;
-    let grid = b.slice(near(d[0]));
+    /* the bar phase most downbeats agree on (a transcriber may open with a stray short bar: SheetSage2 wrote a 1/8 bar before the first
+       downbeat of the test song), and the beats from the first downbeat on that phase; any before it are replaced by the steady pace */
+    const phaseVotes = new Map();
+    d.forEach(t => { const r = near(t) % perBar; phaseVotes.set(r, (phaseVotes.get(r) || 0) + 1); });
+    const phase = Array.from(phaseVotes.keys()).sort((x, y) => phaseVotes.get(y) - phaseVotes.get(x) || x - y)[0];
+    const anchor = d.map(near).find(i => i % perBar === phase);
+    let grid = b.slice(anchor);
     const first = notes.reduce((m, n) => Math.min(m, n.attack != null ? n.attack : n.on), Infinity);
     const last = notes.reduce((m, n) => Math.max(m, n.off), 0);
     while (grid[0] > first - 0.02) {                                       /* whole bars back, to a downbeat before the first note */

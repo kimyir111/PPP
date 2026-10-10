@@ -152,3 +152,12 @@ test('recBeats lead-sheet with beats that are no steady 2, 3 or 4 a bar: the met
   const b = AS.toMusicXml({ notes: notes, pedals: [], beats: beats, downbeats: odd }, Object.assign({ songLayers: true }, v2));
   assert.equal(a.xml, b.xml);
 });
+
+test('recBeats lead-sheet: a stray short bar before the first real downbeat does not shift the bars', () => {
+  const notes = song();
+  const beats = [0.02], downbeats = [0.02];                               /* SheetSage2's opening 1/8 bar, as in the test song */
+  for (let t = 0.5; t <= 34; t += 0.5) beats.push(t);
+  for (let t = 2; t <= 34; t += 2) downbeats.push(t);
+  const built = AS.toMusicXml({ notes: notes, pedals: [], beats: beats, downbeats: downbeats }, Object.assign({ songLayers: true, recBeats: 'lead-sheet' }, v2));
+  built.stats.barStarts.filter(t => t >= 1.9).slice(0, 8).forEach((t, i) => assert.ok(Math.abs(t - (2 + 2 * i)) < 0.06, 'bar ' + i + ' at ' + t));
+});
