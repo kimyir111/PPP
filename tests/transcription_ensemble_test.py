@@ -286,9 +286,93 @@ class MultiInstrumentTest(unittest.TestCase):
         self.assertEqual((r['song']['melody'], r['song']['bass']), (32, 32))
         self.assertEqual(sorted({n['track'] for n in r['notes']}), [1, 2, 3])
 
+    @unittest.skipIf(os.name == 'nt', 'the fake YourMT3 is a shell script')
+    @unittest.skipUnless(HAVE_LIBROSA, 'numpy and soundfile are not installed')
+    def test_a_second_listen_without_drums_and_bass_fills_the_first_ones_gap(self):
+        import numpy as np
+        tune = lambda t0, ps: [(t0 + 0.5 * i, t0 + 0.5 * i + 0.45, m) for i, m in enumerate(ps)]
+        pad = [(0.5 * i, 0.5 * i + 0.45, m) for i in range(32) for m in (57, 60, 64)]
+        first = [(0, 25, tune(0.0, self.TUNE_A)), (1, 48, pad), (2, 33, [(0.5 * i, 0.5 * i + 0.4, 40) for i in range(32)])]
+        lead = [(0, 25, tune(0.0, self.TUNE_A)), (1, 81, tune(8.0, self.TUNE_B)), (2, 48, pad)]   # the quiet lead, heard without the band
+        with tempfile.TemporaryDirectory() as d:
+            a_mid, b_mid = os.path.join(d, 'first.mid'), os.path.join(d, 'lead.mid')
+            _write_multi_midi(a_mid, first)
+            _write_multi_midi(b_mid, lead)
+            fake = os.path.join(d, 'fake-python')
+            with open(fake, 'w') as f:   # YourMT3 hears the lead only in the mix without drums and bass
+                f.write('#!/bin/sh\nsrc="%s"\nfor x in "$@"; do case "$x" in *lead-mix.wav) src="%s";; esac; done\n'
+                        'while [ $# -gt 0 ]; do if [ "$1" = "--mid" ]; then cp "$src" "$2"; fi; shift; done\n' % (a_mid, b_mid))
+            os.chmod(fake, 0o755)
+            space = os.path.join(d, 'space')
+            os.mkdir(space)
+            a = type('A', (), {'mt3_python': fake, 'mt3_dir': space, 'wav': os.path.join(d, 'in.wav'), 'out': os.path.join(d, 'out.json'), 'song_lib': ''})
+            saved = transcribe.separate
+            silent = np.zeros((2, 44100 * 16), np.float32)
+            transcribe.separate = lambda wav, device, lib: ({'drums': silent, 'bass': silent, 'other': silent, 'guitar': silent}, 44100)
+            try:
+                r = transcribe.run_song_mt3(a, 'cpu', 16.0, 0.0)
+            finally:
+                transcribe.separate = saved
+        mel = sorted((n for n in r['notes'] if n['track'] == 1), key=lambda n: n['on'])
+        self.assertEqual([n['midi'] for n in mel], self.TUNE_A + self.TUNE_B)
+        self.assertEqual(r['song']['melodySecond'], len(self.TUNE_A + self.TUNE_B))   # the second listen's melody leads
+
+    def test_low_and_dipping_notes_are_not_the_tune(self):
+        tune = [{'on': 0.25 * i, 'off': 0.25 * i + 0.2, 'midi': m, 'vel': 80} for i, m in enumerate([72, 74, 76, 74, 72, 74, 76, 77])]
+        dip = {'on': 0.9, 'off': 1.0, 'midi': 57, 'vel': 80}       # a guitar's arpeggio dipping to its low string
+        bass = {'on': 2.5, 'off': 2.7, 'midi': 29, 'vel': 80}      # an F1 taken where no tune was heard
+        kept = transcribe.drop_dips(sorted(tune + [dip, bass], key=lambda n: n['on']))
+        self.assertEqual([n['midi'] for n in kept], [n['midi'] for n in tune])
+
+    def test_melody_gaps(self):
+        mel = [{'on': 0.0, 'off': 0.5, 'midi': 72}, {'on': 0.6, 'off': 1.0, 'midi': 74}, {'on': 3.0, 'off': 3.5, 'midi': 76}]
+        self.assertEqual(transcribe.melody_gaps(mel, 6.0), [(1.0, 3.0), (3.5, 6.0)])
+        self.assertEqual(transcribe.melody_gaps(mel, 4.0), [(1.0, 3.0)])
+
     def test_without_yourmt3_song_mode_is_unchanged(self):
         a = type('A', (), {'mt3_python': '', 'mt3_dir': ''})
         self.assertFalse(transcribe.mt3_ready(a))
+
+
+def _tune_audio(sr, tune, t0=0.0, length=None, chord=(48, 52, 55)):
+    """A lead line (harmonic tones, 0.25 s a note from t0) over a quieter sustained low chord and a little noise."""
+    import numpy as np
+    length = length or t0 + 0.25 * len(tune) + 0.5
+    t = np.arange(int(length * sr)) / sr
+    y = 0.003 * np.random.RandomState(1).randn(len(t))
+    for m in chord:
+        f = 440 * 2 ** ((m - 69) / 12)
+        y += 0.08 * sum(np.sin(2 * np.pi * f * h * t) / h for h in (1, 2, 3))
+    for i, m in enumerate(tune):
+        a, b = int((t0 + 0.25 * i) * sr), int((t0 + 0.25 * i + 0.23) * sr)
+        k = t[a:b] - t[a]
+        f = 440 * 2 ** ((m - 69) / 12)
+        y[a:b] += 0.3 * sum(np.sin(2 * np.pi * f * h * k) * 0.7 ** h for h in range(1, 7)) * np.minimum(1, k / 0.01)
+    return (y / np.abs(y).max() * 0.9).astype(np.float32)
+
+
+@unittest.skipUnless(HAVE_LIBROSA, 'numpy, scipy and librosa are not installed')
+class MelodyContourTest(unittest.TestCase):
+    """melody_contour.py: the predominant line of a mix, and the song mode's gaps filled from it."""
+    TUNE = [76, 78, 79, 81, 83, 81, 79, 78, 76, 74, 76, 78]
+
+    def test_the_lead_over_a_chord_is_the_contour(self):
+        import melody_contour
+        sr = 22050
+        times, midi = melody_contour.contour(_tune_audio(sr, self.TUNE), sr)
+        got = [n['midi'] for n in melody_contour.notes(times, midi)]
+        self.assertEqual(got, self.TUNE)
+
+    def test_a_gap_in_the_melody_is_filled_from_the_audio(self):
+        import soundfile as sf
+        sr = 22050
+        with tempfile.TemporaryDirectory() as d:
+            wav = os.path.join(d, 'mix.wav')
+            sf.write(wav, _tune_audio(sr, self.TUNE, t0=2.0, length=6.0), sr)
+            heard = [{'on': 0.25 * i, 'off': 0.25 * i + 0.2, 'midi': 76, 'vel': 80} for i in range(6)]   # the model's tune stops at 1.5 s
+            filled = transcribe.fill_melody_gaps(heard, wav, 6.0)
+        self.assertEqual([n['midi'] for n in filled], self.TUNE)
+        self.assertTrue(all(2.0 - 0.05 <= n['on'] < 5.1 for n in filled))
 
 
 if __name__ == '__main__':
