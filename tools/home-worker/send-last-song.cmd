@@ -12,9 +12,6 @@ set "GIT_INDEX_FILE=%TEMP%\ppp-send-last-song.index"
 if exist "%GIT_INDEX_FILE%" del "%GIT_INDEX_FILE%"
 for /f %%h in ('git hash-object -w "tools\yourmt3-last.mid"') do git update-index --add --cacheinfo 100644,%%h,song.mid
 for /f %%h in ('git hash-object -w "tools\yourmt3-last.wav"') do git update-index --add --cacheinfo 100644,%%h,song.wav
-rem the second listen (the song without drums and bass), when it ran
-if exist "tools\yourmt3-last-lead.mid" for /f %%h in ('git hash-object -w "tools\yourmt3-last-lead.mid"') do git update-index --add --cacheinfo 100644,%%h,lead.mid
-if exist "tools\yourmt3-last-lead.wav" for /f %%h in ('git hash-object -w "tools\yourmt3-last-lead.wav"') do git update-index --add --cacheinfo 100644,%%h,lead.wav
 set "TREE="
 for /f %%t in ('git write-tree') do set "TREE=%%t"
 set "GIT_INDEX_FILE="
@@ -22,7 +19,7 @@ if "%TREE%"=="" goto failed
 set "COMMIT="
 for /f %%c in ('git commit-tree %TREE% -m "debug: the last song converted in song mode"') do set "COMMIT=%%c"
 if "%COMMIT%"=="" goto failed
-echo Sending (about 10-20 MB)...
+echo Sending (about 10 MB)...
 git push -f origin %COMMIT%:refs/heads/debug-mt3
 if errorlevel 1 goto failed
 echo.

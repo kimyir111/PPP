@@ -286,37 +286,6 @@ class MultiInstrumentTest(unittest.TestCase):
         self.assertEqual((r['song']['melody'], r['song']['bass']), (32, 32))
         self.assertEqual(sorted({n['track'] for n in r['notes']}), [1, 2, 3])
 
-    @unittest.skipIf(os.name == 'nt', 'the fake YourMT3 is a shell script')
-    @unittest.skipUnless(HAVE_LIBROSA, 'numpy and soundfile are not installed')
-    def test_a_second_listen_without_drums_and_bass_fills_the_first_ones_gap(self):
-        import numpy as np
-        tune = lambda t0, ps: [(t0 + 0.5 * i, t0 + 0.5 * i + 0.45, m) for i, m in enumerate(ps)]
-        pad = [(0.5 * i, 0.5 * i + 0.45, m) for i in range(32) for m in (57, 60, 64)]
-        first = [(0, 25, tune(0.0, self.TUNE_A)), (1, 48, pad), (2, 33, [(0.5 * i, 0.5 * i + 0.4, 40) for i in range(32)])]
-        lead = [(0, 25, tune(0.0, self.TUNE_A)), (1, 81, tune(8.0, self.TUNE_B)), (2, 48, pad)]   # the quiet lead, heard without the band
-        with tempfile.TemporaryDirectory() as d:
-            a_mid, b_mid = os.path.join(d, 'first.mid'), os.path.join(d, 'lead.mid')
-            _write_multi_midi(a_mid, first)
-            _write_multi_midi(b_mid, lead)
-            fake = os.path.join(d, 'fake-python')
-            with open(fake, 'w') as f:   # YourMT3 hears the lead only in the mix without drums and bass
-                f.write('#!/bin/sh\nsrc="%s"\nfor x in "$@"; do case "$x" in *lead-mix.wav) src="%s";; esac; done\n'
-                        'while [ $# -gt 0 ]; do if [ "$1" = "--mid" ]; then cp "$src" "$2"; fi; shift; done\n' % (a_mid, b_mid))
-            os.chmod(fake, 0o755)
-            space = os.path.join(d, 'space')
-            os.mkdir(space)
-            a = type('A', (), {'mt3_python': fake, 'mt3_dir': space, 'wav': os.path.join(d, 'in.wav'), 'out': os.path.join(d, 'out.json'), 'song_lib': ''})
-            saved = transcribe.separate
-            silent = np.zeros((2, 44100 * 16), np.float32)
-            transcribe.separate = lambda wav, device, lib: ({'drums': silent, 'bass': silent, 'other': silent, 'guitar': silent}, 44100)
-            try:
-                r = transcribe.run_song_mt3(a, 'cpu', 16.0, 0.0)
-            finally:
-                transcribe.separate = saved
-        mel = sorted((n for n in r['notes'] if n['track'] == 1), key=lambda n: n['on'])
-        self.assertEqual([n['midi'] for n in mel], self.TUNE_A + self.TUNE_B)
-        self.assertEqual(r['song']['melodySecond'], len(self.TUNE_A + self.TUNE_B))   # the second listen's melody leads
-
     def test_low_and_dipping_notes_are_not_the_tune(self):
         tune = [{'on': 0.25 * i, 'off': 0.25 * i + 0.2, 'midi': m, 'vel': 80} for i, m in enumerate([72, 74, 76, 74, 72, 74, 76, 77])]
         dip = {'on': 0.9, 'off': 1.0, 'midi': 57, 'vel': 80}       # a guitar's arpeggio dipping to its low string
