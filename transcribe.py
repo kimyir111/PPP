@@ -746,11 +746,12 @@ def run_song_mt3(a, device, duration, t0):
         melody, tracker = lead['melody'], 'lead-sheet'
     if lead and lead['chords'] and lead['beats']:
         # and its chords, a chord a beat, are the accompaniment: what a pianist plays from a lead sheet, not every strum the band played
-        from_chords = chord_accompaniment(lead['chords'], lead['beats'])
+        downs = lead['downbeats'] or lead['beats'][::4]
+        from_chords = chord_accompaniment(lead['chords'], lead['beats'], downs)
         if len(from_chords) >= 8:
             accomp, accomp_from = from_chords, 'lead-sheet'
-            # and the bass under them, the chords' roots (YourMT3's bass line, eighths that fought the chords, is left out)
-            roots = chord_bass(lead['chords'], lead['downbeats'] or lead['beats'][::4])
+            # and the bass that alternates with them, the chords' roots (YourMT3's bass line, eighths that fought the chords, is left out)
+            roots = chord_bass(lead['chords'], downs, lead['beats'])
             if roots:
                 bass = roots
     if tracker != 'lead-sheet':
@@ -919,45 +920,79 @@ def lead_key(rows):
     return {'tonic': tonic, 'mode': mode}
 
 
-CHORD_LOW = 48    # the left hand's chord: its root from C3, the other tones above it within the octave
-BASS_LOW = 36     # the lead sheet's bass: the chord's root from C2 to B2
+CHORD_RANGE = (50, 62)   # the left hand's chord: three notes in close position, all from D3 to D4 (one hand, no stretch)
+BASS_LOW = 40            # the lead sheet's bass: the chord's root from E2 to D#3 (on the bass staff, not below it)
 
 
-def chord_bass(chords, downbeats):
-    """The bass as a pianist plays it from a lead sheet: the chord's root, from C2 to B2, struck where the chord changes and on
-    every downbeat, held until the next. [] without chords."""
+def _bass_times(chords, downbeats):
+    """Where the lead sheet's bass strikes: every chord change and every downbeat under a chord."""
+    return sorted(set([round(c[0], 4) for c in chords] + [round(t, 4) for t in downbeats if chords and chords[0][0] <= t < chords[-1][1]]))
+
+
+def chord_bass(chords, downbeats, beats=()):
+    """The bass of a lead sheet's "boom-chick" left hand: the chord's root, from E2 to D#3, struck where the chord changes and on every
+    downbeat, for one beat (the chord answers it on the next). [] without chords."""
     if not chords:
         return []
-    times = sorted(set([round(c[0], 4) for c in chords] + [round(t, 4) for t in downbeats if chords[0][0] <= t < chords[-1][1]]))
-    events = []
-    for t in times:
-        here = [c for c in chords if c[0] <= t + 1e-3 < c[1]]
-        if here:
-            events.append((t, BASS_LOW + here[0][2][0] % 12, here[0][1]))
+    beat_s = statistics.median([b1 - b0 for b0, b1 in zip(beats[:-1], beats[1:])]) if len(beats) >= 2 else 0.5
+    times = _bass_times(chords, downbeats)
     out = []
-    for i, (t, midi, chord_end) in enumerate(events):
-        end = min(events[i + 1][0] if i + 1 < len(events) else chord_end, chord_end)
+    for i, t in enumerate(times):
+        here = [c for c in chords if c[0] <= t + 1e-3 < c[1]]
+        if not here:
+            continue
+        end = min(times[i + 1] if i + 1 < len(times) else here[0][1], here[0][1], t + beat_s * 1.05)
         if end > t:
-            out.append({'on': round(t, 4), 'off': round(end, 4), 'midi': midi, 'vel': 72})
+            out.append({'on': round(t, 4), 'off': round(end, 4), 'midi': BASS_LOW + (here[0][2][0] - BASS_LOW) % 12, 'vel': 72})
     return out
 
 
-def chord_accompaniment(chords, beats):
-    """The accompaniment as a pianist plays a lead sheet: on every beat the chord sounding there, root, third and fifth (the
-    seventh in place of the fifth), voiced up from its root at or above C3. [] without beats or chords."""
+def _close_voicing(pcs, prev):
+    """Three pitch classes as a close-position chord inside CHORD_RANGE, the inversion nearest the previous chord (the hand moves
+    least); the lowest such inversion for the first."""
+    lo, hi = CHORD_RANGE
+    options = []
+    for k in range(len(pcs)):
+        order = pcs[k:] + pcs[:k]
+        for base in range(lo, hi + 1):
+            if base % 12 != order[0]:
+                continue
+            v = [base]
+            for pc in order[1:]:
+                v.append(v[-1] + (pc - v[-1]) % 12 or 12)
+            if v[-1] <= hi + 2 and v[-1] - v[0] <= 12:
+                options.append(v)
+    if not options:
+        return None
+    if prev is None:
+        return min(options, key=lambda v: (v[0], v))
+    return min(options, key=lambda v: (sum(abs(a - b) for a, b in zip(sorted(v), sorted(prev))), v))
+
+
+def chord_accompaniment(chords, beats, downbeats=()):
+    """The chords of a lead sheet's "boom-chick" left hand: on every beat where the bass does not strike (chord_bass), the chord
+    sounding there, root, third and fifth (the seventh in place of the fifth), in close position inside CHORD_RANGE, each inversion
+    the nearest to the one before. [] without beats or chords."""
     out = []
     if len(beats) < 2 or not chords:
         return out
+    strikes = set(_bass_times(chords, downbeats))
+    prev = None
     for b0, b1 in zip(beats[:-1], beats[1:]):
+        if any(abs(b0 - t) < 0.05 for t in strikes):
+            continue
         mid = (b0 + b1) / 2.0
         here = [c for c in chords if c[0] <= mid < c[1]]
         if not here:
             continue
         tones = here[0][2]
         pick = tones[:3] if len(tones) <= 3 else [tones[0], tones[1], tones[3]]
-        root = CHORD_LOW + (pick[0] - CHORD_LOW) % 12
-        for pc in pick:
-            out.append({'on': round(b0, 4), 'off': round(b1, 4), 'midi': root + (pc - root) % 12, 'vel': 64})
+        voicing = _close_voicing(pick, prev)
+        if not voicing:
+            continue
+        prev = voicing
+        for midi in voicing:
+            out.append({'on': round(b0, 4), 'off': round(b1, 4), 'midi': midi, 'vel': 64})
     return out
 
 

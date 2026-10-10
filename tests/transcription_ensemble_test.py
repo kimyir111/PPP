@@ -345,15 +345,18 @@ class MultiInstrumentTest(unittest.TestCase):
         mel = sorted((n for n in r['notes'] if n['track'] == 1), key=lambda n: n['on'])
         self.assertEqual([n['midi'] for n in mel], self.TUNE_B)
         self.assertEqual(r['song']['melodyTracker'], 'lead-sheet')
-        # the accompaniment: the lead sheet's chords, one a beat, root position from C3 (C E G, then A C E, F A E, G B F)
+        # a "boom-chick" left hand: the chord's root on each downbeat (and chord change) for a beat, the chord in close position on
+        # the other three beats, each inversion the nearest to the one before (C: E G C, Am: E A C, Fmaj7: F A E, G7: F G B)
         acc = [n for n in r['notes'] if n['track'] == 3]
         self.assertEqual(r['song']['accompFrom'], 'lead-sheet')
-        self.assertEqual(len(acc), 32 * 3)
+        self.assertEqual(len(acc), 24 * 3)
         at = lambda t: sorted(n['midi'] for n in acc if abs(n['on'] - t) < 1e-6)
-        self.assertEqual([at(0.0), at(4.0), at(8.0), at(12.0)], [[48, 52, 55], [57, 60, 64], [53, 57, 64], [55, 59, 65]])
-        # the bass: the chords' roots from C2, struck at each chord and each downbeat (C C | A A | F F | G G, a bar every 2 s)
+        self.assertEqual([at(0.5), at(4.5), at(8.5), at(12.5)], [[52, 55, 60], [52, 57, 60], [53, 57, 64], [53, 55, 59]])
+        self.assertEqual(at(0.0), [])
+        self.assertTrue(all(max(at(n['on'])) - min(at(n['on'])) <= 12 for n in acc))   # one hand, no stretch
         bass = sorted((n for n in r['notes'] if n['track'] == 2), key=lambda n: n['on'])
-        self.assertEqual([(n['on'], n['midi']) for n in bass], [(0.0, 36), (2.0, 36), (4.0, 45), (6.0, 45), (8.0, 41), (10.0, 41), (12.0, 43), (14.0, 43)])
+        self.assertEqual([(n['on'], n['midi']) for n in bass], [(0.0, 48), (2.0, 48), (4.0, 45), (6.0, 45), (8.0, 41), (10.0, 41), (12.0, 43), (14.0, 43)])
+        self.assertTrue(all(n['off'] - n['on'] <= 0.53 for n in bass))           # for a beat: the chord answers it
         self.assertEqual(r['song']['bass'], 8)
         # its beats, bar lines and key go with the notes
         self.assertEqual(len(r['beats']), 33)
