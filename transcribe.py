@@ -688,7 +688,25 @@ def run_mt3(a, device, duration, work):
         shutil.copyfile(mid, os.path.join(os.path.dirname(os.path.abspath(a.mt3_dir)), 'yourmt3-last.mid'))
     except OSError:
         pass
+    keep_audio(a.wav, os.path.join(os.path.dirname(os.path.abspath(a.mt3_dir)), 'yourmt3-last.wav'))
     return midi_notes.read_notes(mid, instruments=True)['notes']
+
+
+def keep_audio(src, dst):
+    """The same song's audio beside its MIDI (tools/yourmt3-last.wav: mono, 16 bit, at most 22.05 kHz, ~8 MB for three minutes),
+    so the two can be compared where the original cannot be fetched (tools/home-worker/send-last-song.cmd sends both). Best
+    effort: a song is transcribed whether or not this works."""
+    try:
+        import numpy as np
+        import soundfile as sf
+        data, sr = sf.read(src, dtype='float32', always_2d=True)
+        x = data.mean(axis=1)
+        step = max(1, int(sr // 22050))
+        if step > 1:
+            x = x[:len(x) // step * step].reshape(-1, step).mean(axis=1)
+        sf.write(dst, np.clip(x, -1, 1), int(sr // step), subtype='PCM_16')
+    except Exception:
+        pass
 
 
 def run_song_mt3(a, device, duration, t0):
