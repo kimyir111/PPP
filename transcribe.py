@@ -689,13 +689,14 @@ def mt3_ready(a):
     return bool(getattr(a, 'mt3_python', '') and getattr(a, 'mt3_dir', '') and os.path.exists(a.mt3_python) and os.path.isdir(a.mt3_dir))
 
 
-def run_mt3(a, device, duration, work):
+def run_mt3(a, device, duration, work, wav=None, keep='yourmt3-last'):
     """YourMT3 (multi-instrument transcription) in its own Python, through yourmt3_run.py next to this file: the mix in, a MIDI with one
     program per instrument out. Its notes, each with 'channel' and 'program'."""
     import midi_notes
-    mid = os.path.join(work, 'mt3.mid')
+    wav = wav or a.wav
+    mid = os.path.join(work, keep + '.mid')
     runner = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'yourmt3_run.py')
-    cmd = [a.mt3_python, runner, '--space', a.mt3_dir, '--wav', a.wav, '--mid', mid, '--device', device]
+    cmd = [a.mt3_python, runner, '--space', a.mt3_dir, '--wav', wav, '--mid', mid, '--device', device]
     env = dict(os.environ, PYTHONIOENCODING='utf-8')   # YourMT3 prints emoji; read its output as UTF-8 whatever the console's code page
     r = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', env=env, timeout=max(600, int(duration * 10)))
     if r.returncode != 0 or not os.path.exists(mid):
@@ -703,10 +704,10 @@ def run_mt3(a, device, duration, work):
     # the last song's raw YourMT3 MIDI stays beside the YourMT3 folder (tools/yourmt3-last.mid), so a person can listen to what the model
     # heard before PPP picks the melody and writes the score: is a missing tune the model's or PPP's?
     try:
-        shutil.copyfile(mid, os.path.join(os.path.dirname(os.path.abspath(a.mt3_dir)), 'yourmt3-last.mid'))
+        shutil.copyfile(mid, os.path.join(os.path.dirname(os.path.abspath(a.mt3_dir)), keep + '.mid'))
     except OSError:
         pass
-    keep_audio(a.wav, os.path.join(os.path.dirname(os.path.abspath(a.mt3_dir)), 'yourmt3-last.wav'))
+    keep_audio(wav, os.path.join(os.path.dirname(os.path.abspath(a.mt3_dir)), keep + '.wav'))
     return midi_notes.read_notes(mid, instruments=True)['notes']
 
 
@@ -731,17 +732,31 @@ def run_song_mt3(a, device, duration, t0):
     say('ENGINE multi-instrument')
     say('PROGRESS 0.050')
     work = tempfile.mkdtemp(prefix='mt3-', dir=os.path.dirname(os.path.abspath(a.out)))
+    second, fill_wav = 0, a.wav
     try:
         heard = run_mt3(a, device, duration, work)
+        melody, bass, accomp, melody_from = song_from_instruments(heard, duration)
+        say('PROGRESS 0.500')
+        # a second listen to the recording without its drums and bass: a quiet lead under a loud band, which the first listen
+        # missed (and whose place the top of a pad then took), is heard there. Its melody leads; the first listen's covers its gaps.
+        try:
+            lead = lead_mix(a, device, work)
+            heard2 = run_mt3(a, device, duration, work, wav=lead, keep='yourmt3-last-lead')
+            melody, accomp, melody_from, second = second_listen(melody, accomp, melody_from, heard2, duration)
+            fill_wav = lead
+        except BaseException as e:   # an addition: the song is written from the first listen alone (SystemExit: no demucs)
+            if isinstance(e, KeyboardInterrupt):
+                raise
+            say('NOTE the second listen (without drums and bass) did not run: %s: %s' % (type(e).__name__, str(e)[:300]))
+        say('PROGRESS 0.850')
+        try:
+            filled = fill_melody_gaps(melody, fill_wav, duration)
+        except Exception as e:   # the fill is an addition: a song is written without it
+            say('NOTE the melody gaps were not filled: %s: %s' % (type(e).__name__, e))
+            filled = []
     finally:
         shutil.rmtree(work, ignore_errors=True)
     say('PROGRESS 0.900')
-    melody, bass, accomp, melody_from = song_from_instruments(heard, duration)
-    try:
-        filled = fill_melody_gaps(melody, a.wav, duration)
-    except Exception as e:   # the fill is an addition: a song is written without it
-        say('NOTE the melody gaps were not filled: %s: %s' % (type(e).__name__, e))
-        filled = []
     melody = sorted(melody + filled, key=lambda n: (n['on'], n['midi']))
     accomp, doubles = drop_doubles(accomp, melody + bass)
     for layer, name in ((melody, 'melody'), (bass, 'bass'), (accomp, 'accomp')):
@@ -755,10 +770,46 @@ def run_song_mt3(a, device, duration, t0):
         'ms': int((time.time() - t0) * 1000), 'notes': notes, 'pedals': [], 'uncertainNotes': [],
         'ensemble': {'models': ['yourmt3'], 'primary': 'yourmt3', 'agreement': None, 'accepted': len(notes), 'uncertain': 0},
         'song': {'separation': 'yourmt3', 'melody': len(melody), 'melodyFrom': melody_from if melody else None,
-                 'melodyTracker': 'multi-instrument' if melody else None, 'melodyFilled': len(filled), 'bass': len(bass), 'accomp': len(accomp),
+                 'melodyTracker': 'multi-instrument' if melody else None, 'melodySecond': second, 'melodyFilled': len(filled), 'bass': len(bass), 'accomp': len(accomp),
                  'doublesDropped': doubles},
         'modelFailures': []
     }
+
+
+def lead_mix(a, device, work):
+    """The recording without its drums and bass (Demucs, as the separation path): a quiet lead under a loud band is heard better
+    by a transcriber when the band's loudest parts are gone. Written as a 44.1 kHz WAV in work; its path."""
+    import numpy as np
+    import soundfile as sf
+    stems, sr = separate(a.wav, device, getattr(a, 'song_lib', ''))
+    try:
+        import torch
+        if device == 'cuda':
+            torch.cuda.empty_cache()   # YourMT3 (a subprocess) needs the GPU next
+    except Exception:
+        pass
+    keep = [v for k, v in stems.items() if k not in ('drums', 'bass')]
+    if not keep:
+        raise RuntimeError('the separation returned only drums and bass')
+    y = sum(keep).T.astype(np.float32)
+    path = os.path.join(work, 'lead-mix.wav')
+    sf.write(path, y / max(1.0, float(np.abs(y).max())), sr, subtype='PCM_16')
+    return path
+
+
+def second_listen(melody, accomp, melody_from, heard2, duration):
+    """The melody from a second listen (the recording without drums and bass), with the first listen's melody in its gaps; the
+    first melody's other notes go back to the accompaniment (drop_doubles then drops what the new melody repeats).
+    Returns (melody, accomp, melody_from, how many melody notes came from the second listen)."""
+    melody2, _bass2, _accomp2, from2 = song_from_instruments(heard2, duration)
+    if not melody2:
+        return melody, accomp, melody_from, 0
+    gaps = melody_gaps(melody2, duration)
+    inside = lambda n: any(g0 + 0.02 <= n['on'] < g1 - 0.05 for g0, g1 in gaps)
+    kept = [n for n in melody if inside(n)]
+    back = [n for n in melody if not inside(n)]
+    merged = sorted(melody2 + kept, key=lambda n: (n['on'], n['midi']))
+    return merged, sorted(accomp + back, key=lambda n: (n['on'], n['midi'])), from2 or melody_from, len(melody2)
 
 
 def melody_gaps(melody, duration, min_s=FILL_GAP_S):
