@@ -617,6 +617,8 @@ MT3_BASS_PROGRAMS = range(32, 40)   # General MIDI basses
 MELODY_LOW = 50         # a melody note below D3 is a bass or the low string of an arpeggio, not the tune: it is accompaniment
 MELODY_DIP = 10         # ... and so is a note this many semitones under the tune around it (MELODY_NEAR_S either side)
 MELODY_NEAR_S = 2.0
+FILL_GAP_S = 1.0        # a stretch this long with no melody note is filled from the mix's most salient line (melody_contour.py)
+FILL_PAD_S = 0.5        # the audio read around each such stretch
 
 
 def _skyline(notes, win=BP_SKY_WIN_S):
@@ -735,6 +737,12 @@ def run_song_mt3(a, device, duration, t0):
         shutil.rmtree(work, ignore_errors=True)
     say('PROGRESS 0.900')
     melody, bass, accomp, melody_from = song_from_instruments(heard, duration)
+    try:
+        filled = fill_melody_gaps(melody, a.wav, duration)
+    except Exception as e:   # the fill is an addition: a song is written without it
+        say('NOTE the melody gaps were not filled: %s: %s' % (type(e).__name__, e))
+        filled = []
+    melody = sorted(melody + filled, key=lambda n: (n['on'], n['midi']))
     accomp, doubles = drop_doubles(accomp, melody + bass)
     for layer, name in ((melody, 'melody'), (bass, 'bass'), (accomp, 'accomp')):
         for n in layer:
@@ -747,9 +755,60 @@ def run_song_mt3(a, device, duration, t0):
         'ms': int((time.time() - t0) * 1000), 'notes': notes, 'pedals': [], 'uncertainNotes': [],
         'ensemble': {'models': ['yourmt3'], 'primary': 'yourmt3', 'agreement': None, 'accepted': len(notes), 'uncertain': 0},
         'song': {'separation': 'yourmt3', 'melody': len(melody), 'melodyFrom': melody_from if melody else None,
-                 'melodyTracker': 'multi-instrument' if melody else None, 'bass': len(bass), 'accomp': len(accomp), 'doublesDropped': doubles},
+                 'melodyTracker': 'multi-instrument' if melody else None, 'melodyFilled': len(filled), 'bass': len(bass), 'accomp': len(accomp),
+                 'doublesDropped': doubles},
         'modelFailures': []
     }
+
+
+def melody_gaps(melody, duration, min_s=FILL_GAP_S):
+    """The stretches of at least min_s where no melody note sounds: [(start, end)]."""
+    gaps, end = [], 0.0
+    for n in sorted(melody, key=lambda n: n['on']):
+        if n['on'] - end >= min_s:
+            gaps.append((end, n['on']))
+        end = max(end, n['off'])
+    if duration - end >= min_s:
+        gaps.append((end, duration))
+    return gaps
+
+
+def fill_melody_gaps(melody, wav, duration):
+    """Melody notes for the stretches the multi-instrument model left without a tune, from the predominant line of the mix
+    (melody_contour.py) read in each stretch alone: a quiet lead under a loud band can be lost by a note transcriber and still
+    be the most salient line. Notes below MELODY_LOW are left out, as everywhere."""
+    gaps = melody_gaps(melody, duration)
+    if not gaps:
+        return []
+    import numpy as np
+    import soundfile as sf
+    import melody_contour
+    y, sr = sf.read(wav, dtype='float32', always_2d=True)
+    y = y.mean(axis=1)
+    out = []
+    for g0, g1 in gaps:
+        a0 = max(0.0, g0 - FILL_PAD_S)
+        seg = y[int(a0 * sr):int(min(duration, g1 + FILL_PAD_S) * sr)]
+        if len(seg) < sr // 2:
+            continue
+        times, midi = melody_contour.contour(seg, sr)
+        got = []
+        for n in melody_contour.notes(times, midi):
+            on, off = n['on'] + a0, n['off'] + a0
+            if on >= g0 + 0.02 and on < g1 - 0.05:
+                got.append({'on': round(on, 4), 'off': round(min(off, g1), 4), 'midi': n['midi'], 'vel': 80})
+        # a salience peak an octave off (the second harmonic's line) is written in the octave of the tune around it: the
+        # stretch's own notes and the melody within FILL_GAP_S * 4 of it
+        around = [m['midi'] for m in melody if g0 - 4 * FILL_GAP_S <= m['on'] <= g1 + 4 * FILL_GAP_S] + [n['midi'] for n in got]
+        if around:
+            mid = statistics.median(around)
+            for n in got:
+                while n['midi'] - mid > 7:
+                    n['midi'] -= 12
+                while mid - n['midi'] > 7:
+                    n['midi'] += 12
+        out.extend(n for n in got if n['midi'] >= MELODY_LOW)
+    return out
 
 
 def drop_doubles(accomp, others):
