@@ -826,7 +826,7 @@
     major: { 1: 1, 3: -1, 6: 1, 8: 1, 10: -1 },
     minor: { 1: -1, 4: 1, 6: 1, 9: 1, 11: 1 }
   };
-  function spellingTable(key) {
+  function spellingTable(key, plain) {
     const ka = keyAlters(key.fifths);
     const table = {};
     LETTERS.forEach(l => { table[((LETTER_PC[l] + ka[l]) % 12 + 12) % 12] = { step: l, alter: ka[l] }; });
@@ -835,9 +835,10 @@
       if (table[pc]) continue;
       const dir = dirs[(pc - key.tonic + 12) % 12] || (key.fifths < 0 ? -1 : 1);
       const from = table[(pc - dir + 12) % 12];
-      /* a double sharp or flat only when the other neighbour needs one too: F# major's D is D natural, not C double-sharp */
+      /* plain (a song: opts.songLayers): a double sharp or flat only when the other neighbour needs one too - F# major's D is
+         D, not C double-sharp. The catalogue writes the raised fifth (B major's F double-sharp), so only a song asks for it */
       const alt = table[(pc + dir + 12) % 12];
-      if (from && Math.abs(from.alter + dir) > 1 && alt && Math.abs(alt.alter - dir) <= 1) { table[pc] = { step: alt.step, alter: alt.alter - dir }; continue; }
+      if (plain && from && Math.abs(from.alter + dir) > 1 && alt && Math.abs(alt.alter - dir) <= 1) { table[pc] = { step: alt.step, alter: alt.alter - dir }; continue; }
       table[pc] = from ? { step: from.step, alter: from.alter + dir } : { step: 'C', alter: 0 };
     }
     return table;
@@ -1374,7 +1375,7 @@
       if (opts.keys === 'v2') { const e = new Error('rec/key.js (S8) is not loaded'); e.code = 'E-KEY-NO-LIB'; throw e; }
       return null;
     }
-    const r = lib.analyse(q, { barTicks: bar, bars: bars, ticksPerQuarter: Q });
+    const r = lib.analyse(q, { barTicks: bar, bars: bars, ticksPerQuarter: Q, plain: !!opts.songLayers });
     q.forEach((n, i) => { n.sp = r.spell[i]; });
     return r;
   }
@@ -1713,7 +1714,7 @@
     q.forEach(n => { n.endTick = Math.min(n.endTick, bars * bar); });
 
     const key = estimateKey(notes);
-    const table = spellingTable(key);
+    const table = spellingTable(key, !!opts.songLayers);
     const handsReport = writeHands(q, opts, extra, notes);
 
     const pedals = [];

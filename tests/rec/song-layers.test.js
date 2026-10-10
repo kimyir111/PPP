@@ -1,7 +1,7 @@
 /* toMusicXml with opts.songLayers (the home PC's song mode: each heard note's track is its layer, 1 the melody, 2 the bass,
    3 the accompaniment): the melody is the upper staff, the bass and the accompaniment the lower one, the accompaniment one
    chord a beat in C3-E4; a melody note heard an octave away from the tune is written in the tune's octave; and the key
-   stage spells a pitch with a double sharp only when the other neighbour needs one too. node --test tests/rec */
+   stage spells a song's pitch with a double sharp only when the other neighbour needs one too. node --test tests/rec */
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -104,14 +104,15 @@ test('songLayers on notes without layers changes nothing', () => {
   assert.equal(b.xml, a.xml);
 });
 
-test('spelling: F# major\'s D and G are D and G natural, not C and F double-sharp; a double sharp stays where both neighbours need one', () => {
-  const fs = KEY.spellingTable({ fifths: 6, mode: 'major', tonic: 6 });
+test('spelling of a song: F# major\'s D and G are D and G natural, not C and F double-sharp; elsewhere the catalogue\'s raised fifth stays', () => {
+  const fs = KEY.spellingTable({ fifths: 6, mode: 'major', tonic: 6 }, true);
   assert.deepEqual(fs[2], { step: 'D', alter: 0 });
   assert.deepEqual(fs[7], { step: 'G', alter: 0 });
-  const c = KEY.spellingTable({ fifths: 0, mode: 'major', tonic: 0 });
+  assert.deepEqual(KEY.spellingTable({ fifths: 6, mode: 'major', tonic: 6 })[2], { step: 'C', alter: 2 });
+  const c = KEY.spellingTable({ fifths: 0, mode: 'major', tonic: 0 }, true);
   assert.deepEqual(c[8], { step: 'G', alter: 1 });
   assert.deepEqual(c[10], { step: 'B', alter: -1 });
-  Object.values(KEY.spellingTable({ fifths: 7, mode: 'major', tonic: 1 })).forEach(s => assert.ok(Math.abs(s.alter) <= 2));
+  Object.values(KEY.spellingTable({ fifths: 7, mode: 'major', tonic: 1 }, true)).forEach(s => assert.ok(Math.abs(s.alter) <= 2));
   const xml = AS.toMusicXml({ notes: song(), pedals: [] }, Object.assign({ songLayers: true }, v2)).xml;
   assert.ok(!/<alter>2<\/alter>/.test(xml), 'a double sharp in F# major');
 });
