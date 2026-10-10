@@ -20,7 +20,8 @@ if not exist "%PY%" (
   pause
   exit /b 1
 )
-"%PY%" -m pip install --upgrade pip huggingface_hub
+rem the version SheetSage2's requirements pin (transformers 4.45.2 refuses a 1.x or newer one)
+"%PY%" -m pip install --upgrade pip huggingface_hub==0.36.0
 
 echo.
 echo [2/4] The SheetSage2 model...
