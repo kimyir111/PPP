@@ -18,6 +18,7 @@ Progress goes to stdout, one line at a time, for omr-service.js to relay.
 import argparse
 import json
 import os
+import re
 import shutil
 import statistics
 import subprocess
@@ -737,13 +738,23 @@ def run_song_mt3(a, device, duration, t0):
         shutil.rmtree(work, ignore_errors=True)
     say('PROGRESS 0.900')
     melody, bass, accomp, melody_from = song_from_instruments(heard, duration)
-    tracker, filled = 'multi-instrument', []
-    lead = lead_sheet_melody(a, heard, duration)
-    if lead:
+    tracker, filled, accomp_from = 'multi-instrument', [], 'multi-instrument'
+    lead = lead_sheet(a, heard, duration)
+    if lead and lead['melody']:
         # the tune a lead sheet writes (SheetSage2); the instrument line chosen above goes back to the accompaniment
         accomp = sorted(accomp + melody, key=lambda n: (n['on'], n['midi']))
-        melody, tracker = lead, 'lead-sheet'
-    else:
+        melody, tracker = lead['melody'], 'lead-sheet'
+    if lead and lead['chords'] and lead['beats']:
+        # and its chords, a chord a beat, are the accompaniment: what a pianist plays from a lead sheet, not every strum the band played
+        downs = lead['downbeats'] or lead['beats'][::4]
+        from_chords = chord_accompaniment(lead['chords'], lead['beats'], downs)
+        if len(from_chords) >= 8:
+            accomp, accomp_from = from_chords, 'lead-sheet'
+            # and the bass that alternates with them, the chords' roots (YourMT3's bass line, eighths that fought the chords, is left out)
+            roots = chord_bass(lead['chords'], downs, lead['beats'])
+            if roots:
+                bass = roots
+    if tracker != 'lead-sheet':
         try:
             filled = fill_melody_gaps(melody, a.wav, duration)
         except Exception as e:   # the fill is an addition: a song is written without it
@@ -756,27 +767,37 @@ def run_song_mt3(a, device, duration, t0):
     notes = sorted(melody + bass + accomp, key=lambda n: (n['on'], n['midi']))
     if len(notes) < 4:
         raise RuntimeError('YourMT3 heard almost nothing')
-    return {
+    out = {
         'engine': 'song', 'mode': 'song', 'model': 'YourMT3 (multi-instrument)', 'device': device, 'duration': duration,
         'ms': int((time.time() - t0) * 1000), 'notes': notes, 'pedals': [], 'uncertainNotes': [],
         'ensemble': {'models': ['yourmt3'], 'primary': 'yourmt3', 'agreement': None, 'accepted': len(notes), 'uncertain': 0},
         'song': {'separation': 'yourmt3', 'melody': len(melody), 'melodyFrom': melody_from if melody else None,
-                 'melodyTracker': tracker if melody else None, 'melodyFilled': len(filled), 'bass': len(bass), 'accomp': len(accomp),
+                 'melodyTracker': tracker if melody else None, 'melodyFilled': len(filled), 'accompFrom': accomp_from, 'bass': len(bass), 'accomp': len(accomp),
                  'doublesDropped': doubles},
         'modelFailures': []
     }
+    if lead and lead['beats']:
+        # the lead sheet's beats and bar lines, which the page writes the bars on (song.beatsFrom 'lead-sheet'), and its key
+        out['beats'], out['downbeats'], out['song']['beatsFrom'] = lead['beats'], lead['downbeats'], 'lead-sheet'
+    if lead and lead['key']:
+        out['song']['key'] = lead['key']
+    return out
 
 
 def ss2_ready(a):
     return bool(getattr(a, 'ss2_python', '') and getattr(a, 'ss2_dir', '') and os.path.exists(a.ss2_python) and os.path.isdir(a.ss2_dir))
 
 
-def lead_sheet_melody(a, heard, duration):
-    """The melody from SheetSage2 (m-a-p/SheetSage2: a full song to a lead sheet - melody, chords, beats, key) when it is installed
-    (tools/home-worker/setup-sheetsage2.cmd), run in its own Python through sheetsage2_run.py; [] otherwise or on any failure (a
-    NOTE line), and the song is then written from YourMT3's lines as before. Its melody MIDI is kept as tools/sheetsage2-last.mid."""
+LEAD_FILES = ('melody.mid', 'beat.lab', 'downbeat.lab', 'key.lab', 'chord.lab', 'events.json', 'result.json')
+
+
+def lead_sheet(a, heard, duration):
+    """SheetSage2's lead sheet (m-a-p/SheetSage2: a full song to melody, chords, beats and key) when it is installed
+    (tools/home-worker/setup-sheetsage2.cmd), run in its own Python through sheetsage2_run.py: {'melody', 'beats', 'downbeats',
+    'key', 'chords'} (each empty when the model gave none), or None when it is not installed or failed (a NOTE line; the song is
+    then written from YourMT3 as before). Its files are kept in tools/sheetsage2-last/ for send-last-song.cmd."""
     if not ss2_ready(a):
-        return []
+        return None
     import midi_notes
     work = tempfile.mkdtemp(prefix='ss2-', dir=os.path.dirname(os.path.abspath(a.out)))
     try:
@@ -788,19 +809,191 @@ def lead_sheet_melody(a, heard, duration):
         mid = os.path.join(work, 'melody.mid')
         if r.returncode != 0 or not os.path.exists(mid):
             raise RuntimeError('exit %s: %s' % (r.returncode, (r.stderr or r.stdout or '')[-400:]))
+        keep = os.path.join(os.path.dirname(os.path.abspath(a.ss2_dir)), 'sheetsage2-last')
         try:
-            shutil.copyfile(mid, os.path.join(os.path.dirname(os.path.abspath(a.ss2_dir)), 'sheetsage2-last.mid'))
+            shutil.rmtree(keep, ignore_errors=True)
+            os.makedirs(keep, exist_ok=True)
+            for name in LEAD_FILES:
+                if os.path.exists(os.path.join(work, name)):
+                    shutil.copyfile(os.path.join(work, name), os.path.join(keep, name))
         except OSError:
             pass
-        notes = [{'on': round(float(n['on']), 4), 'off': round(float(n['off']), 4), 'midi': int(n['midi'])}
-                 for n in midi_notes.read_notes(mid)['notes'] if float(n['off']) > float(n['on'])]
+        melody = [{'on': round(float(n['on']), 4), 'off': round(float(n['off']), 4), 'midi': int(n['midi'])}
+                  for n in midi_notes.read_notes(mid)['notes'] if float(n['off']) > float(n['on'])]
+        lab = lambda name: read_lab(os.path.join(work, name))
+        beats, downbeats = lab_times(lab('beat.lab')), lab_times(lab('downbeat.lab'))
+        key, chords = lead_key(lab('key.lab')), lead_chords(lab('chord.lab'))
     except Exception as e:
-        say('NOTE the lead-sheet melody (SheetSage2) did not run: %s: %s' % (type(e).__name__, str(e)[:300]))
-        return []
+        say('NOTE the lead sheet (SheetSage2) did not run: %s: %s' % (type(e).__name__, str(e)[:300]))
+        return None
     finally:
         shutil.rmtree(work, ignore_errors=True)
-    notes = melody_octaves(sorted(notes, key=lambda n: (n['on'], n['midi'])), heard)
-    return [dict(n, vel=80) for n in fold_outliers(notes)]
+    melody = melody_octaves(sorted(melody, key=lambda n: (n['on'], n['midi'])), heard)
+    return {'melody': [dict(n, vel=80) for n in fold_outliers(melody)], 'beats': beats if len(beats) >= 4 else [],
+            'downbeats': downbeats if len(beats) >= 4 else [], 'key': key, 'chords': chords}
+
+
+# ---------------------------------------------------------------- lead-sheet annotations (LAB files: "time [time] [label]" a line)
+PITCH_CLASS = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}
+CHORD_INTERVALS = {   # Harte shorthands (MIREX chord labels); a quality not listed is read by its leading letters below
+    'maj': (0, 4, 7), 'min': (0, 3, 7), 'dim': (0, 3, 6), 'aug': (0, 4, 8), 'sus2': (0, 2, 7), 'sus4': (0, 5, 7), 'sus': (0, 5, 7),
+    '7': (0, 4, 7, 10), 'maj7': (0, 4, 7, 11), 'min7': (0, 3, 7, 10), 'minmaj7': (0, 3, 7, 11), 'dim7': (0, 3, 6, 9), 'hdim7': (0, 3, 6, 10),
+    'maj6': (0, 4, 7, 9), 'min6': (0, 3, 7, 9), '9': (0, 4, 7, 10), 'maj9': (0, 4, 7, 11), 'min9': (0, 3, 7, 10), '5': (0, 7), '1': (0,),
+    'm': (0, 3, 7), 'm7': (0, 3, 7, 10), '': (0, 4, 7)}
+
+
+def read_lab(path):
+    """[(start, end or None, label or '')] of a LAB file; [] when it is not there. Lines that do not start with a number are skipped."""
+    out = []
+    if not os.path.isfile(path):
+        return out
+    with open(path, 'r', encoding='utf-8', errors='replace') as f:
+        for line in f:
+            parts = line.strip().split()
+            nums = []
+            for p in parts:
+                try:
+                    nums.append(float(p))
+                except ValueError:
+                    break
+                if len(nums) == 2:
+                    break
+            if not nums:
+                continue
+            out.append((nums[0], nums[1] if len(nums) > 1 else None, ' '.join(parts[len(nums):])))
+    return out
+
+
+def lab_times(rows):
+    """The start times of a beat or downbeat LAB, rising."""
+    times = sorted(r[0] for r in rows if r[0] >= 0)
+    return [round(t, 4) for i, t in enumerate(times) if i == 0 or t - times[i - 1] > 1e-3]
+
+
+def pitch_class(label):
+    m = re.match(r'^\s*([A-Ga-g])([#b♯♭]*)', label or '')
+    if not m:
+        return None
+    return (PITCH_CLASS[m.group(1).upper()] + m.group(2).count('#') + m.group(2).count('♯') - m.group(2).count('b') - m.group(2).count('♭')) % 12
+
+
+def chord_tones(label):
+    """The pitch classes of a chord label ('F#:min', 'D:7/3', 'Bbmaj7', 'E'), root first; None for no chord ('N', 'X')."""
+    label = (label or '').strip()
+    if not label or label[0] in 'NX':
+        return None
+    root = pitch_class(label)
+    if root is None:
+        return None
+    rest = re.sub(r'^\s*[A-Ga-g][#b♯♭]*', '', label).lstrip(':').split('/')[0].split('(')[0].strip()
+    quality = rest if rest in CHORD_INTERVALS else ('min' if rest.startswith(('min', 'm')) and not rest.startswith('maj') else
+                                                    'dim' if rest.startswith('dim') else 'aug' if rest.startswith('aug') else
+                                                    'sus4' if rest.startswith('sus') else '7' if rest[:1].isdigit() else 'maj')
+    return [(root + i) % 12 for i in CHORD_INTERVALS[quality]]
+
+
+def lead_chords(rows):
+    """[(start, end, [pitch classes])] of a chord LAB, no-chord stretches left out."""
+    out = []
+    for i, (t0, t1, label) in enumerate(rows):
+        tones = chord_tones(label)
+        end = t1 if t1 is not None else (rows[i + 1][0] if i + 1 < len(rows) else None)
+        if tones and end is not None and end > t0:
+            out.append((t0, end, tones))
+    return out
+
+
+def lead_key(rows):
+    """{'tonic': 0-11, 'mode': 'major'|'minor'} of a key LAB: the key held longest; None when it states none."""
+    held = {}
+    for i, (t0, t1, label) in enumerate(rows):
+        tonic = pitch_class(label)
+        if tonic is None:
+            continue
+        low = label.lower()
+        mode = 'minor' if re.search(r'(:|\s)(min|minor|m)\b|^[a-g][#b]*m\b|minor', low) else 'major'
+        end = t1 if t1 is not None else (rows[i + 1][0] if i + 1 < len(rows) else t0 + 1.0)
+        held[(tonic, mode)] = held.get((tonic, mode), 0.0) + max(0.0, end - t0)
+    if not held:
+        return None
+    tonic, mode = max(held, key=lambda k: held[k])
+    return {'tonic': tonic, 'mode': mode}
+
+
+CHORD_RANGE = (50, 62)   # the left hand's chord: three notes in close position, all from D3 to D4 (one hand, no stretch)
+BASS_LOW = 40            # the lead sheet's bass: the chord's root from E2 to D#3 (on the bass staff, not below it)
+
+
+def _bass_times(chords, downbeats):
+    """Where the lead sheet's bass strikes: every chord change and every downbeat under a chord."""
+    return sorted(set([round(c[0], 4) for c in chords] + [round(t, 4) for t in downbeats if chords and chords[0][0] <= t < chords[-1][1]]))
+
+
+def chord_bass(chords, downbeats, beats=()):
+    """The bass of a lead sheet's "boom-chick" left hand: the chord's root, from E2 to D#3, struck where the chord changes and on every
+    downbeat, for one beat (the chord answers it on the next). [] without chords."""
+    if not chords:
+        return []
+    beat_s = statistics.median([b1 - b0 for b0, b1 in zip(beats[:-1], beats[1:])]) if len(beats) >= 2 else 0.5
+    times = _bass_times(chords, downbeats)
+    out = []
+    for i, t in enumerate(times):
+        here = [c for c in chords if c[0] <= t + 1e-3 < c[1]]
+        if not here:
+            continue
+        end = min(times[i + 1] if i + 1 < len(times) else here[0][1], here[0][1], t + beat_s * 1.05)
+        if end > t:
+            out.append({'on': round(t, 4), 'off': round(end, 4), 'midi': BASS_LOW + (here[0][2][0] - BASS_LOW) % 12, 'vel': 72})
+    return out
+
+
+def _close_voicing(pcs, prev):
+    """Three pitch classes as a close-position chord inside CHORD_RANGE, the inversion nearest the previous chord (the hand moves
+    least); the lowest such inversion for the first."""
+    lo, hi = CHORD_RANGE
+    options = []
+    for k in range(len(pcs)):
+        order = pcs[k:] + pcs[:k]
+        for base in range(lo, hi + 1):
+            if base % 12 != order[0]:
+                continue
+            v = [base]
+            for pc in order[1:]:
+                v.append(v[-1] + (pc - v[-1]) % 12 or 12)
+            if v[-1] <= hi + 2 and v[-1] - v[0] <= 12:
+                options.append(v)
+    if not options:
+        return None
+    if prev is None:
+        return min(options, key=lambda v: (v[0], v))
+    return min(options, key=lambda v: (sum(abs(a - b) for a, b in zip(sorted(v), sorted(prev))), v))
+
+
+def chord_accompaniment(chords, beats, downbeats=()):
+    """The chords of a lead sheet's "boom-chick" left hand: on every beat where the bass does not strike (chord_bass), the chord
+    sounding there, root, third and fifth (the seventh in place of the fifth), in close position inside CHORD_RANGE, each inversion
+    the nearest to the one before. [] without beats or chords."""
+    out = []
+    if len(beats) < 2 or not chords:
+        return out
+    strikes = set(_bass_times(chords, downbeats))
+    prev = None
+    for b0, b1 in zip(beats[:-1], beats[1:]):
+        if any(abs(b0 - t) < 0.05 for t in strikes):
+            continue
+        mid = (b0 + b1) / 2.0
+        here = [c for c in chords if c[0] <= mid < c[1]]
+        if not here:
+            continue
+        tones = here[0][2]
+        pick = tones[:3] if len(tones) <= 3 else [tones[0], tones[1], tones[3]]
+        voicing = _close_voicing(pick, prev)
+        if not voicing:
+            continue
+        prev = voicing
+        for midi in voicing:
+            out.append({'on': round(b0, 4), 'off': round(b1, 4), 'midi': midi, 'vel': 64})
+    return out
 
 
 def melody_octaves(notes, heard, near_s=0.12):

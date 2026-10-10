@@ -8597,7 +8597,7 @@ const Import = {
       grid: heard.grid, title: title
     }, Object.assign({ title: title, easy: what.mode === 'arrange', closeGaps: true, exactBars: true }, v2 ? { recording: 'v2' } : {},
       /* a song's layers are its hands: the melody above, the bass and the accompaniment (one chord a beat) below */
-      isSongHeard(heard) && what.mode !== 'arrange' ? { songLayers: true } : {}));
+      isSongHeard(heard) && what.mode !== 'arrange' ? songNotation(null, heard) : {}));
     try {
       built = convert(useV2);
       /* a v2 result the page cannot believe (a tempo outside what the rhythm controls accept, bars far off the length of the heard notes) is not kept: the classic conversion writes this score and the review screen says so */
@@ -12765,7 +12765,15 @@ function melodyFromLabel(layers) {
   return by ? from + ' · ' + by : from;
 }
 /* audio-score.js's option for a song-mode recording written again: its layers (each heard note's track) are its hands */
-function songNotation(S, heard) { return isSongHeard(heard) || (S && S.importSource && S.importSource.songLayers) ? { songLayers: true } : {}; }
+function songNotation(S, heard) {
+  const layers = isSongHeard(heard) ? heard.song : S && S.importSource && S.importSource.songLayers;
+  if (!layers) return {};
+  return Object.assign({ songLayers: true },
+    /* the key the lead sheet states, written instead of the one read from the notes */
+    layers.key && Number.isInteger(layers.key.tonic) ? { keyHint: { tonic: layers.key.tonic, mode: layers.key.mode } } : {},
+    /* its beats are the song's bars (not only evidence of the bar phase, as a beat tracker's are) when they came with these notes */
+    layers.beatsFrom === 'lead-sheet' && heard && Array.isArray(heard.beats) && heard.beats.length >= 4 ? { recBeats: 'lead-sheet' } : {});
+}
 function withSongLayers(plan, source, heard) { return isSongHeard(heard) || (source && source.songLayers) ? Object.assign({}, plan, { melodyTrack: SONG_TRACKS.melody }) : plan; }
 
 /* G10b-5: when the site does not recognise this device's PC code, the code is NOT forgotten (see Component.homeNotRecognized). It is looked at again retryAtMs after the FIRST such answer (now, +5 s, +30 s), then
@@ -15574,7 +15582,9 @@ class Component extends DCLogic {
       ensemble: { models: e.models || [], primary: e.primary || null, agreement: e.agreement, accepted: e.accepted, uncertain: e.uncertain || 0 }
     });
     /* G10d song mode: every note keeps its layer (track 1 melody, 2 bass, 3 accompaniment); the lead sheet takes the tune from the melody layer */
-    if (song) heard.song = { separation: song.separation || null, melodyFrom: song.melodyFrom || null, melodyTracker: song.melodyTracker || null, melody: song.melody | 0, bass: song.bass | 0, accomp: song.accomp | 0 };
+    if (song) heard.song = Object.assign({ separation: song.separation || null, melodyFrom: song.melodyFrom || null, melodyTracker: song.melodyTracker || null, melody: song.melody | 0, bass: song.bass | 0, accomp: song.accomp | 0 },
+      /* a lead sheet's (SheetSage2) chords as the accompaniment, its beats as the bars, its key (home-result.js checked them) */
+      song.accompFrom ? { accompFrom: song.accompFrom } : {}, song.beatsFrom ? { beatsFrom: song.beatsFrom } : {}, song.key ? { key: { tonic: song.key.tonic, mode: song.key.mode } } : {});
     return heard;
   }
   async openHomeJob(id) {

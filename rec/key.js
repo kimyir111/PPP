@@ -318,11 +318,16 @@
     /* a note may name its bar (a score whose bars are not all one length); otherwise the bar is tick / barTicks */
     const barOf = notes.map(n => (n && n.bar != null && isFinite(n.bar) ? Math.max(0, Math.min(bars - 1, n.bar | 0))
       : n && isFinite(n.tick) ? Math.max(0, Math.min(bars - 1, Math.floor(n.tick / barTicks))) : 0));
-    const chosen = chooseKey(notes, ev, { weights: ctx.weights });
+    /* ctx.key {tonic 0-11, mode 'major'|'minor'}: the key stated by the source (a lead-sheet transcriber heard it, SheetSage2), written as
+       it is and for the whole piece (no regions: that transcriber states one key) */
+    const stated = ctx.key && Number.isInteger(ctx.key.tonic) && ctx.key.tonic >= 0 && ctx.key.tonic < 12 && (ctx.key.mode === 'major' || ctx.key.mode === 'minor') ? ctx.key : null;
+    const chosen = stated ? { best: { fifths: fifthsOf(stated.tonic, stated.mode), mode: stated.mode, tonic: stated.tonic, score: null, r: null, fit: null }, margin: 1 }
+      : chooseKey(notes, ev, { weights: ctx.weights });
     const best = chosen.best;
     const key = { fifths: best.fifths, mode: best.mode, tonic: best.tonic, margin: Math.round(chosen.margin * 1e4) / 1e4,
       score: best.score, r: best.r, diatonicFit: best.fit };
-    const keyOfBar = ctx.regions === false ? new Array(bars).fill({ fifths: key.fifths, mode: key.mode, tonic: key.tonic }) : barKeys(notes, ev, barOf, bars, key, c);
+    if (stated) key.source = 'stated';
+    const keyOfBar = ctx.regions === false || stated ? new Array(bars).fill({ fifths: key.fifths, mode: key.mode, tonic: key.tonic }) : barKeys(notes, ev, barOf, bars, key, c);
     const regions = regionsOf(keyOfBar);
     const tables = new Map();
     const tableOf = k => { const id = k.fifths + ':' + k.mode + ':' + k.tonic; if (!tables.has(id)) tables.set(id, spellingTable(k, !!ctx.plain)); return tables.get(id); };

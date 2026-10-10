@@ -286,6 +286,18 @@ class MultiInstrumentTest(unittest.TestCase):
         self.assertEqual((r['song']['melody'], r['song']['bass']), (32, 32))
         self.assertEqual(sorted({n['track'] for n in r['notes']}), [1, 2, 3])
 
+    def test_lead_sheet_labels(self):
+        self.assertEqual(transcribe.chord_tones('F#:min'), [6, 9, 1])
+        self.assertEqual(transcribe.chord_tones('Bb:7/3'), [10, 2, 5, 8])
+        self.assertEqual(transcribe.chord_tones('Ebmaj7'), [3, 7, 10, 2])
+        self.assertEqual(transcribe.chord_tones('C#m'), [1, 4, 8])
+        self.assertIsNone(transcribe.chord_tones('N'))
+        self.assertEqual(transcribe.lead_key([(0.0, 10.0, 'F#:minor'), (10.0, 12.0, 'A:major')]), {'tonic': 6, 'mode': 'minor'})
+        self.assertEqual(transcribe.lead_key([(0.0, 5.0, 'Db major')]), {'tonic': 1, 'mode': 'major'})
+        self.assertEqual(transcribe.lead_key([(0.0, 5.0, 'Am')]), {'tonic': 9, 'mode': 'minor'})
+        self.assertIsNone(transcribe.lead_key([]))
+        self.assertEqual(transcribe.lab_times([(1.0, None, '2'), (0.5, None, '1'), (0.5, None, '1')]), [0.5, 1.0])
+
     def test_a_lead_sheet_note_far_from_the_tune_is_written_in_its_octave(self):
         notes = [{'on': 0.5 * i, 'off': 0.5 * i + 0.4, 'midi': m} for i, m in enumerate([76, 78, 55, 79, 81, 102])]
         self.assertEqual([n['midi'] for n in transcribe.fold_outliers(notes)], [76, 78, 67, 79, 81, 90])   # within an octave of the tune
@@ -308,9 +320,20 @@ class MultiInstrumentTest(unittest.TestCase):
             with open(py, 'w') as f:
                 f.write('#!/bin/sh\nwhile [ $# -gt 0 ]; do if [ "$1" = "--mid" ]; then cp "%s" "$2"; fi; shift; done\n' % src)
             os.chmod(py, 0o755)
+            labs = os.path.join(d, 'labs')
+            os.mkdir(labs)
+            with open(os.path.join(labs, 'beat.lab'), 'w') as f:
+                f.write(''.join('%.3f\t%d\n' % (0.5 * i, i % 4 + 1) for i in range(33)))
+            with open(os.path.join(labs, 'downbeat.lab'), 'w') as f:
+                f.write(''.join('%.3f\n' % (2.0 * i) for i in range(9)))
+            with open(os.path.join(labs, 'key.lab'), 'w') as f:
+                f.write('0.000 16.000 C:maj\n')
+            with open(os.path.join(labs, 'chord.lab'), 'w') as f:
+                f.write('0.000 4.000 C:maj\n4.000 8.000 A:min\n8.000 12.000 F:maj7\n12.000 16.000 G:7\n')
             ss2 = os.path.join(d, 'fake-ss2-python')
             with open(ss2, 'w') as f:
-                f.write('#!/bin/sh\nwhile [ $# -gt 0 ]; do if [ "$1" = "--out-dir" ]; then cp "%s" "$2/melody.mid"; fi; shift; done\n' % sheet)
+                f.write('#!/bin/sh\nwhile [ $# -gt 0 ]; do if [ "$1" = "--out-dir" ]; then cp "%s" "$2/melody.mid"; cp %s/*.lab "$2/"; fi; shift; done\n'
+                        % (sheet, labs))
             os.chmod(ss2, 0o755)
             space, model = os.path.join(d, 'space'), os.path.join(d, 'sheetsage2')
             os.mkdir(space)
@@ -318,12 +341,29 @@ class MultiInstrumentTest(unittest.TestCase):
             a = type('A', (), {'mt3_python': py, 'mt3_dir': space, 'ss2_python': ss2, 'ss2_dir': model,
                                'wav': os.path.join(d, 'in.wav'), 'out': os.path.join(d, 'out.json')})
             r = transcribe.run_song_mt3(a, 'cpu', 16.0, 0.0)
-            kept = os.path.exists(os.path.join(d, 'sheetsage2-last.mid'))
+            kept = sorted(os.listdir(os.path.join(d, 'sheetsage2-last')))
         mel = sorted((n for n in r['notes'] if n['track'] == 1), key=lambda n: n['on'])
         self.assertEqual([n['midi'] for n in mel], self.TUNE_B)
         self.assertEqual(r['song']['melodyTracker'], 'lead-sheet')
-        self.assertIn(self.TUNE_A[0], {n['midi'] for n in r['notes'] if n['track'] == 3})   # the old melody went to the accompaniment
-        self.assertTrue(kept)
+        # a "boom-chick" left hand: the chord's root on each downbeat (and chord change) for a beat, the chord in close position on
+        # the other three beats, each inversion the nearest to the one before (C: E G C, Am: E A C, Fmaj7: F A E, G7: F G B)
+        acc = [n for n in r['notes'] if n['track'] == 3]
+        self.assertEqual(r['song']['accompFrom'], 'lead-sheet')
+        self.assertEqual(len(acc), 24 * 3)
+        at = lambda t: sorted(n['midi'] for n in acc if abs(n['on'] - t) < 1e-6)
+        self.assertEqual([at(0.5), at(4.5), at(8.5), at(12.5)], [[52, 55, 60], [52, 57, 60], [53, 57, 64], [53, 55, 59]])
+        self.assertEqual(at(0.0), [])
+        self.assertTrue(all(max(at(n['on'])) - min(at(n['on'])) <= 12 for n in acc))   # one hand, no stretch
+        bass = sorted((n for n in r['notes'] if n['track'] == 2), key=lambda n: n['on'])
+        self.assertEqual([(n['on'], n['midi']) for n in bass], [(0.0, 48), (2.0, 48), (4.0, 45), (6.0, 45), (8.0, 41), (10.0, 41), (12.0, 43), (14.0, 43)])
+        self.assertTrue(all(n['off'] - n['on'] <= 0.53 for n in bass))           # for a beat: the chord answers it
+        self.assertEqual(r['song']['bass'], 8)
+        # its beats, bar lines and key go with the notes
+        self.assertEqual(len(r['beats']), 33)
+        self.assertEqual(r['downbeats'][:3], [0.0, 2.0, 4.0])
+        self.assertEqual(r['song']['beatsFrom'], 'lead-sheet')
+        self.assertEqual(r['song']['key'], {'tonic': 0, 'mode': 'major'})
+        self.assertEqual(kept, ['beat.lab', 'chord.lab', 'downbeat.lab', 'key.lab', 'melody.mid'])
 
     @unittest.skipIf(os.name == 'nt', 'the fake SheetSage2 is a shell script')
     def test_a_failing_sheetsage2_leaves_the_song_as_before(self):

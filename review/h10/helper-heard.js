@@ -50,7 +50,13 @@ function convertHelperNotes(raw) {
       modelFailures: raw.modelFailures && raw.modelFailures.length ? raw.modelFailures : null, invalidNotesDropped: dropped
     }
   };
-  if (song) heard.song = { separation: raw.song && typeof raw.song.separation === 'string' ? raw.song.separation : null, melodyFrom: raw.song && typeof raw.song.melodyFrom === 'string' ? raw.song.melodyFrom : null };
+  if (song) {
+    const rs = raw.song && typeof raw.song === 'object' ? raw.song : {};
+    const str = k => (typeof rs[k] === 'string' ? rs[k] : null);
+    /* which method found the tune and played the accompaniment, and the key and bars a lead-sheet transcriber stated (home-result.js checks them) */
+    heard.song = { separation: str('separation'), melodyFrom: str('melodyFrom'), melodyTracker: str('melodyTracker'), accompFrom: str('accompFrom'), beatsFrom: str('beatsFrom'),
+      key: rs.key && typeof rs.key === 'object' && Number.isInteger(rs.key.tonic) && typeof rs.key.mode === 'string' ? { tonic: rs.key.tonic, mode: rs.key.mode } : null };
+  }
   return { heard: heard, report: { notes: notes.length, dropped: dropped, uncertain: heard.helper.uncertain, pedalsDropped: heard.helper.pedalSpansDropped, duration: duration } };
 }
 
