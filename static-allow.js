@@ -36,6 +36,8 @@ const CODE_DIRS = 'scoregraph|engrave|playability|difficulty|songgraph|arrangeme
 
 const RULES = [
   new RegExp('^(?:' + CODE_DIRS + ')/[\\w.-]+\\.js$'),
+  /* G11a-3: the practice plan of the graph (PPP.practice 'graph' asks for it, once). Only this file: practice/ also holds the simulator and the variant splice, which no page loads */
+  /^practice\/plan\.js$/,
   /* the trained weights the stages read (rec/weights/*.json, difficulty/weights/g6a-v1.json) */
   /^(?:rec|difficulty)\/weights\/[\w.-]+\.json$/,
   /* G12-1, G12-2: the OMR normaliser and the PdfLayer findings as graph edits, fetched by the page when PPP.omr = 'v2' needs them. Only these two files of omr/: omr/helper-output.js is the local helper's (Node only) */

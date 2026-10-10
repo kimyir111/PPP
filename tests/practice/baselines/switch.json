@@ -1,0 +1,66 @@
+{
+ "schema": 1,
+ "about": "G11a-3 off-path identity (tests/practice/switch.js): the scheduler queue of the 12 pieces of the parity harness at 8x (every note on/off, CC and click, six to eight cases a piece) as the legacy player made it on main before the switch existed (a070d70): runs, queued events and a digest of the lot. Rewritten by `node tests/practice/switch.js record --url URL` on a checkout of that tree.",
+ "spies": {
+  "catalog/method/sonatina/020.mxl": {
+   "runs": 8,
+   "events": 9875,
+   "digest": "b476edf33cf69657"
+  },
+  "catalog/hymns/all-creatures.musicxml": {
+   "runs": 8,
+   "events": 2726,
+   "digest": "e2c523be25809755"
+  },
+  "tests/engrave/fixtures/e/E16-dynamics-hairpins.musicxml": {
+   "runs": 8,
+   "events": 624,
+   "digest": "b360baa15caf20ea"
+  },
+  "tests/engrave/fixtures/e/E17-pedal.musicxml": {
+   "runs": 6,
+   "events": 119,
+   "digest": "bba4b1b4d535189b"
+  },
+  "tests/engrave/fixtures/e/E18-ottava.musicxml": {
+   "runs": 6,
+   "events": 120,
+   "digest": "c153d1e589ebaf29"
+  },
+  "tests/engrave/fixtures/e/E22-repeats-jumps.musicxml": {
+   "runs": 8,
+   "events": 583,
+   "digest": "da7e32f48af9f193"
+  },
+  "tests/engrave/fixtures/e/E40-arpeggio-gliss.musicxml": {
+   "runs": 6,
+   "events": 68,
+   "digest": "114f03521a4b33d5"
+  },
+  "tests/scoregraph/fixtures/xml/repeats-endings-1-2.musicxml": {
+   "runs": 8,
+   "events": 462,
+   "digest": "e77845251d20a50b"
+  },
+  "tests/scoregraph/fixtures/xml/pickup-3-4.musicxml": {
+   "runs": 6,
+   "events": 74,
+   "digest": "1fca30a7999b93d3"
+  },
+  "tests/scoregraph/fixtures/xml/ties-slurs.musicxml": {
+   "runs": 6,
+   "events": 128,
+   "digest": "1738be49b3648842"
+  },
+  "tests/practice/fixtures/pedals.musicxml": {
+   "runs": 8,
+   "events": 560,
+   "digest": "5a9bf0fa2879d229"
+  },
+  "tests/practice/fixtures/tempo-change.musicxml": {
+   "runs": 6,
+   "events": 176,
+   "digest": "72ff2c745b0e9ee4"
+  }
+ }
+}

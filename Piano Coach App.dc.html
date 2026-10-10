@@ -3494,6 +3494,169 @@ const PianoScore = {
   }
 };
 
+/* ============================ G11a-3: practice on the graph (PPP.practice) ============================
+   docs/GOALS/G11_ADAPTIVE_PRACTICE.md sections 5 (G11-D1, G11-D11) and 6.3. PPP.practice = 'legacy' (default) | 'graph'; a value that is neither is no choice, and no choice is the default.
+   'legacy' is the player the app has always had: practicePlan() below IS PianoScore.of (the same call, the same cache, the same object), the page asks for nothing of practice/ and
+   nothing else changes. 'graph' makes the plan from the ScoreGraph the renderer already resolves for the song (practice/plan.js, loaded only then, the first time it is asked for) and
+   hands the player, the matcher, the falling notes and follow mode the SAME shape of plan PianoScore.build makes, with the graph's ids on it (ev, head on a strike, id on a visit).
+   In this phase the plan runs in compat mode (every fix option off: the play order, the notes, the pedal, the beats are the legacy player's to the last bit, proved event by event by
+   tests/practice/parity.js), so 'graph' must look and sound exactly like 'legacy'; the fix options (jumps, graces, follow mode repeats and ties) are not reachable from the page (G11a-4).
+   A song whose graph does not state its music (the source is not resolved yet, its link is not ok, or the module is not here yet) keeps the legacy plan, and the fallback is counted
+   (PPP.practiceStats.practiceFallback: total, by reason, by song); nothing throws and playback is never held up.
+   The choice is remembered on this device (localStorage 'ppp.practice.v1'); ?practice=graph or ?practice=legacy in the address is for that visit only. */
+const PRACTICE_KEY = 'ppp.practice.v1';
+const PRACTICE_DEFAULT = 'legacy';
+const PRACTICE_PLAN_SCRIPT = 'practice/plan.js';
+const PRACTICE_FILE_V = 1; /* the ?v= of practice/plan.js: bump it when the file changes */
+function practiceChoice(v) { return v === 'legacy' || v === 'graph' ? v : null; }
+let PRACTICE_MODE = (() => {
+  let m = PRACTICE_DEFAULT;
+  try { m = practiceChoice(localStorage.getItem(PRACTICE_KEY)) || m; } catch (e) { /* no storage: the default */ }
+  try { const u = practiceChoice(new URLSearchParams(location.search).get('practice')); if (u) m = u; } catch (e) { /* no address to read */ }
+  return m;
+})();
+/* a choice is remembered; a value that is no choice puts the default back and forgets the remembered one. 'graph' asks for practice/plan.js. */
+function setPracticeMode(v) {
+  const c = practiceChoice(v);
+  PRACTICE_MODE = c || PRACTICE_DEFAULT;
+  try { if (c) localStorage.setItem(PRACTICE_KEY, c); else localStorage.removeItem(PRACTICE_KEY); } catch (e) { /* not remembered */ }
+  if (c === 'graph') loadPracticeModule();
+  return PRACTICE_MODE;
+}
+/* what 'graph' did: plans made from a graph, and the plans that stayed legacy, by reason and by song (the id of the Score, like PPP.engraveStats.bySong) */
+const PRACTICE_STATS = { graph: 0, practiceFallback: { total: 0, reasons: {}, bySong: {} } };
+function practiceCountFallback(score, reason) {
+  const f = PRACTICE_STATS.practiceFallback;
+  f.total++;
+  f.reasons[reason] = (f.reasons[reason] || 0) + 1;
+  const id = String(score && score.id != null ? score.id : '?');
+  const s = f.bySong[id] || (f.bySong[id] = { total: 0, reasons: {} });
+  s.total++;
+  s.reasons[reason] = (s.reasons[reason] || 0) + 1;
+}
+function practiceModuleReady() {
+  const P = typeof window !== 'undefined' && window.PPPPractice && window.PPPPractice.plan;
+  return !!(P && typeof P.build === 'function' && typeof P.followGates === 'function');
+}
+let _practicePromise = null, _practiceFailedAt = 0;
+/* practice/plan.js, once; resolves true when PPPPractice.plan is on the page, false when it could not be had (asked for again, at most every 20 s, by the next plan). Never rejects. */
+function loadPracticeModule() {
+  if (practiceModuleReady()) return Promise.resolve(true);
+  if (_practicePromise) return _practicePromise;
+  _practicePromise = new Promise(resolve => {
+    const done = () => { _practicePromise = null; const ok = practiceModuleReady(); if (!ok) _practiceFailedAt = Date.now(); resolve(ok); };
+    try {
+      const el = document.createElement('script');
+      el.src = './' + PRACTICE_PLAN_SCRIPT + '?v=' + PRACTICE_FILE_V;
+      el.async = true;
+      el.onload = done;
+      el.onerror = done;
+      document.head.appendChild(el);
+    } catch (e) { done(); }
+  });
+  return _practicePromise;
+}
+/* something that could turn a fallback into a graph plan has happened since: the module arrived, or the engraver resolved another Score (the source of a song is resolved without a
+   wait only after the renderer, or an import, has made it) */
+function practiceStamp() {
+  let n = 0;
+  try {
+    const st = window.PPPEngrave && window.PPPEngrave.app.stats;
+    if (st) n = (st.remembered || 0) + (st.resolved.live || 0) + (st.resolved.store || 0) + (st.resolved.projected || 0) + (st.resolved.none || 0);
+  } catch (e) { /* no engraver */ }
+  return (practiceModuleReady() ? 'm' : 'x') + n;
+}
+/* Score note of every graph head: the link of the source says which graph event and head each Score note is (engrave/source.js identity) */
+const PRACTICE_HEADS = new WeakMap();
+function practiceHeads(score, link) {
+  const by = link && link.byNote, notes = score && score.notes;
+  if (!by || !notes || by.length !== notes.length) return null;
+  let m = PRACTICE_HEADS.get(link);
+  if (!m) {
+    m = new Map();
+    for (let i = 0; i < notes.length; i++) { const l = by[i]; if (l && l.head) m.set(l.head, notes[i]); }
+    PRACTICE_HEADS.set(link, m);
+  }
+  return m;
+}
+/* The graph plan of a range, or {reason} (never throws). `a`/`b` are measure numbers, as PianoScore.of takes them. The strikes name their Score note (strike.note: what the matcher, the falling
+   notes and the scheduler read today) next to the graph's ev/head, and plan.hold / plan.cont answer for the Score notes too (PianoScore.hold and .struck take a Score note), so every reader of
+   the plan reads what it read before. */
+function practiceGraphBuild(score, a, b, src0) {
+  if (!practiceModuleReady()) {
+    if (!_practicePromise && Date.now() - _practiceFailedAt > 20000) loadPracticeModule();
+    return { reason: 'NOT_LOADED' };
+  }
+  if (typeof window === 'undefined' || !window.PPPEngrave) return { reason: 'NO_ENGRAVER' };
+  const ms = score.measures || [];
+  if (!ms.length || !score.notes) return { reason: 'EMPTY' };
+  let src = src0;
+  if (!src) { try { src = window.PPPEngrave.app.resolveSync(score); } catch (e) { return { reason: 'RESOLVE_ERROR' }; } }
+  if (!src || !src.graph) return { reason: 'NO_GRAPH' };
+  if (!src.link || !src.link.ok) return { reason: 'LINK_FAILED' };
+  const tl = src.graph.timeline && src.graph.timeline.measures;
+  if (!tl || tl.length !== ms.length) return { reason: 'MEASURES' };
+  const heads = practiceHeads(score, src.link);
+  if (!heads) return { reason: 'IDENTITY' };
+  const qpm = +score.tempo > 0 && isFinite(+score.tempo) ? +score.tempo : 84;
+  let plan;
+  try {
+    const i0 = (Score.measure(score, a) || ms[0]).index, i1 = (Score.measure(score, b) || ms[ms.length - 1]).index;
+    plan = window.PPPPractice.plan.build(src.graph, { range: { from: i0, to: i1 }, defaultQpm: qpm, legacyCompat: true, jumps: false, graces: false });
+    const strikes = plan.strikes;
+    for (let i = 0; i < strikes.length; i++) {
+      const n = heads.get(strikes[i].head);
+      if (!n) return { reason: 'IDENTITY' };
+      /* The Score puts a note where its measure NUMBER says, the graph where the measure IS: with two measures of one number (1, 2, 2, 3) the Score has both at the later one and the
+         graph at their own places, and the highlighter and the hand guide (which read the Score) would not follow the sound. Such a song keeps the legacy plan, counted. */
+      if (Math.abs(strikes[i].abs - n.abs) > 1e-6) return { reason: 'ABS_MISMATCH' };
+      strikes[i].note = n;
+    }
+    const holds = [], conts = [];
+    plan.hold.forEach((q, head) => { const n = heads.get(head); if (n) holds.push([n, q]); });
+    plan.cont.forEach(head => { const n = heads.get(head); if (n) conts.push(n); });
+    holds.forEach(h => plan.hold.set(h[0], h[1]));
+    conts.forEach(n => plan.cont.add(n));
+  } catch (e) {
+    return { reason: 'BUILD_ERROR' };
+  }
+  return { plan: plan, src: src };
+}
+const PRACTICE_CACHE = typeof WeakMap === 'function' ? new WeakMap() : null;
+/* One plan per (Score, range), like PianoScore.of: a graph plan is kept for good; a fallback whose reason can change (the module is not here, the engraver has no graph or no good link for the Score yet) is kept until
+   something that could change it has happened (practiceStamp), and then decided again, at most five times; the others (the graph and the Score disagree about the measures, a plan that cannot be built) for good. */
+const PRACTICE_RETRY = { NOT_LOADED: 1, NO_ENGRAVER: 1, RESOLVE_ERROR: 1, NO_GRAPH: 1, LINK_FAILED: 1 };
+function practiceGraphPlan(score, from, to) {
+  if (!score) return PianoScore.of(score, from, to);
+  const a = from == null ? Score.first(score) : from;
+  const b = to == null ? Score.last(score) : to;
+  const key = a + ':' + b;
+  let bag = PRACTICE_CACHE && PRACTICE_CACHE.get(score);
+  const hit = bag && bag[key];
+  if (hit && (hit.graph || !(hit.tries < 5 && PRACTICE_RETRY[hit.reason] && hit.stamp !== practiceStamp()))) return hit.plan;
+  const r = practiceGraphBuild(score, a, b, bag && bag.src);
+  const tries = hit && !hit.graph ? hit.tries + 1 : 1;
+  let entry;
+  if (r.plan) {
+    PRACTICE_STATS.graph++;
+    entry = { plan: r.plan, graph: true };
+  } else {
+    practiceCountFallback(score, r.reason);
+    entry = { plan: PianoScore.of(score, from, to), graph: false, reason: r.reason, tries: tries, stamp: practiceStamp() };
+  }
+  if (PRACTICE_CACHE) {
+    if (!bag) { bag = {}; PRACTICE_CACHE.set(score, bag); }
+    bag[key] = entry;
+    if (r.src) bag.src = r.src;
+  }
+  return entry.plan;
+}
+/* THE ONE FUNCTION the practice code asks for a plan (it replaced PianoScore.of at its nine call sites). Under 'legacy' it is PianoScore.of, with nothing else done. */
+function practicePlan(score, from, to) {
+  if (PRACTICE_MODE !== 'graph') return PianoScore.of(score, from, to);
+  return practiceGraphPlan(score, from, to);
+}
+
 /* ============================================================================
    FALLING-NOTE TIMELINE
 
@@ -3562,7 +3725,7 @@ function scoreToVisualTimeline(score, options) {
   }
   const from = options.from == null ? Score.first(score) : options.from;
   const to = options.to == null ? Score.last(score) : options.to;
-  const plan = options.plan || PianoScore.of(score, from, to);
+  const plan = options.plan || practicePlan(score, from, to);
   const practiceTempo = +options.tempo || score.tempo || 84;
   const scale = practiceTempo / Math.max(1, score.tempo || practiceTempo);
   const notes = [];
@@ -6233,7 +6396,7 @@ class PerformanceEngine {
     const from = run.from, to = run.to;
     const startQ = Score.startQ(score, from);
     const perQuarterMs = 60000 / Math.max(1, run.tempo);
-    const plan = PianoScore.of(score, from, to);
+    const plan = run.plan || practicePlan(score, from, to);
     const scale = (run.tempo || score.tempo || 84) / Math.max(1, score.tempo || run.tempo || 84);
     this._plan = plan;
     this._scale = scale;
@@ -6250,6 +6413,9 @@ class PerformanceEngine {
       .map((s, i) => ({
         id: i,
         note: s.note,
+        evId: s.ev,        /* the graph's event id; `ev` is where noteOn keeps the key event that matched the note */
+        head: s.head,
+        mIdx: s.visit ? s.visit.index : undefined,
         midi: s.midi,
         m: s.m,
         hand: s.hand,
@@ -6406,18 +6572,19 @@ class PerformanceEngine {
 
     /* Per measure the learning model needs more than a ratio: what went wrong,
        how far off the timing was, and which hand it happened in. */
-    const byMeasure = {};
-    const bucket = m => {
-      if (!byMeasure[m]) byMeasure[m] = {
+    /* byMeasure is keyed by the measure NUMBER (what Learning.record reads); byMeasureIdx holds the same buckets by the measure's INDEX in the score (G11-D4: numbers repeat and skip) */
+    const byMeasure = {}, byMeasureIdx = {};
+    const bucket = (map, m) => {
+      if (!map[m]) map[m] = {
         total: 0, matched: 0, missed: 0, wrong: 0, extra: 0,
         onTime: 0, early: 0, late: 0, timingAbsSum: 0, timingCount: 0,
         hands: { r: { total: 0, matched: 0, timingAbsSum: 0, timingCount: 0 },
                  l: { total: 0, matched: 0, timingAbsSum: 0, timingCount: 0 } }
       };
-      return byMeasure[m];
+      return map[m];
     };
-    exp.forEach(x => {
-      const b = bucket(x.m), hb = b.hands[x.hand] || b.hands.r;
+    const tally = (b, x) => {
+      const hb = b.hands[x.hand] || b.hands.r;
       b.total++; hb.total++;
       if (x.matched) {
         b.matched++; hb.matched++;
@@ -6426,17 +6593,34 @@ class PerformanceEngine {
         hb.timingAbsSum += d; hb.timingCount++;
         if (x.verdict === 'on') b.onTime++; else if (x.verdict === 'early') b.early++; else b.late++;
       } else b.missed++;
+    };
+    exp.forEach(x => {
+      tally(bucket(byMeasure, x.m), x);
+      if (x.mIdx != null) tally(bucket(byMeasureIdx, x.mIdx), x);
     });
-    this.wrong.forEach(x => { if (x.m != null) bucket(x.m).wrong++; });
-    this.extras.forEach(x => { if (x.m != null) bucket(x.m).extra++; });
-    Object.keys(byMeasure).forEach(k => {
-      const b = byMeasure[k];
+    /* a stray key has no note: its bar by index is where the playhead was (worked out here, once per run, not at every key) */
+    const idxAt = t => {
+      const ms = this.score.measures || [];
+      if (!ms.length || !this.run) return null;
+      const q = this._plan
+        ? Math.max(0, PianoScore.writtenAtSound(this._plan, PianoScore.qAt(this._plan, Math.max(0, t - this.run.startedAt), this._scale || 1)))
+        : Math.max(0, this.run.startQ + (t - this.run.startedAt) / this.run.perQuarterMs);
+      if (q < ms[0].startQ) return 0;
+      let lo = 0, hi = ms.length - 1;
+      while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (ms[mid].startQ <= q) lo = mid; else hi = mid - 1; }
+      return lo;
+    };
+    this.wrong.forEach(x => { if (x.m != null) { bucket(byMeasure, x.m).wrong++; const i = idxAt(x.t); if (i != null) bucket(byMeasureIdx, i).wrong++; } });
+    this.extras.forEach(x => { if (x.m != null) { bucket(byMeasure, x.m).extra++; const i = idxAt(x.t); if (i != null) bucket(byMeasureIdx, i).extra++; } });
+    [byMeasure, byMeasureIdx].forEach(map => Object.keys(map).forEach(k => {
+      const b = map[k];
       b.accuracy = b.total ? b.matched / b.total : 1;
-    });
+    }));
 
     return {
       accuracy, noteAccuracy, timingAccuracy,
       byMeasure: byMeasure,
+      byMeasureIdx: byMeasureIdx,
       byHand: group(x => x.hand),
       bySection: group(x => sectionOf(x.m)),
       meanDeltaMs: matched.length ? Math.round(matched.reduce((a, x) => a + x.deltaMs, 0) / matched.length) : 0,
@@ -10690,6 +10874,12 @@ window.PPP = {
   /* G08b §11: 'single' (default since G9e default-on: one note per hand) | 'legacy' | 'g8'. Any other value is 'legacy' (G4-F2-1's convention). */
   get arranger() { return ARRANGER_MODE; },
   set arranger(v) { ARRANGER_MODE = v === 'g8' ? 'g8' : v === 'single' ? 'single' : 'legacy'; },
+  /* G11a-3 (docs/GOALS/G11 section 6.3): 'legacy' (default) | 'graph'. Any other value is no choice: the default comes back and the remembered choice is forgotten (PPP.recording's rule). A choice is remembered on this device; ?practice= in the address is for that visit only.
+     practicePlan is the one function the practice code asks for a plan; practiceStats counts what 'graph' did (plans from the graph, and the plans that stayed legacy by reason and by song); loadPracticeModule resolves true once practice/plan.js is on the page. */
+  get practice() { return PRACTICE_MODE; },
+  set practice(v) { setPracticeMode(v); },
+  practicePlan, loadPracticeModule, practiceGraphBuild,
+  get practiceStats() { return PRACTICE_STATS; },
   /* G13-1 (G13-D3): true = React came from unpkg (?cdn=1 or the remembered '1'), false (default) = vendor/react-18.3.1/. Read-only truth about THIS load; a new value applies on the next load. Any value but '1' is no choice: the default returns and the remembered choice is forgotten. */
   get cdn() { return window.PPP_CDN === true; },
   set cdn(v) { try { if (v === '1' || v === 1 || v === true) localStorage.setItem('ppp.cdn', '1'); else localStorage.removeItem('ppp.cdn'); } catch (e) { /* not remembered */ } },
@@ -10726,6 +10916,8 @@ window.PPP = {
   ScoreSearch: (typeof window !== 'undefined' ? window.PPPScoreSearch : null),
   Coach, COACH, Fingering, HandArt, tx: tx
 };
+/* G11a-3: a page that starts on PPP.practice 'graph' asks for practice/plan.js now (a page on 'legacy' never does) */
+if (PRACTICE_MODE === 'graph') loadPracticeModule();
 /* ============================================================================
    WHAT A PDF SAYS IN ITS OWN WORDS
 
@@ -14272,16 +14464,22 @@ class Component extends DCLogic {
      lap start its clock aligned to where the playhead actually is. */
   beginRun(S, beatNow, at) {
     const [from, to] = this.range(S);
-    const plan = PianoScore.of(S.score, from, to);
+    /* G11a-3: a run keeps the plan it began on. A lap of a transport that is running begins on the transport's own plan, so a PPP.practice flipped in the middle of a run changes neither what is heard
+       nor what the matcher expects (under 'legacy' with a legacy plan this is the call it always was). */
+    const tp = this._tp;
+    const keep = !!(tp && tp.plan && (PRACTICE_MODE === 'graph' || tp.plan.graph) && tp.key === this.transportKey(S));
+    const plan = keep ? tp.plan : practicePlan(S.score, from, to);
     const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);
     const startQ = Score.startQ(S.score, from);
     const sq = PianoScore.soundAtWritten(plan, beatNow == null ? startQ : beatNow);
     /* `at` is when beatNow is heard; the transport starts a beat a moment
        ahead so its first notes land whole */
-    this.perf().begin({
+    const run = {
       from, to, hands: S.hands, tempo: S.tempo, practiceMode: S.practiceMode,
       startedAt: (at == null ? nowMs() : at) - PianoScore.msAt(plan, sq, scale)
-    });
+    };
+    if (keep) run.plan = plan;
+    this.perf().begin(run);
   }
 
   /* ======================== follow mode ========================
@@ -14321,8 +14519,16 @@ class Component extends DCLogic {
   followGates() {
     const S = this.state;
     const [from, to] = this.range(S);
-    const key = S.score.id + ':' + from + ':' + to + ':' + S.hands;
+    /* G11a-3: under PPP.practice 'graph' the gates are the graph plan's (practice/plan.js followGates: with every fix option off, today's gates, plus the graph's ids) when this song has one */
+    const gp = PRACTICE_MODE === 'graph' ? practicePlan(S.score, from, to) : null;
+    const viaGraph = !!(gp && gp.graph && practiceModuleReady());
+    const key = S.score.id + ':' + from + ':' + to + ':' + S.hands + (viaGraph ? ':graph' : '');
     if (this._gatesKey === key && this._gates) return this._gates;
+    if (viaGraph) {
+      this._gatesKey = key;
+      this._gates = window.PPPPractice.plan.followGates(gp, S.hands);
+      return this._gates;
+    }
     const playAt = {}, restAt = {}, spans = [];
     const tok = t => t.toFixed(5);
     Score.allIn(S.score, from, to).forEach(n => {
@@ -14691,7 +14897,7 @@ class Component extends DCLogic {
     if (this._tp && this.midiOutLive()) this.midiOutLayer().panic(nowMs());
     const now = nowMs();
     const [from, to] = this.range(S);
-    const plan = PianoScore.of(S.score, from, to);
+    const plan = practicePlan(S.score, from, to);
     const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);
     const t0 = now + this.leadMs(now);
     const writtenStart = Score.startQ(S.score, from);
@@ -14750,7 +14956,7 @@ class Component extends DCLogic {
     } else if (tp.key !== key) {
       /* What the audio thread already has cannot be taken back without a
          click, so it stays, and the new plan picks up exactly where it ends. */
-      const oldPlan = tp.plan || PianoScore.of(S.score, from, to);
+      const oldPlan = tp.plan || practicePlan(S.score, from, to);
       const oldScale = tp.scale || 1;
       let sq = PianoScore.qAt(oldPlan, PianoScore.msAt(oldPlan, tp.b0, oldScale) + Math.max(0, now - tp.t0), oldScale);
       let t0 = Math.max(now, tp.t0), skip = -Infinity;
@@ -14763,7 +14969,7 @@ class Component extends DCLogic {
           t0 = heard; skip = sq;
         }
       }
-      const plan = PianoScore.of(S.score, from, to);
+      const plan = practicePlan(S.score, from, to);
       const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);
       if (sq < -0.001 || sq >= plan.soundLengthQ) {
         this.startTransport(S, writtenStart);
@@ -14795,7 +15001,7 @@ class Component extends DCLogic {
       }
     }
 
-    const plan = tp.plan || PianoScore.of(S.score, from, to);
+    const plan = tp.plan || practicePlan(S.score, from, to);
     const scale = tp.scale || 1;
     const endB = plan.soundLengthQ;
     let prevSq = tp.soundQ != null ? tp.soundQ : tp.b0;
@@ -14890,7 +15096,7 @@ class Component extends DCLogic {
     const clicks = audioOk && S.metro && S.toggles.sound;
     if (!sendMidi && !sendAudio && !clicks) return;
     const [rf, rt] = this.range(S);
-    const plan = tp.plan || PianoScore.of(S.score, rf, rt);
+    const plan = tp.plan || practicePlan(S.score, rf, rt);
     const scale = tp.scale || 1;
     const endB = plan.soundLengthQ;
     const list = plan.strikes || [];
@@ -14957,7 +15163,7 @@ class Component extends DCLogic {
        performance engine scores them, so the simulation stands down. */
     if (this.liveMidi()) return out;
     const [from, to] = this.range(S);
-    const plan = PianoScore.of(S.score, from, to);
+    const plan = practicePlan(S.score, from, to);
     const list = plan.strikes || [];
     for (let i = firstAtOrAfter(list, a, 'q'); i < list.length; i++) {
       const s = list[i];
@@ -18597,9 +18803,12 @@ class Component extends DCLogic {
     const range = this.range(S), from = range[0], to = range[1];
     const tempo = +S.tempo || S.score.tempo || 84;
     const c = this._visualTimeline;
-    if (c && c.score === S.score && c.from === from && c.to === to && c.tempo === tempo) return c.timeline;
-    const timeline = scoreToVisualTimeline(S.score, { from: from, to: to, tempo: tempo });
-    this._visualTimeline = { score: S.score, from: from, to: to, tempo: tempo, timeline: timeline };
+    /* G11a-3: the plan is part of the key: a timeline built on the legacy plan while practice/plan.js was still on its way is not the one the transport (which has the graph plan by now) is on,
+       and visualTransportFrame would fall back to the 40 ms beat for want of the same plan */
+    const plan = S.score.measures && S.score.measures.length ? practicePlan(S.score, from, to) : null;
+    if (c && c.score === S.score && c.from === from && c.to === to && c.tempo === tempo && c.plan === plan) return c.timeline;
+    const timeline = scoreToVisualTimeline(S.score, { from: from, to: to, tempo: tempo, plan: plan });
+    this._visualTimeline = { score: S.score, from: from, to: to, tempo: tempo, plan: plan, timeline: timeline };
     return timeline;
   }
   /* The canvas samples this on every animation frame. During playback it reads

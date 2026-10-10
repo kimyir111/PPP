@@ -59,7 +59,8 @@ function appPlayer() {
   const a = html.indexOf('\n  followGates() {');
   const z = html.indexOf('\n  followDisarmRest()', a);
   if (a < 0 || z < a) throw new Error('followGates is not where it was');
-  const gates = new Function('Score', 'return ({' + html.slice(a + 1, z) + '});')(lib.Score);
+  /* G11a-3: the method asks PPP.practice's switch (PRACTICE_MODE) whether the gates come from the graph plan; here it is the legacy player's, the oracle */
+  const gates = new Function('Score', 'PRACTICE_MODE', 'practicePlan', 'practiceModuleReady', 'return ({' + html.slice(a + 1, z) + '});')(lib.Score, 'legacy', null, null);
   app = {
     Score: lib.Score,
     PianoScore: lib.PianoScore,
