@@ -740,7 +740,7 @@ def run_song_mt3(a, device, duration, t0):
     tracker, filled = 'multi-instrument', []
     lead = lead_sheet_melody(a, heard, duration)
     if lead:
-        # the tune a lead sheet writes (Sheet Sage); the instrument line chosen above goes back to the accompaniment
+        # the tune a lead sheet writes (SheetSage2); the instrument line chosen above goes back to the accompaniment
         accomp = sorted(accomp + melody, key=lambda n: (n['on'], n['midi']))
         melody, tracker = lead, 'lead-sheet'
     else:
@@ -767,59 +767,54 @@ def run_song_mt3(a, device, duration, t0):
     }
 
 
+def ss2_ready(a):
+    return bool(getattr(a, 'ss2_python', '') and getattr(a, 'ss2_dir', '') and os.path.exists(a.ss2_python) and os.path.isdir(a.ss2_dir))
+
+
 def lead_sheet_melody(a, heard, duration):
-    """The melody from Sheet Sage (sheetsage_melody.py) when its model is downloaded and Beat This is installed, each note in the
-    octave YourMT3 heard it in; [] otherwise (the song is then written from YourMT3's lines as before). Kept as
-    tools/sheetsage-last.json beside the YourMT3 MIDI."""
-    try:
-        import sheetsage_melody
-        if not sheetsage_melody.ready():
-            return []
-        import soundfile as sf
-        say('PROGRESS 0.920')
-        beats, downbeats = sheetsage_melody.beats_of(a.wav)
-        y, sr = sf.read(a.wav, dtype='float32', always_2d=True)
-        notes = sheetsage_melody.transcribe(y.mean(axis=1), sr, beats, downbeats)
-    except Exception as e:
-        say('NOTE the lead-sheet melody (Sheet Sage) did not run: %s: %s' % (type(e).__name__, str(e)[:300]))
+    """The melody from SheetSage2 (m-a-p/SheetSage2: a full song to a lead sheet - melody, chords, beats, key) when it is installed
+    (tools/home-worker/setup-sheetsage2.cmd), run in its own Python through sheetsage2_run.py; [] otherwise or on any failure (a
+    NOTE line), and the song is then written from YourMT3's lines as before. Its melody MIDI is kept as tools/sheetsage2-last.mid."""
+    if not ss2_ready(a):
         return []
-    notes = melody_octaves(notes, heard)
+    import midi_notes
+    work = tempfile.mkdtemp(prefix='ss2-', dir=os.path.dirname(os.path.abspath(a.out)))
     try:
-        with open(os.path.join(os.path.dirname(os.path.abspath(a.mt3_dir)), 'sheetsage-last.json'), 'w', encoding='utf-8') as f:
-            json.dump({'notes': notes}, f)
-    except (OSError, AttributeError, TypeError):
-        pass
-    return [dict(n, vel=80) for n in notes]
+        say('PROGRESS 0.920')
+        runner = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sheetsage2_run.py')
+        env = dict(os.environ, PYTHONIOENCODING='utf-8')
+        r = subprocess.run([a.ss2_python, runner, '--model-dir', a.ss2_dir, '--wav', a.wav, '--out-dir', work], capture_output=True,
+                           text=True, encoding='utf-8', errors='replace', env=env, timeout=max(600, int(duration * 10)))
+        mid = os.path.join(work, 'melody.mid')
+        if r.returncode != 0 or not os.path.exists(mid):
+            raise RuntimeError('exit %s: %s' % (r.returncode, (r.stderr or r.stdout or '')[-400:]))
+        try:
+            shutil.copyfile(mid, os.path.join(os.path.dirname(os.path.abspath(a.ss2_dir)), 'sheetsage2-last.mid'))
+        except OSError:
+            pass
+        notes = [{'on': round(float(n['on']), 4), 'off': round(float(n['off']), 4), 'midi': int(n['midi'])}
+                 for n in midi_notes.read_notes(mid)['notes'] if float(n['off']) > float(n['on'])]
+    except Exception as e:
+        say('NOTE the lead-sheet melody (SheetSage2) did not run: %s: %s' % (type(e).__name__, str(e)[:300]))
+        return []
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    return [dict(n, vel=80) for n in fold_outliers(sorted(notes, key=lambda n: (n['on'], n['midi'])))]
 
 
-def melody_octaves(notes, heard, near_s=0.12):
-    """A lead sheet may write the tune in another octave than it sounds: each note takes the octave of a note of the same pitch
-    class YourMT3 heard starting within near_s of it (the one nearest the melody's previous note, the highest for the first); one with none is written in
-    the octave nearest the melody around it, and never below MELODY_LOW."""
-    pitched = sorted((n for n in heard if n.get('channel') != 9), key=lambda n: n['on'])
-    starts = [n['on'] for n in pitched]
-    import bisect
-    out, prev = [], None
+def fold_outliers(notes):
+    """A melody note more than an octave from the melody around it (MELODY_NEAR_S either side), or below MELODY_LOW, is written
+    in the melody's octave."""
+    if not notes:
+        return notes
+    heard = [n['midi'] for n in notes]
     for n in notes:
-        lo, hi = bisect.bisect_left(starts, n['on'] - near_s), bisect.bisect_right(starts, n['on'] + near_s)
-        same = [m['midi'] for m in pitched[lo:hi] if (m['midi'] - n['midi']) % 12 == 0 and m['midi'] >= MELODY_LOW]
-        if not same:
-            midi = n['midi']
-        elif prev is None:
-            midi = max(same)                        # the first note: the tune is usually on top
-        else:
-            midi = min(same, key=lambda p: (abs(p - prev), -p))
-        out.append(dict(n, midi=midi))
-        prev = midi
-    if out:
-        for i, n in enumerate(out):
-            near = [m['midi'] for m in out if abs(m['on'] - n['on']) <= MELODY_NEAR_S]
-            mid = statistics.median(near)
-            while n['midi'] - mid > 12:
-                n['midi'] -= 12
-            while mid - n['midi'] > 12 or n['midi'] < MELODY_LOW:
-                n['midi'] += 12
-    return out
+        mid = statistics.median([heard[j] for j, m in enumerate(notes) if abs(m['on'] - n['on']) <= MELODY_NEAR_S])
+        while n['midi'] - mid > 12:
+            n['midi'] -= 12
+        while mid - n['midi'] > 12 or n['midi'] < MELODY_LOW:
+            n['midi'] += 12
+    return notes
 
 
 def melody_gaps(melody, duration, min_s=FILL_GAP_S):
@@ -1015,6 +1010,8 @@ def main():
     ap.add_argument('--song-lib', default='')
     ap.add_argument('--mt3-python', default='', help='song mode: the Python of a YourMT3 install (multi-instrument transcription)')
     ap.add_argument('--mt3-dir', default='', help='song mode: the YourMT3 code and checkpoints (the Hugging Face space mimbres/YourMT3)')
+    ap.add_argument('--ss2-python', default='', help='song mode: the Python of a SheetSage2 install (the melody as a lead sheet writes it)')
+    ap.add_argument('--ss2-dir', default='', help='song mode: the SheetSage2 model (the Hugging Face model m-a-p/SheetSage2)')
     a = ap.parse_args()
 
     t0 = time.time()
