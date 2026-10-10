@@ -166,6 +166,8 @@ async function songMode() {
   const tracked = R.validateResult(Object.assign({}, layered, { song: { separation: 'htdemucs_6s', melodyFrom: 'guitar', melodyTracker: 'basic-pitch' } }));
   ok('a song result keeps which method followed the tune (shown on the review so a person can see what ran)', tracked.ok && tracked.result.song.melodyTracker === 'basic-pitch' && tracked.result.song.melodyFrom === 'guitar');
   ok('a result from an older worker has no method: it is null, not refused', v.ok && v.result.song.melodyTracker === null);
+  const sheet = R.validateResult(Object.assign({}, layered, { song: { separation: 'yourmt3', melodyFrom: 'guitar', melodyTracker: 'lead-sheet' } }));
+  ok('a song whose tune Sheet Sage wrote says so (lead-sheet)', sheet.ok && sheet.result.song.melodyTracker === 'lead-sheet');
   ok('a method that is not one of the two is refused', !R.validateResult(Object.assign({}, layered, { song: { separation: 'htdemucs_6s', melodyTracker: '<b>x</b>' } })).ok);
   const piano = R.validateResult(Object.assign({}, good, { notes: good.notes.map(n => Object.assign({}, n, { track: 1 })) }));
   ok('a piano result (no mode) keeps no layer: on, off, midi, vel only, and no song summary', piano.ok && piano.result.notes.every(n => n.track === undefined) && piano.result.mode === undefined && piano.result.song === undefined);

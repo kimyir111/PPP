@@ -286,36 +286,66 @@ class MultiInstrumentTest(unittest.TestCase):
         self.assertEqual((r['song']['melody'], r['song']['bass']), (32, 32))
         self.assertEqual(sorted({n['track'] for n in r['notes']}), [1, 2, 3])
 
-    @unittest.skipIf(os.name == 'nt', 'the fake YourMT3 is a shell script')
-    @unittest.skipUnless(HAVE_LIBROSA, 'numpy and soundfile are not installed')
-    def test_a_second_listen_without_drums_and_bass_fills_the_first_ones_gap(self):
-        import numpy as np
-        tune = lambda t0, ps: [(t0 + 0.5 * i, t0 + 0.5 * i + 0.45, m) for i, m in enumerate(ps)]
-        pad = [(0.5 * i, 0.5 * i + 0.45, m) for i in range(32) for m in (57, 60, 64)]
-        first = [(0, 25, tune(0.0, self.TUNE_A)), (1, 48, pad), (2, 33, [(0.5 * i, 0.5 * i + 0.4, 40) for i in range(32)])]
-        lead = [(0, 25, tune(0.0, self.TUNE_A)), (1, 81, tune(8.0, self.TUNE_B)), (2, 48, pad)]   # the quiet lead, heard without the band
+    def test_a_lead_sheet_note_far_from_the_tune_is_written_in_its_octave(self):
+        notes = [{'on': 0.5 * i, 'off': 0.5 * i + 0.4, 'midi': m} for i, m in enumerate([76, 78, 55, 79, 81, 102])]
+        self.assertEqual([n['midi'] for n in transcribe.fold_outliers(notes)], [76, 78, 67, 79, 81, 90])   # within an octave of the tune
+
+    def test_a_lead_sheet_note_takes_the_octave_yourmt3_heard_it_in(self):
+        heard = [{'on': 0.0, 'off': 0.4, 'midi': 64, 'channel': 0, 'program': 25}, {'on': 0.5, 'off': 0.9, 'midi': 67, 'channel': 0, 'program': 25},
+                 {'on': 0.5, 'off': 0.9, 'midi': 43, 'channel': 2, 'program': 33}, {'on': 1.0, 'off': 1.4, 'midi': 36, 'channel': 9, 'program': 0}]
+        sheet = [{'on': 0.02, 'off': 0.5, 'midi': 76}, {'on': 0.5, 'off': 1.0, 'midi': 79}, {'on': 1.0, 'off': 1.5, 'midi': 84}]
+        got = transcribe.melody_octaves(sheet, heard)
+        self.assertEqual([n['midi'] for n in got], [64, 67, 84])   # an octave down where the band played it; the bass and drums not; none heard: kept
+
+    @unittest.skipIf(os.name == 'nt', 'the fake SheetSage2 is a shell script')
+    def test_song_mode_takes_the_lead_sheet_melody_when_sheetsage2_is_there(self):
         with tempfile.TemporaryDirectory() as d:
-            a_mid, b_mid = os.path.join(d, 'first.mid'), os.path.join(d, 'lead.mid')
-            _write_multi_midi(a_mid, first)
-            _write_multi_midi(b_mid, lead)
-            fake = os.path.join(d, 'fake-python')
-            with open(fake, 'w') as f:   # YourMT3 hears the lead only in the mix without drums and bass
-                f.write('#!/bin/sh\nsrc="%s"\nfor x in "$@"; do case "$x" in *lead-mix.wav) src="%s";; esac; done\n'
-                        'while [ $# -gt 0 ]; do if [ "$1" = "--mid" ]; then cp "$src" "$2"; fi; shift; done\n' % (a_mid, b_mid))
-            os.chmod(fake, 0o755)
-            space = os.path.join(d, 'space')
+            src = os.path.join(d, 'answer.mid')
+            _write_multi_midi(src, self.tracks())
+            sheet = os.path.join(d, 'sheet.mid')   # what SheetSage2 writes: the tune alone, a lead sheet's melody
+            _write_multi_midi(sheet, [(0, 0, [(8.0 + 0.5 * i, 8.45 + 0.5 * i, m) for i, m in enumerate(self.TUNE_B)])])
+            py = os.path.join(d, 'fake-python')
+            with open(py, 'w') as f:
+                f.write('#!/bin/sh\nwhile [ $# -gt 0 ]; do if [ "$1" = "--mid" ]; then cp "%s" "$2"; fi; shift; done\n' % src)
+            os.chmod(py, 0o755)
+            ss2 = os.path.join(d, 'fake-ss2-python')
+            with open(ss2, 'w') as f:
+                f.write('#!/bin/sh\nwhile [ $# -gt 0 ]; do if [ "$1" = "--out-dir" ]; then cp "%s" "$2/melody.mid"; fi; shift; done\n' % sheet)
+            os.chmod(ss2, 0o755)
+            space, model = os.path.join(d, 'space'), os.path.join(d, 'sheetsage2')
             os.mkdir(space)
-            a = type('A', (), {'mt3_python': fake, 'mt3_dir': space, 'wav': os.path.join(d, 'in.wav'), 'out': os.path.join(d, 'out.json'), 'song_lib': ''})
-            saved = transcribe.separate
-            silent = np.zeros((2, 44100 * 16), np.float32)
-            transcribe.separate = lambda wav, device, lib: ({'drums': silent, 'bass': silent, 'other': silent, 'guitar': silent}, 44100)
-            try:
-                r = transcribe.run_song_mt3(a, 'cpu', 16.0, 0.0)
-            finally:
-                transcribe.separate = saved
+            os.mkdir(model)
+            a = type('A', (), {'mt3_python': py, 'mt3_dir': space, 'ss2_python': ss2, 'ss2_dir': model,
+                               'wav': os.path.join(d, 'in.wav'), 'out': os.path.join(d, 'out.json')})
+            r = transcribe.run_song_mt3(a, 'cpu', 16.0, 0.0)
+            kept = os.path.exists(os.path.join(d, 'sheetsage2-last.mid'))
         mel = sorted((n for n in r['notes'] if n['track'] == 1), key=lambda n: n['on'])
-        self.assertEqual([n['midi'] for n in mel], self.TUNE_A + self.TUNE_B)
-        self.assertEqual(r['song']['melodySecond'], len(self.TUNE_A + self.TUNE_B))   # the second listen's melody leads
+        self.assertEqual([n['midi'] for n in mel], self.TUNE_B)
+        self.assertEqual(r['song']['melodyTracker'], 'lead-sheet')
+        self.assertIn(self.TUNE_A[0], {n['midi'] for n in r['notes'] if n['track'] == 3})   # the old melody went to the accompaniment
+        self.assertTrue(kept)
+
+    @unittest.skipIf(os.name == 'nt', 'the fake SheetSage2 is a shell script')
+    def test_a_failing_sheetsage2_leaves_the_song_as_before(self):
+        with tempfile.TemporaryDirectory() as d:
+            src = os.path.join(d, 'answer.mid')
+            _write_multi_midi(src, self.tracks())
+            py = os.path.join(d, 'fake-python')
+            with open(py, 'w') as f:
+                f.write('#!/bin/sh\nwhile [ $# -gt 0 ]; do if [ "$1" = "--mid" ]; then cp "%s" "$2"; fi; shift; done\n' % src)
+            os.chmod(py, 0o755)
+            ss2 = os.path.join(d, 'fake-ss2-python')
+            with open(ss2, 'w') as f:
+                f.write('#!/bin/sh\necho "SHEETSAGE2_FAILED: no model" >&2\nexit 2\n')
+            os.chmod(ss2, 0o755)
+            space, model = os.path.join(d, 'space'), os.path.join(d, 'sheetsage2')
+            os.mkdir(space)
+            os.mkdir(model)
+            a = type('A', (), {'mt3_python': py, 'mt3_dir': space, 'ss2_python': ss2, 'ss2_dir': model,
+                               'wav': os.path.join(d, 'in.wav'), 'out': os.path.join(d, 'out.json')})
+            r = transcribe.run_song_mt3(a, 'cpu', 16.0, 0.0)
+        self.assertEqual(r['song']['melodyTracker'], 'multi-instrument')
+        self.assertEqual(r['song']['melody'], 32)
 
     def test_low_and_dipping_notes_are_not_the_tune(self):
         tune = [{'on': 0.25 * i, 'off': 0.25 * i + 0.2, 'midi': m, 'vel': 80} for i, m in enumerate([72, 74, 76, 74, 72, 74, 76, 77])]

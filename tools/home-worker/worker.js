@@ -85,6 +85,10 @@ const DEFAULTS = {
      a clone of the Hugging Face space mimbres/YourMT3) and tools/yourmt3-venv (its Python). setup-yourmt3.cmd makes both */
   mt3Python: '',
   mt3Dir: '',
+  /* song mode's melody from SheetSage2 (a lead-sheet transcriber), found the same way: tools/sheetsage2 (the model m-a-p/SheetSage2) and
+     tools/sheetsage2-venv (its Python). setup-sheetsage2.cmd makes both; without them the melody comes from YourMT3's lines */
+  ss2Python: '',
+  ss2Dir: '',
   ffmpegPath: 'ffmpeg',
   ytdlpPath: '',
   audioBase: '',
@@ -137,12 +141,14 @@ function loadConfig(file, env) {
   if (!cfg.beatTrackPy) cfg.beatTrackPy = path.join(path.dirname(cfg.transcribePy), 'beat_track.py');
   cfg.beats = cfg.beats !== false;
   if (!cfg.songLib) cfg.songLib = firstExisting([path.join(path.dirname(cfg.transcribePy), 'tools', 'song-lib'), path.join(REPO, 'tools', 'song-lib')]);
-  if (!cfg.mt3Dir || !cfg.mt3Python) {
+  if (!cfg.mt3Dir || !cfg.mt3Python || !cfg.ss2Dir || !cfg.ss2Python) {
     const toolDirs = [path.join(path.dirname(cfg.transcribePy), 'tools'), path.join(REPO, 'tools')]
       .concat(cfg.songLib ? [path.dirname(cfg.songLib)] : [])
       .concat(cfg.pythonPath ? [path.dirname(path.dirname(path.dirname(cfg.pythonPath)))] : []);
     if (!cfg.mt3Dir) cfg.mt3Dir = firstExisting(toolDirs.map(d => path.join(d, 'yourmt3', 'model_helper.py'))).replace(/[\\/]model_helper\.py$/, '');
     if (!cfg.mt3Python) cfg.mt3Python = firstExisting([].concat(...toolDirs.map(d => [path.join(d, 'yourmt3-venv', 'Scripts', 'python.exe'), path.join(d, 'yourmt3-venv', 'bin', 'python')])));
+    if (!cfg.ss2Dir) cfg.ss2Dir = firstExisting(toolDirs.map(d => path.join(d, 'sheetsage2', 'config.json'))).replace(/[\\/]config\.json$/, '');
+    if (!cfg.ss2Python) cfg.ss2Python = firstExisting([].concat(...toolDirs.map(d => [path.join(d, 'sheetsage2-venv', 'Scripts', 'python.exe'), path.join(d, 'sheetsage2-venv', 'bin', 'python')])));
   }
   if (!cfg.kongCheckpoint) cfg.kongCheckpoint = env.PPP_TRANSCRIBE_CHECKPOINT || findKongCheckpoint(path.join(path.dirname(cfg.transcribePy), 'tools', 'piano-transcription')) || findKongCheckpoint(path.join(REPO, 'tools', 'piano-transcription'));
   cfg.maxSeconds = Math.max(30, Math.min(Result.LIMITS.MAX_SECONDS, +cfg.maxSeconds || Result.LIMITS.MAX_SECONDS));
@@ -490,6 +496,7 @@ function createWorker(cfg, deps) {
       argv.push('--mode', 'song');
       if (cfg.songLib) argv.push('--song-lib', cfg.songLib);
       if (cfg.mt3Python && cfg.mt3Dir) argv.push('--mt3-python', cfg.mt3Python, '--mt3-dir', cfg.mt3Dir);
+      if (cfg.ss2Python && cfg.ss2Dir) argv.push('--ss2-python', cfg.ss2Python, '--ss2-dir', cfg.ss2Dir);
     }
     let engines = '';
     const r = await run(cfg.pythonPath, argv, {
@@ -783,6 +790,8 @@ async function checkSetup(cfg, log, deps) {
     log(sep.code === 0 ? 'ok    song mode: the source separation (demucs) is there' + (cfg.songLib ? ' (' + cfg.songLib + ')' : '') : 'note  song mode is not set up (no demucs): piano conversions work; see tools/home-worker/README.md, "Song mode"');
     log(cfg.mt3Python && cfg.mt3Dir ? 'ok    song mode: YourMT3 is there (' + cfg.mt3Dir + '); a song is transcribed by it first, by the separation if it fails'
       : 'note  song mode without YourMT3 (tools/home-worker/setup-yourmt3.cmd adds it): songs use the separation; nothing to fix');
+    log(cfg.ss2Python && cfg.ss2Dir ? 'ok    song mode: SheetSage2 is there (' + cfg.ss2Dir + '); a song\'s melody comes from it'
+      : 'note  song mode without SheetSage2 (tools/home-worker/setup-sheetsage2.cmd adds it): the melody comes from YourMT3; nothing to fix');
   }
   if (!problems.some(p => /^(siteUrl|token)/.test(p))) {
     try {
