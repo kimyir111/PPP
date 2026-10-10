@@ -32,6 +32,31 @@ def utf8_stdio():
             pass
 
 
+def stage_remote_code(model_dir):
+    """transformers runs a model's own code from a copy in its modules cache (transformers_modules/<folder name>), and copies only
+    the modeling file and the files it imports statically; SheetSage2's code opens its other modules (chord_spelling_sheetsage2.py,
+    ...) beside itself, so the first load failed with FileNotFoundError. Every file of the model folder but the weights is copied
+    there first."""
+    try:
+        from transformers.utils import HF_MODULES_CACHE
+    except Exception:
+        return
+    dest = os.path.join(HF_MODULES_CACHE, 'transformers_modules', os.path.basename(os.path.normpath(model_dir)))
+    for root, dirs, files in os.walk(model_dir):
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
+        for name in files:
+            src = os.path.join(root, name)
+            if name.startswith('.') or name.endswith(('.safetensors', '.bin', '.pt', '.ckpt')) or os.path.getsize(src) > 20 * 1024 * 1024:
+                continue
+            to = os.path.join(dest, os.path.relpath(src, model_dir))
+            os.makedirs(os.path.dirname(to), exist_ok=True)
+            if not os.path.exists(to) or os.path.getmtime(to) < os.path.getmtime(src):
+                shutil.copyfile(src, to)
+    init = os.path.join(dest, '__init__.py')
+    if not os.path.exists(init):
+        open(init, 'w').close()
+
+
 def load(model_dir, device):
     try:
         import torch
@@ -40,6 +65,7 @@ def load(model_dir, device):
         fail('could not import torch/transformers: %s: %s' % (type(e).__name__, e))
     if not os.path.isfile(os.path.join(model_dir, 'config.json')):
         fail('config.json is not in %s (setup-sheetsage2.cmd downloads m-a-p/SheetSage2 there)' % model_dir)
+    stage_remote_code(model_dir)
     try:
         model = AutoModel.from_pretrained(model_dir, trust_remote_code=True).eval().to(device)
     except Exception as e:
