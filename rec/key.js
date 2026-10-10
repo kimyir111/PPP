@@ -162,7 +162,7 @@
   }
   /* the spelling table of a key: the diatonic steps of its signature, every other pitch class spelled from its neighbour in
      the direction the mode prefers (the table audio-score.js spells with) */
-  function spellingTable(key) {
+  function spellingTable(key, plain) {
     const ka = keyAlters(key.fifths);
     const table = {};
     LETTERS.forEach(l => { table[mod12(LETTER_PC[l] + ka[l])] = { step: l, alter: ka[l] }; });
@@ -171,6 +171,10 @@
       if (table[pc]) continue;
       const dir = dirs[mod12(pc - key.tonic)] || (key.fifths < 0 ? -1 : 1);
       const from = table[mod12(pc - dir)];
+      /* plain (a song: opts.songLayers): a double sharp or flat only when the other neighbour needs one too - F# major's D is
+         D, not C double-sharp. The catalogue writes the raised fifth (B major's F double-sharp), so only a song asks for it */
+      const alt = table[mod12(pc + dir)];
+      if (plain && from && Math.abs(from.alter + dir) > 1 && alt && Math.abs(alt.alter - dir) <= 1) { table[pc] = { step: alt.step, alter: alt.alter - dir }; continue; }
       table[pc] = from ? { step: from.step, alter: from.alter + dir } : { step: 'C', alter: 0 };
     }
     return table;
@@ -321,7 +325,7 @@
     const keyOfBar = ctx.regions === false ? new Array(bars).fill({ fifths: key.fifths, mode: key.mode, tonic: key.tonic }) : barKeys(notes, ev, barOf, bars, key, c);
     const regions = regionsOf(keyOfBar);
     const tables = new Map();
-    const tableOf = k => { const id = k.fifths + ':' + k.mode + ':' + k.tonic; if (!tables.has(id)) tables.set(id, spellingTable(k)); return tables.get(id); };
+    const tableOf = k => { const id = k.fifths + ':' + k.mode + ':' + k.tonic; if (!tables.has(id)) tables.set(id, spellingTable(k, !!ctx.plain)); return tables.get(id); };
     const spell = notes.map((n, i) => {
       if (!(n && isFinite(n.midi))) return null;
       const t = tableOf(keyOfBar[barOf[i]])[mod12(n.midi)];

@@ -30,11 +30,39 @@ def fail(msg):
     raise SystemExit(2)
 
 
+def patch_torchaudio():
+    """torchaudio 2.9+ reads files only through TorchCodec (load() raises 'TorchCodec is required ...' without it, and info() is
+    gone), and TorchCodec on Windows needs FFmpeg's shared libraries. The space's code calls torchaudio.load/info, so both read
+    the file with soundfile instead (the CUDA 12.8 torch an RTX 50xx needs comes with such a torchaudio)."""
+    import types
+    import soundfile as sf
+    import torch
+    import torchaudio
+
+    def load(uri, frame_offset=0, num_frames=-1, normalize=True, channels_first=True, format=None, buffer_size=4096, backend=None):
+        frames = num_frames if num_frames is not None and num_frames > 0 else -1
+        data, sr = sf.read(uri, start=int(frame_offset or 0), frames=frames, dtype='float32', always_2d=True)
+        return torch.from_numpy((data.T if channels_first else data).copy()), sr
+
+    def info(uri, format=None, buffer_size=4096, backend=None):
+        i = sf.info(uri)
+        bits = {'PCM_16': 16, 'PCM_24': 24, 'PCM_32': 32, 'PCM_U8': 8, 'FLOAT': 32, 'DOUBLE': 64}.get(i.subtype, 16)
+        return types.SimpleNamespace(sample_rate=int(i.samplerate), num_frames=int(i.frames), num_channels=int(i.channels),
+                                     bits_per_sample=bits, encoding='PCM_S' if i.subtype.startswith('PCM') else i.subtype)
+
+    torchaudio.load = load
+    torchaudio.info = info
+
+
 def load(space, device, model_args):
     space = os.path.abspath(space)
     if not os.path.isfile(os.path.join(space, 'model_helper.py')):
         fail('model_helper.py is not in ' + space + ' (clone https://huggingface.co/spaces/mimbres/YourMT3 there, with git lfs)')
     os.chdir(space)   # the checkpoints are found relative to the space (amt/logs/...)
+    try:
+        patch_torchaudio()   # before the space's modules import torchaudio's functions
+    except Exception as e:
+        fail('could not prepare audio reading (soundfile/torch): %s: %s' % (type(e).__name__, e))
     for p in (space, os.path.join(space, 'amt', 'src')):
         if p not in sys.path:
             sys.path.insert(0, p)
@@ -62,7 +90,18 @@ def audio_info(path):
             'duration': int(info.frames / info.samplerate), 'encoding': 'pcm_s16'}
 
 
+def utf8_stdio():
+    """The space prints emoji (a '\u23f0' before its timings); a Korean Windows console (cp949) cannot encode them and the
+    print raised UnicodeEncodeError in the middle of a transcription. Write UTF-8, replacing what cannot be written."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding='utf-8', errors='replace')
+        except Exception:
+            pass
+
+
 def main():
+    utf8_stdio()
     ap = argparse.ArgumentParser()
     ap.add_argument('--space', required=True)
     ap.add_argument('--wav', default='')
@@ -83,7 +122,17 @@ def main():
     mid = os.path.abspath(a.mid) if a.mid else ''
     model, transcribe = load(a.space, device, model_args)
     if a.selftest:
-        print('YourMT3: OK - the model loaded on ' + device)
+        if device != 'cpu':
+            # loading a model succeeds even on a GPU this torch has no kernels for (an RTX 50xx under a cu121 torch only warns);
+            # one real operation on it is what fails
+            try:
+                import torch
+                float((torch.ones(8, device=device) * 2).sum())
+            except Exception as e:
+                fail('the model loaded but the GPU cannot run it with this torch (%s: %s); install a torch built for this GPU '
+                     '(an RTX 50xx needs the CUDA 12.8 build: pip install --force-reinstall --no-deps torch torchaudio '
+                     '--index-url https://download.pytorch.org/whl/cu128)' % (type(e).__name__, str(e)[:200]))
+        print('YourMT3: OK - the model loaded and ran on ' + device)
         return
     if not wav or not os.path.isfile(wav) or not mid:
         fail('--wav (an existing file) and --mid are needed')

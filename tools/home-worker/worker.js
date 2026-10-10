@@ -499,6 +499,8 @@ function createWorker(cfg, deps) {
         if (m) onPct(Math.min(1, +m[1]));
         const e = /^ENGINE\s+(\S+)/.exec(line);
         if (e) { engines += (engines ? ' + ' : '') + e[1]; log('Listening with ' + e[1] + '...'); }
+        /* transcribe.py's NOTE lines say why an optional engine (YourMT3, Basic Pitch) gave way to the next one: without them a fallback is silent */
+        if (/^NOTE\s/.test(line)) log(line.slice(0, 600));
       }
     });
     check();

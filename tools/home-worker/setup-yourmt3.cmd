@@ -9,14 +9,17 @@ chcp 65001 >nul
 cd /d "%~dp0..\.."
 set "T=tools"
 
-echo [1/4] YourMT3's own Python...
+echo [1/4] YourMT3's own Python (3.11)...
+rem YourMT3 pins numpy 1.26 and the CUDA builds of torch: neither exists for Python 3.13, where numpy builds from source and
+rem breaks (OverflowError: cannot convert longdouble infinity to integer). An environment on another Python is made again.
 set "PY=%T%\yourmt3-venv\Scripts\python.exe"
+if exist "%PY%" "%PY%" -c "import sys; sys.exit(0 if (3, 10) <= sys.version_info[:2] <= (3, 12) else 1)" || rmdir /s /q "%T%\yourmt3-venv"
 if not exist "%PY%" py -3.11 -m venv "%T%\yourmt3-venv" 2>nul
-if not exist "%PY%" py -3.10 -m venv "%T%\yourmt3-venv" 2>nul
-if not exist "%PY%" python -m venv "%T%\yourmt3-venv"
+rem no Python 3.11 on this PC: uv fetches one by itself (nothing to install by hand)
+if not exist "%PY%" python -m pip install --upgrade uv && python -m uv venv --python 3.11 --seed "%T%\yourmt3-venv"
 if not exist "%PY%" (
   echo.
-  echo Could not make a Python environment. Install Python 3.11 from https://python.org and try again.
+  echo Could not make a Python 3.11 environment. Install Python 3.11 from https://python.org and try again.
   pause
   exit /b 1
 )
@@ -35,8 +38,8 @@ if not exist "%T%\yourmt3\model_helper.py" (
 echo.
 echo [3/4] Packages - a large download...
 if exist "%T%\yourmt3\requirements.txt" "%PY%" -m pip install -r "%T%\yourmt3\requirements.txt"
-rem the CUDA build of torch (it also runs on a PC without an NVIDIA card, on the CPU)
-"%PY%" -m pip install --force-reinstall torch torchaudio --index-url https://download.pytorch.org/whl/cu121
+rem a CUDA build of torch (it also runs on a PC without an NVIDIA card, on the CPU); without one YourMT3 runs on the CPU, slower
+"%PY%" -m pip install --force-reinstall --no-deps torch torchaudio --index-url https://download.pytorch.org/whl/cu128 || "%PY%" -m pip install --force-reinstall --no-deps torch torchaudio --index-url https://download.pytorch.org/whl/cu124 || echo No CUDA build of torch was found: YourMT3 will run on the CPU, slower.
 "%PY%" -m pip install soundfile
 
 echo.
