@@ -614,6 +614,9 @@ def lead_by_window(lines, levels, duration, win=LEAD_WIN_S):
 
 MT3_FRAME_S = 0.01      # the level of an instrument's notes (for choosing the lead) is read on this grid
 MT3_BASS_PROGRAMS = range(32, 40)   # General MIDI basses
+MELODY_LOW = 50         # a melody note below D3 is a bass or the low string of an arpeggio, not the tune: it is accompaniment
+MELODY_DIP = 10         # ... and so is a note this many semitones under the tune around it (MELODY_NEAR_S either side)
+MELODY_NEAR_S = 2.0
 
 
 def _skyline(notes, win=BP_SKY_WIN_S):
@@ -644,6 +647,18 @@ def melody_family(program):
     return 'piano' if 0 <= program <= 7 else 'guitar' if 24 <= program <= 31 else 'other'
 
 
+def drop_dips(melody):
+    """The melody without the notes no tune has: below MELODY_LOW, or MELODY_DIP semitones under the median of the melody around
+    it. An instrument's skyline takes a single low attack (a guitar's arpeggio dips to its bass string between two tune notes; an
+    instrument chosen for a window where the model heard no tune plays bass notes), and the score wrote it as a wrong tune note."""
+    out = []
+    for n in melody:
+        near = [m['midi'] for m in melody if abs(m['on'] - n['on']) <= MELODY_NEAR_S]
+        if n['midi'] >= MELODY_LOW and statistics.median(near) - n['midi'] < MELODY_DIP:
+            out.append(n)
+    return out
+
+
 def song_from_instruments(notes, duration):
     """A song's layers from a multi-instrument transcription (notes with 'channel' and 'program'): drums (channel 9) left out, the
     General MIDI basses are the bass, the melody is chosen every LEAD_WIN_S among the other instruments by lead_by_window (the
@@ -662,6 +677,7 @@ def song_from_instruments(notes, duration):
              for prog, sky in ((prog, _skyline(g)) for prog, g in groups.items())]
     levels = {str(prog): _note_level(g, duration) for prog, g in groups.items()}
     melody, lead, _tracker = lead_by_window(lines, levels, duration) if lines else ([], None, None)
+    melody = drop_dips(melody)
     taken = {(n['on'], n['midi']) for n in melody}
     accomp = sorted((n for g in groups.values() for n in g if (n['on'], n['midi']) not in taken), key=lambda n: (n['on'], n['midi']))
     return melody, sorted(bass, key=lambda n: (n['on'], n['midi'])), accomp, (melody_family(int(lead)) if lead is not None else None)
