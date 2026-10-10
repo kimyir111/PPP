@@ -144,6 +144,33 @@ def main():
     except Exception as e:
         fail('transcription failed: %s: %s' % (type(e).__name__, str(e)[:400]))
     print('SheetSage2: wrote ' + write_melody(result, a.out_dir))
+    gather(result, a.out_dir)
+
+
+def gather(result, out_dir):
+    """The annotations transcribe() wrote (beat.lab, downbeat.lab, key.lab, chord.lab, events.json), wherever under out_dir, copied
+    to out_dir itself for transcribe.py; and result.json, a summary of what transcribe() returned (its keys, and its events when
+    they are plain data), so that a version that writes them elsewhere can be read from it."""
+    import json
+    for name in ('beat.lab', 'downbeat.lab', 'key.lab', 'chord.lab', 'events.json'):
+        target = os.path.join(out_dir, name)
+        if os.path.isfile(target):
+            continue
+        found = sorted(glob.glob(os.path.join(out_dir, '**', name), recursive=True))
+        if found:
+            shutil.copyfile(found[0], target)
+    summary = {'files': sorted(os.path.relpath(p, out_dir).replace(os.sep, '/') for p in glob.glob(os.path.join(out_dir, '**', '*'), recursive=True)
+                               if os.path.isfile(p))[:200]}
+    if isinstance(result, dict):
+        summary['keys'] = sorted(str(k) for k in result.keys())
+        for k in ('events', 'key', 'tempo', 'meter'):
+            try:
+                json.dumps(result.get(k))
+                summary[k] = result.get(k)
+            except (TypeError, ValueError):
+                summary[k] = repr(result.get(k))[:2000]
+    with open(os.path.join(out_dir, 'result.json'), 'w', encoding='utf-8') as f:
+        json.dump(summary, f)
 
 
 if __name__ == '__main__':

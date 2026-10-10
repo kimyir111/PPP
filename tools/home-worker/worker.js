@@ -563,7 +563,13 @@ function createWorker(cfg, deps) {
       }
     }
     /* G10d song mode: the notes carry their layer (convertHelperNotes keeps it), and the result says so */
-    if (h.song) { result.mode = 'song'; result.song = { separation: h.song.separation || null, melodyFrom: h.song.melodyFrom || null, melodyTracker: h.song.melodyTracker || null }; }
+    if (h.song) {
+      result.mode = 'song';
+      result.song = { separation: h.song.separation || null, melodyFrom: h.song.melodyFrom || null, melodyTracker: h.song.melodyTracker || null };
+      if (h.song.accompFrom) result.song.accompFrom = h.song.accompFrom;
+      if (h.song.beatsFrom && result.beats) result.song.beatsFrom = h.song.beatsFrom;
+      if (h.song.key) result.song.key = h.song.key;
+    }
     const v = Result.validateResult(result);
     if (!v.ok) throw new JobError('The notes did not pass the site\'s checks: ' + v.error, false);
     return { result: result, report: c.report, bytes: v.bytes };
@@ -618,7 +624,8 @@ function createWorker(cfg, deps) {
         if (s > lastShown) { lastShown = s; log('  listening: ' + Math.round(p * 100) + '%'); }
       });
       stage = 'beats'; pct = 0;
-      const bt = await beatTrack(dir, wavs);
+      /* a song's lead sheet (SheetSage2) came with its beats and bar lines: those are the song's, Beat This is not run */
+      const bt = raw && Array.isArray(raw.beats) && raw.beats.length >= 4 ? { beats: raw.beats, downbeats: Array.isArray(raw.downbeats) ? raw.downbeats : [] } : await beatTrack(dir, wavs);
       const r = toResult(raw, bt);
       const beatsNote = r.result.beats ? ' and ' + r.result.beats.length + ' beats' : '';
       if (r.result.mode === 'song') {

@@ -34,6 +34,7 @@ const TRACK_OK = new Set([1, 2, 3]);
 /* where a song's melody layer came from: the voice, or (an instrumental) the stem whose line the PC followed */
 const MELODY_FROM = new Set(['vocals', 'other', 'guitar', 'piano']);
 /* which method followed that tune: the pitch tracker, or Basic Pitch (an instrumental's lead line, when the PC has it) */
+const ACCOMP_FROM = new Set(['multi-instrument', 'lead-sheet']);   /* the instruments YourMT3 heard, or the lead sheet's chords */
 const MELODY_TRACKER = new Set(['pitch-tracker', 'basic-pitch', 'multi-instrument', 'lead-sheet']);   /* multi-instrument: YourMT3 heard the song; lead-sheet: SheetSage2 wrote the tune */
 
 const NAME_RE = /^[a-z0-9][a-z0-9._+-]{0,39}$/;
@@ -141,7 +142,16 @@ function validateResult(body, limits) {
     result.mode = 'song';
     if (s.melodyFrom != null && !MELODY_FROM.has(s.melodyFrom)) return bad('The song summary is not usable.', 'bad-meta');
     if (s.melodyTracker != null && !MELODY_TRACKER.has(s.melodyTracker)) return bad('The song summary is not usable.', 'bad-meta');
+    if (s.accompFrom != null && !ACCOMP_FROM.has(s.accompFrom)) return bad('The song summary is not usable.', 'bad-meta');
+    if (s.beatsFrom != null && s.beatsFrom !== 'lead-sheet') return bad('The song summary is not usable.', 'bad-meta');
+    const key = s.key && typeof s.key === 'object' && Number.isInteger(s.key.tonic) && s.key.tonic >= 0 && s.key.tonic < 12 && (s.key.mode === 'major' || s.key.mode === 'minor')
+      ? { tonic: s.key.tonic, mode: s.key.mode } : null;
+    if (s.key != null && !key) return bad('The song summary is not usable.', 'bad-meta');
     result.song = { separation: s.separation || null, melodyFrom: s.melodyFrom || null, melodyTracker: s.melodyTracker || null, melody: count('melody'), bass: count('bass'), accomp: count('accomp') };
+    /* G10d: a lead-sheet transcriber's chords as the accompaniment, its beats as the bars (result.beats), its key */
+    if (s.accompFrom) result.song.accompFrom = s.accompFrom;
+    if (s.beatsFrom) result.song.beatsFrom = s.beatsFrom;   /* dropped below when the beats are not kept */
+    if (key) result.song.key = key;
   }
 
   /* G10a-1d: the helper's audio beats and downbeats (Beat This, beat_track.py), optional. The page passes them to the recording conversion
@@ -164,9 +174,11 @@ function validateResult(body, limits) {
     if (!b || (body.downbeats != null && !d)) result.beatsLeftOut = 'malformed';
     else { result.beats = b; if (d) result.downbeats = d; }
   }
+  if (result.song && result.song.beatsFrom && !result.beats) delete result.song.beatsFrom;
   let bytes = Buffer.byteLength(JSON.stringify(result));
   if (bytes > L.RESULT_MAX_BYTES && result.beats) {
     delete result.beats; delete result.downbeats; result.beatsLeftOut = 'size';
+    if (result.song) delete result.song.beatsFrom;
     bytes = Buffer.byteLength(JSON.stringify(result));
   }
   if (bytes > L.RESULT_MAX_BYTES) return bad('The result is larger than ' + Math.round(L.RESULT_MAX_BYTES / 1048576) + ' MB.', 'too-large');

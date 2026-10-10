@@ -116,3 +116,39 @@ test('spelling of a song: F# major\'s D and G are D and G natural, not C and F d
   const xml = AS.toMusicXml({ notes: song(), pedals: [] }, Object.assign({ songLayers: true }, v2)).xml;
   assert.ok(!/<alter>2<\/alter>/.test(xml), 'a double sharp in F# major');
 });
+
+test('keyHint: the key a lead sheet states is the key signature, whatever the notes suggest', () => {
+  const notes = song();
+  const plain = AS.toMusicXml({ notes: notes, pedals: [] }, Object.assign({ songLayers: true }, v2));
+  const hinted = AS.toMusicXml({ notes: notes, pedals: [] }, Object.assign({ songLayers: true, keyHint: { tonic: 1, mode: 'major' } }, v2));
+  assert.equal(plain.stats.key.fifths, 6);                       // F# major, read from the notes
+  assert.equal(hinted.stats.key.fifths, -5);                     // Db major, as stated (C# major written with flats)
+  assert.equal(hinted.stats.key.source, 'stated');
+  assert.match(hinted.xml, /<fifths>-5<\/fifths>/);
+});
+
+test('recBeats lead-sheet: a lead sheet\'s beats and bar lines are the bars of a song', () => {
+  /* the song() tune starts at 1 s, a bar every 2 s; the lead sheet says the bars start half a bar later (at 2 s) */
+  const notes = song();
+  const beats = [], downbeats = [];
+  for (let t = 0; t <= 34; t += 0.5) beats.push(t);
+  for (let t = 2; t <= 34; t += 2) downbeats.push(t);
+  const built = AS.toMusicXml({ notes: notes, pedals: [], beats: beats, downbeats: downbeats },
+    Object.assign({ songLayers: true, recBeats: 'lead-sheet' }, v2));
+  assert.equal(built.stats.tempo, 120);
+  assert.equal(built.stats.beatsPerBar, 4);
+  /* a bar line on each stated downbeat */
+  const starts = built.stats.barStarts.filter(t => t >= 1.9);
+  assert.ok(starts.length >= 8, 'bars ' + starts.length);
+  starts.slice(0, 8).forEach((t, i) => assert.ok(Math.abs(t - (2 + 2 * i)) < 0.06, 'bar ' + i + ' at ' + t));
+});
+
+test('recBeats lead-sheet with beats that are no steady 2, 3 or 4 a bar: the metre model decides, as before', () => {
+  const notes = song();
+  const beats = [];
+  for (let t = 0; t <= 34; t += 0.5) beats.push(t);
+  const odd = [2, 4.5, 6, 9.5, 10, 13.5];                                 /* 5, 3, 7, 1, 7 beats apart */
+  const a = AS.toMusicXml({ notes: notes, pedals: [], beats: beats, downbeats: odd }, Object.assign({ songLayers: true, recBeats: 'lead-sheet' }, v2));
+  const b = AS.toMusicXml({ notes: notes, pedals: [], beats: beats, downbeats: odd }, Object.assign({ songLayers: true }, v2));
+  assert.equal(a.xml, b.xml);
+});

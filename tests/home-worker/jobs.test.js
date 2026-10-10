@@ -169,6 +169,17 @@ async function songMode() {
   const sheet = R.validateResult(Object.assign({}, layered, { song: { separation: 'yourmt3', melodyFrom: 'guitar', melodyTracker: 'lead-sheet' } }));
   ok('a song whose tune Sheet Sage wrote says so (lead-sheet)', sheet.ok && sheet.result.song.melodyTracker === 'lead-sheet');
   ok('a method that is not one of the two is refused', !R.validateResult(Object.assign({}, layered, { song: { separation: 'htdemucs_6s', melodyTracker: '<b>x</b>' } })).ok);
+  /* G10d: a lead sheet's chords as the accompaniment, its bars and its key */
+  const beatsOf = n => Array.from({ length: n }, (_, i) => i * 0.5);
+  const lead = R.validateResult(Object.assign({}, layered, { beats: beatsOf(16), downbeats: [0, 2, 4, 6],
+    song: { separation: 'yourmt3', melodyTracker: 'lead-sheet', accompFrom: 'lead-sheet', beatsFrom: 'lead-sheet', key: { tonic: 6, mode: 'minor' } } }));
+  ok('a lead sheet\'s accompaniment source, bars and key are kept', lead.ok && lead.result.song.accompFrom === 'lead-sheet' && lead.result.song.beatsFrom === 'lead-sheet'
+    && lead.result.song.key.tonic === 6 && lead.result.song.key.mode === 'minor' && lead.result.beats.length === 16, lead.ok ? '' : lead.error);
+  const noBeats = R.validateResult(Object.assign({}, layered, { song: { separation: 'yourmt3', beatsFrom: 'lead-sheet' } }));
+  ok('"bars from the lead sheet" without beats is dropped, not kept', noBeats.ok && !('beatsFrom' in noBeats.result.song));
+  ok('a key that is not a tonic 0-11 and major/minor is refused', !R.validateResult(Object.assign({}, layered, { song: { separation: 'yourmt3', key: { tonic: 12, mode: 'major' } } })).ok
+    && !R.validateResult(Object.assign({}, layered, { song: { separation: 'yourmt3', key: { tonic: 2, mode: 'dorian' } } })).ok);
+  ok('an unknown accompaniment source is refused', !R.validateResult(Object.assign({}, layered, { song: { separation: 'yourmt3', accompFrom: 'x' } })).ok);
   const piano = R.validateResult(Object.assign({}, good, { notes: good.notes.map(n => Object.assign({}, n, { track: 1 })) }));
   ok('a piano result (no mode) keeps no layer: on, off, midi, vel only, and no song summary', piano.ok && piano.result.notes.every(n => n.track === undefined) && piano.result.mode === undefined && piano.result.song === undefined);
 

@@ -1375,7 +1375,8 @@
       if (opts.keys === 'v2') { const e = new Error('rec/key.js (S8) is not loaded'); e.code = 'E-KEY-NO-LIB'; throw e; }
       return null;
     }
-    const r = lib.analyse(q, { barTicks: bar, bars: bars, ticksPerQuarter: Q, plain: !!opts.songLayers });
+    /* opts.keyHint {tonic, mode}: the key the source states (a song's lead-sheet transcription), written instead of the one read from the notes */
+    const r = lib.analyse(q, Object.assign({ barTicks: bar, bars: bars, ticksPerQuarter: Q, plain: !!opts.songLayers }, opts.keyHint ? { key: opts.keyHint } : {}));
     q.forEach((n, i) => { n.sp = r.spell[i]; });
     return r;
   }
@@ -2000,6 +2001,40 @@
       return typeof module === 'object' && module.exports ? require('./rec/index.js') : (global && global.PPPRec) || null;
     } catch (e) { return null; }
   }
+  /* opts.recBeats 'lead-sheet': the beats and bar lines a lead-sheet transcriber wrote for this song (SheetSage2, in song mode) ARE its
+     skeleton - not a candidate the metre model may pass over for a reading of the notes (a song's strummed 16ths read as the beat
+     doubled its tempo). The metre is the number of beats between its downbeats (2, 3 or 4 a bar, a quarter each); the beats run from a
+     downbeat at or before the first note, extended at the steady pace before the first and after the last beat it gave. null (the
+     metre model decides, as for any other beats) when they are too few or not a steady 2, 3 or 4 a bar. */
+  function statedSkeleton(beats, downbeats, notes) {
+    const b = (beats || []).filter(t => isFinite(t)).slice().sort((x, y) => x - y);
+    const d = (downbeats || []).filter(t => isFinite(t)).slice().sort((x, y) => x - y);
+    if (b.length < 8 || d.length < 3 || !notes.length) return null;
+    const near = t => { let k = 0; for (let i = 1; i < b.length; i++) if (Math.abs(b[i] - t) < Math.abs(b[k] - t)) k = i; return k; };
+    const counts = [];
+    for (let i = 1; i < d.length; i++) counts.push(near(d[i]) - near(d[i - 1]));
+    const perBar = Math.round(median(counts));
+    if (!(perBar >= 2 && perBar <= 4) || counts.filter(c => c === perBar).length < 0.6 * counts.length) return null;
+    const ibi = median(b.slice(1).map((t, i) => t - b[i]));
+    if (!(ibi > 0.15 && ibi < 2)) return null;
+    let grid = b.slice(near(d[0]));
+    const first = notes.reduce((m, n) => Math.min(m, n.attack != null ? n.attack : n.on), Infinity);
+    const last = notes.reduce((m, n) => Math.max(m, n.off), 0);
+    while (grid[0] > first - 0.02) {                                       /* whole bars back, to a downbeat before the first note */
+      const bar = [];
+      for (let k = perBar; k >= 1; k--) bar.push(grid[0] - k * ibi);
+      grid = bar.concat(grid);
+    }
+    while (grid[grid.length - 1] < last + ibi) grid.push(grid[grid.length - 1] + ibi);
+    const key = perBar + '/4';
+    return {
+      metre: { beats: perBar, beatType: 4, compound: false, key: key },
+      beats: grid.map(t => Math.round(t * 1e4) / 1e4), qpm: Math.round(60 / ibi * 100) / 100, conf: 1, posterior: 1, metrePosterior: null,
+      model: { name: 'lead-sheet', version: '1', sha256: null },
+      report: { tracks: [], readings: 0, chosen: { track: -1, audio: true, metre: key, stated: true } }
+    };
+  }
+
   /* the score of a recording on rec/'s time skeleton, or null (the caller then writes it the legacy way) */
   function recordingV2(input, opts, clustered, timingClustered, timingNotes, arrangementPlan) {
     const lib = recLib();
@@ -2007,7 +2042,8 @@
     /* the skeleton is read from the whole performance (an arrangement must not change the tempo or the metre) */
     /* G10a-1d: opts.recBeats 'oracle' marks beats whose downbeats are the score's bar lines (the benchmark's own performer); any other
        beats (a real tracker: Beat This on the user's PC) are evidence of the bar phase only, never of the metre or the tempo */
-    const sk = lib.skeleton(timingClustered, { weights: opts.recWeights, beats: input.beats, downbeats: input.downbeats, beatsTrusted: opts.recBeats === 'oracle' });
+    const sk = (opts.recBeats === 'lead-sheet' && statedSkeleton(input.beats, input.downbeats, timingClustered))
+      || lib.skeleton(timingClustered, { weights: opts.recWeights, beats: input.beats, downbeats: input.downbeats, beatsTrusted: opts.recBeats === 'oracle' });
     if (!sk) return null;
     const beats = sk.beats;
     const compound = !!sk.metre.compound;
