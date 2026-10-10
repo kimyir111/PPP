@@ -290,6 +290,13 @@ class MultiInstrumentTest(unittest.TestCase):
         notes = [{'on': 0.5 * i, 'off': 0.5 * i + 0.4, 'midi': m} for i, m in enumerate([76, 78, 55, 79, 81, 102])]
         self.assertEqual([n['midi'] for n in transcribe.fold_outliers(notes)], [76, 78, 67, 79, 81, 90])   # within an octave of the tune
 
+    def test_a_lead_sheet_note_takes_the_octave_yourmt3_heard_it_in(self):
+        heard = [{'on': 0.0, 'off': 0.4, 'midi': 64, 'channel': 0, 'program': 25}, {'on': 0.5, 'off': 0.9, 'midi': 67, 'channel': 0, 'program': 25},
+                 {'on': 0.5, 'off': 0.9, 'midi': 43, 'channel': 2, 'program': 33}, {'on': 1.0, 'off': 1.4, 'midi': 36, 'channel': 9, 'program': 0}]
+        sheet = [{'on': 0.02, 'off': 0.5, 'midi': 76}, {'on': 0.5, 'off': 1.0, 'midi': 79}, {'on': 1.0, 'off': 1.5, 'midi': 84}]
+        got = transcribe.melody_octaves(sheet, heard)
+        self.assertEqual([n['midi'] for n in got], [64, 67, 84])   # an octave down where the band played it; the bass and drums not; none heard: kept
+
     @unittest.skipIf(os.name == 'nt', 'the fake SheetSage2 is a shell script')
     def test_song_mode_takes_the_lead_sheet_melody_when_sheetsage2_is_there(self):
         with tempfile.TemporaryDirectory() as d:

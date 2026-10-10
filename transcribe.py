@@ -799,7 +799,30 @@ def lead_sheet_melody(a, heard, duration):
         return []
     finally:
         shutil.rmtree(work, ignore_errors=True)
-    return [dict(n, vel=80) for n in fold_outliers(sorted(notes, key=lambda n: (n['on'], n['midi'])))]
+    notes = melody_octaves(sorted(notes, key=lambda n: (n['on'], n['midi'])), heard)
+    return [dict(n, vel=80) for n in fold_outliers(notes)]
+
+
+def melody_octaves(notes, heard, near_s=0.12):
+    """A lead sheet writes a tune in the octave that reads best, not always the one it sounds in: each note takes the octave of a
+    note of its pitch class that YourMT3 heard starting within near_s of it (drums and basses aside), the one nearest the melody's
+    previous note; a note with none keeps its own. On the test song this took the notes at Melodia's pitch from 48 to 111 of 535."""
+    import bisect
+    pitched = sorted((n for n in heard if n.get('channel') != 9 and int(n.get('program', 0)) not in MT3_BASS_PROGRAMS
+                      and int(n['midi']) >= MELODY_LOW), key=lambda n: n['on'])
+    starts = [float(n['on']) for n in pitched]
+    out, prev = [], None
+    for n in notes:
+        lo, hi = bisect.bisect_left(starts, n['on'] - near_s), bisect.bisect_right(starts, n['on'] + near_s)
+        same = [int(m['midi']) for m in pitched[lo:hi] if (int(m['midi']) - n['midi']) % 12 == 0]
+        if same:
+            ref = prev if prev is not None else n['midi']
+            midi = min(same, key=lambda p: (abs(p - ref), abs(p - n['midi'])))
+        else:
+            midi = n['midi']
+        out.append(dict(n, midi=midi))
+        prev = midi
+    return out
 
 
 def fold_outliers(notes):
