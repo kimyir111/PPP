@@ -10,7 +10,8 @@
 
    What it checks (each line PASS/FAIL, exit code 1 on any FAIL):
      /health ok; the page carries the expected build; a fresh profile loads with no page error and no failed request, with no /rec/ request at
-     first paint; the app globals (PPP.recording, PPP.recordingArrange) have the intended defaults; anonymous routes answer as designed
+     first paint; the app globals (PPP.recording, PPP.recordingArrange) have the intended defaults; the code the head defers (G13-4e) came in,
+     with no synchronous load, and Home's thumbnail is drawn; anonymous routes answer as designed
      (auth/me, shares, the PC queue routes 401, no CORS headers); optionally the pairing link and the logs.
    It does NOT run the real transcription (6 minutes): that is for a change of the pipeline, by hand (docs/GOALS/G10 section 25). */
 'use strict';
@@ -90,6 +91,18 @@ async function main() {
     check('PPP.recording is v2 by default', g.rec === 'v2', String(g.rec));
     check('PPP.recordingArrange is the lead sheet by default', g.lead === 'leadsheet', String(g.lead));
     check('PPP.arranger is the one-note arranger by default', g.arranger === 'single', String(g.arranger));
+    /* G13-4e: the code the head defers (lazy-load.js) comes in after the first paint, with no synchronous load, and Home's thumbnail is drawn. A build from before the split has no PPP_LAZY: not a failure. */
+    const lz = await p.evaluate(async () => {
+      const L = window.PPP_LAZY;
+      if (!L || typeof L.status !== 'function') return null;
+      const t0 = Date.now();
+      while (Date.now() - t0 < 25000 && !(L.status().groups.length && L.status().groups.every(x => x.done))) await new Promise(r => setTimeout(r, 250));
+      const s = L.status();
+      return { split: window.PPP.split, groups: s.groups.map(x => x.name + ':' + (x.done ? 'in' : 'NOT IN')).join(' '), all: s.groups.length > 0 && s.groups.every(x => x.done), sync: s.syncLoads, drawn: document.querySelectorAll('.ppp-score svg.ppp-engraved').length };
+    });
+    check('PPP.split is on by default and every deferred group of the head came in after the first paint', lz === null || (lz.split === 'on' && lz.all), lz === null ? 'not in this build' : lz.split + ' / ' + lz.groups);
+    check('no deferred global was read before its group was in (0 synchronous loads)', lz === null || lz.sync === 0, lz === null ? 'not in this build' : String(lz.sync));
+    check('the score thumbnail of Home is engraved', lz === null || lz.drawn >= 1, lz === null ? 'not in this build' : String(lz.drawn));
     await ctx.close();
 
     // 4. the pairing link (read-only: the status route)
