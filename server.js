@@ -37,7 +37,8 @@ const MIME = {
   '.woff2': 'font/woff2',
   '.mp3': 'audio/mpeg',
   '.txt': 'text/plain; charset=utf-8',
-  '.md': 'text/markdown; charset=utf-8'
+  /* G13-3: the only .md the site serves is THIRD_PARTY_NOTICES.md, and a person follows a link to it from Settings: shown as text, not downloaded (browsers download text/markdown) */
+  '.md': 'text/plain; charset=utf-8'
 };
 
 const BLOCKED = new Set(['node_modules', 'tools', '.git', 'data', 'tests']);
@@ -609,6 +610,21 @@ function validScore(s) {
   return !!(s && typeof s === 'object' && Array.isArray(s.measures) && s.measures.length
     && s.measures.length <= 5000 && Array.isArray(s.notes)
     && s.measures.every(isObj) && s.notes.every(isObj));
+}
+
+/* G13-3 (G13 doc, U9): a score made from a YouTube link is for the person's own practice. It is not posted to the PUBLIC Shared Scores (an account's
+   "listed" share); its link can still be sent, as before. The page says so in the share dialog and sets `youtubeDerived` from the song's origin (a score
+   its transcription made from a YouTube link's audio, an arrangement of one, or a copy somebody added that carried the mark: youtubeDerivedOf in the page);
+   here only that is read from what arrives: the payload's flag, and the mark `source.youtubeDerived` inside the score (which is what a stored copy carries).
+   A `source.kind` of 'youtube' alone is NOT read: a hymn or a catalogue score with a performance to watch has one, and it is not made from that audio.
+   This is a policy guard, not a security boundary: the server only knows what the client says, so a modified or older client can leave the marks out. It keeps
+   an honest page from posting by mistake and gives a person who is told "no" a reason; it cannot prove where a score came from. Shares that are already
+   posted are not touched. */
+const YOUTUBE_NOT_PUBLIC = 'A score made from a YouTube link cannot be posted to Shared Scores. You can still send its link.';
+function youtubeDerivedShare(score, flag) {
+  if (flag === true) return true;
+  const src = score && typeof score === 'object' ? score.source : null;
+  return !!(src && typeof src === 'object' && src.youtubeDerived === true);
 }
 
 /* What the list shows: no score, only the preview drawn on its card. */
@@ -1362,6 +1378,10 @@ async function handleShares(req, res, url) {
     if (!songKey) return refuse(422, 'That is not a score PPP can share.');
     const title = clipText(body.title || body.score.title, 120);
     if (!title) return refuse(422, 'A shared score needs a title.');
+    /* G13-3: not to the public list. A link (listed left out, or false) is not refused; a guest link is never listed whatever it says */
+    if (!guest && body.listed === true && youtubeDerivedShare(body.score, body.youtubeDerived)) {
+      return jsonError(res, 403, YOUTUBE_NOT_PUBLIC, { code: 'youtube-not-public' });
+    }
     const ownerId = guest ? guestId : user.id;
     const previewMax = guest ? GUEST.PREVIEW_MAX_BYTES : 96 * 1024;
     let preview = null, bytes = 0;
@@ -1461,6 +1481,10 @@ async function handleShares(req, res, url) {
     try { body = JSON.parse((await readBody(req)).toString('utf8') || '{}'); }
     catch (e) { return jsonError(res, 400, 'Invalid JSON'); }
     if (typeof body.listed !== 'boolean') return jsonError(res, 422, 'Nothing to change.');
+    /* G13-3: posting a stored score that came from a YouTube link is refused like the first post; one already posted stays as it is, and taking down is always allowed */
+    if (body.listed === true && !row.listed && youtubeDerivedShare(row.score, false)) {
+      return jsonError(res, 403, YOUTUBE_NOT_PUBLIC, { code: 'youtube-not-public' });
+    }
     row.listed = body.listed;
     row.updatedAt = new Date().toISOString();
     await store.putShare(row);
