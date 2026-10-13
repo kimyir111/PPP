@@ -881,8 +881,9 @@ model (G11b-2) reads them as simulated by their flag (§9, "Simulated history").
 `?demoRuns=count` must equal (under `legacy`, and under `typed` once the `source` keys are taken out). The new `learner-legacy-separate.json` is the same session recorded from the same page with the four Demo Input laps
 walked (state set, random hits drawn) but their lap-end patch not applied (`node tests/practice/learner-record.js --rev a070d70` writes both): history 52,461 -> 50,439 bytes, 33 -> 29 runs, minutes 28 -> 24, xp 1490 ->
 1390, weekly bar 28 -> 24, memory 926 -> 643 bytes, `secs` another digest, `laps` 10 -> 6 (the default's lap counter reads 10: the screen counts the four laps, and the test subtracts them). The default page equals it
-under `legacy`, and under `typed` once the `source` keys are taken out; under `typed` the log holds the six real runs and `sim.n` is 4. `legacy-gate.json`, `legacy-full.json` (practice-sim), `legacy.json`, `parity.json`,
-`perf.json`, `switch.json` did not move: their laps have a keyboard (the simulator's `liveMidi()` is true) or are not laps.
+under `legacy`, and under `typed` once the `source` keys are taken out; under `typed` the log holds the six real runs and `sim.n` is 4. `legacy-gate.json` and `legacy-full.json` (practice-sim: the 144 gate runs and the
+full file are the committed ones, `appCode` lists no new declaration), `legacy.json` (quick set), `parity.json` (sample) and `switch.json` (sample) did not move: their laps have a keyboard (the simulator's `liveMidi()` is true) or are not laps;
+`perf.json` is timing and is read by its CI job.
 
 **Tests.** `tests/learner-log.test.js` has 132 checks (103 before): the switch for the new default, garbage and a throwing storage under both learner values; the two goldens above; section `demo` rewritten (a coach task, a
 passage of one's own and a recall through `completeLap`, then five and five real laps in Korean with the clock on a page with no keyboard, then the same laps with a fake keyboard, four languages for the line and the hint).
