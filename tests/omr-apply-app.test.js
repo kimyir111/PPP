@@ -156,7 +156,8 @@ const IN_PAGE = `
       ok('the same ' + k + ' as legacy', JSON.stringify(v2.view[k]) === JSON.stringify(legacy.view[k]), JSON.stringify(v2.view[k]) === JSON.stringify(legacy.view[k]) ? '' : short({ v2: v2.view[k], legacy: legacy.view[k] }));
     }
     ok('the same title, composer, tempo, bars, staves', ['title', 'composer', 'tempo', 'measures', 'staves'].every(k => v2.view[k] === legacy.view[k]), short([v2.view.title, v2.view.composer, v2.view.tempo, legacy.view.title, legacy.view.composer, legacy.view.tempo]));
-    ok('the same confidence and the same flagged bars', v2.issues === legacy.issues && v2.level === legacy.level, short([v2.issues, legacy.issues, v2.level, legacy.level]));
+    /* G12-3: a v2 import also carries omr/flags.js' suspect bars (tests/omr-flags-app.test.js): its report is legacy's with the flags added - every issue of legacy is there, and the level is not better */
+    ok('the report is the legacy one with the flags added: no issue lost, the level not better', v2.issues >= legacy.issues && ({ poor: 0, fair: 1, good: 2 })[v2.level] <= ({ poor: 0, fair: 1, good: 2 })[legacy.level], short([v2.issues, legacy.issues, v2.level, legacy.level]));
     ok('no staff is silent', v2.hands === 'l,r', v2.hands);
     await f.page.close();
   }
