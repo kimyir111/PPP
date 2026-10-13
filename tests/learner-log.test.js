@@ -507,25 +507,37 @@ async function logSection(browser) {
   const skipped = await q.page.evaluate(async () => { const log = PPP.runLog.log; const h = (await log.epochs()).epochs[0].hash; const r = await log.read('demo', h); return { rt: r.runs.map(x => x.run.rt), gone: !document.querySelector('[data-run-rating]') }; });
   ok('skipping writes nothing', skipped.gone && skipped.rt[skipped.rt.length - 1] == null && skipped.rt.length === 2, JSON.stringify(skipped.rt));
 
-  // a loop: while it plays the row does not show
+  // a loop that is PLAYED (every lap is a real, logged run): while it plays the row does not show, and the laps are in the log
   const during = await q.page.evaluate(async () => {
     const A = PPP.app, sl = ms => new Promise(r => setTimeout(r, ms));
     A.setState({ practiceMode: 'practice', loop: true, tempo: 200 }); A.setLoop(1, 2); await sl(300);
+    const a0 = PPP.runLog.log.stats.appended;
     const l0 = A.state.laps; A.togglePlay();
-    let shownWhilePlaying = false;
+    let shownWhilePlaying = false, playingSeen = 0;
+    const pressed = new WeakSet();
     const t0 = performance.now();
-    while (A.state.laps < l0 + 2 && performance.now() - t0 < 15000) { await sl(150); if (A.state.playing && document.querySelector('[data-run-rating]')) shownWhilePlaying = true; }
+    while (A.state.laps < l0 + 2 && performance.now() - t0 < 20000) {
+      await sl(100);
+      const now = performance.now();
+      ((A._perf && A._perf.expected) || []).forEach((x, i) => {      /* the notes of every lap, as they come due */
+        if (pressed.has(x) || i % 5 === 4) return;
+        const due = x.tMs - now;
+        if (due < 400 && due > -60) { pressed.add(x); setTimeout(() => { window.__press(x.midi); setTimeout(() => window.__release(x.midi), 50); }, Math.max(0, due)); }
+      });
+      if (A.state.playing) { playingSeen++; if (document.querySelector('[data-run-rating]')) shownWhilePlaying = true; }
+    }
     if (A.state.playing) A.togglePlay();
     await sl(500);
-    return { shownWhilePlaying: shownWhilePlaying, laps: A.state.laps - l0 };
+    await PPP.runLog.log.idle();
+    return { shownWhilePlaying: shownWhilePlaying, playingSeen: playingSeen, laps: A.state.laps - l0, logged: PPP.runLog.log.stats.appended - a0, rowAfter: !!document.querySelector('[data-run-rating]') };
   });
-  ok('while laps are looping the rating row stays out of the way', during.laps >= 2 && !during.shownWhilePlaying, JSON.stringify(during));
+  ok('while laps are looping (and being logged) the rating row stays out of the way; once the music has stopped it is there', during.laps >= 2 && during.logged >= 2 && during.playingSeen >= 3 && !during.shownWhilePlaying && during.rowAfter, JSON.stringify(during));
 
   // the export: through the Settings button, as a person does it
   await q.page.evaluate(() => { window.__dl = []; window.__urls = []; window.__revoked = []; const mk = URL.createObjectURL.bind(URL); URL.createObjectURL = b => { const u = mk(b); window.__dl.push(b); window.__urls.push(u); return u; }; const rv = URL.revokeObjectURL.bind(URL); URL.revokeObjectURL = u => { window.__revoked.push(u); return rv(u); }; });
   await toSettings(q.page);
   const status = await q.page.evaluate(() => ({ title: (document.querySelector('[data-run-log-settings]') || {}).innerText, status: (document.querySelector('[data-run-log-status]') || {}).innerText }));
-  ok('Settings shows the practice log and what it holds', /Practice log/.test(status.title || '') && /Runs saved: 2 · songs: 1/.test(status.status || '') && /Nothing played \(not counted\): 2/.test(status.status || ''), JSON.stringify(status));
+  ok('Settings shows the practice log and what it holds', /Practice log/.test(status.title || '') && /Runs saved: 4 · songs: 1/.test(status.status || '') && !/Nothing played/.test(status.status || ''), JSON.stringify(status));
   await q.page.evaluate(() => document.querySelector('[data-run-log-export]').click());
   await sleep(900);
   const text = await q.page.evaluate(async () => (window.__dl[0] ? await window.__dl[0].text() : null));
@@ -539,7 +551,7 @@ async function logSection(browser) {
     const live = await PPP.runLog.log.exportAll();
     return { ok: r.ok, rejected: r.rejected, same: r.ok && JSON.stringify(r.file.epochs) === JSON.stringify(live.file.epochs), epochs: r.ok ? r.file.epochs.length : 0, runs: r.ok ? r.file.epochs[0].runs.length : 0, format: r.ok && r.file.format, rt: r.ok && r.file.epochs[0].runs.map(x => x.rt) };
   }, text);
-  ok('and re-reading the file gives back exactly the log (every epoch, every run, the rating)', parsed.ok && parsed.same && parsed.rejected === 0 && parsed.epochs === 1 && parsed.runs === 2 && parsed.format === 'ppp-practice-log' && parsed.rt[0] === 3 && parsed.rt.slice(1).every(v => v == null), JSON.stringify(parsed));
+  ok('and re-reading the file gives back exactly the log (every epoch, every run, the rating)', parsed.ok && parsed.same && parsed.rejected === 0 && parsed.epochs === 1 && parsed.runs === 4 && parsed.format === 'ppp-practice-log' && parsed.rt[0] === 3 && parsed.rt.slice(1).every(v => v == null), JSON.stringify(parsed));
   // nothing of the account in it: the keys the app really uses (library-backup.js KEY: the link-sharing key, the PC link and the one before it)
   const secret = await q.page.evaluate(async () => {
     localStorage.setItem('ppp-guest-key', 'SECRET-GUEST-KEY-123');
