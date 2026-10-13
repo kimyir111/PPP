@@ -2331,6 +2331,14 @@
     "Measure {{n}}: {{why}}": "第{{n}}小节：{{why}}",
     "Much of this score was hard to read.": "这份乐谱大部分内容很难读取。",
     "{{n}} more measures are marked on the strip above.": "上方的条上还标出了{{n}}个小节。",
-    "Some of the checks could not run, so some bars that are wrong may not be marked.": "部分检查没能运行，所以有些错误的小节可能没有被标出来。"
+    "Some of the checks could not run, so some bars that are wrong may not be marked.": "部分检查没能运行，所以有些错误的小节可能没有被标出来。",
+    "About & licences": "关于与许可",
+    "Use recordings you have the right to use. The score PPP writes is for your own practice.": "请只使用你有权使用的录音。PPP 生成的乐谱仅供你自己练习使用。",
+    "A score made from a YouTube link cannot be posted to Shared Scores. You can still send its link.": "由 YouTube 链接生成的乐谱不能发布到乐谱分享。仍然可以发送它的链接。",
+    "Piano sounds: Salamander Grand Piano V3 by Alexander Holm, licensed under CC BY 3.0. Notes longer than nine seconds are shortened.": "钢琴音色：Alexander Holm 的 Salamander Grand Piano V3，采用 CC BY 3.0 许可。超过九秒的音被截为九秒。",
+    "Licence text": "许可全文",
+    "Open-source licences and notices": "开源许可与声明",
+    "Code, fonts, sounds and score catalogues, with their licences.": "代码、字体、音色和乐谱库，以及各自的许可。",
+    "Your songs are saved only in this browser. PPP's server receives a song only when you share it or ask it to arrange or read it.": "你的歌曲只保存在此浏览器中。只有当你分享歌曲，或请求 PPP 编曲或识谱时，PPP 服务器才会收到它。"
   }
 }
