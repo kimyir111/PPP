@@ -80,6 +80,15 @@ const DEFAULTS = {
   beatTrackPy: '',
   /* G10d song mode: the folder that holds the source separation (demucs), when it is not installed in the Python itself (pip install --target <folder> demucs ...) */
   songLib: '',
+  /* song mode, optional: YourMT3 (multi-instrument transcription) in its own Python. Found by itself in a tools folder (the one beside
+     transcribe.py, this repository's, or the one that holds the song-lib or the transcription Python): tools/yourmt3 (the code and checkpoints,
+     a clone of the Hugging Face space mimbres/YourMT3) and tools/yourmt3-venv (its Python). setup-yourmt3.cmd makes both */
+  mt3Python: '',
+  mt3Dir: '',
+  /* song mode's melody from SheetSage2 (a lead-sheet transcriber), found the same way: tools/sheetsage2 (the model m-a-p/SheetSage2) and
+     tools/sheetsage2-venv (its Python). setup-sheetsage2.cmd makes both; without them the melody comes from YourMT3's lines */
+  ss2Python: '',
+  ss2Dir: '',
   ffmpegPath: 'ffmpeg',
   ytdlpPath: '',
   audioBase: '',
@@ -132,6 +141,15 @@ function loadConfig(file, env) {
   if (!cfg.beatTrackPy) cfg.beatTrackPy = path.join(path.dirname(cfg.transcribePy), 'beat_track.py');
   cfg.beats = cfg.beats !== false;
   if (!cfg.songLib) cfg.songLib = firstExisting([path.join(path.dirname(cfg.transcribePy), 'tools', 'song-lib'), path.join(REPO, 'tools', 'song-lib')]);
+  if (!cfg.mt3Dir || !cfg.mt3Python || !cfg.ss2Dir || !cfg.ss2Python) {
+    const toolDirs = [path.join(path.dirname(cfg.transcribePy), 'tools'), path.join(REPO, 'tools')]
+      .concat(cfg.songLib ? [path.dirname(cfg.songLib)] : [])
+      .concat(cfg.pythonPath ? [path.dirname(path.dirname(path.dirname(cfg.pythonPath)))] : []);
+    if (!cfg.mt3Dir) cfg.mt3Dir = firstExisting(toolDirs.map(d => path.join(d, 'yourmt3', 'model_helper.py'))).replace(/[\\/]model_helper\.py$/, '');
+    if (!cfg.mt3Python) cfg.mt3Python = firstExisting([].concat(...toolDirs.map(d => [path.join(d, 'yourmt3-venv', 'Scripts', 'python.exe'), path.join(d, 'yourmt3-venv', 'bin', 'python')])));
+    if (!cfg.ss2Dir) cfg.ss2Dir = firstExisting(toolDirs.map(d => path.join(d, 'sheetsage2', 'config.json'))).replace(/[\\/]config\.json$/, '');
+    if (!cfg.ss2Python) cfg.ss2Python = firstExisting([].concat(...toolDirs.map(d => [path.join(d, 'sheetsage2-venv', 'Scripts', 'python.exe'), path.join(d, 'sheetsage2-venv', 'bin', 'python')])));
+  }
   if (!cfg.kongCheckpoint) cfg.kongCheckpoint = env.PPP_TRANSCRIBE_CHECKPOINT || findKongCheckpoint(path.join(path.dirname(cfg.transcribePy), 'tools', 'piano-transcription')) || findKongCheckpoint(path.join(REPO, 'tools', 'piano-transcription'));
   cfg.maxSeconds = Math.max(30, Math.min(Result.LIMITS.MAX_SECONDS, +cfg.maxSeconds || Result.LIMITS.MAX_SECONDS));
   cfg.idlePollSeconds = Math.max(0, Math.min(86400, +cfg.idlePollSeconds || 0));
@@ -474,7 +492,12 @@ function createWorker(cfg, deps) {
     const argv = [cfg.transcribePy, '--wav', wavs.master, '--kong-wav', wavs.kong, '--out', out, '--engine', 'auto'];
     if (cfg.kongCheckpoint) argv.push('--checkpoint', cfg.kongCheckpoint);
     if (cfg.ariaCheckpoint) argv.push('--aria-checkpoint', cfg.ariaCheckpoint);
-    if (isSong(job)) { argv.push('--mode', 'song'); if (cfg.songLib) argv.push('--song-lib', cfg.songLib); }
+    if (isSong(job)) {
+      argv.push('--mode', 'song');
+      if (cfg.songLib) argv.push('--song-lib', cfg.songLib);
+      if (cfg.mt3Python && cfg.mt3Dir) argv.push('--mt3-python', cfg.mt3Python, '--mt3-dir', cfg.mt3Dir);
+      if (cfg.ss2Python && cfg.ss2Dir) argv.push('--ss2-python', cfg.ss2Python, '--ss2-dir', cfg.ss2Dir);
+    }
     let engines = '';
     const r = await run(cfg.pythonPath, argv, {
       cwd: dir, timeoutMs: Math.max(10 * 60 * 1000, wavs.seconds * 8000), onChild: c => { ctl.child = c; },
@@ -483,6 +506,8 @@ function createWorker(cfg, deps) {
         if (m) onPct(Math.min(1, +m[1]));
         const e = /^ENGINE\s+(\S+)/.exec(line);
         if (e) { engines += (engines ? ' + ' : '') + e[1]; log('Listening with ' + e[1] + '...'); }
+        /* transcribe.py's NOTE lines say why an optional engine (YourMT3, Basic Pitch) gave way to the next one: without them a fallback is silent */
+        if (/^NOTE\s/.test(line)) log(line.slice(0, 600));
       }
     });
     check();
@@ -538,7 +563,13 @@ function createWorker(cfg, deps) {
       }
     }
     /* G10d song mode: the notes carry their layer (convertHelperNotes keeps it), and the result says so */
-    if (h.song) { result.mode = 'song'; result.song = { separation: h.song.separation || null, melodyFrom: h.song.melodyFrom || null }; }
+    if (h.song) {
+      result.mode = 'song';
+      result.song = { separation: h.song.separation || null, melodyFrom: h.song.melodyFrom || null, melodyTracker: h.song.melodyTracker || null };
+      if (h.song.accompFrom) result.song.accompFrom = h.song.accompFrom;
+      if (h.song.beatsFrom && result.beats) result.song.beatsFrom = h.song.beatsFrom;
+      if (h.song.key) result.song.key = h.song.key;
+    }
     const v = Result.validateResult(result);
     if (!v.ok) throw new JobError('The notes did not pass the site\'s checks: ' + v.error, false);
     return { result: result, report: c.report, bytes: v.bytes };
@@ -593,7 +624,8 @@ function createWorker(cfg, deps) {
         if (s > lastShown) { lastShown = s; log('  listening: ' + Math.round(p * 100) + '%'); }
       });
       stage = 'beats'; pct = 0;
-      const bt = await beatTrack(dir, wavs);
+      /* a song's lead sheet (SheetSage2) came with its beats and bar lines: those are the song's, Beat This is not run */
+      const bt = raw && Array.isArray(raw.beats) && raw.beats.length >= 4 ? { beats: raw.beats, downbeats: Array.isArray(raw.downbeats) ? raw.downbeats : [] } : await beatTrack(dir, wavs);
       const r = toResult(raw, bt);
       const beatsNote = r.result.beats ? ' and ' + r.result.beats.length + ' beats' : '';
       if (r.result.mode === 'song') {
@@ -763,6 +795,10 @@ async function checkSetup(cfg, log, deps) {
     /* song mode is optional: without the separation only song-mode conversions fail (with a message that says what to install) */
     const sep = await (deps.runTool || runTool)(cfg.pythonPath, ['-c', 'import sys\nif sys.argv[1]: sys.path.insert(0, sys.argv[1])\nimport demucs, librosa\nprint("ok")', cfg.songLib || ''], { timeoutMs: 60000 });
     log(sep.code === 0 ? 'ok    song mode: the source separation (demucs) is there' + (cfg.songLib ? ' (' + cfg.songLib + ')' : '') : 'note  song mode is not set up (no demucs): piano conversions work; see tools/home-worker/README.md, "Song mode"');
+    log(cfg.mt3Python && cfg.mt3Dir ? 'ok    song mode: YourMT3 is there (' + cfg.mt3Dir + '); a song is transcribed by it first, by the separation if it fails'
+      : 'note  song mode without YourMT3 (tools/home-worker/setup-yourmt3.cmd adds it): songs use the separation; nothing to fix');
+    log(cfg.ss2Python && cfg.ss2Dir ? 'ok    song mode: SheetSage2 is there (' + cfg.ss2Dir + '); a song\'s melody comes from it'
+      : 'note  song mode without SheetSage2 (tools/home-worker/setup-sheetsage2.cmd adds it): the melody comes from YourMT3; nothing to fix');
   }
   if (!problems.some(p => /^(siteUrl|token)/.test(p))) {
     try {

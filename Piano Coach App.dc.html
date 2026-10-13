@@ -5334,6 +5334,47 @@ function graphToReviewScore(g, title) {
    NOT in the page's script list: they are fetched in the background once the page has settled (warmSingleModules), or by the
    first arrangement if that comes sooner, in this order (each file's own header says which it needs before it; all are UMD,
    none calls Node's require in the browser). Nothing is loaded while another mode (legacy, g8) is set. */
+/* A failed eager script does not stop the page from opening, but index.js then
+   cannot publish PPPScoreGraph. Retry the head's own list, in its original order.
+   Reload its consumers too: their factories may have kept a missing dependency.
+   Healthy pages make no extra requests; concurrent callers share one recovery. */
+let _scoreModulesPromise = null;
+let _scoreModulesFailed = false;
+function scoreModulesReady() {
+  return !_scoreModulesFailed && !!(window.PPPScoreGraph && window.PPPAudioScore && window.PPPSongGraph && window.PPPRealize && window.PPPEngrave);
+}
+function loadScoreModules() {
+  if (_scoreModulesPromise) return scoreModulesWait(_scoreModulesPromise);
+  if (scoreModulesReady()) return Promise.resolve(true);
+  const scripts = [...document.head.querySelectorAll('script[src]:not([data-score-recovery])')]
+    .map(el => el.getAttribute('src'))
+    .filter(src => /^\.\/(?:scoregraph|playability|difficulty|songgraph|arrangement|realize|engrave)\/|^\.\/audio-score\.js(?:\?|$)/.test(src));
+  if (!scripts.length) return Promise.resolve(false);
+  const stamp = Date.now();
+  _scoreModulesPromise = Promise.all(scripts.map(src => new Promise(resolve => {
+    const el = document.createElement('script');
+    el.setAttribute('data-score-recovery', '');
+    el.src = src + (src.includes('?') ? '&' : '?') + 'retry=' + stamp;
+    el.async = false;
+    el.onload = () => { el.remove(); resolve(true); };
+    el.onerror = () => { el.remove(); resolve(false); };
+    document.head.appendChild(el);
+  }))).then(results => {
+    _scoreModulesFailed = false;
+    const ok = results.every(Boolean) && scoreModulesReady();
+    _scoreModulesFailed = !ok;
+    return ok;
+  }).catch(() => { _scoreModulesFailed = true; return false; })
+    .then(ok => { _scoreModulesPromise = null; return ok; });
+  return scoreModulesWait(_scoreModulesPromise);
+}
+function scoreModulesWait(promise) {
+  /* A stalled request cannot hold an import forever. Keep sharing the actual
+     download after the wait expires, so a retry cannot execute a late copy twice. */
+  let timer;
+  return Promise.race([promise, new Promise(resolve => { timer = setTimeout(() => resolve(false), 15000); })])
+    .then(ok => { clearTimeout(timer); return ok; });
+}
 const SINGLE_SCRIPTS = [
   'realize/handchords.js', 'realize/clefs.js', 'realize/ottava.js',
   'critics/voice-leading.js', 'critics/register-density.js', 'critics/register-floor.js', 'critics/left-hand-jump.js',
@@ -5343,6 +5384,7 @@ const SINGLE_SCRIPTS = [
 let _singleScriptsPromise = null;
 const _singleLoaded = new Set(); /* the scripts of the list that have loaded (and so run) */
 function loadSingleModules() {
+  if (_scoreModulesPromise || !scoreModulesReady()) return loadScoreModules().then(ok => ok ? loadSingleModules() : false);
   /* ready only when EVERY script has loaded: a run where one of the twelve others failed is not ready, even though candidates and repair are there */
   if (SINGLE_SCRIPTS.every(src => _singleLoaded.has(src))) return Promise.resolve(true);
   if (_singleScriptsPromise) return _singleScriptsPromise; /* a download in flight is shared: nothing is asked for twice */
@@ -5671,6 +5713,7 @@ function recordingScriptsToLoad() {
 /* Resolves true when v2 is ready, false when a file could not be loaded (RECORDING_LOAD_ERROR names it). Never rejects. A download in flight is shared; what has loaded is not asked for again,
    and nor is it run again: a file that failed is asked for alone (with the few that read its export when they loaded, recordingScriptsToLoad). */
 function loadRecordingModules() {
+  if (_scoreModulesPromise || !scoreModulesReady()) return loadScoreModules().then(ok => ok ? loadRecordingModules() : false);
   if (recordingModulesReady()) return Promise.resolve(true);
   if (_recPromise) return _recPromise;
   _recPromise = recRaceTimeout((async () => {
@@ -5697,6 +5740,7 @@ function loadRecordingModules() {
 /* rec/app.js alone: the heard notes of a kept graph, "Play as recorded", the flags. It needs none of the stages, so a song written the classic way can play as recorded
    without the weights. */
 function loadRecApp() {
+  if (_scoreModulesPromise || !scoreModulesReady()) return loadScoreModules().then(ok => ok ? loadRecApp() : false);
   if (typeof window !== 'undefined' && window.PPPRecApp) return Promise.resolve(true);
   if (_recAppPromise) return _recAppPromise;
   _recAppPromise = recRaceTimeout(recScriptTag(REC_APP_SCRIPT).then(ok => ok && !!window.PPPRecApp)).then(ok => { _recAppPromise = null; return ok; });
@@ -5763,6 +5807,7 @@ const LEADSHEET_NEEDS = ['rec/grid.js', 'rec/writer.js'];
 const LEADSHEET_MODEL = ['PPPRecGridModel', 'rec/weights/ai5b-grid-v1.json'];
 let _leadPromise = null;
 function loadLeadsheetModule() {
+  if (_scoreModulesPromise || !scoreModulesReady()) return loadScoreModules().then(ok => ok ? loadLeadsheetModule() : false);
   /* the module AND what it reads are on the page: nothing to ask for */
   if (typeof window !== 'undefined' && window.PPPRecLeadsheet && LEADSHEET_NEEDS.every(recScriptGlobalPresent)) return Promise.resolve(true);
   if (_leadPromise) return _leadPromise;
@@ -8734,7 +8779,9 @@ const Import = {
       notes: heard.notes, pedals: heard.pedals,
       beats: pcClassic(v2) ? undefined : heard.beats, downbeats: pcClassic(v2) ? undefined : heard.downbeats,
       grid: heard.grid, title: title
-    }, Object.assign({ title: title, easy: what.mode === 'arrange', closeGaps: true, exactBars: true }, v2 ? { recording: 'v2' } : {}));
+    }, Object.assign({ title: title, easy: what.mode === 'arrange', closeGaps: true, exactBars: true }, v2 ? { recording: 'v2' } : {},
+      /* a song's layers are its hands: the melody above, the bass and the accompaniment (one chord a beat) below */
+      isSongHeard(heard) && what.mode !== 'arrange' ? songNotation(null, heard) : {}));
     try {
       built = convert(useV2);
       /* a v2 result the page cannot believe (a tempo outside what the rhythm controls accept, bars far off the length of the heard notes) is not kept: the classic conversion writes this score and the review screen says so */
@@ -8832,6 +8879,7 @@ const Import = {
   },
   /* v2's files, asked for before the notes are written (a no-op for the classic conversion) */
   async readyRecording(what) {
+    if (!(await loadScoreModules())) throw importError('score-not-loaded', tx('The files needed to write the score could not be loaded. Try again in a moment.'));
     if (RECORDING_MODE === 'v2' && what.mode !== 'arrange') await loadRecordingModules();
   },
 
@@ -8847,6 +8895,7 @@ const Import = {
        The old listen-first order allowed four approximate model notes to
        bypass an exact catalog match. Search by the YouTube title / filename
        before spending time on transcription. */
+    await Import.readyRecording({ mode: 'arrange' }); /* recover the notation core before any dependent lazy module runs */
     if (RECORDING_MODE === 'v2' && what.mode !== 'arrange') loadRecordingModules(); /* G10a-4: asked for now, while the person waits for the transcription */
     stage('search', {});
     let query = nameGuess;
@@ -9074,7 +9123,7 @@ const Import = {
       /* G10d: a song's figure is the estimate (no measured agreement covers its melody and bass): said as one, with the notes of each layer and the accompaniment notes set apart */
       confidenceKind: songMode ? 'song-estimate' : modelCount > 1 ? 'model-agreement' : 'single-model-estimate',
       modelAgreement: modelAgreement, modelCount: modelCount,
-      songLayers: songMode ? { melody: heard.song.melody | 0, bass: heard.song.bass | 0, accomp: heard.song.accomp | 0, melodyFrom: heard.song.melodyFrom || null } : undefined
+      songLayers: songMode ? { melody: heard.song.melody | 0, bass: heard.song.bass | 0, accomp: heard.song.accomp | 0, melodyFrom: heard.song.melodyFrom || null, melodyTracker: heard.song.melodyTracker || null } : undefined
     };
   },
 
@@ -10837,7 +10886,7 @@ window.PPP = {
   /* G10a-4/G10a-5b: 'v2' (default: the staged recording conversion, docs/GOALS/G10 section 6) | 'legacy' (the classic one). Any other value is no choice: the default comes back and the remembered choice is forgotten. A choice is remembered on this device. */
   get recording() { return RECORDING_MODE; },
   set recording(v) { setRecordingMode(v); },
-  loadRecordingModules, recordingModulesReady, recWeightsShapeOk, TRANSCRIPTION_VERSION_V2, RECORDING_SCRIPTS, RECORDING_WEIGHTS,
+  loadScoreModules, loadRecordingModules, recordingModulesReady, recWeightsShapeOk, TRANSCRIPTION_VERSION_V2, RECORDING_SCRIPTS, RECORDING_WEIGHTS,
   /* G10c-1b (docs/GOALS/G10 section 34): 'leadsheet' (the default: RECORDING_ARRANGE_DEFAULT, one line to flip) | 'reduce' (what the page did before). How a recording is arranged at the easier levels by the one-note-per-hand arranger.
      Any other value is no choice: the default comes back and the remembered choice is forgotten (PPP.recording's rule). A choice is remembered on this device; ?recordingArrange= in the address is for that visit only. */
   get recordingArrange() { return RECORDING_ARRANGE_MODE; },
@@ -12173,6 +12222,10 @@ Object.defineProperties(window.PPP, {
 });
 let _engravePromise = null;
 function loadEngrave() {
+  if (_scoreModulesPromise || !scoreModulesReady()) return loadScoreModules().then(ok => {
+    if (!ok) throw importError('score-not-loaded', tx('The files needed to write the score could not be loaded. Try again in a moment.'));
+    return loadEngrave();
+  });
   if (window.PPPEngravePage) return Promise.resolve(window.PPPEngravePage);
   if (_engravePromise) return _engravePromise;
   _engravePromise = new Promise((resolve, reject) => {
@@ -12897,8 +12950,21 @@ const isSongHeard = heard => !!(heard && heard.song);
 /* the review's words for where a song's tune came from (transcribe.py: the voice, or the stem whose line it followed in an instrumental) */
 function melodyFromLabel(layers) {
   const f = layers && layers.melodyFrom;
-  return !layers || !layers.melody ? tx('no melody line (the lead sheet finds one)')
+  const from = !layers || !layers.melody ? tx('no melody line (the lead sheet finds one)')
     : f === 'vocals' ? tx('voice') : f === 'guitar' ? tx('guitar') : f === 'piano' ? tx('piano') : f === 'other' ? tx('synth / other instrument') : tx('not recorded (an earlier conversion)');
+  /* the method is a name, shown as is: a person testing a new PC setup sees which one ran */
+  const by = layers && layers.melody ? { 'basic-pitch': 'Basic Pitch', 'multi-instrument': 'YourMT3', 'lead-sheet': 'SheetSage2' }[layers.melodyTracker] : null;
+  return by ? from + ' · ' + by : from;
+}
+/* audio-score.js's option for a song-mode recording written again: its layers (each heard note's track) are its hands */
+function songNotation(S, heard) {
+  const layers = isSongHeard(heard) ? heard.song : S && S.importSource && S.importSource.songLayers;
+  if (!layers) return {};
+  return Object.assign({ songLayers: true },
+    /* the key the lead sheet states, written instead of the one read from the notes */
+    layers.key && Number.isInteger(layers.key.tonic) ? { keyHint: { tonic: layers.key.tonic, mode: layers.key.mode } } : {},
+    /* its beats are the song's bars (not only evidence of the bar phase, as a beat tracker's are) when they came with these notes */
+    layers.beatsFrom === 'lead-sheet' && heard && Array.isArray(heard.beats) && heard.beats.length >= 4 ? { recBeats: 'lead-sheet' } : {});
 }
 function withSongLayers(plan, source, heard) { return isSongHeard(heard) || (source && source.songLayers) ? Object.assign({}, plan, { melodyTrack: SONG_TRACKS.melody }) : plan; }
 
@@ -15722,7 +15788,9 @@ class Component extends DCLogic {
       ensemble: { models: e.models || [], primary: e.primary || null, agreement: e.agreement, accepted: e.accepted, uncertain: e.uncertain || 0 }
     });
     /* G10d song mode: every note keeps its layer (track 1 melody, 2 bass, 3 accompaniment); the lead sheet takes the tune from the melody layer */
-    if (song) heard.song = { separation: song.separation || null, melodyFrom: song.melodyFrom || null, melody: song.melody | 0, bass: song.bass | 0, accomp: song.accomp | 0 };
+    if (song) heard.song = Object.assign({ separation: song.separation || null, melodyFrom: song.melodyFrom || null, melodyTracker: song.melodyTracker || null, melody: song.melody | 0, bass: song.bass | 0, accomp: song.accomp | 0 },
+      /* a lead sheet's (SheetSage2) chords as the accompaniment, its beats as the bars, its key (home-result.js checked them) */
+      song.accompFrom ? { accompFrom: song.accompFrom } : {}, song.beatsFrom ? { beatsFrom: song.beatsFrom } : {}, song.key ? { key: { tonic: song.key.tonic, mode: song.key.mode } } : {});
     return heard;
   }
   async openHomeJob(id) {
@@ -16527,7 +16595,7 @@ class Component extends DCLogic {
           /* G10a-1d: as finishHeard: the home PC's beats go to v2 only (bar-phase evidence); a song reopened later has no beats (heardForSong) */
           notes: heard.notes, pedals: heard.pedals, beats: heard.homePc && !wantV2 ? undefined : heard.beats, downbeats: heard.homePc && !wantV2 ? undefined : heard.downbeats,
           grid: heard.grid, title: S.score.title
-        }, Object.assign({ title: S.score.title, closeGaps: true, exactBars: true }, wantV2 ? { recording: 'v2' } : {}));
+        }, Object.assign({ title: S.score.title, closeGaps: true, exactBars: true }, wantV2 ? { recording: 'v2' } : {}, songNotation(S, heard)));
       } catch (e) { return done((e && e.message) || tx('The rhythm could not be rewritten.')); }
       if (wantV2 && (!writtenByV2(built) || !v2Plausible(built, heard))) return done(tx('The new transcription method could not read this performance, so nothing was changed.'));
       let score;
@@ -16688,8 +16756,8 @@ class Component extends DCLogic {
       built = A.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
         beats: heard.beats, downbeats: heard.downbeats
-      }, this.recordingRewriteV2(S) ? { title: S.score.title, closeGaps: true, exactBars: true, recording: 'v2' } /* G10a-4: the same conversion that wrote this song */
-        : { title: S.score.title, lock: lock, closeGaps: true, exactBars: true });
+      }, Object.assign(this.recordingRewriteV2(S) ? { title: S.score.title, closeGaps: true, exactBars: true, recording: 'v2' } /* G10a-4: the same conversion that wrote this song */
+        : { title: S.score.title, lock: lock, closeGaps: true, exactBars: true }, songNotation(S, heard)));
       if (singleRoute(plan)) {
         /* G9e-lite: one note per hand, from the same unarranged built.graph. A refusal is NOT a silent legacy result: the
            standard arrangement below is then shown with a notice that stays on screen, and the result is marked in its source. */
@@ -16953,8 +17021,8 @@ class Component extends DCLogic {
       built = window.PPPAudioScore.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
         beats: heard.beats, downbeats: heard.downbeats
-      }, v2 ? { title: S.score.title, arrangement: arrangement, closeGaps: true, exactBars: true, recording: 'v2' }
-        : { title: S.score.title, lock: lock, arrangement: arrangement, closeGaps: true, exactBars: true });
+      }, Object.assign(v2 ? { title: S.score.title, arrangement: arrangement, closeGaps: true, exactBars: true, recording: 'v2' }
+        : { title: S.score.title, lock: lock, arrangement: arrangement, closeGaps: true, exactBars: true }, arrangement ? {} : songNotation(S, heard)));
     } catch (e) {
       this.say((e && e.message) || tx('The rhythm could not be rewritten.'));
       return;

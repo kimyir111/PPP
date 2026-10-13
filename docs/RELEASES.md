@@ -15,6 +15,7 @@ row is `docs/RELEASE_CHECKLIST.md`. `node tools/release/release.js <sha> --confi
 
 | Date (UTC) | Commit | Deploy | What changed | Rollback to | Smoke / verified | Phone cold (FCP / ready / KB) |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-09 07:11 | `7a3e2e4` | `dep-db4977jbc2fs73b2fidg` | Recover missing ScoreGraph modules before recording imports (#247) | `d324c44` | `smoke.js --sha 7a3e2e4 --logs`: 16 checks passed (release.js, 2026-10-09) | - |
 | 2026-10-08 05:55 | `b727ada` | `dep-db3j0g8m7kps73et2v60` | Score view: My Songs opens a song on its whole score (#219) | `3567e27` | `smoke.js --sha b727ada`: 15 checks passed (G13-0, 2026-10-08) | 8.6 s / 9.0 s / 1,407 KB |
 | 2026-10-07 18:02 | `3567e27` | `dep-db38ijrncjis73eqj9ng` | G10b-5: the PC button is always findable; a link is never forgotten on one 401 (#218) | `7ec61cb` | - | - |
 | 2026-10-07 14:57 | `7ec61cb` | `dep-db35rh4s728c73bem5tg` | G10b-4: start at once from the PC browser; confirm before pairing (#189) | `e943c93` | - | - |

@@ -45,7 +45,7 @@ test('the app loads every G4a engrave/ file after the scoregraph library and aud
   assert.match(loader, /s\.async = false;/, 'in order');
   /* defined once, called from the engraver's view (G4d-2) and G4e's print command (printScore()) - both need the
      layout core and page.js, and both are on the same switch (on by default since the G4f-2 flip) */
-  assert.equal((html.match(/loadEngrave\(\)/g) || []).length, 3, 'defined once, called from the engraver\'s view and the print command');
+  assert.equal((html.match(/loadEngrave\(\)/g) || []).length, 4, 'defined once, called after core recovery, from the engraver\'s view and the print command');
 });
 
 /* engraveView (ENGRAVE_FILES through it), run in a sandbox: the page's location, storage, console and document are
@@ -65,6 +65,8 @@ function runSwitch(search, stored, extra) {
   const window = { PPP: {} };
   const ctx = vm.createContext({
     window, document, URLSearchParams,
+    /* This harness isolates the lazy engraver from the already-loaded core. */
+    scoreModulesReady: () => true, _scoreModulesPromise: null,
     location: { search: search || '' },
     localStorage: { getItem: k => (stored && k in stored ? stored[k] : null) },
     console: { warn: function () { warns.push([...arguments].join(' ')); } },
