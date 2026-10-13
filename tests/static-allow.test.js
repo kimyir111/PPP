@@ -271,7 +271,7 @@ test('the server: security headers on every kind of answer, HSTS only over https
     assert.equal((await get(srv.port, '/rec/weights/hands-v1.json')).headers['cache-control'], 'no-store');
     assert.equal((await get(srv.port, '/audio/piano/A0.mp3')).headers['cache-control'], 'public, max-age=2592000');
     assert.equal((await get(srv.port, '/assets/hands/hand-right-black.png')).headers['cache-control'], 'public, max-age=3600');
-    assert.equal((await get(srv.port, '/')).headers['cache-control'], 'no-store');
+    assert.equal((await get(srv.port, '/')).headers['cache-control'], 'no-cache');   /* G13-4c3: the page is revalidated by its ETag, never used unasked */
     /* the engraver's content-hash URLs are still immutable, and a wrong hash is not */
     const body = fs.readFileSync(path.join(REPO, 'engrave', 'canon.js'), 'utf8').replace(/\r\n/g, '\n');
     const hash = require('crypto').createHash('sha256').update(Buffer.from(body, 'utf8')).digest('hex').slice(0, 12);

@@ -33,7 +33,8 @@ test('the served page names each script of its head by the hash of that file', a
   for (const url of ['/', '/index.html', '/Piano%20Coach%20App.dc.html']) {
     const r = await request(srv.port, url);
     assert.equal(r.status, 200, url);
-    assert.equal(r.headers['cache-control'], 'no-store', 'the page itself is never kept: ' + url);
+    assert.equal(r.headers['cache-control'], 'no-cache', 'the page itself is revalidated, never used unasked: ' + url);
+    assert.match(r.headers.etag, /^"[0-9a-f]{20}"$/, 'with the tag of its bytes: ' + url);
     const got = scriptsOf(headOf(r.body.toString('utf8')));
     assert.deepEqual(got.map(g => g[0]), src.map(s => s[0]), 'the same scripts in the same order: ' + url);
     for (const [p, q] of got) {
@@ -194,8 +195,8 @@ test('types that are not hashed keep their own cache headers whatever ?h= says',
   const png = await request(srv.port, '/assets/hands/hand-right-black.png?h=' + hashOf(read('assets/hands/hand-right-black.png'), true));
   assert.equal(png.headers['cache-control'], 'public, max-age=3600');
   const html = await request(srv.port, '/Piano%20Coach%20App.dc.html?h=' + hashOf(read('Piano Coach App.dc.html')));
-  assert.equal(html.headers['cache-control'], 'no-store', 'the page is the thing that names the hashes: never kept');
-  assert.equal(html.headers.etag, undefined);
+  assert.equal(html.headers['cache-control'], 'no-cache', 'the page is the thing that names the hashes: asked about every time');
+  assert.notEqual(html.headers.etag, '"' + hashOf(read('Piano Coach App.dc.html')) + '"', 'its tag is of the bytes sent, not a content hash of the file');
 });
 
 test('the served list still decides: a hash does not make a server file reachable, and no path gets round it', async () => {
@@ -311,5 +312,47 @@ test('a page that names a file the server does not have, or does not serve, is l
     assert.match(head, /src="\.\/scoregraph\/gone\.js"/);
     assert.ok(head.includes('src="./' + DOCS + '/secret.js?v=1"'), 'a file the server does not serve is not given a hash (the hash would be a probe)');
     assert.match(head, /src="https:\/\/example\.com\/x\.js"/);
+  } finally { s.close(); tree.remove(); }
+});
+
+test('G13-4c3: the page has the tag of the bytes it sends; the same bytes are answered 304, anything else in full', async () => {
+  const a = await request(srv.port, '/');
+  assert.equal(a.status, 200);
+  const b = await request(srv.port, '/');
+  assert.equal(b.headers.etag, a.headers.etag, 'the same page twice, the same tag');
+  for (const [name, headers] of [['the tag', { 'If-None-Match': a.headers.etag }], ['weak, as a CDN makes it', { 'If-None-Match': 'W/' + a.headers.etag }], ['a list', { 'If-None-Match': '"other", ' + a.headers.etag }], ['*', { 'If-None-Match': '*' }]]) {
+    const r = await request(srv.port, '/', { headers });
+    assert.equal(r.status, 304, name);
+    assert.equal(r.raw.length, 0, name + ': no body');
+    assert.equal(r.headers['cache-control'], 'no-cache', name);
+    assert.equal(r.headers.etag, a.headers.etag, name);
+  }
+  for (const [name, headers] of [['another tag', { 'If-None-Match': '"0000000000000000000"' }], ['none', {}], ['empty', { 'If-None-Match': '' }]]) {
+    const r = await request(srv.port, '/', { headers });
+    assert.equal(r.status, 200, name);
+    assert.equal(r.raw.length, a.raw.length, name + ': in full');
+  }
+  /* the page at its own address is the same bytes and the same tag; HEAD has the headers */
+  const own = await request(srv.port, '/Piano%20Coach%20App.dc.html');
+  assert.equal(own.headers.etag, a.headers.etag);
+  const h = await request(srv.port, '/', { method: 'HEAD' });
+  assert.equal(h.headers.etag, a.headers.etag);
+  assert.equal(h.raw.length, 0);
+});
+
+test('G13-4c3: a changed script, or a changed page, is another tag, so a returning visitor is never shown the old page', async () => {
+  const tree = smallTree({ 'Piano Coach App.dc.html': PAGE_OF(['support.js']), 'support.js': 'window.s = 1;\n'.repeat(30), 'i18n/ko-KR.json': '{}' });
+  const s = await boot(tree.dir);
+  try {
+    const t1 = (await request(s.port, '/')).headers.etag;
+    assert.equal((await request(s.port, '/', { headers: { 'If-None-Match': t1 } })).status, 304);
+    tree.write('support.js', 'window.s = 2; /* a new release */\n'.repeat(31));
+    const r2 = await request(s.port, '/', { headers: { 'If-None-Match': t1 } });
+    assert.equal(r2.status, 200, 'the script changed, its hash in the page changed, so the old tag no longer matches');
+    assert.notEqual(r2.headers.etag, t1);
+    tree.write('Piano Coach App.dc.html', PAGE_OF(['support.js']).replace('<body>', '<body><!-- edited -->'));
+    const r3 = await request(s.port, '/', { headers: { 'If-None-Match': r2.headers.etag } });
+    assert.equal(r3.status, 200);
+    assert.notEqual(r3.headers.etag, r2.headers.etag);
   } finally { s.close(); tree.remove(); }
 });

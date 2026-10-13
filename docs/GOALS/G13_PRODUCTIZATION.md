@@ -307,7 +307,10 @@ All of this at $0 on the existing free tiers.
   Tests: `tests/load/fonts.test.js`.
 - *(d) piano recordings* start after the window's load, two frames, an idle moment and the CJK stylesheet (or its failure; 7 s cap); a tap or key still starts them at once, and until they are in a note is
   the synthesized stand-in. Tests: `tests/load-app/samples.test.js`.
-- *Mutants:* `npm run test:load-mutants` (52 planted defects, all killed). `npm run test:load` (Node only) is in the gate, shard-h; `npm run test:load-app` (browser, own server) is run by hand.
+- *(c3, a separate stacked PR) the page is revalidated:* `Cache-Control: no-cache` + an ETag of the bytes sent (they contain the build stamp, every script's hash and the share's tags, so any change is another tag); a returning visitor
+  whose bytes are unchanged gets a 304 and no 306 KB page. The one place where "anything else stays `no-store`" of G13-D4 is relaxed, so it is its own commit and PR. Measured: repeat visit, first visit complete: 310 KB / 2.8 s -> **1 KB / 1.4-1.8 s**;
+  with the tool's 6 s settle: ready 3.1-3.6 s -> **1.7-1.9 s** (the 810 KB that remain are samples the first visit had not finished).
+- *Mutants:* `npm run test:load-mutants` (54 planted defects, all killed). `npm run test:load` (Node only) is in the gate, shard-h; `npm run test:load-app` (browser, own server) is run by hand.
 - *Measured* (this PR's server against a `git archive` of origin/main `13bcb86` in the same session, `tests/live/perf.js` phone profile through a brotli stand-in for the CDN edge, local HTTP/1.1, medians of 3
   interleaved runs, a host at 70-100% CPU from other programs): cold FCP 8,412 -> 5,960 ms, ready 8,825 -> 6,337 ms, KB before ready 1,371 -> 1,048, repeat visit with the first visit complete 1,263 -> 310 KB and
   ready 6.2 -> 2.8 s (with the tool's 6 s settle the second visit still pulls the piano samples the first had not finished: ready 6.2 -> 3.1 s, 1,727 -> 1,168 KB of which 810 are samples), desktop ready
