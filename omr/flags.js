@@ -373,6 +373,7 @@
         const o = typeof x === 'string' ? { code: x } : x;
         if (o && typeof o === 'object' && o.code) list.push({ code: String(o.code), strength: o.strength === 'strong' ? 'strong' : 'weak', text: o.text ? String(o.text) : undefined, external: true });
       });
+      list.sort((a, b) => (a.strength === b.strength ? 0 : a.strength === 'strong' ? -1 : 1));          /* the strong reasons are the ones said first */
       const strong = list.filter(r => r.strength === 'strong'), weak = list.filter(r => r.strength === 'weak');
       return { n: i + 1, suspect: strong.length > 0 || weak.length >= P.weakNeeded, strong: strong.map(r => r.code), weak: weak.map(r => r.code), reasons: list };
     });

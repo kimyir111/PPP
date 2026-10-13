@@ -149,6 +149,25 @@ half only where NumPy and OpenCV are installed), Audiveris's process handling wi
 manifest rules, and `tests/omr/node/*.test.js` (PPP's print engraver is deterministic; the SVG sizing). Nothing there starts Audiveris, Chrome or the
 network.
 
+## Flags: which bars are suspect (G12-3)
+
+`omr/flags.js` marks the bars of a `PPP.omr = 'v2'` import that may be wrong, and says why (design: section 8 and the record in section 23 of `docs/GOALS/G12_OMR.md`). It is fitted and judged
+on a RECORDED engine run, with nothing rendered and nothing recognised again:
+
+```
+python tests/bench/run.py omr-live-2 flags-data                      # tests/omr/out/flags/{tune,held,truth,held-truth}.jsonl: every output bar, its signals, whether it is wrong
+node tests/omr/node/flags-fit.js table                               # per-signal precision / recall on the TUNING half, and how often each fires on the truth files
+node tests/omr/node/flags-fit.js fit [--record]                      # which signals are strong, which weak, every threshold (TUNING half only), 5-fold cross-validated inside it
+node tests/omr/node/flags-fit.js eval --params tests/omr/baselines/flags-fit.json            # a PARAMS on the tuning half
+node tests/omr/node/flags-fit.js eval --params tests/omr/baselines/flags-fit.json --half held # the held-out half: ONCE (a second run is refused; `record-held` puts the result in the record)
+python tests/bench/run.py omr-live-2 run --mode app --omr v2 --replay --cases tune --tiers pdf-A,photo-A,scan200-A --base-url http://127.0.0.1:<port>
+                                                                     # the same through the page itself (PdfLayer's bars per line, omr/apply.js): omr.flag.app.* is then the flags'
+```
+
+`flags-data` reads `tests/omr/out/engine/` (a run of `run`), `tests/omr/out/render/<case>/truth.musicxml` and writes the dataset; the fit tool reads only `tune.jsonl` and `truth.jsonl`,
+and the held-out files are opened by `eval --half held` and by nothing else (the tool says so, and keeps a mark that it has been done). `tests/omr/baselines/flags-fit.json` is the record:
+the parameters `omr/flags.js` holds (a unit test compares them), the tuning numbers, the cross-validation, the signal table and, once, the held-out numbers.
+
 ## The real-scan tier
 
 `omrbench/fetch_real.py` downloads public-domain page images of the editions the catalogue was transcribed from (Beyer, Peters, Leipzig 1895; Czerny
@@ -171,4 +190,5 @@ the page-to-bars map of each entry (`pages`) and a `known_differences` list afte
 | `omrbench/degrade.py`, `render.py`, `node/ppp-print.js`, `node/raster.js` | engravers, Chrome raster, photo / scan |
 | `omrbench/engine.py`, `appmode.py`, `suite.py` | Audiveris alone, the app path, the CLI behind `run.py omr-live-2` |
 | `omrbench/fetch_real.py`, `real-scan.json` | the real-scan tier's fetch script and its (empty) list |
-| `baselines/*.json` | committed numbers of Audiveris 5.11.0 |
+| `omrbench/flagdata.py`, `node/flags-cli.js`, `node/flags-fit.js` | G12-3: the per-bar dataset of omr/flags.js on a recorded run, its CLI, the fit and the held-out judgement |
+| `baselines/*.json` | committed numbers of Audiveris 5.11.0 (`flags-fit.json`: the G12-3 fit) |

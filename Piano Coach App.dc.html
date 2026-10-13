@@ -5455,6 +5455,25 @@ function loadOmrApply() {
   }).then(m => { if (!m) _omrApplyPromise = null; return m; });
   return _omrApplyPromise;
 }
+/* G12-3: omr/flags.js (which bars of a v2 import are suspect, and why) and the notation checker it reads (classes 5-8 are signals), fetched the same way, by a v2 import only; the checker first, as flags.js
+   takes it when it loads */
+let _omrFlagsPromise = null;
+function loadOmrFlags() {
+  if (window.PPPOmrFlags) return Promise.resolve(window.PPPOmrFlags);
+  if (_omrFlagsPromise) return _omrFlagsPromise;
+  const add = src => new Promise(resolve => {
+    const el = document.createElement('script');
+    el.src = src;
+    el.onload = () => resolve(true);
+    el.onerror = () => resolve(false);
+    document.head.appendChild(el);
+  });
+  _omrFlagsPromise = (async () => {
+    if (!(window.PPPScoreGraphModules && window.PPPScoreGraphModules.notationCheck)) await add('./scoregraph/tools/notation-check.js?v=1');
+    return (await add('./omr/flags.js?v=1')) ? (window.PPPOmrFlags || null) : null;
+  })().then(m => { if (!m) _omrFlagsPromise = null; return m; });
+  return _omrFlagsPromise;
+}
 const _recLoaded = new Set();
 const _recGlobals = new Set();
 const _recInflight = new Map(); /* src -> the promise of the <script> that is on its way: a second asker waits for it, and never adds a second element (a late file would run twice) */
@@ -7787,6 +7806,62 @@ const Import = {
     } catch (e) { omr.graphFailed = 'threw: ' + String(e && (e.code || e.message) || e).slice(0, 160); return null; }
   },
 
+  /* G12-3 (PPP.omr = 'v2', docs/GOALS/G12_OMR.md section 8): the bars of a page the pages' own lines show, so that omr/flags.js can say "the page shows 6 measures on this line, PPP read 5".
+     One entry per page: the bar count of each system PdfLayer.layout finds (null when the page has no layer or none was found). Called before the layers are let go. */
+  pageLayout(pages, score) {
+    const per = Math.max(1, Math.min(4, (score && score.staves) || 2));
+    const out = (pages || []).map(p => {
+      const L = p && p.layer;
+      if (!L) return null;
+      try {
+        const counts = PdfLayer.layout(L, per).systems.map(s => s.bars.length).filter(c => c > 0);
+        return counts.length ? counts : null;
+      } catch (e) { return null; }
+    });
+    return out.some(Boolean) ? { pages: out } : null;
+  },
+
+  /* G12-3: which bars of this import are suspect, and why (omr/flags.js: a bar is suspect when a strong signal fires, or two weak ones; fitted on omr-live-2's tuning half). The suspect bars join the
+     report's (report.suspectMeasures: the strip's red bars, the count), each with its reasons in the language of the page (report.flagWhy, by measure number; report.flagCodes are the codes for the
+     correction screen), and the confidence is never "good" (0.85) while any bar is suspect. Returns nothing; anything that fails leaves the report as it was and says why (report.flagsFailed). */
+  async omrFlags(omr, s4, score, report, layout) {
+    if (OMR_MODE !== 'v2' || !s4 || !s4.graph || !omr || !omr.normalize || !report) return;
+    try {
+      const FL = await loadOmrFlags();
+      if (!FL) { report.flagsFailed = 'not-loaded'; return; }
+      const res = FL.analyze(s4.graph, { normalize: omr.normalize, layout: layout || null });
+      if (!res.ok) { report.flagsFailed = String(res.error || 'not-ok') + (res.detail ? ': ' + res.detail : ''); return; }
+      const measures = score.measures || [];
+      if (res.bars.length !== measures.length) { report.flagsFailed = 'bars-differ'; return; }
+      const had = new Set(report.suspectMeasures || []);
+      const why = {}, codes = {};
+      res.bars.forEach((b, i) => {
+        if (!b.suspect) return;
+        const m = measures[i].number;
+        had.add(m);
+        why[m] = b.reasons.map(r => FL.reasonText(r, tx));
+        codes[m] = b.reasons.map(r => r.code);
+        if (!(report.issues || []).some(x => x.measure === m))
+          report.issues.push({ measure: m, kind: 'flag', message: tx('Measure {{n}}: {{why}}', { n: m, why: why[m][0] }) });
+      });
+      report.flagsVersion = FL.VERSION;
+      if (!Object.keys(why).length) return;
+      report.suspectMeasures = Array.from(had).sort((a, b) => a - b);
+      report.flagWhy = why;
+      report.flagCodes = codes;
+      report.confidence = FL.confidenceOf(report.suspectMeasures.length, measures.length, report.confidence);
+      report.level = report.confidence >= 0.85 ? 'good' : report.confidence >= 0.55 ? 'fair' : 'poor';
+      const sounding = (score.notes || []).filter(n => !n.rest).length;
+      const found = tx('{{n}} measures, {{m}} notes', { n: measures.length, m: sounding });
+      report.summary = tx(report.suspectMeasures.length === 1
+        ? 'Recognised {{found}}, but {{n}} measure need checking before you practise.'
+        : 'Recognised {{found}}, but {{n}} measures need checking before you practise.', { found: found, n: report.suspectMeasures.length });
+      const runs = [];
+      report.suspectMeasures.forEach(m => { const last = runs[runs.length - 1]; if (last && m === last[1] + 1) last[1] = m; else runs.push([m, m]); });
+      report.advice = tx('PPP may have had trouble reading measures {{list}}.', { list: runs.slice(0, 3).map(r => r[0] === r[1] ? r[0] : r[0] + '–' + r[1]).join(', ') });
+    } catch (e) { report.flagsFailed = 'threw: ' + String(e && (e.code || e.message) || e).slice(0, 160); }
+  },
+
   /* ---- stitch per-page MusicXML into one document ----
      Audiveris numbers every page from 1 because it cannot know what came
      before, so measures are renumbered continuously as pages are appended.
@@ -9124,6 +9199,7 @@ const Import = {
       } catch (e) { /* the first pass stands as it is */ }
     }
 
+    const flagLayout = s4 ? Import.pageLayout(pages, score) : null;   /* G12-3: what the pages' own lines show, read before the layers go (null unless a v2 import) */
     if (kind === 'pdf') pages.forEach(p => { delete p.layer; });
 
     if (source.engine === 'pdf') {
@@ -9142,6 +9218,7 @@ const Import = {
     else if (omr && omr.normalizeFailed) report.normalizeFailed = omr.normalizeFailed;   /* PPP.omr = 'v2' but the import is the legacy one: why */
     if (s4) { report.graph = s4.applied; source.importReport = s4.importReport; }   /* G12-2: what the page's lines changed in the graph (counts, what was skipped and why), what the import kept and dropped */
     else if (omr && omr.graphFailed) report.graphFailed = omr.graphFailed;           /* PPP.omr = 'v2' but the import is the legacy one: why */
+    if (s4 && source.engine !== 'pdf') await Import.omrFlags(omr, s4, score, report, flagLayout);   /* G12-3: the bars that may be wrong, and why; the confidence is never "good" while one is suspect */
     source.status = report.level === 'poor' ? 'low-confidence' : 'recognised';
     score.source = source;
     /* page images stay in memory for the review screen; they are never persisted */
@@ -13120,7 +13197,8 @@ class Component extends DCLogic {
             confidence: S.importReport.confidence, level: S.importReport.level,
             suspectMeasures: S.importReport.suspectMeasures, summary: S.importReport.summary,
             advice: S.importReport.advice
-          }, S.importReport.uncertainMeasures ? { uncertainMeasures: S.importReport.uncertainMeasures, uncertainWhy: S.importReport.uncertainWhy || {}, uncertainPiece: S.importReport.uncertainPiece || null } : {}) : null
+          }, S.importReport.uncertainMeasures ? { uncertainMeasures: S.importReport.uncertainMeasures, uncertainWhy: S.importReport.uncertainWhy || {}, uncertainPiece: S.importReport.uncertainPiece || null } : {},
+            S.importReport.flagWhy ? { flagWhy: S.importReport.flagWhy, flagCodes: S.importReport.flagCodes || {} } : {}) : null
         };
         /* The score itself lives once in its song slot. The old duplicate here
            doubled storage use and made large transcriptions disappear after a
@@ -17004,7 +17082,8 @@ class Component extends DCLogic {
         confidence: rep.confidence, level: rep.level, suspectMeasures: rep.suspectMeasures,
         summary: rep.summary, advice: rep.advice, confidenceKind: rep.confidenceKind,
         modelAgreement: rep.modelAgreement, modelCount: rep.modelCount
-      }, rep.uncertainMeasures ? { uncertainMeasures: rep.uncertainMeasures, uncertainWhy: rep.uncertainWhy || {}, uncertainPiece: rep.uncertainPiece || null } : {}) : null
+      }, rep.uncertainMeasures ? { uncertainMeasures: rep.uncertainMeasures, uncertainWhy: rep.uncertainWhy || {}, uncertainPiece: rep.uncertainPiece || null } : {},
+        rep.flagWhy ? { flagWhy: rep.flagWhy, flagCodes: rep.flagCodes || {} } : {}) : null
     };
     try { localStorage.setItem(SONG_KEY + id, JSON.stringify(slot)); }
     catch (e) { this.storageFull(); return false; }
@@ -20129,7 +20208,9 @@ class Component extends DCLogic {
         /* G10a-4: the bars the new method was not sure about (report.uncertainWhy: 'grid' = the beat, 'hands' = which hand), amber; red (needs checking) wins the colour */
         const why = (S.importReport && S.importReport.uncertainWhy && S.importReport.uncertainWhy[mm.number]) || null;
         const shown = mm.number >= S.reviewFrom && mm.number <= Score.step(score, S.reviewFrom, 3);
-        const reasons = why ? [why.indexOf('grid') > -1 ? tx('PPP was not sure of the beat') : '', why.indexOf('hands') > -1 ? tx('PPP was not sure which hand plays some notes') : ''].filter(Boolean).join(' · ') : '';
+        const flagWhy = (S.importReport && S.importReport.flagWhy && S.importReport.flagWhy[mm.number]) || null;   /* G12-3: the sentences omr/flags.js gave this bar (v2 imports) */
+        const reasons = (why ? [why.indexOf('grid') > -1 ? tx('PPP was not sure of the beat') : '', why.indexOf('hands') > -1 ? tx('PPP was not sure which hand plays some notes') : ''].filter(Boolean) : [])
+          .concat(Array.isArray(flagWhy) ? flagWhy : []).join(' · ');
         return {
           title: tx(suspect ? 'Measure {{n}} · needs checking' : 'Measure {{n}}', { n: mm.number }) + (reasons ? ' · ' + reasons : ''),
           style: 'flex:1;min-width:3px;height:22px;padding:0;border-radius:4px;cursor:pointer;border:1px solid '
