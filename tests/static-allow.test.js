@@ -68,8 +68,8 @@ function expectedServed(rel) {
   const ext = path.extname(name);
   if (parts.length === 1) return ROOT_SERVED.indexOf(name) > -1;
   const top = parts[0];
-  /* G11a-3: PPP.practice 'graph' loads practice/plan.js and nothing else of practice/ (the simulator and the variant splice are not loaded by any page) */
-  if (top === 'practice') return rel === 'practice/plan.js';
+  /* G11a-3: PPP.practice 'graph' loads practice/plan.js; G11b-1: PPP.learner 'typed' loads practice/runlog.js. Nothing else of practice/ (the simulator and the variant splice are not loaded by any page) */
+  if (top === 'practice') return rel === 'practice/plan.js' || rel === 'practice/runlog.js';
   if (CODE_DIRS.indexOf(top) > -1) {
     if (parts.length === 2) return ext === '.js';
     if (rel === 'scoregraph/tools/notation-check.js') return true;                          /* G12-3: the checker omr/flags.js reads (its other tool, ledger-stats.js, is not the page's) */
@@ -101,7 +101,7 @@ test('isServed: the examples that matter', () => {
     'difficulty/tools/dataset/method-books.json', 'i18n/ko-KR.json', 'audio/piano/A0.mp3', 'assets/hands/hand-right-black.png',
     'catalog/index.json', 'catalog/method/index.json', 'catalog/hymns/index.json', 'catalog/hymns/all-creatures.musicxml', 'catalog/method/beyer/001.mxl',
     'samples/prelude-fragment.musicxml', 'vendor/vexflow-4.2.3.js', 'vendor/LICENSE-vexflow.txt', 'vendor/react-18.3.1/react.production.min.js',
-    'vendor/react-18.3.1/LICENSE-react.txt', 'THIRD_PARTY_NOTICES.md', 'omr/normalize.js', 'omr/apply.js', 'omr/flags.js', 'scoregraph/tools/notation-check.js', 'practice/plan.js'].forEach(rel => assert.equal(allow.isServed(rel), true, rel));
+    'vendor/react-18.3.1/LICENSE-react.txt', 'THIRD_PARTY_NOTICES.md', 'omr/normalize.js', 'omr/apply.js', 'omr/flags.js', 'scoregraph/tools/notation-check.js', 'practice/plan.js', 'practice/runlog.js'].forEach(rel => assert.equal(allow.isServed(rel), true, rel));
   ['server.js', 'render.yaml', 'package.json', 'package-lock.json', 'Dockerfile', 'README.md', 'index.html', 'static-allow.js', 'home-jobs.js', 'share-guest.js', 'omr-service.js',
     'arrange_score.py', 'transcribe.py', 'omr/helper-output.js', 'omr/normalize.js.map', 'omr/README.md', DOCS + '/PPP_MASTER_ROADMAP.md', WORKER_DIR + '/worker.js', 'tests/boot.js', 'tools/anything', 'rec/tools/train.js', 'rec/tools/key-eval.js', 'scoregraph/README.md',
     'scoregraph/tools/ledger-stats.js', 'omr/flags.js.map', 'difficulty/tools/train.js', 'audio/piano/README.md', 'catalog/shared-seeds.json', 'catalog/build-shared-seeds.js',

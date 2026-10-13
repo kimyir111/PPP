@@ -1,10 +1,10 @@
 /* G11a-0: the practice and playback browser suites, run together on a FREE port (CI and a developer's machine alike).
 
-   The eleven suites below open http://127.0.0.1:8777 by name, which on a developer's machine is often another session's server serving another
+   The twelve suites below open http://127.0.0.1:8777 by name, which on a developer's machine is often another session's server serving another
    tree. This runner serves THIS tree on a port the operating system gives it (tests/serve-free.js: NODE_ENV=production, so nothing spawns on
    8788) and starts each suite with tests/engrave/tools/with-port.js, which rewrites 8777 to that port in puppeteer's goto and in Node's http.
 
-     node tests/practice/run-suites.js                    all eleven, one after the other
+     node tests/practice/run-suites.js                    all twelve, one after the other
      node tests/practice/run-suites.js --only follow,midi
      node tests/practice/run-suites.js --list
      node tests/practice/run-suites.js --shard 2/3        every third suite (the CI jobs that split the list use this)
@@ -27,7 +27,7 @@ const WITH_PORT = path.join(ROOT, 'tests', 'engrave', 'tools', 'with-port.js');
 
 /* name, file, minutes before the runner gives up on it, and `min`: about three quarters of the checks the suite printed when the list was
    written (2026-10-08: follow 32, falling-notes 26, memory 36, learning 34, playback-scheduler 9, coach 48, midi 74, interactions 52,
-   lessons 130, course 49, alignment 11 = 501). A suite that prints far fewer has stopped testing (a skipped block, a changed output),
+   lessons 130, course 49, alignment 11 = 501; learner-log, 103, was added by G11b-1). A suite that prints far fewer has stopped testing (a skipped block, a changed output),
    so the runner fails it. Raise `min` when a suite grows.
    `noPlans`: a suite that never asks the player for a plan (the coach's plans, the lessons' own rhythm matcher, the course, the alignment of a score to its notes), so that running it on
    `--practice graph` builds no graph plan. Every other suite must build at least one there, or the run says the switch was not engaged (G11a-3). */
@@ -42,7 +42,8 @@ const SUITES = [
   { name: 'interactions', file: 'interactions.test.js', limit: 10, min: 40 },
   { name: 'lessons', file: 'lessons.test.js', limit: 12, min: 100, noPlans: true },
   { name: 'course', file: 'course.test.js', limit: 8, min: 38, noPlans: true },
-  { name: 'alignment', file: 'alignment.test.js', limit: 5, min: 8, noPlans: true }
+  { name: 'alignment', file: 'alignment.test.js', limit: 5, min: 8, noPlans: true },
+  { name: 'learner-log', file: 'learner-log.test.js', limit: 12, min: 76 }
 ];
 
 /* with-port.js ends a suite's output with what the pages did: `[with-port]   practice <modes>: graph plans N, fallbacks M (reasons)`. On --practice graph every page must have been on 'graph', and a suite that
