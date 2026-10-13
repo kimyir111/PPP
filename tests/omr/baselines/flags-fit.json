@@ -1,4 +1,82 @@
 {
+ "about": "The fit of omr/flags.js PARAMS on the TUNING half of omr-live-2 (tests/omr/node/flags-fit.js fit --record). A test compares params with omr/flags.js.",
+ "procedure": {
+  "precisionFloor": 0.65,
+  "truthMax": 0.9,
+  "margin": 1.04,
+  "target": {
+   "clean": 0.9,
+   "scan": 0.9,
+   "photo": 0.85
+  },
+  "strongPrecision": 0.85,
+  "strongMin": 25,
+  "strongTruthMax": 0.15,
+  "designStrong": [
+   "fill-overlap",
+   "dropped",
+   "unreadable-lengths",
+   "page-bars"
+  ],
+  "grids": {
+   "leap": [
+    12,
+    15,
+    17,
+    19,
+    21,
+    24
+   ],
+   "sparse": [
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.8
+   ],
+   "voiceLoss": [
+    1
+   ],
+   "badPage": [
+    0.15,
+    0.2,
+    0.25,
+    0.3,
+    0.4,
+    0.5
+   ],
+   "offKey": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "ledger": [
+    3,
+    4,
+    5
+   ],
+   "xMis": [
+    10,
+    15,
+    20,
+    30
+   ],
+   "dense": [
+    1.3,
+    1.5,
+    1.8,
+    2.2
+   ]
+  },
+  "folds": 5
+ },
+ "data": {
+  "tuneSha256": "2aac2f00542fc5061e53d2ad8b92783989ba5954468422e0634541c3affa0412",
+  "truthSha256": "b249437180bff3dcca398260f931d2f075ccaa12132f100fd9fd10013b2e22d3",
+  "tuneBars": 5475,
+  "truthBars": 825
+ },
  "params": {
   "strong": [
    "fill-overlap",
@@ -32,6 +110,256 @@
    "ledger": 4,
    "xMis": 20,
    "dense": 1.6
+  }
+ },
+ "tune": {
+  "groups": {
+   "clean": {
+    "bars": 1609,
+    "wrong": 467,
+    "flagged": 593,
+    "tp": 434,
+    "recall": 0.9293361884368309,
+    "precision": 0.7318718381112985
+   },
+   "scan": {
+    "bars": 2404,
+    "wrong": 992,
+    "flagged": 1302,
+    "tp": 922,
+    "recall": 0.9294354838709677,
+    "precision": 0.7081413210445469
+   },
+   "photo": {
+    "bars": 1462,
+    "wrong": 795,
+    "flagged": 1040,
+    "tp": 722,
+    "recall": 0.9081761006289308,
+    "precision": 0.6942307692307692
+   }
+  },
+  "truthPer20": 0.5333333333333333,
+  "truthFlags": 22,
+  "truthBars": 825
+ },
+ "crossValidation": {
+  "groups": {
+   "clean": {
+    "bars": 0,
+    "wrong": 467,
+    "tp": 424,
+    "flagged": 600,
+    "recall": 0.9079229122055674,
+    "precision": 0.7066666666666667
+   },
+   "scan": {
+    "bars": 0,
+    "wrong": 992,
+    "tp": 914,
+    "flagged": 1353,
+    "recall": 0.9213709677419355,
+    "precision": 0.6755358462675536
+   },
+   "photo": {
+    "bars": 0,
+    "wrong": 795,
+    "tp": 702,
+    "flagged": 1029,
+    "recall": 0.8830188679245283,
+    "precision": 0.6822157434402333
+   }
+  },
+  "truthPer20": 0.6545454545454545,
+  "truthFlags": 27,
+  "truthBars": 825
+ },
+ "signals": [
+  {
+   "code": "fill-short",
+   "n": 1650,
+   "precision": 0.9387878787878788,
+   "truthPer20": 0.09696969696969697
+  },
+  {
+   "code": "fill-over",
+   "n": 974,
+   "precision": 0.9969199178644764,
+   "truthPer20": 0
+  },
+  {
+   "code": "fill-overlap",
+   "n": 0,
+   "precision": null,
+   "truthPer20": 0
+  },
+  {
+   "code": "empty-staff",
+   "n": 171,
+   "precision": 0.9005847953216374,
+   "truthPer20": 0
+  },
+  {
+   "code": "many-voices",
+   "n": 706,
+   "precision": 0.9985835694050992,
+   "truthPer20": 0
+  },
+  {
+   "code": "tuplet",
+   "n": 57,
+   "precision": 1,
+   "truthPer20": 0
+  },
+  {
+   "code": "value",
+   "n": 135,
+   "precision": 0.6962962962962963,
+   "truthPer20": 0.024242424242424242
+  },
+  {
+   "code": "sum-mismatch",
+   "n": 2009,
+   "precision": 0.885515181682429,
+   "truthPer20": 0.5575757575757576
+  },
+  {
+   "code": "same-note",
+   "n": 198,
+   "precision": 0.3686868686868687,
+   "truthPer20": 0.6545454545454545
+  },
+  {
+   "code": "x-misaligned",
+   "n": 662,
+   "precision": 0.9939577039274925,
+   "truthPer20": 0
+  },
+  {
+   "code": "hands-cross",
+   "n": 291,
+   "precision": 0.5979381443298969,
+   "truthPer20": 0.6060606060606061
+  },
+  {
+   "code": "big-leap",
+   "n": 154,
+   "precision": 0.6688311688311688,
+   "truthPer20": 0.26666666666666666
+  },
+  {
+   "code": "sparse",
+   "n": 530,
+   "precision": 0.42641509433962266,
+   "truthPer20": 1.7212121212121212
+  },
+  {
+   "code": "dense",
+   "n": 216,
+   "precision": 0.4861111111111111,
+   "truthPer20": 0.5575757575757576
+  },
+  {
+   "code": "voice-loss",
+   "n": 648,
+   "precision": 0.7314814814814815,
+   "truthPer20": 0.9212121212121213
+  },
+  {
+   "code": "dup-pitch",
+   "n": 824,
+   "precision": 0.6577669902912622,
+   "truthPer20": 2.787878787878788
+  },
+  {
+   "code": "off-key",
+   "n": 391,
+   "precision": 0.4194373401534527,
+   "truthPer20": 1.6484848484848484
+  },
+  {
+   "code": "ledger",
+   "n": 174,
+   "precision": 0.5402298850574713,
+   "truthPer20": 0.5333333333333333
+  },
+  {
+   "code": "rebuilt",
+   "n": 646,
+   "precision": 0.4551083591331269,
+   "truthPer20": 0
+  },
+  {
+   "code": "switched",
+   "n": 75,
+   "precision": 0.41333333333333333,
+   "truthPer20": 0
+  },
+  {
+   "code": "repaired",
+   "n": 77,
+   "precision": 0.19480519480519481,
+   "truthPer20": 0
+  },
+  {
+   "code": "unreadable-lengths",
+   "n": 0,
+   "precision": null,
+   "truthPer20": 0
+  },
+  {
+   "code": "dropped",
+   "n": 0,
+   "precision": null,
+   "truthPer20": 0
+  },
+  {
+   "code": "fragmented",
+   "n": 36,
+   "precision": 1,
+   "truthPer20": 0
+  },
+  {
+   "code": "joined",
+   "n": 20,
+   "precision": 0.65,
+   "truthPer20": 0
+  }
+ ],
+ "heldOut": {
+  "at": "2026-10-13T06:06:47.693Z",
+  "heldSha256": "e0ff4c58f53fd7dae005d373990f6746396f99d5139687200b57ebea3edfc4a4",
+  "heldTruthSha256": "99e473309fc716f90f184bfbf7665f692a2432cdcde4b96373a8db840839f0ce",
+  "result": {
+   "groups": {
+    "clean": {
+     "bars": 682,
+     "wrong": 84,
+     "flagged": 131,
+     "tp": 78,
+     "recall": 0.9285714285714286,
+     "precision": 0.5954198473282443
+    },
+    "scan": {
+     "bars": 1003,
+     "wrong": 269,
+     "flagged": 378,
+     "tp": 251,
+     "recall": 0.9330855018587361,
+     "precision": 0.6640211640211641
+    },
+    "photo": {
+     "bars": 629,
+     "wrong": 264,
+     "flagged": 358,
+     "tp": 225,
+     "recall": 0.8522727272727273,
+     "precision": 0.6284916201117319
+    }
+   },
+   "truthPer20": 0.05813953488372093,
+   "truthFlags": 1,
+   "truthBars": 344
   }
  }
 }

@@ -210,7 +210,22 @@ function main() {
     const cv = crossValidate(docs, truthDocs, 5);
     console.log('\n5-fold cross-validation inside the tuning half (fit on 4/5 of the cases, judged on the rest): ' + fmt(cv));
     const out = arg('--out', null);
-    if (out) fs.writeFileSync(out, JSON.stringify({ params: res.params, tune: res.result, crossValidation: cv }, null, 1) + '\n');
+    const record = {
+      about: 'The fit of omr/flags.js PARAMS on the TUNING half of omr-live-2 (tests/omr/node/flags-fit.js fit --record). A test compares params with omr/flags.js.',
+      procedure: { precisionFloor: PRECISION_FLOOR, truthMax: TRUTH_MAX, margin: MARGIN, target: TARGET, strongPrecision: STRONG_PRECISION, strongMin: STRONG_MIN, strongTruthMax: STRONG_TRUTH_MAX,
+        designStrong: DESIGN_STRONG, grids: THR_GRID, folds: 5 },
+      data: { tuneSha256: sha(path.join(dir, 'tune.jsonl')), truthSha256: sha(path.join(dir, 'truth.jsonl')), tuneBars: docs.reduce((s, d) => s + d.wrong.length, 0), truthBars: truthDocs.reduce((s, d) => s + d.wrong.length, 0) },
+      params: res.params, tune: res.result, crossValidation: cv, signals: res.table.map(r => ({ code: r.code, n: r.n, precision: r.precision, truthPer20: r.truthPer20 }))
+    };
+    if (out) fs.writeFileSync(out, JSON.stringify(record, null, 1) + '\n');
+    if (process.argv.includes('--record')) {
+      const target = path.join(REPO, 'tests', 'omr', 'baselines', 'flags-fit.json');
+      let old = null;
+      try { old = JSON.parse(fs.readFileSync(target, 'utf8')); } catch (e) { old = null; }
+      if (old && old.heldOut) record.heldOut = old.heldOut;
+      fs.writeFileSync(target, JSON.stringify(record, null, 1) + '\n');
+      console.log('recorded ' + path.relative(REPO, target));
+    }
   } else if (cmd === 'eval') {
     const half = arg('--half', 'tune');
     const params = JSON.parse(fs.readFileSync(arg('--params'), 'utf8'));
@@ -226,13 +241,29 @@ function main() {
       fs.writeFileSync(mark, JSON.stringify({ at: new Date().toISOString(), params: p, result: r }) + '\n');
       console.log('HELD-OUT (once): ' + fmt(r));
       console.log(JSON.stringify(r));
+      if (process.argv.includes('--record')) {
+        const target = path.join(REPO, 'tests', 'omr', 'baselines', 'flags-fit.json');
+        const rec = JSON.parse(fs.readFileSync(target, 'utf8'));
+        rec.heldOut = { at: new Date().toISOString(), heldSha256: sha(path.join(dir, 'held.jsonl')), heldTruthSha256: sha(path.join(dir, 'held-truth.jsonl')), result: r };
+        fs.writeFileSync(target, JSON.stringify(rec, null, 1) + '\n');
+        console.log('recorded the held-out result in ' + path.relative(REPO, target));
+      }
     } else {
       const { docs, truthDocs } = load(dir, 'tune');
       const r = score(docs, truthDocs, p);
       console.log('tune: ' + fmt(r));
     }
+  } else if (cmd === 'record-held') {
+    /* put the one held-out evaluation (held-evaluated.json, written by `eval --half held`) into the record beside the fit; it changes nothing else */
+    const mark = JSON.parse(fs.readFileSync(path.join(dir, 'held-evaluated.json'), 'utf8'));
+    const target = path.join(REPO, 'tests', 'omr', 'baselines', 'flags-fit.json');
+    const rec = JSON.parse(fs.readFileSync(target, 'utf8'));
+    if (JSON.stringify(mark.params) !== JSON.stringify(rec.params)) { console.log('REFUSED: the held-out half was judged with other parameters than the record holds'); process.exit(3); }
+    rec.heldOut = { at: mark.at, heldSha256: sha(path.join(dir, 'held.jsonl')), heldTruthSha256: sha(path.join(dir, 'held-truth.jsonl')), result: mark.result };
+    fs.writeFileSync(target, JSON.stringify(rec, null, 1) + '\n');
+    console.log('recorded the held-out result in ' + path.relative(REPO, target));
   } else {
-    console.log('usage: flags-fit.js table|fit|eval [--data DIR] [--out FILE] [--params FILE] [--half tune|held]');
+    console.log('usage: flags-fit.js table|fit|eval|record-held [--data DIR] [--out FILE] [--params FILE] [--half tune|held] [--record]');
     process.exit(2);
   }
 }
