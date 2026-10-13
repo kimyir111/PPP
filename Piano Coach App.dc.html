@@ -13227,7 +13227,7 @@ class Component extends DCLogic {
       visualSettings: Object.assign({}, PIANO_VISUALIZER_DEFAULTS),
       loop: true, loopFrom: first.from, loopTo: first.to, metro: true, guidance: true,
       practiceMode: 'practice', anchor: null,
-      runHit: 0, runTot: 0, wrongNotes: [], lastAcc: 91, drift: -42, laps: 0,
+      runHit: 0, runTot: 0, wrongNotes: [], lastAcc: 91, drift: -42, laps: 0, lastRec: false, lastDemo: false,
       midi: { supported: false, status: 'idle', error: null, deviceId: null, deviceName: null, devices: [] },
       midiOut: { deviceId: null, deviceName: null, devices: [] },
       held: [], midiDeviceId: null, midiOutDeviceId: null, lastResult: null,
@@ -14010,7 +14010,7 @@ class Component extends DCLogic {
       secs: seedSecs(score),
       tasks: { '1-0': true, '1-1': true, '1-2': false, '2-0': false, '2-1': false, '3-0': false, '3-1': false, '4-0': false, '4-1': false, '4-2': false },
       memLevel: 2, blindRuns: 0, mastered: false, minutes: 0, xp: 0, seqStep: 0, seqReps: 0,
-      laps: 0, playing: false, sessions: [10, 18, 14, 23, 8, 20, 0]
+      laps: 0, playing: false, sessions: [10, 18, 14, 23, 8, 20, 0], lastRec: false, lastDemo: false
     });
     try { localStorage.removeItem(STORE_KEY); } catch (e) {}
     this.say(tx('Progress reset.'));
@@ -15352,7 +15352,9 @@ class Component extends DCLogic {
         }
         b = PianoScore.writtenAtSound(plan, sq);
         patch.beat = b;
-        if (live) this.beginRun(S, patch.beat); else this._sim = this.newSim();
+        /* the keyboard is asked afresh: `live` is what this lap had at its start, and a keyboard that went live after Play (connected, or the MIDI permission resolving)
+           has no run to be judged against until one is begun here - the lap in which it came is lost, the next one is judged (U4: a run without a keyboard is not recorded) */
+        if (this.liveMidi()) this.beginRun(S, patch.beat); else this._sim = this.newSim();
       } else {
         patch.beat = writtenStart;
         patch.playing = false;
@@ -15513,7 +15515,13 @@ class Component extends DCLogic {
     if (!result && DEMO_RUNS_MODE === 'separate') {
       if (LEARNER_MODE === 'typed') this.logRun(S, 'simulated', null, null, from, to, acc);
       /* what to do to have a run recorded: told once a visit (the card on the practice page says it every time), and after every recall, which is a deliberate attempt that used to answer with its result */
-      if (!this._demoTold || S.practiceMode === 'memory') { this._demoTold = true; this.say(tx('Not recorded: connect a MIDI keyboard and turn MIDI on to record your practice.')); }
+      if (!this._demoTold || S.practiceMode === 'memory') {
+        this._demoTold = true;
+        let web = true;
+        try { web = this.midiLayer().supported(); } catch (e) { /* the layer is not there: the common hint */ }
+        this.say(web ? tx('Not recorded. To record your practice, click "Demo Input" at the top and connect a MIDI keyboard.')
+          : tx('Not recorded: this browser has no Web MIDI. Practice is recorded with a MIDI keyboard in a browser that has it, such as Chrome.'));
+      }
       return { laps: S.laps + 1, runHit: 0, runTot: 0, wrongNotes: [], lastDemo: true };
     }
     const secs = Object.assign({}, S.secs);
@@ -15543,7 +15551,7 @@ class Component extends DCLogic {
       secs, laps: S.laps + 1, runHit: 0, runTot: 0, lastAcc: acc, wrongNotes: [],
       minutes: S.minutes + mins, xp: S.xp + 20 + touched * 5, sessions,
       drift: result ? result.meanDeltaMs : R0(-60 + Math.random() * 45),
-      lastResult: result || null, lastDemo: false
+      lastResult: result || null, lastDemo: false, lastRec: true
     };
 
     this.advanceCoach(S, patch);
@@ -16846,7 +16854,7 @@ class Component extends DCLogic {
       tempo: clamp(score.tempo || 84, 30, 200),
       playing: false, hands: 'both', practiceMode: 'practice',
       seqStep: 0, seqReps: 0, memLevel: 0, memReveal: false, blindRuns: 0, mastered: false,
-      laps: 0, runHit: 0, runTot: 0, wrongNotes: [], lastAcc: 0, journeyStep: 1,
+      laps: 0, runHit: 0, runTot: 0, wrongNotes: [], lastAcc: 0, lastRec: false, lastDemo: false, journeyStep: 1,
       coachPlan: null, coachTask: 0, coachReps: 0, coachDone: []
     });
     setTimeout(() => this.requestPlan(), 0);
@@ -17755,7 +17763,7 @@ class Component extends DCLogic {
       fileMeta: (data && data.fileMeta) || (id === 'demo' ? 'built-in sample' : ''),
       importSource: importSource, importReport: importReport,
       playing: false, hands: 'both', practiceMode: 'practice', seqStep: 0, seqReps: 0, memReveal: false,
-      laps: 0, runHit: 0, runTot: 0, wrongNotes: [], lastAcc: 0,
+      laps: 0, runHit: 0, runTot: 0, wrongNotes: [], lastAcc: 0, lastRec: false, lastDemo: false,
       coachPlan: null, coachTask: 0, coachReps: 0, coachDone: [],
       analysis: 'done', analysisPct: 100, parseError: null, upload: 'empty', importKind: null,
       songId: id, pendingSong: null, armedRemove: null
@@ -20184,8 +20192,10 @@ class Component extends DCLogic {
                 /* U4: without a keyboard PPP still plays along on the screen, and none of it is recorded */
                 : DEMO_RUNS_MODE === 'separate' ? tx('Not connected — PPP simulates your playing, and none of it is recorded')
                   : tx('Not connected — PPP is simulating your playing');
-    /* U4: the card on the practice page says a run without a keyboard is not recorded - while such a run plays, and after it, until a recorded run or a keyboard replaces it */
-    const demoNote = DEMO_RUNS_MODE === 'separate' && !midiLive && !!((S.lastDemo && S.laps > 0) || (S.playing && S.screen !== 'score'));
+    /* U4: the card on the practice page says a run without a keyboard is not recorded - while such a run plays (no keyboard now), and after it, until a recorded run replaces it: with a keyboard
+       connected since, it says that the LAST run was unrecorded, so that a stale number of an older run is never read as its */
+    const demoLast = DEMO_RUNS_MODE === 'separate' && !!(S.lastDemo && S.laps > 0);
+    const demoNote = demoLast || (DEMO_RUNS_MODE === 'separate' && !midiLive && !!(S.playing && S.screen !== 'score'));
     const midiLabel = midiLive ? tx('MIDI Connected') : !mi.supported ? tx('Demo Input · no Web MIDI') : tx('Demo Input');
     const midiTone = midiLive ? 'var(--good)' : mi.status === 'denied' || mi.status === 'error' ? 'var(--bad)' : 'var(--ink3)';
     const mo = S.midiOut || {};
@@ -20266,7 +20276,7 @@ class Component extends DCLogic {
              English label from before is shown in the reader's language */
           sub: [/^Transcribed from /.test(x.composer || '') ? '' : x.composer, tx(KIND_LABEL[x.s.kind] || 'MusicXML')].filter(Boolean).join(' · '),
           kind: tx(KIND_LABEL[x.s.kind] || 'MusicXML'),
-          last: x.isCur ? (S.laps ? tx('just now') : tx('Open now')) : this.agoLabel(x.s.lastAt),
+          last: x.isCur ? (S.lastRec ? tx('just now') : tx('Open now')) : this.agoLabel(x.s.lastAt),
           learned: tx('{{pct}} learned', { pct: x.row.prog + '%' }),
           progStyle: this.bar(x.row.prog), memStyle: this.bar(x.row.mem, 'var(--accent-2)'),
           /* the song you are on is marked here exactly as the Progress page marks it */
@@ -20403,7 +20413,7 @@ class Component extends DCLogic {
       songProgPct: prog + '%', songProgBar: this.bar(prog),
       songProgLabel: tx('{{pct}} learned', { pct: prog + '%' }), songProgHint: tx('Song Progress'),
       curSection: passage,
-      lastPracticed: S.laps ? tx('just now') : tx('12 minutes ago'),
+      lastPracticed: S.lastRec ? tx('just now') : tx('12 minutes ago'),
       streakDays: tx('{{n}} day streak', { n: S.streak }),
       /* §25.2 step 3 (DECISIONS G4-R3): used to pass clefs: false to route this thumbnail to the (now removed) legacy
          renderer, avoiding its 15-file load for a tiny box; the engraver has no notion of hiding a clef, and measured,
@@ -21185,10 +21195,10 @@ class Component extends DCLogic {
       hasCoachStructural: !learn.played,
 
       /* U4: a run without a keyboard is not recorded, so no number of a past run stands next to the line that says so (the live count of a run in play is the screen moving) */
-      runAccuracy: (S.runTot ? R0((S.runHit / S.runTot) * 100) + '%' : demoNote ? '—' : S.lastAcc + '%'),
-      runDrift: follows || demoNote ? '—' : (S.drift > 0 ? '+' : '') + S.drift + ' ms',
+      runAccuracy: (S.runTot ? R0((S.runHit / S.runTot) * 100) + '%' : demoNote || !S.lastRec ? '—' : S.lastAcc + '%'),
+      runDrift: follows || demoNote || !S.lastRec ? '—' : (S.drift > 0 ? '+' : '') + S.drift + ' ms',
       showDemoNote: demoNote,
-      demoNote: demoNote ? tx('No keyboard connected, so this run is not recorded. (Demo Input)') : '',
+      demoNote: !demoNote ? '' : midiLive ? tx('The last run was played without a keyboard, so it was not recorded. (Demo Input)') : tx('No keyboard connected, so this run is not recorded. (Demo Input)'),
       midiLabel, midiSub,
       midiHint: midiLive ? tx('Playing {{device}}', { device: mi.deviceName }) : tx('Click to connect a MIDI keyboard'),
       headerMidiStyle: 'display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:9px;font-family:inherit;font-size:12px;cursor:pointer;color:'
@@ -21301,7 +21311,8 @@ class Component extends DCLogic {
       ],
       progFacts: [
         { k: tx('Currently practicing'), v: tx('Measures {{from}}–{{to}}', { from: S.loopFrom, to: S.loopTo }), sub: '' },
-        { k: tx('Accuracy'), v: S.lastAcc + '%', sub: tx('last run') },
+        /* U4: the number of the last RECORDED run; a run without a keyboard has none, and the seed of a fresh page is not one */
+        { k: tx('Accuracy'), v: S.lastRec ? S.lastAcc + '%' : '—', sub: tx('last run') },
         { k: tx('Tempo'), v: S.tempo + ' BPM', sub: tx('score says {{tempo}}', { tempo: score.tempo }) }
       ],
       mapRows, mapBars, mapLegend,
