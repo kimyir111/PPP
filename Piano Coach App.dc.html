@@ -98,7 +98,17 @@
 })();
 </script>
 <script src="./i18n.js"></script>
+<script src="./lazy-load.js?v=1"></script>
+<script>window.PPP_LAZY||(window.PPP_LAZY={mode:'off',version:0,here:function(){var s=document.currentScript,e=s&&s.previousElementSibling;if(e&&document.readyState==='loading')document.write(e.textContent)},ensure:function(){return Promise.resolve(true)},have:function(){return true},peek:function(n){return window[n]},start:function(){},remember:function(){},status:function(){return{mode:'off',groups:[]}}})</script>
+<!-- G13-4e (docs/GOALS/G13_PRODUCTIZATION.md, "G13-4e as built"): the scripts below are the page's own code that Home does not need to draw, still named here in the order they have always run, but as
+     TEXT inside <noscript data-ppp-lazy>: a browser that runs scripts requests none of it. lazy-load.js reads each block (PPP_LAZY.here() right after it) and loads the group when the page asks for it or
+     after its first frame (PPP.split 'on', the default); with PPP.split 'off' it writes the block back with document.write, which is exactly the list of scripts the page had before. The line above
+     is a stand-in for the case that lazy-load.js itself cannot be fetched: every block is then written back, as for 'off'. data-after: the group that must have run first. data-globals: what the group makes. -->
+<noscript data-ppp-lazy="backup" data-globals="PPPBackup">
 <script src="./library-backup.js?v=1"></script>
+</noscript>
+<script>PPP_LAZY.here()</script>
+<noscript data-ppp-lazy="score" data-globals="PPPScoreGraph PPPScoreGraphModules">
 <script src="./scoregraph/rational.js?v=8"></script>
 <script src="./scoregraph/schema.js?v=8"></script>
 <script src="./scoregraph/pitch.js?v=8"></script>
@@ -128,21 +138,24 @@
 <script src="./scoregraph/gaps.js?v=4"></script>
 <script src="./scoregraph/rec-tuplet.js?v=1"></script>
 <script src="./scoregraph/index.js?v=10"></script>
+</noscript>
+<script>PPP_LAZY.here()</script>
 <!-- G05 §11 G5c: the fingering DP (G5b), ported to the ScoreGraph. Only used when PPP.fingering === 'inferred'. -->
-<script src="./playability/reach.js?v=1"></script>
-<script src="./playability/graph.js?v=1"></script>
-<script src="./playability/analyze.js?v=1"></script>
-<script src="./playability/fingering.js?v=1"></script>
-<script src="./playability/index.js?v=1"></script>
 <!-- G06 §11 G6b: the difficulty ranker (G6a), over the same ScoreGraph. Only used when PPP.difficulty === 'g6'. -->
-<script src="./difficulty/features.js?v=1"></script>
-<script src="./difficulty/model.js?v=1"></script>
-<script src="./difficulty/index.js?v=1"></script>
 <!-- G08b §11: G7a SongGraph, G7b planner, G8a realizer. Only used when PPP.arranger === 'g8'
      (the review screen's applyRichReviewArrangement). Browser order matches each module's own
      header comment: songgraph/util.js before the passes that need it, then index.js;
      arrangement/reference+texture before plan.js, then index.js; realize/theory before
      patterns/notation, then index.js. -->
+<noscript data-ppp-lazy="arranger" data-after="score" data-globals="PPPPlayability PPPPlayabilityModules PPPDifficulty PPPDifficultyModules PPPSongGraph PPPSongGraphModules PPPArrangement PPPArrangementModules PPPRealize PPPRealizeModules">
+<script src="./playability/reach.js?v=1"></script>
+<script src="./playability/graph.js?v=1"></script>
+<script src="./playability/analyze.js?v=1"></script>
+<script src="./playability/fingering.js?v=1"></script>
+<script src="./playability/index.js?v=1"></script>
+<script src="./difficulty/features.js?v=1"></script>
+<script src="./difficulty/model.js?v=1"></script>
+<script src="./difficulty/index.js?v=1"></script>
 <script src="./songgraph/util.js?v=1"></script>
 <script src="./songgraph/keys.js?v=1"></script>
 <script src="./songgraph/harmony.js?v=1"></script>
@@ -159,8 +172,14 @@
 <script src="./realize/patterns.js?v=1"></script>
 <script src="./realize/notation.js?v=1"></script>
 <script src="./realize/index.js?v=1"></script>
+</noscript>
+<script>PPP_LAZY.here()</script>
+<noscript data-ppp-lazy="audio" data-after="score" data-globals="PPPAudioScore">
 <script src="./audio-score.js?v=14"></script>
+</noscript>
+<script>PPP_LAZY.here()</script>
 <!-- G4a (docs/GOALS/G04 §8.5): where the renderer's ScoreGraph comes from, and what it must draw. Draws nothing yet. -->
+<noscript data-ppp-lazy="engrave" data-after="score" data-globals="PPPEngrave PPPEngraveModules">
 <script src="./engrave/ledger.js?v=3"></script>
 <script src="./engrave/glyphs.js?v=3"></script>
 <script src="./engrave/plan-beams.js?v=3"></script>
@@ -169,6 +188,8 @@
 <script src="./engrave/store.js?v=4"></script>
 <script src="./engrave/source.js?v=4"></script>
 <script src="./engrave/index.js?v=4"></script>
+</noscript>
+<script>PPP_LAZY.here()</script>
 <script src="./score-search.js"></script>
 <script>
 /* G13-1 (G13-D3): React is served from vendor/react-18.3.1/ (tests/engrave/vendor-react.test.js pins its bytes to the SRI in support.js). PPP.cdn: ?cdn=1 (this visit) or localStorage 'ppp.cdn' = '1' puts the unpkg copies back; ?cdn=0 is vendored for this visit; any other value is no choice, and no choice is the default (vendored). */
@@ -179,7 +200,10 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
 <script>if (window.PPP_CDN) { delete window.React; delete window.ReactDOM; } /* support.js then finds no React and loads the SRI-pinned unpkg copies, as before */</script>
 <script>window.__resources = window.__resources || {}; /* G13-4c: an empty resource map makes support.js (generated, not edited) skip the second fetch of this page (329 KB on the wire, a second render of everything): the template it would recompile from the raw text is the one it already has - the browser only lower-cased 8 event attributes (onClick -> onclick), which the runtime maps back to the same React props (tests/load-app/template-refetch.js). Nothing else reads __resources here. */</script>
 <script src="./support.js"></script>
+<noscript data-ppp-lazy="lessons" data-globals="PPP_LESSONS">
 <script src="./lessons.js"></script>
+</noscript>
+<script>PPP_LAZY.here()</script>
 <script src="./course.js"></script>
 </head>
 <body>
@@ -5426,12 +5450,31 @@ function graphToReviewScore(g, title) {
    Healthy pages make no extra requests; concurrent callers share one recovery. */
 let _scoreModulesPromise = null;
 let _scoreModulesFailed = false;
+/* G13-4e (lazy-load.js, docs/GOALS/G13_PRODUCTIZATION.md): with PPP.split 'on' (the default) the score modules are not scripts of the head any more but groups -
+   'score' (scoregraph/), 'engrave' (the engraver's source and plan), 'audio' (audio-score.js) and 'arranger' (playability, difficulty, songgraph, arrangement, realize) -
+   that lazy-load.js brings in after the first frame or when asked (PPP_LAZY.ensure). lazyPeek reads a global WITHOUT making the page load its group (a plain read of a
+   global that is not in yet loads it synchronously: the safety net, never the way); with 'off' it is window[name] and everything below is what it was. */
+const lazyOn = () => !!(window.PPP_LAZY && window.PPP_LAZY.mode === 'on');
+const lazyPeek = name => (window.PPP_LAZY && window.PPP_LAZY.peek ? window.PPP_LAZY.peek(name) : window[name]);
+const LAZY_SCORE_GROUPS = ['score', 'engrave', 'audio', 'arranger'];
 function scoreModulesReady() {
-  return !_scoreModulesFailed && !!(window.PPPScoreGraph && window.PPPAudioScore && window.PPPSongGraph && window.PPPRealize && window.PPPEngrave);
+  return !_scoreModulesFailed && !!(lazyPeek('PPPScoreGraph') && lazyPeek('PPPAudioScore') && lazyPeek('PPPSongGraph') && lazyPeek('PPPRealize') && lazyPeek('PPPEngrave'));
 }
 function loadScoreModules() {
   if (_scoreModulesPromise) return scoreModulesWait(_scoreModulesPromise);
   if (scoreModulesReady()) return Promise.resolve(true);
+  if (lazyOn()) {
+    /* the groups, each file a failed download is asked for once more with a fresh url (what the recovery of the head's scripts below does); concurrent callers share one load */
+    _scoreModulesFailed = false;
+    _scoreModulesPromise = window.PPP_LAZY.ensure(LAZY_SCORE_GROUPS).then(ok => {
+      _scoreModulesFailed = false;
+      const ready = !!ok && scoreModulesReady();
+      _scoreModulesFailed = !ready;
+      return ready;
+    }).catch(() => { _scoreModulesFailed = true; return false; })
+      .then(ok => { _scoreModulesPromise = null; return ok; });
+    return scoreModulesWait(_scoreModulesPromise);
+  }
   const scripts = [...document.head.querySelectorAll('script[src]:not([data-score-recovery])')]
     .map(el => el.getAttribute('src'))
     .filter(src => /^\.\/(?:scoregraph|playability|difficulty|songgraph|arrangement|realize|engrave)\/|^\.\/audio-score\.js(?:\?|$)/.test(src));
@@ -11089,6 +11132,11 @@ window.PPP = {
   /* G13-1 (G13-D3): true = React came from unpkg (?cdn=1 or the remembered '1'), false (default) = vendor/react-18.3.1/. Read-only truth about THIS load; a new value applies on the next load. Any value but '1' is no choice: the default returns and the remembered choice is forgotten. */
   get cdn() { return window.PPP_CDN === true; },
   set cdn(v) { try { if (v === '1' || v === 1 || v === true) localStorage.setItem('ppp.cdn', '1'); else localStorage.removeItem('ppp.cdn'); } catch (e) { /* not remembered */ } },
+  /* G13-4e (lazy-load.js): 'on' (default: the score library, the engraver's source, audio-score.js, the arranger, the backup module and the lessons come in after the first frame or when a
+     screen asks for them) | 'off' (the head names them all again, as before). ?split=on|off is for this visit; a value remembered on this device (localStorage 'ppp.split.v1') is used next;
+     any other value is no choice: the default returns and the remembered choice is forgotten. The getter says what THIS load did; a new value applies on the next load. */
+  get split() { return window.PPP_LAZY ? window.PPP_LAZY.mode : 'off'; },
+  set split(v) { try { if (window.PPP_LAZY) window.PPP_LAZY.remember(v); } catch (e) { /* not remembered */ } },
   /* G10a-4/G10a-5b: 'v2' (default: the staged recording conversion, docs/GOALS/G10 section 6) | 'legacy' (the classic one). Any other value is no choice: the default comes back and the remembered choice is forgotten. A choice is remembered on this device. */
   get recording() { return RECORDING_MODE; },
   set recording(v) { setRecordingMode(v); },
@@ -12436,8 +12484,27 @@ Object.defineProperties(window.PPP, {
   engraveStats: { enumerable: true, get: () => ENGRAVE_STATE.stats }
 });
 let _engravePromise = null;
+let _engraveWarmed = false;
+/* G13-4e: the fifteen files of the drawing code (ENGRAVE_FILES) are named by this page and not by the head, so they used to be asked for only after the library and the
+   engraver's source were in. They are immutable by hash: asked for now, at the same time, they are in the browser's cache when their script elements are made. */
+function warmEngraveFiles() {
+  if (_engraveWarmed || typeof fetch !== 'function') return;
+  _engraveWarmed = true;
+  ENGRAVE_FILES.forEach(([name, hash]) => {
+    try { fetch('./engrave/' + name + '.js?h=' + hash, { credentials: 'same-origin' }).then(r => r.arrayBuffer()).catch(() => {}); } catch (e) { /* the script element asks later */ }
+  });
+}
 function loadEngrave() {
-  if (_scoreModulesPromise || !scoreModulesReady()) return loadScoreModules().then(ok => {
+  let wait = null;
+  if (lazyOn()) {
+    /* G13-4e: a drawing needs the ScoreGraph and the engraver's own files, not the arranger or audio-score.js: asked for alone, so that Home's first drawing is not held
+       behind 150 KB it never uses (the rest comes in behind it, lazy-load.js start) */
+    if (!window.PPP_LAZY.have(['score', 'engrave'])) {
+      window.PPP_LAZY.afterPaint().then(warmEngraveFiles);   /* not before the first paint, like everything deferred */
+      wait = window.PPP_LAZY.ensure(['score', 'engrave']);
+    }
+  } else if (_scoreModulesPromise || !scoreModulesReady()) wait = loadScoreModules();
+  if (wait) return wait.then(ok => {
     if (!ok) throw importError('score-not-loaded', tx('The files needed to write the score could not be loaded. Try again in a moment.'));
     return loadEngrave();
   });
@@ -13368,10 +13435,14 @@ class Component extends DCLogic {
        frames and an idle moment, and after the Korean/Japanese/Chinese stylesheet has arrived or been given up (head: PPP_CJK_SETTLED), so the 1.3 MB of
        recordings never compete with what draws the page or with the text's font. Until they are in, the synthesized stand-in sounds a note
        (PianoPlayer.synth), and a tap or key starts them at once (wake()). */
+    /* G13-4e: the first frame is this component's mount: the page's other code (lazy-load.js: the engraver, the library, the arranger, the lessons) starts coming in once the
+       frame after it has been produced, before the piano recordings below, which wait for it (codeIn) so that the 1.3 MB of sound never holds up the 450 KB of code */
+    if (lazyOn()) window.PPP_LAZY.start();
     {
       const go = () => { if (!this._dead) PianoSamples.load(); };
       const idle = cb => { if (window.requestIdleCallback) window.requestIdleCallback(cb, { timeout: 3000 }); else setTimeout(cb, 400); };
-      const fontsIn = () => (window.PPP_CJK_SETTLED && window.PPP_CJK_SETTLED.then ? Promise.race([window.PPP_CJK_SETTLED, new Promise(r => setTimeout(r, 7000))]) : Promise.resolve());
+      const codeIn = () => (lazyOn() && window.PPP_LAZY.prefetched && window.PPP_LAZY.prefetched.then ? window.PPP_LAZY.prefetched : Promise.resolve());
+      const fontsIn = () => (window.PPP_CJK_SETTLED && window.PPP_CJK_SETTLED.then ? Promise.race([Promise.all([window.PPP_CJK_SETTLED, codeIn()]), new Promise(r => setTimeout(r, 7000))]) : Promise.race([codeIn(), new Promise(r => setTimeout(r, 7000))]));
       const start = () => requestAnimationFrame(() => requestAnimationFrame(() => idle(() => fontsIn().then(go))));
       if (document.readyState === 'complete') start(); else window.addEventListener('load', start, { once: true });
     }
@@ -13835,19 +13906,25 @@ class Component extends DCLogic {
   }
   /* after the reload that follows a restore: say what it did, once, in the language the page is in by then */
   backupBoot() {
-    const B = window.PPPBackup;
-    let f = null;
-    try { f = B && B.flashTake(window.sessionStorage); } catch (e) { f = null; }
-    if (!f) return;
-    const I = window.PPP_I18N, ready = I && I.ready && I.ready.then ? I.ready : Promise.resolve();
-    ready.then(() => {
-      if (this._dead) return;
-      const parts = [tx('Restored: {{fresh}} new, {{same}} merged, {{copies}} kept as copies.', { fresh: f.fresh | 0, same: f.same | 0, copies: f.copies | 0 })];
-      if (f.skipped) parts.push(tx('Songs that could not be read and were skipped: {{n}}.', { n: f.skipped | 0 }));
-      if (f.blanked) parts.push(tx('Links that were not web addresses were left out: {{n}}.', { n: f.blanked | 0 }));
-      if (f.account === false) parts.push(tx('Your account could not be updated, so progress kept in your account may come back as it was.'));
-      this.say(parts.join(' '));
-    });
+    /* G13-4e: the backup module (library-backup.js) is not in the page at boot any more, and the one thing this needs from it is the note a restore leaves in the session for the
+       page it reloads (FLASH_KEY there): look for the note first, and only a page that has one asks for the module before it reads it */
+    try { if (!window.sessionStorage.getItem('ppp-backup-flash')) return; } catch (e) { return; }
+    const show = () => {
+      const B = window.PPPBackup;
+      let f = null;
+      try { f = B && B.flashTake(window.sessionStorage); } catch (e) { f = null; }
+      if (!f) return;
+      const I = window.PPP_I18N, ready = I && I.ready && I.ready.then ? I.ready : Promise.resolve();
+      ready.then(() => {
+        if (this._dead) return;
+        const parts = [tx('Restored: {{fresh}} new, {{same}} merged, {{copies}} kept as copies.', { fresh: f.fresh | 0, same: f.same | 0, copies: f.copies | 0 })];
+        if (f.skipped) parts.push(tx('Songs that could not be read and were skipped: {{n}}.', { n: f.skipped | 0 }));
+        if (f.blanked) parts.push(tx('Links that were not web addresses were left out: {{n}}.', { n: f.blanked | 0 }));
+        if (f.account === false) parts.push(tx('Your account could not be updated, so progress kept in your account may come back as it was.'));
+        this.say(parts.join(' '));
+      });
+    };
+    if (lazyOn()) window.PPP_LAZY.ensure(['backup']).then(show, show); else show();
   }
   wipeAsk() {
     if (this.bkBusyWork()) { this.bkSet({ phase: 'idle', msg: this.bkBusyText(), msgKind: 'bad' }); return; }
@@ -19856,12 +19933,19 @@ class Component extends DCLogic {
     return { screen: s };
   }
   go(s) {
-    return () => this.setState(st => {
+    const open = () => this.setState(st => {
       const patch = Object.assign({ playing: false, runHit: 0, runTot: 0, wrongNotes: [], sidebarOpen: false, learnFocus: false }, this.screenPatch(s));
       const [from] = this.range(Object.assign({}, st, patch));
       patch.beat = Score.startQ(st.score, from);
       return patch;
     });
+    /* G13-4e: Piano Basics reads lessons.js and Settings reads library-backup.js while they draw; both come in after the first paint, but a tap that comes first waits for the
+       file (a moment) instead of the page loading it synchronously in the middle of drawing */
+    const need = s === 'learn' ? ['lessons'] : s === 'settings' ? ['backup'] : null;
+    return () => {
+      if (need && lazyOn() && !window.PPP_LAZY.have(need)) { window.PPP_LAZY.ensure(need).then(open, open); return; }
+      open();
+    };
   }
   /* Loop a passage on the practice page. */
   drill(from, to, extra) {

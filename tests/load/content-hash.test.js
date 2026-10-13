@@ -356,3 +356,36 @@ test('G13-4c3: a changed script, or a changed page, is another tag, so a returni
     assert.notEqual(r3.headers.etag, r2.headers.etag);
   } finally { s.close(); tree.remove(); }
 });
+
+/* G13-4e: the code the head defers sits in <noscript data-ppp-lazy> blocks as text; the served page names those files by hash too, and a deferred file asked for by that
+   address is immutable and gzip like any other */
+test('G13-4e: the deferred blocks of the head are named by hash, lazy-load.js comes before the first of them, and each block\'s files answer immutable', async () => {
+  const served = (await request(srv.port, '/')).body.toString('utf8');
+  const head = headOf(served);
+  const blocks = [...head.matchAll(/<noscript data-ppp-lazy="([^"]+)"([^>]*)>([\s\S]*?)<\/noscript>/g)];
+  assert.ok(blocks.length >= 6, 'the head has its deferred blocks (' + blocks.length + ')');
+  assert.deepEqual(blocks.map(b => b[1]), ['backup', 'score', 'arranger', 'audio', 'engrave', 'lessons']);
+  assert.ok(head.indexOf('./lazy-load.js?h=') > -1 && head.indexOf('./lazy-load.js?h=') < head.indexOf('<noscript data-ppp-lazy'), 'the module that reads the blocks comes first');
+  assert.ok(head.indexOf('./i18n.js?h=') < head.indexOf('./lazy-load.js?h='), 'and after i18n.js, the first script of the page (the order the pairing test pins)');
+  /* each block is followed by the call that registers it, and nothing else sits between */
+  for (const m of blocks) {
+    const after = head.slice(m.index + m[0].length, m.index + m[0].length + 40);
+    assert.match(after, /^\r?\n<script>PPP_LAZY\.here\(\)<\/script>/, m[1] + ': the registering call follows the block');
+  }
+  let files = 0;
+  for (const m of blocks) {
+    for (const t of m[3].matchAll(/<script src="\.\/([^"?#]+)\?h=([0-9a-f]{12})"><\/script>/g)) {
+      files++;
+      assert.equal(t[2], hashOf(read(t[1])), m[1] + ': ' + t[1] + ' is named by its own hash');
+      const r = await request(srv.port, '/' + t[1] + '?h=' + t[2], { headers: { 'Accept-Encoding': 'gzip' } });
+      assert.equal(r.status, 200, t[1]);
+      assert.equal(r.headers['cache-control'], IMMUTABLE, t[1] + ' is kept for good');
+      assert.equal(r.headers['content-encoding'], 'gzip', t[1]);
+    }
+    assert.ok(!/\?v=/.test(m[3]), m[1] + ': no ?v= is left in the block');
+  }
+  assert.ok(files >= 60, 'the blocks name the deferred files (' + files + ')');
+  /* a block's text is not markup the browser reads: the source and the served page carry the same blocks, but for the hashes */
+  const srcBlocks = [...headOf(SRC_PAGE).matchAll(/<noscript data-ppp-lazy="([^"]+)"/g)].map(b => b[1]);
+  assert.deepEqual(srcBlocks, blocks.map(b => b[1]));
+});

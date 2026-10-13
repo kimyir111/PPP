@@ -67,6 +67,8 @@ function runSwitch(search, stored, extra) {
     window, document, URLSearchParams,
     /* This harness isolates the lazy engraver from the already-loaded core. */
     scoreModulesReady: () => true, _scoreModulesPromise: null,
+    /* G13-4e: the lazily loaded groups (lazy-load.js) are not part of this harness: the page's own load path */
+    lazyOn: () => false,
     location: { search: search || '' },
     localStorage: { getItem: k => (stored && k in stored ? stored[k] : null) },
     console: { warn: function () { warns.push([...arguments].join(' ')); } },
