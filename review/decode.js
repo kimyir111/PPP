@@ -5,6 +5,8 @@
      node review/decode.js --key <key.json> --ratings <ratings.json> [--out summary.json]
      node review/decode.js --mode h10 --key <key.json> --ratings <ratings.json>     (G10a-5: the blind review of the recording conversion, review/h10/decode-h10.js)
      node review/decode.js --mode h10 --compare engine --key <key.json> --ratings <ratings.json>     (G10b-0: the same pieces from the browser's notes and the helper's, review/h10/decode-engine.js)
+     node review/decode.js --mode h10 --compare arrange --key <key.json> --ratings <ratings.json>    (H-10c: the lead sheet against the reduction, the verdict of the key's pass rule, review/h10/decode-arrange.js;
+                                                                                                      --db rows.json instead of --ratings reads the answers out of the artifact database)
 
    Joins the ratings file the reviewer's page exported (X / Y labels) with the key the builder wrote elsewhere (which of X and Y
    was G9 and which was the legacy engine, per item), and reports per arm. It refuses to join a key and a ratings file that
@@ -176,14 +178,17 @@ function report(o) {
 function main() {
   const args = process.argv.slice(2);
   const opt = n => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : null; };
-  if (!opt('--key') || !(opt('--ratings') || opt('--db'))) { console.log('usage: node review/decode.js [--mode h8|h9|h10] [--compare engine] --key <key.json> --ratings <ratings.json> [--out summary.json]\n       node review/decode.js --mode h10 --key <key.json> --db <rows read from the artifact database> [--out summary.json]'); process.exit(2); }
+  if (!opt('--key') || !(opt('--ratings') || opt('--db'))) { console.log('usage: node review/decode.js [--mode h8|h9|h10] [--compare engine|arrange] --key <key.json> --ratings <ratings.json> [--out summary.json]\n       node review/decode.js --mode h10 --key <key.json> --db <rows read from the artifact database> [--out summary.json]'); process.exit(2); }
   const key = JSON.parse(fs.readFileSync(opt('--key'), 'utf8'));
   if (opt('--mode') && opt('--mode') !== key.mode) throw new Error('--mode ' + opt('--mode') + ' but the key is for mode ' + key.mode);
-  if (opt('--compare') && opt('--compare') !== 'engine') throw new Error("--compare must be 'engine'");
+  if (opt('--compare') && !['engine', 'arrange'].includes(opt('--compare'))) throw new Error("--compare must be 'engine' or 'arrange'");
   if (opt('--compare') === 'engine' && key.compare !== 'engine') throw new Error('--compare engine but the key is not an engine-comparison key (built without --compare engine)');
+  if (opt('--compare') === 'arrange' && key.compare !== 'arrange') throw new Error('--compare arrange but the key is not a lead-sheet review key (built without --compare arrange)');
   if (!opt('--compare') && key.compare === 'engine') console.error('(the key is an engine-comparison key: decoded as one)');
+  if (!opt('--compare') && key.compare === 'arrange') console.error('(the key is a lead-sheet review key: decoded as one)');
   /* H-10 answers kept by the page in the artifact database (review/h10/db-to-ratings.js) read like the exported file */
-  const ratings = opt('--db') ? require('./h10/db-to-ratings.js').dbToRatings(JSON.parse(fs.readFileSync(opt('--db'), 'utf8')), key.packetId) : JSON.parse(fs.readFileSync(opt('--ratings'), 'utf8'));
+  const D = opt('--db') ? require('./h10/db-to-ratings.js') : null;
+  const ratings = D ? (key.compare === 'arrange' ? D.dbToRatingsArrange : D.dbToRatings)(JSON.parse(fs.readFileSync(opt('--db'), 'utf8')), key.packetId) : JSON.parse(fs.readFileSync(opt('--ratings'), 'utf8'));
   const o = decode(key, ratings);
   console.log(report(o));
   if (opt('--out')) fs.writeFileSync(opt('--out'), JSON.stringify(o, null, 1) + '\n');
