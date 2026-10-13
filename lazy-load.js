@@ -250,7 +250,11 @@
         win.setTimeout(resolve, 0);
       }
       var observed = false;
+      /* only where the engine says it reports paint timing: an older engine accepts the call and never answers, and the wait would then be the 10 s below */
+      var reports = false;
+      try { reports = !!win.PerformanceObserver && (win.PerformanceObserver.supportedEntryTypes || []).indexOf('paint') >= 0; } catch (e) { reports = false; }
       try {
+        if (!reports) throw new Error('no paint timing');
         var po = new win.PerformanceObserver(function (list) {
           var es = list.getEntries();
           for (var i = 0; i < es.length; i++) {

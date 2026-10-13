@@ -78,7 +78,7 @@ function page(over) {
   let fcpCallback = null;
   if (over.perf) {
     /* a browser whose paint timing the test delivers by hand (p.paint()) */
-    win.PerformanceObserver = class { constructor(cb) { fcpCallback = cb; } observe() {} disconnect() {} };
+    win.PerformanceObserver = class { constructor(cb) { fcpCallback = cb; } observe() {} disconnect() {} static get supportedEntryTypes() { return over.noPaintType ? ['longtask'] : ['paint', 'longtask']; } };
     if (over.hidden) doc.visibilityState = 'hidden';
   }
   const L = create(win, over.options);
@@ -413,4 +413,10 @@ test('a tab in the background makes no paint: the wait ends after a second, not 
 test('a browser with no paint timing falls back to a frame, and the page is not stuck', async () => {
   const p = page();               /* the fake window has no PerformanceObserver */
   assert.equal(await p.L.ensure(['a']), true);
+});
+test('an engine that accepts a PerformanceObserver but does not list paint among its entry types gets the frame, not a ten second wait', async () => {
+  const p = page({ perf: true, noPaintType: true });
+  const t0 = Date.now();
+  assert.equal(await p.L.ensure(['a']), true);
+  assert.ok(Date.now() - t0 < 2000, 'waited ' + (Date.now() - t0) + ' ms');
 });

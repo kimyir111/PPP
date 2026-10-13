@@ -121,6 +121,7 @@ const M = [
   ['L17', 'lazy-load.js', 'a refused synchronous load is asked again at every read', ["if (g.syncFailedAt && Date.now() - g.syncFailedAt < 5000) return;", ""], SPLITN],
   ['L18', 'lazy-load.js', 'a tab in the background waits for ever for a paint', ["win.setTimeout(fire, hidden ? 1000 : 10000);", "win.setTimeout(fire, 1e9);"], SPLITN],
   ['L19', 'lazy-load.js', 'the first-paint entry (a blank paint) is taken for Home', ["if (es[i].name === 'first-contentful-paint') {", "if (es[i].name === 'first-paint' || es[i].name === 'first-contentful-paint') {"], SPLITN],
+  ['L20', 'lazy-load.js', 'an engine that does not report paint timing is waited on for ten seconds', ["try { reports = !!win.PerformanceObserver && (win.PerformanceObserver.supportedEntryTypes || []).indexOf('paint') >= 0; } catch (e) { reports = false; }", "reports = true;"], SPLITN],
   /* G13-4e: the page's use of it (a browser test: load-app/split.test.js) */
   ['S1', 'Piano Coach App.dc.html', 'a drawing waits for every group, the arranger and audio-score.js too', ["function loadEngrave() {\n  let wait = null;\n  if (lazyOn()) {", "function loadEngrave() {\n  let wait = null;\n  if (false) {"], SPLITB],
   ['S2', 'Piano Coach App.dc.html', 'the readiness check reads a global (it loads the library at the first commit)', ["lazyPeek('PPPScoreGraph') && lazyPeek('PPPAudioScore')", "window.PPPScoreGraph && lazyPeek('PPPAudioScore')"], SPLITB],
