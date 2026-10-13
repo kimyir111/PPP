@@ -73,7 +73,8 @@ async function open(browser, o) {
   await page.goto((o.base || BASE) + (o.query || ''), { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForFunction(() => window.PPP && window.PPP.app && window.PPP.PianoScore, { timeout: 60000 });
   await sleep(o.settle || 1200);
-  return { ctx, page, probe, close: () => ctx.close() };
+  /* the page is closed BEFORE its context: tests/engrave/tools/with-port.js reads what a page did (the engraver's draws, and the graph plans of --practice graph) when the page closes */
+  return { ctx, page, probe, close: async () => { try { await page.close(); } catch (e) { /* gone already */ } await ctx.close(); } };
 }
 const toPractice = async (page, connect) => {
   await page.evaluate(() => {
