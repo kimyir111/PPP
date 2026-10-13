@@ -324,6 +324,17 @@ test('a read that comes between two files of a group that is running: the rest r
   assert.deepEqual(p.win.__order, ['a1', 'a2', 'a3'], 'every file exactly once, in order');
 });
 
+test('a namespace object that exists after the first file of a group is not handed out half built: a read between two files completes the group', async () => {
+  const p = page();
+  const asked = p.L.ensure(['a']);
+  for (let i = 0; i < 200 && p.win.__order.length < 1; i++) await flush(1);
+  assert.equal(p.win.__order.length, 1, 'only the first file has run: PPPA exists, with .one');
+  const A = vm.runInContext('PPPA', p.win);       /* the page reads the namespace */
+  assert.equal(A.two, 2, 'and what the later files add is there');
+  assert.equal(await asked, true);
+  assert.deepEqual(p.win.__order, ['a1', 'a2', 'a3']);
+});
+
 /* ---------------------------------------------------------------- the idle prefetch */
 test('start(): after the frame, group by group in priority order; prefetched resolves when every group is in', async () => {
   const p = page({ options: { priority: ['c', 'a', 'b'] } });
@@ -370,14 +381,15 @@ test('a prefetch that fails resolves prefetched (the samples must not wait for e
 });
 
 /* ---------------------------------------------------------------- off is not the stand-in */
-test('a window that already has the global (a test, the page) keeps it when the group registers', () => {
+test('a window that already has the global (a test, the page) keeps it as the value until its own script sets it', () => {
   const p = page({ noRegister: true });
   p.win.PPPA = { mine: true };
   const el = { tagName: 'NOSCRIPT', hasAttribute: () => true, getAttribute: n => (n === 'data-ppp-lazy' ? 'a' : n === 'data-globals' ? 'PPPA' : ''), textContent: '<script src="./a1.js"></script>' };
   p.doc.currentScript = { previousElementSibling: el };
   p.L.here();
-  same(p.win.PPPA, { mine: true });
-  assert.equal(p.log.xhrs.length, 0, 'reading it loads nothing');
+  same(p.L.peek('PPPA'), { mine: true });          /* peek: what is there, nothing loaded */
+  assert.equal(p.log.xhrs.length, 0);
+  assert.equal(p.L.have(['a']), false);
 });
 
 /* ---------------------------------------------------------------- not before the first paint */

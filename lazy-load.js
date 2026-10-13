@@ -95,7 +95,9 @@
       Object.defineProperty(win, name, {
         configurable: true, enumerable: true,
         get: function () {
-          if (m.value === undefined && !m.group.done) loadSync(m.group, name);   /* (loadSync does nothing while a lazy file is running) */
+          /* not "while it is undefined": a namespace object (PPPEngraveModules, PPPScoreGraphModules) exists after the group's first file and is filled by the rest - a read between two files
+             of a group that is on its way would otherwise see half of it. loadSync does nothing while a lazy file is running (its own reads), and nothing once the group is in. */
+          if (!m.group.done) loadSync(m.group, name);
           return m.value;
         },
         set: function (v) { m.value = v; }
