@@ -1,7 +1,7 @@
 {
-  "_about": "The facts THIRD_PARTY_NOTICES.md states that no README of this repository holds: the licences of the libraries the page loads from a CDN, the helper tools, and the wording of the catalogue and YouTube sections. They are G13 section E8's facts (measured 2026-10-08) and nothing is guessed: a tool whose licence the repository does not state says so. tools/notices/build.js reads this file with vendor/README.md, audio/piano/README.md, catalog/*/README.md and catalog/*/index.json; tests/notices/notices.test.js keeps it in step with the page.",
+  "_about": "The facts THIRD_PARTY_NOTICES.md states that no README of this repository holds: the licences of the libraries the page loads from a CDN, the hosts the site's code names, the helper tools and packages, and the wording of the catalogue and YouTube sections. They are G13 section E8's facts (measured 2026-10-08) and nothing is guessed: a tool whose licence this repository does not state says 'see the project's own licence'. tools/notices/build.js reads this file with vendor/README.md, audio/piano/README.md, catalog/*/README.md and catalog/*/index.json; tests/notices/notices.test.js keeps it in step with the page.",
   "cdn": {
-    "_about": "Packages the page (Piano Coach App.dc.html) or support.js names at cdn.jsdelivr.net/npm, unpkg.com or esm.sh. Every package found there must have a row here, and a row whose package is no longer named (it was vendored) must go: build.js --check says which.",
+    "_about": "Packages the served code (the page, support.js and the modules it loads) names at cdn.jsdelivr.net/npm, unpkg.com or esm.sh. Every package found there must have a row here, and a row whose package is no longer named (it was vendored) must go: build.js --check says which.",
     "packages": {
       "pdfjs-dist": {
         "name": "pdf.js",
@@ -45,8 +45,42 @@
         "name": "Onsets and Frames checkpoint (Magenta model weights)",
         "host": "storage.googleapis.com",
         "use": "the in-browser recording transcription; about 60 MB, fetched only when a recording is converted in the browser",
-        "licence": "the terms of this checkpoint are not stated in this repository"
+        "licence": "see the checkpoint's own terms (this repository does not restate them)"
       }
+    ]
+  },
+  "hosts": {
+    "_about": "Every http(s) host the served code names (the page, support.js and the modules static-allow.js hands out, comments cut out) must be here, with what it is. A host that carries a library, a font or data (npm, fonts, storage) is covered by the rows of 'cdn' above and must still be named by the code; a service is listed in the notices; a link is something the page sends a person to or shares to (nothing is loaded from it); a namespace is an XML/SVG identifier. A new host that is not here fails build.js --check: say what it is first, and give a licence row if it loads anything.",
+    "npm": [
+      "cdn.jsdelivr.net",
+      "unpkg.com",
+      "esm.sh"
+    ],
+    "fonts": [
+      "fonts.googleapis.com",
+      "fonts.gstatic.com"
+    ],
+    "storage": [
+      "storage.googleapis.com"
+    ],
+    "service": {
+      "www.youtube-nocookie.com": "the video player shown beside a song that has a YouTube video (YouTube's own embed)",
+      "www.youtube.com": "the title of a video (oEmbed) when PPP's own server cannot give it, and links to the video"
+    },
+    "link": [
+      "archive.org",
+      "creativecommons.org",
+      "social-plugin.line.me",
+      "twitter.com",
+      "www.facebook.com",
+      "www.threads.net"
+    ],
+    "namespace": [
+      "www.w3.org"
+    ],
+    "local": [
+      "127.0.0.1",
+      "localhost"
     ]
   },
   "own": [
@@ -56,61 +90,230 @@
     }
   ],
   "helpers": {
-    "_about": "Software that runs on your own computer or on the server, not in the page. Licences are stated only where this repository states them (G13 section E8).",
+    "_about": "Software, models and packages that run on your own computer or on the server, not in the page. A licence is given only where this repository states it, and `evidence` names the file and the words that say so (build.js --check reads them); every other row says 'see the project's own licence'. `ids` are what the pinned requirements (requirements-*.txt), the models of the setup scripts (tools/home-worker/setup-*.cmd) and the runtime dependencies of package.json are matched against: one that has no row here and no omission fails the check.",
     "rows": [
       {
         "name": "Audiveris",
         "licence": "AGPL-3.0",
-        "where": "your own computer only (the local helper for reading PDFs and photos of scores); PPP does not distribute it and no PPP code links it"
+        "ids": [
+          "audiveris"
+        ],
+        "where": "your own computer only (the local helper that reads PDFs and photos of scores); PPP does not distribute it and no PPP code links it",
+        "evidence": {
+          "file": "README.md",
+          "pattern": "Audiveris is AGPL-3\\.0"
+        }
       },
       {
-        "name": "Kong",
+        "name": "Kong piano transcription (ByteDance; the piano-transcription-inference package)",
         "licence": "Apache-2.0",
-        "where": "the piano transcription helper (your own computer, or the home PC worker)"
+        "ids": [
+          "piano-transcription-inference"
+        ],
+        "where": "the piano transcription helper (your own computer, or the home PC worker); not on the site",
+        "evidence": {
+          "file": "omr-service.js",
+          "pattern": "Apache-2\\.0"
+        }
       },
       {
         "name": "TransKun",
-        "licence": "not stated in this repository",
-        "where": "the piano transcription helper (your own computer, or the home PC worker)"
+        "licence": "see the project's own licence",
+        "ids": [
+          "transkun"
+        ],
+        "where": "the piano transcription helper (your own computer, or the home PC worker); not on the site"
       },
       {
         "name": "Aria-AMT",
-        "licence": "not stated in this repository",
+        "licence": "see the project's own licence",
+        "ids": [
+          "aria-amt"
+        ],
         "where": "the piano transcription helper (your own computer)"
       },
       {
         "name": "Beat This",
-        "licence": "not stated in this repository",
+        "licence": "see the project's own licence",
+        "ids": [
+          "beat-this"
+        ],
         "where": "beat tracking for the home PC worker and the helper"
       },
       {
         "name": "PM2S",
-        "licence": "not stated in this repository",
+        "licence": "see the project's own licence",
+        "ids": [
+          "pm2s"
+        ],
         "where": "beat and metre estimation for the helper"
       },
       {
+        "name": "YourMT3 (mimbres/YourMT3, a Hugging Face space)",
+        "licence": "see the model's own licence",
+        "ids": [
+          "mimbres/YourMT3"
+        ],
+        "where": "song mode on your own PC (tools/home-worker/setup-yourmt3.cmd downloads it); not part of the page or the site"
+      },
+      {
+        "name": "SheetSage2 weights (m-a-p/SheetSage2)",
+        "licence": "CC BY-NC 4.0: non-commercial use only",
+        "ids": [
+          "m-a-p/SheetSage2"
+        ],
+        "where": "song mode on your own PC (tools/home-worker/setup-sheetsage2.cmd downloads it); not part of the page or the site",
+        "evidence": {
+          "file": "sheetsage2_run.py",
+          "pattern": "CC BY-NC 4\\.0"
+        }
+      },
+      {
+        "name": "MERT-v2-FullSong (m-a-p/MERT-v2-FullSong, SheetSage2's encoder)",
+        "licence": "see the model's own licence",
+        "ids": [
+          "m-a-p/MERT-v2-FullSong"
+        ],
+        "where": "song mode on your own PC; SheetSage2 downloads it the first time it runs"
+      },
+      {
+        "name": "Demucs (htdemucs_6s) and its support packages (julius, einops, dora-search, openunmix, lameenc, omegaconf, antlr4, treetable, retrying, submitit, cloudpickle, pyyaml)",
+        "licence": "Demucs: MIT; the support packages: see each project's own licence",
+        "ids": [
+          "demucs"
+        ],
+        "where": "song mode on your own PC (separates the song before it is transcribed)",
+        "evidence": {
+          "file": "tools/home-worker/README.md",
+          "pattern": "htdemucs_6s`?, MIT"
+        }
+      },
+      {
+        "name": "librosa, including its pYIN pitch tracker",
+        "licence": "see the project's own licence",
+        "ids": [
+          "librosa"
+        ],
+        "where": "song mode on your own PC (melody and bass line)"
+      },
+      {
+        "name": "Basic Pitch (the Python package, optional for song mode)",
+        "licence": "Apache-2.0 (the same project as the browser copy listed above)",
+        "ids": [
+          "basic-pitch"
+        ],
+        "where": "song mode on your own PC; without it song mode follows the lead line with the pitch tracker"
+      },
+      {
+        "name": "music21",
+        "licence": "see the project's own licence",
+        "ids": [
+          "music21"
+        ],
+        "where": "the arranger of the site's helper (the Render build installs it from requirements-arranger.txt); the arranger has a fallback without it"
+      },
+      {
+        "name": "Audio and MIDI packages of the transcription environment (soundfile, soxr, pydub, pretty-midi, mido, torch-optimizer, torchlibrosa)",
+        "licence": "see each project's own licence",
+        "ids": [
+          "soundfile",
+          "soxr",
+          "pydub",
+          "pretty-midi",
+          "mido",
+          "torch-optimizer",
+          "torchlibrosa"
+        ],
+        "where": "the transcription environment on your own computer (requirements-transcription.txt)"
+      },
+      {
+        "name": "PyTorch (torch, torchaudio)",
+        "licence": "see the project's own licence",
+        "ids": [
+          "torch",
+          "torchaudio"
+        ],
+        "where": "the transcription environment on your own computer"
+      },
+      {
+        "name": "huggingface_hub",
+        "licence": "see the project's own licence",
+        "ids": [
+          "huggingface_hub"
+        ],
+        "where": "the setup scripts of song mode, to download the models above"
+      },
+      {
         "name": "yt-dlp",
-        "licence": "see the project's own licence (fetched from its GitHub releases when the server is built)",
-        "where": "the server and the home PC worker, to fetch the audio of a YouTube link you paste"
+        "licence": "see the project's own licence",
+        "ids": [
+          "yt-dlp"
+        ],
+        "where": "the site (fetched from its GitHub releases when the server is built) and, if you set it up, your own PC, to fetch the audio of a YouTube link you paste"
+      },
+      {
+        "name": "FFmpeg",
+        "licence": "see the project's own licence",
+        "ids": [
+          "ffmpeg"
+        ],
+        "where": "audio conversion in the local helper and the home PC worker (your own computer)"
+      },
+      {
+        "name": "pg (node-postgres)",
+        "licence": "see the package's own licence",
+        "ids": [
+          "pg"
+        ],
+        "where": "the site's server, a runtime dependency (package.json), for the Postgres store"
+      },
+      {
+        "name": "zod",
+        "licence": "see the package's own licence",
+        "ids": [
+          "zod"
+        ],
+        "where": "the helper (omr-service.js), a runtime dependency (package.json), for the coach"
+      },
+      {
+        "name": "@anthropic-ai/sdk",
+        "licence": "see the package's own licence",
+        "ids": [
+          "@anthropic-ai/sdk"
+        ],
+        "where": "the helper (omr-service.js), a runtime dependency (package.json), for the coach"
+      }
+    ],
+    "omissions": [
+      {
+        "id": "puppeteer",
+        "reason": "a devDependency of package.json: it runs the tests and is not shipped or run by the site"
       }
     ]
   },
   "catalogue": {
-    "_about": "How a catalogue licence code of catalog/method/index.json reads in the notices file.",
+    "_about": "How a catalogue licence code of catalog/method/index.json reads in the notices file; and which pieces are marked 'under review' in its table (tests/notices/notices.test.js checks them against the benchmark's provenance record).",
     "licenceNames": {
       "pd": "public domain",
       "cc0": "CC0 1.0 (public-domain dedication)"
     },
-    "quarantined": {
-      "count": 15,
-      "text": "Czerny 40 (all 10 pieces) and five pieces of Burgmüller 25 (nos. 1, 2, 4, 7 and 18): the compositions are in the public domain, but these typesets carry no public-domain or CC0 statement of their own in the files themselves. They are shown to you as they are while PPP replaces them with typesets that state CC0 or public domain."
-    }
+    "underReview": {
+      "czerny299": "all",
+      "burgmuller25": [
+        1,
+        2,
+        4,
+        7,
+        18
+      ]
+    },
+    "underReviewText": "The compositions are in the public domain. Czerny 40 (all 10 pieces) and Burgmüller 25 nos. 1, 2, 4, 7 and 18 are community typesets whose files carry no public-domain or CC0 statement of their own: the dataset lists them as CC0, and the piece-level statement is under review."
   },
   "demo": {
     "text": "The score that opens first is a practice pattern generated by PPP (`buildDemoScore` in the page). Its title names a film piece and its composer, but its notes are not that piece's melody, and the composer has no connection with PPP.",
-    "todo": "TODO(U6): the demo's title is still \"Interstellar Theme - Hans Zimmer\". The user has not decided U6 (rename it to an original title, e.g. \"PPP Practice Theme\"; its id stays `demo`). When decided: rename it in the page (`buildDemoScore`), then replace this section with the new title and take this comment out. Until then nothing renames it."
+    "todo": "TODO(U6): the demo's title is still \"Interstellar Theme - Hans Zimmer\". The user has not decided U6 (rename it to an original title, e.g. \"PPP Practice Theme\"; its id stays `demo`). When decided: rename it in the page (`buildDemoScore`), then replace the demo text above with the new title. Until then nothing renames it. This note is kept here and is not written into the served notices."
   },
   "youtube": {
-    "text": "When you paste a YouTube link, PPP fetches that video's audio (on the server, or on your own PC when you use the PC worker) only to write the notes it hears; the audio is not kept on the server. Use recordings you have the right to use. The score PPP writes is for your own practice: a score made from a YouTube link cannot be posted to Shared Scores, although you can still send its link."
+    "text": "When you paste a YouTube link, PPP fetches that video's audio (on the server, or on your own PC when you use the PC worker) only to write the notes it hears; the audio is not kept on the server. If YouTube refuses the server, the server falls back to a third-party download site (loader.to), which then receives the link you pasted. Your browser also contacts YouTube to show the video (the youtube-nocookie.com player) and, when PPP's server cannot, to look up its title (oEmbed). Use recordings you have the right to use. The score PPP writes is for your own practice: a score made from a YouTube link cannot be posted to Shared Scores, although you can still send its link."
   }
 }
