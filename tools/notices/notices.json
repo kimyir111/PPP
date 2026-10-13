@@ -1,0 +1,116 @@
+{
+  "_about": "The facts THIRD_PARTY_NOTICES.md states that no README of this repository holds: the licences of the libraries the page loads from a CDN, the helper tools, and the wording of the catalogue and YouTube sections. They are G13 section E8's facts (measured 2026-10-08) and nothing is guessed: a tool whose licence the repository does not state says so. tools/notices/build.js reads this file with vendor/README.md, audio/piano/README.md, catalog/*/README.md and catalog/*/index.json; tests/notices/notices.test.js keeps it in step with the page.",
+  "cdn": {
+    "_about": "Packages the page (Piano Coach App.dc.html) or support.js names at cdn.jsdelivr.net/npm, unpkg.com or esm.sh. Every package found there must have a row here, and a row whose package is no longer named (it was vendored) must go: build.js --check says which.",
+    "packages": {
+      "pdfjs-dist": {
+        "name": "pdf.js",
+        "licence": "Apache-2.0",
+        "use": "reading a PDF or a photo of a score (the import screen); loaded only when one is added"
+      },
+      "@tensorflow/tfjs": {
+        "name": "TensorFlow.js",
+        "licence": "Apache-2.0",
+        "use": "the in-browser recording transcription (version 2.8.6 with Magenta.js) and the Basic Pitch path (version 3.21.0); loaded only when a recording is converted in the browser"
+      },
+      "@magenta/music": {
+        "name": "Magenta.js",
+        "licence": "Apache-2.0",
+        "use": "the in-browser recording transcription (Onsets and Frames); loaded only when a recording is converted in the browser"
+      },
+      "@spotify/basic-pitch": {
+        "name": "Basic Pitch",
+        "licence": "Apache-2.0",
+        "use": "the in-browser note detection path and its model; loaded only when a recording is converted in the browser"
+      },
+      "@babel/standalone": {
+        "name": "Babel standalone",
+        "licence": "MIT",
+        "use": "named by support.js for JSX templates; this page has none and never requests it"
+      }
+    },
+    "fallbackOf": {
+      "_about": "npm packages that PPP serves itself (vendor/) and that the page names at a CDN only as the way back (?cdn=1). They need no row of their own here.",
+      "react": "react-18.3.1",
+      "react-dom": "react-18.3.1"
+    },
+    "fonts": {
+      "_about": "Families of the Google Fonts stylesheet the page asks for after it has loaded (Korean, Japanese and Chinese text): the Latin families are served by PPP itself (vendor/fonts).",
+      "licence": "SIL Open Font License 1.1",
+      "host": "fonts.googleapis.com"
+    },
+    "other": [
+      {
+        "key": "storage.googleapis.com/magentadata/js/checkpoints/transcription/onsets_frames_uni",
+        "name": "Onsets and Frames checkpoint (Magenta model weights)",
+        "host": "storage.googleapis.com",
+        "use": "the in-browser recording transcription; about 60 MB, fetched only when a recording is converted in the browser",
+        "licence": "the terms of this checkpoint are not stated in this repository"
+      }
+    ]
+  },
+  "own": [
+    {
+      "path": "support.js",
+      "text": "`support.js` is the runtime of the page, generated for PPP. It carries no licence header and the source it is generated from is not in this repository."
+    }
+  ],
+  "helpers": {
+    "_about": "Software that runs on your own computer or on the server, not in the page. Licences are stated only where this repository states them (G13 section E8).",
+    "rows": [
+      {
+        "name": "Audiveris",
+        "licence": "AGPL-3.0",
+        "where": "your own computer only (the local helper for reading PDFs and photos of scores); PPP does not distribute it and no PPP code links it"
+      },
+      {
+        "name": "Kong",
+        "licence": "Apache-2.0",
+        "where": "the piano transcription helper (your own computer, or the home PC worker)"
+      },
+      {
+        "name": "TransKun",
+        "licence": "not stated in this repository",
+        "where": "the piano transcription helper (your own computer, or the home PC worker)"
+      },
+      {
+        "name": "Aria-AMT",
+        "licence": "not stated in this repository",
+        "where": "the piano transcription helper (your own computer)"
+      },
+      {
+        "name": "Beat This",
+        "licence": "not stated in this repository",
+        "where": "beat tracking for the home PC worker and the helper"
+      },
+      {
+        "name": "PM2S",
+        "licence": "not stated in this repository",
+        "where": "beat and metre estimation for the helper"
+      },
+      {
+        "name": "yt-dlp",
+        "licence": "see the project's own licence (fetched from its GitHub releases when the server is built)",
+        "where": "the server and the home PC worker, to fetch the audio of a YouTube link you paste"
+      }
+    ]
+  },
+  "catalogue": {
+    "_about": "How a catalogue licence code of catalog/method/index.json reads in the notices file.",
+    "licenceNames": {
+      "pd": "public domain",
+      "cc0": "CC0 1.0 (public-domain dedication)"
+    },
+    "quarantined": {
+      "count": 15,
+      "text": "Czerny 40 (all 10 pieces) and five pieces of Burgmüller 25 (nos. 1, 2, 4, 7 and 18): the compositions are in the public domain, but these typesets carry no public-domain or CC0 statement of their own in the files themselves. They are shown to you as they are while PPP replaces them with typesets that state CC0 or public domain."
+    }
+  },
+  "demo": {
+    "text": "The score that opens first is a practice pattern generated by PPP (`buildDemoScore` in the page). Its title names a film piece and its composer, but its notes are not that piece's melody, and the composer has no connection with PPP.",
+    "todo": "TODO(U6): the demo's title is still \"Interstellar Theme - Hans Zimmer\". The user has not decided U6 (rename it to an original title, e.g. \"PPP Practice Theme\"; its id stays `demo`). When decided: rename it in the page (`buildDemoScore`), then replace this section with the new title and take this comment out. Until then nothing renames it."
+  },
+  "youtube": {
+    "text": "When you paste a YouTube link, PPP fetches that video's audio (on the server, or on your own PC when you use the PC worker) only to write the notes it hears; the audio is not kept on the server. Use recordings you have the right to use. The score PPP writes is for your own practice: a score made from a YouTube link cannot be posted to Shared Scores, although you can still send its link."
+  }
+}
