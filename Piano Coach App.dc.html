@@ -18391,8 +18391,8 @@ class Component extends DCLogic {
       if (!score || !score.measures.length || !score.notes.some(n => !n.rest)) throw new Error(tx('That shared score could not be read.'));
       score.id = 'shared:' + row.id + ':' + Date.now();
       const source = { kind: 'shared', name: row.title, shareId: row.id, owner: row.owner, importedAt: Clock.now(), status: 'shared' };
-      /* G13-3: a copy that came from a YouTube link stays one in the hands of whoever adds it (it is not posted again) */
-      const ytMark = !!(score.source && (score.source.youtubeDerived === true || score.source.kind === 'youtube'));
+      /* G13-3: a copy that was made from a YouTube link stays one in the hands of whoever adds it (it is not posted again). Only the mark counts: a source of kind youtube alone is a hymn or a catalogue score with a performance to watch */
+      const ytMark = !!(score.source && score.source.youtubeDerived === true);
       if (!score.source || score.source.kind !== 'youtube') score.source = { kind: 'shared', shareId: row.id };
       if (ytMark) score.source.youtubeDerived = true;
       this.cancelImport(true);
