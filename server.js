@@ -1114,7 +1114,7 @@ async function serveStatic(req, res, urlPath, url) {
       : ext === '.mp3' ? 'public, max-age=2592000' : 'public, max-age=3600';
     fs.readFile(abs, (e2, buf) => {
       if (e2) return jsonError(res, 500, 'Read failed');
-      const want = assets.HASHABLE.has(ext) && url && url.searchParams ? url.searchParams.get('h') : null;
+      const want = assets.HASHABLE.has(ext) && url ? assets.hashOfRequest(url.searchParams) : null;
       if (want) {
         const e = assets.entryOf(abs, st, buf);
         if (e.hash === want) {

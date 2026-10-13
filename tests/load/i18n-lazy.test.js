@@ -21,6 +21,7 @@ const CATALOG = {
 function page(opts) {
   opts = opts || {};
   const asked = [];
+  const timers = [];
   const inits = [];
   const held = {};
   const storage = {};
@@ -52,13 +53,16 @@ function page(opts) {
     }
   };
   if (opts.hashes) ctx.PPP_HASHES = opts.hashes;
+  ctx.setTimeout = (fn, ms) => { timers.push({ fn, ms }); return timers.length; };   /* the retries wait for the test, not for the clock */
   ctx.window = ctx;
   vm.createContext(ctx);
   vm.runInContext(SRC, ctx, { filename: 'i18n.js' });
   const I = ctx.PPP_I18N;
-  const answer = (loc, how) => { const q = held[loc] || []; held[loc] = []; q.forEach(h => (how === 'fail' ? h.reject(new Error('offline')) : h.resolve({ ok: how !== 'http404', json: async () => ({ content: CATALOG[loc] || {} }) }))); };
+  const answer = (loc, how) => { const q = held[loc] || []; held[loc] = []; q.forEach(h => (how === 'fail' ? h.reject(new Error('offline')) : h.resolve({ ok: how !== 'http404' && how !== 'http503', status: how === 'http503' ? 503 : how === 'http404' ? 404 : 200, json: async () => ({ content: CATALOG[loc] || {} }) }))); };
   return {
-    I, asked, inits, storage, doc,
+    I, asked, inits, timers, storage, doc,
+    runTimers: async () => { const t = timers.splice(0); t.forEach(x => x.fn()); await new Promise(r => setImmediate(r)); },
+    http503: loc => { answer(loc, 'http503'); return new Promise(r => setImmediate(r)); },
     release: loc => { answer(loc); return new Promise(r => setImmediate(r)); },
     fail: loc => { answer(loc, 'fail'); return new Promise(r => setImmediate(r)); },
     http404: loc => { answer(loc, 'http404'); return new Promise(r => setImmediate(r)); },
@@ -180,6 +184,70 @@ test('a catalog that cannot be fetched leaves English, ready still ends, and the
   assert.deepEqual(p.locales(), ['zh-CN', 'zh-CN'], 'asked again');
   await p.release('zh-CN');
   assert.equal(p.I.tx('Home'), '首页');
+});
+
+test('an answer that is not 2xx (503 while the server restarts) is not a catalog: English for now, asked again 2 s and 6 s later, translated when it comes', async () => {
+  const p = page({ saved: 'ko-KR' });
+  const heard = [];
+  p.I.onChange(l => heard.push(l + ':' + p.I.tx('Home')));
+  await p.http503('ko-KR');
+  await p.I.ready;
+  assert.equal(p.I.tx('Home'), 'Home', 'English: a 503 is not a catalog');
+  assert.deepEqual(p.timers.map(t => t.ms), [2000], 'one retry is waiting, 2 s');
+  await p.runTimers();
+  assert.deepEqual(p.locales(), ['ko-KR', 'ko-KR'], 'asked again');
+  await p.release('ko-KR');
+  assert.equal(p.I.tx('Home'), '홈', 'translated without a reload');
+  assert.deepEqual(heard, ['ko-KR:홈'], 'and told to the listeners once, so the page is translated');
+  assert.deepEqual(p.timers, [], 'nothing left to retry');
+});
+
+test('the retries are bounded: three asks in all, then it waits for the next switch to that language', async () => {
+  const p = page({ saved: 'ja-JP' });
+  await p.http503('ja-JP');
+  assert.deepEqual(p.timers.map(t => t.ms), [2000]);
+  await p.runTimers();
+  await p.http503('ja-JP');
+  assert.deepEqual(p.timers.map(t => t.ms), [6000], 'the second wait is longer');
+  await p.runTimers();
+  await p.http503('ja-JP');
+  assert.deepEqual(p.timers, [], 'no fourth try');
+  assert.deepEqual(p.locales(), ['ja-JP', 'ja-JP', 'ja-JP']);
+  assert.equal(p.I.tx('Home'), 'Home');
+  /* a person who switches away and back asks again */
+  p.I.setLocale('en-US');
+  p.I.setLocale('ja-JP');
+  await tick();
+  assert.equal(p.locales().length, 4);
+  await p.release('ja-JP');
+  assert.equal(p.I.tx('Home'), 'ホーム');
+});
+
+test('a 404 is not a catalog either (same retries), and a network error is the same as a 503', async () => {
+  const p = page({ saved: 'zh-CN' });
+  await p.http404('zh-CN');
+  assert.deepEqual(p.timers.map(t => t.ms), [2000]);
+  await p.runTimers();
+  await p.fail('zh-CN');
+  assert.deepEqual(p.timers.map(t => t.ms), [6000]);
+  await p.runTimers();
+  await p.release('zh-CN');
+  assert.equal(p.I.tx('Home'), '首页');
+});
+
+test('a catalog that comes after the person switched to another language is kept, not announced', async () => {
+  const p = page({ saved: 'ko-KR' });
+  const heard = [];
+  p.I.onChange(l => heard.push(l));
+  await p.http503('ko-KR');
+  p.I.setLocale('en-US');
+  assert.deepEqual(heard, ['en-US']);
+  await p.runTimers();
+  await p.release('ko-KR');
+  assert.deepEqual(heard, ['en-US'], 'Korean arrived, but the page is English: nobody is told');
+  p.I.setLocale('ko-KR');
+  assert.equal(p.locales().length, 2, 'switching back asks for nothing more');
+  assert.equal(p.I.tx('Home'), '홈');
 });
 
 test('ready follows the language in use: after a switch it is the new catalog\'s promise', async () => {

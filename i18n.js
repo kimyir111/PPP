@@ -228,20 +228,36 @@
   }
 
   /* G13-4a: only the catalog of the language in use is fetched (the other three were fetched on every load: 184 KB on the wire for a person who reads one of them);
-     the others come when the language is switched. English is the key of every string, so it has no catalog to wait for. A catalog that cannot be fetched leaves
-     the page in English, as before, and is asked for again at the next switch to it. */
+     the others come when the language is switched. English is the key of every string, so it has no catalog to wait for.
+     A catalog that cannot be had - the network, or an answer that is not 2xx (a 502/503 while the server restarts for a deploy) - leaves the page in English for now, ready still
+     ends (nothing waits for it), and it is asked for twice more, 2 s and 6 s later, and again at the next switch to that language. One that arrives then is told to the listeners
+     like a switch (they translate the page): a person is not left in English until they reload. */
   var loaded = {};
   var pending = {};
+  var retrying = {};
+  var RETRY_MS = [2000, 6000];
   loaded[DEFAULT_LOCALE] = true;
+  function fetchCatalog(loc) {
+    var url = catalogUrl(loc);
+    /* a url that names the content may come from the browser's cache; one that does not is never kept (the server says no-store, and this makes sure) */
+    return fetch(url, /[?]h=[0-9a-f]{12}$/.test(url) ? undefined : { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (json) { catalogs[loc] = indexContent(json && json.content); loaded[loc] = true; });
+  }
+  function retry(loc, n) {
+    if (loaded[loc] || retrying[loc] || n >= RETRY_MS.length) return;
+    retrying[loc] = true;
+    setTimeout(function () {
+      retrying[loc] = false;
+      if (loaded[loc]) return;
+      fetchCatalog(loc).then(function () { if (locale === loc) fire(loc); }, function () { retry(loc, n + 1); });
+    }, RETRY_MS[n]);
+  }
   function load(loc) {
     if (loaded[loc]) return Promise.resolve();
     if (pending[loc]) return pending[loc];
-    var url = catalogUrl(loc);
-    /* a url that names the content may come from the browser's cache; one that does not is never kept (the server says no-store, and this makes sure) */
-    pending[loc] = fetch(url, /[?]h=[0-9a-f]{12}$/.test(url) ? undefined : { cache: 'no-store' })
-      .then(function (r) { return r.ok ? r.json() : { content: {} }; })
-      .then(function (json) { catalogs[loc] = indexContent(json && json.content); loaded[loc] = true; })
-      .catch(function () { catalogs[loc] = {}; })
+    pending[loc] = fetchCatalog(loc)
+      .then(function () {}, function () { catalogs[loc] = {}; retry(loc, 0); })
       .then(function () { pending[loc] = null; });
     return pending[loc];
   }

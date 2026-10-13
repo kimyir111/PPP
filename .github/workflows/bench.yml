@@ -905,6 +905,22 @@ jobs:
       - run: npm ci                                        # puppeteer (and its Chrome)
       - run: node tests/backup-ui.test.js
 
+  # load-suite (G13-4): the browser tests of the load work (tests/load-app: the piano recordings start after load and a note sounds before they are in, the page is fetched once and drawn
+  # as before, the CJK stylesheet leaves out a family the device has) and tests/scoregraph-recovery-app.test.js (a script that failed to load is fetched again by its hashed address). Each starts
+  # this tree's server on a free port itself. Like backup-suite: a check of its own, NOT a job the gate waits for; its Node-only half (npm run test:load) is a step of shard-h.
+  load-suite:
+    needs: plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || needs.plan.outputs.mode == 'full') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci                                        # puppeteer (and its Chrome)
+      - run: npm run test:load-app
+      - run: node tests/scoregraph-recovery-app.test.js
+
   nightly:
     if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.event.inputs.only != 'practice'
     runs-on: ubuntu-latest

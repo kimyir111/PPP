@@ -64,10 +64,32 @@
   var CJK = 'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap';
   /* PPP_CJK_SETTLED: resolved shortly after that stylesheet has arrived or failed (G13-4d: the piano recordings wait for it, so they do not hold it up) */
   var settle; window.PPP_CJK_SETTLED = new Promise(function (r) { settle = r; });
+  /* A family this device already has is not asked for. A web face of the same name SHADOWS the installed font while it loads, and the text then goes through a third look (the system's
+     default) before it comes back to the same Noto Sans: a layout shift of the whole page, and 100+ KB for nothing. 'Installed' = the family alone draws a sample differently from the
+     generic fallbacks (the same under two of them) AND has a real bold (a Latin string is wider at 700 than at 400): a regular-only install is not enough, it would draw the bold faked. */
+  var FAMILIES = [['Noto+Sans+KR', 'Noto Sans KR', '\ud55c\uae00\uac00\ub098'], ['Noto+Sans+JP', 'Noto Sans JP', '\u3042\u30a2\u65e5\u672c'], ['Noto+Sans+SC', 'Noto Sans SC', '\u6c49\u5b57\u7b80\u4f53']];
+  function installed(name, sample) {
+    try {
+      var ctx = document.createElement('canvas').getContext('2d'), latin = 'Hamburgefonstiv';
+      var w = function (font, text) { ctx.font = font; return ctx.measureText(text).width; };
+      var a = w('40px "' + name + '", monospace', sample), b = w('40px "' + name + '", serif', sample);
+      var m = w('40px monospace', sample), s = w('40px serif', sample);
+      if (!(a === b && (a !== m || b !== s))) return false;
+      var r = w('400 40px "' + name + '", monospace', latin);
+      return r !== w('400 40px monospace', latin) && w('700 40px "' + name + '", monospace', latin) !== r;
+    } catch (e) { return false; }
+  }
+  function wanted() {
+    var parts = [];
+    FAMILIES.forEach(function (f) { if (!installed(f[1], f[2])) parts.push('family=' + f[0] + ':wght@400;500;600;700'); });
+    return parts.length ? CJK.split('?')[0] + '?' + parts.join('&') + '&display=swap' : null;
+  }
   function add() {
     if (document.querySelector('link[data-ppp-cjk]')) return;
+    var url = wanted();
+    if (!url) { settle(); return; }
     var l = document.createElement('link');
-    l.rel = 'stylesheet'; l.href = CJK; l.setAttribute('data-ppp-cjk', '');
+    l.rel = 'stylesheet'; l.href = url; l.setAttribute('data-ppp-cjk', '');
     l.onload = l.onerror = function () { setTimeout(settle, 600); };
     document.head.appendChild(l);
   }

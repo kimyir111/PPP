@@ -172,6 +172,10 @@ test('anything but the right hash is answered as before: no-store for scripts an
     ['an encoded dot-dot as the hash', '/scoregraph/rational.js?h=%2e%2e%2f%2e%2e'],
     ['a very long hash', '/scoregraph/rational.js?h=' + 'a'.repeat(5000)],
     ['the wrong one first', '/scoregraph/rational.js?h=' + stale + '&h=' + real],
+    ['the right one first, a second one after it (two h= is not one hash)', '/scoregraph/rational.js?h=' + real + '&h=' + stale],
+    ['the right hash and a recovery stamp (loadScoreModules asks again with &retry=)', '/scoregraph/rational.js?h=' + real + '&retry=1791886000123'],
+    ['the right hash and any other parameter', '/scoregraph/rational.js?h=' + real + '&junk=1'],
+    ['the right hash after another parameter', '/scoregraph/rational.js?v=8&h=' + real],
     ['a catalog with a stale hash', '/i18n/ko-KR.json?h=' + stale],
     ['a catalog with no hash', '/i18n/ko-KR.json']
   ];
@@ -183,11 +187,6 @@ test('anything but the right hash is answered as before: no-store for scripts an
     assert.equal(r.headers.etag, undefined, name);
     assert.ok(r.raw.equals(read(u.slice(1).split('?')[0])), name + ': the current content');
   }
-  /* the right hash first, a second one after it, is still the first one */
-  const first = await request(srv.port, '/scoregraph/rational.js?h=' + real + '&h=' + stale);
-  assert.equal(first.headers['cache-control'], IMMUTABLE);
-  /* extra parameters beside a right hash do not matter */
-  assert.equal((await request(srv.port, '/scoregraph/rational.js?v=8&h=' + real)).headers['cache-control'], IMMUTABLE);
 });
 
 test('types that are not hashed keep their own cache headers whatever ?h= says', async () => {

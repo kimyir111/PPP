@@ -37,7 +37,7 @@ function makeCopy() {
   return dir;
 }
 
-const LAZY = 'i18n-lazy.test.js', HASH = 'content-hash.test.js', FONTS = 'fonts.test.js', SAMPLES = 'load-app/samples.test.js', TEMPLATE = 'load-app/template.test.js';
+const LAZY = 'i18n-lazy.test.js', HASH = 'content-hash.test.js', FONTS = 'fonts.test.js', SAMPLES = 'load-app/samples.test.js', TEMPLATE = 'load-app/template.test.js', CJK = 'load-app/cjk-fonts.test.js';
 
 /* id, file, what the mutant breaks, [from, to] or a list of them (each replaced once), the test that must fail */
 const M = [
@@ -49,6 +49,10 @@ const M = [
   ['A5', 'i18n.js', 'a catalog already fetched is fetched again at every switch', ["if (loaded[loc]) return Promise.resolve();\n    if (pending[loc]) return pending[loc];", "if (pending[loc]) return pending[loc];"], LAZY],
   ['A6', 'i18n.js', 'a catalog that failed is never asked for again', ["      .then(function () { pending[loc] = null; });", "      .then(function () { /* pending stays */ });"], LAZY],
   ['A7', 'i18n.js', 'ready stays the first catalog\'s promise after a switch', ["if (global.PPP_I18N) global.PPP_I18N.ready = wait;", ""], LAZY],
+  ['H1', 'i18n.js', 'an answer that is not 2xx is taken for an (empty) catalog: English until a reload', ["if (!r.ok) throw new Error('HTTP ' + r.status); return r.json();", "return r.ok ? r.json() : { content: {} };"], LAZY],
+  ['H2', 'i18n.js', 'the retries have no end', ["if (loaded[loc] || retrying[loc] || n >= RETRY_MS.length) return;", "if (loaded[loc] || retrying[loc]) return; n = Math.min(n, RETRY_MS.length - 1);"], LAZY],
+  ['H3', 'i18n.js', 'a catalog that arrives by a retry is not told to the listeners (the page stays English)', ["if (locale === loc) fire(loc);", ""], LAZY],
+  ['H4', 'i18n.js', 'a catalog that arrives by a retry is announced although the person has gone to another language', ["if (locale === loc) fire(loc);", "fire(loc);"], LAZY],
   /* G13-4b: the page's head and vendor/fonts */
   ['B1', 'Piano Coach App.dc.html', 'a font face blocks text again (display: block)', ["font-weight:700;font-display:swap;src:url(./vendor/fonts/figtree-v9-latin.woff2", "font-weight:700;font-display:block;src:url(./vendor/fonts/figtree-v9-latin.woff2"], FONTS],
   ['B2', 'Piano Coach App.dc.html', 'a weight range replaces Google\'s steps (650 would draw as 650, not 700)', ["font-weight:600;font-display:swap;src:url(./vendor/fonts/figtree-v9-latin.woff2", "font-weight:400 700;font-display:swap;src:url(./vendor/fonts/figtree-v9-latin.woff2"], FONTS],
@@ -59,6 +63,9 @@ const M = [
   ['B7', 'Piano Coach App.dc.html', 'the unicode-range of a latin face is not Google\'s (a glyph would not use it)', ["unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}\n@font-face{font-family:'Instrument Serif';font-style:italic", "unicode-range:U+0000-007F}\n@font-face{font-family:'Instrument Serif';font-style:italic"], FONTS],
   ['B8', 'Piano Coach App.dc.html', 'a Google link of the helmet is removed (the template has one element fewer: every data-dc-tpl stamp shifts)', ["<link rel=\"dns-prefetch\" href=\"https://fonts.googleapis.com\" />", ""], FONTS],
   ['B9', 'Piano Coach App.dc.html', 'a font is preloaded from the body (the browser finds it at once and it takes bandwidth from the scripts)', ["<link rel=\"dns-prefetch\" href=\"https://fonts.googleapis.com\" />", "<link rel=\"preload\" as=\"font\" type=\"font/woff2\" crossorigin=\"anonymous\" href=\"./vendor/fonts/figtree-v9-latin.woff2?v=1\" />"], FONTS],
+  ['F1', 'Piano Coach App.dc.html', 'an installed Noto family is asked for anyway (it shadows the installed font while it loads)', ["if (!(a === b && (a !== m || b !== s))) return false;", "return false;"], CJK],
+  ['F2', 'Piano Coach App.dc.html', 'a regular-only install counts (the bold would be faked)', ["return r !== w('400 40px monospace', latin) && w('700 40px \"' + name + '\", monospace', latin) !== r;", "return r !== w('400 40px monospace', latin);"], CJK],
+  ['F3', 'Piano Coach App.dc.html', 'with every family installed the stylesheet is still asked for', ["return parts.length ? CJK.split('?')[0] + '?' + parts.join('&') + '&display=swap' : null;", "return CJK;"], CJK],
   /* G13-4d: the piano recordings, in the app's componentDidMount (a browser test: load-app/samples.test.js; not part of the unmutated-copy check above) */
   ['D1', 'Piano Coach App.dc.html', 'the recordings are asked for at mount again (not after the load event)', ["if (document.readyState === 'complete') start(); else window.addEventListener('load', start, { once: true });", "go();"], SAMPLES],
   ['D2', 'Piano Coach App.dc.html', 'the recordings do not wait for the CJK stylesheet', ["idle(() => fontsIn().then(go))", "idle(go)"], SAMPLES],
@@ -71,6 +78,8 @@ const M = [
   ['P1', 'server.js', 'the page\'s tag is not of its bytes (a new release is answered 304)', ["const etag = '\"' + crypto.createHash('sha256').update(body).digest('hex').slice(0, 20) + '\"';", "const etag = '\"00000000000000000000\"';"], HASH],
   ['P2', 'server.js', 'the page is answered 304 whatever tag the browser has', ["if (assets.ifNoneMatchHas(req.headers['if-none-match'], etag)) return send(res, 304, Buffer.alloc(0), headers);", "if (req.headers['if-none-match']) return send(res, 304, Buffer.alloc(0), headers);"], HASH],
   ['P3', 'server.js', 'the page is kept for an hour without asking', ["const headers = { 'Cache-Control': 'no-cache', 'ETag': etag };", "const headers = { 'Cache-Control': 'public, max-age=3600', 'ETag': etag };"], HASH],
+  ['G1', 'static-assets.js', 'a request with other parameters beside the right hash is answered immutable (a retry stamp fills the cache)', ["return keys.length === 1 && keys[0] === 'h' ? searchParams.get('h') : null;", "return searchParams.get('h');"], HASH],
+  ['G2', 'static-assets.js', 'a second h= is read as long as the first one is right', ["return keys.length === 1 && keys[0] === 'h' ? searchParams.get('h') : null;", "return keys[0] === 'h' ? searchParams.get('h') : null;"], HASH],
   /* G13-4c: static-assets.js, server.js, i18n.js */
   ['C1', 'server.js', 'a wrong hash is answered immutable (any ?h= is believed)', ["if (e.hash === want) {", "if (true) {"], HASH],
   ['C2', 'static-assets.js', 'the hash ignores the content', [".update(body).digest('hex').slice(0, 12)", ".update('same').digest('hex').slice(0, 12)"], HASH],
