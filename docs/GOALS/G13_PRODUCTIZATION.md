@@ -437,14 +437,13 @@ All of this at $0 on the existing free tiers.
 
   | phone profile, cold | origin/main | this PR | budget (section 11) |
   | --- | --- | --- | --- |
-  | first contentful paint, 3 runs on a quieter host | 5,852 ms | **3,568 ms** (-39%) | <= 4,000: **met** |
-  | app ready, same runs | 6,132 ms | **3,783 ms** (-38%) | <= 5,000: **met** |
-  | first contentful paint, 5 runs on a busy host (range) | 6,200 (5,928-7,072) | **3,864** (3,704-4,356) | <= 4,000: met in 4 of 5 |
-  | app ready, same runs | 6,495 | **4,077** (3,990-4,620) | <= 5,000: **met** (all 5) |
-  | KB before ready | 1,004-1,057 | **541** | <= 1,200: met (it was already) |
+  | first contentful paint, 5 runs (final code, host quieter) | 5,872 ms (5,708-5,876) | **3,568 ms** (3,468-3,640) (-39%) | <= 4,000: **met** (5 of 5) |
+  | app ready, same runs | 6,169 ms | **3,798 ms** (3,663-3,895) (-38%) | <= 5,000: **met** (5 of 5) |
+  | the same on a busy host (60-100% CPU of other programs), FCP / ready | 6,200 / 6,495 ms | 3,864 (3,704-4,356) / 4,077 (max 4,620) ms | met in 4 of 5 / 5 of 5 |
+  | KB before ready | 1,004 | **543** | <= 1,200: met (it was already) |
   | requests before ready | 93 | 53 | |
-  | total blocking time (after FCP) | 381 / 617 | 340 / 364 | <= 300: **not met** |
-  | longest long task | 802 / 1,127 ms | 813 / 1,041 ms | <= 500: **not met** |
+  | total blocking time (after FCP; 5 runs: 288-360 vs 277-406) | 345 ms | 364 ms | <= 300: **not met**, not changed |
+  | longest long task | 803 ms | 785 ms | <= 500: **not met**, not changed |
   | desktop, FCP / ready (3 runs) | 440 / 471 ms | **356 / 314 ms** | not worse: **met** |
   | repeat visit, second visit: ready; KB other than piano samples | 1.8-2.2 s; 1 KB | 1.7-2.5 s; 1 KB | <= 3,000 ms: met; <= 450 KB: met apart from the samples (as in G13-4: the fixed 6 s settle ends a faster first visit earlier, so more samples are left for the second) |
 
