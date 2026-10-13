@@ -67,7 +67,9 @@ function branchOptions(call) {
   const run = flag => {
     const scope = {
       useV2: flag, wantV2: flag, v2: flag, title: 'T', what: { mode: 'solo' }, lock: { beats: 4, beatType: 4, bpm: 90, firstDownbeat: 0 }, arrangement: { level: 'beginner', style: 'balanced' },
-      S: { score: { title: 'T' } }
+      S: { score: { title: 'T' } },
+      /* a recording, not a song-mode one (a song's layers add songLayers: true) */
+      heard: { notes: [] }, isSongHeard: h => !!(h && h.song), songNotation: () => ({})
     };
     const self = { recordingRewriteV2: () => flag };
     const f = new Function(...Object.keys(scope), 'return (' + expr + ');');
