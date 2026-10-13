@@ -14,7 +14,10 @@ const { spawn } = require('child_process');
 const REPO = path.resolve(__dirname, '..', '..');
 /* (catalog/shared-seeds.json: the server.js copy is run for real by the Postgres test, and its seed library is read from beside it) */
 const PAGE = 'Piano Coach App.dc.html';
-const FILES = [PAGE, 'home-jobs.js', 'home-result.js', 'home-jobs-store.js', 'server.js', 'share-guest.js', 'tools/home-worker/worker.js', 'review/h10/helper-heard.js', 'catalog/shared-seeds.json'];
+const FILES = [PAGE, 'home-jobs.js', 'home-result.js', 'home-omr.js', 'home-jobs-store.js', 'server.js', 'share-guest.js', 'tools/home-worker/worker.js', 'review/h10/helper-heard.js', 'catalog/shared-seeds.json', 'omr/engine.js', 'omr/helper-output.js', 'i18n/ko-KR.json',
+  /* what server.js requires at its top (G13-4/G13-5 added these: a copy of server.js without them does not start) */
+  'static-allow.js', 'static-assets.js', 'signup-limit.js', 'server-stats.js'];
+const OMR_TESTS = ['omr-jobs.test.js', 'omr-limits.test.js', 'omr-flow.test.js', 'omr-worker.test.js'], OMR_PG = 'omr-jobs-pg.test.js', OMR_PAGE = 'omr-page.test.js';
 const JOBS = 'jobs.test.js', WORKER = 'worker.test.js', PG = 'jobs-pg.test.js', LINKS = 'links.test.js', SERVER = 'server.test.js', PAIRW = 'pair.test.js', PAIRPAGE = 'pairing.test.js', PROTO = 'protocol.test.js', FINDABLE = 'findable.test.js';
 
 /* id, file, what the mutant breaks, [from, to] (strings, replaced once), the test that must fail */
@@ -23,9 +26,9 @@ const M = [
   ['A2', 'home-jobs.js', 'a worker token can finish (or beat for) any account\'s job', ["if (!job || job.ownerId !== rec.ownerId) throw httpError(404, 'That job is not there.', 'not-found');", "if (!job) throw httpError(404, 'That job is not there.', 'not-found');"], JOBS],
   ['A3', 'home-jobs.js', 'a claim hands out any account\'s queued job', ["if (j.ownerId === ownerId && j.status === 'queued' && !j.writing", "if (j.status === 'queued' && !j.writing"], JOBS],
   ['A4', 'home-jobs.js', 'the token compare ignores the secret', ['const got = sha256(t.token);\n    const same = want.length === got.length && crypto.timingSafeEqual(want, got);', 'const got = sha256(t.token);\n    const same = want.length === got.length;'], JOBS],
-  ['A5', 'home-jobs.js', 'every poll writes last-seen to the database (an idle poll hits the DB)', ['if (cold) await persistSeen(rec);\n\n    let job', 'await persistSeen(rec);\n\n    let job'], JOBS],
+  ['A5', 'home-jobs.js', 'every poll writes last-seen to the database (an idle poll hits the DB)', ['if (cold) await persistSeen(rec);\n\n    const canSong', 'await persistSeen(rec);\n\n    const canSong'], JOBS],
   ['A6', 'home-jobs.js', 'the queue is read from the database on every request, not once per boot', ['if (loaded) return false;', 'if (false) return false;'], JOBS],
-  ['A7', 'home-jobs.js', 'a posted result is not validated', ['const v = R.validateResult(body);', 'const v = { ok: true, result: body, bytes: 1 };'], JOBS],
+  ['A7', 'home-jobs.js', 'a posted result is not validated', ['const v = omr ? H.validateOmrResult(body, { pages: job.pages }) : R.validateResult(body);', 'const v = { ok: true, result: body, bytes: 1 };'], JOBS],
   ['A8', 'home-jobs.js', 'the cross-site check is gone', ['function requireSameSite(req) {\n    if (!sameSite(req))', 'function requireSameSite(req) {\n    if (false)'], JOBS],
   ['A9', 'home-jobs.js', 'wrong secrets (tokens and codes) are never rate limited', ["if (!limiters.badTokens.take(ip)) return httpError(429,", "if (false) return httpError(429,"], JOBS],
   ['A10', 'home-jobs.js', 'the cap of 5 waiting jobs is gone', ['>= L.PENDING_PER_USER', '>= 999'], JOBS],
@@ -36,10 +39,10 @@ const M = [
   ['A15', 'home-jobs.js', 'a job given back is handed out again at once', ['job.notBefore = t + (C.retryDelayMs != null ? C.retryDelayMs : L.RETRY_DELAY_MS) * job.attempts;', 'job.notBefore = 0;'], JOBS],
   ['A16', 'home-jobs.js', 'finished jobs are kept 300 days, not 3', ['DONE_TTL_MS: 3 * DAY,', 'DONE_TTL_MS: 300 * DAY,'], JOBS],
   ['A17', 'home-jobs.js', 'CORS is opened', ["Object.assign({ 'Cache-Control': 'no-store' }, headers));\n\n  /* ====", "Object.assign({ 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' }, headers));\n\n  /* ===="], JOBS],
-  ['A18', 'home-jobs.js', 'the same link asked twice is two jobs', ['const dup = mine.find(j => pending(j) && j.url === parsed.url);', 'const dup = null;'], JOBS],
+  ['A18', 'home-jobs.js', 'the same link asked twice is two jobs', ['const dup = mine.find(j => pending(j) && j.url === parsed.url && j.kind === kind);', 'const dup = null;'], JOBS],
   ['A19', 'home-jobs.js', 'a revoked link\'s token keeps working (both guards: the token is not dropped from memory, and a token is no longer asked what its link says)', [['    ownTokens.forEach(k => tokens.delete(k.id));\n', ''], ['if (!link || link.revokedAt || link.writing) throw badToken(req);', 'if (!link) throw badToken(req);']], LINKS],
   ['A20', 'home-jobs.js', 'a result is taken for a job that is already done or cancelled (all three guards: the state list, the re-check after the body, the WHERE of the store)', [
-    ["const { rec, link, job } = await workerJob(req, id, ['claimed', 'queued']);\n    const body = await readJson(req, L.RESULT_BODY", "const { rec, link, job } = await workerJob(req, id, ['claimed', 'queued', 'done', 'cancelled', 'failed']);\n    const body = await readJson(req, L.RESULT_BODY"],
+    ["const { rec, link, job } = await workerJob(req, id, ['claimed', 'queued']);\n    /* G12-5: what a job accepts", "const { rec, link, job } = await workerJob(req, id, ['claimed', 'queued', 'done', 'cancelled', 'failed']);\n    /* G12-5: what a job accepts"],
     ["if (job.status !== 'claimed' && job.status !== 'queued') throw httpError(409, job.status === 'cancelled' ? 'That job was cancelled.' : 'That job is not waiting for this any more.', job.status === 'cancelled' ? 'cancelled' : 'not-open', { status: job.status });\n    const t = now();\n    const was = { status: job.status, finishedAt", "const t = now();\n    const was = { status: job.status, finishedAt"],
     ['home-jobs-store.js', "if (!j || (j.status !== 'claimed' && j.status !== 'queued')) return false;\n      Object.assign(j, { status: status, finishedAt: t,", "if (!j) return false;\n      Object.assign(j, { status: status, finishedAt: t,"]], JOBS],
   ['A21', 'home-jobs.js', 'a result body may be any size', ['RESULT_BODY: R.LIMITS.RESULT_MAX_BYTES + 1024 * 1024,', 'RESULT_BODY: 100 * 1024 * 1024,'], JOBS],
@@ -47,7 +50,7 @@ const M = [
   ['A23', 'home-jobs.js', 'a revoked/never-seen token is not "not alive"', ["const alive = seen > 0 && t - seen <= Math.max(2 * pollS, 120) * 1000 + 30000;", "const alive = seen > 0;"], JOBS],
   ['B1', 'home-result.js', 'a note may be any pitch', ['if (!isInt(n.midi) || n.midi < 21 || n.midi > 108)', 'if (!isInt(n.midi))'], JOBS],
   ['B2', 'home-result.js', 'a note may be past 15 minutes (both of its guards: the note, and the duration)', [["if (n.off > ceiling) return bad(", "if (false) return bad("], ["if (duration > ceiling) return bad(", "if (false) return bad("]], JOBS],
-  ['B3', 'home-result.js', 'any number of notes', ['if (list.length > L.MAX_NOTES)', 'if (false)'], JOBS],
+  ['B3', 'home-result.js', 'any number of notes', ['if (list.length > maxNotes)', 'if (false)'], JOBS],
   ['B4', 'home-result.js', 'markup and bidi/line-separator characters are kept in a title or an error line', ["replace(/[\\u0000-\\u001f\\u007f<>\\u061c\\u200e\\u200f\\u2028\\u2029\\u202a-\\u202e\\u2066-\\u2069]/g, ' ')", "replace(/[\\u0000-\\u001f\\u007f]/g, ' ')"], JOBS],
   ['B5', 'home-result.js', 'a note keeps whatever else the worker wrote on it', ['notes[i] = { on: on, off: off, midi: n.midi, vel: vel };', 'notes[i] = Object.assign({}, n, { on: on, off: off, vel: vel });'], JOBS],
   ['B6', 'home-result.js', 'the stored size is not capped', ['if (bytes > L.RESULT_MAX_BYTES)', 'if (false)'], JOBS],
@@ -79,7 +82,7 @@ const M = [
   ['N13', 'tools/home-worker/worker.js', 'ffmpeg may open any protocol (no -protocol_whitelist)', [["'-y', '-protocol_whitelist', 'file,pipe', '-i', input,", "'-y', '-i', input,"], ["'-y', '-protocol_whitelist', 'file,pipe', '-i', master,", "'-y', '-i', master,"]], WORKER],
   ['N14', 'tools/home-worker/worker.js', 'escape sequences and bidi characters reach the log', ['return hidden !== f ? hidden : redact(clean(raw));', 'return hidden !== f ? hidden : redact(raw);'], WORKER],
   ['N15', 'home-jobs-store.js', 'Postgres: the migration takes no advisory lock (two instances can race)', ["await c.query('SELECT pg_advisory_xact_lock($1)', [MIGRATE_LOCK_KEY]);", ''], PG],
-  ['R7', 'home-result.js', 'a result\'s notes are stored in the order they arrive', ['notes.sort((a, b) => a.on - b.on || a.midi - b.midi || a.off - b.off);', ''], JOBS],
+  ['R7', 'home-result.js', 'a result\'s notes are stored in the order they arrive', ['notes.sort((a, b) => a.on - b.on || a.midi - b.midi || a.off - b.off || (a.track || 0) - (b.track || 0));', ''], JOBS],
   ['R11', 'home-jobs.js', 'a link\'s last use is written to the database on every page request (no 6-hour throttle)', ['if (!link || link.revokedAt || t - link.persistedAt < L.LINK_TOUCH_MS) return;', 'if (!link || link.revokedAt) return;'], JOBS],
   ['R12', 'home-jobs.js', 'a timer reads the queue from the database every 10 minutes', ['const stats = { loads: 0 };', 'const stats = { loads: 0 };\n  setInterval(() => { store.loadAll().catch(() => {}); }, 600000).unref();'], JOBS],
   ['R14', 'home-jobs.js', 'a heartbeat writes the last-seen time to the database', ['job.beatAt = t;\n    const pct =', 'job.beatAt = t; await persistSeen(rec);\n    const pct ='], JOBS],
@@ -164,7 +167,7 @@ const M = [
   ['L32', 'home-jobs.js', 'a link removed while a conversion is being written for it keeps the row that was just written (and the page is told 201)', ["    if (!currentLink(link)) { const gone = links.get(link.id); try { await store.revokeLink(link.id, (gone && gone.revokedAt) || now()); } catch (e) { logError(e); } giveUp(httpError(401, 'That PC link is not valid.', 'bad-code')); }\n", ''], LINKS],
   ['L33', 'home-jobs.js', 'a failed write of a link\'s last use is tried again by every request while the database is down', ['link.persistedAt = Math.max(was, t - L.LINK_TOUCH_MS + 60 * 1000);', 'link.persistedAt = was;'], JOBS],
   ['L34', 'home-jobs.js', 'the rows of the links of one address are not bounded (a few addresses could fill the site\'s rows with cancelled conversions)', ["if (link.ipTag && addressRows(link.ipTag) > L.ROWS_PER_ADDRESS) giveUp(", "if (false) giveUp("], LINKS],
-  ['L35', 'home-jobs.js', 'a PC that waited for work (long-poll) is handed the next job even if its token was replaced or its link removed meanwhile', ["      if (!alive(rec)) throw httpError(401, 'That token is not valid.', 'bad-token');\n      job = nextQueued(rec.ownerId);", "      job = nextQueued(rec.ownerId);"], LINKS],
+  ['L35', 'home-jobs.js', 'a PC that waited for work (long-poll) is handed the next job even if its token was replaced or its link removed meanwhile', ["      if (!alive(rec)) throw httpError(401, 'That token is not valid.', 'bad-token');\n      job = nextQueued(rec.ownerId, canSong, canOmr);", "      job = nextQueued(rec.ownerId, canSong, canOmr);"], LINKS],
   ['L36', 'home-jobs.js', 'a result is taken from a token that was replaced (or a link removed) while its body was read and room cleared', ["    if (!alive(rec)) throw httpError(401, 'That token is not valid.', 'bad-token');\n    if (job.status !== 'claimed' && job.status !== 'queued')", "    if (job.status !== 'claimed' && job.status !== 'queued')"], LINKS],
   ['L37', 'home-jobs.js', 'a link that ran out in the purge its own request triggered still gets its conversion written', ["    const cur = currentLink(link);\n    if (!cur) { release(); throw httpError(401, 'That PC link is not valid.', 'bad-code'); }\n    link = cur;\n", ""], LINKS],
   ['L38', 'home-jobs.js', 'a link that is being made is lost when the queue is read again', ["    making.forEach(l => { if (!links.has(l.id)) links.set(l.id, l); });\n    makingTokens.forEach(k => { if (!tokens.has(k.id)) tokens.set(k.id, k); });\n", ""], LINKS],
@@ -261,7 +264,7 @@ const M = [
   ['R10', PAGE, 'in-app browsers get no hint', [".test((typeof navigator !== 'undefined' && navigator.userAgent) || '');", ".test('');"], PAIRPAGE],
   ['R11', PAGE, 'what follows an "&" is taken for part of the code (a link with &local=1 or &utm= is "incomplete")', ["var c = amp < 0 ? rest : rest.slice(0, amp);", "var c = rest;"], PAIRPAGE],
   ['R12', PAGE, '"local=10" (or any text with local=1 in it) counts as the flag', ["('&' + rest.slice(amp + 1) + '&').indexOf('&local=1&') >= 0", "rest.indexOf('local=1') >= 0"], PAIRPAGE],
-  ['R13', PAGE, 'the PC is asked to start BEFORE the job is queued (a run that starts first finds nothing)', ["      const r = await this.homeApi('/api/jobs', { method: 'POST', body: { url: url, title: title } });\n      const launched", "      if (local) this.launchPcWorker();\n      const r = await this.homeApi('/api/jobs', { method: 'POST', body: { url: url, title: title } });\n      const launched"], PAIRPAGE],
+  ['R13', PAGE, 'the PC is asked to start BEFORE the job is queued (a run that starts first finds nothing)', ["      const r = await this.homeApi('/api/jobs', { method: 'POST', body: mode === 'song' ? { url: url, title: title, mode: 'song' } : { url: url, title: title } });\n      const launched", "      if (local) this.launchPcWorker();\n      const r = await this.homeApi('/api/jobs', { method: 'POST', body: mode === 'song' ? { url: url, title: title, mode: 'song' } : { url: url, title: title } });\n      const launched"], PAIRPAGE],
   ['R14', PAGE, 'every desktop browser launches pppworker:// (not only the PC\'s own)', ["const local = PcLocal.get();", "const local = true;"], PAIRPAGE],
   ['R15', PAGE, 'the launch is made twice', ["r.job.status === 'queued' && this.launchPcWorker());", "r.job.status === 'queued' && (this.launchPcWorker(), this.launchPcWorker()));"], PAIRPAGE],
   ['R16', PAGE, 'the launch carries data (the link being converted rides on pppworker://)', ["a.href = 'pppworker://run';", "a.href = 'pppworker://run?u=' + encodeURIComponent(this._yt || document.title);"], PAIRPAGE],
@@ -296,7 +299,7 @@ const M = [
   ['S18', 'tools/home-worker/worker.js', 'what follows an & after the code is part of the code (a link with &local=1 is no link to the worker)', ["const a = t.indexOf('&'); if (a >= 0) t = t.slice(0, a);", ""], PAIRW],
   ['S19', 'tools/home-worker/worker.js', 'the run lock is not taken by --once at all', ["const lock = acquireRunLock(cfg, Object.assign({}, deps && deps.lock));", "const lock = { ok: true, file: '', pid: process.pid };"], PROTO],
   ['T1', 'home-jobs.js', 'the link\'s name is the whole id (more of the hash than 6 characters)', ["String(id).slice(-6) : null);", "String(id) : null);"], LINKS],
-  ['T2', 'home-jobs.js', 'the status answer has no linkTag', [", activePollSeconds: C.activePollS, linkTag: linkTagOf(ownerId) };", ", activePollSeconds: C.activePollS };"], LINKS],
+  ['T2', 'home-jobs.js', 'the status answer has no linkTag', ["activePollSeconds: C.activePollS, linkTag: linkTagOf(ownerId), songMode: song,", "activePollSeconds: C.activePollS, songMode: song,"], LINKS],
   ['T3', 'home-jobs.js', 'the link\'s name is the first 6 hex of the id (the same bytes as the hash start, a different name than the last 6)', ["String(id).slice(-6) : null);", "String(id).slice(3, 9) : null);"], LINKS],
   /* G10b-5: the PC button is always findable; a link is never forgotten on one 401 (tests/home-worker/findable.test.js) */
   ['F1', PAGE, 'a PC link is forgotten on the FIRST answer of "not valid" (the code is cleared at once)', ["    if (this._dead || PcLink.get() !== code) return;\n    const t = Date.now();\n    let u = this._unrec;", "    if (this._dead || PcLink.get() !== code) return;\n    PcLink.clear();\n    const t = Date.now();\n    let u = this._unrec;"], FINDABLE],
@@ -324,6 +327,9 @@ const M = [
   ['F23', PAGE, 'the pairing link of a link the site does not recognise is still offered on Settings', ["homePairBlock: !!(linked && !N && !unrec),", "homePairBlock: !!(linked && !N),"], FINDABLE],
   ['F24', PAGE, 'the sheet that explains the button stays open over another screen', ["      if (this.state.homeSheet) this.setState({ homeSheet: false });       /* the sheet that explains the PC button belongs to the Add screen */\n", ""], FINDABLE],
 ];
+
+/* G12-5: the mutants of the kind 'omr' (omr-mutants.js) */
+require('./omr-mutants.js').forEach(m => M.push(m));
 
 const only = process.argv.slice(2);
 const runPg = !!process.env.PPP_TEST_PG_URL;
@@ -361,7 +367,7 @@ function run(dir, test, pgUrl) {
     child.stdout.on('data', d => { out += d; }); child.stderr.on('data', d => { out += d; });
     /* the page suite is long (it waits 21 s for a question that must not time out, and drives a browser through 270 checks): 25 minutes for it, 4 for the others; the unmutated copies are checked against the same limits first */
     let timedOut = false;
-    const t = setTimeout(() => { timedOut = true; child.kill(); }, test === PAIRPAGE ? 1500000 : test === FINDABLE ? 900000 : 240000);
+    const t = setTimeout(() => { timedOut = true; child.kill(); }, test === PAIRPAGE ? 1500000 : test === FINDABLE ? 900000 : test === OMR_PAGE ? 600000 : 240000);
     child.on('close', code => { clearTimeout(t); resolve({ code: code, out: out, timedOut: timedOut }); });
   });
 }
@@ -378,14 +384,16 @@ const firstFail = out => {
     const clean = path.join(base, 'clean'); copyTree(clean);
     const wantPage = M.some(m => (!only.length || only.indexOf(m[0]) >= 0) && m[4] === PAIRPAGE);
     const wantFind = M.some(m => (!only.length || only.indexOf(m[0]) >= 0) && m[4] === FINDABLE);
-    const tests = [JOBS, LINKS, SERVER, WORKER, PAIRW, PROTO].concat(wantPage ? [PAIRPAGE] : []).concat(wantFind ? [FINDABLE] : []).concat(runPg ? [PG] : []);
+    const wantOmrPage = M.some(m => (!only.length || only.indexOf(m[0]) >= 0) && m[4] === OMR_PAGE);
+    const tests = [JOBS, LINKS, SERVER, WORKER, PAIRW, PROTO].concat(OMR_TESTS).concat(wantPage ? [PAIRPAGE] : []).concat(wantFind ? [FINDABLE] : []).concat(wantOmrPage ? [OMR_PAGE] : []).concat(runPg ? [PG, OMR_PG] : []);
     for (const t of tests) {
       const r = await run(clean, t);
       if (r.code !== 0 || r.timedOut) { console.error('The unmutated copy ' + (r.timedOut ? 'was cut off (too slow) in ' : 'fails ') + t + ':\n' + r.out.slice(-1500)); process.exit(2); }
       console.log('clean copy passes ' + t);
     }
-    const todo = M.filter(m => (!only.length || only.indexOf(m[0]) >= 0) && (m[4] !== PG || runPg));
-    const skipped = M.filter(m => m[4] === PG && !runPg).map(m => m[0]);
+    const isPg = m => m[4] === PG || m[4] === OMR_PG;
+    const todo = M.filter(m => (!only.length || only.indexOf(m[0]) >= 0) && (!isPg(m) || runPg));
+    const skipped = M.filter(m => isPg(m) && !runPg).map(m => m[0]);
     const work = async m => {
       const dir = path.join(base, m[0]); copyTree(dir);
       /* one replacement [from, to] in the mutant's file, or several: [from, to] or [file, from, to] each */
@@ -400,12 +408,12 @@ const firstFail = out => {
         fs.writeFileSync(f, src.slice(0, at) + to + src.slice(at + from.length));
       });
       if (bad) { results.push({ id: m[0], what: m[2], status: bad }); return; }
-      const r = await run(dir, m[4], m[4] === PG ? (m.pgUrl || process.env.PPP_TEST_PG_URL) : null);
+      const r = await run(dir, m[4], isPg(m) ? (m.pgUrl || process.env.PPP_TEST_PG_URL) : null);
       /* a run that is cut off is a mutant that HANGS (a loop that never ends, a wait that never returns) - the unmutated copy was shown to finish inside the same limit, so it cannot be a pass */
       results.push({ id: m[0], what: m[2], test: m[4], status: r.code !== 0 || r.timedOut ? 'killed' : 'SURVIVED', by: r.timedOut ? 'hangs: cut off by the runner' : r.code !== 0 ? firstFail(r.out) : '' });
     };
     /* the Postgres ones share a database: one at a time; the others in fours */
-    const par = todo.filter(m => m[4] !== PG && m[4] !== PAIRPAGE && m[4] !== FINDABLE), seq = todo.filter(m => m[4] === PG), pages = todo.filter(m => m[4] === PAIRPAGE || m[4] === FINDABLE);
+    const par = todo.filter(m => !isPg(m) && m[4] !== PAIRPAGE && m[4] !== FINDABLE && m[4] !== OMR_PAGE), seq = todo.filter(isPg), pages = todo.filter(m => m[4] === PAIRPAGE || m[4] === FINDABLE || m[4] === OMR_PAGE);
     for (let i = 0; i < par.length; i += 4) await Promise.all(par.slice(i, i + 4).map(work));
     /* the page's ones are browser runs (a Chrome and a server each): three at a time (MUT_PAGE_PAR) */
     const pagePar = Math.max(1, +process.env.MUT_PAGE_PAR || 3);
