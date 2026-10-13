@@ -29,7 +29,10 @@ WORKFLOW = os.path.join(util.repo_root(), ".github", "workflows", "bench.yml")
 class PathClasses(unittest.TestCase):
     def test_documents_are_docs(self):
         for p in ("docs/GOALS/G10_AUDIO_TO_SCORE.md", "docs/DECISIONS.md", "docs/img/diagram.png", "README.md", "DEPLOY_RENDER.md",
-                  "CHANGELOG.md", "LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING", "NOTICE.txt"):
+                  "CHANGELOG.md", "LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING", "NOTICE.txt",
+                  # G13-3: the generated licence notices are a root document, so a change to only that file is `docs`: the light job runs
+                  # `node tools/notices/build.js --check` for that reason (a hand edit of the generated file fails there)
+                  "THIRD_PARTY_NOTICES.md"):
             self.assertEqual(ci_plan.path_class(p), "docs", p)
 
     def test_tooling_is_tooling(self):
@@ -44,7 +47,11 @@ class PathClasses(unittest.TestCase):
                   "audio/piano/README.md", "i18n/ko-KR.json", "Piano Coach App.dc.html", "home-jobs.js", "tools/other.js",
                   "review/build.js", "review/lib/appcode.js", "review/lib/neutral.js", "review/h10/helper-heard.js", "review/README.md",
                   "tools/home-worker", "tools/home-workers/x.js", "docs", "review", "tests/review", "tests/reviewed/x.js",
-                  "tests/home-worker-extra/x.js", "render.yaml", "Dockerfile", "requirements-arranger.txt"):
+                  "tests/home-worker-extra/x.js", "render.yaml", "Dockerfile", "requirements-arranger.txt",
+                  # G13-3: the generator of the notices and its data (they read vendor/, audio/ and catalog/ - not documents), the tests of the notices
+                  # and of the YouTube rule of Shared Scores, and the served-path list that names the notices file
+                  "tools/notices/build.js", "tools/notices/notices.json", "tests/notices/notices.test.js", "tests/notices/mutants.js",
+                  "tests/notices-ui.test.js", "tests/youtube-share.test.js", "static-allow.js"):
             self.assertEqual(ci_plan.path_class(p), "full", p)
 
     def test_a_file_a_whole_tree_walk_would_ingest_is_never_light(self):
@@ -389,6 +396,16 @@ class GateShape(unittest.TestCase):
         runs_scoregraph = [n for n, b in self.shards.items() if "npm run test:scoregraph" in commands_of(b)]
         self.assertEqual(runs_scoregraph, with_history)
         self.assertEqual(len(runs_scoregraph), 1)
+
+    def test_the_notices_check_runs_in_every_light_mode_and_in_a_shard(self):
+        """G13-3: THIRD_PARTY_NOTICES.md is a root document (class `docs`), generated from files that are `full` (vendor/, audio/, catalog/, the page). A change that
+        is only a hand edit of it must still fail, so the generator's --check is a command of the light job, and (as every light command must be) a step of a shard."""
+        cmd = "node tools/notices/build.js --check"
+        self.assertIn(cmd, commands_of(self.jobs["light"]))
+        light_body = self.jobs["light"]
+        m = re.search(r"^      - run: " + re.escape(cmd) + r"s*$", light_body, re.M)
+        self.assertTrue(m, "the notices check has no `if:` in the light job: it runs for docs and for tooling")
+        self.assertTrue(any(cmd in commands_of(body) for body in self.shards.values()))
 
     def test_the_light_commands_are_steps_of_the_full_gate(self):
         full = {c for body in self.shards.values() for c in commands_of(body)}
