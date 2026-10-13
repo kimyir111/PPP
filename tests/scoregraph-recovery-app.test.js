@@ -12,7 +12,7 @@ const F = require('./recording-v2-fixtures');
   const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'], protocolTimeout: 120000 });
   try {
     for (const legacy of [true, false]) {
-      const p = await L.openPage(browser, { legacy, failWhile: /\/scoregraph\/index\.js\?v=\d+$/ });
+      const p = await L.openPage(browser, { legacy, failWhile: /\/scoregraph\/index\.js\?(?:v=\d+|h=[0-9a-f]{12})$/ }   /* the served page names the script by its content hash (G13-4c), the source by ?v=N */);
       const result = await L.importHeard(p, F.keyChange([[8, 0]], 3, 0.004));
       assert.equal(result.screen, 'review', JSON.stringify(result));
       assert.ok(p.__rec.failed.length > 0, 'initial module download was actually blocked');

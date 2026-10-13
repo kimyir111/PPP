@@ -45,21 +45,11 @@ const BLOCKED = new Set(['node_modules', 'tools', '.git', 'data', 'tests']);
    modules, the catalogues, the piano and the language files; the server's own sources, deploy files, docs/ and the rest are a 404. */
 const staticAllow = require('./static-allow');
 
-/* G4d-2 (docs/GOALS/G04 §16; DECISIONS G4-D2-5): the engraver's files and the vendored VexFlow are kept by the browser for
-   good when they are asked for by their content hash - ?h=<the first 12 hex of the sha256 of the file with CRLF read as
-   LF> (tests/engrave/tools/page-files.js) - and the hash is the file's own. Such a URL names one content, so a kept copy
-   can never be stale; gzip when the browser takes it. Every other request, and any request for another file, is
-   answered as before (.js no-store). The app asks this way only under the developer's renderer 'engrave'. */
-const ENGINE_DIRS = new Set(['engrave', 'vendor']);
-const engineCache = new Map();
-function engineFile(abs, buf, st) {
-  const c = engineCache.get(abs);
-  if (c && c.mtimeMs === st.mtimeMs && c.size === st.size) return c;
-  const hash = crypto.createHash('sha256').update(Buffer.from(buf.toString('utf8').replace(/\r\n/g, '\n'), 'utf8')).digest('hex').slice(0, 12);
-  const e = { mtimeMs: st.mtimeMs, size: st.size, hash: hash, gz: null };
-  engineCache.set(abs, e);
-  return e;
-}
+/* G4d-2 (docs/GOALS/G04 §16; DECISIONS G4-D2-5), made general by G13-4c (docs/GOALS/G13 G13-D4): a script, catalog, stylesheet or font is kept by the
+   browser for good when it is asked for by its content hash - ?h=<the first 12 hex of the sha256 of the file with CRLF read as LF> - and the hash is the
+   file's own; gzip when the browser takes it. Every other request is answered as before (.js .json .html no-store). The page the server hands out names the
+   hash of each file it loads (static-assets.js: rewriteHead, hashMap), so a deploy cannot leave a stale script behind. */
+const assets = require('./static-assets');
 
 function send(res, status, body, headers) {
   const extra = headers || {};
@@ -1083,34 +1073,29 @@ function noteNotServed(abs, rel) {
 }
 
 const BUILD_ID = String(process.env.RENDER_GIT_COMMIT || process.env.PPP_BUILD || '').replace(/[^0-9a-f]/gi, '').slice(0, 7);
-async function serveStatic(req, res, urlPath, url) {
-  if (urlPath === '/' || urlPath === '/index.html') {
-    const app = path.join(ROOT, 'Piano Coach App.dc.html');
-    let html = fs.readFileSync(app);
-    const meta = await shareMeta(url && url.searchParams.get('share'), req);
-    if (meta) {
-      const text = html.toString('utf8');
-      /* after the charset, which has to come first */
-      html = Buffer.from(/<meta charset="utf-8">/i.test(text)
-        ? text.replace(/<meta charset="utf-8">/i, m => m + '\n' + meta)
-        : text.replace(/<head>/i, m => m + '\n' + meta));
-    }
-    if (BUILD_ID) {
-      /* the commit this server runs, for the page to stamp on what it makes (and for a person to read): Render sets RENDER_GIT_COMMIT */
-      const text = html.toString('utf8');
-      const tag = '<script>window.PPP_BUILD=' + JSON.stringify(BUILD_ID) + ';</script>';
-      html = Buffer.from(/<meta charset="utf-8">/i.test(text)
-        ? text.replace(/<meta charset="utf-8">/i, m => m + '\n' + tag)
-        : text.replace(/<head>/i, m => m + '\n' + tag));
-    }
-    send(res, 200, html, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
-    return;
+const APP_FILE = 'Piano Coach App.dc.html';
+/* the page, at / and at its own address: the share's tags, the build stamp, and (G13-4c) the content hash of every script, catalog and font it loads */
+async function servePage(req, res, url) {
+  let text = fs.readFileSync(path.join(ROOT, APP_FILE)).toString('utf8');
+  const meta = await shareMeta(url && url.searchParams.get('share'), req);
+  /* after the charset, which has to come first */
+  if (meta) text = /<meta charset="utf-8">/i.test(text) ? text.replace(/<meta charset="utf-8">/i, m => m + '\n' + meta) : text.replace(/<head>/i, m => m + '\n' + meta);
+  if (BUILD_ID) {
+    /* the commit this server runs, for the page to stamp on what it makes (and for a person to read): Render sets RENDER_GIT_COMMIT */
+    const tag = '<script>window.PPP_BUILD=' + JSON.stringify(BUILD_ID) + ';</script>';
+    text = /<meta charset="utf-8">/i.test(text) ? text.replace(/<meta charset="utf-8">/i, m => m + '\n' + tag) : text.replace(/<head>/i, m => m + '\n' + tag);
   }
+  text = assets.preparePage(text, ROOT);
+  send(res, 200, Buffer.from(text, 'utf8'), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+}
+async function serveStatic(req, res, urlPath, url) {
+  if (urlPath === '/' || urlPath === '/index.html') return servePage(req, res, url);
   const abs = safePath(urlPath);
   if (!abs) return jsonError(res, 404, 'Not found');
   /* the file this request resolves to, from the root with "/" (not the text of the request: "//a", "%2e" and a disk that ignores case all land on it) */
   const rel = path.relative(ROOT, abs).split(path.sep).join('/');
   if (!staticAllow.isServed(rel)) { noteNotServed(abs, rel); return jsonError(res, 404, 'Not found'); }
+  if (rel === APP_FILE) return servePage(req, res, url);
   fs.stat(abs, (err, st) => {
     if (err || !st.isFile()) return jsonError(res, 404, 'Not found');
     const ext = path.extname(abs).toLowerCase();
@@ -1120,17 +1105,14 @@ async function serveStatic(req, res, urlPath, url) {
       : ext === '.mp3' ? 'public, max-age=2592000' : 'public, max-age=3600';
     fs.readFile(abs, (e2, buf) => {
       if (e2) return jsonError(res, 500, 'Read failed');
-      const want = ext === '.js' && url && url.searchParams ? url.searchParams.get('h') : null;
-      if (want && ENGINE_DIRS.has(path.relative(ROOT, abs).split(path.sep)[0])) {
-        const e = engineFile(abs, buf, st);
+      const want = assets.HASHABLE.has(ext) && url ? assets.hashOfRequest(url.searchParams) : null;
+      if (want) {
+        const e = assets.entryOf(abs, st, buf);
         if (e.hash === want) {
-          const headers = { 'Content-Type': type, 'Cache-Control': 'public, max-age=31536000, immutable', 'Vary': 'Accept-Encoding' };
-          if (/\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
-            if (!e.gz) e.gz = zlib.gzipSync(buf, { level: 9 });
-            headers['Content-Encoding'] = 'gzip';
-            return send(res, 200, e.gz, headers);
-          }
-          return send(res, 200, buf, headers);
+          return assets.immutableAnswer(req, e, buf, type).then(a => send(res, a.status, a.body, a.headers), err2 => {
+            console.error(err2);
+            if (!res.headersSent) jsonError(res, 500, 'Server error');
+          });
         }
       }
       send(res, 200, buf, { 'Content-Type': type, 'Cache-Control': cache });

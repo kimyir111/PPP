@@ -69,3 +69,40 @@ switch is removed one release after G13-1 has been live (G13-D3). A page whose v
 
 To change the version: move the pins in `support.js` first (it is generated), then replace the folder, the two `?h=` values in the app
 head and this table; the test says which of them is out of step.
+
+## fonts/
+
+The Latin fonts of the page, and the music font, served by PPP itself so that no text waits for another site and the page has them offline
+(docs/GOALS/G13_PRODUCTIZATION.md G13-4b). Each file is the woff2 that Google Fonts serves for the family (fonts.googleapis.com/css2, fetched with a
+Chrome 153 user agent on 2026-10-08), **byte for byte** (no subsetting or other change is made here: the SIL Open Font License allows redistribution,
+and a modified font may not keep a Reserved Font Name). The page declares them in a `<style>` in its head with the same weights, styles and
+`unicode-range`s as Google's own stylesheet (`font-display: swap`), so a file is fetched only when a character of its range is on the page.
+Only the `latin` and `latin-ext` pieces (and `music`) are here: Figtree and Instrument Serif have no others on Google Fonts; JetBrains Mono also has
+cyrillic, cyrillic-ext, greek and vietnamese, which are not kept (the mono face only draws bar numbers, hint letters and times: those characters fall
+back to the system monospace). **Korean, Japanese and Chinese text is not here**: Noto Sans KR / JP / SC stay on Google Fonts, asked for after the page
+has loaded (U7 in the G13 doc is undecided).
+
+| File | Family, style, subset | Google Fonts URL | Size | sha256 |
+| --- | --- | --- | --- | --- |
+| `fonts/figtree-v9-latin.woff2` | Figtree 400-700 (one variable file, declared once per weight 400/500/600/700), latin | `https://fonts.gstatic.com/s/figtree/v9/_Xms-HUzqDCFdgfMm4S9DQ.woff2` | 20,156 bytes | `4ba7d3d096695818fe0686be4f1e82c6b05134e18a22260336130335027462dd` |
+| `fonts/figtree-v9-latin-ext.woff2` | Figtree, latin-ext | `https://fonts.gstatic.com/s/figtree/v9/_Xms-HUzqDCFdgfMm4q9DbZs.woff2` | 10,280 bytes | `bf7828e2c258cffcfa50a048ee388a36b95bc16b452e8d36fa797635dbe15965` |
+| `fonts/instrument-serif-v5-latin.woff2` | Instrument Serif 400 normal, latin | `https://fonts.gstatic.com/s/instrumentserif/v5/jizBRFtNs2ka5fXjeivQ4LroWlx-6zUTjg.woff2` | 21,032 bytes | `5eb09b5ac0e28b67c2f041c8ba6d244604ca0c0980d65912ab2d47fed84ddc31` |
+| `fonts/instrument-serif-v5-latin-ext.woff2` | Instrument Serif 400 normal, latin-ext | `https://fonts.gstatic.com/s/instrumentserif/v5/jizBRFtNs2ka5fXjeivQ4LroWlx-6zsTjmbI.woff2` | 11,604 bytes | `290e6267dd833bf5f899eba4c29ad0a9b09dbe53f6075b18af38057159e1ff20` |
+| `fonts/instrument-serif-v5-italic-latin.woff2` | Instrument Serif 400 italic, latin | `https://fonts.gstatic.com/s/instrumentserif/v5/jizHRFtNs2ka5fXjeivQ4LroWlx-6zAjjH7M.woff2` | 22,128 bytes | `5a51946dfffa82972bc98745359c46761515641fda557c25116459a9f83da4a7` |
+| `fonts/instrument-serif-v5-italic-latin-ext.woff2` | Instrument Serif 400 italic, latin-ext | `https://fonts.gstatic.com/s/instrumentserif/v5/jizHRFtNs2ka5fXjeivQ4LroWlx-6zAjgn7MsNo.woff2` | 12,384 bytes | `d0014821252a8a770bf7551641572f239a8ede83d75652d84fef0c3627751baf` |
+| `fonts/jetbrains-mono-v24-latin.woff2` | JetBrains Mono 400-500 (variable, declared for 400 and 500), latin | `https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2` | 31,432 bytes | `83c005d49d8a6a50474c73a5a36ac0468076e9c4a29da7bdb14995d80560a5be` |
+| `fonts/jetbrains-mono-v24-latin-ext.woff2` | JetBrains Mono, latin-ext | `https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwhsk.woff2` | 11,624 bytes | `db5ff4db83e580426280e9337a58dc57d3a83784a1b03ad80914651594441d52` |
+| `fonts/noto-music-v21-music.woff2` | Noto Music 400, music (U+25CC, U+2669-266F, U+1D000-1D0F5, U+1D100-1D245: the clefs and accidentals the lessons and the Home card draw) | `https://fonts.gstatic.com/s/notomusic/v21/pe0rMIiSN5pO63htf1sxEkW7I9tScg.woff2` | 56,324 bytes | `20881b15b870b8005986da42bf273b33da61df848d5e26e670556adfd0e3bc22` |
+
+Licences (SIL Open Font License 1.1), each the family's own `OFL.txt` from github.com/google/fonts (`ofl/<family>/OFL.txt`) byte for byte:
+
+| Family | Copyright line | File |
+| --- | --- | --- |
+| Figtree | Copyright 2022 The Figtree Project Authors (https://github.com/erikdkennedy/figtree) | `fonts/LICENSE-figtree-OFL.txt` |
+| Instrument Serif | Copyright 2022 The Instrument Serif Project Authors (https://github.com/Instrument/instrument-serif) | `fonts/LICENSE-instrument-serif-OFL.txt` |
+| JetBrains Mono | Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono) | `fonts/LICENSE-jetbrains-mono-OFL.txt` |
+| Noto Music | Copyright 2022 The Noto Project Authors (https://github.com/notofonts/music) | `fonts/LICENSE-noto-music-OFL.txt` |
+
+The page asks for each file as `./vendor/fonts/<file>?h=<12 hex of the sha256 of its bytes>` (server.js rewrites the `?v=1` of the source,
+`static-assets.js`), which the server answers `immutable` (no gzip: a woff2 is compressed already). `tests/load/fonts.test.js` checks the table above against
+the files, the licences against the families, and the `@font-face` rules of the page against Google's published faces.
