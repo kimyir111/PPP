@@ -49,9 +49,9 @@ test('§18.3: the text widths are a table made from the page\'s fonts - five fac
   assert.notEqual(TM.render(edited), cur.block);
   const out = execFileSync(process.execPath, [path.join(REPO, 'tests', 'engrave', 'tools', 'make-text-metrics.js'), '--check'], { encoding: 'utf8' });
   assert.match(out, /PASS - form and digest checked/);
-  /* only the table is committed (§18.3): no font binary is tracked */
+  /* only the table is committed (§18.3): no font binary is tracked - except the page's own web fonts of G13-4b (vendor/fonts: OFL woff2 the page serves, with their licences; vendor/README.md), which are not what the table was made from */
   const tracked = execFileSync('git', ['ls-files'], { cwd: REPO, encoding: 'utf8' }).split('\n');
-  assert.deepEqual(tracked.filter(f => /\.(ttf|otf|woff2?)$/i.test(f)), []);
+  assert.deepEqual(tracked.filter(f => /\.(ttf|otf|woff2?)$/i.test(f) && !/^vendor\/fonts\/[\w-]+\.woff2$/.test(f)), []);
 });
 
 test('§18.3: a width is the sum of the table\'s advances at the size in sp; a character the face lacks is 0.6 em and named', () => {
