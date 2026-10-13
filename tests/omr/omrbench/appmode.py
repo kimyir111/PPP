@@ -143,8 +143,30 @@ def build_jobs(sel: List[Dict[str, Any]], tiers: List[str], doc: Dict[str, Any],
     return jobs
 
 
+# the engine tier an app tier reads (the page image is the same one; the PDF tiers are the vector PDFs of the clean pages)
+ENGINE_TIER = {"pdf-A": "clean-A", "pdf-B": "clean-B", "photo-A": "photo-A", "photo-B": "photo-B", "scan150-A": "scan150-A", "scan150-B": "scan150-B",
+               "scan200-A": "scan200-A", "scan200-B": "scan200-B", "brace-less": "brace-less"}
+
+
+def replay_table(jobs: List[Dict[str, Any]], engine_dir: str) -> Dict[str, Any]:
+    """{job id: {"pages": [[the .mxl files of page 1, in movement order], ...]}} from the engine's earlier run (G12-2, --replay). A job with no engine output
+    is left out: the page is told Audiveris wrote nothing for it."""
+    import glob
+    from . import engine as eng
+    table: Dict[str, Any] = {}
+    for j in jobs:
+        tier = ENGINE_TIER.get(j["tier"])
+        case_dir = os.path.join(engine_dir, j["case"])
+        dirs = sorted(glob.glob(os.path.join(case_dir, tier + "-p*")), key=lambda d: int(d.rsplit("-p", 1)[-1])) if tier else []
+        pages = [sorted(glob.glob(os.path.join(d, "**", "*.mxl"), recursive=True), key=lambda x: (eng.movement_order(x), x)) for d in dirs]
+        if any(pages):
+            table[j["id"]] = {"pages": pages}
+    return table
+
+
 def run(args) -> int:
     from . import suite
+    replay = bool(getattr(args, "replay", False))
     nohelper = args.mode == "app-nohelper"
     doc = casesmod.load()
     selector = args.cases or "s1-app"
@@ -153,11 +175,11 @@ def run(args) -> int:
     for t in tiers:
         if t not in APP_TIERS:
             raise SystemExit(f"--tiers: {t!r} is not one of {', '.join(APP_TIERS)}")
-    problem = suite.env_problem(not nohelper, any(t.endswith("-A") for t in tiers))
+    problem = suite.env_problem(not nohelper and not replay, any(t.endswith("-A") for t in tiers))
     if problem:
         return suite.skip(problem, args.require_env)
     omr_mode = getattr(args, "omr", None)
-    out_dir = os.path.join(args.out or suite.OUT, args.mode + render.SUFFIX + ("-" + omr_mode if omr_mode and omr_mode != "legacy" else ""))
+    out_dir = os.path.join(args.out or suite.OUT, args.mode + render.SUFFIX + ("-" + omr_mode if omr_mode and omr_mode != "legacy" else "") + ("-replay" if replay else ""))
     os.makedirs(out_dir, exist_ok=True)
     img_tiers = [t for t in tiers if t != "brace-less"]
     if img_tiers:
@@ -166,12 +188,16 @@ def run(args) -> int:
     jobs = build_jobs(sel, tiers, doc, skipped)
     for s in skipped:
         print("  skipped:", s)
+    if replay:
+        # only the jobs the engine has been run on (the brace-less PDFs, which the engine alone does not read, are left out)
+        table = replay_table(jobs, os.path.join(args.out or suite.OUT, "engine" + render.SUFFIX))
+        jobs = [j for j in jobs if j["id"] in table]
     procs = Procs()
     node = envinfo.node_binary()
     try:
         helper_port = 0
         health: Dict[str, Any] = {}
-        if not nohelper:
+        if not nohelper and not replay:
             exe = envinfo.audiveris_path(args.audiveris)
             helper_port = free_port()
             procs.start([node, os.path.join(envinfo.REPO, "omr-service.js"), "--port", str(helper_port), "--audiveris", exe],
@@ -197,11 +223,17 @@ def run(args) -> int:
         with open(jobs_path, "w", encoding="utf-8", newline="\n") as h:
             for j in jobs:
                 h.write(json.dumps({"id": j["id"], "path": j["path"], "type": j["type"]}) + "\n")
+        replay_args: List[str] = []
+        if replay:
+            replay_path = os.path.join(out_dir, "replay.json")
+            with open(replay_path, "w", encoding="utf-8", newline="\n") as h:
+                json.dump(table, h)
+            replay_args = ["--replay", replay_path]
         t0 = time.time()
         print(f"omr-live-2 {args.mode}: {len(jobs)} files through Import.load at {base}"
-              + (f", helper on port {helper_port}" if not nohelper else ", no helper"))
+              + (", the engine's earlier output replayed" if replay else f", helper on port {helper_port}" if not nohelper else ", no helper"))
         r = subprocess.run([node, os.path.join(envinfo.REPO, "tests", "bench", "node", "omr-live.js"), "--in", jobs_path, "--out", rows_path,
-                            "--base", base, "--helper-port", str(helper_port)] + (["--omr", omr_mode] if omr_mode else []), capture_output=True, env=envinfo.node_env(), timeout=7200)
+                            "--base", base, "--helper-port", str(helper_port)] + (["--omr", omr_mode] if omr_mode else []) + replay_args, capture_output=True, env=envinfo.node_env(), timeout=7200)
         if r.returncode != 0:
             msg = r.stderr.decode("utf-8", "replace").strip().splitlines()
             return suite.skip("the app page did not run OMR: " + (msg[-1] if msg else f"exit {r.returncode}"), args.require_env)
@@ -243,6 +275,9 @@ def score_app(doc, sel, tiers, jobs, rows, args, health, elapsed) -> Dict[str, A
     nohelper = args.mode == "app-nohelper"
     if nohelper:
         results["engine"] = {"name": "browser draft reader (PdfLayer.notate)", "version": "-", "helper": None}
+    elif getattr(args, "replay", False):
+        results["engine"] = {"name": "audiveris, the engine's earlier output replayed through the page", "version": "5.11.0", "helper": None}
+        results["replay"] = True
     else:
         installed = envinfo.audiveris_version(envinfo.audiveris_path(args.audiveris)) or {"version": "?", "jar_sha256": None}
         results["engine"] = dict(installed, name="audiveris via the local helper", helper={k: health.get(k) for k in ("version", "audiveris", "pdfToMusic")})

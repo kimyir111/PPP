@@ -373,7 +373,7 @@ test('the page: rec/leadsheet.js is in no up-front list, not in RECORDING_SCRIPT
   const wantsWeightsShape = html.indexOf('recWeightsShapeOk(LEADSHEET_MODEL[0], j)');
   assert.ok(wantsWeightsShape > -1, 'the model is checked for its shape like v2\'s own');
   const askers = (html.match(/loadLeadsheetModule\(\)/g) || []).length;
-  assert.equal(askers, 3, 'the loader itself, the entry (arrangeSingleNoteWithLeadsheet) and warmLeadsheetModule: ' + askers);
+  assert.equal(askers, 4, 'the loader itself, its core recovery retry, the entry (arrangeSingleNoteWithLeadsheet) and warmLeadsheetModule: ' + askers);
   assert.match(html, /warmLeadsheetModule\(\) \{\s*\n\s*if \(RECORDING_ARRANGE_MODE === 'leadsheet' && ARRANGER_MODE === 'single'\) loadLeadsheetModule\(\);/, 'the warm is a no-op unless a lead sheet would be made');
   /* every arrangeSingleNote call of the page is inside the two entry functions: arrangeSingleNoteWithHandsFallback's first run and its retry, the lead sheet's one run */
   assert.equal((html.match(/await arrangeSingleNote\(/g) || []).length, 3);

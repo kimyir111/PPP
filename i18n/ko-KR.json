@@ -2280,6 +2280,7 @@
     "piano": "피아노",
     "synth / other instrument": "신스·기타 악기",
     "no melody line (the lead sheet finds one)": "멜로디 선 없음 (리드시트가 찾아요)",
-    "not recorded (an earlier conversion)": "기록 없음 (이전 변환)"
+    "not recorded (an earlier conversion)": "기록 없음 (이전 변환)",
+    "The files needed to write the score could not be loaded. Try again in a moment.": "악보를 만드는 데 필요한 파일을 불러오지 못했어요. 잠시 후 다시 시도해 주세요."
   }
 }
