@@ -3047,8 +3047,8 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
         <sc-if value="{{ shareCanPost }}" hint-placeholder-val="{{ true }}">
           <section style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg);">
             <div style="font-size: 13.5px; font-weight: 600;">{{ sharePostHeading }}</div>
-            <p data-share-post-note data-blocked="{{ sharePostBlockedAttr }}" style="margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink2);">{{ sharePostNote }}</p>
-            <button data-share-post data-posted="{{ sharePostedAttr }}" disabled="{{ sharePostDisabled }}" aria-disabled="{{ sharePostDisabled }}" onClick="{{ sharePost }}" style="{{ sharePostStyle }}">{{ sharePostLabel }}</button>
+            <p id="ppp-share-post-note" data-share-post-note data-blocked="{{ sharePostBlockedAttr }}" style="margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink2);">{{ sharePostNote }}</p>
+            <button data-share-post data-posted="{{ sharePostedAttr }}" disabled="{{ sharePostDisabled }}" aria-disabled="{{ sharePostDisabled }}" aria-describedby="ppp-share-post-note" onClick="{{ sharePost }}" style="{{ sharePostStyle }}">{{ sharePostLabel }}</button>
           </section>
         </sc-if>
         <sc-if value="{{ shareCanLink }}" hint-placeholder-val="{{ true }}">
@@ -13917,7 +13917,7 @@ class Component extends DCLogic {
     return {
       aboutTitle: tx('About & licences'),
       aboutBuild: [tx('PPP — Piano Practice Partner'), build].filter(Boolean).join(' · '),
-      aboutLocal: tx('Your songs stay on this device unless you share them.'),
+      aboutLocal: tx('Your songs are saved only in this browser. PPP\'s server receives a song only when you share it or ask it to arrange or read it.'),
       aboutYoutube: tx('Use recordings you have the right to use. The score PPP writes is for your own practice.') + ' '
         + tx('A score made from a YouTube link cannot be posted to Shared Scores. You can still send its link.'),
       aboutSounds: tx('Piano sounds: Salamander Grand Piano V3 by Alexander Holm, licensed under CC BY 3.0. Notes longer than nine seconds are shortened.'),
@@ -18132,6 +18132,10 @@ class Component extends DCLogic {
      This is the page's reading of what it knows; the server reads only the mark and the flag this page sends (server.js youtubeDerivedShare), as a policy guard, not
      a security boundary. */
   youtubeDerivedOf(songId, seen) {
+    /* a transcription saved before transcriptionVersion / amt existed carries only the engine's label ('Basic Pitch', 'Piano Onsets & Frames', ...). Not a catalogue score
+       found by the title (retrieved), not a score uploaded beside the video (referenceScore), and not a hymn with a performance to watch (no engine at all) */
+    const labelledAudioEngine = src => !!src && !src.referenceScore && !src.retrieved
+      && /basic pitch|onsets|transkun|kong|aria|ensemble|transcription|song separation|broad audio/i.test(src.engine || '');
     seen = seen || {};
     if (!songId || songId === 'demo' || seen[songId]) return false;
     seen[songId] = true;
@@ -18143,7 +18147,7 @@ class Component extends DCLogic {
     let card = null;
     try { card = this.libraryRead().songs.find(c => c.id === songId) || null; } catch (e) { card = null; }
     if (src.youtubeDerived === true) return true;
-    if ((src.kind || (card && card.kind)) === 'youtube' && inferredAudioNotation(src)) return true;
+    if ((src.kind || (card && card.kind)) === 'youtube' && (inferredAudioNotation(src) || labelledAudioEngine(src))) return true;
     const parent = src.parentSongId || (card && card.arrangedFrom) || null;
     return parent ? this.youtubeDerivedOf(parent, seen) : false;
   }

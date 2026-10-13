@@ -1512,6 +1512,9 @@ async function shareMeta(id, req) {
   if (!row || guestShare.expired(row, Date.now())) return '';
   const proto = String(req.headers['x-forwarded-proto'] || (COOKIE_SECURE ? 'https' : 'http')).split(',')[0].trim();
   const link = proto + '://' + (req.headers.host || 'localhost') + '/?share=' + encodeURIComponent(row.id);
+  /* G13-3 (U9): a score made from a YouTube link is for its owner's practice; its link is for the people it was sent to, as a guest link is: not for a search engine and with
+     no title or description of it in a preview (the page's own <title> is all the link says) */
+  if (youtubeDerivedShare(row.score, false)) return '<meta name="robots" content="noindex">';
   const title = row.title + (row.composer ? ' · ' + row.composer : '');
   const desc = row.measures + (row.measures === 1 ? ' bar' : ' bars') + ' · shared by ' + row.ownerName + ' on PPP — Piano Practice Partner';
   return [
