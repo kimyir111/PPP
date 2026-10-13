@@ -2329,6 +2329,26 @@
     "Measure {{n}}: {{why}}": "{{n}}마디: {{why}}",
     "Much of this score was hard to read.": "이 악보는 대부분 읽기 어려웠어요.",
     "{{n}} more measures are marked on the strip above.": "위쪽 막대에 {{n}}마디가 더 표시되어 있어요.",
-    "Some of the checks could not run, so some bars that are wrong may not be marked.": "일부 검사를 실행하지 못해서, 틀린 마디가 모두 표시되지는 않았을 수 있어요."
+    "Some of the checks could not run, so some bars that are wrong may not be marked.": "일부 검사를 실행하지 못해서, 틀린 마디가 모두 표시되지는 않았을 수 있어요.",
+    "Sending {{n}} pages to your PC": "{{n}}쪽을 내 PC로 보내는 중",
+    "Sending the page to your PC": "악보 한 쪽을 내 PC로 보내는 중",
+    "Waiting for your PC to read the pages": "내 PC가 악보를 읽기를 기다리는 중",
+    "Your PC is reading page {{page}} of {{of}}": "내 PC가 {{of}}쪽 중 {{page}}쪽을 읽는 중",
+    "Use the draft instead": "초안으로 대신하기",
+    "Your PC is not on yet. Start it, or use the draft.": "내 PC가 아직 켜져 있지 않아요. PC를 켜거나, 초안으로 진행하세요.",
+    "Your PC has not connected yet.": "내 PC가 아직 연결된 적이 없어요.",
+    "The PPP worker on your PC cannot read scores yet: update it.": "내 PC의 PPP worker가 아직 악보를 읽지 못해요. worker를 업데이트해 주세요.",
+    "Reading scores on your PC is switched off on this site.": "이 사이트에서는 내 PC로 악보 읽기가 꺼져 있어요.",
+    "Scores are already waiting for your PC.": "내 PC가 읽을 악보가 이미 기다리고 있어요.",
+    "Too many scores were sent just now.": "방금 너무 많은 악보를 보냈어요.",
+    "The site is busy right now.": "지금은 사이트가 바빠요.",
+    "The site could not take the pages of this score.": "사이트가 이 악보의 쪽들을 받지 못했어요.",
+    "This page is too detailed to send to your PC.": "이 쪽은 내 PC로 보내기에는 너무 커요.",
+    "You chose the draft.": "초안으로 진행하기로 했어요.",
+    "Your PC did not take this score in time.": "내 PC가 제때 이 악보를 가져가지 않았어요.",
+    "Your PC could not read this score.": "내 PC가 이 악보를 읽지 못했어요.",
+    "Your PC could not read this score: {{why}}": "내 PC가 이 악보를 읽지 못했어요: {{why}}",
+    "Audiveris on your PC": "내 PC의 Audiveris",
+    "Your PC did not read this score ({{why}}), so this is the browser draft.": "내 PC가 이 악보를 읽지 못해서({{why}}) 브라우저 초안으로 만들었어요."
   }
 }

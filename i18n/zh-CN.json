@@ -2329,6 +2329,26 @@
     "Measure {{n}}: {{why}}": "第{{n}}小节：{{why}}",
     "Much of this score was hard to read.": "这份乐谱大部分内容很难读取。",
     "{{n}} more measures are marked on the strip above.": "上方的条上还标出了{{n}}个小节。",
-    "Some of the checks could not run, so some bars that are wrong may not be marked.": "部分检查没能运行，所以有些错误的小节可能没有被标出来。"
+    "Some of the checks could not run, so some bars that are wrong may not be marked.": "部分检查没能运行，所以有些错误的小节可能没有被标出来。",
+    "Sending {{n}} pages to your PC": "正在把 {{n}} 页发送到你的电脑",
+    "Sending the page to your PC": "正在把乐谱发送到你的电脑",
+    "Waiting for your PC to read the pages": "正在等待你的电脑读取乐谱",
+    "Your PC is reading page {{page}} of {{of}}": "你的电脑正在读取第 {{page}} 页（共 {{of}} 页）",
+    "Use the draft instead": "改用草稿",
+    "Your PC is not on yet. Start it, or use the draft.": "你的电脑还没有开机。请开机，或改用草稿。",
+    "Your PC has not connected yet.": "你的电脑还没有连接过。",
+    "The PPP worker on your PC cannot read scores yet: update it.": "你电脑上的 PPP worker 还不能读取乐谱，请更新 worker。",
+    "Reading scores on your PC is switched off on this site.": "本站已关闭用你的电脑读取乐谱的功能。",
+    "Scores are already waiting for your PC.": "已经有乐谱在等待你的电脑读取。",
+    "Too many scores were sent just now.": "刚刚发送的乐谱太多了。",
+    "The site is busy right now.": "网站现在比较忙。",
+    "The site could not take the pages of this score.": "网站没能接收这份乐谱的页面。",
+    "This page is too detailed to send to your PC.": "这一页太大，无法发送到你的电脑。",
+    "You chose the draft.": "你选择了草稿。",
+    "Your PC did not take this score in time.": "你的电脑没有及时取走这份乐谱。",
+    "Your PC could not read this score.": "你的电脑没能读取这份乐谱。",
+    "Your PC could not read this score: {{why}}": "你的电脑没能读取这份乐谱：{{why}}",
+    "Audiveris on your PC": "你电脑上的 Audiveris",
+    "Your PC did not read this score ({{why}}), so this is the browser draft.": "你的电脑没能读取这份乐谱（{{why}}），所以这是浏览器草稿。"
   }
 }

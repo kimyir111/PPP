@@ -2329,6 +2329,26 @@
     "Measure {{n}}: {{why}}": "{{n}}小節目：{{why}}",
     "Much of this score was hard to read.": "この楽譜は大部分が読み取りにくかったです。",
     "{{n}} more measures are marked on the strip above.": "上のバーにあと{{n}}小節が示されています。",
-    "Some of the checks could not run, so some bars that are wrong may not be marked.": "一部のチェックを実行できなかったため、間違っている小節がすべては示されていない可能性があります。"
+    "Some of the checks could not run, so some bars that are wrong may not be marked.": "一部のチェックを実行できなかったため、間違っている小節がすべては示されていない可能性があります。",
+    "Sending {{n}} pages to your PC": "{{n}}ページをPCへ送信中",
+    "Sending the page to your PC": "楽譜をPCへ送信中",
+    "Waiting for your PC to read the pages": "PCが楽譜を読み取るのを待っています",
+    "Your PC is reading page {{page}} of {{of}}": "PCが{{of}}ページ中{{page}}ページ目を読み取り中",
+    "Use the draft instead": "下書きで進める",
+    "Your PC is not on yet. Start it, or use the draft.": "PCがまだ起動していません。PCを起動するか、下書きで進めてください。",
+    "Your PC has not connected yet.": "PCはまだ一度も接続されていません。",
+    "The PPP worker on your PC cannot read scores yet: update it.": "PCのPPP workerはまだ楽譜を読めません。workerを更新してください。",
+    "Reading scores on your PC is switched off on this site.": "このサイトではPCでの楽譜の読み取りがオフになっています。",
+    "Scores are already waiting for your PC.": "PCが読み取る楽譜がすでに待機中です。",
+    "Too many scores were sent just now.": "短時間に多くの楽譜を送りすぎました。",
+    "The site is busy right now.": "現在サイトが混み合っています。",
+    "The site could not take the pages of this score.": "サイトがこの楽譜のページを受け取れませんでした。",
+    "This page is too detailed to send to your PC.": "このページは大きすぎてPCに送れません。",
+    "You chose the draft.": "下書きで進めることにしました。",
+    "Your PC did not take this score in time.": "PCが時間内にこの楽譜を受け取りませんでした。",
+    "Your PC could not read this score.": "PCはこの楽譜を読み取れませんでした。",
+    "Your PC could not read this score: {{why}}": "PCはこの楽譜を読み取れませんでした: {{why}}",
+    "Audiveris on your PC": "お使いのPCのAudiveris",
+    "Your PC did not read this score ({{why}}), so this is the browser draft.": "PCがこの楽譜を読み取れなかったため（{{why}}）、ブラウザの下書きです。"
   }
 }

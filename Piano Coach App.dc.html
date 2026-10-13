@@ -1241,6 +1241,9 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
                 </sc-for>
               </div>
             </sc-if>
+            <sc-if value="{{ showPcDraft }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ usePcDraft }}" data-pc-omr-draft style="width: 100%; margin-top: 16px; padding: 10px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">{{ pcDraftLabel }}</button>
+            </sc-if>
             <button onClick="{{ analyzeOn }}" style="width: 100%; margin-top: 16px; padding: 11px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;">{{ analyzeCta }}</button>
           </section>
         </div>
@@ -5803,6 +5806,31 @@ function loadOmrFlags() {
   })().then(m => { if (!m) _omrFlagsPromise = null; return m; });
   return _omrFlagsPromise;
 }
+/* ============================ G12-5: the PC path of a v2 import (docs/GOALS/G12_OMR.md section 24) ============================
+   Under PPP.omr = 'v2', on a device that holds a PC link (the same link as the YouTube conversion: PcLink, X-PPP-PC), a PDF or a photo that no local helper reads is sent to the PERSON'S OWN PC: the
+   pages go up to the site (POST /api/jobs/omr), wait there until the PC's worker asks for them, Audiveris reads them there, and the MusicXML of each page comes back through the same queue
+   (GET /api/jobs/:id). The answer is made into the shape the local helper's answer has, so it goes through Import.omrXml, S4 and the flags exactly as a helper's result does. Any failure (no PC,
+   not able, not on, a refusal, a failed read, "Use the draft instead") falls back to the browser draft, which says so. 'legacy', and a device with no link, never come here. */
+const PC_OMR = {
+  maxSide: 3500,                                 /* the longest side of a page sent (A4 at 300 DPI is 3508 x 2480) */
+  pageBytes: 1.5 * 1048576, jobBytes: 12 * 1048576, qualities: [0.9, 0.8, 0.7, 0.6, 0.5],
+  hintAfterMs: 45000,                            /* waiting this long for a PC that has not taken the score: say "start it, or use the draft" */
+  poll: { reading: 2000, early: 3000, earlyMs: 30000, mid: 10000, midMs: 5 * 60000, late: 30000 }
+};
+/* one request to the queue with this device's PC code; resolves the JSON, throws an Error with .status, .code and .off (a queue that is switched off). No cookie, never a code in a URL. */
+function pcOmrApi(path, opts) {
+  const code = PcLink.get();
+  if (!code) return Promise.reject(Object.assign(new Error('no link'), { status: 401, code: 'no-link' }));
+  const o = { credentials: 'omit', cache: 'no-store', method: (opts && opts.method) || 'GET', headers: { 'X-PPP-PC': code } };
+  if (opts && opts.body !== undefined) { o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(opts.body); }
+  return fetch(path, o)
+    .catch(() => { throw Object.assign(new Error('network'), { status: 0 }); })
+    .then(async r => {
+      const body = await r.json().catch(() => null);
+      if (r.ok && body) return body;
+      throw Object.assign(new Error((body && body.error) || 'failed'), { status: r.status, code: body && body.code, off: !!(body && body.disabled) });
+    });
+}
 const _recLoaded = new Set();
 const _recGlobals = new Set();
 const _recInflight = new Map(); /* src -> the promise of the <script> that is on its way: a second asker waits for it, and never adds a second element (a late file would run twice) */
@@ -8088,6 +8116,118 @@ const Import = {
     return body;
   },
 
+  /* ---- G12-5: the person's own PC reads the pages (see PC_OMR) ---- */
+  /* is the PC path on offer? A v2 import, on a device with a PC link, whose PC has connected and has not said it cannot read a score. Resolves { ok, alive } or { ok: false, why }. */
+  async pcOmrStatus() {
+    if (OMR_MODE !== 'v2' || !PcLink.get()) return { ok: false, why: null };
+    let w;
+    try { w = (await pcOmrApi('/api/worker/status')).worker; } catch (e) {
+      if (e.status === 401 && e.code === 'bad-code') return { ok: false, why: tx('This device holds a PC link that the site does not recognise right now.') };
+      return { ok: false, why: null };         /* the site cannot be reached, or has no queue: the draft, with nothing said */
+    }
+    if (!w || !w.hasToken || !w.everSeen) return { ok: false, why: tx('Your PC has not connected yet.') };
+    if (w.omrMode === 'off') return { ok: false, why: tx('Reading scores on your PC is switched off on this site.') };
+    if (w.omrMode === false) return { ok: false, why: tx('The PPP worker on your PC cannot read scores yet: update it.') };
+    return { ok: true, alive: !!w.alive };
+  },
+  /* one page as the base64 the site takes: the page's own PNG when it fits, else the same picture as a JPEG, smaller until it does */
+  async pcPageData(p, maxBytes) {
+    const bytesOf = u => Math.floor((u.length - u.indexOf(',') - 1) * 3 / 4);
+    const w = p.width || 0, h = p.height || 0, edge = Math.max(w, h);
+    if (p.dataUrl && bytesOf(p.dataUrl) <= maxBytes && edge <= PC_OMR.maxSide && w * h <= 20e6 && Math.min(w, h) >= 200) return p.dataUrl.split(',')[1];
+    const img = await new Promise((resolve, reject) => { const im = new Image(); im.onload = () => resolve(im); im.onerror = () => reject(new Error('bad image')); im.src = p.dataUrl; });
+    const iw = img.naturalWidth || w, ih = img.naturalHeight || h;
+    let scale = Math.min(1, PC_OMR.maxSide / Math.max(iw, ih, 1));
+    for (let round = 0; round < 7; round++) {
+      const c = document.createElement('canvas');
+      c.width = Math.max(200, Math.round(iw * scale)); c.height = Math.max(200, Math.round(ih * scale));
+      const g = c.getContext('2d');
+      g.fillStyle = '#ffffff'; g.fillRect(0, 0, c.width, c.height);
+      g.drawImage(img, 0, 0, c.width, c.height);
+      for (const q of PC_OMR.qualities) { const u = c.toDataURL('image/jpeg', q); if (bytesOf(u) <= maxBytes) return u.split(',')[1]; }
+      scale *= 0.8;
+    }
+    throw importError('too-large', tx('This page is too detailed to send to your PC.'));
+  },
+  /* send the pages to the PC, wait for it, and answer in the shape of the local helper's /omr answer ({ ok, engine, ms, pages, musicxml, movements }); null when the person chose the draft or
+     cancelled. Throws an Error with .pcWhy (a sentence, in the person's language) when the PC path cannot give a result: the caller falls back to the draft. */
+  async recogniseOnPc(pages, name, onStage, ctl) {
+    ctl = ctl || {};
+    const fail = (why, e) => { const err = new Error(why); err.pcWhy = why; err.soft = true; if (e) err.cause = e; return err; };
+    const reasonOf = e => {
+      const c = e && e.code;
+      if (c === 'no-pc') return tx('Your PC has not connected yet.');
+      if (c === 'no-omr-pc') return tx('The PPP worker on your PC cannot read scores yet: update it.');
+      if (c === 'omr-off') return tx('Reading scores on your PC is switched off on this site.');
+      if (c === 'bad-code') return tx('This device holds a PC link that the site does not recognise right now.');
+      if (c === 'queue-full' || c === 'quota') return tx('Scores are already waiting for your PC.');
+      if (c === 'too-many') return tx('Too many scores were sent just now.');
+      if (c === 'busy' || c === 'store' || (e && (e.status === 0 || e.status >= 500))) return tx('The site is busy right now.');
+      return tx('The site could not take the pages of this score.');
+    };
+    const st = await Import.pcOmrStatus();
+    if (!st.ok) { if (st.why) throw fail(st.why); return null; }
+    const n = pages.length;
+    if (onStage) onStage('pcsend', { of: n });
+    const per = Math.floor(Math.min(PC_OMR.pageBytes, PC_OMR.jobBytes / n) * 0.97);
+    const data = [];
+    for (let i = 0; i < n; i++) {
+      if (ctl.cancelled) return null;
+      try { data.push(await Import.pcPageData(pages[i], per)); } catch (e) { throw fail((e && e.message) || tx('This page is too detailed to send to your PC.'), e); }
+    }
+    if (ctl.cancelled) return null;
+    let job, sent;
+    try {
+      sent = await pcOmrApi('/api/jobs/omr', { method: 'POST', body: Object.assign({ title: String(name || '').replace(/\.[^.]+$/, '').slice(0, 120), pages: data }, n > 12 ? { large: true } : {}) });
+      job = sent.job;
+    } catch (e) { throw fail(reasonOf(e), e); }
+    if (!job || !job.id) throw fail(tx('The site could not take the pages of this score.'));
+    const id = job.id;
+    /* this browser is on the PC that runs the worker: ask it to start now (the same launch the YouTube button makes; it does nothing where nothing is registered) */
+    try { const A = window.PPP && window.PPP.app; if (PcLocal.get() && A && typeof A.launchPcWorker === 'function') A.launchPcWorker(); } catch (e) { /* the next check of the PC picks it up */ }
+    const cancelJob = () => pcOmrApi('/api/jobs/' + encodeURIComponent(id) + '/cancel', { method: 'POST', body: {} }).catch(() => null);
+    const t0 = Date.now();
+    let hinted = false, lastKey = '';
+    const alive = !!(sent.worker && sent.worker.alive);
+    for (;;) {
+      if (ctl.cancelled) { await cancelJob(); return null; }
+      if (ctl.pcDraft) { await cancelJob(); throw fail(tx('You chose the draft.')); }
+      let cur = null, r;
+      try { r = await pcOmrApi('/api/jobs/' + encodeURIComponent(id)); cur = r.job; } catch (e) {
+        if (e.status === 404) throw fail(tx('Your PC did not take this score in time.'), e);
+        if (e.status === 401 || e.off) throw fail(reasonOf(e), e);
+        cur = null;                                           /* a look that did not get through: the next one will */
+      }
+      if (cur) {
+        if (cur.status === 'done' && r.result && Array.isArray(r.result.pages)) {
+          const res = r.result;
+          pcOmrApi('/api/jobs/' + encodeURIComponent(id), { method: 'DELETE' }).catch(() => null);    /* the score is here: the site keeps nothing of it */
+          const info = res.pages.map(p => ({ index: p.index, ok: !!p.ok, error: p.ok ? null : (p.error || null), ms: p.ms || 0 }));
+          const mv = res.pages.map(p => (p.ok && Array.isArray(p.movements) && p.movements.length ? p.movements : null));
+          if (!mv.some(Boolean)) throw fail(tx('Your PC could not read this score.'));
+          return { ok: true, engine: 'Audiveris', engineVersion: res.engineVersion || null, via: 'pc', ms: res.ms || 0, pages: info,
+            musicxml: mv.map(m => (m ? m[m.length - 1] : null)), movements: mv };
+        }
+        if (cur.status === 'failed') throw fail(tx('Your PC could not read this score: {{why}}', { why: String(cur.error || '').slice(0, 160) }));
+        if (cur.status === 'cancelled' || cur.status === 'expired') throw fail(tx('Your PC did not take this score in time.'));
+        const key = cur.status + ':' + ((cur.progress && cur.progress.page) || 0);
+        if (cur.status === 'claimed') {
+          const page = Math.max(1, Math.min(n, (cur.progress && cur.progress.page) || 1));
+          if (onStage && key !== lastKey) onStage('pcread', { page: page, of: n, pct: Math.max(0, Math.min(1, ((cur.progress && cur.progress.pct) || 0))) });
+        } else if (onStage) {
+          const waited = Date.now() - t0;
+          if (!hinted && (!alive || waited >= PC_OMR.hintAfterMs)) hinted = true;
+          if (key !== lastKey || hinted) onStage('pcwait', { hint: hinted ? tx('Your PC is not on yet. Start it, or use the draft.') : '' });
+        }
+        lastKey = key;
+      }
+      const elapsed = Date.now() - t0;
+      const delay = cur && cur.status === 'claimed' ? PC_OMR.poll.reading : elapsed < PC_OMR.poll.earlyMs ? PC_OMR.poll.early : elapsed < PC_OMR.poll.midMs ? PC_OMR.poll.mid : PC_OMR.poll.late;
+      await new Promise(resolve => { const timer = setTimeout(resolve, delay); ctl.pcWake = () => { clearTimeout(timer); resolve(); }; });
+      ctl.pcWake = null;
+    }
+  },
+
   /* A PDF exported by notation software still contains vector glyphs and
      lines. When the optional desktop converter is installed, ask it for
      MusicXML before throwing those semantics away by rasterising for OMR. */
@@ -9423,6 +9563,26 @@ const Import = {
         xml = await Import.omrXml(omr);
       } catch (e) { recognitionError = e; }
     }
+    /* G12-5 (PPP.omr = 'v2', a device with a PC link, no local helper): the person's own PC reads the pages with Audiveris. Anything it cannot do ends in the browser draft below, which says why. */
+    let pcTried = null;
+    if (!xml && !(health.ok && health.audiveris) && OMR_MODE === 'v2' && PcLink.get()) {
+      try {
+        const got = await Import.recogniseOnPc(pages, file.name, onStage, ctl);
+        if (got) {
+          omr = got;
+          source.engine = tx('Audiveris on your PC');
+          source.pages = got.pages;
+          source.viaPc = true;
+          stage('merge', { pages: got.pages.filter(p => p.ok).length });
+          xml = await Import.omrXml(got);
+        } else if (ctl && ctl.cancelled) throw importError('cancelled', tx('Cancelled.'));
+      } catch (e) {
+        if (e && e.code === 'cancelled') throw e;
+        pcTried = { why: (e && e.pcWhy) || tx('Your PC could not read this score.') };
+        omr = null; xml = null;
+        source.viaPc = false; source.pages = null; source.engine = null;
+      }
+    }
 
     /* Keep tablet/hosted imports useful when no helper exists. This browser
        recogniser is also the last-resort path if Audiveris rejects a page;
@@ -9479,7 +9639,7 @@ const Import = {
        engine is still there, the pages are read again at a higher DPI and
        each flagged measure is taken from whichever pass read it cleanly.
        Everything the first pass got right stays byte-identical. */
-    if (omr && kind === 'pdf' && report.issues.length) {
+    if (omr && kind === 'pdf' && report.issues.length && !omr.via) {
       try {
         stage('reread', {});
         const dpi2 = Math.round(IMPORT_LIMITS.dpi * 1.17);
@@ -9526,6 +9686,7 @@ const Import = {
         message: tx('This is a browser draft; pitches and rhythms need comparison with the original page.') });
       report.summary = tx('PPP made a draft from the page, but high-quality notation recognition was unavailable.');
       report.advice = tx('Compare every measure with the original before practising.');
+      if (pcTried) report.issues.unshift({ measure: null, kind: 'pc-omr-fallback', message: tx('Your PC did not read this score ({{why}}), so this is the browser draft.', { why: pcTried.why }) });
     }
     if (omr && omr.normalize) report.normalize = omr.normalize;   /* G12-1: what omr/normalize.js changed, for the review (and G12-3's flags) */
     else if (omr && omr.normalizeFailed) report.normalizeFailed = omr.normalizeFailed;   /* PPP.omr = 'v2' but the import is the legacy one: why */
@@ -11126,7 +11287,7 @@ window.PPP = {
   MidiInput, MidiOut, PerformanceEngine, TIMING_DEFAULTS, DYN_VEL, PEDAL_CC,
   Learning, LEARN, STATE_TONE, STATE_LABEL, seedDemoHistory,
   Memory, MEMORY, MEM_LABEL, MEM_TONE, HINTS, Clock, onsetKey,
-  Import, IMPORT_LIMITS, OMR_URL, TRANSCRIPTION_VERSION, inferredAudioNotation, migrateSavedTranscription,
+  Import, IMPORT_LIMITS, PC_OMR, OMR_URL, TRANSCRIPTION_VERSION, inferredAudioNotation, migrateSavedTranscription,
   packScore, unpackScore, ScoreArranger,
   ScoreSearch: (typeof window !== 'undefined' ? window.PPPScoreSearch : null),
   Coach, COACH, Fingering, HandArt, tx: tx
@@ -16588,9 +16749,17 @@ class Component extends DCLogic {
     if (!ctl) return;
     ctl.cancelled = true;
     this._importCtl = null;
+    if (typeof ctl.pcWake === 'function') ctl.pcWake();      /* G12-5: a wait for the PC ends now (its job is cancelled on the site) */
     if (quiet) return;
-    this.setState({ analysis: 'idle', analysisPct: 0, stageLog: [], upload: 'empty', importKind: null });
+    this.setState({ analysis: 'idle', analysisPct: 0, stageLog: [], upload: 'empty', importKind: null, pcOmr: null });
     this.say(tx('Cancelled.'));
+  }
+  /* G12-5: "Use the draft instead" while the PC is being waited for: its job on the site is cancelled and the import goes on with the browser draft, which says why */
+  usePcDraft() {
+    const ctl = this._importCtl;
+    if (!ctl) return;
+    ctl.pcDraft = true;
+    if (typeof ctl.pcWake === 'function') ctl.pcWake();
   }
   dropRecording() {
     if (this._recording && this._recording.url) { try { URL.revokeObjectURL(this._recording.url); } catch (e) {} }
@@ -16677,7 +16846,7 @@ class Component extends DCLogic {
       analysis: 'running', analysisStep: 0, analysisPct: 0, parseError: null,
       /* left empty: the first real stage callback fills it, so nothing is
          listed that has not actually happened */
-      importHints: [], stageLog: []
+      importHints: [], stageLog: [], pcOmr: null
     });
 
     const pct = d => R0(clamp(d.pct || 0, 0, 1) * 100);
@@ -16686,6 +16855,10 @@ class Component extends DCLogic {
       rasterise: d => tx('Rendering page {{page}} of {{of}} at {{dpi}} DPI', { page: d.page, of: d.of, dpi: Import.LIMITS.dpi }),
       vectorpdf: () => tx('Reading notation directly from the vector PDF'),
       recognise: d => d.of > 1 ? tx('Reading the notation on {{n}} pages', { n: d.of }) : tx('Reading the notation'),
+      /* G12-5: the person's own PC reads the pages (PC_OMR) */
+      pcsend: d => (d.of > 1 ? tx('Sending {{n}} pages to your PC', { n: d.of }) : tx('Sending the page to your PC')),
+      pcwait: () => tx('Waiting for your PC to read the pages'),
+      pcread: d => tx('Your PC is reading page {{page}} of {{of}}', { page: d.page, of: d.of }),
       reread: d => d && d.of > 1 ? tx('Reading the flagged pages again, closer up', { n: d.of }) : tx('Reading the flagged bars again, closer up'),
       merge: d => tx(d.pages === 1 ? 'Joining {{n}} page' : 'Joining {{n}} pages', { n: d.pages }),
       upload: () => tx('Handing the recording to the local helper'),
@@ -16703,7 +16876,7 @@ class Component extends DCLogic {
     /* where each stage sits on the bar; a stage that reports progress fills its span */
     const SPAN = recording
       ? { validate: [2, 2], search: [3, 4], upload: [3, 6], download: [3, 20], decode: [20, 26], catalog: [26, 30], transcribe: [26, 84], beats: [84, 88], quantize: [88, 92], notate: [92, 92], parse: [95, 95], check: [98, 98] }
-      : { validate: [5, 5], rasterise: [25, 25], vectorpdf: [25, 55], recognise: [55, 55], merge: [70, 70], parse: [85, 85], check: [95, 95], reread: [70, 85] };
+      : { validate: [5, 5], rasterise: [25, 25], vectorpdf: [25, 55], recognise: [55, 55], pcsend: [30, 30], pcwait: [30, 30], pcread: [30, 65], merge: [70, 70], parse: [85, 85], check: [95, 95], reread: [70, 85] };
     const onStage = (name, detail) => {
       if (ctl.cancelled) return;
       detail = detail || {};
@@ -16723,6 +16896,9 @@ class Component extends DCLogic {
           analysisPct: span ? R0(span[0] + (span[1] - span[0]) * clamp(detail.pct || 0, 0, 1)) : st.analysisPct
         };
         if (yt && detail.title && st.fileName !== detail.title) patch.fileName = detail.title;
+        /* G12-5: while the PC reads the pages the person can give up waiting; the line under the summary says what to do when it is not on */
+        if (name === 'pcwait' || name === 'pcread' || name === 'pcsend') { patch.pcOmr = name === 'pcsend' ? 'send' : name === 'pcwait' ? 'wait' : 'read'; patch.importHints = detail.hint ? [detail.hint] : []; }
+        else if (st.pcOmr) { patch.pcOmr = null; patch.importHints = []; }
         return patch;
       });
     };
@@ -16770,7 +16946,7 @@ class Component extends DCLogic {
       if (ctl.cancelled) return;
       this._importCtl = null;
       this.setState({
-        analysis: 'error', analysisPct: 0,
+        analysis: 'error', analysisPct: 0, pcOmr: null,
         parseError: (err && err.message) || tx('That file could not be read.'),
         importHints: (err && err.hints) || [],
         importReport: null
@@ -20747,6 +20923,7 @@ class Component extends DCLogic {
             : tx('Reading {{file}}…', { file: S.fileName }))
             : tx('Add sheet music — MusicXML, a PDF or a photo — or a recording: MP3, MP4 or a YouTube link. PPP starts on it straight away.'),
       analyzeSummaryStyle: `margin-top:20px;padding:14px;border-radius:13px;font-size:12.5px;line-height:1.55;background:${failed ? 'var(--surface2)' : 'var(--bg)'};border:1px solid ${failed ? 'var(--bad)' : 'var(--line)'};color:${failed ? 'var(--ink)' : 'var(--ink2)'};`,
+      showPcDraft: running && (S.pcOmr === 'wait' || S.pcOmr === 'read'), pcDraftLabel: tx('Use the draft instead'), usePcDraft: () => this.usePcDraft(),
       analyzeCta: added ? (S.pendingSong ? tx('Check the result') : tx('See analysis'))
         : running ? tx('Cancel') : failed ? tx('Try again') : tx('Choose file'),
       analyzeOn: () => {
