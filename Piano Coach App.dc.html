@@ -1520,12 +1520,16 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
             <div style="margin-top: 16px; padding: 14px 16px; border-radius: 14px; background: var(--bg); border: 1px solid var(--line); display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
               <div>
                 <div style="font-size: 12px; color: var(--ink2);">{{ accuracyLabel }}</div>
-                <div style="font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 600; margin-top: 2px;">{{ runAccuracy }}</div>
+                <div data-run-accuracy style="font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 600; margin-top: 2px;">{{ runAccuracy }}</div>
               </div>
               <div>
                 <div style="font-size: 12px; color: var(--ink2);">{{ driftLabel }}</div>
-                <div style="font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 600; margin-top: 2px;">{{ runDrift }}</div>
+                <div data-run-drift style="font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 600; margin-top: 2px;">{{ runDrift }}</div>
               </div>
+              <!-- U4: a run without a keyboard moves the screen and is not recorded; this line says so (it shows while such a run plays, and after it) -->
+              <sc-if value="{{ showDemoNote }}" hint-placeholder-val="{{ false }}">
+                <div data-demo-note style="grid-column: 1 / -1; font-size: 12px; line-height: 1.45; color: var(--ink2);">{{ demoNote }}</div>
+              </sc-if>
             </div>
 
             <!-- G11b-1 (PPP.learner 'typed' only): one tap to say how the run just finished felt. Shown while nothing is playing, never in the way of a loop. -->
@@ -5663,8 +5667,9 @@ function setRecordingArrangeMode(v) {
    (Demo Input: no keyboard, hits drawn at random) - and the name goes into the run summary of the history; the three real kinds also go into the bounded run log of practice/runlog.js (IndexedDB, per song and music hash,
    at most 300 runs of 2 KB), which a person can export from Settings. A simulated run is only counted on its epoch, never logged: it is not evidence. A log that cannot be had (a private window, a full disk, a damaged
    record) is given up for the session without a word (stats.degraded) and the page works as under 'legacy'.
-   PPP.demoRuns = 'count' (default: today) | 'separate' is decision U4 (G11 section 14.1), OFF until the user decides: under 'typed' and 'separate' a run without a keyboard still moves the screen (laps, minutes, section bars, the
-   plan's task) but is not folded into history.byMeasure or the memory record, the things weakness, recommendations and memory eligibility are read from. It does nothing under 'legacy'. */
+   PPP.demoRuns = 'separate' (default) | 'count' is decision U4 (G11 section 14.1), decided YES by the user on 2026-10-13: a run without a keyboard (Demo Input: no MIDI keyboard connected, selected and switched on) moves the
+   screen (the lap counter, the playhead, the falling notes) and writes no evidence - not history.byMeasure or runs[], not the memory record, not the section bars, the coach or Loop-panel counters, minutes, xp,
+   the weekly bars or the run log (an epoch still counts it). It holds under 'legacy' and 'typed' alike; 'count' is an explicit opt-out (?demoRuns=count, PPP.demoRuns = 'count'), today's behaviour before U4. */
 const LEARNER_KEY = 'ppp.learner.v1';
 const LEARNER_DEFAULT = 'legacy';
 function learnerChoice(v) { return v === 'typed' || v === 'legacy' ? v : null; }
@@ -5675,7 +5680,7 @@ let LEARNER_MODE = (() => {
   return m;
 })();
 const DEMO_RUNS_KEY = 'ppp.demoRuns.v1';
-const DEMO_RUNS_DEFAULT = 'count';
+const DEMO_RUNS_DEFAULT = 'separate';
 function demoRunsChoice(v) { return v === 'count' || v === 'separate' ? v : null; }
 let DEMO_RUNS_MODE = (() => {
   let m = DEMO_RUNS_DEFAULT;
@@ -11099,7 +11104,7 @@ window.PPP = {
   set recordingArrange(v) { setRecordingArrangeMode(v); },
   /* G11b-1 (docs/GOALS/G11 G11-D5, G11-D6): 'legacy' (default: the learner history exactly as it was) | 'typed' (every run is named, and the measured, follow and memory runs go into the run log, practice/runlog.js).
      Any other value is no choice: the default comes back and the remembered choice is forgotten (PPP.recording's rule). A choice is remembered on this device; ?learner= in the address is for that visit only.
-     PPP.demoRuns is decision U4, OFF: 'count' (default: a run without a keyboard is folded into the history as today) | 'separate' (under 'typed', it is not). runLog is for tests and the console. */
+     PPP.demoRuns is decision U4, decided YES (2026-10-13): 'separate' (default: a run without a keyboard moves the screen and writes no evidence, under 'legacy' and 'typed') | 'count' (explicit opt-out: folded in as before U4). runLog is for tests and the console. */
   get learner() { return LEARNER_MODE; },
   set learner(v) { setLearnerMode(v); },
   get demoRuns() { return DEMO_RUNS_MODE; },
@@ -15463,6 +15468,16 @@ class Component extends DCLogic {
   completeLap(S, hit, tot, result) {
     const [from, to] = this.range(S);
     const acc = result ? R0(result.accuracy * 100) : (tot ? R0((hit / tot) * 100) : 100);
+    /* U4 (decided YES, 2026-10-13; PPP.demoRuns 'separate' is the default, 'count' an explicit opt-out): a lap that ended with no matcher result - no MIDI keyboard connected, selected and
+       switched on, so its hits were drawn at random - moves the screen (the lap counter, the playhead, the toast) and writes no evidence: no section bar, no minutes, xp or weekly bar, no
+       coach or Loop-panel step, no history, no memory record (a random recall cannot move strength or "memorize" a section), no run in the log (under 'typed' the epoch still counts it, which
+       is how an export says how much practice had no keyboard). Under PPP.learner 'legacy' and 'typed' alike. A keyboard attached and nothing played ('idle') is not this: a keyboard judged it. */
+    if (!result && DEMO_RUNS_MODE === 'separate') {
+      if (LEARNER_MODE === 'typed') this.logRun(S, 'simulated', null, null, from, to, acc);
+      /* what to do to have a run recorded: told once a visit (the card on the practice page says it every time), and after every recall, which is a deliberate attempt that used to answer with its result */
+      if (!this._demoTold || S.practiceMode === 'memory') { this._demoTold = true; this.say(tx('Not recorded: connect a MIDI keyboard and turn MIDI on to record your practice.')); }
+      return { laps: S.laps + 1, runHit: 0, runTot: 0, wrongNotes: [], lastDemo: true };
+    }
     const secs = Object.assign({}, S.secs);
     let touched = 0;
     this.sections().forEach(sec => {
@@ -15490,7 +15505,7 @@ class Component extends DCLogic {
       secs, laps: S.laps + 1, runHit: 0, runTot: 0, lastAcc: acc, wrongNotes: [],
       minutes: S.minutes + mins, xp: S.xp + 20 + touched * 5, sessions,
       drift: result ? result.meanDeltaMs : R0(-60 + Math.random() * 45),
-      lastResult: result || null
+      lastResult: result || null, lastDemo: false
     };
 
     this.advanceCoach(S, patch);
@@ -15504,9 +15519,8 @@ class Component extends DCLogic {
     /* The feedback loop: every finished run folds into the history, which is
        what weakness, section state and the next recommendation are read from. */
     const measured = result || this.simResult(S);
-    /* G11b-1: PPP.learner 'typed' names the run (null under 'legacy', where nothing below differs from before); a run without a keyboard is kept out of history and memory only under PPP.demoRuns 'separate' (U4, off) */
+    /* G11b-1: PPP.learner 'typed' names the run (null under 'legacy', where nothing below differs from before). A lap without a keyboard reaches here only under PPP.demoRuns 'count' (U4's opt-out) */
     const kind = LEARNER_MODE === 'typed' ? runSource(S, result) : null;
-    const demoApart = kind === 'simulated' && DEMO_RUNS_MODE === 'separate';
     if (measured) {
       if (!result) patch.drift = measured.meanDeltaMs;
       const meta = {
@@ -15514,14 +15528,14 @@ class Component extends DCLogic {
         hands: S.hands, simulated: !result, follow: !!(result && result.follow)
       };
       if (kind) meta.source = kind;
-      if (!demoApart) patch.history = Learning.record(S.history, measured, meta);
+      patch.history = Learning.record(S.history, measured, meta);
     }
     if (kind) this.logRun(S, kind, result, measured, from, to, acc);
 
     if (S.practiceMode === 'memory') {
       /* A recall attempt is scored and recorded separately from practice, and
          only this can move memory strength. */
-      const res = demoApart ? null : measured;
+      const res = measured;
       if (res) {
         const before = Memory.get(S.memory, this.sectionOf(from).id);
         const mem = this.recordRecall(S, res);
@@ -15559,8 +15573,6 @@ class Component extends DCLogic {
         this.say(tx('{{label}} done.', { label: stp.label }));
       } else patch.seqReps = reps;
     } else this.say(tx('Run finished at {{pct}}% accuracy.', { pct: acc }));
-    /* U4, off: the one thing a person is told when a run without a keyboard was kept out of their progress */
-    if (demoApart && measured) this.say(tx('Demo input is not counted as practice progress.'));
     return patch;
   }
 
@@ -20090,7 +20102,11 @@ class Component extends DCLogic {
           : mi.status === 'connecting' ? tx('Connecting…')
             : mi.status === 'error' ? tx(mi.error || 'Could not reach MIDI')
               : mi.status === 'connected' ? tx('No inputs found — plug a keyboard in')
-                : tx('Not connected — PPP is simulating your playing');
+                /* U4: without a keyboard PPP still plays along on the screen, and none of it is recorded */
+                : DEMO_RUNS_MODE === 'separate' ? tx('Not connected — PPP simulates your playing, and none of it is recorded')
+                  : tx('Not connected — PPP is simulating your playing');
+    /* U4: the card on the practice page says a run without a keyboard is not recorded - while such a run plays, and after it, until a recorded run or a keyboard replaces it */
+    const demoNote = DEMO_RUNS_MODE === 'separate' && !midiLive && !!((S.lastDemo && S.laps > 0) || (S.playing && S.screen !== 'score'));
     const midiLabel = midiLive ? tx('MIDI Connected') : !mi.supported ? tx('Demo Input · no Web MIDI') : tx('Demo Input');
     const midiTone = midiLive ? 'var(--good)' : mi.status === 'denied' || mi.status === 'error' ? 'var(--bad)' : 'var(--ink3)';
     const mo = S.midiOut || {};
@@ -21089,8 +21105,11 @@ class Component extends DCLogic {
       })(),
       hasCoachStructural: !learn.played,
 
-      runAccuracy: (S.runTot ? R0((S.runHit / S.runTot) * 100) : S.lastAcc) + '%',
-      runDrift: follows ? '—' : (S.drift > 0 ? '+' : '') + S.drift + ' ms',
+      /* U4: a run without a keyboard is not recorded, so no number of a past run stands next to the line that says so (the live count of a run in play is the screen moving) */
+      runAccuracy: (S.runTot ? R0((S.runHit / S.runTot) * 100) + '%' : demoNote ? '—' : S.lastAcc + '%'),
+      runDrift: follows || demoNote ? '—' : (S.drift > 0 ? '+' : '') + S.drift + ' ms',
+      showDemoNote: demoNote,
+      demoNote: demoNote ? tx('No keyboard connected, so this run is not recorded. (Demo Input)') : '',
       midiLabel, midiSub,
       midiHint: midiLive ? tx('Playing {{device}}', { device: mi.deviceName }) : tx('Click to connect a MIDI keyboard'),
       headerMidiStyle: 'display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:9px;font-family:inherit;font-size:12px;cursor:pointer;color:'
