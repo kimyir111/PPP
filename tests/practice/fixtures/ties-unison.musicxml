@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- G11a-1 fixture, written by hand for the tests of PPP (no source music): two voices on one staff play the SAME pitch (a unison, as in a hymn's alto and soprano)
+     and both are tied over the bar line. The old player finds a tie's end by pitch and place, so the two voices' ends are one note to it and one of them
+     is struck again; the tie spanners of the graph name the ends. -->
+<score-partwise version="4.0">
+  <work><work-title>Unison ties</work-title></work>
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes><divisions>2</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>half</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><tie type="start"/><voice>1</voice><type>half</type><notations><tied type="start"/></notations></note>
+      <backup><duration>8</duration></backup>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><voice>2</voice><type>half</type></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><tie type="start"/><voice>2</voice><type>half</type><notations><tied type="start"/></notations></note>
+    </measure>
+    <measure number="2">
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><tie type="stop"/><voice>1</voice><type>half</type><notations><tied type="stop"/></notations></note>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>half</type></note>
+      <backup><duration>8</duration></backup>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><tie type="stop"/><voice>2</voice><type>half</type><notations><tied type="stop"/></notations></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><voice>2</voice><type>half</type></note>
+      <barline location="right"><bar-style>light-heavy</bar-style></barline>
+    </measure>
+  </part>
+</score-partwise>

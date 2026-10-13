@@ -50,10 +50,19 @@ const screenTitle = page => page.evaluate(() => {
   await page.setViewport({ width: 1440, height: 950 });
 
   page.on('console', m => {
+    /* G11a-0: the page asks the site once whether it has the home-PC queue (G10b-2, tests/home-worker/findable.test.js); a visitor with no
+       account and no PC link is answered 401 by design, and Chrome logs every failed fetch. That one request is expected, nothing else is. */
+    const where = m.location ? m.location() : null;
+    if (m.type() === 'error' && /\b401\b/.test(m.text()) && where && /\/api\/worker\/status(\?|$)/.test(where.url || '')) return;
     if (m.type() === 'error' || m.type() === 'warning') errors.push('[console.' + m.type() + '] ' + m.text());
   });
   page.on('pageerror', e => errors.push('[pageerror] ' + e.message));
-  page.on('requestfailed', r => errors.push('[requestfailed] ' + r.url() + ' — ' + (r.failure() || {}).errorText));
+  page.on('requestfailed', r => {
+    /* G11a-0: an image the page stopped waiting for because the suite had already moved to the next screen (the hand pictures of the practice
+       view, on a busy machine - a CI runner) is cancelled by the browser, ERR_ABORTED. That is not a failed request. */
+    if ((r.failure() || {}).errorText === 'net::ERR_ABORTED' && /\/assets\/[^?]*\.(png|jpe?g|svg|webp)(\?|$)/.test(r.url())) return;
+    errors.push('[requestfailed] ' + r.url() + ' — ' + (r.failure() || {}).errorText);
+  });
 
   const steps = [];
   const step = (name, detail) => { steps.push({ name, detail }); console.log('  ✓ ' + name + (detail ? ' — ' + detail : '')); };

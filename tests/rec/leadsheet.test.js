@@ -322,3 +322,47 @@ test('the browser: the module loads in a bare vm after the page\'s own scripts a
   assert.equal(SER.fingerprint(page.graph), SER.fingerprint(node.graph));
   assert.equal(JSON.stringify(page.sg.harmony.map(w => [w.m, w.root, w.quality])), JSON.stringify(node.sg.harmony.map(w => [w.m, w.root, w.quality])));
 });
+
+/* G10d song mode: the notes of a separated song say their layer (track 1 the sung melody, 2 the bass, 3 the accompaniment). A synth line ABOVE the voice is what the
+   skyline takes for the tune; with opts.melodyTrack the lead sheet takes the voice. */
+test('song mode: opts.melodyTrack takes the tune from the melody layer, not from a higher accompaniment line; too few layer notes falls back to the skyline', () => {
+  const voice = (b, k) => tune(b, k) - 12;                  /* the sung tune, C4..G4 */
+  const c = cover(12, voice);
+  const isTune = new Set(c.melody.map(n => n.on + '|' + n.midi));
+  const notes = c.notes.map(n => Object.assign({}, n, { track: isTune.has(n.on + '|' + n.midi) ? 1 : n.midi < 48 ? 2 : 3 }));
+  /* a synth figure an octave and more above the voice, on every beat and the half beat after: the highest notes of the piece */
+  c.melody.forEach((n, i) => { notes.push({ on: n.on, off: +(n.on + 0.25).toFixed(3), midi: 86 + (i % 3), vel: 60, track: 3 }, { on: +(n.on + 0.3).toFixed(3), off: +(n.on + 0.55).toFixed(3), midi: 84, vel: 60, track: 3 }); });
+  notes.sort((a, b) => a.on - b.on || a.midi - b.midi);
+  const g = convert({ notes: notes });
+  assert.ok(g.performances[0].notes.some(n => n.track === 1), 'the layers reach the performance layer');
+  const truth = headsOf(g, c.melody);
+  const sky = LS.prepare(g, { songgraph: SGG }), lay = LS.prepare(g, { songgraph: SGG, melodyTrack: 1 });
+  assert.equal(sky.ok && lay.ok, true);
+  assert.equal(sky.report.melodyFrom, 'skyline');
+  assert.equal(lay.report.melodyFrom, 'layer');
+  const fs1 = f1(sky.melody.map(m => m.head), truth).f1, fl1 = f1(lay.melody.map(m => m.head), truth).f1;
+  assert.ok(fl1 >= 0.95, 'the layer gives the sung tune: F1 ' + fl1.toFixed(3));
+  assert.ok(fs1 < 0.5, 'the skyline takes the synth line above it: F1 ' + fs1.toFixed(3));
+  const none = LS.prepare(g, { songgraph: SGG, melodyTrack: 7 });
+  assert.equal(none.ok && none.report.melodyFrom, 'skyline', 'a layer with no notes is no layer');
+});
+
+test('song mode: an accompaniment note on the key and tick of a melody note (an instrument doubling the tune) does not take the melody away; a few layer notes are no tune', () => {
+  const voice = (b, k) => tune(b, k) - 12;
+  const c = cover(12, voice);
+  const isTune = new Set(c.melody.map(n => n.on + '|' + n.midi));
+  const notes = c.notes.map(n => Object.assign({}, n, { track: isTune.has(n.on + '|' + n.midi) ? 1 : n.midi < 48 ? 2 : 3 }));
+  /* the piano doubles the tune, 70 ms late: the same key, the same written tick, a second heard note on the same head */
+  c.melody.forEach(n => notes.push({ on: +(n.on + 0.07).toFixed(3), off: n.off, midi: n.midi, vel: 50, track: 3 }));
+  c.melody.forEach((n, i) => notes.push({ on: n.on, off: +(n.on + 0.25).toFixed(3), midi: 86 + (i % 3), vel: 60, track: 3 }));
+  notes.sort((a, b) => a.on - b.on || a.midi - b.midi);
+  const g = convert({ notes: notes });
+  const lay = LS.prepare(g, { songgraph: SGG, melodyTrack: 1 });
+  assert.equal(lay.ok && lay.report.melodyFrom, 'layer');
+  assert.ok(f1(lay.melody.map(m => m.head), headsOf(g, c.melody)).f1 >= 0.95);
+  /* three stray notes of a vocal stem in a piece of 48 instants: not a tune (the skyline) */
+  const few = c.notes.map(n => Object.assign({}, n, { track: 3 }));
+  c.melody.slice(0, 3).forEach(n => { const x = few.find(y => y.on === n.on && y.midi === n.midi); x.track = 1; });
+  few.push({ on: c.melody[3].on, off: c.melody[3].off, midi: 40, vel: 40, track: 1 });
+  assert.equal(LS.prepare(convert({ notes: few.sort((a, b) => a.on - b.on || a.midi - b.midi) }), { songgraph: SGG, melodyTrack: 1 }).report.melodyFrom, 'skyline');
+});

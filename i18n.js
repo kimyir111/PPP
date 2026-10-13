@@ -173,7 +173,11 @@
       if (/^[\d.%×x/\-–→←+]+$/.test(trimmed)) return;
       var translated = tx(trimmed);
       if (translated && translated !== trimmed) {
-        node.nodeValue = raw.replace(trimmed, translated);
+        /* swap the whole text between the white space: `trimmed` is the normalized form (straight quotes, one space), so it need not
+           occur in `raw` as it is — a text with curly quotes was never found, and stayed English */
+        var lead = raw.length - raw.replace(/^\s+/, '').length;
+        var trail = raw.length - raw.replace(/\s+$/, '').length;
+        node.nodeValue = raw.slice(0, lead) + translated + raw.slice(raw.length - trail);
       }
     });
     var attrs = root.querySelectorAll('[placeholder], [title], [aria-label]');

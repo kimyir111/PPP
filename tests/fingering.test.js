@@ -329,9 +329,8 @@ const clickText = (page, re) => page.evaluate(src => {
        order, and the whole-measure LH rest shares onset 0 with the first RH note (App comment, App
        ~315: "no sort here... Score.finalize orders by absolute position"). C4=60, D4=62, E4=64, F4=65. */
     const byPitch = sc => { const m = {}; sc.notes.forEach(n => { if (!n.rest) m[n.midi] = n.finger || 0; }); return m; };
-    const savedFingering = window.PPP.fingering, savedLegacyImport = window.PPP.legacyImport;
+    const savedFingering = window.PPP.fingering;
     const out = { defaultMode: window.PPP.fingering };
-    window.PPP.legacyImport = false;   /* the graph import path (G2's default) - the only one G5c reaches */
     try {
       window.PPP.fingering = 'legacy';
       const scOff = window.PPP.scoreFromXml(xml, 'g5c-off.musicxml');
@@ -350,7 +349,6 @@ const clickText = (page, re) => page.evaluate(src => {
       out.typoMode = window.PPP.fingering;
     } finally {
       window.PPP.fingering = savedFingering;
-      window.PPP.legacyImport = savedLegacyImport;
     }
     return out;
   }, g5cXml);
@@ -370,8 +368,7 @@ const clickText = (page, re) => page.evaluate(src => {
   console.log('\n── PPP.fingering reaches the real import entry point (Import.load), not just scoreFromXml ──');
   const g5cImport = await page.evaluate(async xml => {
     const byPitch = sc => { const m = {}; sc.notes.forEach(n => { if (!n.rest) m[n.midi] = n.finger || 0; }); return m; };
-    const savedFingering = window.PPP.fingering, savedLegacyImport = window.PPP.legacyImport;
-    window.PPP.legacyImport = false;
+    const savedFingering = window.PPP.fingering;
     try {
       const file = new File([xml], 'g5c-import.musicxml', { type: 'application/vnd.recordare.musicxml+xml' });
       window.PPP.fingering = 'legacy';
@@ -381,7 +378,6 @@ const clickText = (page, re) => page.evaluate(src => {
       return { off: byPitch(off.score), on: byPitch(on.score) };
     } finally {
       window.PPP.fingering = savedFingering;
-      window.PPP.legacyImport = savedLegacyImport;
     }
   }, g5cXml);
   ok('Import.load under \'legacy\' leaves unprinted notes unfingered',
@@ -396,8 +392,7 @@ const clickText = (page, re) => page.evaluate(src => {
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     const xml = await window.PPP.readMxl(bytes.buffer);
-    const savedFingering = window.PPP.fingering, savedLegacyImport = window.PPP.legacyImport;
-    window.PPP.legacyImport = false;
+    const savedFingering = window.PPP.fingering;
     try {
       window.PPP.fingering = 'legacy';
       window.PPP.scoreFromXml(xml, 'perf-warm.mxl'); /* warm up parsing/JIT before timing either mode */
@@ -424,7 +419,6 @@ const clickText = (page, re) => page.evaluate(src => {
       return { legacyMs, inferredMs, fingered, struck: fingerable.length, tieContinuations: tieContinuations.length, tiedStillPlayable };
     } finally {
       window.PPP.fingering = savedFingering;
-      window.PPP.legacyImport = savedLegacyImport;
     }
   }, fs.readFileSync(path.join(__dirname, '..', 'catalog', 'method', 'sonatina', '020.mxl')).toString('base64'));
   ok('sonatina/020 (the longest R-corpus piece) gets fingered on import under \'inferred\', tie continuations aside',

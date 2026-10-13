@@ -162,7 +162,7 @@
   }
   /* the spelling table of a key: the diatonic steps of its signature, every other pitch class spelled from its neighbour in
      the direction the mode prefers (the table audio-score.js spells with) */
-  function spellingTable(key) {
+  function spellingTable(key, plain) {
     const ka = keyAlters(key.fifths);
     const table = {};
     LETTERS.forEach(l => { table[mod12(LETTER_PC[l] + ka[l])] = { step: l, alter: ka[l] }; });
@@ -171,6 +171,10 @@
       if (table[pc]) continue;
       const dir = dirs[mod12(pc - key.tonic)] || (key.fifths < 0 ? -1 : 1);
       const from = table[mod12(pc - dir)];
+      /* plain (a song: opts.songLayers): a double sharp or flat only when the other neighbour needs one too - F# major's D is
+         D, not C double-sharp. The catalogue writes the raised fifth (B major's F double-sharp), so only a song asks for it */
+      const alt = table[mod12(pc + dir)];
+      if (plain && from && Math.abs(from.alter + dir) > 1 && alt && Math.abs(alt.alter - dir) <= 1) { table[pc] = { step: alt.step, alter: alt.alter - dir }; continue; }
       table[pc] = from ? { step: from.step, alter: from.alter + dir } : { step: 'C', alter: 0 };
     }
     return table;
@@ -314,14 +318,19 @@
     /* a note may name its bar (a score whose bars are not all one length); otherwise the bar is tick / barTicks */
     const barOf = notes.map(n => (n && n.bar != null && isFinite(n.bar) ? Math.max(0, Math.min(bars - 1, n.bar | 0))
       : n && isFinite(n.tick) ? Math.max(0, Math.min(bars - 1, Math.floor(n.tick / barTicks))) : 0));
-    const chosen = chooseKey(notes, ev, { weights: ctx.weights });
+    /* ctx.key {tonic 0-11, mode 'major'|'minor'}: the key stated by the source (a lead-sheet transcriber heard it, SheetSage2), written as
+       it is and for the whole piece (no regions: that transcriber states one key) */
+    const stated = ctx.key && Number.isInteger(ctx.key.tonic) && ctx.key.tonic >= 0 && ctx.key.tonic < 12 && (ctx.key.mode === 'major' || ctx.key.mode === 'minor') ? ctx.key : null;
+    const chosen = stated ? { best: { fifths: fifthsOf(stated.tonic, stated.mode), mode: stated.mode, tonic: stated.tonic, score: null, r: null, fit: null }, margin: 1 }
+      : chooseKey(notes, ev, { weights: ctx.weights });
     const best = chosen.best;
     const key = { fifths: best.fifths, mode: best.mode, tonic: best.tonic, margin: Math.round(chosen.margin * 1e4) / 1e4,
       score: best.score, r: best.r, diatonicFit: best.fit };
-    const keyOfBar = ctx.regions === false ? new Array(bars).fill({ fifths: key.fifths, mode: key.mode, tonic: key.tonic }) : barKeys(notes, ev, barOf, bars, key, c);
+    if (stated) key.source = 'stated';
+    const keyOfBar = ctx.regions === false || stated ? new Array(bars).fill({ fifths: key.fifths, mode: key.mode, tonic: key.tonic }) : barKeys(notes, ev, barOf, bars, key, c);
     const regions = regionsOf(keyOfBar);
     const tables = new Map();
-    const tableOf = k => { const id = k.fifths + ':' + k.mode + ':' + k.tonic; if (!tables.has(id)) tables.set(id, spellingTable(k)); return tables.get(id); };
+    const tableOf = k => { const id = k.fifths + ':' + k.mode + ':' + k.tonic; if (!tables.has(id)) tables.set(id, spellingTable(k, !!ctx.plain)); return tables.get(id); };
     const spell = notes.map((n, i) => {
       if (!(n && isFinite(n.midi))) return null;
       const t = tableOf(keyOfBar[barOf[i]])[mod12(n.midi)];

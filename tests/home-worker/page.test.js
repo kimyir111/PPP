@@ -5,12 +5,14 @@
    worker - so what is checked here is the PAGE: when the button shows, what it sends, the list, what a reload keeps, Open writing the score from the PC's notes (v2 or
    classic), the review screen's words, saving, and that nothing changes for anyone who has no link.
 
-     - no link on this device: no button, no note, no list, no request about jobs; the Add-sheet-music card is identical, tag for tag, to the card of the commit before the
-       feature; the Settings card offers "Create my PC link" and "Use a PC link from another device" and says no sign-in is needed
+     - no link on this device: no primary button, no note, no list, no request about jobs (G10b-5: ONE probe, GET /api/worker/status with no header, to learn whether the site has the queue); the
+       Add-sheet-music card is identical, tag for tag, to the card of the commit before the feature EXCEPT for the one secondary button "High-quality (my PC)" that opens the sheet saying how to
+       connect (G10b-5: the button must always be findable; tests/home-worker/findable.test.js has every state of it); the Settings card offers "Create my PC link" and "Use a PC link from
+       another device" and says no sign-in is needed
      - a private window (localStorage blocked, or its getter throwing): no card, no request, no error
      - making a link: both secrets shown once with copy buttons, the exact lines for the PC, a warning to keep them secret; the code is in localStorage, no cookie is sent
      - a link on this device: status, Show my PC code, New PC token (asked twice; the old token is dead), Remove link (asked twice), Forget on this device
-     - a second device types the code (pasted with spaces, dashes and capitals), sees the same list, opens the result; a wrong or stale code is said and forgotten
+     - a second device types the code (pasted with spaces, dashes and capitals), sees the same list, opens the result; a wrong code is said and not kept; a code the site does not know right now is KEPT and said (G10b-5)
      - the PC connects: the button beside "Make sheet music", the honest note, the list, Cancel, Remove, Open (v2 or classic), the review, Accept
      - the polling: a timer only while something is waiting or converting
      - Korean, Japanese and Chinese: the card, the button, the note and the statuses
@@ -118,8 +120,8 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
     heading('no link on this device: nothing of it, no request, and the card of the commit before is the same');
     const guest = await openPage(browser, base);
     await goAdd(guest);
-    ok('no button, no note, no list on the Add screen', !(await has(guest, '[data-home-pc]')) && !(await has(guest, '[data-home-note]')) && !(await has(guest, '[data-home-jobs]')));
-    ok('a device with no link asks the site NOTHING about jobs, workers or links while the Add screen is open', queued(guest).length === 0, queued(guest).join(', '));
+    ok('no primary button, no note, no list on the Add screen; the secondary button (how to connect) is there instead (G10b-5)', !(await has(guest, '[data-home-pc]')) && !(await has(guest, '[data-home-note]')) && !(await has(guest, '[data-home-jobs]')) && await has(guest, '[data-home-pc-help]'));
+    ok('a device with no link asks the site NOTHING about jobs or links while the Add screen is open - only the one probe that learns whether the site has the queue (GET /api/worker/status, no PC code)', queued(guest).join() === 'GET /api/worker/status' && await guest.evaluate(() => window.__fetches.every(f => !f.headers || !f.headers['X-PPP-PC'])), queued(guest).join(', '));
     let baseHtml = null;
     /* b7f9fb5: main as it was before G10b-2 (the home-PC queue with accounts; for a device with no account and no link the Add card is the plain one) */
     try { baseHtml = execFileSync('git', ['show', 'b7f9fb5:Piano Coach App.dc.html'], { cwd: L.REPO, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }); } catch (e) { baseHtml = null; }
@@ -128,8 +130,14 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
       await goAdd(old);
       const norm = h => h.replace(/\s+/g, ' ').replace(/ data-reactroot=""/g, '');
       const a = norm(await old.evaluate(() => document.querySelector('[data-add-sheet]').outerHTML));
-      const b = norm(await guest.evaluate(() => { window.PPP.app.go('upload')(); return new Promise(r => setTimeout(() => r(document.querySelector('[data-add-sheet]').outerHTML), 700)); }));
-      ok('the Add-sheet-music card of a device with no link is identical to the one of main before this change (b7f9fb5; ' + a.length + ' characters)', a === b && a.length > 3000, a === b ? '' : 'differs near ' + [...a].findIndex((c, i) => c !== b[i]));
+      const bRaw = await guest.evaluate(() => { window.PPP.app.go('upload')(); return new Promise(r => setTimeout(() => r(document.querySelector('[data-add-sheet]').outerHTML), 700)); });
+      /* G10b-5 (deliberate): the card used to be identical to this one for everybody with no link; it now differs by EXACTLY one element, the secondary button "High-quality (my PC)" (data-home-pc-help) that opens the
+         sheet saying how to connect. Everything else of the card is the same, tag for tag. */
+      const helpRe = /<button\b[^>]*data-home-pc-help[^>]*>.*?<\/button>/;
+      const helpBtn = (bRaw.match(helpRe) || [''])[0];
+      const b = norm(bRaw.replace(helpRe, ''));
+      ok('the Add-sheet-music card of a device with no link is identical to the one of main before this change (b7f9fb5; ' + a.length + ' characters) except for ONE added element: the secondary button "High-quality (my PC)" (G10b-5)', a === b && a.length > 3000 && /High-quality \(my PC\)/.test(helpBtn) && norm(bRaw) !== a && (bRaw.match(/data-home-pc-help/g) || []).length === 1, a === b ? '' : 'differs near ' + [...a].findIndex((c, i) => c !== b[i]));
+      ok('and that button sits in the row of "Make sheet music" (same parent), after it', await guest.evaluate(() => { const h = document.querySelector('[data-home-pc-help]'), m = [...document.querySelectorAll('[data-youtube] button')].find(x => /Make sheet music/.test(x.innerText)); return !!h && !!m && h.parentElement === m.parentElement && !!(m.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING); }));
       await old.close();
     } else console.log('  - git history of b7f9fb5 not available: the identical-card check is skipped');
     await goSettings(guest);
@@ -165,12 +173,12 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
     ok('Create my PC link POSTs /api/pc-links with an empty body and no PC code (there is none yet)', !!post && post.method === 'POST' && JSON.parse(post.body || '{}') && Object.keys(JSON.parse(post.body || '{}')).length === 0
       && (await pg.evaluate(() => window.__fetches.find(f => f.u === '/api/pc-links')).then(f => !!f && !('X-PPP-PC' in f.headers))));
     ok('the PC token (ppw_...) and the pairing link (this site, #pc=, the 64 hex of the code) are shown, each with a Copy button', /^ppw_[A-Za-z0-9_-]{12}_[A-Za-z0-9_-]{43}$/.test(token) && /^[0-9a-f]{64}$/.test(code) && pairLink === new URL(base).origin + '/#pc=' + code && /Copy/.test(await text(pg, '[data-home-token-copy]')) && /Copy/.test(await text(pg, '[data-home-pair-copy-new]')), token.slice(0, 8));
-    ok('an explicit warning under the link: anyone with this link can send conversions to your PC - send it only to yourself', /Anyone with this link can send conversions to your PC: send it only to yourself/.test(await text(pg, '[data-home-warning]')));
+    ok('an explicit warning under the link that says what a holder can do (G10b-4): send conversions to your PC, read their results, replace the PC token, remove the link - send it only to yourself', await text(pg, '[data-home-warning]') === 'Anyone with this link can send conversions to your PC, read their results, replace the PC token and remove the link: send it only to yourself.', await text(pg, '[data-home-warning]'));
     const steps = await text(pg, '[data-home-steps]');
     ok('and the exact lines for the PC: the file to copy, the siteUrl of this site, this token, the --check and --once commands', /worker\.config\.example\.json/.test(steps) && steps.indexOf('"siteUrl": "' + new URL(base).origin + '"') > 0 && steps.indexOf('"token": "' + token + '"') > 0 && /worker\.js --check/.test(steps) && /worker\.js --once/.test(steps), JSON.stringify({ base: base, tokenLen: token.length, a: /worker\.config\.example\.json/.test(steps), b: steps.indexOf('"siteUrl": "' + new URL(base).origin + '"'), c: steps.indexOf('"token": "' + token + '"') }));
     ok('this browser keeps the code in localStorage (ppp.pclink.v1) - and only the code, not the token', JSON.parse(await stored(pg)).code === code && (await stored(pg)).indexOf(token) < 0 && (await pg.evaluate(() => Object.keys(localStorage).filter(k => localStorage.getItem(k).indexOf('ppw_') >= 0).length)) === 0);
     ok('no cookie is involved: every call to the queue was made with credentials "omit", and the code goes in X-PPP-PC', await pg.evaluate(() => window.__fetches.every(f => f.credentials === 'omit') && window.__fetches.some(f => f.headers && f.headers['X-PPP-PC'])));
-    ok('after the link is made the card shows its status (waiting for the PC); "Create my PC link" is gone, and the other buttons are under More (closed)', /^Waiting for your PC$/.test(await text(pg, '[data-home-status-line]')) && !(await has(pg, '[data-home-link-make]')) && !(await has(pg, '[data-home-use]')) && !(await has(pg, '[data-home-link]')));
+    ok('after the link is made the card shows its status (waiting for the PC); "Create my PC link" is gone, and the other buttons are under More (closed)', /^Waiting for your PC · PC link …[0-9a-f]{6}$/.test(await text(pg, '[data-home-status-line]')) && !(await has(pg, '[data-home-link-make]')) && !(await has(pg, '[data-home-use]')) && !(await has(pg, '[data-home-link]')));
     await openMore(pg);
     ok('under More: show my code, new token, remove link, forget on this device, and the paste form', await pg.evaluate(() => ['[data-home-code-show]', '[data-home-token-rotate]', '[data-home-link-remove]', '[data-home-link-forget]', '[data-home-use-input]'].every(s => !!document.querySelector(s))));
     await pg.evaluate(() => document.querySelector('[data-home-more]').click()); await sleep(300);
@@ -189,7 +197,11 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
       return shown && !(await has(pg, '[data-home-code-shown]')) && /Show my PC code/.test(await text(pg, '[data-home-code-show]'));
     })());
     await goAdd(pg);
-    ok('a link whose PC has never connected shows no button (nothing could pick the job up), no list', !(await has(pg, '[data-home-pc]')) && !(await has(pg, '[data-home-jobs]')));
+    ok('a link whose PC has never connected still shows the button (G10b-5: it is always findable), enabled, with one line under it: the PC has not connected yet, it will take the job when it does; no note, no list', await (async () => {
+      await sleep(300);
+      const b = await pg.evaluate(() => { const e = document.querySelector('[data-home-pc]'); return e && { disabled: e.disabled }; });
+      return !!b && b.disabled === false && (await text(pg, '[data-home-pc-state]')) === 'Your PC has not connected yet: it will take the job when it does' && (await pg.evaluate(() => document.querySelector('[data-home-pc-state]').getAttribute('data-home-pc-state'))) === 'never-seen' && !(await has(pg, '[data-home-note]')) && !(await has(pg, '[data-home-jobs]'));
+    })());
     ok('the Add screen now asks for the list with the code (and the Settings screen asked nothing without a link: the probe was made once before the link existed)', pg.__rec.requests.some(r => r === 'GET /api/jobs'));
 
     heading('the PC connects: the button, the note');
@@ -206,14 +218,18 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
     ok('a PC that has checked in: the button is there, beside "Make sheet music"', await has(pg, '[data-home-pc]') && /High-quality \(my PC\)/.test(await text(pg, '[data-home-pc]')));
     const note = await text(pg, '[data-home-note]');
     ok('the note is honest: about once an hour, must be on, a few minutes a song, run the desktop shortcut to start now', /about once an hour/.test(note) && /switched on/.test(note) && /few minutes/.test(note) && /run the desktop shortcut/.test(note) && !/20 minutes/.test(note), note);
-    ok('the PC is alive, so no "has not checked in" sentence', !/has not checked in/.test(note));
+    ok('the PC is alive, so no "has not checked in" sentence, and no state line under the button any more', !/has not checked in/.test(note) && !(await has(pg, '[data-home-pc-state]')));
     ok('the two buttons are in the same row', await pg.evaluate(() => { const a = document.querySelector('[data-home-pc]'), b = [...document.querySelectorAll('[data-youtube] button')].find(x => /Make sheet music/.test(x.innerText)); return !!a && !!b && a.parentElement === b.parentElement; }));
     ok('the Full song recording type hides it (the helper makes faithful transcriptions)', await (async () => { await pg.evaluate(() => window.PPP.app.setState({ transcriptionMode: 'arrange' })); await sleep(300); const gone = !(await has(pg, '[data-home-pc]')); await pg.evaluate(() => window.PPP.app.setState({ transcriptionMode: 'auto' })); await sleep(300); return gone; })());
     ok('a PC the server has not heard of lately adds one honest sentence', await pg.evaluate(() => { const n = window.PPP.app.homeView({ homeWorker: { everSeen: true, alive: false, idlePollSeconds: 3600 }, homeJobs: [] }).homePcNote; return /about once an hour/.test(n) && /has not checked in lately/.test(n); }));
     ok('the interval is said in the words the site\'s setting calls for: 15 minutes, half an hour, an hour, 3 hours, a day', await pg.evaluate(() => { const f = secs => window.PPP.app.homeView({ homeWorker: { everSeen: true, alive: true, idlePollSeconds: secs }, homeJobs: [] }).homePcNote; return /about every 15 minutes/.test(f(900)) && /about every 30 minutes/.test(f(1800)) && /about once an hour/.test(f(3600)) && /about every 3 hours/.test(f(10800)) && /about every 24 hours/.test(f(86400)); }));
 
     await goSettings(pg); await refresh(pg);
-    ok('Settings now says the PC is connected, and when it was last seen (the time of its first check): one line', /^PC connected · last seen (just now|\d+ min ago)$/.test(await text(pg, '[data-home-status-line]')) && !(await has(pg, '[data-home-last-seen]')), await text(pg, '[data-home-status-line]'));
+    ok('Settings now says the PC is connected, and when it was last seen (the time of its first check): one line', /^PC connected · last seen (just now|\d+ min ago) · PC link …[0-9a-f]{6}$/.test(await text(pg, '[data-home-status-line]')) && !(await has(pg, '[data-home-last-seen]')), await text(pg, '[data-home-status-line]'));
+    ok('G10b-4: the name in the status line is the site\'s linkTag of this device\'s link (the last 6 hex of the link id), and not a piece of the code', await (async () => {
+      const J = L.mod('home-jobs.js'), c = JSON.parse(await stored(pg)).code, tag = J.linkTagOf(J.linkIdOf(J.codeHash(c)));
+      return (await text(pg, '[data-home-status-line]')).endsWith('…' + tag) && !c.includes(tag) && !(await pg.evaluate(() => document.body.innerText)).includes(c);
+    })());
     await goAdd(pg);
 
     heading('asking for a conversion');
@@ -240,6 +256,30 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
     await click(pg, '[data-home-pc]');
     await sleep(500);
     ok('a link that is not YouTube is refused by the page, before any request', /not a link to a YouTube video/.test(await text(pg, '[data-youtube]')) && pg.__rec.posts.filter(p => p.path === '/api/jobs').length === postsBefore);
+
+    heading('G10d: piano recording or song');
+    const modeOf = () => pg.evaluate(() => ({ piano: document.querySelector('[data-home-mode-piano]').getAttribute('aria-checked'), song: document.querySelector('[data-home-mode-song]').getAttribute('aria-checked'), note: document.querySelector('[data-home-mode-note]').innerText, kept: localStorage.getItem('ppp.homemode.v1') }));
+    const m0 = await modeOf();
+    ok('beside the button: "Piano recording" (chosen) or "Song (vocals, band)", with a line that says what each does', m0.piano === 'true' && m0.song === 'false' && /Piano recording: the piano models/.test(m0.note) && m0.kept === null, JSON.stringify(m0));
+    ok('the job asked for above (piano) went without a mode', !('mode' in JSON.parse(jpost.body)));
+    await click(pg, '[data-home-mode-song]');
+    await sleep(200);
+    const m1 = await modeOf();
+    ok('choosing Song marks it, says the voice becomes the tune and the drums are left out, and is remembered on this device', m1.song === 'true' && m1.piano === 'false' && /drums out/.test(m1.note) && m1.kept === 'song', JSON.stringify(m1));
+    const SONG_YT = 'https://www.youtube.com/watch?v=songsong001';
+    await typeLink(pg, SONG_YT);
+    await click(pg, '[data-home-pc]');
+    await pg.waitForFunction(() => document.querySelectorAll('[data-home-job]').length === 2, { timeout: 8000 });
+    const spost = pg.__rec.posts.filter(p => p.path === '/api/jobs' && p.method === 'POST' && JSON.parse(p.body).url === SONG_YT)[0];
+    ok('the button then asks for the conversion in song mode', !!spost && JSON.parse(spost.body).mode === 'song', spost && spost.body);
+    const songJob = (await req(port, 'GET', '/api/jobs', { code: code })).body.jobs.find(j => j.url === SONG_YT);
+    ok('the site has it as a song job, and the list says so', !!songJob && songJob.kind === 'youtube-song' && /· Song/.test(await pg.evaluate(id => document.querySelector('[data-home-job="' + id + '"] [data-home-status]').innerText, songJob.id)));
+    await req(port, 'POST', '/api/jobs/' + songJob.id + '/cancel', { code: code, body: {} });
+    await req(port, 'DELETE', '/api/jobs/' + songJob.id, { code: code });
+    await click(pg, '[data-home-mode-piano]');
+    await sleep(200);
+    ok('Piano recording again: chosen, and nothing is remembered (the default)', (await modeOf()).piano === 'true' && (await modeOf()).kept === null);
+    await goAdd(pg); await sleep(600);
 
     heading('looking again: backing off, stopping, a way to look once more');
     {
@@ -327,6 +367,10 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
     });
     ok('the review screen opened (no error)', rv.screen === 'review' && !rv.err, rv.err || rv.screen);
     ok('the heard object is the page\'s own format: tier local-piano-ensemble, engine ensemble, notes only (no pedals, no beats)', rv.heard.tier === 'local-piano-ensemble' && rv.heard.engine === 'ensemble' && rv.heard.homePc === true && !rv.heard.pedals && !rv.heard.beats && rv.heard.n === heard.length, JSON.stringify(rv.heard));
+    /* G10a-1d: a result with the PC's beats carries them into the heard object (v2 reads them as bar-phase evidence); one without carries none */
+    const hb = await pg.evaluate(() => { const A = window.PPP.app; const b = [0.5, 1, 1.5, 2, 2.5]; const x = A.homeHeard({ notes: [], duration: 3, beats: b, downbeats: [0.5, 2.5] }), y = A.homeHeard({ notes: [], duration: 3, beats: [1, 2] });
+      return { beats: x.beats, downbeats: x.downbeats, none: !('beats' in y) && !('downbeats' in y) }; });
+    ok('a PC result with beats gives the heard object its beats and downbeats; fewer than four beats, none', JSON.stringify(hb.beats) === '[0.5,1,1.5,2,2.5]' && JSON.stringify(hb.downbeats) === '[0.5,2.5]' && hb.none, JSON.stringify(hb));
     ok('it carries the ensemble summary (models, agreement 0.83, 12 kept apart)', rv.heard.agreement === 0.83 && rv.heard.models.join() === 'transkun,piano-transcription' && rv.heard.uncertain === 12 && rv.heard.device === 'cuda');
     ok('v2 was selected, so v2 wrote the notation (pipeline v2, version 8)', rv.pipeline === 'v2' && rv.version === 8, JSON.stringify({ p: rv.pipeline, v: rv.version }));
     ok('the source says where it came from: YouTube, this link, "Piano ensemble on your PC"', rv.kind === 'youtube' && rv.url === YT && rv.engineLabel === 'Piano ensemble on your PC' && rv.amt === 'ensemble' && rv.device === 'cuda', JSON.stringify({ k: rv.kind, e: rv.engineLabel }));
@@ -449,14 +493,18 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
       await dev3.close();
     }
 
-    heading('a code the site does not know (removed on another device, or purged for not being used): the device says so and forgets it');
+    heading('a code the site does not know right now (G10b-5): the device KEEPS it, says so, and asks again; only the person (or three spaced answers over a minute, tests/home-worker/findable.test.js) lets go of it');
     {
       const stale = await openPage(browser, base, { store: { 'ppp.pclink.v1': JSON.stringify({ v: 1, code: 'ab'.repeat(32) }) } });
       await goAdd(stale); await sleep(800);
-      ok('the page is told 401 "not valid": no list, no button; the code is cleared from localStorage; no timer is set', !(await has(stale, '[data-home-pc]')) && !(await has(stale, '[data-home-jobs]')) && (await stored(stale)) === null && !(await stale.evaluate(() => !!window.PPP.app._homeTimer)));
+      ok('the page is told 401 "not valid" ONCE: the code is still in localStorage; the button is there but disabled, with the reason; no list; no polling timer', (await stored(stale)) !== null && await stale.evaluate(() => { const b = document.querySelector('[data-home-pc]'); return !!b && b.disabled === true; })
+        && /does not recognise right now/.test(await text(stale, '[data-home-pc-state]')) && !(await has(stale, '[data-home-jobs]')) && !(await stale.evaluate(() => !!window.PPP.app._homeTimer)));
       const countAsked = stale.__rec.requests.filter(r => r === 'GET /api/jobs').length;
       await goSettings(stale);
-      ok('Settings says the link is no longer valid and offers to create a new one; it does not ask again with the dead code', /no longer valid/.test(await text(stale, '[data-home-gone]')) && await has(stale, '[data-home-link-make]') && stale.__rec.requests.filter(r => r === 'GET /api/jobs').length === countAsked && clean(stale), errs(stale));
+      ok('Settings says so, with Check again and Remove it; it does not offer to create a new link (this device still holds one), and it asked the site again on opening', /does not recognise right now/.test(await text(stale, '[data-home-unrec-text]')) && await has(stale, '[data-home-unrec-check]') && await has(stale, '[data-home-unrec-remove]') && !(await has(stale, '[data-home-gone]')) && !(await has(stale, '[data-home-link-make]'))
+        && stale.__rec.requests.filter(r => r === 'GET /api/jobs').length > countAsked && clean(stale), errs(stale));
+      await click(stale, '[data-home-unrec-remove]'); await sleep(500);
+      ok('Remove it: this device lets go of the code (the person said so); the card is back to "Create my PC link"', (await stored(stale)) === null && await has(stale, '[data-home-link-make]') && !(await has(stale, '[data-home-unrec]')));
       await stale.close();
     }
 
@@ -475,7 +523,7 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
       ok('(the Add screen of this device)', !(await has(pg, '[data-home-pc]')) && !(await has(pg, '[data-home-jobs]')));
       ok('the PC token is refused at once (401), the code is refused (401), and the conversions are gone from the site', (await req(port, 'POST', '/api/worker/claim', { token: tokenNow, body: {} })).status === 401 && (await req(port, 'GET', '/api/jobs', { code: code })).status === 401);
       await refresh(devB);
-      ok('the other device finds out at its next look: it says the link is no longer valid and forgets the code', (await stored(devB)) === null && !(await has(devB, '[data-home-jobs]')));
+      ok('the other device finds out at its next look - and keeps the code (G10b-5: one answer of "not valid" proves nothing): the state is "unrecognised", no list, the button disabled', (await stored(devB)) !== null && !(await has(devB, '[data-home-jobs]')) && await devB.evaluate(() => { const b = document.querySelector('[data-home-pc]'); return !!b && b.disabled === true; }) && await devB.evaluate(() => !!window.PPP.app.state.homeUnrec));
       await devB.close();
       ok('no page or console error', clean(pg), errs(pg));
     }

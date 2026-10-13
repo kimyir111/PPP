@@ -1,0 +1,23 @@
+{
+ "schema": "ppp.omr-real-scan/1",
+ "bench": "omr-live-2",
+ "about": "Public-domain page images of the editions the catalogue was transcribed from (catalog/method/books.json). The images are never committed; omrbench/fetch_real.py downloads the entries below to a git-ignored folder after the host itself says the file is public domain and the bytes match the pinned sha256. The list is EMPTY on purpose: no file's licence has been read on its host yet, and an id or URL written down from memory would be a guess (tests/omr/README.md, 'The real-scan tier').",
+ "editions": [
+  {"work": "method/beyer", "edition": "Beyer, Vorschule im Klavierspiel Op. 101: Peters, Leipzig 1895 (rev. A. Ruthardt)", "transcribed_in": "catalog/method/beyer/"},
+  {"work": "method/czerny599", "edition": "Czerny, 100 Progressive Studies Op. 599: Schirmer, New York 1893 (ed. G. Buonamici)", "transcribed_in": "catalog/method/czerny599/"}
+ ],
+ "entry_example": {
+  "id": "beyer-op101-peters-1895",
+  "source": "commons | imslp",
+  "title": "File:<exact Commons file title>.pdf   (Commons) | the IMSLP file name",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/<path>.pdf",
+  "sha256": "<64 hex digits; 64 zeros while pinning, then the value `--pin` prints>",
+  "licence": "Public domain (author died 1883)",
+  "licence_evidence": "https://<the https page of the host that states the licence>",
+  "edition": "Peters, Leipzig 1895",
+  "work": "method/beyer",
+  "pages": [{"pdf_page": 12, "piece": "method/beyer/012", "bars": [1, 8]}]
+ },
+ "known_differences": [],
+ "entries": []
+}

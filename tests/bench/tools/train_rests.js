@@ -69,7 +69,8 @@ function runPerfs(lines) {
     const perf = JSON.parse(line);
     rows = [];
     let err = null;
-    try { AS.toMusicXml(Object.assign({ title: 'train' }, perf.input), Object.assign({}, CONFIG.opts)); } catch (e) { err = String(e && e.message || e).slice(0, 200); }
+    /* the humanizer's beats are the score's bar lines (the benchmark's notate.js marks them so too, G10a-1d) */
+    try { AS.toMusicXml(Object.assign({ title: 'train' }, perf.input), Object.assign({}, CONFIG.opts, perf.input.beats ? { recBeats: 'oracle' } : {})); } catch (e) { err = String(e && e.message || e).slice(0, 200); }
     return { id: perf.id, rows: rows, err: err };
   });
 }

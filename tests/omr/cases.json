@@ -1,0 +1,1193 @@
+{
+ "bench": "omr-live-2",
+ "cases": [
+  {
+   "bars": 8,
+   "bars_total": 8,
+   "case": "catalog_gymnopedie-1",
+   "fifths": 2,
+   "id": "catalog/gymnopedie-1",
+   "license": "CC0 — PPP public-domain catalog (Erik Satie, Gymnopédie No. 1)",
+   "path": "catalog/gymnopedie-1.musicxml",
+   "source_sha256": "90c82a30689b7fac4049203d2cd093a5fd4a6b25ba314628c1cd55a0f0ef7649",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:catalog",
+    "time:3/4",
+    "key:+2",
+    "s1",
+    "s1-app"
+   ],
+   "time": "3/4"
+  },
+  {
+   "bars": 8,
+   "bars_total": 8,
+   "case": "catalog_happy-birthday",
+   "fifths": 1,
+   "id": "catalog/happy-birthday",
+   "license": "CC0 — PPP public-domain catalog (Traditional, Happy Birthday)",
+   "path": "catalog/happy-birthday.musicxml",
+   "source_sha256": "81d7a5c68d803379590260626c488d3f0ee51c04c468984fcb78cf6ea9e9d76d",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:catalog",
+    "time:3/4",
+    "key:+1",
+    "s1"
+   ],
+   "time": "3/4"
+  },
+  {
+   "bars": 17,
+   "bars_total": 17,
+   "case": "hymns_all-creatures",
+   "fifths": 2,
+   "id": "hymns/all-creatures",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/all-creatures.musicxml",
+   "source_sha256": "ca6cb5d68043d16efecc6452f311f75eb04ea9153c23b02f639e149dd6ec2c4b",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:6/4",
+    "key:+2"
+   ],
+   "time": "6/4"
+  },
+  {
+   "bars": 16,
+   "bars_total": 16,
+   "case": "hymns_be-thou-my-vision",
+   "fifths": -3,
+   "id": "hymns/be-thou-my-vision",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/be-thou-my-vision.musicxml",
+   "source_sha256": "c4ccbe23477404f85adc96236bd0ed925f7c4b87d0c98405bb8d6253de69026b",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:3/4",
+    "key:-3"
+   ],
+   "time": "3/4"
+  },
+  {
+   "bars": 17,
+   "bars_total": 17,
+   "case": "hymns_blessed-assurance",
+   "fifths": 2,
+   "id": "hymns/blessed-assurance",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/blessed-assurance.musicxml",
+   "source_sha256": "fefacac57d9d359038c679d2683839b82e9150664d8c3e95e4424e25d1204814",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:9/8",
+    "key:+2",
+    "s1"
+   ],
+   "time": "9/8"
+  },
+  {
+   "bars": 24,
+   "bars_total": 37,
+   "case": "hymns_come-holy-spirit",
+   "fifths": 1,
+   "id": "hymns/come-holy-spirit",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/come-holy-spirit.musicxml",
+   "source_sha256": "436dc2b0366e47f591cfa9fb53d219997c3624cad6db413f12232120c5fcad1f",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:4/4",
+    "key:+1"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 16,
+   "bars_total": 16,
+   "case": "hymns_god-will-take-care",
+   "fifths": -2,
+   "id": "hymns/god-will-take-care",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/god-will-take-care.musicxml",
+   "source_sha256": "cff1016e6d83b88665582d52617471f97d9636e01510518d4e73546d990f0c28",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:6/8",
+    "key:-2"
+   ],
+   "time": "6/8"
+  },
+  {
+   "bars": 20,
+   "bars_total": 20,
+   "case": "hymns_hark-the-herald",
+   "fifths": -1,
+   "id": "hymns/hark-the-herald",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/hark-the-herald.musicxml",
+   "source_sha256": "499be8058c12f568f3e66ee8ad82c7e8c8622d5804740018d46cfd7cdd84e616",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:4/4",
+    "key:-1"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 17,
+   "bars_total": 17,
+   "case": "hymns_how-firm-a-foundation",
+   "fifths": -4,
+   "id": "hymns/how-firm-a-foundation",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/how-firm-a-foundation.musicxml",
+   "source_sha256": "dbdb9244e5287c8de5772e2a27bd3c1c9dee8ef02f0ed8927cbd674484e2cb04",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:2/2",
+    "key:-4",
+    "s1"
+   ],
+   "time": "2/2"
+  },
+  {
+   "bars": 16,
+   "bars_total": 16,
+   "case": "hymns_i-know-that-my-redeemer",
+   "fifths": 2,
+   "id": "hymns/i-know-that-my-redeemer",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/i-know-that-my-redeemer.musicxml",
+   "source_sha256": "7628017376b099d8ed260f0ec35fa600e6f57186c831f71197e71cd48b09ab41",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:4/4",
+    "key:+2"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 17,
+   "bars_total": 17,
+   "case": "hymns_i-know-whom",
+   "fifths": -3,
+   "id": "hymns/i-know-whom",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/i-know-whom.musicxml",
+   "source_sha256": "3c04dd1d18a441465fe15c494faad11531e14c8619dfe1ab9001d49211091dd4",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:4/4",
+    "key:-3"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 22,
+   "bars_total": 22,
+   "case": "hymns_it-is-well",
+   "fifths": -5,
+   "id": "hymns/it-is-well",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/it-is-well.musicxml",
+   "source_sha256": "8e98bf8cf64d77adefb0271b6527156d5b083480f03d5d3283e8c537c834dfb8",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:4/4",
+    "key:-5",
+    "s1"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 16,
+   "bars_total": 16,
+   "case": "hymns_jesus-shall-reign",
+   "fifths": -3,
+   "id": "hymns/jesus-shall-reign",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/jesus-shall-reign.musicxml",
+   "source_sha256": "af69d4c2692a0ac2b45feb60bc1d66808529f31ec9cf40ea9962909592dcaff6",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:2/2",
+    "key:-3"
+   ],
+   "time": "2/2"
+  },
+  {
+   "bars": 19,
+   "bars_total": 19,
+   "case": "hymns_joy-to-the-world",
+   "fifths": 2,
+   "id": "hymns/joy-to-the-world",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/joy-to-the-world.musicxml",
+   "source_sha256": "c30b56e3025a9d99847192abf3f12fcad7db296f58895d60c18213553937596d",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:2/4",
+    "key:+2",
+    "s1",
+    "s1-app"
+   ],
+   "time": "2/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 26,
+   "case": "hymns_lo-he-comes",
+   "fifths": 1,
+   "id": "hymns/lo-he-comes",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/lo-he-comes.musicxml",
+   "source_sha256": "95bf92686a6dd2c4b6e25956c8605be22d220583ece3ad0be0587f7c02c94e48",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:4/4",
+    "key:+1"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 17,
+   "bars_total": 17,
+   "case": "hymns_my-saviors-love",
+   "fifths": -4,
+   "id": "hymns/my-saviors-love",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/my-saviors-love.musicxml",
+   "source_sha256": "1705a8c1f423a90884ccb4834f17b17f45b494a80e6af588f9ab377fa2df46bc",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:4/4",
+    "key:-4"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 16,
+   "bars_total": 16,
+   "case": "hymns_nearer-my-god",
+   "fifths": 1,
+   "id": "hymns/nearer-my-god",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/nearer-my-god.musicxml",
+   "source_sha256": "7ec99f24f09e486fa5c14af5ddb62cfee8c94f8622b54bf94bf29073f90e274c",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:6/4",
+    "key:+1"
+   ],
+   "time": "6/4"
+  },
+  {
+   "bars": 20,
+   "bars_total": 20,
+   "case": "hymns_o-come-emmanuel",
+   "fifths": 1,
+   "id": "hymns/o-come-emmanuel",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/o-come-emmanuel.musicxml",
+   "source_sha256": "6c3bb71e6038582a5286e18ce70758f4f970fe71ea848265cceeff82604a5988",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:4/4",
+    "key:+1"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 12,
+   "bars_total": 12,
+   "case": "hymns_silent-night",
+   "fifths": -2,
+   "id": "hymns/silent-night",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/silent-night.musicxml",
+   "source_sha256": "43029b1b6d8e1282a4c23339516b591f8e80c822714680e65f0e61fe8060d570",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:3/4",
+    "key:-2",
+    "s1",
+    "s1-app"
+   ],
+   "time": "3/4"
+  },
+  {
+   "bars": 17,
+   "bars_total": 17,
+   "case": "hymns_the-lords-my-shepherd",
+   "fifths": 2,
+   "id": "hymns/the-lords-my-shepherd",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/the-lords-my-shepherd.musicxml",
+   "source_sha256": "8aafd7bf3bbb87b90c02499c8a28755b658e3b0ec77a6f3682ed49eee460e769",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:3/2",
+    "key:+2"
+   ],
+   "time": "3/2"
+  },
+  {
+   "bars": 24,
+   "bars_total": 33,
+   "case": "hymns_to-god-be-the-glory",
+   "fifths": -4,
+   "id": "hymns/to-god-be-the-glory",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/to-god-be-the-glory.musicxml",
+   "source_sha256": "4933985e57546f4b5051906060c5bcb95ca137d153fc8fbf78f37ddde9b03ac3",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:3/4",
+    "key:-4"
+   ],
+   "time": "3/4"
+  },
+  {
+   "bars": 17,
+   "bars_total": 17,
+   "case": "hymns_what-child-is-this",
+   "fifths": 2,
+   "id": "hymns/what-child-is-this",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/what-child-is-this.musicxml",
+   "source_sha256": "c384d096a44416fc83b206c52815942f27de411d858a2a2bdaa1c398e98f49c0",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:3/4",
+    "key:+2"
+   ],
+   "time": "3/4"
+  },
+  {
+   "bars": 16,
+   "bars_total": 16,
+   "case": "hymns_when-i-survey",
+   "fifths": -1,
+   "id": "hymns/when-i-survey",
+   "license": "Public domain (Open Hymnal Project SATB setting, two-staff piano reduction) — Open Hymnal Project ABC SATB setting (2014.06), converted by catalog/hymns/abc-to-musicxml.js",
+   "path": "catalog/hymns/when-i-survey.musicxml",
+   "source_sha256": "337c6e049ed96c87bc61cf88c48a4413b61a2a6338f15b1fc9e7a65d54e22357",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:hymns",
+    "time:4/4",
+    "key:-1"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 8,
+   "bars_total": 8,
+   "case": "method_beyer_012",
+   "fifths": 0,
+   "id": "method/beyer/012",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription, transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets",
+   "path": "catalog/method/beyer/012.mxl",
+   "source_sha256": "388a17de2478175617dd210b93d98776cad6f7fb7df281d449764d0b3f82f184",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:beyer",
+    "time:4/4",
+    "key:+0",
+    "s1",
+    "s1-app"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 16,
+   "bars_total": 16,
+   "case": "method_beyer_015",
+   "fifths": 0,
+   "id": "method/beyer/015",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription, transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets",
+   "path": "catalog/method/beyer/015.mxl",
+   "source_sha256": "09de6085824ff4d4f18ce7178d4a35c30fda05ae113194dd52c178dd9844d895",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:beyer",
+    "time:4/4",
+    "key:+0"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 24,
+   "case": "method_beyer_017",
+   "fifths": 0,
+   "id": "method/beyer/017",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription, transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets",
+   "path": "catalog/method/beyer/017.mxl",
+   "source_sha256": "72449cf0024e0e06184ab83b4d1ea15e7b2806d080a4396475a9bc3fb0fe69ad",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:beyer",
+    "time:4/4",
+    "key:+0"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 16,
+   "bars_total": 16,
+   "case": "method_beyer_020",
+   "fifths": 0,
+   "id": "method/beyer/020",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription, transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets",
+   "path": "catalog/method/beyer/020.mxl",
+   "source_sha256": "86670f84cb502175b2a7c11853cc0150be8e9337b76fe2d966c93ffdfbaf585e",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:beyer",
+    "time:4/4",
+    "key:+0"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 16,
+   "bars_total": 16,
+   "case": "method_beyer_039",
+   "fifths": 0,
+   "id": "method/beyer/039",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription, transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets",
+   "path": "catalog/method/beyer/039.mxl",
+   "source_sha256": "ab5bf821bc816d0fc888d5fb1081c0967bac13d6156e17c38fca926564461d12",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:beyer",
+    "time:4/4",
+    "key:+0"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 38,
+   "case": "method_beyer_044",
+   "fifths": 0,
+   "id": "method/beyer/044",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription, transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets",
+   "path": "catalog/method/beyer/044.mxl",
+   "source_sha256": "de1134410f67d5e3e07fed5d638af23228e2db978408b8bcc853915661c9b9e3",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:beyer",
+    "time:4/4",
+    "key:+0"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 32,
+   "case": "method_beyer_059",
+   "fifths": 0,
+   "id": "method/beyer/059",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription, transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets",
+   "path": "catalog/method/beyer/059.mxl",
+   "source_sha256": "45e6f44c79a322eaba2c462fa3d42aff8c563c9dc3a54d6cab37549114c0dc27",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:beyer",
+    "time:3/8",
+    "key:+0"
+   ],
+   "time": "3/8"
+  },
+  {
+   "bars": 24,
+   "bars_total": 24,
+   "case": "method_beyer_060",
+   "fifths": 0,
+   "id": "method/beyer/060",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription, transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets",
+   "path": "catalog/method/beyer/060.mxl",
+   "source_sha256": "e0650dbcb8f5b4a9f20def4c92a8935b44fe6700ec0ef5d6f5793d97f3680247",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:beyer",
+    "time:3/4",
+    "key:+0"
+   ],
+   "time": "3/4"
+  },
+  {
+   "bars": 16,
+   "bars_total": 16,
+   "case": "method_beyer_065",
+   "fifths": 0,
+   "id": "method/beyer/065",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription, transcribed for PPP from the Peters edition (Leipzig, 1895, rev. A. Ruthardt); pupil's part of the duets",
+   "path": "catalog/method/beyer/065.mxl",
+   "source_sha256": "2104aeb7c57bd0ff8971599e04a8f3516367fd4a195479eb54015cd6174bc913",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:beyer",
+    "time:4/4",
+    "key:+0"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 29,
+   "case": "method_burgmuller25_003",
+   "fifths": 1,
+   "id": "method/burgmuller25/003",
+   "license": "by Mutopia-2013/01/12-218 - public domain — Mutopia Project",
+   "path": "catalog/method/burgmuller25/003.mxl",
+   "source_sha256": "9f8e0cb0de9b1a3255664eaa4b5c6df9e4750a6e855647ad1ff42e68fc342462",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:burgmuller25",
+    "time:6/8",
+    "key:+1",
+    "s1"
+   ],
+   "time": "6/8"
+  },
+  {
+   "bars": 17,
+   "bars_total": 17,
+   "case": "method_burgmuller25_005",
+   "fifths": -1,
+   "id": "method/burgmuller25/005",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription (ABC source catalog/method/src/burgmuller25/005.abc)",
+   "path": "catalog/method/burgmuller25/005.mxl",
+   "source_sha256": "e9d8eac6a6dea29e420ad33bcb77a593651170a5ef42a1c1d2e6610ed29f4fe2",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:burgmuller25",
+    "time:3/4",
+    "key:-1"
+   ],
+   "time": "3/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 80,
+   "case": "method_burgmuller25_015",
+   "fifths": -3,
+   "id": "method/burgmuller25/015",
+   "license": "Public Domain (PianoXML typeset) — PianoXML typeset (named in the file; the book-level note says PDMX)",
+   "path": "catalog/method/burgmuller25/015.mxl",
+   "source_sha256": "6048e56e991223ff1f7ab015de33c1e64ac5f0faa3c65050517c9843695befc0",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:burgmuller25",
+    "time:3/8",
+    "key:-3",
+    "s1"
+   ],
+   "time": "3/8"
+  },
+  {
+   "bars": 24,
+   "bars_total": 30,
+   "case": "method_burgmuller25_019",
+   "fifths": 3,
+   "id": "method/burgmuller25/019",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription (ABC source catalog/method/src/burgmuller25/019.abc)",
+   "path": "catalog/method/burgmuller25/019.mxl",
+   "source_sha256": "1e18374256b086aa53c1f4af94a47ef5bb076271f8b7cb2986c428d2d2fd7b50",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:burgmuller25",
+    "time:3/4",
+    "key:+3"
+   ],
+   "time": "3/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 32,
+   "case": "method_czerny599_002",
+   "fifths": 0,
+   "id": "method/czerny599/002",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription, transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici)",
+   "path": "catalog/method/czerny599/002.mxl",
+   "source_sha256": "a2eee9fe6be96d29980b2e8923322939ac8505a645d03a5e41625da212dedaf3",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:czerny599",
+    "time:4/4",
+    "key:+0"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 12,
+   "bars_total": 12,
+   "case": "method_czerny599_010",
+   "fifths": 0,
+   "id": "method/czerny599/010",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription, transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici)",
+   "path": "catalog/method/czerny599/010.mxl",
+   "source_sha256": "29def8b1a502ae9de65d1b6aeb03e4ec7758cf12a15535624852f92a62950ef0",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:czerny599",
+    "time:4/4",
+    "key:+0",
+    "s1",
+    "s1-app"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 16,
+   "bars_total": 16,
+   "case": "method_czerny599_013",
+   "fifths": 0,
+   "id": "method/czerny599/013",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription, transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici)",
+   "path": "catalog/method/czerny599/013.mxl",
+   "source_sha256": "0a9514bcd2fa7e9e36ced2a1d788432c1efcfd629bc601b509377f7ce58cb1e4",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:czerny599",
+    "time:4/4",
+    "key:+0"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 16,
+   "bars_total": 16,
+   "case": "method_czerny599_014",
+   "fifths": 0,
+   "id": "method/czerny599/014",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription, transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici)",
+   "path": "catalog/method/czerny599/014.mxl",
+   "source_sha256": "da8650b9f64833906f456aebcf65edb6455ba77b5897af5094b03bee76be4303",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:czerny599",
+    "time:4/4",
+    "key:+0"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 16,
+   "bars_total": 16,
+   "case": "method_czerny599_022",
+   "fifths": 0,
+   "id": "method/czerny599/022",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription, transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici)",
+   "path": "catalog/method/czerny599/022.mxl",
+   "source_sha256": "a086ca0f163cc4bb85881cc661d1f2390eb50cee9d2783ac50acfcdedd28298f",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:czerny599",
+    "time:2/4",
+    "key:+0"
+   ],
+   "time": "2/4"
+  },
+  {
+   "bars": 16,
+   "bars_total": 16,
+   "case": "method_czerny599_026",
+   "fifths": 0,
+   "id": "method/czerny599/026",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription, transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici)",
+   "path": "catalog/method/czerny599/026.mxl",
+   "source_sha256": "40f2e306e2ab6009341675f4a4314634632b3fb6597a558569fcfbefff003824",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:czerny599",
+    "time:3/8",
+    "key:+0"
+   ],
+   "time": "3/8"
+  },
+  {
+   "bars": 16,
+   "bars_total": 16,
+   "case": "method_czerny599_051",
+   "fifths": 2,
+   "id": "method/czerny599/051",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription, transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici)",
+   "path": "catalog/method/czerny599/051.mxl",
+   "source_sha256": "570a9ac79cf3bff8a0fdd1d6a55cb712121ff61c4f27263608f6b268ed11799f",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:czerny599",
+    "time:4/4",
+    "key:+2"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 16,
+   "bars_total": 16,
+   "case": "method_czerny599_078",
+   "fifths": -1,
+   "id": "method/czerny599/078",
+   "license": "Public domain. Transcribed for PPP from a public-domain edition. — PPP transcription, transcribed for PPP from the Schirmer edition (New York, 1893, ed. G. Buonamici)",
+   "path": "catalog/method/czerny599/078.mxl",
+   "source_sha256": "9603dd5e6c53975edffe4cce0abd8b6b7eca7b484291d6f0a904364976076d6b",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:czerny599",
+    "time:4/4",
+    "key:-1"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 32,
+   "case": "method_czerny849_001",
+   "fifths": 0,
+   "id": "method/czerny849/001",
+   "license": "dedicated to the public domain (catalog/method/books.json, names the same typesetter) — Neru Hayashi's typeset (named in the file), via PDMX per catalog/method/books.json",
+   "path": "catalog/method/czerny849/001.mxl",
+   "source_sha256": "302add4d3e497f0371daf6776c51252f1d7d18189c59e42aa3e8642bf4374164",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:czerny849",
+    "time:4/4",
+    "key:+0"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 24,
+   "case": "method_czerny849_005",
+   "fifths": 0,
+   "id": "method/czerny849/005",
+   "license": "dedicated to the public domain (catalog/method/books.json, names the same typesetter) — Neru Hayashi's typeset (named in the file), via PDMX per catalog/method/books.json",
+   "path": "catalog/method/czerny849/005.mxl",
+   "source_sha256": "5427f762b8d709be18221d1c4b4cc21cfe0489cda10afe27d974b570cd6a393b",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:czerny849",
+    "time:2/4",
+    "key:+0",
+    "s1"
+   ],
+   "time": "2/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 32,
+   "case": "method_czerny849_007",
+   "fifths": 0,
+   "id": "method/czerny849/007",
+   "license": "dedicated to the public domain (catalog/method/books.json, names the same typesetter) — Neru Hayashi's typeset (named in the file), via PDMX per catalog/method/books.json",
+   "path": "catalog/method/czerny849/007.mxl",
+   "source_sha256": "e08e13ecaaa891bb35278e748f50aa3f06f5d92e885570961775c1b5a69f5a46",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:czerny849",
+    "time:4/4",
+    "key:+0"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 48,
+   "case": "method_czerny849_019",
+   "fifths": -2,
+   "id": "method/czerny849/019",
+   "license": "dedicated to the public domain (catalog/method/books.json, names the same typesetter) — Neru Hayashi's typeset (named in the file), via PDMX per catalog/method/books.json",
+   "path": "catalog/method/czerny849/019.mxl",
+   "source_sha256": "8d2755fae8fc7de928b5f312f8e8a47cbc043ccb161edbf7cd6a0d93cc854524",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:czerny849",
+    "time:3/8",
+    "key:-2"
+   ],
+   "time": "3/8"
+  },
+  {
+   "bars": 24,
+   "bars_total": 31,
+   "case": "method_czerny849_022",
+   "fifths": 4,
+   "id": "method/czerny849/022",
+   "license": "dedicated to the public domain (catalog/method/books.json, names the same typesetter) — Neru Hayashi's typeset (named in the file), via PDMX per catalog/method/books.json",
+   "path": "catalog/method/czerny849/022.mxl",
+   "source_sha256": "4cc96f68e6be76a5ce13fa853b8a29238615ee5fa0e8330192593503f0143e7a",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:czerny849",
+    "time:4/4",
+    "key:+4"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 30,
+   "case": "method_hanon_001",
+   "fifths": 0,
+   "id": "method/hanon/001",
+   "license": "Public Domain — community typeset; catalog/method/books.json says: MuseScore community typesets from the PDMX dataset (CC0) (no per-file identifier)",
+   "path": "catalog/method/hanon/001.mxl",
+   "source_sha256": "c8c6581e03f18fd90f5514a9c4e218e6974cd81f07200273d4647aea0d28cdde",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:hanon",
+    "time:2/4",
+    "key:+0",
+    "s1"
+   ],
+   "time": "2/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 29,
+   "case": "method_hanon_002",
+   "fifths": 0,
+   "id": "method/hanon/002",
+   "license": "Public Domain — community typeset; catalog/method/books.json says: MuseScore community typesets from the PDMX dataset (CC0) (no per-file identifier)",
+   "path": "catalog/method/hanon/002.mxl",
+   "source_sha256": "c9986d3b5c031e8890fcd262f9773d648ddaa681724a5d494105b6b8f9007b10",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:hanon",
+    "time:2/4",
+    "key:+0"
+   ],
+   "time": "2/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 29,
+   "case": "method_hanon_011",
+   "fifths": 0,
+   "id": "method/hanon/011",
+   "license": "Public Domain — community typeset; catalog/method/books.json says: MuseScore community typesets from the PDMX dataset (CC0) (no per-file identifier)",
+   "path": "catalog/method/hanon/011.mxl",
+   "source_sha256": "9e21154dbd1d853533208da9f7cdacdfd62dba199b3a8c31039d3ada61c85a3d",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:hanon",
+    "time:2/4",
+    "key:+0"
+   ],
+   "time": "2/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 38,
+   "case": "method_sonatina_001",
+   "fifths": 0,
+   "id": "method/sonatina/001",
+   "license": "Public Domain (PianoXML typeset) — PianoXML typeset (named in the file; the book-level note says PDMX)",
+   "path": "catalog/method/sonatina/001.mxl",
+   "source_sha256": "54f5935c763070cfaef45235e2a098bf913e6d2697ecae2a367a949de5dc1680",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:sonatina",
+    "time:2/2",
+    "key:+0",
+    "s1",
+    "s1-app"
+   ],
+   "time": "2/2"
+  },
+  {
+   "bars": 24,
+   "bars_total": 26,
+   "case": "method_sonatina_002",
+   "fifths": -1,
+   "id": "method/sonatina/002",
+   "license": "Public Domain (PianoXML typeset) — PianoXML typeset (named in the file; the book-level note says PDMX)",
+   "path": "catalog/method/sonatina/002.mxl",
+   "source_sha256": "522e3509e91dddd6eae008447228c3fec0b644a3a1f1f1b1e46f8a525e67f14a",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:sonatina",
+    "time:3/4",
+    "key:-1"
+   ],
+   "time": "3/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 64,
+   "case": "method_sonatina_007",
+   "fifths": 0,
+   "id": "method/sonatina/007",
+   "license": "Public Domain (PianoXML typeset) — PianoXML typeset (named in the file; the book-level note says PDMX)",
+   "path": "catalog/method/sonatina/007.mxl",
+   "source_sha256": "b4bb7aa77e11de5e0ed07eff030c1851b6fd89c96e9363359fe9e76dd6ff4eec",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:sonatina",
+    "time:4/4",
+    "key:+0",
+    "s1"
+   ],
+   "time": "4/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 82,
+   "case": "method_sonatina_009",
+   "fifths": 0,
+   "id": "method/sonatina/009",
+   "license": "Public Domain (PianoXML typeset) — PianoXML typeset (named in the file; the book-level note says PDMX)",
+   "path": "catalog/method/sonatina/009.mxl",
+   "source_sha256": "54a82d996f7d675e5c75c601ba7378261aeafda7a1dd46e57f9c906f1f0c7fe9",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:sonatina",
+    "time:2/4",
+    "key:+0"
+   ],
+   "time": "2/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 71,
+   "case": "method_sonatina_010",
+   "fifths": -1,
+   "id": "method/sonatina/010",
+   "license": "Public Domain (PianoXML typeset) — PianoXML typeset (named in the file; the book-level note says PDMX)",
+   "path": "catalog/method/sonatina/010.mxl",
+   "source_sha256": "79ef0942030acc887f16dc8fd18d7fb4a5635acc919b4c31b6947b0158f7fbd5",
+   "split": "held",
+   "staves": 2,
+   "tags": [
+    "collection:sonatina",
+    "time:3/4",
+    "key:-1"
+   ],
+   "time": "3/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 53,
+   "case": "method_sonatina_012",
+   "fifths": -1,
+   "id": "method/sonatina/012",
+   "license": "Public Domain (PianoXML typeset) — PianoXML typeset (named in the file; the book-level note says PDMX)",
+   "path": "catalog/method/sonatina/012.mxl",
+   "source_sha256": "142a548fad83cc061f64da7cb8ea6c5f5f619f95be0059632e9abc71bd554a3b",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:sonatina",
+    "time:2/4",
+    "key:-1"
+   ],
+   "time": "2/4"
+  },
+  {
+   "bars": 24,
+   "bars_total": 82,
+   "case": "method_sonatina_014",
+   "fifths": 0,
+   "id": "method/sonatina/014",
+   "license": "Public Domain (PianoXML typeset) — PianoXML typeset (named in the file; the book-level note says PDMX)",
+   "path": "catalog/method/sonatina/014.mxl",
+   "source_sha256": "ffc2f04a5cb66d0da85fda7125cb0ffe8417508206b7a03f94f6198b9c24b683",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:sonatina",
+    "time:3/8",
+    "key:+0"
+   ],
+   "time": "3/8"
+  },
+  {
+   "bars": 24,
+   "bars_total": 71,
+   "case": "method_sonatina_027",
+   "fifths": -1,
+   "id": "method/sonatina/027",
+   "license": "Public Domain (PianoXML) — PianoXML typeset (named in the file; the book-level note says PDMX)",
+   "path": "catalog/method/sonatina/027.mxl",
+   "source_sha256": "dfe4161c1bd75ca790a1bb69e301a76d9f30e9319aa383d2bb7af15b0eb63bfc",
+   "split": "tune",
+   "staves": 2,
+   "tags": [
+    "collection:sonatina",
+    "time:2/4",
+    "key:-1"
+   ],
+   "time": "2/4"
+  }
+ ],
+ "coverage": {
+  "fifths": [
+   -5,
+   -4,
+   -3,
+   -2,
+   -1,
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "time": [
+   "2/2",
+   "2/4",
+   "3/2",
+   "3/4",
+   "3/8",
+   "4/4",
+   "6/4",
+   "6/8",
+   "9/8"
+  ]
+ },
+ "excerpt_bars": 24,
+ "fixtures": [
+  {
+   "bars": 8,
+   "case": "brace-less_piano-clean.pdf",
+   "engine": false,
+   "id": "brace-less/piano-clean.pdf",
+   "path": "tests/fixtures/piano-clean.pdf",
+   "sha256": "f38b3c3f2c1eafa0954d0d7bdda81725371b260be5bed15ab656cea9560e1101",
+   "split": "tune",
+   "tags": [
+    "brace-less"
+   ],
+   "truth": "tests/bench/corpus/omr/piano-test-score.musicxml",
+   "type": "application/pdf"
+  },
+  {
+   "bars": 8,
+   "case": "brace-less_piano-clean.png",
+   "engine": true,
+   "id": "brace-less/piano-clean.png",
+   "path": "tests/fixtures/piano-clean.png",
+   "sha256": "a366a4738fa04defb7fb6e17c7b25da884f3cdfbb709a63f63a9079c17695f71",
+   "split": "tune",
+   "tags": [
+    "brace-less"
+   ],
+   "truth": "tests/bench/corpus/omr/piano-test-score.musicxml",
+   "type": "image/png"
+  },
+  {
+   "bars": 8,
+   "case": "brace-less_piano-clean.jpg",
+   "engine": true,
+   "id": "brace-less/piano-clean.jpg",
+   "path": "tests/fixtures/piano-clean.jpg",
+   "sha256": "dfa6a435a32063bedb3f828a800977301e40bb5a9677947eab8f1c99b2e0dfd8",
+   "split": "tune",
+   "tags": [
+    "brace-less"
+   ],
+   "truth": "tests/bench/corpus/omr/piano-test-score.musicxml",
+   "type": "image/jpeg"
+  },
+  {
+   "bars": 8,
+   "case": "brace-less_piano-multipage.pdf",
+   "engine": false,
+   "id": "brace-less/piano-multipage.pdf",
+   "path": "tests/fixtures/piano-multipage.pdf",
+   "sha256": "528f0b73890dd90595ee1be4d6ed0c01b3e22c17b4e17c9eb31a3d4bb10104a9",
+   "split": "tune",
+   "tags": [
+    "brace-less"
+   ],
+   "truth": "tests/bench/corpus/omr/piano-test-score.musicxml",
+   "type": "application/pdf"
+  }
+ ],
+ "pool": 234,
+ "salt": "omr-live-2",
+ "schema": "ppp.omr-cases/1"
+}

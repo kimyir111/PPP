@@ -70,7 +70,7 @@ class DegradedOutput(unittest.TestCase):
         self.assertEqual(bad["struct.tempo.mark_consistent"], 0.0)
 
     def test_shortened_durations(self):
-        # every dotted half becomes a quarter, in the file's own divisions (24 a quarter from buildXml; the
+        # every dotted half becomes a quarter, in the file's own divisions (24 a quarter in the G0 writer's files; the
         # ScoreGraph exporter writes the fewest, G1)
         div = int(re.search(r"<divisions>(\d+)</divisions>", self.row["xml"]).group(1))
         xml = self.row["xml"].replace(f"<duration>{3 * div}</duration>", f"<duration>{div}</duration>").replace(

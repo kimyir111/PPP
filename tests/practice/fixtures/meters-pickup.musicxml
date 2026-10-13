@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- G11a-1 fixture, written by hand for the tests of PPP (no source music): how the beats are counted. A 3/4 pickup of one quarter (bar 0), a 3/4 bar, a 6/8 bar,
+     a 6/4 bar, a 2/2 bar, a 3+2/8 bar. The metronome counts 3/4 in three, 6/8 in two, 6/4 in SIX (the old player), 2/2 in two, 3+2/8 as 3/8 (the first number alone). -->
+<score-partwise version="4.0">
+  <work><work-title>Meters and a pickup</work-title></work>
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="0" implicit="yes"><attributes><divisions>2</divisions><key><fifths>0</fifths></key><time><beats>3</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type></note></measure>
+    <measure number="1">
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>6</duration><voice>1</voice><type>half</type><dot/></note></measure>
+    <measure number="2"><attributes><time><beats>6</beats><beat-type>8</beat-type></time></attributes>
+      <note><pitch><step>D</step><octave>5</octave></pitch><duration>3</duration><voice>1</voice><type>quarter</type><dot/></note>
+      <note><pitch><step>E</step><octave>5</octave></pitch><duration>3</duration><voice>1</voice><type>quarter</type><dot/></note></measure>
+    <measure number="3"><attributes><time><beats>6</beats><beat-type>4</beat-type></time></attributes>
+      <note><pitch><step>F</step><octave>5</octave></pitch><duration>6</duration><voice>1</voice><type>half</type><dot/></note>
+      <note><pitch><step>G</step><octave>5</octave></pitch><duration>6</duration><voice>1</voice><type>half</type><dot/></note></measure>
+    <measure number="4"><attributes><time><beats>2</beats><beat-type>2</beat-type></time></attributes>
+      <note><pitch><step>A</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>half</type></note>
+      <note><pitch><step>B</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>half</type></note></measure>
+    <measure number="5"><attributes><time><beats>3+2</beats><beat-type>8</beat-type></time></attributes>
+      <note><pitch><step>C</step><octave>6</octave></pitch><duration>3</duration><voice>1</voice><type>quarter</type><dot/></note>
+      <note><pitch><step>B</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type></note>
+      <barline location="right"><bar-style>light-heavy</bar-style></barline></measure>
+  </part>
+</score-partwise>

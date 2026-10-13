@@ -7,7 +7,7 @@
     "n": 846
    },
    "critical.beat_placement": {
-    "mean": 0.299054,
+    "mean": 0.301418,
     "n": 846
    },
    "critical.hands": {
@@ -35,7 +35,7 @@
     "n": 846
    },
    "critical.structure": {
-    "mean": 0.574468,
+    "mean": 0.57565,
     "n": 846
    },
    "errors": {
@@ -67,15 +67,15 @@
     "n": 846
    },
    "notation.duration.accuracy": {
-    "mean": 0.503356,
+    "mean": 0.503378,
     "n": 846
    },
    "notation.duration.accuracy_ref": {
-    "mean": 0.499129,
+    "mean": 0.499151,
     "n": 846
    },
    "notation.duration.page_accuracy": {
-    "mean": 0.503485,
+    "mean": 0.503507,
     "n": 846
    },
    "notation.hand.accuracy": {
@@ -115,11 +115,11 @@
     "n": 846
    },
    "notation.onset_pos.accuracy": {
-    "mean": 0.4614,
+    "mean": 0.463764,
     "n": 846
    },
    "notation.onset_pos.accuracy_ref": {
-    "mean": 0.456453,
+    "mean": 0.458817,
     "n": 846
    },
    "notation.pedal.false_per_min": {
@@ -139,7 +139,7 @@
     "n": 846
    },
    "notation.ties.extra_per_100": {
-    "mean": 7.204284,
+    "mean": 7.203861,
     "n": 846
    },
    "notation.tuplets.f1": {
@@ -199,19 +199,19 @@
     "n": 626
    },
    "nq.ned": {
-    "mean": 0.904471,
+    "mean": 0.903677,
     "n": 846
    },
    "nq.range.ledger4_rate": {
-    "mean": 9.210517,
+    "mean": 9.210884,
     "n": 846
    },
    "nq.range.ledger4_rate.delta": {
-    "mean": 4.443794,
+    "mean": 4.444161,
     "n": 846
    },
    "nq.rest.per_measure_delta": {
-    "mean": 2.979219,
+    "mean": 2.97933,
     "n": 846
    },
    "nq.rhythm.hidden_beat_rate": {
@@ -287,11 +287,11 @@
     "n": 846
    },
    "nq.tie.mergeable_rate": {
-    "mean": 0.176019,
+    "mean": 0.176024,
     "n": 614
    },
    "nq.tie.mergeable_rate.delta": {
-    "mean": 0.157557,
+    "mean": 0.15758,
     "n": 119
    },
    "nq.tuplet.group_complete": {
@@ -319,7 +319,7 @@
     "n": 53
    },
    "nq.voice.poly_recall": {
-    "mean": 0.215926,
+    "mean": 0.216089,
     "n": 360
    },
    "read.accidentals_per_note": {
@@ -327,7 +327,7 @@
     "n": 846
    },
    "read.accidentals_per_note.delta": {
-    "mean": -0.001731,
+    "mean": -0.00173,
     "n": 846
    },
    "read.bar_completeness": {
@@ -371,11 +371,11 @@
     "n": 846
    },
    "read.rests_per_measure": {
-    "mean": 3.385956,
+    "mean": 3.386067,
     "n": 846
    },
    "read.rests_per_measure.delta": {
-    "mean": 2.979219,
+    "mean": 2.97933,
     "n": 846
    },
    "read.short_notes_rate": {
@@ -387,19 +387,19 @@
     "n": 846
    },
    "read.ties_per_note": {
-    "mean": 0.058051,
+    "mean": 0.058047,
     "n": 846
    },
    "read.ties_per_note.delta": {
-    "mean": 0.053814,
+    "mean": 0.053811,
     "n": 846
    },
    "read.tuplets_per_note": {
-    "mean": 0.080573,
+    "mean": 0.080575,
     "n": 846
    },
    "read.tuplets_per_note.delta": {
-    "mean": 0.035341,
+    "mean": 0.035343,
     "n": 846
    },
    "rec.check.1": {
@@ -439,39 +439,47 @@
     "n": 846
    },
    "rec.check.9": {
-    "mean": 87.268923,
+    "mean": 87.266174,
     "n": 846
    },
    "rec.harmony.agreement": {
-    "mean": 0.619805,
+    "mean": 0.620346,
+    "n": 846
+   },
+   "rec.ledger.ge3_per_100_heads": {
+    "mean": 1.955586,
+    "n": 846
+   },
+   "rec.ledger.plain_ge3_per_100_heads": {
+    "mean": 3.693803,
     "n": 846
    },
    "rec.metre.f1": {
-    "mean": 0.748067,
+    "mean": 0.748755,
     "n": 846
    },
    "rec.mv2h": {
-    "mean": 0.70839,
+    "mean": 0.70864,
     "n": 846
    },
    "rec.onset_f1": {
-    "mean": 0.458842,
+    "mean": 0.461207,
     "n": 846
    },
    "rec.rest.false_per_100_bars": {
-    "mean": 241.485732,
+    "mean": 241.476368,
     "n": 846
    },
    "rec.rest.precision": {
-    "mean": 0.167574,
+    "mean": 0.167057,
     "n": 846
    },
    "rec.rest.recall": {
-    "mean": 0.599786,
+    "mean": 0.604187,
     "n": 462
    },
    "rec.stability": {
-    "mean": 0.498016,
+    "mean": 0.498393,
     "n": 846
    },
    "rec.tuplet.false_per_100_beats": {
@@ -495,11 +503,11 @@
     "n": 846
    },
    "sqi": {
-    "mean": 75.221047,
+    "mean": 75.256725,
     "n": 846
    },
    "struct.downbeat.f1": {
-    "mean": 0.690848,
+    "mean": 0.693212,
     "n": 846
    },
    "struct.form.order_exact": {
@@ -531,11 +539,11 @@
     "n": 846
    },
    "struct.measures.count_exact": {
-    "mean": 0.579196,
+    "mean": 0.580378,
     "n": 846
    },
    "struct.measures.count_ratio": {
-    "mean": 1.139213,
+    "mean": 1.139282,
     "n": 846
    },
    "struct.measures.extra_empty_edge": {
@@ -591,7 +599,7 @@
     "n": 846
    },
    "usable": {
-    "mean": 0.186761,
+    "mean": 0.187943,
     "n": 846
    }
   },
@@ -603,7 +611,7 @@
      "n": 423
     },
     "critical.beat_placement": {
-     "mean": 0.198582,
+     "mean": 0.20331,
      "n": 423
     },
     "critical.hands": {
@@ -631,7 +639,7 @@
      "n": 423
     },
     "critical.structure": {
-     "mean": 0.413712,
+     "mean": 0.416076,
      "n": 423
     },
     "errors": {
@@ -711,11 +719,11 @@
      "n": 423
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.322736,
+     "mean": 0.327464,
      "n": 423
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.319668,
+     "mean": 0.324396,
      "n": 423
     },
     "notation.pedal.false_per_min": {
@@ -795,7 +803,7 @@
      "n": 313
     },
     "nq.ned": {
-     "mean": 0.984176,
+     "mean": 0.982611,
      "n": 423
     },
     "nq.range.ledger4_rate": {
@@ -807,7 +815,7 @@
      "n": 423
     },
     "nq.rest.per_measure_delta": {
-     "mean": 3.130831,
+     "mean": 3.131409,
      "n": 423
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -915,7 +923,7 @@
      "n": 28
     },
     "nq.voice.poly_recall": {
-     "mean": 0.20963,
+     "mean": 0.209957,
      "n": 180
     },
     "read.accidentals_per_note": {
@@ -967,11 +975,11 @@
      "n": 423
     },
     "read.rests_per_measure": {
-     "mean": 3.537568,
+     "mean": 3.538147,
      "n": 423
     },
     "read.rests_per_measure.delta": {
-     "mean": 3.130831,
+     "mean": 3.131409,
      "n": 423
     },
     "read.short_notes_rate": {
@@ -1039,35 +1047,43 @@
      "n": 423
     },
     "rec.harmony.agreement": {
-     "mean": 0.523884,
+     "mean": 0.524965,
+     "n": 423
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.978099,
+     "n": 423
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 3.709833,
      "n": 423
     },
     "rec.metre.f1": {
-     "mean": 0.641837,
+     "mean": 0.643213,
      "n": 423
     },
     "rec.mv2h": {
-     "mean": 0.658209,
+     "mean": 0.658701,
      "n": 423
     },
     "rec.onset_f1": {
-     "mean": 0.321146,
+     "mean": 0.325874,
      "n": 423
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 252.156682,
+     "mean": 252.158227,
      "n": 423
     },
     "rec.rest.precision": {
-     "mean": 0.156319,
+     "mean": 0.155137,
      "n": 423
     },
     "rec.rest.recall": {
-     "mean": 0.498898,
+     "mean": 0.507556,
      "n": 231
     },
     "rec.stability": {
-     "mean": 0.656149,
+     "mean": 0.656725,
      "n": 423
     },
     "rec.tuplet.false_per_100_beats": {
@@ -1091,11 +1107,11 @@
      "n": 423
     },
     "sqi": {
-     "mean": 71.721114,
+     "mean": 71.792036,
      "n": 423
     },
     "struct.downbeat.f1": {
-     "mean": 0.518661,
+     "mean": 0.52339,
      "n": 423
     },
     "struct.form.order_exact": {
@@ -1127,11 +1143,11 @@
      "n": 423
     },
     "struct.measures.count_exact": {
-     "mean": 0.420804,
+     "mean": 0.423168,
      "n": 423
     },
     "struct.measures.count_ratio": {
-     "mean": 1.107452,
+     "mean": 1.107591,
      "n": 423
     },
     "struct.measures.extra_empty_edge": {
@@ -1187,7 +1203,7 @@
      "n": 423
     },
     "usable": {
-     "mean": 0.1513,
+     "mean": 0.153664,
      "n": 423
     }
    },
@@ -1258,15 +1274,15 @@
      "n": 423
     },
     "notation.duration.accuracy": {
-     "mean": 0.526685,
+     "mean": 0.526728,
      "n": 423
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.522257,
+     "mean": 0.5223,
      "n": 423
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.526805,
+     "mean": 0.526848,
      "n": 423
     },
     "notation.hand.accuracy": {
@@ -1330,7 +1346,7 @@
      "n": 423
     },
     "notation.ties.extra_per_100": {
-     "mean": 6.783163,
+     "mean": 6.782317,
      "n": 423
     },
     "notation.tuplets.f1": {
@@ -1390,19 +1406,19 @@
      "n": 313
     },
     "nq.ned": {
-     "mean": 0.824766,
+     "mean": 0.824743,
      "n": 423
     },
     "nq.range.ledger4_rate": {
-     "mean": 9.184364,
+     "mean": 9.185097,
      "n": 423
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 4.41764,
+     "mean": 4.418374,
      "n": 423
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.827607,
+     "mean": 2.82725,
      "n": 423
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -1478,11 +1494,11 @@
      "n": 423
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.196132,
+     "mean": 0.196141,
      "n": 294
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.183511,
+     "mean": 0.18356,
      "n": 56
     },
     "nq.tuplet.group_complete": {
@@ -1538,7 +1554,7 @@
      "n": 423
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.009184,
+     "mean": 0.009185,
      "n": 423
     },
     "read.ledger_lines.heavy_rate.delta": {
@@ -1562,11 +1578,11 @@
      "n": 423
     },
     "read.rests_per_measure": {
-     "mean": 3.234344,
+     "mean": 3.233988,
      "n": 423
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.827607,
+     "mean": 2.82725,
      "n": 423
     },
     "read.short_notes_rate": {
@@ -1578,19 +1594,19 @@
      "n": 423
     },
     "read.ties_per_note": {
-     "mean": 0.052826,
+     "mean": 0.052819,
      "n": 423
     },
     "read.ties_per_note.delta": {
-     "mean": 0.04859,
+     "mean": 0.048583,
      "n": 423
     },
     "read.tuplets_per_note": {
-     "mean": 0.064357,
+     "mean": 0.064361,
      "n": 423
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.019125,
+     "mean": 0.019129,
      "n": 423
     },
     "rec.check.1": {
@@ -1630,11 +1646,19 @@
      "n": 423
     },
     "rec.check.9": {
-     "mean": 88.028386,
+     "mean": 88.022888,
      "n": 423
     },
     "rec.harmony.agreement": {
      "mean": 0.715726,
+     "n": 423
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.933073,
+     "n": 423
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 3.677773,
      "n": 423
     },
     "rec.metre.f1": {
@@ -1642,7 +1666,7 @@
      "n": 423
     },
     "rec.mv2h": {
-     "mean": 0.75857,
+     "mean": 0.758579,
      "n": 423
     },
     "rec.onset_f1": {
@@ -1650,19 +1674,19 @@
      "n": 423
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 230.814782,
+     "mean": 230.794509,
      "n": 423
     },
     "rec.rest.precision": {
-     "mean": 0.178829,
+     "mean": 0.178978,
      "n": 423
     },
     "rec.rest.recall": {
-     "mean": 0.700673,
+     "mean": 0.700818,
      "n": 231
     },
     "rec.stability": {
-     "mean": 0.339883,
+     "mean": 0.340062,
      "n": 423
     },
     "rec.tuplet.false_per_100_beats": {
@@ -1686,7 +1710,7 @@
      "n": 423
     },
     "sqi": {
-     "mean": 78.72098,
+     "mean": 78.721413,
      "n": 423
     },
     "struct.downbeat.f1": {
@@ -2216,6 +2240,14 @@
      "mean": 0.635261,
      "n": 96
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.0,
+     "n": 96
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 6.005248,
+     "n": 96
+    },
     "rec.metre.f1": {
      "mean": 0.816202,
      "n": 96
@@ -2241,7 +2273,7 @@
      "n": 36
     },
     "rec.stability": {
-     "mean": 0.403618,
+     "mean": 0.403791,
      "n": 96
     },
     "rec.tuplet.false_per_100_beats": {
@@ -2807,6 +2839,14 @@
      "mean": 0.608771,
      "n": 54
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 3.10392,
+     "n": 54
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 4.61949,
+     "n": 54
+    },
     "rec.metre.f1": {
      "mean": 0.759489,
      "n": 54
@@ -2832,7 +2872,7 @@
      "n": 54
     },
     "rec.stability": {
-     "mean": 0.558021,
+     "mean": 0.558099,
      "n": 54
     },
     "rec.tuplet.false_per_100_beats": {
@@ -3386,6 +3426,14 @@
      "mean": 0.691189,
      "n": 96
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 5.58218,
+     "n": 96
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 8.28127,
+     "n": 96
+    },
     "rec.metre.f1": {
      "mean": 0.811754,
      "n": 96
@@ -3411,7 +3459,7 @@
      "n": 30
     },
     "rec.stability": {
-     "mean": 0.460577,
+     "mean": 0.460794,
      "n": 96
     },
     "rec.tuplet.false_per_100_beats": {
@@ -3670,7 +3718,7 @@
      "n": 60
     },
     "notation.ties.extra_per_100": {
-     "mean": 5.878112,
+     "mean": 5.872149,
      "n": 60
     },
     "notation.tuplets.f1": {
@@ -3730,19 +3778,19 @@
      "n": 60
     },
     "nq.ned": {
-     "mean": 0.948215,
+     "mean": 0.948185,
      "n": 60
     },
     "nq.range.ledger4_rate": {
-     "mean": 55.206699,
+     "mean": 55.211872,
      "n": 60
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 18.520296,
+     "mean": 18.52547,
      "n": 60
     },
     "nq.rest.per_measure_delta": {
-     "mean": 3.072091,
+     "mean": 3.07348,
      "n": 60
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -3818,11 +3866,11 @@
      "n": 60
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.139277,
+     "mean": 0.139323,
      "n": 59
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.261651,
+     "mean": 0.261877,
      "n": 12
     },
     "nq.tuplet.group_complete": {
@@ -3854,11 +3902,11 @@
      "n": 48
     },
     "read.accidentals_per_note": {
-     "mean": 0.027864,
+     "mean": 0.027867,
      "n": 60
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.004303,
+     "mean": 0.004307,
      "n": 60
     },
     "read.bar_completeness": {
@@ -3878,11 +3926,11 @@
      "n": 60
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.055207,
+     "mean": 0.055212,
      "n": 60
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.01852,
+     "mean": 0.018525,
      "n": 60
     },
     "read.max_chord_size": {
@@ -3902,11 +3950,11 @@
      "n": 60
     },
     "read.rests_per_measure": {
-     "mean": 4.760837,
+     "mean": 4.762225,
      "n": 60
     },
     "read.rests_per_measure.delta": {
-     "mean": 3.072091,
+     "mean": 3.07348,
      "n": 60
     },
     "read.short_notes_rate": {
@@ -3918,19 +3966,19 @@
      "n": 60
     },
     "read.ties_per_note": {
-     "mean": 0.05348,
+     "mean": 0.053429,
      "n": 60
     },
     "read.ties_per_note.delta": {
-     "mean": 0.052789,
+     "mean": 0.052738,
      "n": 60
     },
     "read.tuplets_per_note": {
-     "mean": 0.239438,
+     "mean": 0.239465,
      "n": 60
     },
     "read.tuplets_per_note.delta": {
-     "mean": -0.060144,
+     "mean": -0.060117,
      "n": 60
     },
     "rec.check.1": {
@@ -3977,6 +4025,14 @@
      "mean": 0.553491,
      "n": 60
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 10.379048,
+     "n": 60
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 15.918856,
+     "n": 60
+    },
     "rec.metre.f1": {
      "mean": 0.651162,
      "n": 60
@@ -3994,11 +4050,11 @@
      "n": 60
     },
     "rec.rest.precision": {
-     "mean": 0.225187,
+     "mean": 0.225516,
      "n": 60
     },
     "rec.rest.recall": {
-     "mean": 0.598076,
+     "mean": 0.598631,
      "n": 60
     },
     "rec.stability": {
@@ -4548,6 +4604,14 @@
      "mean": 0.272745,
      "n": 48
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.035102,
+     "n": 48
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 3.385679,
+     "n": 48
+    },
     "rec.metre.f1": {
      "mean": 0.558578,
      "n": 48
@@ -4752,15 +4816,15 @@
      "n": 84
     },
     "notation.duration.accuracy": {
-     "mean": 0.493294,
+     "mean": 0.493327,
      "n": 84
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.492491,
+     "mean": 0.492523,
      "n": 84
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.493983,
+     "mean": 0.494015,
      "n": 84
     },
     "notation.hand.accuracy": {
@@ -4884,7 +4948,7 @@
      "n": 84
     },
     "nq.ned": {
-     "mean": 1.022596,
+     "mean": 1.0225,
      "n": 84
     },
     "nq.range.ledger4_rate": {
@@ -4896,7 +4960,7 @@
      "n": 84
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.992385,
+     "mean": 2.991832,
      "n": 84
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -5056,11 +5120,11 @@
      "n": 84
     },
     "read.rests_per_measure": {
-     "mean": 3.812268,
+     "mean": 3.811714,
      "n": 84
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.992385,
+     "mean": 2.991832,
      "n": 84
     },
     "read.short_notes_rate": {
@@ -5124,11 +5188,19 @@
      "n": 84
     },
     "rec.check.9": {
-     "mean": 114.626234,
+     "mean": 114.598548,
      "n": 84
     },
     "rec.harmony.agreement": {
      "mean": 0.552734,
+     "n": 84
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.830452,
+     "n": 84
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 2.935998,
      "n": 84
     },
     "rec.metre.f1": {
@@ -5136,7 +5208,7 @@
      "n": 84
     },
     "rec.mv2h": {
-     "mean": 0.693564,
+     "mean": 0.693571,
      "n": 84
     },
     "rec.onset_f1": {
@@ -5144,11 +5216,11 @@
      "n": 84
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 247.300874,
+     "mean": 247.273188,
      "n": 84
     },
     "rec.rest.precision": {
-     "mean": 0.285958,
+     "mean": 0.286474,
      "n": 84
     },
     "rec.rest.recall": {
@@ -5156,7 +5228,7 @@
      "n": 84
     },
     "rec.stability": {
-     "mean": 0.569497,
+     "mean": 0.569355,
      "n": 84
     },
     "rec.tuplet.false_per_100_beats": {
@@ -5180,7 +5252,7 @@
      "n": 84
     },
     "sqi": {
-     "mean": 70.781951,
+     "mean": 70.782274,
      "n": 84
     },
     "struct.downbeat.f1": {
@@ -5283,7 +5355,7 @@
      "n": 258
     },
     "critical.beat_placement": {
-     "mean": 0.329457,
+     "mean": 0.333333,
      "n": 258
     },
     "critical.hands": {
@@ -5311,7 +5383,7 @@
      "n": 258
     },
     "critical.structure": {
-     "mean": 0.581395,
+     "mean": 0.585271,
      "n": 258
     },
     "errors": {
@@ -5391,11 +5463,11 @@
      "n": 258
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.495327,
+     "mean": 0.499203,
      "n": 258
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.486716,
+     "mean": 0.490592,
      "n": 258
     },
     "notation.pedal.false_per_min": {
@@ -5471,7 +5543,7 @@
      "n": 170
     },
     "nq.ned": {
-     "mean": 0.794448,
+     "mean": 0.793291,
      "n": 258
     },
     "nq.range.ledger4_rate": {
@@ -5483,7 +5555,7 @@
      "n": 258
     },
     "nq.rest.per_measure_delta": {
-     "mean": 3.217011,
+     "mean": 3.218821,
      "n": 258
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -5583,7 +5655,7 @@
      "n": 115
     },
     "nq.voice.poly_recall": {
-     "mean": 0.307222,
+     "mean": 0.307467,
      "n": 240
     },
     "read.accidentals_per_note": {
@@ -5635,11 +5707,11 @@
      "n": 258
     },
     "read.rests_per_measure": {
-     "mean": 3.384217,
+     "mean": 3.386027,
      "n": 258
     },
     "read.rests_per_measure.delta": {
-     "mean": 3.217011,
+     "mean": 3.218821,
      "n": 258
     },
     "read.short_notes_rate": {
@@ -5707,35 +5779,43 @@
      "n": 258
     },
     "rec.harmony.agreement": {
-     "mean": 0.664148,
+     "mean": 0.66506,
+     "n": 258
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.417618,
+     "n": 258
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 0.464429,
      "n": 258
     },
     "rec.metre.f1": {
-     "mean": 0.762676,
+     "mean": 0.763784,
      "n": 258
     },
     "rec.mv2h": {
-     "mean": 0.703004,
+     "mean": 0.703408,
      "n": 258
     },
     "rec.onset_f1": {
-     "mean": 0.490922,
+     "mean": 0.494798,
      "n": 258
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 246.380924,
+     "mean": 246.426523,
      "n": 258
     },
     "rec.rest.precision": {
-     "mean": 0.170689,
+     "mean": 0.168751,
      "n": 258
     },
     "rec.rest.recall": {
-     "mean": 0.538773,
+     "mean": 0.545718,
      "n": 144
     },
     "rec.stability": {
-     "mean": 0.379838,
+     "mean": 0.37999,
      "n": 258
     },
     "rec.tuplet.false_per_100_beats": {
@@ -5755,11 +5835,11 @@
      "n": 258
     },
     "sqi": {
-     "mean": 77.943494,
+     "mean": 78.001634,
      "n": 258
     },
     "struct.downbeat.f1": {
-     "mean": 0.692229,
+     "mean": 0.696105,
      "n": 258
     },
     "struct.form.order_exact": {
@@ -5791,11 +5871,11 @@
      "n": 258
     },
     "struct.measures.count_exact": {
-     "mean": 0.585271,
+     "mean": 0.589147,
      "n": 258
     },
     "struct.measures.count_ratio": {
-     "mean": 1.214597,
+     "mean": 1.214825,
      "n": 258
     },
     "struct.measures.extra_empty_edge": {
@@ -5922,15 +6002,15 @@
      "n": 168
     },
     "notation.duration.accuracy": {
-     "mean": 0.422918,
+     "mean": 0.422934,
      "n": 168
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.416038,
+     "mean": 0.416054,
      "n": 168
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.423137,
+     "mean": 0.423153,
      "n": 168
     },
     "notation.hand.accuracy": {
@@ -5994,7 +6074,7 @@
      "n": 168
     },
     "notation.ties.extra_per_100": {
-     "mean": 6.41383,
+     "mean": 6.411701,
      "n": 168
     },
     "notation.tuplets.f1": {
@@ -6054,19 +6134,19 @@
      "n": 168
     },
     "nq.ned": {
-     "mean": 0.940932,
+     "mean": 0.940873,
      "n": 168
     },
     "nq.range.ledger4_rate": {
-     "mean": 27.455189,
+     "mean": 27.457036,
      "n": 168
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 6.863258,
+     "mean": 6.865105,
      "n": 168
     },
     "nq.rest.per_measure_delta": {
-     "mean": 3.037967,
+     "mean": 3.038186,
      "n": 168
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -6142,11 +6222,11 @@
      "n": 168
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.148334,
+     "mean": 0.148352,
      "n": 153
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.163835,
+     "mean": 0.163893,
      "n": 47
     },
     "nq.tuplet.group_complete": {
@@ -6178,11 +6258,11 @@
      "n": 78
     },
     "read.accidentals_per_note": {
-     "mean": 0.029039,
+     "mean": 0.02904,
      "n": 168
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.000108,
+     "mean": 0.00011,
      "n": 168
     },
     "read.bar_completeness": {
@@ -6202,11 +6282,11 @@
      "n": 168
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.027455,
+     "mean": 0.027457,
      "n": 168
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.006863,
+     "mean": 0.006865,
      "n": 168
     },
     "read.max_chord_size": {
@@ -6226,11 +6306,11 @@
      "n": 168
     },
     "read.rests_per_measure": {
-     "mean": 4.243404,
+     "mean": 4.243623,
      "n": 168
     },
     "read.rests_per_measure.delta": {
-     "mean": 3.037967,
+     "mean": 3.038186,
      "n": 168
     },
     "read.short_notes_rate": {
@@ -6242,19 +6322,19 @@
      "n": 168
     },
     "read.ties_per_note": {
-     "mean": 0.054874,
+     "mean": 0.054855,
      "n": 168
     },
     "read.ties_per_note.delta": {
-     "mean": 0.052002,
+     "mean": 0.051983,
      "n": 168
     },
     "read.tuplets_per_note": {
-     "mean": 0.17084,
+     "mean": 0.170849,
      "n": 168
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.004981,
+     "mean": 0.004991,
      "n": 168
     },
     "rec.check.1": {
@@ -6294,11 +6374,19 @@
      "n": 168
     },
     "rec.check.9": {
-     "mean": 143.249038,
+     "mean": 143.235195,
      "n": 168
     },
     "rec.harmony.agreement": {
      "mean": 0.619573,
+     "n": 168
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 4.926756,
+     "n": 168
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 7.699153,
      "n": 168
     },
     "rec.metre.f1": {
@@ -6306,7 +6394,7 @@
      "n": 168
     },
     "rec.mv2h": {
-     "mean": 0.667957,
+     "mean": 0.667961,
      "n": 168
     },
     "rec.onset_f1": {
@@ -6314,19 +6402,19 @@
      "n": 168
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 272.364194,
+     "mean": 272.350351,
      "n": 168
     },
     "rec.rest.precision": {
-     "mean": 0.252627,
+     "mean": 0.253002,
      "n": 168
     },
     "rec.rest.recall": {
-     "mean": 0.624044,
+     "mean": 0.624266,
      "n": 150
     },
     "rec.stability": {
-     "mean": 0.694305,
+     "mean": 0.694383,
      "n": 168
     },
     "rec.tuplet.false_per_100_beats": {
@@ -6350,7 +6438,7 @@
      "n": 168
     },
     "sqi": {
-     "mean": 67.99729,
+     "mean": 67.997451,
      "n": 168
     },
     "struct.downbeat.f1": {
@@ -6864,6 +6952,14 @@
      "mean": 0.555556,
      "n": 18
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.0,
+     "n": 18
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 1.257862,
+     "n": 18
+    },
     "rec.metre.f1": {
      "mean": 0.74334,
      "n": 18
@@ -6889,7 +6985,7 @@
      "n": 6
     },
     "rec.stability": {
-     "mean": 0.278683,
+     "mean": 0.280997,
      "n": 18
     },
     "rec.tuplet.false_per_100_beats": {
@@ -7148,7 +7244,7 @@
      "n": 48
     },
     "notation.ties.extra_per_100": {
-     "mean": 5.695312,
+     "mean": 5.687859,
      "n": 48
     },
     "notation.tuplets.f1": {
@@ -7208,27 +7304,27 @@
      "n": 48
     },
     "nq.ned": {
-     "mean": 0.962987,
+     "mean": 0.962951,
      "n": 48
     },
     "nq.range.ledger4_rate": {
-     "mean": 58.727401,
+     "mean": 58.733868,
      "n": 48
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 11.687849,
+     "mean": 11.694316,
      "n": 48
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.856425,
+     "mean": 2.858161,
      "n": 48
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.039376,
+     "mean": 0.039377,
      "n": 48
     },
     "nq.rhythm.hidden_beat_rate.delta": {
-     "mean": 0.039376,
+     "mean": 0.039377,
      "n": 48
     },
     "nq.rhythm.short_rate_delta": {
@@ -7296,11 +7392,11 @@
      "n": 48
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.139692,
+     "mean": 0.139749,
      "n": 47
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.14365,
+     "mean": 0.143741,
      "n": 30
     },
     "nq.tuplet.group_complete": {
@@ -7332,11 +7428,11 @@
      "n": 30
     },
     "read.accidentals_per_note": {
-     "mean": 0.041831,
+     "mean": 0.041835,
      "n": 48
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.004832,
+     "mean": 0.004837,
      "n": 48
     },
     "read.bar_completeness": {
@@ -7356,11 +7452,11 @@
      "n": 48
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.058727,
+     "mean": 0.058734,
      "n": 48
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.011688,
+     "mean": 0.011694,
      "n": 48
     },
     "read.max_chord_size": {
@@ -7380,11 +7476,11 @@
      "n": 48
     },
     "read.rests_per_measure": {
-     "mean": 4.617333,
+     "mean": 4.619069,
      "n": 48
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.856425,
+     "mean": 2.858161,
      "n": 48
     },
     "read.short_notes_rate": {
@@ -7396,19 +7492,19 @@
      "n": 48
     },
     "read.ties_per_note": {
-     "mean": 0.053129,
+     "mean": 0.053066,
      "n": 48
     },
     "read.ties_per_note.delta": {
-     "mean": 0.044312,
+     "mean": 0.044248,
      "n": 48
     },
     "read.tuplets_per_note": {
-     "mean": 0.225309,
+     "mean": 0.225342,
      "n": 48
     },
     "read.tuplets_per_note.delta": {
-     "mean": -0.022818,
+     "mean": -0.022785,
      "n": 48
     },
     "rec.check.1": {
@@ -7455,6 +7551,14 @@
      "mean": 0.508176,
      "n": 48
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 9.778091,
+     "n": 48
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 14.684252,
+     "n": 48
+    },
     "rec.metre.f1": {
      "mean": 0.655809,
      "n": 48
@@ -7472,15 +7576,15 @@
      "n": 48
     },
     "rec.rest.precision": {
-     "mean": 0.280516,
+     "mean": 0.280926,
      "n": 48
     },
     "rec.rest.recall": {
-     "mean": 0.642915,
+     "mean": 0.64361,
      "n": 48
     },
     "rec.stability": {
-     "mean": 0.742608,
+     "mean": 0.742609,
      "n": 48
     },
     "rec.tuplet.false_per_100_beats": {
@@ -7607,7 +7711,7 @@
      "n": 264
     },
     "critical.beat_placement": {
-     "mean": 0.337121,
+     "mean": 0.344697,
      "n": 264
     },
     "critical.hands": {
@@ -7635,7 +7739,7 @@
      "n": 264
     },
     "critical.structure": {
-     "mean": 0.640152,
+     "mean": 0.643939,
      "n": 264
     },
     "errors": {
@@ -7715,11 +7819,11 @@
      "n": 264
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.521032,
+     "mean": 0.528607,
      "n": 264
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.511427,
+     "mean": 0.519003,
      "n": 264
     },
     "notation.pedal.false_per_min": {
@@ -7795,7 +7899,7 @@
      "n": 200
     },
     "nq.ned": {
-     "mean": 0.776036,
+     "mean": 0.773528,
      "n": 264
     },
     "nq.range.ledger4_rate": {
@@ -7807,7 +7911,7 @@
      "n": 264
     },
     "nq.rest.per_measure_delta": {
-     "mean": 3.205941,
+     "mean": 3.206868,
      "n": 264
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -7907,7 +8011,7 @@
      "n": 126
     },
     "nq.voice.poly_recall": {
-     "mean": 0.319722,
+     "mean": 0.319967,
      "n": 240
     },
     "read.accidentals_per_note": {
@@ -7959,11 +8063,11 @@
      "n": 264
     },
     "read.rests_per_measure": {
-     "mean": 3.386913,
+     "mean": 3.387839,
      "n": 264
     },
     "read.rests_per_measure.delta": {
-     "mean": 3.205941,
+     "mean": 3.206868,
      "n": 264
     },
     "read.short_notes_rate": {
@@ -8031,35 +8135,43 @@
      "n": 264
     },
     "rec.harmony.agreement": {
-     "mean": 0.676353,
+     "mean": 0.678086,
+     "n": 264
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.254705,
+     "n": 264
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 0.339541,
      "n": 264
     },
     "rec.metre.f1": {
-     "mean": 0.773754,
+     "mean": 0.77596,
      "n": 264
     },
     "rec.mv2h": {
-     "mean": 0.706571,
+     "mean": 0.707359,
      "n": 264
     },
     "rec.onset_f1": {
-     "mean": 0.516116,
+     "mean": 0.523692,
      "n": 264
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 243.822364,
+     "mean": 243.82484,
      "n": 264
     },
     "rec.rest.precision": {
-     "mean": 0.168011,
+     "mean": 0.166117,
      "n": 264
     },
     "rec.rest.recall": {
-     "mean": 0.570402,
+     "mean": 0.581897,
      "n": 174
     },
     "rec.stability": {
-     "mean": 0.392448,
+     "mean": 0.392439,
      "n": 264
     },
     "rec.tuplet.false_per_100_beats": {
@@ -8079,11 +8191,11 @@
      "n": 264
     },
     "sqi": {
-     "mean": 78.749378,
+     "mean": 78.863015,
      "n": 264
     },
     "struct.downbeat.f1": {
-     "mean": 0.714427,
+     "mean": 0.722002,
      "n": 264
     },
     "struct.form.order_exact": {
@@ -8115,11 +8227,11 @@
      "n": 264
     },
     "struct.measures.count_exact": {
-     "mean": 0.640152,
+     "mean": 0.643939,
      "n": 264
     },
     "struct.measures.count_ratio": {
-     "mean": 1.178687,
+     "mean": 1.17891,
      "n": 264
     },
     "struct.measures.extra_empty_edge": {
@@ -8175,7 +8287,7 @@
      "n": 264
     },
     "usable": {
-     "mean": 0.212121,
+     "mean": 0.215909,
      "n": 264
     }
    },
@@ -8605,6 +8717,14 @@
      "mean": 0.4375,
      "n": 12
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.479611,
+     "n": 12
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 1.834005,
+     "n": 12
+    },
     "rec.metre.f1": {
      "mean": 0.480774,
      "n": 12
@@ -8885,7 +9005,7 @@
      "n": 108
     },
     "notation.ties.extra_per_100": {
-     "mean": 8.635852,
+     "mean": 8.63254,
      "n": 108
     },
     "notation.tuplets.f1": {
@@ -8945,19 +9065,19 @@
      "n": 80
     },
     "nq.ned": {
-     "mean": 0.957872,
+     "mean": 0.957856,
      "n": 108
     },
     "nq.range.ledger4_rate": {
-     "mean": 12.293527,
+     "mean": 12.296401,
      "n": 108
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 2.408174,
+     "mean": 2.411049,
      "n": 108
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.716341,
+     "mean": 2.717112,
      "n": 108
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -9033,11 +9153,11 @@
      "n": 108
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.153096,
+     "mean": 0.153123,
      "n": 102
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.153096,
+     "mean": 0.153123,
      "n": 102
     },
     "nq.tuplet.group_complete": {
@@ -9069,11 +9189,11 @@
      "n": 60
     },
     "read.accidentals_per_note": {
-     "mean": 0.039289,
+     "mean": 0.039291,
      "n": 108
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.003637,
+     "mean": -0.003635,
      "n": 108
     },
     "read.bar_completeness": {
@@ -9093,11 +9213,11 @@
      "n": 108
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.012294,
+     "mean": 0.012296,
      "n": 108
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.002408,
+     "mean": 0.002411,
      "n": 108
     },
     "read.max_chord_size": {
@@ -9117,11 +9237,11 @@
      "n": 108
     },
     "read.rests_per_measure": {
-     "mean": 3.739049,
+     "mean": 3.739821,
      "n": 108
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.716341,
+     "mean": 2.717112,
      "n": 108
     },
     "read.short_notes_rate": {
@@ -9133,19 +9253,19 @@
      "n": 108
     },
     "read.ties_per_note": {
-     "mean": 0.075963,
+     "mean": 0.075935,
      "n": 108
     },
     "read.ties_per_note.delta": {
-     "mean": 0.044745,
+     "mean": 0.044717,
      "n": 108
     },
     "read.tuplets_per_note": {
-     "mean": 0.113122,
+     "mean": 0.113137,
      "n": 108
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.021907,
+     "mean": 0.021922,
      "n": 108
     },
     "rec.check.1": {
@@ -9192,6 +9312,14 @@
      "mean": 0.50424,
      "n": 108
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 3.492151,
+     "n": 108
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 5.408596,
+     "n": 108
+    },
     "rec.metre.f1": {
      "mean": 0.712255,
      "n": 108
@@ -9209,11 +9337,11 @@
      "n": 108
     },
     "rec.rest.precision": {
-     "mean": 0.229272,
+     "mean": 0.229454,
      "n": 108
     },
     "rec.rest.recall": {
-     "mean": 0.586381,
+     "mean": 0.586689,
      "n": 108
     },
     "rec.stability": {
@@ -9480,7 +9608,7 @@
      "n": 60
     },
     "notation.ties.extra_per_100": {
-     "mean": 4.940848,
+     "mean": 4.934885,
      "n": 60
     },
     "notation.tuplets.f1": {
@@ -9540,19 +9668,19 @@
      "n": 60
     },
     "nq.ned": {
-     "mean": 0.976273,
+     "mean": 0.976244,
      "n": 60
     },
     "nq.range.ledger4_rate": {
-     "mean": 24.687295,
+     "mean": 24.692469,
      "n": 60
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 8.791373,
+     "mean": 8.796547,
      "n": 60
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.587515,
+     "mean": 2.588904,
      "n": 60
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -9628,11 +9756,11 @@
      "n": 60
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.096081,
+     "mean": 0.096129,
      "n": 56
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.12995,
+     "mean": 0.130101,
      "n": 18
     },
     "nq.tuplet.group_complete": {
@@ -9664,11 +9792,11 @@
      "n": 30
     },
     "read.accidentals_per_note": {
-     "mean": 0.029231,
+     "mean": 0.029235,
      "n": 60
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.004051,
+     "mean": 0.004055,
      "n": 60
     },
     "read.bar_completeness": {
@@ -9688,11 +9816,11 @@
      "n": 60
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.024687,
+     "mean": 0.024692,
      "n": 60
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.008791,
+     "mean": 0.008797,
      "n": 60
     },
     "read.max_chord_size": {
@@ -9712,11 +9840,11 @@
      "n": 60
     },
     "read.rests_per_measure": {
-     "mean": 4.08675,
+     "mean": 4.088139,
      "n": 60
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.587515,
+     "mean": 2.588904,
      "n": 60
     },
     "read.short_notes_rate": {
@@ -9728,19 +9856,19 @@
      "n": 60
     },
     "read.ties_per_note": {
-     "mean": 0.046277,
+     "mean": 0.046227,
      "n": 60
     },
     "read.ties_per_note.delta": {
-     "mean": 0.041112,
+     "mean": 0.041061,
      "n": 60
     },
     "read.tuplets_per_note": {
-     "mean": 0.277939,
+     "mean": 0.277966,
      "n": 60
     },
     "read.tuplets_per_note.delta": {
-     "mean": -0.359833,
+     "mean": -0.359806,
      "n": 60
     },
     "rec.check.1": {
@@ -9787,6 +9915,14 @@
      "mean": 0.612553,
      "n": 60
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 6.400583,
+     "n": 60
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 9.828213,
+     "n": 60
+    },
     "rec.metre.f1": {
      "mean": 0.645742,
      "n": 60
@@ -9804,15 +9940,15 @@
      "n": 60
     },
     "rec.rest.precision": {
-     "mean": 0.186336,
+     "mean": 0.186665,
      "n": 60
     },
     "rec.rest.recall": {
-     "mean": 0.5311,
+     "mean": 0.531717,
      "n": 54
     },
     "rec.stability": {
-     "mean": 0.731562,
+     "mean": 0.731492,
      "n": 60
     },
     "rec.tuplet.false_per_100_beats": {
@@ -10075,7 +10211,7 @@
      "n": 90
     },
     "notation.ties.extra_per_100": {
-     "mean": 5.306856,
+     "mean": 5.30288,
      "n": 90
     },
     "notation.tuplets.f1": {
@@ -10135,19 +10271,19 @@
      "n": 72
     },
     "nq.ned": {
-     "mean": 0.978182,
+     "mean": 0.978162,
      "n": 90
     },
     "nq.range.ledger4_rate": {
-     "mean": 8.378752,
+     "mean": 8.382202,
      "n": 90
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 4.275734,
+     "mean": 4.279183,
      "n": 90
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.676638,
+     "mean": 2.677564,
      "n": 90
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -10223,11 +10359,11 @@
      "n": 90
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.13639,
+     "mean": 0.136428,
      "n": 71
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.162671,
+     "mean": 0.162784,
      "n": 24
     },
     "nq.tuplet.group_complete": {
@@ -10259,11 +10395,11 @@
      "n": 36
     },
     "read.accidentals_per_note": {
-     "mean": 0.029772,
+     "mean": 0.029774,
      "n": 90
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.005163,
+     "mean": -0.00516,
      "n": 90
     },
     "read.bar_completeness": {
@@ -10283,11 +10419,11 @@
      "n": 90
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.008379,
+     "mean": 0.008382,
      "n": 90
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.004276,
+     "mean": 0.004279,
      "n": 90
     },
     "read.max_chord_size": {
@@ -10307,11 +10443,11 @@
      "n": 90
     },
     "read.rests_per_measure": {
-     "mean": 3.375193,
+     "mean": 3.376119,
      "n": 90
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.676638,
+     "mean": 2.677564,
      "n": 90
     },
     "read.short_notes_rate": {
@@ -10323,19 +10459,19 @@
      "n": 90
     },
     "read.ties_per_note": {
-     "mean": 0.046225,
+     "mean": 0.046192,
      "n": 90
     },
     "read.ties_per_note.delta": {
-     "mean": 0.045233,
+     "mean": 0.045199,
      "n": 90
     },
     "read.tuplets_per_note": {
-     "mean": 0.081086,
+     "mean": 0.081104,
      "n": 90
     },
     "read.tuplets_per_note.delta": {
-     "mean": -0.073378,
+     "mean": -0.07336,
      "n": 90
     },
     "rec.check.1": {
@@ -10382,6 +10518,14 @@
      "mean": 0.633641,
      "n": 90
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.6635,
+     "n": 90
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 2.806871,
+     "n": 90
+    },
     "rec.metre.f1": {
      "mean": 0.732898,
      "n": 90
@@ -10399,11 +10543,11 @@
      "n": 90
     },
     "rec.rest.precision": {
-     "mean": 0.19501,
+     "mean": 0.195229,
      "n": 90
     },
     "rec.rest.recall": {
-     "mean": 0.54693,
+     "mean": 0.547436,
      "n": 66
     },
     "rec.stability": {
@@ -10977,6 +11121,14 @@
      "mean": 0.639168,
      "n": 60
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 3.520332,
+     "n": 60
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 5.663853,
+     "n": 60
+    },
     "rec.metre.f1": {
      "mean": 0.711006,
      "n": 60
@@ -11002,7 +11154,7 @@
      "n": 42
     },
     "rec.stability": {
-     "mean": 0.540909,
+     "mean": 0.541256,
      "n": 60
     },
     "rec.tuplet.false_per_100_beats": {
@@ -11193,15 +11345,15 @@
      "n": 48
     },
     "notation.duration.accuracy": {
-     "mean": 0.510186,
+     "mean": 0.510511,
      "n": 48
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.505343,
+     "mean": 0.505669,
      "n": 48
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.512276,
+     "mean": 0.512602,
      "n": 48
     },
     "notation.hand.accuracy": {
@@ -11333,7 +11485,7 @@
      "n": 48
     },
     "nq.rest.per_measure_delta": {
-     "mean": 3.161086,
+     "mean": 3.15718,
      "n": 48
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -11485,11 +11637,11 @@
      "n": 48
     },
     "read.rests_per_measure": {
-     "mean": 3.446524,
+     "mean": 3.442618,
      "n": 48
     },
     "read.rests_per_measure.delta": {
-     "mean": 3.161086,
+     "mean": 3.15718,
      "n": 48
     },
     "read.short_notes_rate": {
@@ -11560,12 +11712,20 @@
      "mean": 0.566157,
      "n": 48
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.311533,
+     "n": 48
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 0.415231,
+     "n": 48
+    },
     "rec.metre.f1": {
      "mean": 0.737909,
      "n": 48
     },
     "rec.mv2h": {
-     "mean": 0.693748,
+     "mean": 0.693813,
      "n": 48
     },
     "rec.onset_f1": {
@@ -11573,7 +11733,7 @@
      "n": 48
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 244.925369,
+     "mean": 244.795161,
      "n": 48
     },
     "rec.rest.precision": {
@@ -11585,7 +11745,7 @@
      "n": 30
     },
     "rec.stability": {
-     "mean": 0.441463,
+     "mean": 0.441551,
      "n": 48
     },
     "rec.tuplet.false_per_100_beats": {
@@ -11605,7 +11765,7 @@
      "n": 48
     },
     "sqi": {
-     "mean": 73.511851,
+     "mean": 73.515106,
      "n": 48
     },
     "struct.downbeat.f1": {
@@ -11712,7 +11872,7 @@
      "n": 24
     },
     "critical.beat_placement": {
-     "mean": 0.291667,
+     "mean": 0.333333,
      "n": 24
     },
     "critical.hands": {
@@ -11740,7 +11900,7 @@
      "n": 24
     },
     "critical.structure": {
-     "mean": 0.416667,
+     "mean": 0.458333,
      "n": 24
     },
     "errors": {
@@ -11820,11 +11980,11 @@
      "n": 24
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.394001,
+     "mean": 0.435668,
      "n": 24
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.391424,
+     "mean": 0.433091,
      "n": 24
     },
     "notation.pedal.false_per_min": {
@@ -11900,7 +12060,7 @@
      "n": 16
     },
     "nq.ned": {
-     "mean": 0.776729,
+     "mean": 0.764298,
      "n": 24
     },
     "nq.range.ledger4_rate": {
@@ -11912,7 +12072,7 @@
      "n": 24
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.838192,
+     "mean": 2.857647,
      "n": 24
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -12012,7 +12172,7 @@
      "n": 15
     },
     "nq.voice.poly_recall": {
-     "mean": 0.330882,
+     "mean": 0.333333,
      "n": 24
     },
     "read.accidentals_per_note": {
@@ -12064,11 +12224,11 @@
      "n": 24
     },
     "read.rests_per_measure": {
-     "mean": 3.213192,
+     "mean": 3.232647,
      "n": 24
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.838192,
+     "mean": 2.857647,
      "n": 24
     },
     "read.short_notes_rate": {
@@ -12136,35 +12296,43 @@
      "n": 24
     },
     "rec.harmony.agreement": {
-     "mean": 0.530428,
+     "mean": 0.540232,
+     "n": 24
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.0,
+     "n": 24
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 0.0,
      "n": 24
     },
     "rec.metre.f1": {
-     "mean": 0.672672,
+     "mean": 0.684589,
      "n": 24
     },
     "rec.mv2h": {
-     "mean": 0.661237,
+     "mean": 0.665581,
      "n": 24
     },
     "rec.onset_f1": {
-     "mean": 0.3927,
+     "mean": 0.434367,
      "n": 24
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 202.015103,
+     "mean": 202.505299,
      "n": 24
     },
     "rec.rest.precision": {
-     "mean": 0.285551,
+     "mean": 0.264718,
      "n": 24
     },
     "rec.rest.recall": {
-     "mean": 0.59375,
+     "mean": 0.635417,
      "n": 24
     },
     "rec.stability": {
-     "mean": 0.344081,
+     "mean": 0.343979,
      "n": 24
     },
     "rec.tuplet.false_per_100_beats": {
@@ -12184,11 +12352,11 @@
      "n": 24
     },
     "sqi": {
-     "mean": 72.898868,
+     "mean": 73.523868,
      "n": 24
     },
     "struct.downbeat.f1": {
-     "mean": 0.652486,
+     "mean": 0.694152,
      "n": 24
     },
     "struct.form.order_exact": {
@@ -12220,11 +12388,11 @@
      "n": 24
     },
     "struct.measures.count_exact": {
-     "mean": 0.416667,
+     "mean": 0.458333,
      "n": 24
     },
     "struct.measures.count_ratio": {
-     "mean": 1.41552,
+     "mean": 1.417971,
      "n": 24
     },
     "struct.measures.extra_empty_edge": {
@@ -12712,6 +12880,14 @@
     },
     "rec.harmony.agreement": {
      "mean": 0.583742,
+     "n": 18
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.403557,
+     "n": 18
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 0.403557,
      "n": 18
     },
     "rec.metre.f1": {
@@ -13305,6 +13481,14 @@
      "mean": 0.610296,
      "n": 384
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 2.729049,
+     "n": 384
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 5.763919,
+     "n": 384
+    },
     "rec.metre.f1": {
      "mean": 0.748633,
      "n": 384
@@ -13330,7 +13514,7 @@
      "n": 150
     },
     "rec.stability": {
-     "mean": 0.549754,
+     "mean": 0.550438,
      "n": 384
     },
     "rec.tuplet.false_per_100_beats": {
@@ -13521,15 +13705,15 @@
      "n": 144
     },
     "notation.duration.accuracy": {
-     "mean": 0.485939,
+     "mean": 0.485958,
      "n": 144
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.481562,
+     "mean": 0.481581,
      "n": 144
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.485686,
+     "mean": 0.485705,
      "n": 144
     },
     "notation.hand.accuracy": {
@@ -13653,7 +13837,7 @@
      "n": 108
     },
     "nq.ned": {
-     "mean": 0.886775,
+     "mean": 0.886719,
      "n": 144
     },
     "nq.range.ledger4_rate": {
@@ -13665,7 +13849,7 @@
      "n": 144
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.812602,
+     "mean": 2.812279,
      "n": 144
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -13825,11 +14009,11 @@
      "n": 144
     },
     "read.rests_per_measure": {
-     "mean": 3.282001,
+     "mean": 3.281678,
      "n": 144
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.812602,
+     "mean": 2.812279,
      "n": 144
     },
     "read.short_notes_rate": {
@@ -13893,11 +14077,19 @@
      "n": 144
     },
     "rec.check.9": {
-     "mean": 61.200453,
+     "mean": 61.184303,
      "n": 144
     },
     "rec.harmony.agreement": {
      "mean": 0.620187,
+     "n": 144
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.851372,
+     "n": 144
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 1.178907,
      "n": 144
     },
     "rec.metre.f1": {
@@ -13905,7 +14097,7 @@
      "n": 144
     },
     "rec.mv2h": {
-     "mean": 0.710011,
+     "mean": 0.710014,
      "n": 144
     },
     "rec.onset_f1": {
@@ -13913,11 +14105,11 @@
      "n": 144
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 227.870151,
+     "mean": 227.854001,
      "n": 144
     },
     "rec.rest.precision": {
-     "mean": 0.191889,
+     "mean": 0.19219,
      "n": 144
     },
     "rec.rest.recall": {
@@ -13925,7 +14117,7 @@
      "n": 84
     },
     "rec.stability": {
-     "mean": 0.435031,
+     "mean": 0.435266,
      "n": 144
     },
     "rec.tuplet.false_per_100_beats": {
@@ -13949,7 +14141,7 @@
      "n": 144
     },
     "sqi": {
-     "mean": 77.936391,
+     "mean": 77.936579,
      "n": 144
     },
     "struct.downbeat.f1": {
@@ -14056,7 +14248,7 @@
      "n": 66
     },
     "critical.beat_placement": {
-     "mean": 0.348485,
+     "mean": 0.363636,
      "n": 66
     },
     "critical.hands": {
@@ -14164,11 +14356,11 @@
      "n": 66
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.45917,
+     "mean": 0.474322,
      "n": 66
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.453264,
+     "mean": 0.468415,
      "n": 66
     },
     "notation.pedal.false_per_min": {
@@ -14244,7 +14436,7 @@
      "n": 36
     },
     "nq.ned": {
-     "mean": 0.804343,
+     "mean": 0.798833,
      "n": 66
     },
     "nq.range.ledger4_rate": {
@@ -14256,7 +14448,7 @@
      "n": 66
     },
     "nq.rest.per_measure_delta": {
-     "mean": 3.13014,
+     "mean": 3.126773,
      "n": 66
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -14408,11 +14600,11 @@
      "n": 66
     },
     "read.rests_per_measure": {
-     "mean": 3.315498,
+     "mean": 3.312131,
      "n": 66
     },
     "read.rests_per_measure.delta": {
-     "mean": 3.13014,
+     "mean": 3.126773,
      "n": 66
     },
     "read.short_notes_rate": {
@@ -14480,23 +14672,31 @@
      "n": 66
     },
     "rec.harmony.agreement": {
-     "mean": 0.669244,
+     "mean": 0.672611,
+     "n": 66
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.622252,
+     "n": 66
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 0.700439,
      "n": 66
     },
     "rec.metre.f1": {
-     "mean": 0.737467,
+     "mean": 0.741956,
      "n": 66
     },
     "rec.mv2h": {
-     "mean": 0.715463,
+     "mean": 0.717034,
      "n": 66
     },
     "rec.onset_f1": {
-     "mean": 0.456154,
+     "mean": 0.471306,
      "n": 66
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 236.060783,
+     "mean": 235.892433,
      "n": 66
     },
     "rec.rest.precision": {
@@ -14504,7 +14704,7 @@
      "n": 66
     },
     "rec.rest.recall": {
-     "mean": 0.549479,
+     "mean": 0.570313,
      "n": 48
     },
     "rec.stability": {
@@ -14528,11 +14728,11 @@
      "n": 66
     },
     "sqi": {
-     "mean": 75.710219,
+     "mean": 75.937491,
      "n": 66
     },
     "struct.downbeat.f1": {
-     "mean": 0.675916,
+     "mean": 0.691067,
      "n": 66
     },
     "struct.form.order_exact": {
@@ -14624,7 +14824,7 @@
      "n": 66
     },
     "usable": {
-     "mean": 0.166667,
+     "mean": 0.181818,
      "n": 66
     }
    },
@@ -15056,6 +15256,14 @@
     },
     "rec.harmony.agreement": {
      "mean": 0.788889,
+     "n": 6
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 9.941968,
+     "n": 6
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 12.662653,
      "n": 6
     },
     "rec.metre.f1": {
@@ -15629,6 +15837,14 @@
      "mean": 1.0,
      "n": 6
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 0.0,
+     "n": 6
+    },
     "rec.metre.f1": {
      "mean": 1.0,
      "n": 6
@@ -15837,15 +16053,15 @@
      "n": 96
     },
     "notation.duration.accuracy": {
-     "mean": 0.460033,
+     "mean": 0.460062,
      "n": 96
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.457671,
+     "mean": 0.457699,
      "n": 96
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.461438,
+     "mean": 0.461466,
      "n": 96
     },
     "notation.hand.accuracy": {
@@ -15909,7 +16125,7 @@
      "n": 96
     },
     "notation.ties.extra_per_100": {
-     "mean": 13.731592,
+     "mean": 13.727865,
      "n": 96
     },
     "notation.tuplets.f1": {
@@ -15969,23 +16185,23 @@
      "n": 92
     },
     "nq.ned": {
-     "mean": 0.903763,
+     "mean": 0.90366,
      "n": 96
     },
     "nq.range.ledger4_rate": {
-     "mean": 15.463435,
+     "mean": 15.466669,
      "n": 96
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 8.068672,
+     "mean": 8.071905,
      "n": 96
     },
     "nq.rest.per_measure_delta": {
-     "mean": 3.039772,
+     "mean": 3.040156,
      "n": 96
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.041459,
+     "mean": 0.04146,
      "n": 96
     },
     "nq.rhythm.hidden_beat_rate.delta": {
@@ -16057,11 +16273,11 @@
      "n": 96
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.218507,
+     "mean": 0.21854,
      "n": 82
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.230002,
+     "mean": 0.23008,
      "n": 35
     },
     "nq.tuplet.group_complete": {
@@ -16093,11 +16309,11 @@
      "n": 60
     },
     "read.accidentals_per_note": {
-     "mean": 0.026367,
+     "mean": 0.02637,
      "n": 96
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.006468,
+     "mean": -0.006466,
      "n": 96
     },
     "read.bar_completeness": {
@@ -16117,11 +16333,11 @@
      "n": 96
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.015463,
+     "mean": 0.015467,
      "n": 96
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.008069,
+     "mean": 0.008072,
      "n": 96
     },
     "read.max_chord_size": {
@@ -16141,11 +16357,11 @@
      "n": 96
     },
     "read.rests_per_measure": {
-     "mean": 3.64018,
+     "mean": 3.640563,
      "n": 96
     },
     "read.rests_per_measure.delta": {
-     "mean": 3.039772,
+     "mean": 3.040156,
      "n": 96
     },
     "read.short_notes_rate": {
@@ -16157,19 +16373,19 @@
      "n": 96
     },
     "read.ties_per_note": {
-     "mean": 0.109074,
+     "mean": 0.109043,
      "n": 96
     },
     "read.ties_per_note.delta": {
-     "mean": 0.101208,
+     "mean": 0.101176,
      "n": 96
     },
     "read.tuplets_per_note": {
-     "mean": 0.101768,
+     "mean": 0.101785,
      "n": 96
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.054893,
+     "mean": 0.05491,
      "n": 96
     },
     "rec.check.1": {
@@ -16209,11 +16425,19 @@
      "n": 96
     },
     "rec.check.9": {
-     "mean": 99.410534,
+     "mean": 99.386309,
      "n": 96
     },
     "rec.harmony.agreement": {
      "mean": 0.564313,
+     "n": 96
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 3.577428,
+     "n": 96
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 6.078504,
      "n": 96
     },
     "rec.metre.f1": {
@@ -16221,7 +16445,7 @@
      "n": 96
     },
     "rec.mv2h": {
-     "mean": 0.685513,
+     "mean": 0.685518,
      "n": 96
     },
     "rec.onset_f1": {
@@ -16229,19 +16453,19 @@
      "n": 96
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 249.939813,
+     "mean": 249.915588,
      "n": 96
     },
     "rec.rest.precision": {
-     "mean": 0.216838,
+     "mean": 0.217494,
      "n": 96
     },
     "rec.rest.recall": {
-     "mean": 0.638264,
+     "mean": 0.638769,
      "n": 66
     },
     "rec.stability": {
-     "mean": 0.546106,
+     "mean": 0.546026,
      "n": 96
     },
     "rec.tuplet.false_per_100_beats": {
@@ -16265,7 +16489,7 @@
      "n": 96
     },
     "sqi": {
-     "mean": 69.02911,
+     "mean": 69.029392,
      "n": 96
     },
     "struct.downbeat.f1": {
@@ -16432,15 +16656,15 @@
      "n": 6
     },
     "notation.duration.accuracy": {
-     "mean": 0.518229,
+     "mean": 0.520833,
      "n": 6
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.518229,
+     "mean": 0.520833,
      "n": 6
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.518229,
+     "mean": 0.520833,
      "n": 6
     },
     "notation.hand.accuracy": {
@@ -16572,7 +16796,7 @@
      "n": 6
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.34375,
+     "mean": 2.3125,
      "n": 6
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -16708,11 +16932,11 @@
      "n": 6
     },
     "read.rests_per_measure": {
-     "mean": 2.34375,
+     "mean": 2.3125,
      "n": 6
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.34375,
+     "mean": 2.3125,
      "n": 6
     },
     "read.short_notes_rate": {
@@ -16783,12 +17007,20 @@
      "mean": 0.208333,
      "n": 6
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 0.0,
+     "n": 6
+    },
     "rec.metre.f1": {
      "mean": 0.614815,
      "n": 6
     },
     "rec.mv2h": {
-     "mean": 0.6464,
+     "mean": 0.646921,
      "n": 6
     },
     "rec.onset_f1": {
@@ -16796,7 +17028,7 @@
      "n": 6
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 166.666667,
+     "mean": 165.625,
      "n": 6
     },
     "rec.rest.precision": {
@@ -16824,7 +17056,7 @@
      "n": 6
     },
     "sqi": {
-     "mean": 61.09098,
+     "mean": 61.117021,
      "n": 6
     },
     "struct.downbeat.f1": {
@@ -17370,6 +17602,14 @@
      "mean": 0.565148,
      "n": 54
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 2.044003,
+     "n": 54
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 3.997796,
+     "n": 54
+    },
     "rec.metre.f1": {
      "mean": 0.688565,
      "n": 54
@@ -17395,7 +17635,7 @@
      "n": 42
     },
     "rec.stability": {
-     "mean": 0.508802,
+     "mean": 0.50888,
      "n": 54
     },
     "rec.tuplet.false_per_100_beats": {
@@ -17947,6 +18187,14 @@
     },
     "rec.harmony.agreement": {
      "mean": 0.598039,
+     "n": 6
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.342388,
+     "n": 6
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 1.342388,
      "n": 6
     },
     "rec.metre.f1": {
@@ -18528,6 +18776,14 @@
      "mean": 0.366898,
      "n": 18
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.517598,
+     "n": 18
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 0.749678,
+     "n": 18
+    },
     "rec.metre.f1": {
      "mean": 0.700569,
      "n": 18
@@ -18680,7 +18936,7 @@
      "n": 168
     },
     "critical.beat_placement": {
-     "mean": 0.184524,
+     "mean": 0.190476,
      "n": 168
     },
     "critical.hands": {
@@ -18708,7 +18964,7 @@
      "n": 168
     },
     "critical.structure": {
-     "mean": 0.392857,
+     "mean": 0.39881,
      "n": 168
     },
     "errors": {
@@ -18788,11 +19044,11 @@
      "n": 168
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.271904,
+     "mean": 0.277856,
      "n": 168
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.270129,
+     "mean": 0.276081,
      "n": 168
     },
     "notation.pedal.false_per_min": {
@@ -18872,7 +19128,7 @@
      "n": 144
     },
     "nq.ned": {
-     "mean": 1.006056,
+     "mean": 1.004281,
      "n": 168
     },
     "nq.range.ledger4_rate": {
@@ -18884,7 +19140,7 @@
      "n": 168
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.94177,
+     "mean": 2.944549,
      "n": 168
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -18992,7 +19248,7 @@
      "n": 16
     },
     "nq.voice.poly_recall": {
-     "mean": 0.18225,
+     "mean": 0.184211,
      "n": 30
     },
     "read.accidentals_per_note": {
@@ -19044,11 +19300,11 @@
      "n": 168
     },
     "read.rests_per_measure": {
-     "mean": 3.384623,
+     "mean": 3.387402,
      "n": 168
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.94177,
+     "mean": 2.944549,
      "n": 168
     },
     "read.short_notes_rate": {
@@ -19116,35 +19372,43 @@
      "n": 168
     },
     "rec.harmony.agreement": {
-     "mean": 0.445149,
+     "mean": 0.44655,
+     "n": 168
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.717674,
+     "n": 168
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 3.588057,
      "n": 168
     },
     "rec.metre.f1": {
-     "mean": 0.666204,
+     "mean": 0.667906,
      "n": 168
     },
     "rec.mv2h": {
-     "mean": 0.65632,
+     "mean": 0.65694,
      "n": 168
     },
     "rec.onset_f1": {
-     "mean": 0.270982,
+     "mean": 0.276935,
      "n": 168
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 255.383569,
+     "mean": 255.453597,
      "n": 168
     },
     "rec.rest.precision": {
-     "mean": 0.126567,
+     "mean": 0.123591,
      "n": 168
     },
     "rec.rest.recall": {
-     "mean": 0.487695,
+     "mean": 0.500516,
      "n": 78
     },
     "rec.stability": {
-     "mean": 0.635438,
+     "mean": 0.636912,
      "n": 168
     },
     "rec.tuplet.false_per_100_beats": {
@@ -19168,11 +19432,11 @@
      "n": 168
     },
     "sqi": {
-     "mean": 68.169209,
+     "mean": 68.258494,
      "n": 168
     },
     "struct.downbeat.f1": {
-     "mean": 0.602233,
+     "mean": 0.608186,
      "n": 168
     },
     "struct.form.order_exact": {
@@ -19204,11 +19468,11 @@
      "n": 168
     },
     "struct.measures.count_exact": {
-     "mean": 0.392857,
+     "mean": 0.39881,
      "n": 168
     },
     "struct.measures.count_ratio": {
-     "mean": 0.869569,
+     "mean": 0.869919,
      "n": 168
     },
     "struct.measures.extra_empty_edge": {
@@ -19275,7 +19539,7 @@
      "n": 330
     },
     "critical.beat_placement": {
-     "mean": 0.360606,
+     "mean": 0.363636,
      "n": 330
     },
     "critical.hands": {
@@ -19383,11 +19647,11 @@
      "n": 330
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.578972,
+     "mean": 0.582002,
      "n": 330
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.571341,
+     "mean": 0.574372,
      "n": 330
     },
     "notation.pedal.false_per_min": {
@@ -19467,7 +19731,7 @@
      "n": 228
     },
     "nq.ned": {
-     "mean": 0.806609,
+     "mean": 0.805507,
      "n": 330
     },
     "nq.range.ledger4_rate": {
@@ -19479,7 +19743,7 @@
      "n": 330
     },
     "nq.rest.per_measure_delta": {
-     "mean": 3.17948,
+     "mean": 3.178807,
      "n": 330
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -19639,11 +19903,11 @@
      "n": 330
     },
     "read.rests_per_measure": {
-     "mean": 3.616987,
+     "mean": 3.616313,
      "n": 330
     },
     "read.rests_per_measure.delta": {
-     "mean": 3.17948,
+     "mean": 3.178807,
      "n": 330
     },
     "read.short_notes_rate": {
@@ -19711,23 +19975,31 @@
      "n": 330
     },
     "rec.harmony.agreement": {
-     "mean": 0.725084,
+     "mean": 0.725757,
+     "n": 330
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.777326,
+     "n": 330
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 2.880744,
      "n": 330
     },
     "rec.metre.f1": {
-     "mean": 0.806587,
+     "mean": 0.807485,
      "n": 330
     },
     "rec.mv2h": {
-     "mean": 0.739398,
+     "mean": 0.739712,
      "n": 330
     },
     "rec.onset_f1": {
-     "mean": 0.575006,
+     "mean": 0.578036,
      "n": 330
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 250.841444,
+     "mean": 250.807774,
      "n": 330
     },
     "rec.rest.precision": {
@@ -19735,11 +20007,11 @@
      "n": 330
     },
     "rec.rest.recall": {
-     "mean": 0.684241,
+     "mean": 0.690193,
      "n": 168
     },
     "rec.stability": {
-     "mean": 0.48683,
+     "mean": 0.487058,
      "n": 330
     },
     "rec.tuplet.false_per_100_beats": {
@@ -19763,11 +20035,11 @@
      "n": 330
     },
     "sqi": {
-     "mean": 82.202662,
+     "mean": 82.248117,
      "n": 330
     },
     "struct.downbeat.f1": {
-     "mean": 0.732424,
+     "mean": 0.735454,
      "n": 330
     },
     "struct.form.order_exact": {
@@ -19859,7 +20131,7 @@
      "n": 330
     },
     "usable": {
-     "mean": 0.245455,
+     "mean": 0.248485,
      "n": 330
     }
    },
@@ -20309,6 +20581,14 @@
      "mean": 0.679511,
      "n": 168
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.834276,
+     "n": 168
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 4.467574,
+     "n": 168
+    },
     "rec.metre.f1": {
      "mean": 0.779439,
      "n": 168
@@ -20525,15 +20805,15 @@
      "n": 6
     },
     "notation.duration.accuracy": {
-     "mean": 0.518229,
+     "mean": 0.520833,
      "n": 6
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.518229,
+     "mean": 0.520833,
      "n": 6
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.518229,
+     "mean": 0.520833,
      "n": 6
     },
     "notation.hand.accuracy": {
@@ -20665,7 +20945,7 @@
      "n": 6
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.34375,
+     "mean": 2.3125,
      "n": 6
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -20801,11 +21081,11 @@
      "n": 6
     },
     "read.rests_per_measure": {
-     "mean": 2.34375,
+     "mean": 2.3125,
      "n": 6
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.34375,
+     "mean": 2.3125,
      "n": 6
     },
     "read.short_notes_rate": {
@@ -20876,12 +21156,20 @@
      "mean": 0.208333,
      "n": 6
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 0.0,
+     "n": 6
+    },
     "rec.metre.f1": {
      "mean": 0.614815,
      "n": 6
     },
     "rec.mv2h": {
-     "mean": 0.6464,
+     "mean": 0.646921,
      "n": 6
     },
     "rec.onset_f1": {
@@ -20889,7 +21177,7 @@
      "n": 6
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 166.666667,
+     "mean": 165.625,
      "n": 6
     },
     "rec.rest.precision": {
@@ -20917,7 +21205,7 @@
      "n": 6
     },
     "sqi": {
-     "mean": 61.09098,
+     "mean": 61.117021,
      "n": 6
     },
     "struct.downbeat.f1": {
@@ -21024,7 +21312,7 @@
      "n": 24
     },
     "critical.beat_placement": {
-     "mean": 0.25,
+     "mean": 0.291667,
      "n": 24
     },
     "critical.hands": {
@@ -21052,7 +21340,7 @@
      "n": 24
     },
     "critical.structure": {
-     "mean": 0.5,
+     "mean": 0.541667,
      "n": 24
     },
     "errors": {
@@ -21132,11 +21420,11 @@
      "n": 24
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.330458,
+     "mean": 0.372125,
      "n": 24
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.325358,
+     "mean": 0.367024,
      "n": 24
     },
     "notation.pedal.false_per_min": {
@@ -21216,7 +21504,7 @@
      "n": 6
     },
     "nq.ned": {
-     "mean": 0.88006,
+     "mean": 0.867629,
      "n": 24
     },
     "nq.range.ledger4_rate": {
@@ -21228,7 +21516,7 @@
      "n": 24
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.729604,
+     "mean": 2.749059,
      "n": 24
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -21332,7 +21620,7 @@
      "n": 6
     },
     "nq.voice.poly_recall": {
-     "mean": 0.218954,
+     "mean": 0.222222,
      "n": 18
     },
     "read.accidentals_per_note": {
@@ -21384,11 +21672,11 @@
      "n": 24
     },
     "read.rests_per_measure": {
-     "mean": 3.354604,
+     "mean": 3.374059,
      "n": 24
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.729604,
+     "mean": 2.749059,
      "n": 24
     },
     "read.short_notes_rate": {
@@ -21456,35 +21744,43 @@
      "n": 24
     },
     "rec.harmony.agreement": {
-     "mean": 0.544764,
+     "mean": 0.554568,
+     "n": 24
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 2.179379,
+     "n": 24
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 3.442129,
      "n": 24
     },
     "rec.metre.f1": {
-     "mean": 0.625179,
+     "mean": 0.637096,
      "n": 24
     },
     "rec.mv2h": {
-     "mean": 0.627173,
+     "mean": 0.631517,
      "n": 24
     },
     "rec.onset_f1": {
-     "mean": 0.327766,
+     "mean": 0.369433,
      "n": 24
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 216.149767,
+     "mean": 216.639963,
      "n": 24
     },
     "rec.rest.precision": {
-     "mean": 0.127944,
+     "mean": 0.107111,
      "n": 24
     },
     "rec.rest.recall": {
-     "mean": 0.445513,
+     "mean": 0.528846,
      "n": 12
     },
     "rec.stability": {
-     "mean": 0.510922,
+     "mean": 0.51082,
      "n": 24
     },
     "rec.tuplet.false_per_100_beats": {
@@ -21508,11 +21804,11 @@
      "n": 24
     },
     "sqi": {
-     "mean": 66.633751,
+     "mean": 67.258751,
      "n": 24
     },
     "struct.downbeat.f1": {
-     "mean": 0.655912,
+     "mean": 0.697578,
      "n": 24
     },
     "struct.form.order_exact": {
@@ -21544,11 +21840,11 @@
      "n": 24
     },
     "struct.measures.count_exact": {
-     "mean": 0.5,
+     "mean": 0.541667,
      "n": 24
     },
     "struct.measures.count_ratio": {
-     "mean": 1.263242,
+     "mean": 1.265693,
      "n": 24
     },
     "struct.measures.extra_empty_edge": {
@@ -22054,6 +22350,14 @@
      "mean": 0.428547,
      "n": 144
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.640723,
+     "n": 144
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 3.612379,
+     "n": 144
+    },
     "rec.metre.f1": {
      "mean": 0.673041,
      "n": 144
@@ -22079,7 +22383,7 @@
      "n": 66
     },
     "rec.stability": {
-     "mean": 0.656191,
+     "mean": 0.657927,
      "n": 144
     },
     "rec.tuplet.false_per_100_beats": {
@@ -22627,6 +22931,14 @@
     },
     "rec.harmony.agreement": {
      "mean": 0.754902,
+     "n": 6
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 2.439215,
+     "n": 6
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 2.439215,
      "n": 6
     },
     "rec.metre.f1": {
@@ -23214,6 +23526,14 @@
     },
     "rec.harmony.agreement": {
      "mean": 0.676719,
+     "n": 162
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.81187,
+     "n": 162
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 4.542698,
      "n": 162
     },
     "rec.metre.f1": {
@@ -23811,6 +24131,14 @@
      "mean": 0.565148,
      "n": 54
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 2.044003,
+     "n": 54
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 3.997796,
+     "n": 54
+    },
     "rec.metre.f1": {
      "mean": 0.688565,
      "n": 54
@@ -23836,7 +24164,7 @@
      "n": 42
     },
     "rec.stability": {
-     "mean": 0.508802,
+     "mean": 0.50888,
      "n": 54
     },
     "rec.tuplet.false_per_100_beats": {
@@ -23967,7 +24295,7 @@
      "n": 330
     },
     "critical.beat_placement": {
-     "mean": 0.360606,
+     "mean": 0.363636,
      "n": 330
     },
     "critical.hands": {
@@ -24075,11 +24403,11 @@
      "n": 330
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.578972,
+     "mean": 0.582002,
      "n": 330
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.571341,
+     "mean": 0.574372,
      "n": 330
     },
     "notation.pedal.false_per_min": {
@@ -24159,7 +24487,7 @@
      "n": 228
     },
     "nq.ned": {
-     "mean": 0.806609,
+     "mean": 0.805507,
      "n": 330
     },
     "nq.range.ledger4_rate": {
@@ -24171,7 +24499,7 @@
      "n": 330
     },
     "nq.rest.per_measure_delta": {
-     "mean": 3.17948,
+     "mean": 3.178807,
      "n": 330
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -24331,11 +24659,11 @@
      "n": 330
     },
     "read.rests_per_measure": {
-     "mean": 3.616987,
+     "mean": 3.616313,
      "n": 330
     },
     "read.rests_per_measure.delta": {
-     "mean": 3.17948,
+     "mean": 3.178807,
      "n": 330
     },
     "read.short_notes_rate": {
@@ -24403,23 +24731,31 @@
      "n": 330
     },
     "rec.harmony.agreement": {
-     "mean": 0.725084,
+     "mean": 0.725757,
+     "n": 330
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.777326,
+     "n": 330
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 2.880744,
      "n": 330
     },
     "rec.metre.f1": {
-     "mean": 0.806587,
+     "mean": 0.807485,
      "n": 330
     },
     "rec.mv2h": {
-     "mean": 0.739398,
+     "mean": 0.739712,
      "n": 330
     },
     "rec.onset_f1": {
-     "mean": 0.575006,
+     "mean": 0.578036,
      "n": 330
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 250.841444,
+     "mean": 250.807774,
      "n": 330
     },
     "rec.rest.precision": {
@@ -24427,11 +24763,11 @@
      "n": 330
     },
     "rec.rest.recall": {
-     "mean": 0.684241,
+     "mean": 0.690193,
      "n": 168
     },
     "rec.stability": {
-     "mean": 0.48683,
+     "mean": 0.487058,
      "n": 330
     },
     "rec.tuplet.false_per_100_beats": {
@@ -24455,11 +24791,11 @@
      "n": 330
     },
     "sqi": {
-     "mean": 82.202662,
+     "mean": 82.248117,
      "n": 330
     },
     "struct.downbeat.f1": {
-     "mean": 0.732424,
+     "mean": 0.735454,
      "n": 330
     },
     "struct.form.order_exact": {
@@ -24551,7 +24887,7 @@
      "n": 330
     },
     "usable": {
-     "mean": 0.245455,
+     "mean": 0.248485,
      "n": 330
     }
    },
@@ -24967,6 +25303,14 @@
     },
     "rec.harmony.agreement": {
      "mean": 0.277778,
+     "n": 6
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.552795,
+     "n": 6
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 2.249034,
      "n": 6
     },
     "rec.metre.f1": {
@@ -25544,6 +25888,14 @@
      "mean": 0.411458,
      "n": 12
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.0,
+     "n": 12
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 0.0,
+     "n": 12
+    },
     "rec.metre.f1": {
      "mean": 0.697993,
      "n": 12
@@ -25756,15 +26108,15 @@
      "n": 96
     },
     "notation.duration.accuracy": {
-     "mean": 0.460033,
+     "mean": 0.460062,
      "n": 96
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.457671,
+     "mean": 0.457699,
      "n": 96
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.461438,
+     "mean": 0.461466,
      "n": 96
     },
     "notation.hand.accuracy": {
@@ -25828,7 +26180,7 @@
      "n": 96
     },
     "notation.ties.extra_per_100": {
-     "mean": 13.731592,
+     "mean": 13.727865,
      "n": 96
     },
     "notation.tuplets.f1": {
@@ -25888,23 +26240,23 @@
      "n": 92
     },
     "nq.ned": {
-     "mean": 0.903763,
+     "mean": 0.90366,
      "n": 96
     },
     "nq.range.ledger4_rate": {
-     "mean": 15.463435,
+     "mean": 15.466669,
      "n": 96
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 8.068672,
+     "mean": 8.071905,
      "n": 96
     },
     "nq.rest.per_measure_delta": {
-     "mean": 3.039772,
+     "mean": 3.040156,
      "n": 96
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.041459,
+     "mean": 0.04146,
      "n": 96
     },
     "nq.rhythm.hidden_beat_rate.delta": {
@@ -25976,11 +26328,11 @@
      "n": 96
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.218507,
+     "mean": 0.21854,
      "n": 82
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.230002,
+     "mean": 0.23008,
      "n": 35
     },
     "nq.tuplet.group_complete": {
@@ -26012,11 +26364,11 @@
      "n": 60
     },
     "read.accidentals_per_note": {
-     "mean": 0.026367,
+     "mean": 0.02637,
      "n": 96
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.006468,
+     "mean": -0.006466,
      "n": 96
     },
     "read.bar_completeness": {
@@ -26036,11 +26388,11 @@
      "n": 96
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.015463,
+     "mean": 0.015467,
      "n": 96
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.008069,
+     "mean": 0.008072,
      "n": 96
     },
     "read.max_chord_size": {
@@ -26060,11 +26412,11 @@
      "n": 96
     },
     "read.rests_per_measure": {
-     "mean": 3.64018,
+     "mean": 3.640563,
      "n": 96
     },
     "read.rests_per_measure.delta": {
-     "mean": 3.039772,
+     "mean": 3.040156,
      "n": 96
     },
     "read.short_notes_rate": {
@@ -26076,19 +26428,19 @@
      "n": 96
     },
     "read.ties_per_note": {
-     "mean": 0.109074,
+     "mean": 0.109043,
      "n": 96
     },
     "read.ties_per_note.delta": {
-     "mean": 0.101208,
+     "mean": 0.101176,
      "n": 96
     },
     "read.tuplets_per_note": {
-     "mean": 0.101768,
+     "mean": 0.101785,
      "n": 96
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.054893,
+     "mean": 0.05491,
      "n": 96
     },
     "rec.check.1": {
@@ -26128,11 +26480,19 @@
      "n": 96
     },
     "rec.check.9": {
-     "mean": 99.410534,
+     "mean": 99.386309,
      "n": 96
     },
     "rec.harmony.agreement": {
      "mean": 0.564313,
+     "n": 96
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 3.577428,
+     "n": 96
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 6.078504,
      "n": 96
     },
     "rec.metre.f1": {
@@ -26140,7 +26500,7 @@
      "n": 96
     },
     "rec.mv2h": {
-     "mean": 0.685513,
+     "mean": 0.685518,
      "n": 96
     },
     "rec.onset_f1": {
@@ -26148,19 +26508,19 @@
      "n": 96
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 249.939813,
+     "mean": 249.915588,
      "n": 96
     },
     "rec.rest.precision": {
-     "mean": 0.216838,
+     "mean": 0.217494,
      "n": 96
     },
     "rec.rest.recall": {
-     "mean": 0.638264,
+     "mean": 0.638769,
      "n": 66
     },
     "rec.stability": {
-     "mean": 0.546106,
+     "mean": 0.546026,
      "n": 96
     },
     "rec.tuplet.false_per_100_beats": {
@@ -26184,7 +26544,7 @@
      "n": 96
     },
     "sqi": {
-     "mean": 69.02911,
+     "mean": 69.029392,
      "n": 96
     },
     "struct.downbeat.f1": {
@@ -26714,6 +27074,14 @@
      "mean": 0.598039,
      "n": 6
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.342388,
+     "n": 6
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 1.342388,
+     "n": 6
+    },
     "rec.metre.f1": {
      "mean": 0.593576,
      "n": 6
@@ -26866,7 +27234,7 @@
      "n": 594
     },
     "critical.beat_placement": {
-     "mean": 0.348485,
+     "mean": 0.351852,
      "n": 594
     },
     "critical.hands": {
@@ -26894,7 +27262,7 @@
      "n": 594
     },
     "critical.structure": {
-     "mean": 0.611111,
+     "mean": 0.612795,
      "n": 594
     },
     "errors": {
@@ -26926,15 +27294,15 @@
      "n": 594
     },
     "notation.duration.accuracy": {
-     "mean": 0.517841,
+     "mean": 0.517867,
      "n": 594
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.514131,
+     "mean": 0.514157,
      "n": 594
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.518004,
+     "mean": 0.518031,
      "n": 594
     },
     "notation.hand.accuracy": {
@@ -26974,11 +27342,11 @@
      "n": 594
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.526584,
+     "mean": 0.529951,
      "n": 594
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.521752,
+     "mean": 0.525119,
      "n": 594
     },
     "notation.pedal.false_per_min": {
@@ -27058,7 +27426,7 @@
      "n": 386
     },
     "nq.ned": {
-     "mean": 0.876511,
+     "mean": 0.875397,
      "n": 594
     },
     "nq.range.ledger4_rate": {
@@ -27070,7 +27438,7 @@
      "n": 594
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.98221,
+     "mean": 2.982306,
      "n": 594
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -27178,7 +27546,7 @@
      "n": 6
     },
     "nq.voice.poly_recall": {
-     "mean": 0.287901,
+     "mean": 0.288119,
      "n": 270
     },
     "read.accidentals_per_note": {
@@ -27230,11 +27598,11 @@
      "n": 594
     },
     "read.rests_per_measure": {
-     "mean": 3.1816,
+     "mean": 3.181696,
      "n": 594
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.98221,
+     "mean": 2.982306,
      "n": 594
     },
     "read.short_notes_rate": {
@@ -27302,35 +27670,43 @@
      "n": 594
     },
     "rec.harmony.agreement": {
-     "mean": 0.667682,
+     "mean": 0.668452,
+     "n": 594
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.201662,
+     "n": 594
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 2.66539,
      "n": 594
     },
     "rec.metre.f1": {
-     "mean": 0.78372,
+     "mean": 0.7847,
      "n": 594
     },
     "rec.mv2h": {
-     "mean": 0.731214,
+     "mean": 0.731569,
      "n": 594
     },
     "rec.onset_f1": {
-     "mean": 0.524113,
+     "mean": 0.52748,
      "n": 594
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 232.212403,
+     "mean": 232.202981,
      "n": 594
     },
     "rec.rest.precision": {
-     "mean": 0.146368,
+     "mean": 0.145526,
      "n": 594
     },
     "rec.rest.recall": {
-     "mean": 0.590622,
+     "mean": 0.597868,
      "n": 276
     },
     "rec.stability": {
-     "mean": 0.425715,
+     "mean": 0.426265,
      "n": 594
     },
     "rec.tuplet.false_per_100_beats": {
@@ -27354,11 +27730,11 @@
      "n": 594
     },
     "sqi": {
-     "mean": 78.456446,
+     "mean": 78.507214,
      "n": 594
     },
     "struct.downbeat.f1": {
-     "mean": 0.723127,
+     "mean": 0.726494,
      "n": 594
     },
     "struct.form.order_exact": {
@@ -27390,11 +27766,11 @@
      "n": 594
     },
     "struct.measures.count_exact": {
-     "mean": 0.616162,
+     "mean": 0.617845,
      "n": 594
     },
     "struct.measures.count_ratio": {
-     "mean": 1.181115,
+     "mean": 1.181214,
      "n": 594
     },
     "struct.measures.extra_empty_edge": {
@@ -27450,7 +27826,7 @@
      "n": 594
     },
     "usable": {
-     "mean": 0.205387,
+     "mean": 0.207071,
      "n": 594
     }
    },
@@ -27884,6 +28260,14 @@
      "mean": 0.594676,
      "n": 30
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.310559,
+     "n": 30
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 0.739115,
+     "n": 30
+    },
     "rec.metre.f1": {
      "mean": 0.732904,
      "n": 30
@@ -28096,15 +28480,15 @@
      "n": 222
     },
     "notation.duration.accuracy": {
-     "mean": 0.459965,
+     "mean": 0.459977,
      "n": 222
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.453817,
+     "mean": 0.453829,
      "n": 222
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.46002,
+     "mean": 0.460032,
      "n": 222
     },
     "notation.hand.accuracy": {
@@ -28168,7 +28552,7 @@
      "n": 222
     },
     "notation.ties.extra_per_100": {
-     "mean": 5.922933,
+     "mean": 5.921321,
      "n": 222
     },
     "notation.tuplets.f1": {
@@ -28228,19 +28612,19 @@
      "n": 222
     },
     "nq.ned": {
-     "mean": 0.960082,
+     "mean": 0.960038,
      "n": 222
     },
     "nq.range.ledger4_rate": {
-     "mean": 18.350107,
+     "mean": 18.351505,
      "n": 222
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 6.396994,
+     "mean": 6.398393,
      "n": 222
     },
     "nq.rest.per_measure_delta": {
-     "mean": 3.034012,
+     "mean": 3.034178,
      "n": 222
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -28316,11 +28700,11 @@
      "n": 222
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.138228,
+     "mean": 0.138242,
      "n": 206
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.153066,
+     "mean": 0.1531,
      "n": 79
     },
     "nq.tuplet.group_complete": {
@@ -28352,11 +28736,11 @@
      "n": 90
     },
     "read.accidentals_per_note": {
-     "mean": 0.029155,
+     "mean": 0.029156,
      "n": 222
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.001135,
+     "mean": 0.001136,
      "n": 222
     },
     "read.bar_completeness": {
@@ -28376,11 +28760,11 @@
      "n": 222
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.01835,
+     "mean": 0.018352,
      "n": 222
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.006397,
+     "mean": 0.006398,
      "n": 222
     },
     "read.max_chord_size": {
@@ -28400,11 +28784,11 @@
      "n": 222
     },
     "read.rests_per_measure": {
-     "mean": 3.957416,
+     "mean": 3.957582,
      "n": 222
     },
     "read.rests_per_measure.delta": {
-     "mean": 3.034012,
+     "mean": 3.034178,
      "n": 222
     },
     "read.short_notes_rate": {
@@ -28416,19 +28800,19 @@
      "n": 222
     },
     "read.ties_per_note": {
-     "mean": 0.051944,
+     "mean": 0.05193,
      "n": 222
     },
     "read.ties_per_note.delta": {
-     "mean": 0.049139,
+     "mean": 0.049125,
      "n": 222
     },
     "read.tuplets_per_note": {
-     "mean": 0.166332,
+     "mean": 0.166339,
      "n": 222
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.018909,
+     "mean": 0.018916,
      "n": 222
     },
     "rec.check.1": {
@@ -28468,11 +28852,19 @@
      "n": 222
     },
     "rec.check.9": {
-     "mean": 143.947644,
+     "mean": 143.937168,
      "n": 222
     },
     "rec.harmony.agreement": {
      "mean": 0.495098,
+     "n": 222
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 4.195141,
+     "n": 222
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 6.844785,
      "n": 222
     },
     "rec.metre.f1": {
@@ -28480,7 +28872,7 @@
      "n": 222
     },
     "rec.mv2h": {
-     "mean": 0.643142,
+     "mean": 0.643144,
      "n": 222
     },
     "rec.onset_f1": {
@@ -28488,19 +28880,19 @@
      "n": 222
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 269.131687,
+     "mean": 269.121212,
      "n": 222
     },
     "rec.rest.precision": {
-     "mean": 0.223035,
+     "mean": 0.223319,
      "n": 222
     },
     "rec.rest.recall": {
-     "mean": 0.6131,
+     "mean": 0.613292,
      "n": 174
     },
     "rec.stability": {
-     "mean": 0.704765,
+     "mean": 0.704731,
      "n": 222
     },
     "rec.tuplet.false_per_100_beats": {
@@ -28524,7 +28916,7 @@
      "n": 222
     },
     "sqi": {
-     "mean": 66.924084,
+     "mean": 66.924206,
      "n": 222
     },
     "struct.downbeat.f1": {
@@ -29064,6 +29456,14 @@
     },
     "rec.harmony.agreement": {
      "mean": 0.529937,
+     "n": 282
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 2.890414,
+     "n": 282
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 2.890414,
      "n": 282
     },
     "rec.metre.f1": {
@@ -29661,6 +30061,14 @@
      "mean": 0.543225,
      "n": 282
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 2.886461,
+     "n": 282
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 2.886461,
+     "n": 282
+    },
     "rec.metre.f1": {
      "mean": 0.684875,
      "n": 282
@@ -29817,7 +30225,7 @@
      "n": 282
     },
     "critical.beat_placement": {
-     "mean": 0.680851,
+     "mean": 0.687943,
      "n": 282
     },
     "critical.hands": {
@@ -29845,7 +30253,7 @@
      "n": 282
     },
     "critical.structure": {
-     "mean": 0.762411,
+     "mean": 0.765957,
      "n": 282
     },
     "errors": {
@@ -29877,15 +30285,15 @@
      "n": 282
     },
     "notation.duration.accuracy": {
-     "mean": 0.872341,
+     "mean": 0.872406,
      "n": 282
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.868929,
+     "mean": 0.868994,
      "n": 282
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.872341,
+     "mean": 0.872406,
      "n": 282
     },
     "notation.hand.accuracy": {
@@ -29925,11 +30333,11 @@
      "n": 282
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.729385,
+     "mean": 0.736477,
      "n": 282
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.72629,
+     "mean": 0.733382,
      "n": 282
     },
     "notation.pedal.false_per_min": {
@@ -29949,7 +30357,7 @@
      "n": 282
     },
     "notation.ties.extra_per_100": {
-     "mean": 1.732953,
+     "mean": 1.731684,
      "n": 282
     },
     "notation.tuplets.f1": {
@@ -30009,19 +30417,19 @@
      "n": 206
     },
     "nq.ned": {
-     "mean": 0.374963,
+     "mean": 0.372581,
      "n": 282
     },
     "nq.range.ledger4_rate": {
-     "mean": 15.622386,
+     "mean": 15.623487,
      "n": 282
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 10.855662,
+     "mean": 10.856763,
      "n": 282
     },
     "nq.rest.per_measure_delta": {
-     "mean": 0.172216,
+     "mean": 0.172549,
      "n": 282
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -30097,11 +30505,11 @@
      "n": 282
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.044184,
+     "mean": 0.044202,
      "n": 146
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.038366,
+     "mean": 0.038436,
      "n": 39
     },
     "nq.tuplet.group_complete": {
@@ -30129,15 +30537,15 @@
      "n": 15
     },
     "nq.voice.poly_recall": {
-     "mean": 0.647778,
+     "mean": 0.648268,
      "n": 120
     },
     "read.accidentals_per_note": {
-     "mean": 0.017132,
+     "mean": 0.017133,
      "n": 282
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.002828,
+     "mean": -0.002827,
      "n": 282
     },
     "read.bar_completeness": {
@@ -30157,11 +30565,11 @@
      "n": 282
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.015622,
+     "mean": 0.015623,
      "n": 282
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.010856,
+     "mean": 0.010857,
      "n": 282
     },
     "read.max_chord_size": {
@@ -30181,11 +30589,11 @@
      "n": 282
     },
     "read.rests_per_measure": {
-     "mean": 0.578953,
+     "mean": 0.579287,
      "n": 282
     },
     "read.rests_per_measure.delta": {
-     "mean": 0.172216,
+     "mean": 0.172549,
      "n": 282
     },
     "read.short_notes_rate": {
@@ -30197,19 +30605,19 @@
      "n": 282
     },
     "read.ties_per_note": {
-     "mean": 0.017491,
+     "mean": 0.01748,
      "n": 282
     },
     "read.ties_per_note.delta": {
-     "mean": 0.013254,
+     "mean": 0.013244,
      "n": 282
     },
     "read.tuplets_per_note": {
-     "mean": 0.052681,
+     "mean": 0.052687,
      "n": 282
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.007449,
+     "mean": 0.007454,
      "n": 282
     },
     "rec.check.1": {
@@ -30249,39 +30657,47 @@
      "n": 282
     },
     "rec.check.9": {
-     "mean": 2.957775,
+     "mean": 2.949528,
      "n": 282
     },
     "rec.harmony.agreement": {
-     "mean": 0.786253,
+     "mean": 0.787875,
+     "n": 282
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.089882,
+     "n": 282
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 5.304533,
      "n": 282
     },
     "rec.metre.f1": {
-     "mean": 0.894904,
+     "mean": 0.896969,
      "n": 282
     },
     "rec.mv2h": {
-     "mean": 0.888643,
+     "mean": 0.889393,
      "n": 282
     },
     "rec.onset_f1": {
-     "mean": 0.72777,
+     "mean": 0.734862,
      "n": 282
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 21.823423,
+     "mean": 21.795331,
      "n": 282
     },
     "rec.rest.precision": {
-     "mean": 0.392249,
+     "mean": 0.390699,
      "n": 282
     },
     "rec.rest.recall": {
-     "mean": 0.469388,
+     "mean": 0.482592,
      "n": 154
     },
     "rec.stability": {
-     "mean": 0.215813,
+     "mean": 0.216945,
      "n": 282
     },
     "rec.tuplet.false_per_100_beats": {
@@ -30305,11 +30721,11 @@
      "n": 282
     },
     "sqi": {
-     "mean": 89.629158,
+     "mean": 89.736191,
      "n": 282
     },
     "struct.downbeat.f1": {
-     "mean": 0.865814,
+     "mean": 0.872906,
      "n": 282
     },
     "struct.form.order_exact": {
@@ -30341,11 +30757,11 @@
      "n": 282
     },
     "struct.measures.count_exact": {
-     "mean": 0.762411,
+     "mean": 0.765957,
      "n": 282
     },
     "struct.measures.count_ratio": {
-     "mean": 1.067912,
+     "mean": 1.06812,
      "n": 282
     },
     "struct.measures.extra_empty_edge": {
@@ -30401,7 +30817,7 @@
      "n": 282
     },
     "usable": {
-     "mean": 0.549645,
+     "mean": 0.553191,
      "n": 282
     }
    },
@@ -30412,7 +30828,7 @@
      "n": 846
     },
     "critical.beat_placement": {
-     "mean": 0.299054,
+     "mean": 0.301418,
      "n": 846
     },
     "critical.hands": {
@@ -30440,7 +30856,7 @@
      "n": 846
     },
     "critical.structure": {
-     "mean": 0.574468,
+     "mean": 0.57565,
      "n": 846
     },
     "errors": {
@@ -30472,15 +30888,15 @@
      "n": 846
     },
     "notation.duration.accuracy": {
-     "mean": 0.503356,
+     "mean": 0.503378,
      "n": 846
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.499129,
+     "mean": 0.499151,
      "n": 846
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.503485,
+     "mean": 0.503507,
      "n": 846
     },
     "notation.hand.accuracy": {
@@ -30520,11 +30936,11 @@
      "n": 846
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.4614,
+     "mean": 0.463764,
      "n": 846
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.456453,
+     "mean": 0.458817,
      "n": 846
     },
     "notation.pedal.false_per_min": {
@@ -30544,7 +30960,7 @@
      "n": 846
     },
     "notation.ties.extra_per_100": {
-     "mean": 7.204284,
+     "mean": 7.203861,
      "n": 846
     },
     "notation.tuplets.f1": {
@@ -30604,19 +31020,19 @@
      "n": 626
     },
     "nq.ned": {
-     "mean": 0.904471,
+     "mean": 0.903677,
      "n": 846
     },
     "nq.range.ledger4_rate": {
-     "mean": 9.210517,
+     "mean": 9.210884,
      "n": 846
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 4.443794,
+     "mean": 4.444161,
      "n": 846
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.979219,
+     "mean": 2.97933,
      "n": 846
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -30692,11 +31108,11 @@
      "n": 846
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.176019,
+     "mean": 0.176024,
      "n": 614
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.157557,
+     "mean": 0.15758,
      "n": 119
     },
     "nq.tuplet.group_complete": {
@@ -30724,7 +31140,7 @@
      "n": 53
     },
     "nq.voice.poly_recall": {
-     "mean": 0.215926,
+     "mean": 0.216089,
      "n": 360
     },
     "read.accidentals_per_note": {
@@ -30732,7 +31148,7 @@
      "n": 846
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.001731,
+     "mean": -0.00173,
      "n": 846
     },
     "read.bar_completeness": {
@@ -30776,11 +31192,11 @@
      "n": 846
     },
     "read.rests_per_measure": {
-     "mean": 3.385956,
+     "mean": 3.386067,
      "n": 846
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.979219,
+     "mean": 2.97933,
      "n": 846
     },
     "read.short_notes_rate": {
@@ -30792,19 +31208,19 @@
      "n": 846
     },
     "read.ties_per_note": {
-     "mean": 0.058051,
+     "mean": 0.058047,
      "n": 846
     },
     "read.ties_per_note.delta": {
-     "mean": 0.053814,
+     "mean": 0.053811,
      "n": 846
     },
     "read.tuplets_per_note": {
-     "mean": 0.080573,
+     "mean": 0.080575,
      "n": 846
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.035341,
+     "mean": 0.035343,
      "n": 846
     },
     "rec.check.1": {
@@ -30844,39 +31260,47 @@
      "n": 846
     },
     "rec.check.9": {
-     "mean": 87.268923,
+     "mean": 87.266174,
      "n": 846
     },
     "rec.harmony.agreement": {
-     "mean": 0.619805,
+     "mean": 0.620346,
+     "n": 846
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.955586,
+     "n": 846
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 3.693803,
      "n": 846
     },
     "rec.metre.f1": {
-     "mean": 0.748067,
+     "mean": 0.748755,
      "n": 846
     },
     "rec.mv2h": {
-     "mean": 0.70839,
+     "mean": 0.70864,
      "n": 846
     },
     "rec.onset_f1": {
-     "mean": 0.458842,
+     "mean": 0.461207,
      "n": 846
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 241.485732,
+     "mean": 241.476368,
      "n": 846
     },
     "rec.rest.precision": {
-     "mean": 0.167574,
+     "mean": 0.167057,
      "n": 846
     },
     "rec.rest.recall": {
-     "mean": 0.599786,
+     "mean": 0.604187,
      "n": 462
     },
     "rec.stability": {
-     "mean": 0.498016,
+     "mean": 0.498393,
      "n": 846
     },
     "rec.tuplet.false_per_100_beats": {
@@ -30900,11 +31324,11 @@
      "n": 846
     },
     "sqi": {
-     "mean": 75.221047,
+     "mean": 75.256725,
      "n": 846
     },
     "struct.downbeat.f1": {
-     "mean": 0.690848,
+     "mean": 0.693212,
      "n": 846
     },
     "struct.form.order_exact": {
@@ -30936,11 +31360,11 @@
      "n": 846
     },
     "struct.measures.count_exact": {
-     "mean": 0.579196,
+     "mean": 0.580378,
      "n": 846
     },
     "struct.measures.count_ratio": {
-     "mean": 1.139213,
+     "mean": 1.139282,
      "n": 846
     },
     "struct.measures.extra_empty_edge": {
@@ -30996,7 +31420,7 @@
      "n": 846
     },
     "usable": {
-     "mean": 0.186761,
+     "mean": 0.187943,
      "n": 846
     }
    },
@@ -31007,7 +31431,7 @@
      "n": 846
     },
     "critical.beat_placement": {
-     "mean": 0.299054,
+     "mean": 0.301418,
      "n": 846
     },
     "critical.hands": {
@@ -31035,7 +31459,7 @@
      "n": 846
     },
     "critical.structure": {
-     "mean": 0.574468,
+     "mean": 0.57565,
      "n": 846
     },
     "errors": {
@@ -31067,15 +31491,15 @@
      "n": 846
     },
     "notation.duration.accuracy": {
-     "mean": 0.503356,
+     "mean": 0.503378,
      "n": 846
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.499129,
+     "mean": 0.499151,
      "n": 846
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.503485,
+     "mean": 0.503507,
      "n": 846
     },
     "notation.hand.accuracy": {
@@ -31115,11 +31539,11 @@
      "n": 846
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.4614,
+     "mean": 0.463764,
      "n": 846
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.456453,
+     "mean": 0.458817,
      "n": 846
     },
     "notation.pedal.false_per_min": {
@@ -31139,7 +31563,7 @@
      "n": 846
     },
     "notation.ties.extra_per_100": {
-     "mean": 7.204284,
+     "mean": 7.203861,
      "n": 846
     },
     "notation.tuplets.f1": {
@@ -31199,19 +31623,19 @@
      "n": 626
     },
     "nq.ned": {
-     "mean": 0.904471,
+     "mean": 0.903677,
      "n": 846
     },
     "nq.range.ledger4_rate": {
-     "mean": 9.210517,
+     "mean": 9.210884,
      "n": 846
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 4.443794,
+     "mean": 4.444161,
      "n": 846
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.979219,
+     "mean": 2.97933,
      "n": 846
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -31287,11 +31711,11 @@
      "n": 846
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.176019,
+     "mean": 0.176024,
      "n": 614
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.157557,
+     "mean": 0.15758,
      "n": 119
     },
     "nq.tuplet.group_complete": {
@@ -31319,7 +31743,7 @@
      "n": 53
     },
     "nq.voice.poly_recall": {
-     "mean": 0.215926,
+     "mean": 0.216089,
      "n": 360
     },
     "read.accidentals_per_note": {
@@ -31327,7 +31751,7 @@
      "n": 846
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.001731,
+     "mean": -0.00173,
      "n": 846
     },
     "read.bar_completeness": {
@@ -31371,11 +31795,11 @@
      "n": 846
     },
     "read.rests_per_measure": {
-     "mean": 3.385956,
+     "mean": 3.386067,
      "n": 846
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.979219,
+     "mean": 2.97933,
      "n": 846
     },
     "read.short_notes_rate": {
@@ -31387,19 +31811,19 @@
      "n": 846
     },
     "read.ties_per_note": {
-     "mean": 0.058051,
+     "mean": 0.058047,
      "n": 846
     },
     "read.ties_per_note.delta": {
-     "mean": 0.053814,
+     "mean": 0.053811,
      "n": 846
     },
     "read.tuplets_per_note": {
-     "mean": 0.080573,
+     "mean": 0.080575,
      "n": 846
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.035341,
+     "mean": 0.035343,
      "n": 846
     },
     "rec.check.1": {
@@ -31439,39 +31863,47 @@
      "n": 846
     },
     "rec.check.9": {
-     "mean": 87.268923,
+     "mean": 87.266174,
      "n": 846
     },
     "rec.harmony.agreement": {
-     "mean": 0.619805,
+     "mean": 0.620346,
+     "n": 846
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.955586,
+     "n": 846
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 3.693803,
      "n": 846
     },
     "rec.metre.f1": {
-     "mean": 0.748067,
+     "mean": 0.748755,
      "n": 846
     },
     "rec.mv2h": {
-     "mean": 0.70839,
+     "mean": 0.70864,
      "n": 846
     },
     "rec.onset_f1": {
-     "mean": 0.458842,
+     "mean": 0.461207,
      "n": 846
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 241.485732,
+     "mean": 241.476368,
      "n": 846
     },
     "rec.rest.precision": {
-     "mean": 0.167574,
+     "mean": 0.167057,
      "n": 846
     },
     "rec.rest.recall": {
-     "mean": 0.599786,
+     "mean": 0.604187,
      "n": 462
     },
     "rec.stability": {
-     "mean": 0.498016,
+     "mean": 0.498393,
      "n": 846
     },
     "rec.tuplet.false_per_100_beats": {
@@ -31495,11 +31927,11 @@
      "n": 846
     },
     "sqi": {
-     "mean": 75.221047,
+     "mean": 75.256725,
      "n": 846
     },
     "struct.downbeat.f1": {
-     "mean": 0.690848,
+     "mean": 0.693212,
      "n": 846
     },
     "struct.form.order_exact": {
@@ -31531,11 +31963,11 @@
      "n": 846
     },
     "struct.measures.count_exact": {
-     "mean": 0.579196,
+     "mean": 0.580378,
      "n": 846
     },
     "struct.measures.count_ratio": {
-     "mean": 1.139213,
+     "mean": 1.139282,
      "n": 846
     },
     "struct.measures.extra_empty_edge": {
@@ -31591,7 +32023,7 @@
      "n": 846
     },
     "usable": {
-     "mean": 0.186761,
+     "mean": 0.187943,
      "n": 846
     }
    },
@@ -32021,6 +32453,14 @@
      "mean": 0.583333,
      "n": 18
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.644258,
+     "n": 18
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 0.644258,
+     "n": 18
+    },
     "rec.metre.f1": {
      "mean": 0.64092,
      "n": 18
@@ -32173,7 +32613,7 @@
      "n": 240
     },
     "critical.beat_placement": {
-     "mean": 0.325,
+     "mean": 0.329167,
      "n": 240
     },
     "critical.hands": {
@@ -32201,7 +32641,7 @@
      "n": 240
     },
     "critical.structure": {
-     "mean": 0.6125,
+     "mean": 0.616667,
      "n": 240
     },
     "errors": {
@@ -32281,11 +32721,11 @@
      "n": 240
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.509794,
+     "mean": 0.513961,
      "n": 240
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.499534,
+     "mean": 0.503701,
      "n": 240
     },
     "notation.pedal.false_per_min": {
@@ -32361,7 +32801,7 @@
      "n": 182
     },
     "nq.ned": {
-     "mean": 0.737278,
+     "mean": 0.736035,
      "n": 240
     },
     "nq.range.ledger4_rate": {
@@ -32373,7 +32813,7 @@
      "n": 240
     },
     "nq.rest.per_measure_delta": {
-     "mean": 3.274015,
+     "mean": 3.275961,
      "n": 240
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -32473,7 +32913,7 @@
      "n": 120
     },
     "nq.voice.poly_recall": {
-     "mean": 0.319722,
+     "mean": 0.319967,
      "n": 240
     },
     "read.accidentals_per_note": {
@@ -32525,11 +32965,11 @@
      "n": 240
     },
     "read.rests_per_measure": {
-     "mean": 3.45607,
+     "mean": 3.458016,
      "n": 240
     },
     "read.rests_per_measure.delta": {
-     "mean": 3.274015,
+     "mean": 3.275961,
      "n": 240
     },
     "read.short_notes_rate": {
@@ -32597,35 +33037,43 @@
      "n": 240
     },
     "rec.harmony.agreement": {
-     "mean": 0.668525,
+     "mean": 0.669505,
+     "n": 240
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.280176,
+     "n": 240
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 0.280176,
      "n": 240
     },
     "rec.metre.f1": {
-     "mean": 0.773674,
+     "mean": 0.774866,
      "n": 240
     },
     "rec.mv2h": {
-     "mean": 0.701331,
+     "mean": 0.701766,
      "n": 240
     },
     "rec.onset_f1": {
-     "mean": 0.504545,
+     "mean": 0.508711,
      "n": 240
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 247.572326,
+     "mean": 247.621345,
      "n": 240
     },
     "rec.rest.precision": {
-     "mean": 0.180706,
+     "mean": 0.178623,
      "n": 240
     },
     "rec.rest.recall": {
-     "mean": 0.550556,
+     "mean": 0.557222,
      "n": 150
     },
     "rec.stability": {
-     "mean": 0.382916,
+     "mean": 0.382906,
      "n": 240
     },
     "rec.tuplet.false_per_100_beats": {
@@ -32645,11 +33093,11 @@
      "n": 240
     },
     "sqi": {
-     "mean": 78.438303,
+     "mean": 78.500803,
      "n": 240
     },
     "struct.downbeat.f1": {
-     "mean": 0.711576,
+     "mean": 0.715743,
      "n": 240
     },
     "struct.form.order_exact": {
@@ -32681,11 +33129,11 @@
      "n": 240
     },
     "struct.measures.count_exact": {
-     "mean": 0.6125,
+     "mean": 0.616667,
      "n": 240
     },
     "struct.measures.count_ratio": {
-     "mean": 1.193836,
+     "mean": 1.194081,
      "n": 240
     },
     "struct.measures.extra_empty_edge": {
@@ -32812,15 +33260,15 @@
      "n": 438
     },
     "notation.duration.accuracy": {
-     "mean": 0.492904,
+     "mean": 0.49291,
      "n": 438
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.489354,
+     "mean": 0.489361,
      "n": 438
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.493145,
+     "mean": 0.493151,
      "n": 438
     },
     "notation.hand.accuracy": {
@@ -32884,7 +33332,7 @@
      "n": 438
     },
     "notation.ties.extra_per_100": {
-     "mean": 5.775708,
+     "mean": 5.774892,
      "n": 438
     },
     "notation.tuplets.f1": {
@@ -32944,19 +33392,19 @@
      "n": 348
     },
     "nq.ned": {
-     "mean": 0.974757,
+     "mean": 0.974734,
      "n": 438
     },
     "nq.range.ledger4_rate": {
-     "mean": 17.760704,
+     "mean": 17.761412,
      "n": 438
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 8.553744,
+     "mean": 8.554453,
      "n": 438
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.949653,
+     "mean": 2.949737,
      "n": 438
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -33032,11 +33480,11 @@
      "n": 438
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.16554,
+     "mean": 0.165547,
      "n": 350
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.152721,
+     "mean": 0.152752,
      "n": 89
     },
     "nq.tuplet.group_complete": {
@@ -33068,11 +33516,11 @@
      "n": 114
     },
     "read.accidentals_per_note": {
-     "mean": 0.019882,
+     "mean": 0.019883,
      "n": 438
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.001968,
+     "mean": -0.001967,
      "n": 438
     },
     "read.bar_completeness": {
@@ -33116,11 +33564,11 @@
      "n": 438
     },
     "read.rests_per_measure": {
-     "mean": 3.593086,
+     "mean": 3.59317,
      "n": 438
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.949653,
+     "mean": 2.949737,
      "n": 438
     },
     "read.short_notes_rate": {
@@ -33132,19 +33580,19 @@
      "n": 438
     },
     "read.ties_per_note": {
-     "mean": 0.050185,
+     "mean": 0.050178,
      "n": 438
     },
     "read.ties_per_note.delta": {
-     "mean": 0.04615,
+     "mean": 0.046143,
      "n": 438
     },
     "read.tuplets_per_note": {
-     "mean": 0.114748,
+     "mean": 0.114752,
      "n": 438
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.040027,
+     "mean": 0.040031,
      "n": 438
     },
     "rec.check.1": {
@@ -33184,11 +33632,19 @@
      "n": 438
     },
     "rec.check.9": {
-     "mean": 113.721614,
+     "mean": 113.716305,
      "n": 438
     },
     "rec.harmony.agreement": {
      "mean": 0.577497,
+     "n": 438
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 3.492435,
+     "n": 438
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 6.815584,
      "n": 438
     },
     "rec.metre.f1": {
@@ -33196,7 +33652,7 @@
      "n": 438
     },
     "rec.mv2h": {
-     "mean": 0.694555,
+     "mean": 0.694556,
      "n": 438
     },
     "rec.onset_f1": {
@@ -33204,19 +33660,19 @@
      "n": 438
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 251.106453,
+     "mean": 251.101144,
      "n": 438
     },
     "rec.rest.precision": {
-     "mean": 0.186676,
+     "mean": 0.186819,
      "n": 438
     },
     "rec.rest.recall": {
-     "mean": 0.621279,
+     "mean": 0.621405,
      "n": 264
     },
     "rec.stability": {
-     "mean": 0.576235,
+     "mean": 0.576303,
      "n": 438
     },
     "rec.tuplet.false_per_100_beats": {
@@ -33240,7 +33696,7 @@
      "n": 438
     },
     "sqi": {
-     "mean": 72.561243,
+     "mean": 72.561305,
      "n": 438
     },
     "struct.downbeat.f1": {
@@ -33347,7 +33803,7 @@
      "n": 144
     },
     "critical.beat_placement": {
-     "mean": 0.340278,
+     "mean": 0.347222,
      "n": 144
     },
     "critical.hands": {
@@ -33407,15 +33863,15 @@
      "n": 144
     },
     "notation.duration.accuracy": {
-     "mean": 0.531772,
+     "mean": 0.53188,
      "n": 144
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.53095,
+     "mean": 0.531059,
      "n": 144
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.531978,
+     "mean": 0.532087,
      "n": 144
     },
     "notation.hand.accuracy": {
@@ -33455,11 +33911,11 @@
      "n": 144
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.489864,
+     "mean": 0.496808,
      "n": 144
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.489385,
+     "mean": 0.49633,
      "n": 144
     },
     "notation.pedal.false_per_min": {
@@ -33539,7 +33995,7 @@
      "n": 78
     },
     "nq.ned": {
-     "mean": 0.926531,
+     "mean": 0.924006,
      "n": 144
     },
     "nq.range.ledger4_rate": {
@@ -33551,7 +34007,7 @@
      "n": 144
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.69512,
+     "mean": 2.692275,
      "n": 144
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -33711,11 +34167,11 @@
      "n": 144
     },
     "read.rests_per_measure": {
-     "mean": 2.730421,
+     "mean": 2.727575,
      "n": 144
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.69512,
+     "mean": 2.692275,
      "n": 144
     },
     "read.short_notes_rate": {
@@ -33783,23 +34239,31 @@
      "n": 144
     },
     "rec.harmony.agreement": {
-     "mean": 0.67771,
+     "mean": 0.679253,
+     "n": 144
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.318749,
+     "n": 144
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 0.422865,
      "n": 144
     },
     "rec.metre.f1": {
-     "mean": 0.767506,
+     "mean": 0.769564,
      "n": 144
     },
     "rec.mv2h": {
-     "mean": 0.764015,
+     "mean": 0.764757,
      "n": 144
     },
     "rec.onset_f1": {
-     "mean": 0.489619,
+     "mean": 0.496564,
      "n": 144
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 211.870409,
+     "mean": 211.749845,
      "n": 144
     },
     "rec.rest.precision": {
@@ -33807,11 +34271,11 @@
      "n": 144
     },
     "rec.rest.recall": {
-     "mean": 0.6625,
+     "mean": 0.704167,
      "n": 24
     },
     "rec.stability": {
-     "mean": 0.47239,
+     "mean": 0.474416,
      "n": 144
     },
     "rec.tuplet.false_per_100_beats": {
@@ -33835,11 +34299,11 @@
      "n": 144
     },
     "sqi": {
-     "mean": 78.744249,
+     "mean": 78.849501,
      "n": 144
     },
     "struct.downbeat.f1": {
-     "mean": 0.682887,
+     "mean": 0.689831,
      "n": 144
     },
     "struct.form.order_exact": {
@@ -33931,7 +34395,7 @@
      "n": 144
     },
     "usable": {
-     "mean": 0.166667,
+     "mean": 0.173611,
      "n": 144
     }
    },
@@ -34357,6 +34821,14 @@
      "mean": 0.479167,
      "n": 6
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.0,
+     "n": 6
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 0.0,
+     "n": 6
+    },
     "rec.metre.f1": {
      "mean": 0.757775,
      "n": 6
@@ -34641,7 +35113,7 @@
      "n": 192
     },
     "notation.ties.extra_per_100": {
-     "mean": 5.493518,
+     "mean": 5.491655,
      "n": 192
     },
     "notation.tuplets.f1": {
@@ -34701,23 +35173,23 @@
      "n": 192
     },
     "nq.ned": {
-     "mean": 0.976413,
+     "mean": 0.976404,
      "n": 192
     },
     "nq.range.ledger4_rate": {
-     "mean": 20.264849,
+     "mean": 20.266466,
      "n": 192
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 7.007605,
+     "mean": 7.009222,
      "n": 192
     },
     "nq.rest.per_measure_delta": {
-     "mean": 3.141209,
+     "mean": 3.141643,
      "n": 192
     },
     "nq.rhythm.hidden_beat_rate": {
-     "mean": 0.03129,
+     "mean": 0.031291,
      "n": 192
     },
     "nq.rhythm.hidden_beat_rate.delta": {
@@ -34789,11 +35261,11 @@
      "n": 192
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.143079,
+     "mean": 0.143094,
      "n": 181
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.155875,
+     "mean": 0.155926,
      "n": 54
     },
     "nq.tuplet.group_complete": {
@@ -34825,11 +35297,11 @@
      "n": 78
     },
     "read.accidentals_per_note": {
-     "mean": 0.028217,
+     "mean": 0.028218,
      "n": 192
     },
     "read.accidentals_per_note.delta": {
-     "mean": 0.000272,
+     "mean": 0.000273,
      "n": 192
     },
     "read.bar_completeness": {
@@ -34849,11 +35321,11 @@
      "n": 192
     },
     "read.ledger_lines.heavy_rate": {
-     "mean": 0.020265,
+     "mean": 0.020266,
      "n": 192
     },
     "read.ledger_lines.heavy_rate.delta": {
-     "mean": 0.007008,
+     "mean": 0.007009,
      "n": 192
     },
     "read.max_chord_size": {
@@ -34873,11 +35345,11 @@
      "n": 192
     },
     "read.rests_per_measure": {
-     "mean": 4.003383,
+     "mean": 4.003817,
      "n": 192
     },
     "read.rests_per_measure.delta": {
-     "mean": 3.141209,
+     "mean": 3.141643,
      "n": 192
     },
     "read.short_notes_rate": {
@@ -34889,19 +35361,19 @@
      "n": 192
     },
     "read.ties_per_note": {
-     "mean": 0.049068,
+     "mean": 0.049053,
      "n": 192
     },
     "read.ties_per_note.delta": {
-     "mean": 0.047526,
+     "mean": 0.047511,
      "n": 192
     },
     "read.tuplets_per_note": {
-     "mean": 0.173366,
+     "mean": 0.173375,
      "n": 192
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.053835,
+     "mean": 0.053843,
      "n": 192
     },
     "rec.check.1": {
@@ -34948,6 +35420,14 @@
      "mean": 0.490117,
      "n": 192
     },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 4.328779,
+     "n": 192
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 7.157214,
+     "n": 192
+    },
     "rec.metre.f1": {
      "mean": 0.650329,
      "n": 192
@@ -34965,11 +35445,11 @@
      "n": 192
     },
     "rec.rest.precision": {
-     "mean": 0.214171,
+     "mean": 0.214274,
      "n": 192
     },
     "rec.rest.recall": {
-     "mean": 0.594735,
+     "mean": 0.594966,
      "n": 144
     },
     "rec.stability": {
@@ -35104,7 +35584,7 @@
      "n": 474
     },
     "critical.beat_placement": {
-     "mean": 0.341772,
+     "mean": 0.343882,
      "n": 474
     },
     "critical.hands": {
@@ -35132,7 +35612,7 @@
      "n": 474
     },
     "critical.structure": {
-     "mean": 0.613924,
+     "mean": 0.616034,
      "n": 474
     },
     "errors": {
@@ -35164,15 +35644,15 @@
      "n": 474
     },
     "notation.duration.accuracy": {
-     "mean": 0.517527,
+     "mean": 0.517533,
      "n": 474
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.512356,
+     "mean": 0.512362,
      "n": 474
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.517575,
+     "mean": 0.517581,
      "n": 474
     },
     "notation.hand.accuracy": {
@@ -35212,11 +35692,11 @@
      "n": 474
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.515243,
+     "mean": 0.517352,
      "n": 474
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.508248,
+     "mean": 0.510358,
      "n": 474
     },
     "notation.pedal.false_per_min": {
@@ -35296,7 +35776,7 @@
      "n": 356
     },
     "nq.ned": {
-     "mean": 0.84051,
+     "mean": 0.839864,
      "n": 474
     },
     "nq.range.ledger4_rate": {
@@ -35308,7 +35788,7 @@
      "n": 474
     },
     "nq.rest.per_measure_delta": {
-     "mean": 3.099727,
+     "mean": 3.100614,
      "n": 474
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -35416,7 +35896,7 @@
      "n": 8
     },
     "nq.voice.poly_recall": {
-     "mean": 0.265012,
+     "mean": 0.265221,
      "n": 282
     },
     "read.accidentals_per_note": {
@@ -35468,11 +35948,11 @@
      "n": 474
     },
     "read.rests_per_measure": {
-     "mean": 3.425369,
+     "mean": 3.426256,
      "n": 474
     },
     "read.rests_per_measure.delta": {
-     "mean": 3.099727,
+     "mean": 3.100614,
      "n": 474
     },
     "read.short_notes_rate": {
@@ -35536,39 +36016,47 @@
      "n": 474
     },
     "rec.check.9": {
-     "mean": 79.161158,
+     "mean": 79.156251,
      "n": 474
     },
     "rec.harmony.agreement": {
-     "mean": 0.666965,
+     "mean": 0.667461,
+     "n": 474
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.657972,
+     "n": 474
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 2.885478,
      "n": 474
     },
     "rec.metre.f1": {
-     "mean": 0.779476,
+     "mean": 0.780079,
      "n": 474
     },
     "rec.mv2h": {
-     "mean": 0.724176,
+     "mean": 0.724397,
      "n": 474
     },
     "rec.onset_f1": {
-     "mean": 0.511632,
+     "mean": 0.513742,
      "n": 474
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 243.40934,
+     "mean": 243.429254,
      "n": 474
     },
     "rec.rest.precision": {
-     "mean": 0.173556,
+     "mean": 0.172593,
      "n": 474
     },
     "rec.rest.recall": {
-     "mean": 0.593092,
+     "mean": 0.59706,
      "n": 252
     },
     "rec.stability": {
-     "mean": 0.431193,
+     "mean": 0.431778,
      "n": 474
     },
     "rec.tuplet.false_per_100_beats": {
@@ -35592,11 +36080,11 @@
      "n": 474
     },
     "sqi": {
-     "mean": 78.145233,
+     "mean": 78.176936,
      "n": 474
     },
     "struct.downbeat.f1": {
-     "mean": 0.722545,
+     "mean": 0.724655,
      "n": 474
     },
     "struct.form.order_exact": {
@@ -35628,11 +36116,11 @@
      "n": 474
     },
     "struct.measures.count_exact": {
-     "mean": 0.620253,
+     "mean": 0.622363,
      "n": 474
     },
     "struct.measures.count_ratio": {
-     "mean": 1.17017,
+     "mean": 1.170294,
      "n": 474
     },
     "struct.measures.extra_empty_edge": {
@@ -35699,7 +36187,7 @@
      "n": 180
     },
     "critical.beat_placement": {
-     "mean": 0.344444,
+     "mean": 0.35,
      "n": 180
     },
     "critical.hands": {
@@ -35759,15 +36247,15 @@
      "n": 180
     },
     "notation.duration.accuracy": {
-     "mean": 0.516124,
+     "mean": 0.516211,
      "n": 180
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.515819,
+     "mean": 0.515906,
      "n": 180
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.516124,
+     "mean": 0.516211,
      "n": 180
     },
     "notation.hand.accuracy": {
@@ -35807,11 +36295,11 @@
      "n": 180
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.522666,
+     "mean": 0.528221,
      "n": 180
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.522259,
+     "mean": 0.527815,
      "n": 180
     },
     "notation.pedal.false_per_min": {
@@ -35891,7 +36379,7 @@
      "n": 78
     },
     "nq.ned": {
-     "mean": 0.996165,
+     "mean": 0.994145,
      "n": 180
     },
     "nq.range.ledger4_rate": {
@@ -35903,7 +36391,7 @@
      "n": 180
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.489091,
+     "mean": 2.486815,
      "n": 180
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -36059,11 +36547,11 @@
      "n": 180
     },
     "read.rests_per_measure": {
-     "mean": 2.623582,
+     "mean": 2.621306,
      "n": 180
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.489091,
+     "mean": 2.486815,
      "n": 180
     },
     "read.short_notes_rate": {
@@ -36131,23 +36619,31 @@
      "n": 180
     },
     "rec.harmony.agreement": {
-     "mean": 0.633951,
+     "mean": 0.635185,
+     "n": 180
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 0.207896,
+     "n": 180
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 2.128086,
      "n": 180
     },
     "rec.metre.f1": {
-     "mean": 0.769608,
+     "mean": 0.771254,
      "n": 180
     },
     "rec.mv2h": {
-     "mean": 0.743108,
+     "mean": 0.743701,
      "n": 180
     },
     "rec.onset_f1": {
-     "mean": 0.522455,
+     "mean": 0.528011,
      "n": 180
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 194.736255,
+     "mean": 194.639804,
      "n": 180
     },
     "rec.rest.precision": {
@@ -36155,11 +36651,11 @@
      "n": 180
     },
     "rec.rest.recall": {
-     "mean": 0.636364,
+     "mean": 0.651515,
      "n": 66
     },
     "rec.stability": {
-     "mean": 0.419423,
+     "mean": 0.419654,
      "n": 180
     },
     "rec.tuplet.false_per_100_beats": {
@@ -36183,11 +36679,11 @@
      "n": 180
     },
     "sqi": {
-     "mean": 77.728609,
+     "mean": 77.81281,
      "n": 180
     },
     "struct.downbeat.f1": {
-     "mean": 0.701413,
+     "mean": 0.706969,
      "n": 180
     },
     "struct.form.order_exact": {
@@ -36279,7 +36775,7 @@
      "n": 180
     },
     "usable": {
-     "mean": 0.161111,
+     "mean": 0.166667,
      "n": 180
     }
    },
@@ -36290,7 +36786,7 @@
      "n": 846
     },
     "critical.beat_placement": {
-     "mean": 0.299054,
+     "mean": 0.301418,
      "n": 846
     },
     "critical.hands": {
@@ -36318,7 +36814,7 @@
      "n": 846
     },
     "critical.structure": {
-     "mean": 0.574468,
+     "mean": 0.57565,
      "n": 846
     },
     "errors": {
@@ -36350,15 +36846,15 @@
      "n": 846
     },
     "notation.duration.accuracy": {
-     "mean": 0.503356,
+     "mean": 0.503378,
      "n": 846
     },
     "notation.duration.accuracy_ref": {
-     "mean": 0.499129,
+     "mean": 0.499151,
      "n": 846
     },
     "notation.duration.page_accuracy": {
-     "mean": 0.503485,
+     "mean": 0.503507,
      "n": 846
     },
     "notation.hand.accuracy": {
@@ -36398,11 +36894,11 @@
      "n": 846
     },
     "notation.onset_pos.accuracy": {
-     "mean": 0.4614,
+     "mean": 0.463764,
      "n": 846
     },
     "notation.onset_pos.accuracy_ref": {
-     "mean": 0.456453,
+     "mean": 0.458817,
      "n": 846
     },
     "notation.pedal.false_per_min": {
@@ -36422,7 +36918,7 @@
      "n": 846
     },
     "notation.ties.extra_per_100": {
-     "mean": 7.204284,
+     "mean": 7.203861,
      "n": 846
     },
     "notation.tuplets.f1": {
@@ -36482,19 +36978,19 @@
      "n": 626
     },
     "nq.ned": {
-     "mean": 0.904471,
+     "mean": 0.903677,
      "n": 846
     },
     "nq.range.ledger4_rate": {
-     "mean": 9.210517,
+     "mean": 9.210884,
      "n": 846
     },
     "nq.range.ledger4_rate.delta": {
-     "mean": 4.443794,
+     "mean": 4.444161,
      "n": 846
     },
     "nq.rest.per_measure_delta": {
-     "mean": 2.979219,
+     "mean": 2.97933,
      "n": 846
     },
     "nq.rhythm.hidden_beat_rate": {
@@ -36570,11 +37066,11 @@
      "n": 846
     },
     "nq.tie.mergeable_rate": {
-     "mean": 0.176019,
+     "mean": 0.176024,
      "n": 614
     },
     "nq.tie.mergeable_rate.delta": {
-     "mean": 0.157557,
+     "mean": 0.15758,
      "n": 119
     },
     "nq.tuplet.group_complete": {
@@ -36602,7 +37098,7 @@
      "n": 53
     },
     "nq.voice.poly_recall": {
-     "mean": 0.215926,
+     "mean": 0.216089,
      "n": 360
     },
     "read.accidentals_per_note": {
@@ -36610,7 +37106,7 @@
      "n": 846
     },
     "read.accidentals_per_note.delta": {
-     "mean": -0.001731,
+     "mean": -0.00173,
      "n": 846
     },
     "read.bar_completeness": {
@@ -36654,11 +37150,11 @@
      "n": 846
     },
     "read.rests_per_measure": {
-     "mean": 3.385956,
+     "mean": 3.386067,
      "n": 846
     },
     "read.rests_per_measure.delta": {
-     "mean": 2.979219,
+     "mean": 2.97933,
      "n": 846
     },
     "read.short_notes_rate": {
@@ -36670,19 +37166,19 @@
      "n": 846
     },
     "read.ties_per_note": {
-     "mean": 0.058051,
+     "mean": 0.058047,
      "n": 846
     },
     "read.ties_per_note.delta": {
-     "mean": 0.053814,
+     "mean": 0.053811,
      "n": 846
     },
     "read.tuplets_per_note": {
-     "mean": 0.080573,
+     "mean": 0.080575,
      "n": 846
     },
     "read.tuplets_per_note.delta": {
-     "mean": 0.035341,
+     "mean": 0.035343,
      "n": 846
     },
     "rec.check.1": {
@@ -36722,39 +37218,47 @@
      "n": 846
     },
     "rec.check.9": {
-     "mean": 87.268923,
+     "mean": 87.266174,
      "n": 846
     },
     "rec.harmony.agreement": {
-     "mean": 0.619805,
+     "mean": 0.620346,
+     "n": 846
+    },
+    "rec.ledger.ge3_per_100_heads": {
+     "mean": 1.955586,
+     "n": 846
+    },
+    "rec.ledger.plain_ge3_per_100_heads": {
+     "mean": 3.693803,
      "n": 846
     },
     "rec.metre.f1": {
-     "mean": 0.748067,
+     "mean": 0.748755,
      "n": 846
     },
     "rec.mv2h": {
-     "mean": 0.70839,
+     "mean": 0.70864,
      "n": 846
     },
     "rec.onset_f1": {
-     "mean": 0.458842,
+     "mean": 0.461207,
      "n": 846
     },
     "rec.rest.false_per_100_bars": {
-     "mean": 241.485732,
+     "mean": 241.476368,
      "n": 846
     },
     "rec.rest.precision": {
-     "mean": 0.167574,
+     "mean": 0.167057,
      "n": 846
     },
     "rec.rest.recall": {
-     "mean": 0.599786,
+     "mean": 0.604187,
      "n": 462
     },
     "rec.stability": {
-     "mean": 0.498016,
+     "mean": 0.498393,
      "n": 846
     },
     "rec.tuplet.false_per_100_beats": {
@@ -36778,11 +37282,11 @@
      "n": 846
     },
     "sqi": {
-     "mean": 75.221047,
+     "mean": 75.256725,
      "n": 846
     },
     "struct.downbeat.f1": {
-     "mean": 0.690848,
+     "mean": 0.693212,
      "n": 846
     },
     "struct.form.order_exact": {
@@ -36814,11 +37318,11 @@
      "n": 846
     },
     "struct.measures.count_exact": {
-     "mean": 0.579196,
+     "mean": 0.580378,
      "n": 846
     },
     "struct.measures.count_ratio": {
-     "mean": 1.139213,
+     "mean": 1.139282,
      "n": 846
     },
     "struct.measures.extra_empty_edge": {
@@ -36874,7 +37378,7 @@
      "n": 846
     },
     "usable": {
-     "mean": 0.186761,
+     "mean": 0.187943,
      "n": 846
     }
    }
@@ -44385,7 +44889,7 @@
    "error_code": null,
    "metrics": {
     "critical.accidentals": 1.0,
-    "critical.beat_placement": 0.0,
+    "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
     "critical.key": 1.0,
     "critical.meter": 0.0,
@@ -44393,7 +44897,7 @@
     "critical.pedal": null,
     "critical.pitch_integrity": 1.0,
     "critical.playback_tempo": 1.0,
-    "critical.structure": 0.0,
+    "critical.structure": 1.0,
     "notation.accidentals.required_recall": 1.0,
     "notation.duration.accuracy": 0.994475,
     "notation.duration.accuracy_ref": 0.994475,
@@ -44403,8 +44907,8 @@
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
     "notation.note_shape.mismatches": 0.0,
-    "notation.onset_pos.accuracy": 0.0,
-    "notation.onset_pos.accuracy_ref": 0.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
     "notation.pedal.false_per_min": 0.0,
     "notation.spelling.accuracy": 0.98895,
@@ -44423,27 +44927,27 @@
     "rec.check.5": 0.0,
     "rec.check.6": 0.0,
     "rec.check.7": 0.0,
-    "rec.harmony.agreement": 0.411765,
-    "rec.metre.f1": 0.460065,
-    "rec.mv2h": 0.764421,
-    "rec.onset_f1": 0.0,
-    "rec.rest.false_per_100_bars": 0.0,
-    "rec.rest.precision": 1.0,
-    "rec.rest.recall": 0.0,
-    "rec.stability": 0.041667,
+    "rec.harmony.agreement": 0.647059,
+    "rec.metre.f1": 0.746069,
+    "rec.mv2h": 0.868681,
+    "rec.onset_f1": 1.0,
+    "rec.rest.false_per_100_bars": 11.764706,
+    "rec.rest.precision": 0.5,
+    "rec.rest.recall": 1.0,
+    "rec.stability": 0.039216,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 1.0,
-    "sqi": 77.389503,
-    "struct.downbeat.f1": 0.0,
+    "sqi": 92.389503,
+    "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
     "struct.measure_numbers.app_onset_accuracy": 1.0,
     "struct.measure_numbers.valid": 1.0,
-    "struct.measures.count_exact": 0.0,
+    "struct.measures.count_exact": 1.0,
     "struct.stats_consistent": 1.0,
     "struct.tempo.ok_effective": 1.0,
     "struct.tempo.timeline_accuracy": 1.0,
@@ -44452,8 +44956,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "f77f1ca9f01912a8",
-   "sqi": 77.389503,
+   "semantic": "8d5c8cafbec3e06e",
+   "sqi": 92.389503,
    "status": "ok"
   },
   "hymns/how-firm-a-foundation|cover-alt|oracle-noisy|s1|opt:app": {
@@ -61305,7 +61809,7 @@
     "rec.rest.false_per_100_bars": 45.0,
     "rec.rest.precision": 0.0,
     "rec.rest.recall": null,
-    "rec.stability": 0.016667,
+    "rec.stability": 0.033333,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
@@ -66255,7 +66759,7 @@
     "rec.rest.false_per_100_bars": 12.658228,
     "rec.rest.precision": 0.848485,
     "rec.rest.recall": 0.651163,
-    "rec.stability": 0.168776,
+    "rec.stability": 0.172996,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
@@ -75255,7 +75759,7 @@
     "rec.rest.false_per_100_bars": 6.25,
     "rec.rest.precision": 0.984127,
     "rec.rest.recall": 0.78481,
-    "rec.stability": 0.291667,
+    "rec.stability": 0.3125,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
@@ -79734,7 +80238,7 @@
     "notation.pedal.false_per_min": 0.0,
     "notation.spelling.accuracy": 0.989267,
     "notation.spelling.accuracy_ref": 0.982238,
-    "notation.ties.extra_per_100": 8.586762,
+    "notation.ties.extra_per_100": 8.22898,
     "notation.tuplets.f1": 0.668555,
     "notation.tuplets.false_per_100": 8.407871,
     "notes.identity.f1": 0.996435,
@@ -79753,8 +80257,8 @@
     "rec.mv2h": 0.65816,
     "rec.onset_f1": 0.117647,
     "rec.rest.false_per_100_bars": 66.666667,
-    "rec.rest.precision": 0.428571,
-    "rec.rest.recall": 0.666667,
+    "rec.rest.precision": 0.448276,
+    "rec.rest.recall": 0.7,
     "rec.stability": 0.75,
     "rec.tuplet.false_per_100_beats": 14.583333,
     "rec.tuplet.precision": 0.72,
@@ -79777,7 +80281,7 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "238567050ee4e632",
+   "semantic": "439943b4ba86277c",
    "sqi": 54.518619,
    "status": "ok"
   },
@@ -87180,7 +87684,7 @@
     "rec.rest.false_per_100_bars": 26.25,
     "rec.rest.precision": 0.691176,
     "rec.rest.recall": 0.701493,
-    "rec.stability": 0.229167,
+    "rec.stability": 0.225,
     "rec.tuplet.false_per_100_beats": 3.125,
     "rec.tuplet.precision": 0.74359,
     "rec.tuplet.recall": 0.90625,
@@ -88720,9 +89224,9 @@
     "critical.playback_tempo": 1.0,
     "critical.structure": 1.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.853659,
-    "notation.duration.accuracy_ref": 0.853659,
-    "notation.duration.page_accuracy": 0.853659,
+    "notation.duration.accuracy": 0.856369,
+    "notation.duration.accuracy_ref": 0.856369,
+    "notation.duration.page_accuracy": 0.856369,
     "notation.hand.accuracy": 0.98916,
     "notation.hand.accuracy_ref": 0.98916,
     "notation.ioi.accuracy": 1.0,
@@ -88750,18 +89254,18 @@
     "rec.check.7": 0.0,
     "rec.harmony.agreement": 0.976744,
     "rec.metre.f1": 1.0,
-    "rec.mv2h": 0.9524,
+    "rec.mv2h": 0.952942,
     "rec.onset_f1": 1.0,
-    "rec.rest.false_per_100_bars": 4.651163,
-    "rec.rest.precision": 0.909091,
+    "rec.rest.false_per_100_bars": 2.325581,
+    "rec.rest.precision": 0.952381,
     "rec.rest.recall": 0.526316,
-    "rec.stability": 0.046512,
+    "rec.stability": 0.03876,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
     "rec.usable": 1.0,
     "rec.voice.f1": 0.931596,
-    "sqi": 98.414634,
+    "sqi": 98.441734,
     "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -88777,8 +89281,8 @@
     "struct.time_sig.timeline_accuracy": 1.0,
     "usable": 1.0
    },
-   "semantic": "8413dabd5efc6a81",
-   "sqi": 98.414634,
+   "semantic": "a589d726e58020c2",
+   "sqi": 98.441734,
    "status": "ok"
   },
   "method/sonatina/027|cover-alt|none|s1|opt:app": {
@@ -92985,7 +93489,7 @@
    "error_code": null,
    "metrics": {
     "critical.accidentals": 1.0,
-    "critical.beat_placement": 0.0,
+    "critical.beat_placement": 1.0,
     "critical.hands": 1.0,
     "critical.key": 1.0,
     "critical.meter": 1.0,
@@ -93003,8 +93507,8 @@
     "notation.ioi.accuracy": 1.0,
     "notation.note_shape.consistency": 1.0,
     "notation.note_shape.mismatches": 0.0,
-    "notation.onset_pos.accuracy": 0.0,
-    "notation.onset_pos.accuracy_ref": 0.0,
+    "notation.onset_pos.accuracy": 1.0,
+    "notation.onset_pos.accuracy_ref": 1.0,
     "notation.pedal.f1": null,
     "notation.pedal.false_per_min": 0.0,
     "notation.spelling.accuracy": 1.0,
@@ -93023,21 +93527,21 @@
     "rec.check.5": 0.0,
     "rec.check.6": 0.0,
     "rec.check.7": 0.0,
-    "rec.harmony.agreement": 0.666667,
-    "rec.metre.f1": 0.637681,
-    "rec.mv2h": 0.830361,
-    "rec.onset_f1": 0.0,
-    "rec.rest.false_per_100_bars": 44.444444,
+    "rec.harmony.agreement": 0.888889,
+    "rec.metre.f1": 0.933977,
+    "rec.mv2h": 0.934065,
+    "rec.onset_f1": 1.0,
+    "rec.rest.false_per_100_bars": 33.333333,
     "rec.rest.precision": 0.0,
-    "rec.rest.recall": 0.0,
+    "rec.rest.recall": 1.0,
     "rec.stability": 0.037037,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 1.0,
-    "sqi": 84.830508,
-    "struct.downbeat.f1": 0.0,
+    "sqi": 99.830508,
+    "struct.downbeat.f1": 1.0,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
     "struct.key.timeline_accuracy": 1.0,
@@ -93050,10 +93554,10 @@
     "struct.time_sig.exact": 1.0,
     "struct.time_sig.score": 1.0,
     "struct.time_sig.timeline_accuracy": 1.0,
-    "usable": 0.0
+    "usable": 1.0
    },
-   "semantic": "b0d889280d0cb2e0",
-   "sqi": 84.830508,
+   "semantic": "7284e8b7305a5587",
+   "sqi": 99.830508,
    "status": "ok"
   },
   "micro/M08-pickup-4-4|cover-alt|oracle-noisy|s1|opt:app": {
@@ -97080,7 +97584,7 @@
     "rec.rest.false_per_100_bars": 0.0,
     "rec.rest.precision": 1.0,
     "rec.rest.recall": null,
-    "rec.stability": 0.208333,
+    "rec.stability": 0.458333,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
@@ -98620,9 +99124,9 @@
     "critical.playback_tempo": 1.0,
     "critical.structure": 0.0,
     "notation.accidentals.required_recall": 1.0,
-    "notation.duration.accuracy": 0.96875,
-    "notation.duration.accuracy_ref": 0.96875,
-    "notation.duration.page_accuracy": 0.96875,
+    "notation.duration.accuracy": 0.984375,
+    "notation.duration.accuracy_ref": 0.984375,
+    "notation.duration.page_accuracy": 0.984375,
     "notation.hand.accuracy": 1.0,
     "notation.hand.accuracy_ref": 1.0,
     "notation.ioi.accuracy": 1.0,
@@ -98650,9 +99154,9 @@
     "rec.check.7": 0.0,
     "rec.harmony.agreement": 0.25,
     "rec.metre.f1": 0.8,
-    "rec.mv2h": 0.80375,
+    "rec.mv2h": 0.806875,
     "rec.onset_f1": 0.0625,
-    "rec.rest.false_per_100_bars": 12.5,
+    "rec.rest.false_per_100_bars": 6.25,
     "rec.rest.precision": 0.0,
     "rec.rest.recall": null,
     "rec.stability": 0.020833,
@@ -98661,7 +99165,7 @@
     "rec.tuplet.recall": null,
     "rec.usable": 0.0,
     "rec.voice.f1": 1.0,
-    "sqi": 75.625,
+    "sqi": 75.78125,
     "struct.downbeat.f1": 0.4,
     "struct.form.order_exact": 1.0,
     "struct.key.fifths_exact": 1.0,
@@ -98677,8 +99181,8 @@
     "struct.time_sig.timeline_accuracy": 0.0,
     "usable": 0.0
    },
-   "semantic": "ede7a5485574f105",
-   "sqi": 75.625,
+   "semantic": "f11db4b339ebcf64",
+   "sqi": 75.78125,
    "status": "ok"
   },
   "micro/M21-five-four|cover-alt|none|s1|opt:app": {
@@ -100455,7 +100959,7 @@
     "rec.rest.false_per_100_bars": 87.5,
     "rec.rest.precision": 0.0,
     "rec.rest.recall": null,
-    "rec.stability": 0.041667,
+    "rec.stability": 0.083333,
     "rec.tuplet.false_per_100_beats": 0.0,
     "rec.tuplet.precision": 1.0,
     "rec.tuplet.recall": null,
@@ -101060,6 +101564,22 @@
    "reason": "G10a-1b: the time skeleton on real covers (ai5a v1.1: a beat cap of 100 on the accent evidence, swung frames of the simple metres, the swing family in the training data, after the review a 0.75-nat preference for 4/4 over 2/4 when no downbeats are heard; S6 refitted on the new skeleton with its threshold held at main's training precision). Mixed on the catalogue suites, see docs/GOALS/G10_AUDIO_TO_SCORE.md section 28",
    "sqi_all": 75.221047,
    "usable_all": 0.186761
+  },
+  {
+   "audio_score_sha256": "0ec12b46d05331531a89d070d0688f29f6604cc3290bcfae2b586459dfab2c84",
+   "date": "2026-10-08",
+   "git_sha": "286abe741c44eb5a3b4283c1ff6313efabc03fe0",
+   "reason": "G10a-1d: a phase step after the unchanged metre model (harmonic rhythm, later-start training, the helper's unsteady downbeats as phase evidence only); metre and tempo identical (G10 section 36)",
+   "sqi_all": 75.272843,
+   "usable_all": 0.189125
+  },
+  {
+   "audio_score_sha256": "cdb9125f08ce64c162d07036e743935b0f012f77db70e8d7efc865ec210ce424",
+   "date": "2026-10-08",
+   "git_sha": "025238b07bfbee1a882c8470eddbcec266f8073f",
+   "reason": "G10a-1d review round: the helper's real beats never reach the metre model; the harmonic rhythm weighed by the chord share and a learned margin before a phase moves; S6 refitted (G10 section 36)",
+   "sqi_all": 75.256725,
+   "usable_all": 0.187943
   }
  ],
  "known_failures": {
@@ -101405,10 +101925,10 @@
  },
  "lock_sha256": "78f76b3cc4ccebdc3f75885cfdf26c07689ff53d69c0cf6b7edfedd9f49fcdb0",
  "recorded": {
-  "audio_score_sha256": "94155165165c4edd9cdc2d171b6a6763aced7aa4389b100afd4a472445543d5f",
-  "date": "2026-10-05",
+  "audio_score_sha256": "cdb9125f08ce64c162d07036e743935b0f012f77db70e8d7efc865ec210ce424",
+  "date": "2026-10-08",
   "git_dirty": true,
-  "git_sha": "2cd4f0e09807458b49e30bef45b0175271ae0693",
+  "git_sha": "025238b07bfbee1a882c8470eddbcec266f8073f",
   "node": "v24.17.0",
   "platform": "win32",
   "python": "3.13.5"

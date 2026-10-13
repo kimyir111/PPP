@@ -1,7 +1,8 @@
 'use strict';
 /* toMusicXml writes its MusicXML from a ScoreGraph (G01 §15.3, Step 7): the graph of every G0 golden input,
-   its performance layer, the warnings it must carry, the way back (opts.legacyWriter) and the browser path
-   (A40, A41, A42, A43). The G0 benchmark checks the MusicXML itself (golden, core, ab, mutation-check). */
+   its performance layer, the warnings it must carry and the browser path (A40, A41, A42, A43). The G0 benchmark
+   checks the MusicXML itself (golden, core, ab, mutation-check). The G0 writer (buildXml) and its way back
+   (opts.legacyWriter) were removed by MX-3: the graph writer is the only writer. */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
@@ -132,34 +133,30 @@ test('the graph carries the writer\'s known issues as warnings (A42)', () => {
      tests/bench/unit/test_scoregraph_vertical.py, which reads the files itself */
 });
 
-test('opts.legacyWriter is the way back: the G0 writer, the same stats, no graph (G01 §15.3)', () => {
+test('there is one writer: the graph writer; the G0 writer and opts.legacyWriter are gone (MX-3)', () => {
   const d = input('G03');
-  const sg = run('G03'), legacy = A.toMusicXml(d.input, Object.assign({}, d.opts, { legacyWriter: true }));
-  assert.deepEqual(legacy.stats, sg.stats);
-  assert.equal(legacy.graph, undefined);
-  assert.equal(legacy.graphIssues, undefined);
-  assert.match(legacy.xml, /^<\?xml[^\n]*\n<score-partwise version="3.1">/);
+  const sg = run('G03'), asked = A.toMusicXml(d.input, Object.assign({}, d.opts, { legacyWriter: true }));
+  /* an old caller that still passes the removed option gets the graph writer's file, not an error and not the old file */
+  assert.equal(asked.xml, sg.xml);
+  assert.deepEqual(asked.stats, sg.stats);
+  assert.ok(asked.graph && asked.graphIssues, 'a graph comes back');
   assert.match(sg.xml, /<score-partwise version="4.0">/);
-  /* the way back does not need the library: it never loads it */
-  const loaded = execFileSync(process.execPath, ['-e', `
-    const A = require(${JSON.stringify(path.join(REPO, 'audio-score.js'))});
-    const d = JSON.parse(require('fs').readFileSync(${JSON.stringify(path.join(INPUTS, 'G03.json'))}, 'utf8'));
-    A.toMusicXml(d.input, Object.assign({}, d.opts, { legacyWriter: true }));
-    process.stdout.write(String(Object.keys(require.cache).some(f => f.includes('scoregraph'))));`], { encoding: 'utf8' });
-  assert.equal(loaded, 'false');
+  assert.doesNotMatch(sg.xml, /<score-partwise version="3.1">/);
+  const src = fs.readFileSync(path.join(REPO, 'audio-score.js'), 'utf8');
+  assert.doesNotMatch(src, /function buildXml\b|opts\.legacyWriter/, 'audio-score.js no longer holds the G0 writer or its switch');
 });
 
 test('a pedal whose press or release is not a number is dropped, not written and not thrown on (§26 F2)', () => {
   const d = input('G15');                                /* the one golden input that has a pedal */
   const opts = extra => Object.assign({}, d.opts, extra);
-  const base = run('G15'), baseLegacy = A.toMusicXml(d.input, opts({ legacyWriter: true }));
+  const base = run('G15');
   const marks = xml => (xml.match(/<pedal /g) || []).length;
   assert.ok(marks(base.xml) > 0 && marks(base.xml) % 2 === 0, 'the untouched input writes paired pedal marks');
   assert.ok(base.graph.parts[0].spanners.some(s => s.type === 'pedal'), 'and pedal spanners in the graph');
 
   /* Every shape a producer can hand over with a time that is not a number. The score must be the one it
      would have been without that pedal — the writers never see a NaN tick, which threw the whole score
-     away in the exporter ("rational parts must be integers") and left an unpaired mark in the G0 writer. */
+     away in the exporter ("rational parts must be integers") and left an unpaired mark in the G0 writer (removed by MX-3). */
   [{ on: 1 }, { off: 3 }, {}, { on: NaN, off: 3 }, { on: 1, off: NaN }, { on: NaN, off: NaN },
    { on: 'abc', off: 3 }, { on: 1, off: 'abc' }, { on: undefined, off: undefined },
    { on: Infinity, off: 3 }, { on: Infinity, off: Infinity }].forEach(bad => {
@@ -169,8 +166,6 @@ test('a pedal whose press or release is not a number is dropped, not written and
     assert.equal(r.xml, base.xml, why + ': the score is the one without it');
     assert.equal(SG.serialize(r.graph), SG.serialize(base.graph), why + ': and so is the graph');
     assert.deepEqual(r.graphIssues.filter(i => i.severity === 'ERROR'), [], why);
-    assert.equal(A.toMusicXml(withBad, opts({ legacyWriter: true })).xml, baseLegacy.xml,
-      why + ': the way back writes no unpaired mark either');
   });
 
   /* A press that is never released is not a broken time: it still sounds, to the last tick of the score.
@@ -179,7 +174,6 @@ test('a pedal whose press or release is not a number is dropped, not written and
     const why = JSON.stringify(good, (k, v) => (typeof v === 'number' && !isFinite(v) ? String(v) : v));
     const withIt = Object.assign({}, d.input, { pedals: d.input.pedals.concat([good]) });
     assert.equal(marks(A.toMusicXml(withIt, opts()).xml), marks(base.xml) + 2, why + ': one more pedal, both ends');
-    assert.equal(marks(A.toMusicXml(withIt, opts({ legacyWriter: true })).xml), marks(base.xml) + 2, why + ': the same way back');
   });
 
   /* and a recording whose pedal track is nothing but broken times is still a score */
@@ -215,8 +209,8 @@ test('in the browser, audio-score.js uses the PPPScoreGraph the scripts before i
 /* G1 could say the app changed only by its script tags, because nothing in it used the graph yet.
    G2 moves the import boundary onto the graph, so the app does change - and what has to hold now is
    that the change is the boundary and nothing else: a file a person opens is read by the graph, and
-   parseMusicXML survives only as the way back (G02 §14.2, A34). */
-test('a file a person opens is read through the graph, and parseMusicXML is only the way back (A34)', () => {
+   parseMusicXML is not behind the import door at all since MX-3 removed the switch that put it back (G02 §14.2, A34). */
+test('a file a person opens is read through the graph, and no import door reaches parseMusicXML (A34, MX-3)', () => {
   const html = fs.readFileSync(path.join(REPO, 'Piano Coach App.dc.html'), 'utf8');
   const body = (from, to) => {
     const i = html.indexOf(from);
@@ -228,20 +222,19 @@ test('a file a person opens is read through the graph, and parseMusicXML is only
   const picked = body('async function scoreFromFile(file)', '\n/* =====');
   assert.match(picked, /PPPScoreGraph\.legacy\.toScore/, 'scoreFromFile builds the Score from the graph');
   assert.match(picked, /importToGraph\(/, 'through the one door');
-  (picked.match(/parseMusicXML\(/g) || []).forEach(() => {
-    assert.match(picked, /if \(LEGACY_IMPORT[\s\S]*parseMusicXML\(/, 'and only reaches the old reader behind LEGACY_IMPORT');
-  });
+  assert.doesNotMatch(picked, /parseMusicXML\(/, 'and never reaches the old reader');
   /* and the entry point the import screen calls */
   const load = body("if (kind === 'musicxml' || kind === 'mxl' || kind === 'midi')", 'PDF / photo');
   assert.match(load, /PPPScoreGraph\.legacy\.toScore/);
-  assert.match(load, /if \(LEGACY_IMPORT && kind !== 'midi'\)/, 'with the same way back');
+  assert.doesNotMatch(load, /parseMusicXML\(/, 'with no way back to the old reader');
   assert.match(load, /graph: got\.graph/, 'and the graph comes back with the import');
   /* but never on `source`: that object is written whole into localStorage (G02 §24.10) */
   assert.doesNotMatch(load, /source\.graph\s*=/, 'the graph does not ride on the object that gets saved');
   assert.match(load, /source\.importReport = Import\.summariseGraph/, 'only a summary of it does');
 
-  /* the way back is a switch a person can flip, not a fallback the code takes on its own */
-  assert.match(html, /let LEGACY_IMPORT = false;/);
+  /* the one-release switch is gone, and the text reader (scoreFromXml) is on the graph too */
+  assert.doesNotMatch(html, /LEGACY_IMPORT|legacyImport/, 'no switch puts the old reader back');
+  assert.doesNotMatch(body('function scoreFromXml(xml, name)', '\n/* Read whatever the user picked'), /parseMusicXML\(/, 'scoreFromXml reads through the graph');
   assert.doesNotMatch(picked, /catch[\s\S]{0,120}parseMusicXML/, 'never a silent fallback');
 });
 

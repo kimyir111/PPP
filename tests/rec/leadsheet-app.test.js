@@ -373,14 +373,16 @@ test('the page: rec/leadsheet.js is in no up-front list, not in RECORDING_SCRIPT
   const wantsWeightsShape = html.indexOf('recWeightsShapeOk(LEADSHEET_MODEL[0], j)');
   assert.ok(wantsWeightsShape > -1, 'the model is checked for its shape like v2\'s own');
   const askers = (html.match(/loadLeadsheetModule\(\)/g) || []).length;
-  assert.equal(askers, 3, 'the loader itself, the entry (arrangeSingleNoteWithLeadsheet) and warmLeadsheetModule: ' + askers);
+  assert.equal(askers, 4, 'the loader itself, its core recovery retry, the entry (arrangeSingleNoteWithLeadsheet) and warmLeadsheetModule: ' + askers);
   assert.match(html, /warmLeadsheetModule\(\) \{\s*\n\s*if \(RECORDING_ARRANGE_MODE === 'leadsheet' && ARRANGER_MODE === 'single'\) loadLeadsheetModule\(\);/, 'the warm is a no-op unless a lead sheet would be made');
   /* every arrangeSingleNote call of the page is inside the two entry functions: arrangeSingleNoteWithHandsFallback's first run and its retry, the lead sheet's one run */
   assert.equal((html.match(/await arrangeSingleNote\(/g) || []).length, 3);
   assert.equal((html.match(/await arrangeSingleNoteWithHandsFallback\(/g) || []).length, 1, 'awaited once: the reduction after a lead sheet refusal (the other return is the request the lead sheet is not asked for)');
   assert.equal((html.match(/arrangeSingleNoteWithHandsFallback\(/g) || []).length, 3, 'its definition and the two returns of arrangeSingleNoteWithLeadsheet');
-  assert.match(html, /sn = await arrangeSingleNoteWithLeadsheet\(src\.graph, plan, sourceScore\.title, !!d\.recording\)/, 'the Song Arranger (a recording that is no Full song: d.recording, set when it opens)');
-  assert.match(html, /const sn = await arrangeSingleNoteWithLeadsheet\(built\.graph, plan, S\.score\.title, isLeadsheetSong\(S\.importSource\)\)/, 'the review screen\'s Apply arrangement');
+  assert.match(html, /sn = await arrangeSingleNoteWithLeadsheet\(src\.graph, withSongLayers\(plan, sourceScore\.source\), sourceScore\.title, !!d\.recording\)/, 'the Song Arranger (a recording that is no Full song: d.recording, set when it opens)');
+  /* G10d: the plan the review screen hands on is the person's plan, with the melody layer named only for a song-mode result (heard.song, or a saved song's source.songLayers) */
+  assert.match(html, /function withSongLayers\(plan, source, heard\) \{ return isSongHeard\(heard\) \|\| \(source && source\.songLayers\) \? Object\.assign\(\{\}, plan, \{ melodyTrack: SONG_TRACKS\.melody \}\) : plan; \}/);
+  assert.match(html, /const sn = await arrangeSingleNoteWithLeadsheet\(built\.graph, withSongLayers\(plan, S\.importSource, heard\), S\.score\.title, isLeadsheetSong\(S\.importSource\)\)/, 'the review screen\'s Apply arrangement');
   assert.equal((html.match(/arrangeSingleNoteWithLeadsheet\(/g) || []).length, 3, 'its definition and the two screens');
   /* the copies carry the mark and the words */
   assert.equal((html.match(/leadsheetMark\(sn\)\) \};/g) || []).length, 2, 'both copies\' source.arrangement');

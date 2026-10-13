@@ -1,10 +1,53 @@
 # G0 score-quality benchmark (tests/bench/README.md).
-# The gate is the regression gate on every push/PR. Its steps run as five parallel shard jobs (shard-a .. shard-e), and the job named
-# `gate` passes only when every shard passed (TD22). The nightly jobs (full suite, gate sensitivity, the independent review's
-# adversarial checks) run on a schedule or by hand.
+# The gate is the regression gate on every push/PR. It is a small job `plan` (which checks does this change need?), sixteen parallel
+# shard jobs (shard-a .. shard-p) that run its 76 steps, two merge jobs (merge-rec-core, merge-rec-grid) that join the shards of the two
+# suites that are cut across several shard jobs and check them, a job `light` (for a change that is only documents or the home-PC
+# worker's files), and the job named `gate`, which passes only when every job the plan asked for passed (TD22, TD22b). The nightly jobs
+# (full suite, gate sensitivity, the independent review's adversarial checks, the recording suites) run on a schedule or by hand and
+# are unchanged.
 # No npm install: the benchmark needs only Node, the Python standard library and git. The two checks
 # that drive the real page - tests/scoregraph/tools/shadow-legacy.js --check and app-import-check.js
 # (G02 §14) - need puppeteer and `npm start`, so they run locally, like T1-C conformance.
+#
+# THE GATE (TD22 cut it from one job of 26-50 minutes into five of about 11; TD22b into sixteen of about 4.5). Rules for keeping it right:
+#  - every step of the old job is in exactly one shard job, with its command unchanged (tests/bench/unit/test_ci_plan.py holds the
+#    invariants: no step twice, a `run --suite X` with its `check`, a sharded suite complete, `gate` waiting for every job);
+#  - steps that depend on each other stay together: `run --suite X` then `check --suite X` (check reads what run wrote under
+#    tests/bench/out/X), `hands_data.py && train_hands.js --check` and `key_data.py && key-eval.js --check` (the data goes
+#    to tests/bench/.cache). Every other step reads committed files and writes only under a path of its own or a temp dir;
+#  - rec-core (2,538 cases, 370 s alone) and rec-grid (1,410, 434 s) were longer than any shard could be: each runs as `run --suite X
+#    --shard K/N` in N different shard jobs, hands its shard.json to a merge job as a one-day artifact, and merge-rec-core /
+#    merge-rec-grid run `merge-shards` (which refuses anything but the N shards of this commit) and then the very `check` the unsharded
+#    run had. The merged results.json is byte for byte the unsharded run's (tests/bench/README.md, "Sharded runs"). A shard is every
+#    N-th case of the id-sorted list and an id ends in opt:app, opt:legacy, opt:v2, so N=3 would give one shard all the v2 cases (2.3x
+#    the work of another: measured): rec-core is cut in 4 (every shard has every family), rec-grid in 3. rec-robust (217 s) stays whole;
+#  - the verdict is the job named exactly `gate`: green only if the plan succeeded and every job it asked for did (see the comment above
+#    it). The shards are deliberately not named gate-*, so nothing that looks for "gate" can take one of them for the verdict;
+#  - a new step goes in the shard job with the most slack. Step seconds per job, on the fast and on the slow runners of 2026-10-06/07
+#    (the same VM type draws 1.0-1.8x slower on some jobs; a job adds about 12 s of checkout, setup and upload): see each job's comment.
+#    The wall-clock is the slowest job (rec-robust, 217 s on a slow runner) + the plan, the merge for the sliced suites and the gate, about
+#    4.5-5 minutes. Further shards would save little: rec-robust in two jobs 9 s, then nothing, because the largest steps (test:scoregraph
+#    203 s, rec/tools/train.js 195 s, the hands check 192 s on a slow runner) are one step each. Up to 20 jobs run at once for the account;
+#    a run uses 16, so two gates started together make the later jobs of the second wait for a slot;
+#  - the ScoreGraph tests compare package.json with the G1 base commit (`git show aff7080:package.json`): the one job that runs them
+#    (shard-c) fetches the whole history. No other step of the gate reads git history, so the other jobs take the default one commit
+#    (a step that skips quietly without history would hide a check; `npm run test:home-worker-page` and jobs-pg do, and neither is in the gate).
+#
+# THE PRACTICE JOBS (G11a-0, docs/GOALS/G11_ADAPTIVE_PRACTICE.md section 5 G11-D12) are NOT part of the gate: practice-plan, practice-suites,
+# practice-legacy, practice-perf, practice-parity and practice-parity-mutants are checks of their own, so the gate's jobs, steps and verdict are as they were
+# (test_ci_plan.py reads only plan, light, shard-* and merge-*). On a pull request practice-plan (tests/practice/plan.py, the base's copy, like the gate's) decides whether
+# the change touches the app's page, practice/ or the practice tests; if so the three jobs run: the twelve practice and playback browser suites
+# on a free port (tests/practice/run-suites.js), the legacy recorder's baseline (what the legacy player, matcher and follow gates do with every
+# catalogue piece) and the mutation check that proves the baseline notices a broken matcher, and the perf probe (matcher, plan building, press
+# to paint, long tasks) against its committed baseline. The same three jobs run every night and on a manual run. G11a-2 adds two more: practice-parity (the
+# event-parity harness tests/practice/parity.js: practice/plan.js against the legacy player, every difference booked to its cause; the whole corpus in about a minute, a
+# sample of it on a pull request) and practice-parity-mutants (the planted defects of practice/plan.js the check must notice, in four shards). G11a-3 (the PPP.practice switch) adds
+# three things: practice-suites runs the eleven suites twice, once on the legacy player and once with every page started on PPP.practice 'graph' (a matrix of two checks);
+# practice-switch is the switch's own test (tests/practice/switch.js: the default and what is no choice, the module requested only under 'graph', the scheduler's queue of the 12
+# pieces equal to the one recorded on main before the switch, the matcher, the falling notes and follow mode equal, the fallbacks counted, the corpus swept, the build time);
+# practice-switch-mutants breaks one line of the switch at a time and the test must go red (in three shards). A manual run can be
+# narrowed to them with `-f only=practice` (the heavy nightly jobs below are then skipped; the gate still runs), and `-f perf_record=true`
+# makes practice-perf measure a new baseline for this kind of machine and upload it instead of checking.
 name: bench
 on:
   push:
@@ -13,6 +56,16 @@ on:
   schedule:
     - cron: '17 18 * * *'
   workflow_dispatch:
+    inputs:
+      only:
+        description: 'all = every nightly job (the default); practice = only the practice jobs (the gate runs either way)'
+        type: choice
+        options: [all, practice]
+        default: all
+      perf_record:
+        description: 'practice-perf measures and uploads a new baseline for the runner (tests/practice/baselines/perf.json) instead of checking'
+        type: boolean
+        default: false
 
 # A new push to a pull request cancels that PR's older run (its result is for a commit nobody will merge). A push to main, the
 # schedule and a manual dispatch each get a group of their own (the run id), so none of them is ever cancelled, or replaced by a
@@ -22,213 +75,837 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # THE GATE, SHARDED (TD22). The 59 steps that used to be one job of 26-50 minutes run as five jobs at once (hosted runners are free
-  # for a public repository). The wall-clock is the slowest of the five: about 11 minutes (4 runs on 2026-10-06: 10.6-11.1), and
-  # 6-7 when every shard lands on a fast runner; the same code took 26-50 minutes as one job. Rules for keeping it right:
-  #  - every step of the old job is in exactly one shard, in its old relative order, with its command unchanged;
-  #  - steps that depend on each other stay together: `run --suite X` then `check --suite X` (check reads what run wrote under
-  #    tests/bench/out/X), `hands_data.py && train_hands.js --check` and `key_data.py && key-eval.js --check` (the data goes
-  #    to tests/bench/.cache). Every other step reads committed files and writes only under a path of its own or a temp dir;
-  #  - the verdict is the job named exactly `gate`, the last of these jobs: green only if every shard is green. The shards are
-  #    deliberately not named gate-*, so nothing that looks for "gate" can take one of them for the verdict;
-  #  - a new step goes in the shard with the most slack. Step seconds per shard, mean of the fast and of the slow runs of
-  #    2026-10-05/06 (a job adds about 15 s of checkout and setup): a 336/592, b 340/587, c 334/575, d 333/585, e 323/548;
-  #    rec-core alone is 336/592, so no split can beat that unless that suite is sharded;
-  #  - every job that runs the ScoreGraph tests (and layout-hashes.js) needs the whole history: fetch-depth 0.
 
-  # shard-a: rec-core
-  #   (steps ~336 s on a fast runner, ~592 s on a slow one)
+  # plan: which checks does this change need? (tests/bench/tools/ci_plan.py; the table of paths against the steps that read them is in
+  # tests/bench/README.md, "The gate in CI"). `full` for anything that is not a pull request, and for a pull request that touches any
+  # path the classifier does not know to be harmless; `docs` / `tooling` only when EVERY changed path is on its whitelist. The classifier
+  # that runs is the one of the pull request's BASE, so a change to the rules does not apply to itself (it is `full`, being under
+  # tests/bench/). Its answer, the changed files and the reason are in this job's summary. If this job fails, `gate` fails.
+  plan:
+    if: ${{ github.event_name != 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      mode: ${{ steps.plan.outputs.mode }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }                 # a pull request's checkout is a merge commit: HEAD^1 is the base, HEAD^2 the branch
+      - id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          # the base's classifier, not this checkout's (see ci_plan.py); a base without one (the change that adds it) is `full`
+          if [ "$EVENT" = "pull_request" ] && git show HEAD^1:tests/bench/tools/ci_plan.py > "$RUNNER_TEMP/ci_plan.py" \
+             && python3 "$RUNNER_TEMP/ci_plan.py" --event "$EVENT" --github-output "$RUNNER_TEMP/plan.out" --summary "$GITHUB_STEP_SUMMARY"; then
+            cat "$RUNNER_TEMP/plan.out" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+            echo "### gate plan: **FULL**" >> "$GITHUB_STEP_SUMMARY"
+            echo "event \`$EVENT\`: no classifier to ask (not a pull request, or the base has none): the full gate runs." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          grep '^mode=' "$GITHUB_OUTPUT"
+
+  # shard-a: rec-robust
+  #   (steps ~138 s on a fast runner, ~217 s on a slow one)
   shard-a:
-    if: github.event_name != 'schedule'
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit
+      - name: runner
+        run: |
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
       - uses: actions/setup-node@v4
         with: { node-version: '24' }          # same major as the recorded baseline
       - uses: actions/setup-python@v5
         with: { python-version: '3.13' }
-      - run: python tests/bench/run.py run --suite rec-core
-      - run: python tests/bench/run.py check --suite rec-core
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bench-shard-a
-          path: |
-            tests/bench/out/rec-core/summary.md
-
-  # shard-b: rec-grid, rec-arrange-smoke, robust, the engrave generator checks, test:rec, the key check
-  #   (steps ~340 s on a fast runner, ~587 s on a slow one)
-  shard-b:
-    if: github.event_name != 'schedule'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: npm run test:rec                         # G10a-1: rec/ S0-S2 (attacks, pulse tracks, the metre model) and toMusicXml recording 'v2'
-      - run: python tests/bench/tools/key_data.py && node rec/tools/key-eval.js --check   # G10a-3 (S8): the key stage's committed evaluation on the catalogue truth is what the code makes (G10 section 22)
-      - run: node tests/engrave/tools/make-e-fixtures.js --check   # the E fixtures are the generator's (G04 §22.1)
-      - run: node tests/engrave/tools/make-corpus.js --check       # the R corpus manifest is the rule's (G04 §22.2)
-      - run: node tests/engrave/tools/make-metrics.js --check      # G4b: the layout's glyph metrics are the pinned font's (G04 §18.2)
-      - run: node tests/engrave/tools/make-outlines.js --check     # G4c: the SVG backend's glyph outlines are the pinned font's (G04 §18.2)
-      - run: node tests/engrave/tools/make-text-metrics.js --check   # G4d-1a: the text-width table's form and digest (G04 §18.3) - no network; the rebuild runs nightly
-      - run: node tests/engrave/tools/layout-hashes.js             # G4b: the committed layout hashes, on Linux too (A27)
-      - run: node tests/engrave/tools/bench.js check --suite r     # L1 on the reference corpus against its baseline (G04 §21.5)
-      - run: node tests/engrave/tools/bench.js check --suite e
-      - run: node tests/engrave/tools/bench.js check --suite x
-      - run: python tests/bench/run.py run --suite robust
-      - run: python tests/bench/run.py check --suite robust
-      - run: python tests/bench/run.py run --suite rec-arrange-smoke   # G10c-0: what the one-note arranger does to recordings, against the true score
-      - run: python tests/bench/run.py check --suite rec-arrange-smoke
-      - run: python tests/bench/run.py run --suite rec-grid        # G10a-2: v2 with and without its grid stage (rec/grid.js), oracle beats and swing included
-      - run: python tests/bench/run.py check --suite rec-grid
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bench-shard-b
-          path: |
-            tests/bench/out/robust/summary.md
-            tests/bench/out/rec-arrange-smoke/summary.md
-            tests/bench/out/rec-grid/summary.md
-
-  # shard-c: test:scoregraph, test:difficulty, the rec trainer check, core, core-app, smoke-app, rec-smoke
-  #   (steps ~334 s on a fast runner, ~575 s on a slow one)
-  shard-c:
-    if: github.event_name != 'schedule'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: npm run test:scoregraph                 # the ScoreGraph library and the graphs toMusicXml writes from (G01)
-      - run: npm run test:difficulty                 # G6a: difficulty features, the ranker, metamorphic tests, the dataset/weights reproduce (G06)
-      - run: node difficulty/tools/train.js --check  # G6a: the committed leave-one-book-out and hold-out evaluation reproduces (G06 §11)
-      - run: node rec/tools/train.js --check          # G10a-1 (AI-5a): the committed weights and evaluation are what the training makes (G10 section 18)
-      - run: python tests/bench/run.py run --suite core
-      - run: python tests/bench/run.py check --suite core
-      - run: python tests/bench/run.py run --suite smoke-app      # the app's options (closeGaps, exactBars): what users get (G10a-0)
-      - run: python tests/bench/run.py check --suite smoke-app
-      - run: python tests/bench/run.py run --suite core-app
-      - run: python tests/bench/run.py check --suite core-app
-      - run: python tests/bench/run.py run --suite rec-smoke       # G10a-0: the recording metrics on the calibrated humanizer
-      - run: python tests/bench/run.py check --suite rec-smoke
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bench-shard-c
-          path: |
-            tests/bench/out/core/summary.md
-            tests/bench/out/core/results.json
-            tests/bench/out/core/run.json
-            tests/bench/out/core-app/summary.md
-
-  # shard-d: the unit tests, realize, songgraph, playability, the hands and rests checks, golden/lint/correctness, smoke, the replays, transcription-core
-  #   (steps ~333 s on a fast runner, ~585 s on a slow one)
-  shard-d:
-    if: github.event_name != 'schedule'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: python -m unittest discover -s tests/bench/unit -t tests/bench
-      - run: npm run test:playability                # G5a: the playability analyzer, its mutation suite, R-corpus false positives, the legacy-arranger baseline (G05)
-      - run: npm run test:songgraph                  # G7a: key regions, harmony, melody/bass, sections/phrases, voice roles, energy, span round trips, mutation suite (G07)
-      - run: npm run test:realize                     # G8a: the deterministic realizer, golden determinism, mutation suite (G08)
-      - run: python tests/bench/tools/hands_data.py && node tests/bench/tools/train_hands.js --check   # G10a-2 (AI-5b, S4): the hand model and its evaluation are what the training makes (G10 section 19)
-      - run: node tests/bench/tools/train_rests.js --check  # G10a-3 (AI-5b, S6): the silence classifier's weights and evaluation are what the training makes (G10 section 22; ~30-60 s)
-      - run: node tests/scoregraph/tools/make-midi-fixtures.js --check   # the committed MIDI bytes are the generator's (G02)
-      - run: python tests/bench/run.py golden
-      - run: python tests/bench/run.py lint-corpus
-      - run: python tests/bench/tools/make_provenance.py --check
-      - run: python tests/bench/run.py correctness
-      - run: python tests/bench/run.py run --suite smoke
-      - run: python tests/bench/run.py check --suite smoke
-      - run: python tests/bench/run.py run --suite replay-public   # exits with the replay verdict
-      - run: python tests/bench/run.py run --suite replay-of       # G10a-0: the production browser model (Onsets & Frames) on rendered audio, replayed from committed notes
-      - run: python tests/bench/run.py run --suite replay-of-app   # the same fixtures with the app's options
-      - run: python tests/bench/run.py run --suite replay-of-v2    # G10a-1: and with the recording conversion v2
-      - run: python tests/bench/run.py run --suite replay-public-v2   # G10a-3 (S9): the helper's real pedal on rendered audio (no pedal was played), with the pedal policy
-      - run: npm run test:transcription-core && npm run test:arranger
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bench-shard-d
-          path: |
-            tests/bench/out/replay-public/summary.md
-            tests/bench/out/correctness/report.json
-
-  # shard-e: test:engrave, test:home-worker, the planner, the grid check, sg-roundtrip, robust-app, rec-robust
-  #   (steps ~323 s on a fast runner, ~548 s on a slow one)
-  shard-e:
-    if: github.event_name != 'schedule'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit
-      - uses: actions/setup-node@v4
-        with: { node-version: '24' }          # same major as the recorded baseline
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.13' }
-      - run: npm run test:home-worker                # G10b-1: the home-PC queue, its worker and server.js with it (Node only, ~40 s; the Postgres part skips without PPP_TEST_PG_URL)
-      - run: npm run test:engrave                    # G4a-G4d-1a: render source, NotationPlan and ledger, layout, notation, SVG, curves and marks (G04)
-      - run: npm run test:arrangement-planner         # G7b: texture ladder, deterministic search, real-corpus coverage, mutation suite (G07B)
-      - run: node tests/bench/tools/train_grid.js --check   # G10a-2 (AI-5b): the grid stage's committed weights are what the training makes (G10 section 20)
-      - run: python tests/bench/run.py sg-roundtrip  # every committed MusicXML through ScoreGraph and back (G01)
-      - run: python tests/bench/run.py run --suite robust-app
-      - run: python tests/bench/run.py check --suite robust-app
-      - run: python tests/bench/tools/make_rec_suites.py --check   # the committed rec-* suites are the generator's (G10a-0)
       - run: python tests/bench/run.py run --suite rec-robust
       - run: python tests/bench/run.py check --suite rec-robust
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bench-shard-e
+          name: bench-shard-a
+          path: |
+            tests/bench/out/rec-robust/summary.md
+          overwrite: true
+
+  # shard-b: test:engrave, core-app, e-fixtures check, corpus check, metrics check, outlines check, text-metrics check, engrave bench e, engrave bench x
+  #   (steps ~158 s on a fast runner, ~212 s on a slow one)
+  shard-b:
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: runner
+        run: |
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: node tests/engrave/tools/make-e-fixtures.js --check   # the E fixtures are the generator's (G04 §22.1)
+      - run: node tests/engrave/tools/make-corpus.js --check       # the R corpus manifest is the rule's (G04 §22.2)
+      - run: node tests/engrave/tools/make-metrics.js --check      # G4b: the layout's glyph metrics are the pinned font's (G04 §18.2)
+      - run: node tests/engrave/tools/make-outlines.js --check     # G4c: the SVG backend's glyph outlines are the pinned font's (G04 §18.2)
+      - run: node tests/engrave/tools/make-text-metrics.js --check   # G4d-1a: the text-width table's form and digest (G04 §18.3) - no network; the rebuild runs nightly
+      - run: node tests/engrave/tools/bench.js check --suite e
+      - run: node tests/engrave/tools/bench.js check --suite x
+      - run: python tests/bench/run.py run --suite core-app
+      - run: python tests/bench/run.py check --suite core-app
+      - run: npm run test:engrave                                  # G4a-G4d-1a: render source, NotationPlan and ledger, layout, notation, SVG, curves and marks (G04)
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-shard-b
+          path: |
+            tests/bench/out/core-app/summary.md
+          overwrite: true
+
+  # shard-c: test:scoregraph
+  #   (steps ~154 s on a fast runner, ~203 s on a slow one)
+  shard-c:
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }                 # the ScoreGraph tests compare package.json with the G1 base commit (git show aff7080:package.json)
+      - name: runner
+        run: |
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: npm run test:scoregraph                               # the ScoreGraph library and the graphs toMusicXml writes from (G01)
+
+  # shard-d: the rec trainer check, midi-fixtures check, correctness
+  #   (steps ~152 s on a fast runner, ~195 s on a slow one)
+  shard-d:
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: runner
+        run: |
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: node rec/tools/train.js --check                       # G10a-1 (AI-5a): the committed weights and evaluation are what the training makes (G10 section 18)
+      - run: node tests/scoregraph/tools/make-midi-fixtures.js --check   # the committed MIDI bytes are the generator's (G02)
+      - run: python tests/bench/run.py correctness
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-shard-d
+          path: |
+            tests/bench/out/correctness/report.json
+          overwrite: true
+
+  # shard-e: the hands check, smoke-app, transcription-core, arranger
+  #   (steps ~154 s on a fast runner, ~195 s on a slow one)
+  shard-e:
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: runner
+        run: |
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python tests/bench/run.py run --suite smoke-app       # the app's options (closeGaps, exactBars): what users get (G10a-0)
+      - run: python tests/bench/run.py check --suite smoke-app
+      - run: python tests/bench/tools/hands_data.py && node tests/bench/tools/train_hands.js --check   # G10a-2 (AI-5b, S4): the hand model and its evaluation are what the training makes (G10 section 19)
+      - run: npm run test:transcription-core && npm run test:arranger
+
+  # shard-f: test:realize, engrave bench r, rec suites check, replay-public-v2
+  #   (steps ~142 s on a fast runner, ~196 s on a slow one)
+  shard-f:
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: runner
+        run: |
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: node tests/engrave/tools/bench.js check --suite r     # L1 on the reference corpus against its baseline (G04 §21.5)
+      - run: npm run test:realize                                  # G8a: the deterministic realizer, golden determinism, mutation suite (G08)
+      - run: python tests/bench/run.py run --suite replay-public-v2   # G10a-3 (S9): the helper's real pedal on rendered audio (no pedal was played), with the pedal policy
+      - run: python tests/bench/tools/make_rec_suites.py --check   # the committed rec-* suites are the generator's (G10a-0)
+
+  # shard-g: the grid trainer check, core, test:difficulty, test:monitoring, test:omr-normalize, test:omr-apply (G12-2: about 2 s; 83 tests in 1 s on Windows), test:omr-flags (G12-3: about 3 s; 136 tests in 2 s on Windows)
+  #   (steps ~133 s on a fast runner, ~195 s on a slow one, before test:monitoring (G13-7a: 10 s on a Windows desktop, estimated 10-20 s on a runner) and test:omr-normalize (G12-1: about 2-3 s, 93 tests in 0.9 s on Windows here and in about 2.5 s on Linux (Docker, Node 24), where the 2 that start the helper with a stand-in for Audiveris also run, 2026-10-08))
+  shard-g:
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: runner
+        run: |
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: npm run test:difficulty                               # G6a: difficulty features, the ranker, metamorphic tests, the dataset/weights reproduce (G06)
+      - run: npm run test:omr-normalize                            # G12-1: omr/normalize.js (movements, divisions, grand staff, systems, bar count) with its planted defects and mutants; the helper's movement files (G12 section 7.1)
+      - run: npm run test:omr-apply                                # G12-2: omr/apply.js (the PdfLayer findings as graph edits: each edit, idempotence, provenance, the hand rule of an OMR graph) with its mutants (G12 section 7.3)
+      - run: npm run test:omr-flags                                # G12-3: omr/flags.js (which bars of an OMR import are suspect and why: every signal, the rule, the confidence, the fit's record) with its mutants (G12 section 8)
+      - run: python tests/bench/run.py run --suite core
+      - run: python tests/bench/run.py check --suite core
+      - run: node tests/bench/tools/train_grid.js --check          # G10a-2 (AI-5b): the grid stage's committed weights are what the training makes (G10 section 20)
+      - run: npm run test:monitoring                               # G13-7a: the release script (a red or missing gate refuses), the daily smoke's issue reporter, the server's counters and the mutants of all three (Node only, no network)
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-shard-g
+          path: |
+            tests/bench/out/core/summary.md
+            tests/bench/out/core/results.json
+            tests/bench/out/core/run.json
+          overwrite: true
+
+  # shard-h: the rests trainer check, test:home-worker, test:server-hygiene, the key check, replay-public
+  #   (steps ~166 s on a fast runner, ~193 s on a slow one, before test:server-hygiene (G13-5): that step took 5 s on a runner; test:backup (G13-6) adds about 10 s)
+  shard-h:
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: runner
+        run: |
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python tests/bench/tools/key_data.py && node rec/tools/key-eval.js --check   # G10a-3 (S8): the key stage's committed evaluation on the catalogue truth is what the code makes (G10 section 22)
+      - run: node tests/bench/tools/train_rests.js --check         # G10a-3 (AI-5b, S6): the silence classifier's weights and evaluation are what the training makes (G10 section 22; ~30-60 s)
+      - run: python tests/bench/run.py run --suite replay-public   # exits with the replay verdict
+      - run: npm run test:home-worker                              # G10b-1: the home-PC queue, its worker and server.js with it (Node only, ~40 s; the Postgres part skips without PPP_TEST_PG_URL)
+      - run: npm run test:backup                                   # G13-6: Settings > My data, its module alone (library-backup.js against a fake storage and a fake IndexedDB): six safety properties and 15 mutants that each break one of them (Node only)
+      - run: npm run test:server-hygiene                           # G13-5: the served-path allowlist (a lazy module the page loads must be on it), the security headers, the signup limit, the paged Shared Scores list (Node only; the Postgres part skips without PPP_TEST_PG_URL)
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-shard-h
+          path: |
+            tests/bench/out/replay-public/summary.md
+          overwrite: true
+
+  # shard-i: rec-arrange-smoke, the bench unit tests, test:playability, replay-of-v2
+  #   (steps ~139 s on a fast runner, ~195 s on a slow one)
+  shard-i:
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: runner
+        run: |
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python tests/bench/run.py run --suite rec-arrange-smoke   # G10c-0: what the one-note arranger does to recordings, against the true score
+      - run: python tests/bench/run.py check --suite rec-arrange-smoke
+      - run: python -m unittest discover -s tests/bench/unit -t tests/bench
+      - run: npm run test:playability                              # G5a: the playability analyzer, its mutation suite, R-corpus false positives, the legacy-arranger baseline (G05)
+      - run: python tests/bench/run.py run --suite replay-of-v2    # G10a-1: and with the recording conversion v2
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-shard-i
+          path: |
+            tests/bench/out/rec-arrange-smoke/summary.md
+          overwrite: true
+
+  # shard-j: rec-core 1/4, rec-smoke, replay-of-app, test:practice-variant
+  #   (steps ~134 s on a fast runner, ~195 s on a slow one, before test:practice-variant, which adds 7-11 s: 67 tests in 7.1 s and 11.3 s on two draws, 2026-10-08, PR 227)
+  shard-j:
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: runner
+        run: |
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python tests/bench/run.py run --suite rec-core --shard 1/4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rec-core-shard-1-of-4
+          path: |
+            tests/bench/out/rec-core/shards/1-of-4/shard.json
+            tests/bench/out/rec-core/shards/1-of-4/run.json
+          retention-days: 1                # an input of the merge job, not a result
+          overwrite: true
+      - run: python tests/bench/run.py run --suite rec-smoke       # G10a-0: the recording metrics on the calibrated humanizer
+      - run: python tests/bench/run.py check --suite rec-smoke
+      - run: python tests/bench/run.py run --suite replay-of-app   # the same fixtures with the app's options
+      - run: npm run test:practice-variant                         # G11c-0: the passage splice of an easier or harder arrangement (practice/variant.js, G11 section 8.2): its checks, its mutants, and the benchmark sample on frozen arrangements, every accepted splice read by an independent verifier
+
+  # shard-k: rec-core 2/4, test:arrangement-planner, replay-of, golden
+  #   (steps ~134 s on a fast runner, ~195 s on a slow one)
+  shard-k:
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: runner
+        run: |
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python tests/bench/run.py run --suite rec-core --shard 2/4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rec-core-shard-2-of-4
+          path: |
+            tests/bench/out/rec-core/shards/2-of-4/shard.json
+            tests/bench/out/rec-core/shards/2-of-4/run.json
+          retention-days: 1                # an input of the merge job, not a result
+          overwrite: true
+      - run: python tests/bench/run.py golden
+      - run: python tests/bench/run.py run --suite replay-of       # G10a-0: the production browser model (Onsets & Frames) on rendered audio, replayed from committed notes
+      - run: npm run test:arrangement-planner                      # G7b: texture ladder, deterministic search, real-corpus coverage, mutation suite (G07B); one test file at a time (--test-concurrency=1), so its 200 ms plan() budget is measured beside no other file (tests/timing.js)
+
+  # shard-l: rec-core 3/4, test:rec, test:songgraph, smoke, provenance
+  #   (steps ~133 s on a fast runner, ~195 s on a slow one)
+  shard-l:
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: runner
+        run: |
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python tests/bench/run.py run --suite rec-core --shard 3/4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rec-core-shard-3-of-4
+          path: |
+            tests/bench/out/rec-core/shards/3-of-4/shard.json
+            tests/bench/out/rec-core/shards/3-of-4/run.json
+          retention-days: 1                # an input of the merge job, not a result
+          overwrite: true
+      - run: npm run test:rec                                      # G10a-1: rec/ S0-S2 (attacks, pulse tracks, the metre model) and toMusicXml recording 'v2'
+      - run: npm run test:songgraph                                # G7a: key regions, harmony, melody/bass, sections/phrases, voice roles, energy, span round trips, mutation suite (G07)
+      - run: python tests/bench/tools/make_provenance.py --check
+      - run: python tests/bench/run.py run --suite smoke
+      - run: python tests/bench/run.py check --suite smoke
+
+  # shard-m: rec-core 4/4, the difficulty trainer check, layout hashes, test:practice-sim
+  #   (steps ~136 s on a fast runner, ~195 s on a slow one; G11b-0's test:practice-sim adds ~18 s / ~30 s, estimated from a local run)
+  shard-m:
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: runner
+        run: |
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python tests/bench/run.py run --suite rec-core --shard 4/4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rec-core-shard-4-of-4
+          path: |
+            tests/bench/out/rec-core/shards/4-of-4/shard.json
+            tests/bench/out/rec-core/shards/4-of-4/run.json
+          retention-days: 1                # an input of the merge job, not a result
+          overwrite: true
+      - run: node tests/engrave/tools/layout-hashes.js             # G4b: the committed layout hashes, on Linux too (A27)
+      - run: node difficulty/tools/train.js --check                # G6a: the committed leave-one-book-out and hold-out evaluation reproduces (G06 §11)
+      - run: npm run test:practice-sim                             # G11b-0: the synthetic learners (practice/sim.js), the legacy-policy runner on the app's own code, determinism (G11 section 7.4)
+
+  # shard-n: rec-grid 1/3, robust-app, the practice-sim baseline 1/3
+  #   (steps ~128 s on a fast runner, ~197 s on a slow one; G11b-0's baseline part adds ~12 s / ~20 s, estimated: 42 CPU-s for the
+  #   three parts in a Linux container on 4 threads)
+  shard-n:
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: runner
+        run: |
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python tests/bench/run.py run --suite rec-grid --shard 1/3   # G10a-2: v2 with and without its grid stage (rec/grid.js), oracle beats and swing included
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rec-grid-shard-1-of-3
+          path: |
+            tests/bench/out/rec-grid/shards/1-of-3/shard.json
+            tests/bench/out/rec-grid/shards/1-of-3/run.json
+          retention-days: 1                # an input of the merge job, not a result
+          overwrite: true
+      - run: python tests/bench/run.py run --suite robust-app
+      - run: python tests/bench/run.py check --suite robust-app
+      - run: node tests/practice-sim/baseline.js --check --part 1/3   # G11b-0: the LEGACY practice baseline (the app's Learning/Memory/Coach on synthetic learners), a third of its runs, plus the whole file's consistency
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-shard-n
           path: |
             tests/bench/out/robust-app/summary.md
-            tests/bench/out/rec-robust/summary.md
+          overwrite: true
 
-  # The verdict. The merge rule is "read the result of the check named gate": this is that check. It runs after every shard (also
-  # when one failed or was cancelled, hence always()) and is green only when every shard's result is success - a failed, cancelled
-  # or skipped shard turns it red. It also counts the shard jobs in this file against the ones it waited for, so a shard added
-  # without a place in `needs` is red, not silently ignored. No schedule run: the shards are skipped there, the nightly jobs run.
+  # shard-o: rec-grid 2/3, robust, test:practice, the practice-sim baseline 2/3
+  #   (steps ~125 s on a fast runner, ~196 s on a slow one, before test:practice, which adds 5 s: 80 tests in 4.6 s on a slow draw, 2026-10-08, PR 225;
+  #   G11b-0's baseline part adds ~12 s / ~20 s, estimated: 42 CPU-s for the three parts in a Linux container on 4 threads)
+  shard-o:
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: runner
+        run: |
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python tests/bench/run.py run --suite robust
+      - run: python tests/bench/run.py check --suite robust
+      - run: node tests/practice-sim/baseline.js --check --part 2/3   # G11b-0: the legacy practice baseline, the second third
+      - run: python tests/bench/run.py run --suite rec-grid --shard 2/3   # G10a-2: v2 with and without its grid stage (rec/grid.js), oracle beats and swing included
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rec-grid-shard-2-of-3
+          path: |
+            tests/bench/out/rec-grid/shards/2-of-3/shard.json
+            tests/bench/out/rec-grid/shards/2-of-3/run.json
+          retention-days: 1                # an input of the merge job, not a result
+          overwrite: true
+      - run: npm run test:practice                                 # G11a-1: practice/plan.js - the PlaybackPlan from the graph, parity with the app's PianoScore, jumps, graces, follow gates, mutants (G11 §6.1)
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-shard-o
+          path: |
+            tests/bench/out/robust/summary.md
+          overwrite: true
+
+  # shard-p: rec-grid 3/3, sg-roundtrip, lint-corpus, the i18n gaps check and its mutation test, the practice-sim baseline 3/3
+  #   (steps ~127 s on a fast runner, ~194 s on a slow one, before the two i18n steps; they add about 2 s; G11b-0's baseline part adds ~12 s / ~20 s, estimated)
+  shard-p:
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'full' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: runner
+        run: |
+          echo "$(nproc) CPUs, $(grep -m1 'model name' /proc/cpuinfo | cut -d':' -f2 | xargs), $(awk '/MemTotal/ {printf "%d", $2/1048576}' /proc/meminfo) GB"
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python tests/bench/run.py run --suite rec-grid --shard 3/3   # G10a-2: v2 with and without its grid stage (rec/grid.js), oracle beats and swing included
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rec-grid-shard-3-of-3
+          path: |
+            tests/bench/out/rec-grid/shards/3-of-3/shard.json
+            tests/bench/out/rec-grid/shards/3-of-3/run.json
+          retention-days: 1                # an input of the merge job, not a result
+          overwrite: true
+      - run: python tests/bench/run.py lint-corpus
+      - run: python tests/bench/run.py sg-roundtrip                # every committed MusicXML through ScoreGraph and back (G01)
+      - run: node tests/i18n/gaps.js --check                       # G13-0: no English string of the page lacks a ko/ja/zh translation unless tests/i18n/gaps-baseline.json lists it
+      - run: node tests/i18n/gaps.test.js                          # G13-0: that checker fails on a planted untranslated tx() / label / one-locale string / parity gap (mutation test)
+      - run: node tests/practice-sim/baseline.js --check --part 3/3   # G11b-0: the legacy practice baseline, the last third
+
+  # merge-rec-core: the 4 shards of rec-core (2,538 cases) joined into the run's results.json, then the gate's check of that run. Exactly what the
+  # unsharded `run` + `check` did: merge-shards refuses anything but the 4 shards of this commit (tests/bench/README.md, "Sharded runs"),
+  # and the merged results.json is byte for byte the unsharded run's. Python only: no Node here.
+  merge-rec-core:
+    needs: [shard-j, shard-k, shard-l, shard-m]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rec-core-shard-*
+          path: tests/bench/out/rec-core/shards     # one directory per shard artifact, each holding its shard.json and run.json
+      - run: python tests/bench/run.py merge-shards --suite rec-core
+      - run: python tests/bench/run.py check --suite rec-core
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-merged-rec-core
+          path: |
+            tests/bench/out/rec-core/summary.md
+          overwrite: true
+
+  # merge-rec-grid: the 3 shards of rec-grid (1,410 cases) joined into the run's results.json, then the gate's check of that run. Exactly what the
+  # unsharded `run` + `check` did: merge-shards refuses anything but the 3 shards of this commit (tests/bench/README.md, "Sharded runs"),
+  # and the merged results.json is byte for byte the unsharded run's. Python only: no Node here.
+  merge-rec-grid:
+    needs: [shard-n, shard-o, shard-p]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rec-grid-shard-*
+          path: tests/bench/out/rec-grid/shards     # one directory per shard artifact, each holding its shard.json and run.json
+      - run: python tests/bench/run.py merge-shards --suite rec-grid
+      - run: python tests/bench/run.py check --suite rec-grid
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-merged-rec-grid
+          path: |
+            tests/bench/out/rec-grid/summary.md
+          overwrite: true
+
+  # light: what a change that is only documents (`docs`) or only documents and tooling (`tooling`) runs instead of the shards. The
+  # three sanity checks (the corpus lint, the provenance registry, and the i18n gaps check of G13-0) run in both; the home-PC worker's
+  # tests and the bench unit tests run for `tooling`. Every command here is also
+  # a step of a shard (tests/bench/unit/test_ci_plan.py checks that), so this job cannot check anything the full gate does not.
+  light:
+    needs: plan
+    if: ${{ needs.plan.outputs.mode == 'docs' || needs.plan.outputs.mode == 'tooling' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }          # same major as the recorded baseline
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: python tests/bench/run.py lint-corpus
+      - run: python tests/bench/tools/make_provenance.py --check
+      - run: node tests/i18n/gaps.js --check
+      - if: ${{ needs.plan.outputs.mode == 'tooling' }}
+        run: npm run test:home-worker
+      - if: ${{ needs.plan.outputs.mode == 'tooling' }}
+        run: python -m unittest discover -s tests/bench/unit -t tests/bench
+
+  # The verdict. The merge rule is "read the result of the check named gate": this is that check. It runs after every other job of
+  # the gate (also when one failed or was cancelled, hence always()). What it demands depends on the plan's mode:
+  #   full:            every shard-* and merge-* job succeeded and `light` was skipped;
+  #   docs / tooling:  `light` succeeded and every shard-* and merge-* job was skipped.
+  # Anything else is red: a failed, cancelled or skipped job that was expected to run, a job that ran when it was not wanted, a plan
+  # that did not succeed or answered something unknown. It also counts the jobs of this file (plan, light, shard-*, merge-*) against
+  # the ones it waited for, so a job added without a place in `needs` is red, not silently ignored. No schedule run: the jobs
+  # are skipped there, the nightly jobs run.
   gate:
     if: ${{ always() && github.event_name != 'schedule' }}
-    needs: [shard-a, shard-b, shard-c, shard-d, shard-e]
+    needs: [plan, light, shard-a, shard-b, shard-c, shard-d, shard-e, shard-f, shard-g, shard-h, shard-i, shard-j, shard-k, shard-l, shard-m, shard-n, shard-o, shard-p, merge-rec-core, merge-rec-grid]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4                     # only to read this file's list of shards
-      - name: every shard passed
+      - uses: actions/checkout@v4                     # only to read this file's list of jobs
+        with: { sparse-checkout: .github/workflows }
+      - name: every job passed, or was skipped by the plan
         env:
           NEEDS: ${{ toJSON(needs) }}
         run: |
           echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
           waited=$(echo "$NEEDS" | jq 'length')
-          not_success=$(echo "$NEEDS" | jq '[to_entries[] | select(.value.result != "success")] | length')
-          in_file=$(grep -cE '^  shard-[a-z]+:[[:space:]]*$' .github/workflows/bench.yml)
-          echo "shards waited for: $waited, shard jobs in the workflow: $in_file, not successful: $not_success"
-          if [ "$waited" != "$in_file" ]; then echo "gate FAILED: a shard job is not in needs (or the reverse)"; exit 1; fi
-          if [ "$not_success" != "0" ]; then echo "gate FAILED: a shard did not succeed"; exit 1; fi
-          echo "gate passed: all $waited shards succeeded"
+          in_file=$(grep -cE '^  (plan|light|shard-[a-z]+|merge-[a-z0-9-]+):[[:space:]]*$' .github/workflows/bench.yml)
+          echo "jobs waited for: $waited, gate jobs in the workflow: $in_file"
+          if [ "$waited" != "$in_file" ]; then echo "gate FAILED: a job of the gate is not in needs (or the reverse)"; exit 1; fi
+          plan=$(echo "$NEEDS" | jq -r '.plan.result')
+          mode=$(echo "$NEEDS" | jq -r '.plan.outputs.mode // ""')
+          echo "plan: $plan, mode: '$mode'"
+          if [ "$plan" != "success" ]; then echo "gate FAILED: the plan did not succeed ($plan), so it is not known which checks were needed"; exit 1; fi
+          case "$mode" in full|docs|tooling) ;; *) echo "gate FAILED: the plan answered '$mode'"; exit 1 ;; esac
+          wrong=$(echo "$NEEDS" | jq -r --arg mode "$mode" '
+            to_entries[] | select(.key != "plan")
+            | (if (.key == "light") == ($mode == "full") then "skipped" else "success" end) as $want
+            | select(.value.result != $want) | "  \(.key): \(.value.result), wanted \($want)"')
+          if [ -n "$wrong" ]; then echo "gate FAILED, in $mode mode:"; echo "$wrong"; exit 1; fi
+          if [ "$mode" = "full" ]; then
+            shards=$(echo "$NEEDS" | jq '[keys[] | select(startswith("shard-"))] | length')
+            merges=$(echo "$NEEDS" | jq '[keys[] | select(startswith("merge-"))] | length')
+            echo "gate passed: FULL mode, $shards shards and $merges merges succeeded"
+          else
+            echo "gate passed: LIGHT $mode-only mode (the full gate is not needed: see the plan job's summary)"
+          fi
+
+  # practice-plan: do the practice jobs run for this pull request? (tests/practice/plan.py; the table of paths is in tests/bench/unit/test_practice_plan.py).
+  # `run` when the change touches the app's page, practice/, a practice suite or what the suites run on; `harness` when it touches the probes
+  # themselves (then the mutation check runs too). The plan of the pull request's BASE is the one that runs, so a change to the rules does not
+  # apply to itself; a base without one (the change that adds it) runs everything. Anything it cannot read answers run.
+  practice-plan:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.plan.outputs.run }}
+      harness: ${{ steps.plan.outputs.harness }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }                 # a pull request's checkout is a merge commit: HEAD^1 is the base
+      - id: plan
+        run: |
+          if git show HEAD^1:tests/practice/plan.py > "$RUNNER_TEMP/practice_plan.py" \
+             && python3 "$RUNNER_TEMP/practice_plan.py" --event pull_request --github-output "$RUNNER_TEMP/plan.out" --summary "$GITHUB_STEP_SUMMARY"; then
+            cat "$RUNNER_TEMP/plan.out" >> "$GITHUB_OUTPUT"
+          else
+            { echo "run=true"; echo "harness=true"; } >> "$GITHUB_OUTPUT"
+            echo "### practice plan: **RUN**" >> "$GITHUB_STEP_SUMMARY"
+            echo "the base has no tests/practice/plan.py (or it failed): the practice jobs run, with the mutation check." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          grep -E '^(run|harness)=' "$GITHUB_OUTPUT"
+
+  # practice-suites: the twelve practice and playback browser suites (follow, falling-notes, memory, learning, playback-scheduler, coach, midi,
+  # interactions, lessons, course, alignment, learner-log (G11b-1: PPP.learner and the run log): about 600 checks) on a port the runner is given, with NODE_ENV=production and
+  # tests/engrave/tools/with-port.js (G11-D12). They had never run in CI before; a suite is green only if it exits 0, fails no check and prints
+  # about as many checks as it did when the list was written (a suite that stopped testing is not a pass). About 4 minutes of suites. G11a-3: twice, as a matrix - the page's
+  # own player (PPP.practice 'legacy') and every page started on 'graph' (the plan made from the ScoreGraph; tests/engrave/tools/with-port.js sets the remembered choice before
+  # the app runs) - and the suites must pass both ways, unedited. Each player in two shards (run-suites.js --shard K/2: every second suite; 2.6 and 1.5 minutes of suites, so that no check
+  # is longer than 4 minutes with its install).
+  practice-suites:
+    needs: practice-plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.run == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        practice: [legacy, graph]
+        part: [1, 2]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci                                        # puppeteer (and its Chrome)
+      - run: node tests/practice/run-suites.js --practice ${{ matrix.practice }} --shard ${{ matrix.part }}/2 --log-dir tests/practice/out/suites-${{ matrix.practice }}-${{ matrix.part }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: practice-suites-${{ matrix.practice }}-${{ matrix.part }}
+          path: tests/practice/out/suites-${{ matrix.practice }}-${{ matrix.part }}
+          overwrite: true
+
+  # practice-legacy: the legacy recorder (tests/practice/record.js check: canonical digests of PianoScore.build, the matcher's verdicts for six
+  # scripted performances and follow mode's gates over the 325 catalogue pieces and the 69 committed fixtures, against
+  # tests/practice/baselines/legacy.json; about 20 s) and the mutation check (tests/practice/mutants.js: each row breaks one rule of the
+  # player, matcher or follow gates in the served page; the recorder, and for some rows the suites, must go red; the unmutated control must
+  # not; several minutes) and, since G11b-1, tests/practice/learner-mutants.js (the same for PPP.learner and the run log: rows break one rule of the page or of
+  # practice/runlog.js, the sections of tests/learner-log.test.js that watch it must go red; about 15 minutes). On a pull request both mutation checks run only when the probes themselves changed.
+  practice-legacy:
+    needs: practice-plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.run == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci
+      - run: node tests/practice/record.js check
+      - if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.practice-plan.outputs.harness == 'true') }}
+        run: node tests/practice/mutants.js
+      - if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.practice-plan.outputs.harness == 'true') }}
+        run: node tests/practice/learner-mutants.js          # G11b-1: the same for PPP.learner and the run log: one rule of the page or of practice/runlog.js broken at a time, the sections of tests/learner-log.test.js that watch it must go red
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: practice-legacy
+          path: tests/practice/out
+          overwrite: true
+
+  # practice-perf: the perf probe (tests/practice/perf.js check): matcher, plan building, press to painted frame and long tasks on the
+  # 1,776-note Sonatina at CPU 1x and 4x, against the baseline of this kind of machine (profile `ci`): every limit grows with how much slower than
+  # the baseline's the runner of the day is (a calibration workload, up to 3x), the +20 % band on top, best of 3 probes. perf-selftest.js first
+  # holds the check itself (no browser): a slow runner is green, a planted 2x slowdown of the matcher or the plan build is red at any speed. A job of its own so that nothing else loads the runner while it measures. A manual run with `-f perf_record=true`
+  # measures 5 probes and uploads tests/practice/baselines/perf.json to commit, instead of checking.
+  practice-perf:
+    needs: practice-plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.run == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci
+      - run: node tests/practice/perf-selftest.js                  # the check itself: a slow machine is green, a planted 2x slowdown red at calibration ratio 1.0 and 1.4
+        if: ${{ github.event.inputs.perf_record != 'true' }}
+      - run: node tests/practice/perf.js check
+        if: ${{ github.event.inputs.perf_record != 'true' }}
+      - run: node tests/practice/perf.js record --attempts 5
+        if: ${{ github.event.inputs.perf_record == 'true' }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: practice-perf
+          path: tests/practice/baselines/perf.json
+          overwrite: true
+
+  # practice-parity: the event-parity harness (tests/practice/parity.js, docs/GOALS/G11 section 6.2). The graph plan practice/plan.js (added to the served page by addScriptTag)
+  # against the app's own PianoScore.build, matcher, follow gates and scheduler, in a real page on a free port: compat mode must be the legacy player to the last bit on the
+  # catalogue, the 69 committed fixtures and the hand-written ones (whole piece and 20 four-bar windows, three hands, two tempi, six scripted performances), the real scheduler on
+  # 12 pieces must queue the same notes, pedal events and clicks, and with the fix options on every difference must be booked to JUMP, GRACE, FOLLOW_REPEAT or FOLLOW_TIE
+  # (anything else is UNEXPLAINED and fails). Counts per cause are compared with tests/practice/baselines/parity.json. The whole corpus takes about a minute (418 files, 51 s on
+  # a developer's laptop); a pull request runs every 5th catalogue file, every fixture and every file the baseline gives a cause (about 20 s) and the nightly and a manual run the lot.
+  practice-parity:
+    needs: practice-plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.run == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci
+      - run: node tests/practice/parity.js check --sample 5
+        if: ${{ github.event_name == 'pull_request' }}
+      - run: node tests/practice/parity.js check
+        if: ${{ github.event_name != 'pull_request' }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: practice-parity
+          path: tests/practice/out/parity.json
+          overwrite: true
+
+  # practice-parity-mutants: does the parity check notice a plan that got worse? tests/practice/parity-mutants.js adds a copy of practice/plan.js with ONE line broken to the page in
+  # place of the real one and runs the whole check on a sample of the corpus (about 17 s a row); every row must turn it red (the five the design names: the pedal change lift, one
+  # visit shifted, ties keyed by pitch only, the hand filter, a volta pass off by one - and twenty more), except two that tests/practice/plan.test.js watches. On a pull request only
+  # when the probes themselves changed (practice-plan's `harness`), then only the five; every night all 25, in four shards (a row is 17-27 s, a shard 3-4 minutes).
+  practice-parity-mutants:
+    needs: practice-plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.harness == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci
+      - run: node tests/practice/parity-mutants.js --core --shard ${{ matrix.part }}/4
+        if: ${{ github.event_name == 'pull_request' }}
+      - run: node tests/practice/parity-mutants.js --shard ${{ matrix.part }}/4
+        if: ${{ github.event_name != 'pull_request' }}
+
+  # practice-switch: the PPP.practice switch in a real page on a free port (tests/practice/switch.js, docs/GOALS/G11 section 6.3): what is no choice is legacy; 'legacy' never requests
+  # practice/plan.js; the scheduler's queue of the 12 pieces at 8x under 'legacy' is the digest recorded on main before the switch (tests/practice/baselines/switch.json) and under
+  # 'graph' the same to the bit; five scripted performances, the falling notes and follow mode's gates give the same answers on either plan; a song whose graph does not state its
+  # music keeps the legacy plan and is counted by reason and by song; the corpus swept under 'graph' (fallbacks on the catalogue: 0); the build time against the legacy build + 25%.
+  # The whole corpus takes a minute or two; a pull request reads every 5th catalogue file and every fixture.
+  practice-switch:
+    needs: practice-plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.run == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci
+      - run: node tests/practice/switch.js --sample 5
+        if: ${{ github.event_name == 'pull_request' }}
+      - run: node tests/practice/switch.js
+        if: ${{ github.event_name != 'pull_request' }}
+
+  # practice-switch-mutants: does the switch test notice a switch that got worse? tests/practice/switch-mutants.js breaks ONE line of the page at a time (practicePlan returns the legacy plan
+  # under 'graph', a call site asks PianoScore.of again, the default is graph, a value that is no choice is graph, a fallback is not counted, a link that is not ok is used, ...) and the
+  # test, run on the sections the row names, must go red; 38 rows, 1-25 s each (three shards). On a pull request only when the probes themselves changed (practice-plan's `harness`), every night otherwise.
+  practice-switch-mutants:
+    needs: practice-plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.harness == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci
+      - run: node tests/practice/switch-mutants.js --shard ${{ matrix.part }}/3
+
+  # backup-suite (G13-6): the browser suite of Settings > My data (tests/backup-ui.test.js: back up, restore, refuse, delete everything, on fresh profiles, in
+  # Korean, with mutants of library-backup.js served to the page). Like the practice suites it needs puppeteer (npm ci), serves this tree on a free port itself
+  # (tests/serve-free.js) and is a check of its own: NOT a job the gate waits for (test_ci_plan.py reads only plan, light, shard-* and merge-*). It runs whenever the
+  # gate runs in full mode and every night. Its Node-only half (npm run test:backup) is a step of shard-h and is in the gate.
+  backup-suite:
+    needs: plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || needs.plan.outputs.mode == 'full') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci                                        # puppeteer (and its Chrome)
+      - run: node tests/backup-ui.test.js
 
   nightly:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.event.inputs.only != 'practice'
     runs-on: ubuntu-latest
     timeout-minutes: 100                 # was 45, when `full` took minutes and the job stopped at its first failing step; run to the
                                          # end it is ~42 min locally (mutation-check 11, full 7, adversarial 9, final_review 12) and
@@ -300,7 +977,7 @@ jobs:
   # count is in two places - the matrix and --shard K/4 - and merge-shards refuses a run that is not exactly the shards it was
   # told of.
   nightly-rec:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.event.inputs.only != 'practice'
     runs-on: ubuntu-latest
     # Was 90, which one slow runner from red. Measured on a runner, by workflow_dispatch of this job at 1b30342 (2026-10-05, all
     # green, 5092 s = 84.9 minutes in all):
@@ -362,7 +1039,7 @@ jobs:
             tests/bench/out/rec-arrange-play/summary.md
 
   nightly-rec-shard:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.event.inputs.only != 'practice'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
@@ -387,7 +1064,7 @@ jobs:
 
   nightly-rec-full:
     needs: nightly-rec-shard
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.event.inputs.only != 'practice'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

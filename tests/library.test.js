@@ -149,6 +149,16 @@ const ok = (name, cond, detail) => {
   await cards();
   await page.evaluate(() => document.querySelector('[data-open-song="demo"]').click());
   await sleep(500);
+  /* a song opened from My Songs shows its whole score first; Practice is a button there */
+  const view = await page.evaluate(() => ({
+    screen: window.PPP.app.state.screen,
+    systems: !!document.querySelector('[data-score-view] svg'),
+    practice: !!document.querySelector('[data-score-practice]')
+  }));
+  ok('a song opens on its whole score, with a Practice button', view.screen === 'score' && view.systems && view.practice, JSON.stringify(view));
+  await page.evaluate(() => document.querySelector('[data-score-practice]').click());
+  await sleep(300);
+  ok('Practice goes to the practice page', await page.evaluate(() => window.PPP.app.state.screen === 'player'));
   ok('opening the sample switches the song', /Interstellar/.test(await title()));
   const demoTempo = await tempo();
   ok('the sample has its own tempo back', demoTempo === '60', demoTempo + ' BPM (was left at 60)');

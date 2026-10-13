@@ -3,8 +3,12 @@
    One file, two users: server.js (home-jobs.js) validates every result a worker posts with it, and the worker itself
    (tools/home-worker/worker.js) cuts what it sends down to the same bounds, so a result the worker builds is one the server
    accepts. The result is the helper's ACCEPTED notes in the heard-notes format of the app's own browser transcription
-   ({ on, off, midi, vel }); everything else the helper writes (pedals, beats, single-model notes, per-note confidence) is
-   not part of it and is stripped here, never stored.
+   ({ on, off, midi, vel }), and since G10a-1d the helper's audio beats and downbeats (bounded, checked); everything else the helper
+   writes (pedals, single-model notes, per-note confidence) is not part of it and is stripped here, never stored.
+
+   G10d song mode (a job of kind 'youtube-song': the PC separates the song first): every note also says its layer, `track`
+   1 the melody (the voice), 2 the bass, 3 the accompaniment (SONG_TRACKS), and the result says mode 'song' with a short
+   summary (song: how many notes each layer has, the separation model). A piano result has neither.
 
    Pure: no I/O, no clock. */
 'use strict';
@@ -16,13 +20,26 @@ const LIMITS = {
   SECONDS_SLACK: 5,
   MIN_NOTES: 4,
   MAX_NOTES: 20000,
+  /* a song-mode result holds three layers (melody, bass, accompaniment): 30,000 notes with their layer are about 1.9 MB, under RESULT_MAX_BYTES */
+  SONG_MAX_NOTES: 30000,
   /* the body of a result, and what is stored of it (the stripped, rounded JSON) */
   RESULT_MAX_BYTES: 2 * 1024 * 1024,
-  MODELS_MAX: 6
+  MODELS_MAX: 6,
+  /* G10a-1d: beats and downbeats, each at most this many (a 15-minute piece at 240 beats a minute is 3,600) */
+  MAX_BEATS: 20000
 };
+/* the layers of a song-mode result (transcribe.py SONG_TRACK) */
+const SONG_TRACKS = Object.freeze({ melody: 1, bass: 2, accomp: 3 });
+const TRACK_OK = new Set([1, 2, 3]);
+/* where a song's melody layer came from: the voice, or (an instrumental) the stem whose line the PC followed */
+const MELODY_FROM = new Set(['vocals', 'other', 'guitar', 'piano']);
+/* which method followed that tune: the pitch tracker, or Basic Pitch (an instrumental's lead line, when the PC has it) */
+const ACCOMP_FROM = new Set(['multi-instrument', 'lead-sheet']);   /* the instruments YourMT3 heard, or the lead sheet's chords */
+const MELODY_TRACKER = new Set(['pitch-tracker', 'basic-pitch', 'multi-instrument', 'lead-sheet']);   /* multi-instrument: YourMT3 heard the song; lead-sheet: SheetSage2 wrote the tune */
 
 const NAME_RE = /^[a-z0-9][a-z0-9._+-]{0,39}$/;
 const DEVICE_RE = /^[a-z0-9][a-z0-9:._-]{0,15}$/;
+const SEPARATION_RE = /^[a-z0-9][a-z0-9_.+-]{0,39}$/;   /* a separation model's name (htdemucs_6s) */
 const r4 = v => Math.round(v * 10000) / 10000;
 const isInt = v => typeof v === 'number' && Number.isInteger(v);
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
@@ -36,15 +53,18 @@ function cleanText(value, max) {
 }
 
 /* body (parsed JSON) -> { ok: true, result, bytes } | { ok: false, error, code }.
-   result = { v, notes: [{ on, off, midi, vel }] sorted by on, midi, off; duration; engine; model; device; ensemble }. */
+   result = { v, notes: [{ on, off, midi, vel, track? }] sorted by on, midi, off; duration; engine; model; device; ensemble; mode?; song? }. */
 function validateResult(body, limits) {
   const L = Object.assign({}, LIMITS, limits || {});
   if (!body || typeof body !== 'object' || Array.isArray(body)) return bad('The result is not an object.', 'bad-result');
   const list = body.notes;
   if (!Array.isArray(list)) return bad('The result has no notes list.', 'bad-result');
   if (list.length < L.MIN_NOTES) return bad('Fewer than ' + L.MIN_NOTES + ' notes.', 'too-few-notes');
-  if (list.length > L.MAX_NOTES) return bad('More than ' + L.MAX_NOTES + ' notes.', 'too-many-notes');
+  const maxNotes = body.mode === 'song' ? Math.max(L.MAX_NOTES, L.SONG_MAX_NOTES) : L.MAX_NOTES;
+  if (list.length > maxNotes) return bad('More than ' + maxNotes + ' notes.', 'too-many-notes');
   const ceiling = L.MAX_SECONDS + L.SECONDS_SLACK;
+  const song = body.mode === 'song';
+  if (body.mode != null && body.mode !== 'song' && body.mode !== 'piano') return bad('The mode is not usable.', 'bad-meta');
   const notes = new Array(list.length);
   let last = 0;
   for (let i = 0; i < list.length; i++) {
@@ -59,9 +79,13 @@ function validateResult(body, limits) {
     const on = r4(n.on), off = r4(n.off);
     if (!(off > on)) return bad('Note ' + i + ' is too short.', 'bad-note');
     notes[i] = { on: on, off: off, midi: n.midi, vel: vel };
+    if (song) {
+      if (!TRACK_OK.has(n.track)) return bad('Note ' + i + ' has no usable layer.', 'bad-note');
+      notes[i].track = n.track;
+    }
     if (off > last) last = off;
   }
-  notes.sort((a, b) => a.on - b.on || a.midi - b.midi || a.off - b.off);
+  notes.sort((a, b) => a.on - b.on || a.midi - b.midi || a.off - b.off || (a.track || 0) - (b.track || 0));
   let duration = last;
   if (body.duration != null) {
     if (!isNum(body.duration) || body.duration <= 0 || body.duration > ceiling) return bad('The duration is not usable.', 'bad-duration');
@@ -110,9 +134,55 @@ function validateResult(body, limits) {
   }
 
   const result = { v: 1, notes: notes, duration: duration, engine: engine, model: model, device: device, ensemble: ensemble };
-  const bytes = Buffer.byteLength(JSON.stringify(result));
+  if (song) {
+    /* the layer counts are the notes' own (what the worker says is not trusted for them); the separation model is a name */
+    const count = k => notes.reduce((c, n) => c + (n.track === SONG_TRACKS[k] ? 1 : 0), 0);
+    const s = body.song && typeof body.song === 'object' && !Array.isArray(body.song) ? body.song : {};
+    if (s.separation != null && (typeof s.separation !== 'string' || !SEPARATION_RE.test(s.separation))) return bad('The song summary is not usable.', 'bad-meta');
+    result.mode = 'song';
+    if (s.melodyFrom != null && !MELODY_FROM.has(s.melodyFrom)) return bad('The song summary is not usable.', 'bad-meta');
+    if (s.melodyTracker != null && !MELODY_TRACKER.has(s.melodyTracker)) return bad('The song summary is not usable.', 'bad-meta');
+    if (s.accompFrom != null && !ACCOMP_FROM.has(s.accompFrom)) return bad('The song summary is not usable.', 'bad-meta');
+    if (s.beatsFrom != null && s.beatsFrom !== 'lead-sheet') return bad('The song summary is not usable.', 'bad-meta');
+    const key = s.key && typeof s.key === 'object' && Number.isInteger(s.key.tonic) && s.key.tonic >= 0 && s.key.tonic < 12 && (s.key.mode === 'major' || s.key.mode === 'minor')
+      ? { tonic: s.key.tonic, mode: s.key.mode } : null;
+    if (s.key != null && !key) return bad('The song summary is not usable.', 'bad-meta');
+    result.song = { separation: s.separation || null, melodyFrom: s.melodyFrom || null, melodyTracker: s.melodyTracker || null, melody: count('melody'), bass: count('bass'), accomp: count('accomp') };
+    /* G10d: a lead-sheet transcriber's chords as the accompaniment, its beats as the bars (result.beats), its key */
+    if (s.accompFrom) result.song.accompFrom = s.accompFrom;
+    if (s.beatsFrom) result.song.beatsFrom = s.beatsFrom;   /* dropped below when the beats are not kept */
+    if (key) result.song.key = key;
+  }
+
+  /* G10a-1d: the helper's audio beats and downbeats (Beat This, beat_track.py), optional. The page passes them to the recording conversion
+     v2 as EVIDENCE of the bar phase (rec/: never bar lines); kept only when well formed: each a list of at most MAX_BEATS finite seconds,
+     rising, from 0 to the duration + 1 s, downbeats only with beats. They never fail a result: malformed ones, or ones that would take the
+     result past its size cap, are left out and the notes are kept (result.beatsLeftOut says why). Anything else in the body is stripped. */
+  const beatList = xs => {
+    if (!Array.isArray(xs) || xs.length > L.MAX_BEATS) return null;
+    const out = new Array(xs.length);
+    for (let i = 0; i < xs.length; i++) {
+      const t = xs[i];
+      if (!isNum(t) || t < 0 || t > duration + 1) return null;
+      out[i] = r4(t);
+      if (i && !(out[i] > out[i - 1])) return null;
+    }
+    return out;
+  };
+  if (body.beats != null || body.downbeats != null) {
+    const b = body.beats != null ? beatList(body.beats) : null, d = body.downbeats != null ? beatList(body.downbeats) : null;
+    if (!b || (body.downbeats != null && !d)) result.beatsLeftOut = 'malformed';
+    else { result.beats = b; if (d) result.downbeats = d; }
+  }
+  if (result.song && result.song.beatsFrom && !result.beats) delete result.song.beatsFrom;
+  let bytes = Buffer.byteLength(JSON.stringify(result));
+  if (bytes > L.RESULT_MAX_BYTES && result.beats) {
+    delete result.beats; delete result.downbeats; result.beatsLeftOut = 'size';
+    if (result.song) delete result.song.beatsFrom;
+    bytes = Buffer.byteLength(JSON.stringify(result));
+  }
   if (bytes > L.RESULT_MAX_BYTES) return bad('The result is larger than ' + Math.round(L.RESULT_MAX_BYTES / 1048576) + ' MB.', 'too-large');
   return { ok: true, result: result, bytes: bytes };
 }
 
-module.exports = { LIMITS, validateResult, cleanText };
+module.exports = { LIMITS, SONG_TRACKS, validateResult, cleanText };

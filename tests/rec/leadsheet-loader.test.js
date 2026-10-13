@@ -75,7 +75,8 @@ function makePage(o) {
     await wait((o.ms && o.ms[f]) || o.weights || 12);
     return { ok: true, json: async () => JSON.parse(JSON.stringify(WEIGHTS_JSON[f])) };
   };
-  const api = new Function('window', 'document', 'fetch', SRC)(win, document, fetch);
+  /* This harness exercises the rec loaders after the eager notation core is ready. */
+  const api = new Function('window', 'document', 'fetch', 'scoreModulesReady', '_scoreModulesPromise', SRC)(win, document, fetch, () => true, null);
   return Object.assign({ win, reqs, runs, fail, wait }, api);
 }
 const count = (list, f) => list.filter(x => x === f).length;

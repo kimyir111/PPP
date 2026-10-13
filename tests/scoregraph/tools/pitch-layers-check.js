@@ -93,11 +93,11 @@ const b64 = rel => fs.readFileSync(path.join(repoRoot, rel)).toString('base64');
       r.count + ' notes, ' + r.shifted + ' under an octave line');
   }
 
-  process.stdout.write('\nthe way back is unaffected\n');
+  process.stdout.write('\nthe old reader (parseMusicXML, which no import door reaches any more) agrees\n');
   const roll = await page.evaluate(async d => {
-    PPP.legacyImport = true;
-    const old = await window.scoreOf(d, 'fur-elise.musicxml');
-    PPP.legacyImport = false;
+    const bin = atob(d), u = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    const old = PPP.parseMusicXML(new TextDecoder().decode(u), 'fur-elise.musicxml');
     const now = await window.scoreOf(d, 'fur-elise.musicxml');
     const key = s => s.notes.filter(n => !n.rest).map(n => n.p + ':' + window.played(n) + ':' + window.drawn(n)).join(' ');
     return { same: key(old) === key(now), n: now.notes.length };

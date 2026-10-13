@@ -1,0 +1,9 @@
+{
+  "note": "The i18n gaps the static checker (tests/i18n/gaps.js) tolerates: G13-0 listed the 54 strings and 2 parity keys that existed when it was added, G13-2 translated them and emptied this file, so ANY gap fails the gate now. Never add to it by hand (--update refuses to add without --allow-new).",
+  "total": { "strings": 0, "parityKeys": 0 },
+  "gaps": {
+    "template": {},
+    "tx": {}
+  },
+  "parity": {}
+}

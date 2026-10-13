@@ -1,0 +1,8 @@
+# omr-live-2 (tests/omr): the LOCAL tool's Python packages, pinned to what the committed baselines were measured with.
+# The CI gate installs nothing and runs only the unit tests of the pure parts (tests/bench/unit/test_omr2_*.py), which need none of these.
+#   pip install -r tests/omr/requirements.txt
+# Also needed, not from pip: Node 24 with puppeteer (Chrome), Audiveris 5.11.0 (tools/audiveris, or PPP_AUDIVERIS).
+verovio==6.3.0
+numpy==2.5.0
+opencv-python==5.0.0.93
+PyMuPDF==1.28.2          # only to render a downloaded real-scan PDF to PNG (fetch_real.py)

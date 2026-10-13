@@ -826,7 +826,7 @@
     major: { 1: 1, 3: -1, 6: 1, 8: 1, 10: -1 },
     minor: { 1: -1, 4: 1, 6: 1, 9: 1, 11: 1 }
   };
-  function spellingTable(key) {
+  function spellingTable(key, plain) {
     const ka = keyAlters(key.fifths);
     const table = {};
     LETTERS.forEach(l => { table[((LETTER_PC[l] + ka[l]) % 12 + 12) % 12] = { step: l, alter: ka[l] }; });
@@ -835,6 +835,10 @@
       if (table[pc]) continue;
       const dir = dirs[(pc - key.tonic + 12) % 12] || (key.fifths < 0 ? -1 : 1);
       const from = table[(pc - dir + 12) % 12];
+      /* plain (a song: opts.songLayers): a double sharp or flat only when the other neighbour needs one too - F# major's D is
+         D, not C double-sharp. The catalogue writes the raised fifth (B major's F double-sharp), so only a song asks for it */
+      const alt = table[(pc + dir + 12) % 12];
+      if (plain && from && Math.abs(from.alter + dir) > 1 && alt && Math.abs(alt.alter - dir) <= 1) { table[pc] = { step: alt.step, alter: alt.alter - dir }; continue; }
       table[pc] = from ? { step: from.step, alter: from.alter + dir } : { step: 'C', alter: 0 };
     }
     return table;
@@ -1105,10 +1109,6 @@
     return out;
   }
 
-  function esc(s) {
-    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
-  }
-
   function staffEvents(notes, staff, bar, beat, allowBarTies, grid) {
     const mine = notes.filter(n => n.staff === staff);
     const byTick = {};
@@ -1190,131 +1190,8 @@
     return events;
   }
 
-  function buildXml(model) {
-    const { title, key, beatsPerBar, beatType, bpm, bars, events1, events2, pedals, table } = model;
-    const beatTicks = beatType >= 8 && beatsPerBar % 3 === 0 ? Q * 3 / 2 : Q; /* dotted quarter or quarter */
-    const bar = Math.round(beatsPerBar * (4 / beatType) * Q);
-    const out = [];
-    out.push('<?xml version="1.0" encoding="UTF-8"?>');
-    out.push('<score-partwise version="3.1">');
-    out.push('<work><work-title>' + esc(title) + '</work-title></work>');
-    out.push('<identification><encoding><software>PPP audio transcription</software></encoding></identification>');
-    out.push('<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>');
-    out.push('<part id="P1">');
-
-    const perBar = events => {
-      const buckets = [];
-      for (let b = 0; b < bars; b++) buckets.push([]);
-      events.forEach(e => {
-        let s = e.start;
-        while (s < e.end) {
-          const b = Math.floor(s / bar);
-          if (b >= bars) break;
-          const stop = Math.min(e.end, (b + 1) * bar);
-          buckets[b].push({ start: s, end: stop, notes: e.notes, tuplet: e.tuplet, tieIn: s > e.start, tieOut: stop < e.end });
-          s = stop;
-        }
-      });
-      return buckets;
-    };
-    const b1 = perBar(events1), b2 = perBar(events2);
-
-    const writeStaff = (list, staff, voice, barIdx) => {
-      const x = [];
-      const barStart = barIdx * bar;
-      let cursor = 0;
-      const state = Object.assign({}, keyAlters(key.fifths));
-      const accState = {};
-      const pedalsHere = staff === 2 ? pedals.filter(p => p.tick >= barStart && p.tick < barStart + bar) : [];
-      let pi = 0;
-      const emitPedalsUpTo = (tick, atCursor) => {
-        while (pi < pedalsHere.length && pedalsHere[pi].tick - barStart < tick) {
-          const off = pedalsHere[pi].tick - barStart - atCursor;
-          x.push('<direction placement="below"><direction-type><pedal type="' + pedalsHere[pi].type + '" line="no"/></direction-type>' +
-            (off ? '<offset>' + off + '</offset>' : '') + '<staff>' + staff + '</staff></direction>');
-          pi++;
-        }
-      };
-      const rest = (from, to) => {
-        const full = from === 0 && to === bar;
-        pieces(from, to - from, bar, beatTicks).forEach(v => {
-          emitPedalsUpTo(from + v, from);
-          const t = full ? TYPES[bar] || TYPES[v] || ['whole', 0] : TYPES[v] || ['16th', 0];
-          x.push('<note>' + (full ? '<rest measure="yes"/>' : '<rest/>') + '<duration>' + v + '</duration><voice>' + voice +
-            '</voice><type>' + t[0] + '</type>' + (t[1] ? '<dot/>' : '') + '<staff>' + staff + '</staff></note>');
-          from += v;
-        });
-      };
-      list.forEach(ev => {
-        const s = ev.start - barStart, e = ev.end - barStart;
-        if (s > cursor) rest(cursor, s);
-        let pos = s;
-        const parts = notePieces(s, e - s, bar, beatTicks);
-        const anyTuplet = ev.tuplet || parts.some(v => tupletOf(v));
-        parts.forEach((v, pi2) => {
-          emitPedalsUpTo(pos + v, pos);
-          const tu = tupletOf(v);
-          const t = tu ? [tu.type, 0] : (TYPES[v] || ['16th', 0]);
-          const tieStop = pi2 > 0 || ev.tieIn, tieStart = pi2 < parts.length - 1 || ev.tieOut;
-          const tupStart = anyTuplet && tu && pi2 === 0;
-          const tupStop = anyTuplet && tu && pi2 === parts.length - 1;
-          ev.notes.forEach((n, ci) => {
-            const sp = spell(n.midi, table);
-            const k = sp.step + sp.octave;
-            const current = k in accState ? accState[k] : state[sp.step];
-            let acc = '';
-            if (sp.alter !== current && !tieStop) {
-              acc = '<accidental>' + ({ '-2': 'flat-flat', '-1': 'flat', '0': 'natural', '1': 'sharp', '2': 'double-sharp' }[sp.alter]) + '</accidental>';
-            }
-            accState[k] = sp.alter;
-            const tm = tu ? '<time-modification><actual-notes>' + tu.a + '</actual-notes><normal-notes>' + tu.n + '</normal-notes></time-modification>' : '';
-            const notations = [];
-            if (tieStop) notations.push('<tied type="stop"/>');
-            if (tieStart) notations.push('<tied type="start"/>');
-            if (tupStart && !ci) notations.push('<tuplet type="start" bracket="yes" number="1"/>');
-            if (tupStop && !ci) notations.push('<tuplet type="stop" number="1"/>');
-            x.push('<note>' + (ci ? '<chord/>' : '') +
-              '<pitch><step>' + sp.step + '</step>' + (sp.alter ? '<alter>' + sp.alter + '</alter>' : '') + '<octave>' + sp.octave + '</octave></pitch>' +
-              '<duration>' + v + '</duration>' +
-              (tieStop ? '<tie type="stop"/>' : '') + (tieStart ? '<tie type="start"/>' : '') +
-              '<voice>' + voice + '</voice><type>' + t[0] + '</type>' + (t[1] ? '<dot/>' : '') + tm + acc +
-              '<staff>' + staff + '</staff>' +
-              (notations.length ? '<notations>' + notations.join('') + '</notations>' : '') +
-              '</note>');
-          });
-          pos += v;
-        });
-        cursor = e;
-      });
-      if (cursor < bar) rest(cursor, bar);
-      emitPedalsUpTo(bar + 1, bar);
-      return x.join('');
-    };
-
-    const compound = beatType >= 8 && beatsPerBar % 3 === 0;
-    const metro = compound
-      ? '<metronome><beat-unit>quarter</beat-unit><beat-unit-dot/><per-minute>' + bpm + '</per-minute></metronome>'
-      : '<metronome><beat-unit>quarter</beat-unit><per-minute>' + bpm + '</per-minute></metronome>';
-
-    for (let b = 0; b < bars; b++) {
-      out.push('<measure number="' + (b + 1) + '">');
-      if (b === 0) {
-        out.push('<attributes><divisions>' + Q + '</divisions><key><fifths>' + key.fifths + '</fifths><mode>' + key.mode +
-          '</mode></key><time><beats>' + beatsPerBar + '</beats><beat-type>' + beatType + '</beat-type></time><staves>2</staves>' +
-          '<clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef></attributes>');
-        out.push('<direction placement="above"><direction-type>' + metro + '</direction-type><staff>1</staff><sound tempo="' + bpm + '"/></direction>');
-      }
-      out.push(writeStaff(b1[b], 1, 1, b));
-      out.push('<backup><duration>' + bar + '</duration></backup>');
-      out.push(writeStaff(b2[b], 2, 5, b));
-      out.push('</measure>');
-    }
-    out.push('</part></score-partwise>');
-    return out.join('\n');
-  }
-
   /* ------------------------------------------------------------ ScoreGraph */
-  /* The same score as a ScoreGraph (docs/GOALS/G01 §15.3): buildXml's musical decisions — bars, note pieces
+  /* The same score as a ScoreGraph (docs/GOALS/G01 §15.3): the musical decisions of the G0 writer (buildXml, removed by MX-3) — bars, note pieces
      and the ties between them, rest pieces, triplet values, printed accidentals, pedal marks — as a canonical,
      validated graph whose MusicXML reads back as the same music. What was heard (onsets and releases in µs,
      velocities, the pedal, bar times) stays in the graph's performance layer instead of being dropped. */
@@ -1382,12 +1259,92 @@
       return typeof module === 'object' && module.exports ? require('./rec/rests.js') : (global && global.PPPRecRests) || null;
     } catch (e) { return null; }
   }
+  /* A song heard in layers (opts.songLayers: the home PC's song mode, each note's `track` 1 the melody, 2 the bass, 3 the
+     accompaniment) is written as a piano part by its layers, not by the piano hand model: the hand model splits by pitch, and a
+     guitar's strums in the melody's register buried the tune in right-hand chords written as 16ths and rests. The melody is the
+     right hand, held until its next note when the silence is under a beat (a guitar or synth lead is heard short). The bass and
+     the accompaniment are the left hand: the accompaniment becomes one chord per beat - its most-heard pitches, at most
+     SONG_CHORD, folded into C3-E4 - and a chord the next beat repeats in the same bar is held instead. Returns the hands report,
+     or null when the notes carry no layers (the caller then assigns hands as usual). */
+  const SONG_CHORD = 3, SONG_LOW = 48, SONG_HIGH = 64, SONG_SPAN = 8;
+  function songHands(q, notes, beat, bar) {
+    const layerOf = new Map();
+    (notes || []).forEach(n => {
+      if (!Number.isInteger(n.track)) return;
+      const k = n.on + '|' + n.off + '|' + n.midi;
+      if (!layerOf.has(k)) layerOf.set(k, []);
+      layerOf.get(k).push(n.track);
+    });
+    const layer = q.map(n => { const l = layerOf.get(n.on + '|' + n.off + '|' + n.midi); return l && l.length ? l.shift() : 0; });
+    if (!layer.some(t => t === 1)) return null;
+    const melody = [], left = [], byBeat = new Map();
+    q.forEach((n, i) => {
+      if (layer[i] === 1) { n.staff = 1; melody.push(n); }
+      else if (layer[i] === 3) {
+        const b = Math.floor(n.tick / beat);
+        if (!byBeat.has(b)) byBeat.set(b, []);
+        byBeat.get(b).push(n);
+      } else { n.staff = layer[i] === 2 ? 2 : n.midi >= 60 ? 1 : 2; (n.staff === 1 ? melody : left).push(n); }
+    });
+    melody.sort((a, b) => a.tick - b.tick);
+    /* a note more than an octave from the tune around it (SONG_SPAN beats either side) is the same pitch heard in another
+       octave - a guitar's low string, an overtone - and is written in the tune's octave */
+    const heardPitch = melody.map(n => n.midi);
+    melody.forEach((n, i) => {
+      const near = [];
+      for (let j = 0; j < melody.length; j++) if (Math.abs(melody[j].tick - n.tick) <= SONG_SPAN * beat) near.push(heardPitch[j]);
+      const mid = median(near);
+      n.heardMidi = n.midi;
+      while (n.midi - mid > 12 && n.midi - 12 >= 21) n.midi -= 12;
+      while (mid - n.midi > 12 && n.midi + 12 <= 108) n.midi += 12;
+    });
+    melody.forEach((n, i) => {
+      const next = melody[i + 1];
+      if (next && next.tick > n.tick && next.tick - n.endTick < beat) n.endTick = Math.max(n.endTick, next.tick);
+      n.lenTicks = Math.max(1, n.endTick - n.tick);
+    });
+    const bassAt = new Set(left.map(n => n.tick + '|' + n.midi));
+    const chords = [];
+    let prev = null;
+    Array.from(byBeat.keys()).sort((a, b) => a - b).forEach(b => {
+      const weight = new Map();
+      byBeat.get(b).forEach(n => {
+        let p = n.midi;
+        while (p > SONG_HIGH) p -= 12;
+        while (p < SONG_LOW) p += 12;
+        weight.set(p, (weight.get(p) || 0) + Math.max(1, n.endTick - n.tick));
+      });
+      const tick = b * beat;
+      const pitches = Array.from(weight.keys()).sort((x, y) => weight.get(y) - weight.get(x) || x - y)
+        .slice(0, SONG_CHORD).filter(p => !bassAt.has(tick + '|' + p)).sort((x, y) => x - y);
+      if (!pitches.length) return;
+      const sig = pitches.join(',');
+      if (prev && prev.sig === sig && prev.end === tick && Math.floor(prev.tick / bar) === Math.floor(tick / bar)) {
+        prev.end = tick + beat;
+        prev.notes.forEach(n => { n.endTick = prev.end; n.lenTicks = n.endTick - n.tick; });
+        return;
+      }
+      const src = byBeat.get(b)[0];
+      const made = pitches.map(p => Object.assign({}, src, { midi: p, tick: tick, endTick: tick + beat, lenTicks: beat, staff: 2, tuplet: false, err: 0 }));
+      made.forEach(n => chords.push(n));
+      prev = { sig: sig, tick: tick, end: tick + beat, notes: made };
+    });
+    const before = q.length;
+    q.length = 0;
+    melody.concat(left, chords).sort((a, b) => a.tick - b.tick || a.midi - b.midi).forEach(n => q.push(n));
+    return { model: 'song-layers', style: 'piano', notes: q.length, heard: before, right: melody.length, left: q.length - melody.length, lowConfidence: 0 };
+  }
+
   /* The hands (docs/GOALS/G10_AUDIO_TO_SCORE.md section 8, stage S4, G10a-2): rec/'s S4 (rec/hands.js, through rec/index.js) writes the
      staff of every note for the recording conversion v2 (opts.recording 'v2'), or on any path with opts.hands 'v2' (a measurement:
      the app's path with only S4 swapped); opts.hands 'legacy' keeps assignHands under v2. Without either, the hands are assignHands'
      as always. Asked for by name and not loaded is an error (a measurement must know which ran); under v2 without the option, a
      page whose rec/ has no hand model keeps assignHands and the report says so. */
-  function writeHands(q, opts, extra) {
+  function writeHands(q, opts, extra, notes) {
+    if (opts.songLayers) {
+      const r = songHands(q, notes, extra.ticksPerBeat || Q, Math.round(extra.beatsPerBar * (4 / (extra.beatType || 4)) * Q));
+      if (r) return r;
+    }
     const mode = opts.hands || (extra.recording === 'v2' ? 'v2' : 'legacy');
     if (mode !== 'v2') { assignHands(q); return null; }
     const lib = recLib();
@@ -1404,7 +1361,7 @@
   /* The key and the spelling (docs/GOALS/G10_AUDIO_TO_SCORE.md section 8, stage S8, G10a-3): rec/key.js decides the key signature from the onsets (not the releases), the tonal regions, the spelling of every note
      from its region, and the printed accidentals by the rule the benchmark checks (a tied-over head neither needs one nor changes what is in force). It is the recording conversion v2's S8 (opts.recording 'v2'),
      or on any path with opts.keys 'v2' (a measurement: the app's path with only S8 swapped); opts.keys 'legacy' keeps estimateKey / spellingTable under v2. Without either nothing here runs. Asked for by name and
-     not loaded is an error (a measurement must know which ran); under v2 without the option, a page without rec/key.js keeps the legacy key. The ScoreGraph writer only: opts.legacyWriter keeps buildXml. */
+     not loaded is an error (a measurement must know which ran); under v2 without the option, a page without rec/key.js keeps the legacy key. */
   function keyLib() {
     try {
       return typeof module === 'object' && module.exports ? require('./rec/key.js') : (global && global.PPPRecKey) || null;
@@ -1412,13 +1369,14 @@
   }
   function writeKeys(q, opts, extra, bar, bars) {
     const mode = opts.keys || (extra.recording === 'v2' ? 'v2' : 'legacy');
-    if (mode !== 'v2' || opts.legacyWriter) return null;
+    if (mode !== 'v2') return null;
     const lib = keyLib();
     if (!lib) {
       if (opts.keys === 'v2') { const e = new Error('rec/key.js (S8) is not loaded'); e.code = 'E-KEY-NO-LIB'; throw e; }
       return null;
     }
-    const r = lib.analyse(q, { barTicks: bar, bars: bars, ticksPerQuarter: Q });
+    /* opts.keyHint {tonic, mode}: the key the source states (a song's lead-sheet transcription), written instead of the one read from the notes */
+    const r = lib.analyse(q, Object.assign({ barTicks: bar, bars: bars, ticksPerQuarter: Q, plain: !!opts.songLayers }, opts.keyHint ? { key: opts.keyHint } : {}));
     q.forEach((n, i) => { n.sp = r.spell[i]; });
     return r;
   }
@@ -1574,7 +1532,7 @@
             if (tieStart) pendingTie[staff].set(n.midi, id);
             if (pi2 === 0 && !ev.tieIn) headOf.set(staff + '|' + ev.start + '|' + n.midi, id);
           });
-          /* a triplet value is one tuplet of its own piece; the bracket shows where buildXml draws one */
+          /* a triplet value is one tuplet of its own piece; the bracket shows where the G0 writer drew one */
           if (tu) tuplets.push({ events: [event.id], printed: !!(anyTuplet && (pi2 === 0 || pi2 === parts.length - 1)) });
           pos += v;
         });
@@ -1700,7 +1658,7 @@
         /* a MIDI file states which track and channel a note came from; a microphone does not */
         if (Number.isInteger(n.track)) x.track = n.track;
         if (Number.isInteger(n.channel)) x.channel = n.channel;
-        const link = n.staff ? headOf.get(n.staff + '|' + n.tick + '|' + n.midi) : null;
+        const link = n.staff ? headOf.get(n.staff + '|' + n.tick + '|' + (n.written != null ? n.written : n.midi)) : null;
         if (link) x.link = link;
         b.perfNote(pf, x);
       });
@@ -1757,8 +1715,8 @@
     q.forEach(n => { n.endTick = Math.min(n.endTick, bars * bar); });
 
     const key = estimateKey(notes);
-    const table = spellingTable(key);
-    const handsReport = writeHands(q, opts, extra);
+    const table = spellingTable(key, !!opts.songLayers);
+    const handsReport = writeHands(q, opts, extra, notes);
 
     const pedals = [];
     const held = [];
@@ -1799,7 +1757,7 @@
     let grid = null, gridReport = null, v2w = null;
     /* v2 (G10a-3): the writer of rec/writer.js (S5-S7: voices, rests, exact bars in every metre, the tuplets) instead of exactGrid / staffEvents below;
        opts.writer 'legacy' keeps them under v2 (for comparison) */
-    const v2Writer = extra.recording === 'v2' && opts.exactBars && !opts.legacyWriter && opts.writer !== 'legacy' && (opts.sourceKind || 'audio-score') === 'audio-score' ? writerLib() : null;
+    const v2Writer = extra.recording === 'v2' && opts.exactBars && opts.writer !== 'legacy' && (opts.sourceKind || 'audio-score') === 'audio-score' ? writerLib() : null;
     if (v2Writer) {
       /* the run rule of the grid stage (a staff silent before an odd-32nd onset: no 32nd rest is written), now that the hands are known; simple time only (a compound beat's grid has no 32nds) */
       if (notationBeat !== Q * 3 / 2) gridReport = gridV2 ? Object.assign({ v2: gridV2.report }, gridLib().writable(q)) : snapOnsets(q, bars, bar, beats, origin, ticksPerBeat);
@@ -1820,7 +1778,7 @@
         decideRests: decideRests });
       if (restsReport) v2w.report.restModel = restsReport;
       if (voicesReport) v2w.report.voiceModel = voicesReport;
-    } else if (opts.exactBars && !opts.legacyWriter && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4 && ticksPerBeat === Q && tupletLib() && tupletLib().addTriplets) {
+    } else if (opts.exactBars && (opts.sourceKind || 'audio-score') === 'audio-score' && beatType === 4 && ticksPerBeat === Q && tupletLib() && tupletLib().addTriplets) {
       /* with rec/grid.js the onsets are already on one grid per beat: snapOnsets' work is done but for its "genuine run" rule (a staff silent before
          an odd-32nd onset cannot be written: no rest shorter than a 16th), applied now that the hands are known */
       gridReport = gridV2 ? Object.assign({ v2: gridV2.report }, gridLib().writable(q)) : snapOnsets(q, bars, bar, beats, origin, ticksPerBeat);
@@ -1897,12 +1855,7 @@
     };
 
     /* The MusicXML is written from the score as a ScoreGraph (docs/GOALS/G01 §15.3): the graph, its issues
-       (warnings and notes; an error throws) and the file its exporter writes. opts.legacyWriter keeps the
-       G0 writer, buildXml, for one release as the way back; it does not load the ScoreGraph library. */
-    if (opts.legacyWriter) {
-      result.xml = buildXml(model);
-      return result;
-    }
+       (warnings and notes; an error throws) and the file its exporter writes. */
     model.scoreId = opts.scoreId;
     if (opts.sourceKind) model.sourceKind = opts.sourceKind;
     if (opts.sourceInput) model.sourceInput = opts.sourceInput;
@@ -1920,7 +1873,8 @@
     /* where each heard note was written: the placed note with the same onset, release and pitch */
     const placed = new Map();
     q.forEach(n => {
-      const k = n.on + '|' + n.off + '|' + n.midi;
+      /* a song's melody note written in another octave (songHands) is still the note that was heard */
+      const k = n.on + '|' + n.off + '|' + (n.heardMidi != null ? n.heardMidi : n.midi);
       if (!placed.has(k)) placed.set(k, []);
       placed.get(k).push(n);
     });
@@ -1928,6 +1882,7 @@
       const list = placed.get(n.on + '|' + n.off + '|' + n.midi);
       const p = list && list.length ? list.shift() : null;
       const out = { on: n.on, off: n.off, midi: n.midi, vel: n.vel, staff: p ? p.staff : 0, tick: p ? p.tick : 0 };
+      if (p && p.midi !== n.midi) out.written = p.midi;
       if (Number.isInteger(n.track)) out.track = n.track;
       if (Number.isInteger(n.channel)) out.channel = n.channel;
       return out;
@@ -2046,12 +2001,55 @@
       return typeof module === 'object' && module.exports ? require('./rec/index.js') : (global && global.PPPRec) || null;
     } catch (e) { return null; }
   }
+  /* opts.recBeats 'lead-sheet': the beats and bar lines a lead-sheet transcriber wrote for this song (SheetSage2, in song mode) ARE its
+     skeleton - not a candidate the metre model may pass over for a reading of the notes (a song's strummed 16ths read as the beat
+     doubled its tempo). The metre is the number of beats between its downbeats (2, 3 or 4 a bar, a quarter each); the beats run from a
+     downbeat at or before the first note, extended at the steady pace before the first and after the last beat it gave. null (the
+     metre model decides, as for any other beats) when they are too few or not a steady 2, 3 or 4 a bar. */
+  function statedSkeleton(beats, downbeats, notes) {
+    const b = (beats || []).filter(t => isFinite(t)).slice().sort((x, y) => x - y);
+    const d = (downbeats || []).filter(t => isFinite(t)).slice().sort((x, y) => x - y);
+    if (b.length < 8 || d.length < 3 || !notes.length) return null;
+    const near = t => { let k = 0; for (let i = 1; i < b.length; i++) if (Math.abs(b[i] - t) < Math.abs(b[k] - t)) k = i; return k; };
+    const counts = [];
+    for (let i = 1; i < d.length; i++) counts.push(near(d[i]) - near(d[i - 1]));
+    const perBar = Math.round(median(counts));
+    if (!(perBar >= 2 && perBar <= 4) || counts.filter(c => c === perBar).length < 0.6 * counts.length) return null;
+    const ibi = median(b.slice(1).map((t, i) => t - b[i]));
+    if (!(ibi > 0.15 && ibi < 2)) return null;
+    /* the bar phase most downbeats agree on (a transcriber may open with a stray short bar: SheetSage2 wrote a 1/8 bar before the first
+       downbeat of the test song), and the beats from the first downbeat on that phase; any before it are replaced by the steady pace */
+    const phaseVotes = new Map();
+    d.forEach(t => { const r = near(t) % perBar; phaseVotes.set(r, (phaseVotes.get(r) || 0) + 1); });
+    const phase = Array.from(phaseVotes.keys()).sort((x, y) => phaseVotes.get(y) - phaseVotes.get(x) || x - y)[0];
+    const anchor = d.map(near).find(i => i % perBar === phase);
+    let grid = b.slice(anchor);
+    const first = notes.reduce((m, n) => Math.min(m, n.attack != null ? n.attack : n.on), Infinity);
+    const last = notes.reduce((m, n) => Math.max(m, n.off), 0);
+    while (grid[0] > first - 0.02) {                                       /* whole bars back, to a downbeat before the first note */
+      const bar = [];
+      for (let k = perBar; k >= 1; k--) bar.push(grid[0] - k * ibi);
+      grid = bar.concat(grid);
+    }
+    while (grid[grid.length - 1] < last + ibi) grid.push(grid[grid.length - 1] + ibi);
+    const key = perBar + '/4';
+    return {
+      metre: { beats: perBar, beatType: 4, compound: false, key: key },
+      beats: grid.map(t => Math.round(t * 1e4) / 1e4), qpm: Math.round(60 / ibi * 100) / 100, conf: 1, posterior: 1, metrePosterior: null,
+      model: { name: 'lead-sheet', version: '1', sha256: null },
+      report: { tracks: [], readings: 0, chosen: { track: -1, audio: true, metre: key, stated: true } }
+    };
+  }
+
   /* the score of a recording on rec/'s time skeleton, or null (the caller then writes it the legacy way) */
   function recordingV2(input, opts, clustered, timingClustered, timingNotes, arrangementPlan) {
     const lib = recLib();
     if (!lib) return null;
     /* the skeleton is read from the whole performance (an arrangement must not change the tempo or the metre) */
-    const sk = lib.skeleton(timingClustered, { weights: opts.recWeights, beats: input.beats, downbeats: input.downbeats });
+    /* G10a-1d: opts.recBeats 'oracle' marks beats whose downbeats are the score's bar lines (the benchmark's own performer); any other
+       beats (a real tracker: Beat This on the user's PC) are evidence of the bar phase only, never of the metre or the tempo */
+    const sk = (opts.recBeats === 'lead-sheet' && statedSkeleton(input.beats, input.downbeats, timingClustered))
+      || lib.skeleton(timingClustered, { weights: opts.recWeights, beats: input.beats, downbeats: input.downbeats, beatsTrusted: opts.recBeats === 'oracle' });
     if (!sk) return null;
     const beats = sk.beats;
     const compound = !!sk.metre.compound;
