@@ -10,8 +10,16 @@
      - then SAMPLES timed calls, and the MEDIAN is held to the budget: a neighbour's burst spoils a sample or two, not the middle
        one, and a code path that really became slower is slower in every sample, so it still fails;
      - the samples are printed (t.diagnostic) and are in the failure message, so the margin on the runner is in the log.
-   Where the number is a ratio of two sizes (a growth check), take the fastest of each (bestOfPair): noise only adds to a time, so
-   the fastest sample of each size is the least disturbed one, and the ratio of the two is the one the code owns.
+   Where the number is a ratio of two sizes (a growth check), the fastest of each (bestOfPair) is right while the noise is bursts:
+   noise only adds to a time, so the fastest sample of each size is the least disturbed one. It is not right when the machine is
+   busy for the whole test, because then the two fastest samples can come from different stretches of it: the A30 export check
+   read 3.0x for a bound of 3.0 on code that is linear (the nightly of 2026-10-13, 235 -> 709 ms, the fastest of five of each), and
+   busy loops on the 2 cores the check was pinned to reproduced it: the fastest-of-5 ratio read 3.03 and 3.50 in 2 of 13 runs
+   with 3 loops, and 3.4, 4.2, 5.2 and 6.4 in 4 of 20 runs of the whole test with 6, where the medians of the per-pair ratios
+   were 1.6-2.8 in the 13 and 2.1-2.7 in 10 runs of the new test. So a growth check takes pairRatios: the two sizes timed
+   back to back, in turns, so that a pair shares its stretch of the machine, and the MEDIAN of the per-pair ratios is held to
+   the bound. A growth that is wrong in the count of the work (a scan per measure) is better caught by counting that work, as the
+   reads test in tests/scoregraph/musicxml.test.js does; the clock is the sanity bound over it.
    (tests/engrave/plan.test.js B1 and tests/scoregraph/g3-perf.test.js already take the fastest of five / of three for the same
    reason; tests/arrangement/perf.test.js also runs alone, see its header.) */
 const SAMPLES = 5;
@@ -52,4 +60,17 @@ function bestOfPair(fa, fb, n) {
   return [a, b];
 }
 
-module.exports = { SAMPLES, CI_FACTOR, budget, samples, median, describe, bestOfPair };
+/* a growth check by pairs: fa() and fb() once each to warm up, then n pairs timed back to back (fa, then fb), in turns. Returns
+   { a, b, ratios }: the times of each size, and b/a of every pair, in call order; the caller holds median(ratios) to its bound. */
+function pairRatios(fa, fb, n) {
+  n = n || SAMPLES;
+  fa(); fb();
+  const a = [], b = [];
+  for (let i = 0; i < n; i++) {
+    let t0 = now(); fa(); a.push(msSince(t0));
+    t0 = now(); fb(); b.push(msSince(t0));
+  }
+  return { a, b, ratios: a.map((x, i) => b[i] / x) };
+}
+
+module.exports = { SAMPLES, CI_FACTOR, budget, samples, median, describe, bestOfPair, pairRatios };
