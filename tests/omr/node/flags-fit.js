@@ -37,6 +37,7 @@ const THR_GRID = {
 };
 const THR_OF = { 'big-leap': 'leap', 'sparse': 'sparse', 'voice-loss': 'voiceLoss', 'bad-page': 'badPage', 'off-key': 'offKey', 'ledger': 'ledger', 'x-misaligned': 'xMis', 'dense': 'dense' };
 
+const sha = file => require('crypto').createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 const arg = (name, dflt) => { const i = process.argv.indexOf(name); return i >= 0 ? process.argv[i + 1] : dflt; };
 const groupOf = tier => (tier.startsWith('clean') ? 'clean' : tier.startsWith('scan') ? 'scan' : tier.startsWith('photo') ? 'photo' : tier);
 

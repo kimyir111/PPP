@@ -112,6 +112,7 @@ test('the confidence is never "good" when any bar is suspect (gate A3), and fall
     }
   }
   assert.ok(F.confidenceOf(1, 40, 1) > F.confidenceOf(10, 40, 1) && F.confidenceOf(10, 40, 1) > F.confidenceOf(30, 40, 1), 'more suspect bars, less confidence');
+  assert.ok(F.confidenceOf(1, 4000, 1) <= 0.84, 'one bar in four thousand still shows 84 % at most, never a round "good"');
   assert.equal(F.confidenceOf(3, 40, 0.3), 0.3, 'a base that is lower already stays');
   assert.equal(F.confidenceOf(3, 40, undefined), F.confidenceOf(3, 40, 1), 'no base: 1');
 });
