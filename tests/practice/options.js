@@ -368,7 +368,8 @@ async function sectionSweep(browser, url, args, base) {
     check('FOLLOW_REPEAT: ' + exp.FOLLOW_REPEAT.files + ' files ask more gates', got.repeat === exp.FOLLOW_REPEAT.files, got.repeat);
     check('FOLLOW_TIE: ' + exp.FOLLOW_TIE.files + ' files / ' + exp.FOLLOW_TIE.notes + ' notes', got.tie === exp.FOLLOW_TIE.files && got.tieNotes === exp.FOLLOW_TIE.notes, JSON.stringify([got.tie, got.tieNotes]));
   } else {
-    check('every file the baseline gives a cause shows it (a sample: the totals are for the whole corpus)', cat.every(r => {
+    check('every file the baseline gives a cause shows it (a sample: the totals are for the whole corpus; a licence-quarantined file has no per-file baseline)', cat.every(r => {
+      if (by.get(r.file).quarantined) return true;
       const e = base.files[r.file] || {};
       return !!e.jf === (r.jumps > 0) && !!e.gs === (r.graceStrikes > 0) && (e.ge || 0) === (r.graceEvents || 0) && !!e.ft === (r.tieNotes > 0) && (e.ft || 0) === (r.tieNotes || 0);
     }), '');
