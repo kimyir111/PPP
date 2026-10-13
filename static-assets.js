@@ -81,6 +81,14 @@ function gzipOnce(e, buf) {
   return e.gzWait;
 }
 
+/* The hash a request names, and only when ?h= is the WHOLE query. Another parameter (the page's recovery url of a script that failed to load adds &retry=<stamp>, a hand-made &junk=1) is a url
+   nobody put in the page: it is answered like any other, no-store, and cannot fill a browser's cache with a year-long copy under an address of its own. Two h= is not one hash either. */
+function hashOfRequest(searchParams) {
+  if (!searchParams) return null;
+  const keys = Array.from(searchParams.keys());
+  return keys.length === 1 && keys[0] === 'h' ? searchParams.get('h') : null;
+}
+
 /* The answer for a request whose ?h= matched: { status, headers, body }. Range is not honoured (a whole 200 is a legal answer to it, and a slice of a gzip
    body is of no use to anyone), and Accept-Ranges says so; HEAD gets the headers a GET would, with the Content-Length of the body that GET would send. */
 async function immutableAnswer(req, e, buf, type) {
@@ -148,4 +156,4 @@ function preparePage(text, root) {
   return out;
 }
 
-module.exports = { HASHABLE, IMMUTABLE, entryOf, hashOfFile, hashBytes, acceptsGzip, ifNoneMatchHas, immutableAnswer, rewriteHead, hashMap, preparePage };
+module.exports = { HASHABLE, IMMUTABLE, hashOfRequest, entryOf, hashOfFile, hashBytes, acceptsGzip, ifNoneMatchHas, immutableAnswer, rewriteHead, hashMap, preparePage };
