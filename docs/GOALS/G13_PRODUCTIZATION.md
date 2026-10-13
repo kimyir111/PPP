@@ -360,7 +360,7 @@ All of this at $0 on the existing free tiers.
   it is missing instead of logging a failure per job, and every `tests/home-worker` fixture that builds a config to name its tool; `setup-*.cmd` would have to install it. Follow-up phase (small, tooling
   class): "auto-detect yt-dlp, prefer it, keep the site as the fallback".
 - *Tests:* `npm run test:notices` (in the gate, shard-h: the generator and its 14 planted defects, `youtube-share.test.js` on this `server.js`), `npm run test:notices-mutants-node` (12 planted defects of
-  `server.js` / `static-allow.js`, shard-h), `node tools/notices/build.js --check` (a shard and the light job), `tests/notices-ui.test.js` + the 14 page mutants (job `notices-suite`: Korean, a real account,
+  `server.js` / `static-allow.js`, shard-h), `node tools/notices/build.js --check` (a shard and the light job), `tests/notices-ui.test.js` + the 15 page mutants (job `notices-suite`: Korean, a real account,
   the page's own arranger). `tests/static-allow.test.js` names the notices file as the one served root document; the i18n gaps checker stays at 0.
 
 ---

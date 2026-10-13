@@ -926,7 +926,7 @@ jobs:
       - run: node tests/scoregraph-recovery-app.test.js
 
   # notices-suite (G13-3): the browser suite of Settings > About & licences, the YouTube rights notice and the Shared Scores block (tests/notices-ui.test.js: Korean, a real account on the
-  # real server, the page's own arranger) and the 14 planted defects of the page (tests/notices/mutants.js P1-P14, each must make that suite fail). Like backup-suite: needs puppeteer (npm ci),
+  # real server, the page's own arranger) and the 15 planted defects of the page (tests/notices/mutants.js P1-P15, each must make that suite fail). Like backup-suite: needs puppeteer (npm ci),
   # serves this tree on a free port itself, and is a check of its own, NOT a job the gate waits for; its Node-only halves (npm run test:notices, test:notices-mutants-node) are steps of shard-h.
   notices-suite:
     needs: plan
@@ -939,7 +939,7 @@ jobs:
         with: { node-version: '24' }
       - run: npm ci                                        # puppeteer (and its Chrome)
       - run: node tests/notices-ui.test.js
-      - run: node tests/notices/mutants.js P1 P2 P3 P4 P5 P6 P7 P8 P9 P10 P11 P12 P13 P14
+      - run: node tests/notices/mutants.js P1 P2 P3 P4 P5 P6 P7 P8 P9 P10 P11 P12 P13 P14 P15
 
   nightly:
     if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.event.inputs.only != 'practice'

@@ -83,11 +83,13 @@ const M = [
   ['P10', 'Piano Coach App.dc.html', 'the Post button is not turned off',
     ["sharePostDisabled: ytBlocked,", "sharePostDisabled: false,"], UI],
   ['P11', 'Piano Coach App.dc.html', 'a share that is posted cannot be taken down (blocked whether posted or not)',
-    ["const ytBlocked = !posted && (t.card ?", "const ytBlocked = (t.card ?"], UI],
+    ["const ytBlocked = !posted && !!t.card && this.youtubeDerivedOf(t.card.id);", "const ytBlocked = !!t.card && this.youtubeDerivedOf(t.card.id);"], UI],
   ['P12', 'Piano Coach App.dc.html', 'an arrangement made by the page does not take the mark of its source',
     ["    if (this.youtubeDerivedOf(d.songId)) source.youtubeDerived = true;\n", ""], UI],
   ['P13', 'Piano Coach App.dc.html', 'every score with a YouTube source is taken for a transcription (a hymn with a performance to watch is blocked)',
     ["if ((src.kind || (card && card.kind)) === 'youtube' && inferredAudioNotation(src)) return true;", "if ((src.kind || (card && card.kind)) === 'youtube') return true;"], UI],
+  ['P15', 'Piano Coach App.dc.html', 'a copy that only has a YouTube source gets the mark when it is added (a hymn is blocked in the hands of whoever adds it)',
+    ["const ytMark = !!(score.source && score.source.youtubeDerived === true);", "const ytMark = !!(score.source && (score.source.youtubeDerived === true || score.source.kind === 'youtube'));"], UI],
   ['P14', 'Piano Coach App.dc.html', 'the page posts it anyway when asked (the client does not stop a post)',
     ["    if (ytDerived && listed === true) return Promise.reject(new Error(tx('A score made from a YouTube link cannot be posted to Shared Scores. You can still send its link.')));\n", ""], UI]
 ];
@@ -126,7 +128,12 @@ function main() {
     }
     for (const m of picked) {
       const [id, file, what, [from, to], test] = m;
-      const original = applyEdit(dir, file, from, to);
+      let original;
+      try { original = applyEdit(dir, file, from, to); } catch (e) {
+        console.log('STALE    ' + id + ': ' + e.message);
+        bad++;
+        continue;
+      }
       let r;
       try { r = runTest(dir, test); } finally { fs.writeFileSync(path.join(dir, file), original); }
       const killed = r.status !== 0;

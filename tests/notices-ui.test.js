@@ -302,6 +302,20 @@ const WATCH = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
       const d = added && await openDialog(added);
       ok('and its Post button is off, with the reason', !!d && d.disabled && d.note === ko(REASON), JSON.stringify(d));
       await closeDialog();
+      /* a share of a hymn: a YouTube performance link and no mark. Adding it does not make it a YouTube-derived score (a source of kind youtube alone is not one) */
+      const hymn = await api(page, 'POST', '/api/shares', {
+        songKey: 'song-hymn-elsewhere', title: 'A hymn with a performance', composer: '', kind: 'youtube',
+        score: Object.assign({}, plain, { title: 'A hymn with a performance', source: { kind: 'youtube', url: WATCH, youtubeId: 'dQw4w9WgXcQ' } }), preview: null
+      });
+      ok('a link is made for the hymn', hymn.status === 201, JSON.stringify(hymn.body).slice(0, 100));
+      await page.evaluate(id => PPP.app.openShared({ id: id, title: 'A hymn with a performance', owner: 'Teacher', mine: false }), hymn.body.id);
+      const addedHymn = await waitFor(() => page.evaluate(() => { const S = PPP.app.state; return S.score && S.score.title === 'A hymn with a performance' ? S.songId : null; }), 15000);
+      ok('it was added to My Songs', !!addedHymn, String(addedHymn));
+      const hymnState = addedHymn && await page.evaluate(id => ({ mark: PPP.app.state.score.source.youtubeDerived === true, kind: PPP.app.state.score.source.kind, derived: PPP.app.youtubeDerivedOf(id) }), addedHymn);
+      ok('it carries no mark and is not YouTube-derived', !!hymnState && !hymnState.mark && hymnState.kind === 'youtube' && hymnState.derived === false, JSON.stringify(hymnState));
+      const dh = addedHymn && await openDialog(addedHymn);
+      ok('its Post button is on', !!dh && !dh.disabled && dh.blocked === 'false', JSON.stringify(dh));
+      await closeDialog();
     }
 
     console.log('\n── 3f. an arrangement made by the page\'s own arranger ──');
