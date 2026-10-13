@@ -10,6 +10,7 @@
      node tests/practice/run-suites.js --shard 2/3        every third suite (the CI jobs that split the list use this)
      node tests/practice/run-suites.js --log-dir DIR      each suite's full output (default tests/practice/out/suites)
      node tests/practice/run-suites.js --port N           use the server already listening on N (the mutation proxy of mutants.js) instead of starting one
+     node tests/practice/run-suites.js --practice graph   every page starts on PPP.practice 'graph' (G11a-3: the same suites against the plan made from the ScoreGraph; default legacy)
 
    A suite's checks are the lines its own ok() helper prints, starting with a tick or a cross (playback-scheduler: PASS or FAIL). The run is red when a suite exits non-zero, runs
    past its limit, or prints no check at all (a suite that silently did nothing is not a pass). The last lines of a failing suite are printed
@@ -27,26 +28,39 @@ const WITH_PORT = path.join(ROOT, 'tests', 'engrave', 'tools', 'with-port.js');
 /* name, file, minutes before the runner gives up on it, and `min`: about three quarters of the checks the suite printed when the list was
    written (2026-10-08: follow 32, falling-notes 26, memory 36, learning 34, playback-scheduler 9, coach 48, midi 74, interactions 52,
    lessons 130, course 49, alignment 11 = 501). A suite that prints far fewer has stopped testing (a skipped block, a changed output),
-   so the runner fails it. Raise `min` when a suite grows. */
+   so the runner fails it. Raise `min` when a suite grows.
+   `noPlans`: a suite that never asks the player for a plan (the coach's plans, the lessons' own rhythm matcher, the course, the alignment of a score to its notes), so that running it on
+   `--practice graph` builds no graph plan. Every other suite must build at least one there, or the run says the switch was not engaged (G11a-3). */
 const SUITES = [
   { name: 'follow', file: 'follow.test.js', limit: 8, min: 25 },
   { name: 'falling-notes', file: 'falling-notes.test.js', limit: 8, min: 20 },
   { name: 'memory', file: 'memory.test.js', limit: 8, min: 28 },
   { name: 'learning', file: 'learning.test.js', limit: 8, min: 26 },
   { name: 'playback-scheduler', file: 'playback-scheduler.test.js', limit: 5, min: 7 },
-  { name: 'coach', file: 'coach.test.js', limit: 8, min: 38 },
+  { name: 'coach', file: 'coach.test.js', limit: 8, min: 38, noPlans: true },
   { name: 'midi', file: 'midi.test.js', limit: 10, min: 58 },
   { name: 'interactions', file: 'interactions.test.js', limit: 10, min: 40 },
-  { name: 'lessons', file: 'lessons.test.js', limit: 12, min: 100 },
-  { name: 'course', file: 'course.test.js', limit: 8, min: 38 },
-  { name: 'alignment', file: 'alignment.test.js', limit: 5, min: 8 }
+  { name: 'lessons', file: 'lessons.test.js', limit: 12, min: 100, noPlans: true },
+  { name: 'course', file: 'course.test.js', limit: 8, min: 38, noPlans: true },
+  { name: 'alignment', file: 'alignment.test.js', limit: 5, min: 8, noPlans: true }
 ];
+
+/* with-port.js ends a suite's output with what the pages did: `[with-port]   practice <modes>: graph plans N, fallbacks M (reasons)`. On --practice graph every page must have been on 'graph', and a suite that
+   plans at all must have built a graph plan: a suite that ran 'green' on the legacy plan under the name of the graph would prove nothing. */
+const PRACTICE_LINE = /\[with-port\]\s+practice ([^:\s]+): graph plans (\d+), fallbacks (\d+)/;
+function graphProblem(r, practice) {
+  if (practice !== 'graph') return null;
+  if (!r.graph) return 'no "[with-port] practice" line in the output: the pages could not be read, so nothing says the suite ran on the graph plan';
+  if (r.graph.modes !== 'graph') return 'a page ran on PPP.practice "' + r.graph.modes + '", not only on "graph"';
+  if (!r.suite.noPlans && r.graph.plans < 1) return 'the suite built no graph plan on --practice graph (it does not reach the switch; if it never plans, mark it noPlans in SUITES)';
+  return null;
+}
 
 const PASS_LINE = /^\s*(✓|PASS) /;
 const FAIL_LINE = /^\s*(✗|FAIL) /;
 
 function parseArgs(argv) {
-  const a = { only: null, list: false, shard: null, port: null, logDir: path.join(__dirname, 'out', 'suites') };
+  const a = { only: null, list: false, shard: null, port: null, practice: 'legacy', logDir: null };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
     if (k === '--only') a.only = String(argv[++i] || '').split(',').filter(Boolean);
@@ -54,18 +68,21 @@ function parseArgs(argv) {
     else if (k === '--shard') { const m = /^(\d+)\/(\d+)$/.exec(argv[++i] || ''); if (!m || +m[1] < 1 || +m[1] > +m[2]) throw new Error('--shard K/N'); a.shard = [+m[1], +m[2]]; }
     else if (k === '--log-dir') a.logDir = path.resolve(argv[++i]);
     else if (k === '--port') a.port = +argv[++i];
+    else if (k === '--practice') { a.practice = argv[++i]; if (a.practice !== 'legacy' && a.practice !== 'graph') throw new Error('--practice legacy|graph'); }
     else throw new Error('unknown argument ' + k);
   }
+  if (!a.logDir) a.logDir = path.join(__dirname, 'out', a.practice === 'graph' ? 'suites-graph' : 'suites');
   return a;
 }
 
-function runOne(suite, port, logDir) {
+function runOne(suite, port, logDir, practice) {
   return new Promise(resolve => {
     const t0 = Date.now();
     const log = path.join(logDir, suite.name + '.log');
     const chunks = [];
     const env = Object.assign({}, process.env, { PPP_PORT: String(port), NODE_ENV: 'production' });
     delete env.PPP_URL;                      // the suites that read it would bypass the port rewrite
+    if (practice === 'graph') env.PPP_PRACTICE = 'graph'; else delete env.PPP_PRACTICE;   // with-port.js starts every page on PPP.practice 'graph'
     const child = spawn(process.execPath, ['-r', WITH_PORT, path.join(ROOT, 'tests', suite.file)], { cwd: ROOT, env, stdio: ['ignore', 'pipe', 'pipe'] });
     child.stdout.on('data', d => chunks.push(d));
     child.stderr.on('data', d => chunks.push(d));
@@ -79,7 +96,8 @@ function runOne(suite, port, logDir) {
       const lines = text.split(/\r?\n/);
       const pass = lines.filter(l => PASS_LINE.test(l)).length;
       const fail = lines.filter(l => FAIL_LINE.test(l)).length;
-      resolve({ suite, code, timedOut, pass, fail, seconds: (Date.now() - t0) / 1000, lines, log });
+      const pm = PRACTICE_LINE.exec(text);
+      resolve({ suite, code, timedOut, pass, fail, seconds: (Date.now() - t0) / 1000, lines, log, graph: pm ? { modes: pm[1], plans: +pm[2], fallbacks: +pm[3] } : null });
     });
   });
 }
@@ -98,17 +116,18 @@ function runOne(suite, port, logDir) {
   fs.mkdirSync(args.logDir, { recursive: true });
   const srv = args.port ? { port: args.port, close: async () => {} } : await startServer();
   if (srv.external) { console.log('PPP_URL is set: the suites would not use a free port; unset it'); process.exit(2); }
-  console.log(args.port ? 'using the server on port ' + args.port : 'serving this tree on ' + srv.url);
+  console.log((args.port ? 'using the server on port ' + args.port : 'serving this tree on ' + srv.url) + ' (PPP.practice ' + args.practice + ')');
   const results = [];
   try {
     for (const s of list) {
       process.stdout.write(s.name + ' ... ');
-      const r = await runOne(s, srv.port, args.logDir);
+      const r = await runOne(s, srv.port, args.logDir, args.practice);
       results.push(r);
-      const bad = r.code !== 0 || r.timedOut || r.fail > 0 || r.pass < s.min;
-      console.log((bad ? 'FAILED' : 'ok') + ' (' + r.pass + ' checks, ' + r.seconds.toFixed(0) + ' s)');
+      const gp = graphProblem(r, args.practice);
+      const bad = r.code !== 0 || r.timedOut || r.fail > 0 || r.pass < s.min || !!gp;
+      console.log((bad ? 'FAILED' : 'ok') + ' (' + r.pass + ' checks, ' + r.seconds.toFixed(0) + ' s' + (args.practice === 'graph' && r.graph ? ', ' + r.graph.plans + ' graph plans' + (r.graph.fallbacks ? ', ' + r.graph.fallbacks + ' fallbacks' : '') : '') + ')');
       if (bad) {
-        const why = r.timedOut ? 'ran past ' + s.limit + ' minutes' : r.code !== 0 ? 'exit code ' + r.code : r.fail ? r.fail + ' check(s) failed' : 'only ' + r.pass + ' checks printed, expected at least ' + s.min;
+        const why = r.timedOut ? 'ran past ' + s.limit + ' minutes' : r.code !== 0 ? 'exit code ' + r.code : r.fail ? r.fail + ' check(s) failed' : r.pass < s.min ? 'only ' + r.pass + ' checks printed, expected at least ' + s.min : gp;
         console.log('  why: ' + why);
         const failing = r.lines.filter(l => FAIL_LINE.test(l)).slice(0, 12);
         (failing.length ? failing : r.lines.filter(l => l.trim()).slice(-14)).forEach(l => console.log('    ' + l));
@@ -120,7 +139,7 @@ function runOne(suite, port, logDir) {
   console.log('\nsuite'.padEnd(21) + 'checks  failed  seconds  result');
   let red = 0;
   results.forEach(r => {
-    const bad = r.code !== 0 || r.timedOut || r.fail > 0 || r.pass < r.suite.min;
+    const bad = r.code !== 0 || r.timedOut || r.fail > 0 || r.pass < r.suite.min || !!graphProblem(r, args.practice);
     if (bad) red++;
     console.log(r.suite.name.padEnd(20) + String(r.pass).padStart(6) + String(r.fail).padStart(8) + r.seconds.toFixed(0).padStart(9) + '  ' + (bad ? 'RED' : 'green'));
   });
