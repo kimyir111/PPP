@@ -72,7 +72,7 @@ const M = [
   ['C2', 'static-assets.js', 'the hash ignores the content', [".update(body).digest('hex').slice(0, 12)", ".update('same').digest('hex').slice(0, 12)"], HASH],
   ['C3', 'static-assets.js', 'the hash of a text file depends on CRLF vs LF', ["Buffer.from(buf.toString('utf8').replace(/\\r\\n/g, '\\n'), 'utf8')", "buf"], HASH],
   ['C4', 'static-assets.js', 'the page is not rewritten (scripts keep ?v=N, no hashes)', ["let out = cut < 0 ? text : rewriteHead(text.slice(0, cut), root) + text.slice(cut);", "let out = text;"], HASH],
-  ['C5', 'static-assets.js', 'gzip is sent whatever the browser said', ["const gz = buf.length >= MIN_GZIP && acceptsGzip(req.headers['accept-encoding']);", "const gz = buf.length >= MIN_GZIP;"], HASH],
+  ['C5', 'static-assets.js', 'gzip is sent whatever the browser said', ["&& acceptsGzip(req.headers['accept-encoding']);", "&& true;"], HASH],
   ['C6', 'static-assets.js', 'gzip;q=0 is read as gzip (the header is matched as text)', ["if (name !== 'gzip' && name !== '*') continue;\n    let q = 1;", "if (name !== 'gzip' && name !== '*') continue;\n    let q = 1; return true;"], HASH],
   ['C7', 'static-assets.js', 'one entity tag for both encodings', ["const etag = '\"' + e.hash + (gz ? '-gz' : '') + '\"';", "const etag = '\"' + e.hash + '\"';"], HASH],
   ['C8', 'static-assets.js', 'an answer says gzip but sends the plain bytes', ["if (gz) { body = await gzipOnce(e, buf); headers['Content-Encoding'] = 'gzip'; }", "if (gz) { headers['Content-Encoding'] = 'gzip'; }"], HASH],

@@ -304,10 +304,11 @@ All of this at $0 on the existing free tiers.
   for by a script after load and idle, so the text is in the system font until it arrives. Tests: `tests/load/fonts.test.js`.
 - *(d) piano recordings* start after the window's load, two frames, an idle moment and the CJK stylesheet (or its failure; 7 s cap); a tap or key still starts them at once, and until they are in a note is
   the synthesized stand-in. Tests: `tests/load-app/samples.test.js`.
-- *Mutants:* `npm run test:load-mutants` (35 planted defects, all killed). `npm run test:load` (Node only) is in the gate, shard-h; `npm run test:load-app` (browser, own server) is run by hand.
-- *Measured* (this PR's server against a `git archive` of origin/main in the same session, `tests/live/perf.js` phone profile through a brotli stand-in for the CDN edge, medians of 3 interleaved runs, a host at
-  100% CPU from other programs): cold FCP 8,400 -> 5,780 ms, ready 8,818 -> 6,030 ms, KB before ready 1,368 -> 992, repeat visit (first visit complete) 1,256 -> 306 KB and ready 5.6 -> 2.5 s, desktop ready
-  889 -> 394 ms. Not reached: cold FCP <= 4.0 s and ready <= 5.0 s: before the first paint the phone must receive the 306 KB page and 514 KB of scripts (gzip) at 200 KB/s, 4.5 s of its own; the rest of
+- *Mutants:* `npm run test:load-mutants` (43 planted defects, all killed). `npm run test:load` (Node only) is in the gate, shard-h; `npm run test:load-app` (browser, own server) is run by hand.
+- *Measured* (this PR's server against a `git archive` of origin/main `13bcb86` in the same session, `tests/live/perf.js` phone profile through a brotli stand-in for the CDN edge, local HTTP/1.1, medians of 3
+  interleaved runs, a host at 70-100% CPU from other programs): cold FCP 8,412 -> 5,960 ms, ready 8,825 -> 6,337 ms, KB before ready 1,371 -> 1,048, repeat visit with the first visit complete 1,263 -> 310 KB and
+  ready 6.2 -> 2.8 s (with the tool's 6 s settle the second visit still pulls the piano samples the first had not finished: ready 6.2 -> 3.1 s, 1,727 -> 1,168 KB of which 810 are samples), desktop ready
+  892 -> 442 ms. Not reached: cold FCP <= 4.0 s and ready <= 5.0 s: before the first paint the phone must receive the 306 KB page and 514 KB of scripts (gzip) at 200 KB/s, 4.5 s of its own; the rest of
   the distance is code that is not needed to draw Home (arranger and recording modules, about 190 KB gzip) and the page itself - a code-splitting job, not one of (a)-(d).
 
 ---
