@@ -297,11 +297,65 @@ function synthetic(bars) {
   return b.finish().graph;
 }
 
-/* The fastest of five of each size, taken in turns after a warm call of each (tests/timing.js bestOfPair): a single pair of calls
-   also timed the test files running beside this one, and failed once on the runner (36,000 heads took 3.1x the time of 16,000,
-   261 -> 818 ms, on 2026-10-06; it passed on the rerun). Noise only adds to a time, so the fastest sample is the least disturbed. */
-test('export grows with the score, not with its square (A30)', () => {
-  const small = synthetic(1600), large = synthetic(3600);   /* 16,000 and 36,000 heads */
+/* The two sizes of the A30 checks, built once for both tests. */
+let scaleGraphs;
+const scale = () => scaleGraphs || (scaleGraphs = { small: synthetic(1600), large: synthetic(3600) });   /* 16,000 and 36,000 heads */
+
+/* The work of an export, counted instead of timed: how many times it reads an event or a measure of the graph, through a Proxy on
+   those two arrays (the two a scan per measure walks). Linear code reads each of them a fixed number of times, 40.3 per event at
+   400, 1,600 and 3,600 bars alike; the code A30 fixed read every event once per measure, so the reads per event grew with the
+   bars. No clock is in it, so a busy runner cannot change it. The graph is cloned with those two arrays replaced (and frozen, as
+   the original is: time.js caches per frozen graph), and the reads stop the run when they pass `limit`, so a regression fails in
+   a moment instead of walking 36,000 heads once per measure through a Proxy. */
+function countReads(g, limit) {
+  const tally = { reads: 0 };
+  const watch = arr => new Proxy(arr, {
+    get(target, key, recv) {
+      const c = typeof key === 'string' ? key.charCodeAt(0) : 0;
+      if (c >= 48 && c <= 57 && ++tally.reads > limit) throw new RangeError('more than ' + limit + ' reads');
+      return Reflect.get(target, key, recv);
+    }
+  });
+  const clone = Object.freeze(Object.assign({}, g, {
+    timeline: Object.freeze(Object.assign({}, g.timeline, { measures: watch(g.timeline.measures) })),
+    parts: Object.freeze(g.parts.map(p => Object.freeze(Object.assign({}, p, { events: watch(p.events) }))))
+  }));
+  try {
+    const x = SG.musicxml.export(clone);
+    return { ok: x.ok, xml: x.xml, message: x.message, reads: tally.reads, over: false };
+  } catch (e) {
+    if (e instanceof RangeError && /reads$/.test(e.message)) return { ok: false, reads: tally.reads, over: true };
+    throw e;
+  }
+}
+
+test('export reads each event a fixed number of times, however many bars the score has (A30, counted not timed)', () => {
+  const { small, large } = scale();
+  const events = g => g.parts[0].events.length;
+  const PER_EVENT_CAP = 100;   /* 40 now; a scan per measure is 1,600 or 3,600 */
+  const rs = countReads(small, events(small) * PER_EVENT_CAP), rl = countReads(large, events(large) * PER_EVENT_CAP);
+  assert.equal(rl.over, false, 'export read the 36,000 heads more than ' + PER_EVENT_CAP + ' times per event: something scans the whole score per measure or per event again');
+  assert.equal(rs.over, false, 'export read the 16,000 heads more than ' + PER_EVENT_CAP + ' times per event');
+  assert.equal(rs.ok && rl.ok, true, rs.message || rl.message);
+  /* the counted graph is the same graph: the bytes are the ones of the original */
+  assert.equal(rs.xml, SG.musicxml.export(small).xml);
+  assert.equal(rl.xml, SG.musicxml.export(large).xml);
+  const per = (r, g) => r.reads / events(g);
+  /* 2.25x the bars: linear reads the same per event at both sizes; quadratic reads 2.25x as many per event at 3,600 as at 1,600 */
+  assert.ok(per(rl, large) <= per(rs, small) * 1.25, 'reads per event grew with the bars: ' + per(rs, small).toFixed(1) + ' at 1,600 bars, ' + per(rl, large).toFixed(1) + ' at 3,600');
+});
+
+/* Growth by the clock, the sanity bound over the count above: it is what sees a scan of something the count does not watch.
+   The two sizes are timed back to back, in turns (tests/timing.js pairRatios), and the MEDIAN of the per-pair ratios is held to the
+   bound. This test took the fastest of five of each size (bestOfPair) from 2026-10-07, after a single pair read 3.1x on the runner
+   (261 -> 818 ms, 2026-10-06), and that read 3.0x too (235 -> 709 ms, the nightly of 2026-10-13): on a runner that is busy
+   throughout, the fastest small sample and the fastest large one come from different stretches of it, and the ratio of the two is
+   not the code's. A pair shares its stretch.
+   Quadratic is 5x the time for 2.25x the heads (4.5x measured at 467 -> 2,120 ms before A30's fix; a median of 4.4x, pairs 3.9-4.9,
+   with that fix taken out again), linear is 2.25x (medians of seven pairs 1.8-2.7 with three to six busy loops on the two cores
+   the test ran on, where single pairs read 0.9 to 5.0); the bound sits between them. */
+test('export grows with the score, not with its square (A30)', t => {
+  const { small, large } = scale();
   const heads = g => g.parts[0].events.reduce((s, e) => s + e.heads.length, 0);
   assert.equal(heads(small), 16000);
   assert.equal(heads(large), 36000);
@@ -309,8 +363,12 @@ test('export grows with the score, not with its square (A30)', () => {
     const x = SG.musicxml.export(g);
     assert.equal(x.ok, true, x.message);
   };
-  const [a, b] = T.bestOfPair(write(small), write(large));
-  assert.ok(b < 1500, 'writing 36,000 heads took ' + b.toFixed(0) + ' ms');
-  /* 2.25x the heads: quadratic would be about 5x the time, linear about 2.25x */
-  assert.ok(b / a < 3.0, '36,000 heads took ' + (b / a).toFixed(1) + 'x the time of 16,000 (' + a.toFixed(0) + ' -> ' + b.toFixed(0) + ' ms)');
+  const PAIRS = 7;   /* 8 pairs of calls with the warm-up: about 3 s on the development machine, under 10 s on a runner that is 3x slower */
+  const p = T.pairRatios(write(small), write(large), PAIRS);
+  const ratio = T.median(p.ratios), fastest = Math.min.apply(null, p.b);
+  const f = xs => xs.map(x => x.toFixed(0)).join(', ');
+  const shown = 'median ' + ratio.toFixed(2) + 'x of [' + p.ratios.map(x => x.toFixed(2)).join(', ') + '] (16,000 heads: ' + f(p.a) + ' ms; 36,000: ' + f(p.b) + ' ms)';
+  t.diagnostic(shown);
+  assert.ok(fastest < T.budget(1500), 'writing 36,000 heads took ' + fastest.toFixed(0) + ' ms at best: ' + shown);
+  assert.ok(ratio < 3.5, '36,000 heads took ' + ratio.toFixed(2) + 'x the time of 16,000 for 2.25x the heads: ' + shown);
 });
