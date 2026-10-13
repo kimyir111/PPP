@@ -43,7 +43,7 @@ async function capture(browser, base) {
       if (!ok) throw new Error('no nav button for ' + name);
       await sleep(2500);
     }
-    out[name] = await page.evaluate(() => document.body.innerHTML);
+    out[name] = await page.evaluate(() => { const r = document.getElementById('dc-root'); return r ? r.innerHTML : document.body.innerHTML; });   /* the rendered app: the page's own inline scripts are not DOM a person sees (and differ when the app's code does) */
   }
   await ctx.close();
   return { out, errors };

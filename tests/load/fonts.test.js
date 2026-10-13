@@ -141,3 +141,20 @@ test('the server hands out each font by its hash: immutable, a woff2 is not gzip
     assert.equal((await request(srv.port, '/vendor/fonts/missing.woff2')).status, 404);
   } finally { srv.close(); }
 });
+
+test('the three fonts the first screen draws with are preloaded where the removed Google links were, and each is a file a rule uses', () => {
+  const pre = [...PAGE.matchAll(/<link rel="preload"[^>]*>/g)].map(m => m[0]);
+  assert.equal(pre.length, 3, 'one preload each for Figtree, Instrument Serif and JetBrains Mono (latin)');
+  const used = new Set(rules().map(r => fileOf(r.url)));
+  const files = pre.map(l => fileOf((/href="([^"]+)"/.exec(l) || [])[1]));
+  assert.deepEqual(files.slice().sort(), ['figtree-v9-latin.woff2', 'instrument-serif-v5-latin.woff2', 'jetbrains-mono-v24-latin.woff2']);
+  for (const l of pre) {
+    assert.match(l, /as="font"/);
+    assert.match(l, /type="font\/woff2"/);
+    assert.match(l, /crossorigin="anonymous"/, 'a font is always fetched with CORS: a preload without it is fetched twice');
+  }
+  for (const f of files) assert.ok(used.has(f), f + ' is declared by a @font-face rule (a preload nothing uses is a wasted request)');
+  /* they sit in the template's <helmet>, in place of the three links they replace, so the template has as many elements as before and every data-dc-tpl stamp is where it was */
+  const helmet = PAGE.slice(PAGE.indexOf('<helmet>'), PAGE.indexOf('</helmet>'));
+  for (const l of pre) assert.ok(helmet.includes(l), 'inside the helmet');
+});

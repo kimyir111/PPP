@@ -289,6 +289,28 @@ All of this at $0 on the existing free tiers.
   the history of `main` refuses unless `--allow-unmerged`; every `gh` call names `kimyir111/PPP`.
   Tests: `npm run test:monitoring` (in the gate, shard-g).
 
+**G13-4 as built (load performance, PR "G13-4").** Each sub-item is its own commit and reverts alone.
+- *(a) i18n.js* fetches only the catalog of the language in use (English: none, `ready` is already done); `setLocale`/`setAutomaticLocale` fetch the new one and tell the listeners when it is in
+  (only the latest switch). `PPP_I18N.load(locale)` fetches without switching. Tests: `tests/load/i18n-lazy.test.js`; the slow-network cases of `tests/i18n-and-auth.test.js` are unchanged and green.
+- *(c) content hashes.* `static-assets.js` (new, used by `server.js`): a js/json/css/woff2 file asked for as `?h=<12 hex of sha256, CRLF as LF>` is `immutable` + gzip (a woff2 is not gzipped again),
+  with an ETag per encoding, 304 for `If-None-Match`, a whole 200 for `Range` and the headers of GET for HEAD; any other URL stays `no-store`. The page (at `/` and at its own address) is rewritten per
+  request: the head's `<script src>`, `<link href>` and `url()` of served files name their hash instead of `?v=N` (the source keeps `?v=N`), and `window.PPP_HASHES` carries the catalogs' hashes.
+  Tests: `tests/load/content-hash.test.js`; `static-allow` still decides first.
+- *(c) the template re-fetch is switched off* (`window.__resources = {}`, one line in the head; `support.js` untouched). Evidence (`tests/load-app/template-refetch.js`, second fetch held): the two
+  compiled templates differ in nothing but the spelling of 8 event attributes (`onClick`... lower-cased by the DOM parser, mapped back by the runtime's EVENT_MAP), the rendered DOM is identical,
+  and React is handed identical props by each of the 454 / 3,077 / 462 elements of Home / Practice / Settings. `tests/load-app/template.test.js` keeps that proved.
+- *(b) fonts.* Figtree, Instrument Serif, JetBrains Mono (latin + latin-ext) and Noto Music (music) are in `vendor/fonts/` (Google's woff2, byte for byte, OFL licences, README rows) and declared in the
+  head with Google's own faces (same weights and unicode-ranges, `swap`); the three the first screen uses are preloaded from the template's `<helmet>`, in place of the three Google links it had (the
+  template keeps its element count, so every `data-dc-tpl` stamp of the DOM is where it was: Home/Practice/Settings are byte-identical to origin/main, `tests/load-app/dom-identity.js`). The 331 KB Google stylesheet leaves the template: Korean/Japanese/Chinese stay on Google's Noto Sans (U7 undecided), asked
+  for by a script after load and idle, so the text is in the system font until it arrives. Tests: `tests/load/fonts.test.js`.
+- *(d) piano recordings* start after the window's load, two frames, an idle moment and the CJK stylesheet (or its failure; 7 s cap); a tap or key still starts them at once, and until they are in a note is
+  the synthesized stand-in. Tests: `tests/load-app/samples.test.js`.
+- *Mutants:* `npm run test:load-mutants` (35 planted defects, all killed). `npm run test:load` (Node only) is in the gate, shard-h; `npm run test:load-app` (browser, own server) is run by hand.
+- *Measured* (this PR's server against a `git archive` of origin/main in the same session, `tests/live/perf.js` phone profile through a brotli stand-in for the CDN edge, medians of 3 interleaved runs, a host at
+  100% CPU from other programs): cold FCP 8,400 -> 5,780 ms, ready 8,818 -> 6,030 ms, KB before ready 1,368 -> 992, repeat visit (first visit complete) 1,256 -> 306 KB and ready 5.6 -> 2.5 s, desktop ready
+  889 -> 394 ms. Not reached: cold FCP <= 4.0 s and ready <= 5.0 s: before the first paint the phone must receive the 306 KB page and 514 KB of scripts (gzip) at 200 KB/s, 4.5 s of its own; the rest of
+  the distance is code that is not needed to draw Home (arranger and recording modules, about 190 KB gzip) and the page itself - a code-splitting job, not one of (a)-(d).
+
 ---
 
 ## 5. Architecture after G13
