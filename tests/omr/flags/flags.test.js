@@ -207,8 +207,8 @@ test('catalogue scores fed back as if they had been recognised: at most one flag
 });
 
 test('PARAMS is what the fit recorded, and uses only signals that exist', () => {
-  const rec = JSON.parse(fs.readFileSync(path.join(L.REPO, 'tests', 'omr', 'baselines', 'flags-fit.json'), 'utf8'));
-  assert.deepEqual(F.PARAMS, rec.params, 'omr/flags.js PARAMS and tests/omr/baselines/flags-fit.json params differ: refit (tests/omr/node/flags-fit.js fit --record) or restore');
+  const rec = JSON.parse(fs.readFileSync(path.join(L.REPO, 'tests', 'omr', 'flags', 'flags-fit.json'), 'utf8'));
+  assert.deepEqual(F.PARAMS, rec.params, 'omr/flags.js PARAMS and tests/omr/flags/flags-fit.json params differ: refit (tests/omr/node/flags-fit.js fit --record) or restore');
   [].concat(F.PARAMS.strong, F.PARAMS.weak).forEach(code => assert.ok(F.CODES.includes(code), code));
   assert.equal(new Set([].concat(F.PARAMS.strong, F.PARAMS.weak)).size, F.PARAMS.strong.length + F.PARAMS.weak.length, 'a signal is strong or weak, not both');
   assert.ok(F.PARAMS.weakNeeded >= 2);

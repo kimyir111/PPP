@@ -12,7 +12,7 @@
 
    "This page was read badly as a whole" is itself a weak signal that every bar of such a page carries, so on a badly read page one more
    doubt is enough. Which signals are strong, which are weak and every threshold is in PARAMS, fitted on the tuning half of omr-live-2
-   (tests/omr/node/flags-fit.js; the record is tests/omr/baselines/flags-fit.json, which a test compares with PARAMS) and judged once on the
+   (tests/omr/node/flags-fit.js; the record is tests/omr/flags/flags-fit.json, which a test compares with PARAMS) and judged once on the
    other half. Nothing here learns at run time. Pure (no DOM, no network, no clock), Node and browser, deterministic; it never throws.
 
    Inputs

@@ -220,7 +220,7 @@ function main() {
     };
     if (out) fs.writeFileSync(out, JSON.stringify(record, null, 1) + '\n');
     if (process.argv.includes('--record')) {
-      const target = path.join(REPO, 'tests', 'omr', 'baselines', 'flags-fit.json');
+      const target = path.join(REPO, 'tests', 'omr', 'flags', 'flags-fit.json');
       let old = null;
       try { old = JSON.parse(fs.readFileSync(target, 'utf8')); } catch (e) { old = null; }
       if (old && old.heldOut) record.heldOut = old.heldOut;
@@ -243,7 +243,7 @@ function main() {
       console.log('HELD-OUT (once): ' + fmt(r));
       console.log(JSON.stringify(r));
       if (process.argv.includes('--record')) {
-        const target = path.join(REPO, 'tests', 'omr', 'baselines', 'flags-fit.json');
+        const target = path.join(REPO, 'tests', 'omr', 'flags', 'flags-fit.json');
         const rec = JSON.parse(fs.readFileSync(target, 'utf8'));
         rec.heldOut = { at: new Date().toISOString(), heldSha256: sha(path.join(dir, 'held.jsonl')), heldTruthSha256: sha(path.join(dir, 'held-truth.jsonl')), result: r };
         fs.writeFileSync(target, JSON.stringify(rec, null, 1) + '\n');
@@ -257,7 +257,7 @@ function main() {
   } else if (cmd === 'record-held') {
     /* put the one held-out evaluation (held-evaluated.json, written by `eval --half held`) into the record beside the fit; it changes nothing else */
     const mark = JSON.parse(fs.readFileSync(path.join(dir, 'held-evaluated.json'), 'utf8'));
-    const target = path.join(REPO, 'tests', 'omr', 'baselines', 'flags-fit.json');
+    const target = path.join(REPO, 'tests', 'omr', 'flags', 'flags-fit.json');
     const rec = JSON.parse(fs.readFileSync(target, 'utf8'));
     if (JSON.stringify(mark.params) !== JSON.stringify(rec.params)) { console.log('REFUSED: the held-out half was judged with other parameters than the record holds'); process.exit(3); }
     rec.heldOut = { at: mark.at, heldSha256: sha(path.join(dir, 'held.jsonl')), heldTruthSha256: sha(path.join(dir, 'held-truth.jsonl')), result: mark.result };
