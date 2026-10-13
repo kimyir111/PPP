@@ -2329,6 +2329,14 @@
     "Measure {{n}}: {{why}}": "{{n}}小節目：{{why}}",
     "Much of this score was hard to read.": "この楽譜は大部分が読み取りにくかったです。",
     "{{n}} more measures are marked on the strip above.": "上のバーにあと{{n}}小節が示されています。",
-    "Some of the checks could not run, so some bars that are wrong may not be marked.": "一部のチェックを実行できなかったため、間違っている小節がすべては示されていない可能性があります。"
+    "Some of the checks could not run, so some bars that are wrong may not be marked.": "一部のチェックを実行できなかったため、間違っている小節がすべては示されていない可能性があります。",
+    "About & licences": "情報とライセンス",
+    "Your songs stay on this device unless you share them.": "曲は、あなたが共有しない限り、この端末の中だけにあります。",
+    "Use recordings you have the right to use. The score PPP writes is for your own practice.": "利用する権利のある録音だけを使ってください。PPPが作る楽譜はご自身の練習用です。",
+    "A score made from a YouTube link cannot be posted to Shared Scores. You can still send its link.": "YouTubeのリンクから作った楽譜は楽譜シェアに公開できません。リンクは今までどおり送れます。",
+    "Piano sounds: Salamander Grand Piano V3 by Alexander Holm, licensed under CC BY 3.0. Notes longer than nine seconds are shortened.": "ピアノの音：Alexander Holm による Salamander Grand Piano V3（CC BY 3.0）。9秒を超える音は9秒で切っています。",
+    "Licence text": "ライセンス全文",
+    "Open-source licences and notices": "オープンソースのライセンスと表示",
+    "Code, fonts, sounds and score catalogues, with their licences.": "コード、フォント、音、楽譜集と、それぞれのライセンスです。"
   }
 }

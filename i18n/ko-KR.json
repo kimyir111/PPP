@@ -2329,6 +2329,14 @@
     "Measure {{n}}: {{why}}": "{{n}}마디: {{why}}",
     "Much of this score was hard to read.": "이 악보는 대부분 읽기 어려웠어요.",
     "{{n}} more measures are marked on the strip above.": "위쪽 막대에 {{n}}마디가 더 표시되어 있어요.",
-    "Some of the checks could not run, so some bars that are wrong may not be marked.": "일부 검사를 실행하지 못해서, 틀린 마디가 모두 표시되지는 않았을 수 있어요."
+    "Some of the checks could not run, so some bars that are wrong may not be marked.": "일부 검사를 실행하지 못해서, 틀린 마디가 모두 표시되지는 않았을 수 있어요.",
+    "About & licences": "정보 및 라이선스",
+    "Your songs stay on this device unless you share them.": "내 곡은 직접 공유하지 않는 한 이 기기에만 있어요.",
+    "Use recordings you have the right to use. The score PPP writes is for your own practice.": "사용할 권리가 있는 녹음만 쓰세요. PPP가 만든 악보는 본인 연습용이에요.",
+    "A score made from a YouTube link cannot be posted to Shared Scores. You can still send its link.": "YouTube 링크로 만든 악보는 악보 공유에 올릴 수 없어요. 링크는 그대로 보낼 수 있어요.",
+    "Piano sounds: Salamander Grand Piano V3 by Alexander Holm, licensed under CC BY 3.0. Notes longer than nine seconds are shortened.": "피아노 소리: Alexander Holm의 Salamander Grand Piano V3, CC BY 3.0 라이선스. 9초보다 긴 음은 9초로 잘라 썼어요.",
+    "Licence text": "라이선스 전문",
+    "Open-source licences and notices": "오픈소스 라이선스와 고지",
+    "Code, fonts, sounds and score catalogues, with their licences.": "코드, 글꼴, 소리, 악보 모음과 각각의 라이선스예요."
   }
 }
