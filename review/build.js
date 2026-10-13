@@ -7,6 +7,8 @@
                           [--level intermediate] [--no-titles] [--list]      (G10a-5: the blind review of the recording conversion; review/h10/packet.js)
      node review/build.js --mode h10 --compare engine --heard <dir> --heard-b <dir> --out <dir> --key-out <dir> [--seed <secret>] [--jobs 3] [--excerpt-bars 12] [--excerpt-seconds N]
                           [--level intermediate] [--no-titles] [--list]      (G10b-0: the same pieces from the in-browser model's notes and the helper's notes, both through v2)
+     node review/build.js --mode h10 --compare arrange --heard <dir> --out <dir> --key-out <dir> [--seed <secret>] [--jobs 3] [--excerpt-bars 12] [--excerpt-seconds N] [--levels beginner,intermediate] [--no-titles] [--list]
+                                                                              (H-10c: the lead sheet against the reduction, one note set per piece)
 
    --seed      optional; a SECRET string of at least 20 characters. Omit it and a random one is made. It decides which arrangement
                is X and which is Y and the order of the items, and it is written only to the key file. (A short seed can be guessed
@@ -22,6 +24,10 @@
    --heard     (h10) the folder of heard notes + items.json that review/h10/collect.js wrote; --jobs runs that many items at once in their own processes.
    --compare engine   (h10, G10b-0) compare two NOTE SOURCES for the same pieces instead of classic against v2: --heard is the in-browser model's notes, --heard-b the helper's
                (the same file format: review/h10/helper-heard.js makes it from the helper's own files); both are written by the page's v2 conversion.
+
+   --compare arrange  (h10, H-10c) the lead sheet against the reduction: ONE note set per piece (--heard; e.g. the helper's notes, in the same folder format), read once by the page's v2
+               conversion, the Song Arranger's one-note-per-hand copy at beginner and intermediate made with recordingArrange 'leadsheet' and with 'reduce'; a pair X / Y where both
+               made a copy, a single where one did; questions about the notes; the pass rule is written into the key (review/h10/packet-arrange.js). Decode: review/decode.js --mode h10 --compare arrange.
 
    Nothing here touches the app or the server; it only reads the repository and writes the two directories above. */
 'use strict';
@@ -220,19 +226,24 @@ async function main() {
       return;
     }
     const num = n => (flag(n) ? Number(opt(n)) : undefined);
-    if (flag('--compare') && opt('--compare') !== 'engine') throw new Error("--compare must be 'engine' (omit it for the classic-against-v2 comparison)");
+    if (flag('--compare') && !['engine', 'arrange'].includes(opt('--compare'))) throw new Error("--compare must be 'engine' or 'arrange' (omit it for the classic-against-v2 comparison)");
     const r = await buildPacket({ mode: mode, compare: opt('--compare'), heardB: opt('--heard-b'), seed: opt('--seed'), out: opt('--out'), keyOut: opt('--key-out'), heard: opt('--heard'), jobs: num('--jobs') || 3,
-      excerptBars: num('--excerpt-bars'), excerptSeconds: num('--excerpt-seconds'), level: opt('--level'), titles: !flag('--no-titles'), log: m => console.log(m) });
+      excerptBars: num('--excerpt-bars'), excerptSeconds: num('--excerpt-seconds'), level: opt('--level'), levels: opt('--levels'), titles: !flag('--no-titles'), log: m => console.log(m) });
     const size = f => (fs.statSync(f).size / 1048576).toFixed(2) + ' MB';
     console.log('\npacket: ' + r.files.html + ' (' + size(r.files.html) + '), ' + r.count + ' items, id ' + r.packetId);
     console.log('        ' + r.files.manifest);
     console.log('key (NOT for the reviewer): ' + r.files.key);
     if (r.skipped.length) console.log('SKIPPED ' + r.skipped.length + ': ' + r.skipped.map(s => s.id + ' (' + s.reason.slice(0, 80) + ')').join('; '));
+    if (r.key.compare === 'arrange') {
+      const sm = r.key.summary, line = m => Object.keys(sm[m]).map(l => l + ' ' + sm[m][l].made + '/' + sm[m][l].of).join(', ');
+      console.log('made (per level): lead sheet ' + line('leadsheet') + '; reduction ' + line('reduce'));
+      console.log('the page shows ' + r.key.shown.pieces + ' pieces: ' + r.key.shown.pairs + ' pairs and ' + r.key.shown.singles + ' singles');
+    }
     if (r.key.compare === 'engine') {
       const flagged = Object.keys(r.key.items).filter(id => r.key.items[id].agreement.flags.length);
       console.log('engine comparison: the two readings disagree on bars, tempo or metre in ' + flagged.length + ' of ' + r.count + ' pieces' + (flagged.length ? ': ' + flagged.map(id => r.key.items[id].source.id + ' (' + r.key.items[id].agreement.flags.join(', ') + ')').join('; ') : '') + ' (the key has the numbers)');
     }
-    console.log('about ' + Math.round(r.count * 5.5) + ' minutes for the reviewer; built in ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s');
+    console.log('about ' + (r.key.shown ? r.key.shown.minutes : Math.round(r.count * 5.5)) + ' minutes for the reviewer; built in ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s');
     return;
   }
   if (flag('--list')) {

@@ -327,6 +327,46 @@ node review/decode.js --mode h10 --compare engine --key <key-dir>/key.json --rat
 - **Limits**: one excerpt per piece; one reviewer; notes only (the helper path as it would ship, with its beats and pedal, is not what is judged); "missing or extra notes" is one tag for both
   directions (her notes say which); part A exists for few pieces (the arranger refuses many of them, differently for the two readings, which is itself a result).
 
+## H-10c - the lead sheet against the reduction, on the NOTES (`--compare arrange`)
+
+The user's rule (2026-10-07): **if the notes are accurate, switch recordings to the lead sheet** (`recordingArrange: 'leadsheet'`, `docs/GOALS/G10_AUDIO_TO_SCORE.md` sections 33 and 34).
+This packet asks one person (the user, or the piano teacher) exactly that, blind, on real covers: are the notes (the melody) of the lead-sheet copy accurate against the original, and
+how does it compare with the reduction's copy of the same cover? One note set per piece (the helper ensemble's notes are what the user's PC produces now), read ONCE by the page's v2
+conversion; the Song Arranger's one-note-per-hand copy of it is made at beginner and at intermediate, each once with `recordingArrange: 'leadsheet'` and once with `'reduce'`
+(`lib/appcode.js arranger().arrange(graph, level, title, { recordingArrange })`: the page's own function, every fallback included).
+
+```
+node review/build.js --mode h10 --compare arrange --heard <heard-dir> --out <packet-dir> --key-out <key-dir> [--seed <secret>] [--jobs 3]
+                     [--excerpt-bars 12] [--excerpt-seconds N] [--levels beginner,intermediate] [--no-titles] [--list]
+node review/decode.js --mode h10 --compare arrange --key <key-dir>/key.json --ratings ratings-h10c-<id>.json [--out summary.json]
+node review/decode.js --mode h10 --compare arrange --key <key-dir>/key.json --db rows.json        # answers read out of the artifact database
+```
+
+- **One folder**: `--heard` is a heard-notes folder (`items.json` and one `<id>.json` per piece, the format of `collect.js` and `helper-heard.js`); there is no `--heard-b`. An item's
+  `inputClass` in `items.json` is copied into the key (say which pieces come from which note source there, never on the page).
+- **What counts as made** (`lib/h10-item.js buildArrangeItem`): the reduction when `res.ok`; the lead sheet only when the lead sheet itself made the copy (`recordingArrange === 'leadsheet'`).
+  A lead sheet that refused and fell back to the reduction made NOTHING: its reason (`leadsheetRefusal`) is in the key and the reduction's own copy is the other method's. A copy with other
+  bars than the conversion is not drawn (said in the key).
+- **The window**: about twelve bars, chosen in time from the heard notes (`lib/h10-excerpt.js`, the H-10 rule) and the bars of the conversion that cover it; the SAME bars for every copy of
+  the piece and for both levels. The link opens the original at the first bar drawn.
+- **Pair or single**: where both methods made a copy at a level the page shows two scores X and Y (which method is X is `HMAC(seed, piece id)`, an even split over the pieces that have a
+  pair - `blind.js assignArms` with a `balance` predicate - and the same sides for both levels); where only one did, ONE score, with no label, and the key says which method and why the
+  other made none. When every method gives the same sounding notes at both levels the two levels are ONE part ("초급 · 중급"), drawn from beginner (`merged` in the key).
+- **The page** (`lib/page-arrange.js`; one file, offline, Korean, phone first; the H-10 page's styles, player, packed drawings and answer keeping): per copy "음(멜로디)이 원곡과 맞나요?"
+  (맞아요 / 대체로 맞아요 / 틀린 곳이 많아요) and "학생에게 줄 수 있나요?" (그대로 / 조금 고치면 / 안 돼요); per pair "어느 쪽이 나아요?" (X / 비슷해요 / Y); per part an optional note.
+  Answers: memory, `localStorage`, and with the Artifact `db` capability the documents `answers/<packetId>/items/<id>` (per part `B`, `I` or `BI`: `{ pref, X: { notes, hand }, Y, text }` or
+  `{ S: { notes, hand }, text }`) and `answers/<packetId>` (the role). Export: `ppp-review-ratings/3` (`mode h10`, `compare arrange`).
+- **The vocabulary**: nothing on the page, in the manifest or in a drawing may name either method or the app's own words for them (`lib/h10-leak.js scanArrange`: lead sheet, 리드 시트,
+  reduce, reduction, 덜어내, the composer line's "(lead sheet)", the relaxed-plan note, `recordingArrange`, ...); the builder **refuses to write** a packet that does. The page's script
+  never uses `Array.prototype.reduce` (the scan reads it too).
+- **The pass rule is written into the key before any answer exists** (`key.passRule`, `h10/packet-arrange.js PASS_RULE`): (1) the lead-sheet copies shown are judged 맞아요 or 대체로 맞아요 on at
+  least 80%; (2) no pair in which the lead copy is 틀린 곳이 많아요 while the reduction's copy of the same piece and level is not; (3) of the pairs answered, the lead copy is preferred or 비슷해요
+  on at least 80%. `decode-arrange.js` reads the numbers from the KEY and prints PASS / FAIL / INCOMPLETE per the rule (an answer still missing is counted in the worst and the best case: a rule
+  is decided only when the missing answers cannot change it), the counts per method, per piece, the comments and the caveats. It decides nothing beyond the rule: the switch is the user's.
+- **Limits**: one reviewer; a handful of pieces and one excerpt each; a transcription error is in both copies (rule 2 is the comparison, rule 1 is not); the two methods differ visibly in
+  density and the left hand, so the blinding is partial; singles tell the reviewer that one method refused (not which).
+- Tests: `tests/review/h10-arrange.test.js` (Node), `tests/review/h10-arrange-page.test.js` (the page in a browser).
+
 ## Files
 
 - `build.js` - packet builder CLI and `buildPacket()`; `decode.js` - ratings + key.
@@ -340,3 +380,5 @@ node review/decode.js --mode h10 --compare engine --key <key-dir>/key.json --rat
   Tests: `tests/review/h10-*.test.js` (excerpt, pack and the page's own code, packets and decode, the page in a browser, the collector).
 - H-10b (G10b-0): `h10/helper-heard.js` (the helper's notes -> heard notes), `h10/decode-engine.js`, `lib/h10-leak.js` (the vocabulary scan); `buildEngineItem` in `lib/h10-item.js`.
   Tests: `tests/review/h10-engine.test.js` (Node only), `tests/review/h10-engine-page.test.js` (the page in a browser).
+- H-10c: `h10/packet-arrange.js` (the packet, the pass rule), `h10/decode-arrange.js`, `lib/page-arrange.js`; `buildArrangeItem` in `lib/h10-item.js`, `scanArrange` in `lib/h10-leak.js`,
+  `dbToRatingsArrange` in `h10/db-to-ratings.js`.

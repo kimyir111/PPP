@@ -583,4 +583,4 @@ function drawingsOf(html) {
   return out;
 }
 
-module.exports = { pageHtml, drawingsOf, TAGS, PARTS, MINUTES_PER_ITEM, CREDIT, letter };
+module.exports = { pageHtml, drawingsOf, TAGS, PARTS, MINUTES_PER_ITEM, CREDIT, letter, CSS, SOUND, esc, scriptJson, linkAt, fmtSec };
