@@ -1,0 +1,37 @@
+{
+ "params": {
+  "strong": [
+   "fill-overlap",
+   "dropped",
+   "unreadable-lengths",
+   "page-bars",
+   "fill-short",
+   "fill-over",
+   "empty-staff",
+   "many-voices",
+   "tuplet",
+   "x-misaligned",
+   "fragmented"
+  ],
+  "weak": [
+   "hands-cross",
+   "big-leap",
+   "sparse",
+   "rebuilt",
+   "bad-page",
+   "next-to-bad",
+   "voice-loss"
+  ],
+  "weakNeeded": 2,
+  "thr": {
+   "leap": 19,
+   "sparse": 0.6,
+   "voiceLoss": 1,
+   "badPage": 0.3,
+   "offKey": 2,
+   "ledger": 4,
+   "xMis": 20,
+   "dense": 1.6
+  }
+ }
+}

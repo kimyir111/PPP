@@ -44,8 +44,8 @@
 
   /* ---------------------------------------------------------------- parameters (fitted: see the header) */
   const PARAMS = {
-    strong: ['fill-short', 'fill-over', 'fill-overlap', 'empty-staff', 'many-voices', 'tuplet'],
-    weak: ['hands-cross', 'big-leap', 'sparse', 'voice-loss', 'dup-pitch', 'bad-page'],
+    strong: ['fill-overlap', 'dropped', 'unreadable-lengths', 'page-bars', 'fill-short', 'fill-over', 'empty-staff', 'many-voices', 'tuplet', 'x-misaligned', 'fragmented'],
+    weak: ['hands-cross', 'big-leap', 'sparse', 'rebuilt', 'bad-page', 'next-to-bad', 'voice-loss'],
     weakNeeded: 2,
     thr: { leap: 19, sparse: 0.6, voiceLoss: 1, badPage: 0.3, offKey: 2, ledger: 4, xMis: 20, dense: 1.6 }
   };
@@ -103,7 +103,7 @@
   function newBar() {
     return {
       hole: 0, short: 0, over: 0, overlap: 0, lenDiff: 0, emptyStaff: 0, voices: 0, vb: 0, notes: 0, heads: 0, chordMax: 0,
-      ledger: 0, cross: 0, leap: 0, offKey: 0, dup: 0, xMis: 0, nc5: 0, nc6: 0, nc7: 0, nc8: 0,
+      ledger: 0, cross: 0, leap: 0, offKey: 0, dup: 0, xMis: 0, nc5: 0, nc6: 0, nc7: 0, nc8: 0, closes: false,
       lo1: null, hi1: null, lo2: null, hi2: null, width: null, onsets: 0, sys: 0, sysBars: 0, sysPos: 0
     };
   }
@@ -159,6 +159,7 @@
             cur = at + q(e.dur);
           }
           const closes = i === n - 1 && pickupGap > EPS && near(cur, pickupGap);        /* the last bar holds what the pickup lacks */
+          if (closes) b.closes = true;
           b.hole = Math.max(b.hole, hole);
           b.overlap = Math.max(b.overlap, overlap);
           if (!closes && cur < len - EPS) b.short = Math.max(b.short, len - cur);
@@ -237,6 +238,7 @@
       try {
         const r = NC.checkGraph(graph, {});
         [5, 6, 7, 8].forEach(c => r.classes[c].bars.forEach(x => { const b = bars[x.bar - 1]; if (b) b['nc' + c]++; }));
+        bars.forEach(b => { if (b.closes) b.nc5 = 0; });                              /* the checker does not know that a pickup's last bar is short on purpose */
       } catch (e) { /* a graph the checker cannot read: the other signals stand */ }
     }
     return { bars, doc: { bars: n, systems: bars[n - 1].sys + 1 } };
@@ -287,7 +289,7 @@
     'fragmented': { test: (b, c) => c.n.indexOf('parts-fragmented') >= 0 ? {} : null },
     'joined': { test: (b, c) => c.n.indexOf('movement-start') >= 0 ? {} : null },
     /* what the pages show */
-    'page-bars': { test: (b, c) => c.shown ? { shown: c.shown.shown, read: c.shown.read } : null },
+    'page-bars': { test: (b, c) => c.shown ? (c.shown.page ? { shown: c.shown.shown, read: c.shown.read, page: true } : { shown: c.shown.shown, read: c.shown.read }) : null },
     /* the page as a whole, and the bar's neighbours */
     'bad-page': { test: (b, c) => c.badPage ? { share: c.badPage } : null },
     'next-to-bad': { test: (b, c) => c.nextToBad ? {} : null }
@@ -308,13 +310,14 @@
     const pageOf = new Array(bars.length).fill(null);
     let at = 0;
     report.structure.forEach(m => {
+      if (!m || !Number.isInteger(m.page)) return;
       for (let k = 0; k < m.bars && at < bars.length; k++) pageOf[at++] = m.page;
     });
     const pages = new Map();
     pageOf.forEach((p, i) => { if (p === null) return; if (!pages.has(p)) pages.set(p, []); pages.get(p).push(i); });
     pages.forEach((idx, p) => {
       const shown = layout.pages[p];
-      if (!Array.isArray(shown) || !shown.length) return;
+      if (!Array.isArray(shown) || !shown.length || !shown.every(x => Number.isInteger(x) && x > 0)) return;
       /* the page's systems as read: runs of bars from one new-system mark to the next */
       const read = [];
       idx.forEach((i, k) => {
@@ -336,8 +339,11 @@
     const bars = feat.bars, n = bars.length;
     ctx = ctx || {};
     const nflags = normFlags(ctx.normalize);
-    const shownAt = pageBarsCheck(bars, ctx.normalize, ctx.layout);
-    const external = ctx.external && typeof ctx.external === 'object' ? ctx.external : {};
+    let shownAt = {};
+    try { shownAt = pageBarsCheck(bars, ctx.normalize, ctx.layout); } catch (e) { shownAt = {}; }           /* a layout or a structure that is not what it should be says nothing */
+    const externalAll = ctx.external && typeof ctx.external === 'object' ? ctx.external : {};
+    const external = {};
+    Object.keys(externalAll).forEach(k => { const v = externalAll[k]; external[k] = Array.isArray(v) ? v : (typeof v === 'string' ? [v] : []); });
     const strongSet = new Set(P.strong), weakSet = new Set(P.weak);
     const thr = P.thr;
     const tag = (code, r) => Object.assign({ code: code, strength: strongSet.has(code) ? 'strong' : 'weak' }, r);
@@ -372,6 +378,48 @@
     });
   }
 
+  /* ---------------------------------------------------------------- the sentence for the user */
+  /* `tx` is the page's translator (ko, ja, zh, en); without one the English text is returned with its numbers filled in. Every sentence is a literal
+     tx('...') so that tests/i18n/gaps.js finds it and checks the catalogues. */
+  const plain = (src, vars) => String(src).replace(/\{\{(\w+)\}\}/g, (m, k) => (vars && vars[k] !== undefined ? vars[k] : m));
+  function reasonText(r, tx) {
+    tx = typeof tx === 'function' ? tx : plain;
+    r = r || {};
+    switch (r.code) {
+      case 'fill-short': return tx('The notes do not fill this measure.');
+      case 'fill-over': return tx('This measure holds more than its time signature allows.');
+      case 'fill-overlap': return tx('Two notes overlap where they should follow each other.');
+      case 'empty-staff': return tx('One hand has nothing written in this measure.');
+      case 'many-voices': return tx('Three or more voices share one staff here, which is unusual.');
+      case 'tuplet': return tx('A triplet or other tuplet in this measure does not add up.');
+      case 'value': return tx('A note value here does not match its length.');
+      case 'sum-mismatch': return tx('The note values here do not add up to the measure.');
+      case 'same-note': return tx('Both hands play the same note at the same time.');
+      case 'x-misaligned': return tx('Notes that sound together are not lined up on the page.');
+      case 'hands-cross': return tx('The right hand plays lower than the left hand here.');
+      case 'big-leap': return tx('A very large jump between two notes in a row.');
+      case 'sparse': return tx('Far fewer notes than the measures around it.');
+      case 'dense': return tx('Far more notes than the measures around it.');
+      case 'voice-loss': return tx('Fewer voices than the rest of the piece.');
+      case 'dup-pitch': return tx('The same note is written twice at the same time.');
+      case 'off-key': return tx('Several notes here do not belong to the key.');
+      case 'ledger': return tx('Notes very far above or below the staff.');
+      case 'rebuilt': return tx('This part was rebuilt from two staves.');
+      case 'switched': return tx('This measure came from a different staff group than the one before it.');
+      case 'repaired': return tx('The note lengths here were repaired after reading.');
+      case 'unreadable-lengths': return tx('The note lengths here could not be worked out.');
+      case 'dropped': return tx('Two readings of this measure disagreed and the smaller one was dropped.');
+      case 'fragmented': return tx('The staves of this page could not be put together into one piano part.');
+      case 'joined': return tx('This measure starts a separate piece of the page.');
+      case 'page-bars': return r.page
+        ? tx('The page shows {{shown}} measures in all, PPP read {{read}}.', { shown: r.shown, read: r.read })
+        : tx('The page shows {{shown}} measures on this line, PPP read {{read}}.', { shown: r.shown, read: r.read });
+      case 'bad-page': return tx('Much of this page was hard to read.');
+      case 'next-to-bad': return tx('Next to a measure that does not add up.');
+      default: return r.text ? String(r.text) : tx('Another check doubts this measure.');
+    }
+  }
+
   /* the report's confidence is never 0.85 ("good") when any bar is suspect (gate A3); more suspect bars lower it further */
   const GOOD = 0.85;
   function confidenceOf(suspectCount, barCount, base) {
@@ -393,5 +441,5 @@
     return { ok: true, version: VERSION, bars, suspect, counts, confidence: confidenceOf(suspect.length, bars.length, 1), features: feat, params };
   }
 
-  return { VERSION, PARAMS, SIGNALS, CODES, GOOD, extract, derive, decide, analyze, confidenceOf, pageBarsCheck, midiOf, clefBottom, ledgers };
+  return { VERSION, PARAMS, SIGNALS, CODES, GOOD, extract, derive, decide, analyze, confidenceOf, pageBarsCheck, reasonText, midiOf, clefBottom, ledgers };
 });

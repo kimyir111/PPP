@@ -24,8 +24,8 @@ const F = require(path.join(REPO, 'omr', 'flags.js'));
 const GROUPS = ['clean', 'scan', 'photo'];
 const TARGET = { clean: 0.90, scan: 0.90, photo: 0.85 };
 const MARGIN = 1.04;                  /* stop adding when every tier is 4 % above its target on the tuning half: room for the other half */
-const PRECISION_FLOOR = 0.70;         /* the gate says 0.60 */
-const TRUTH_MAX = 0.7;                /* the gate says 1 flag per 20 bars on a truth file */
+const PRECISION_FLOOR = 0.65;         /* the gate says 0.60 */
+const TRUTH_MAX = 0.9;                /* the gate says 1 flag per 20 bars on a truth file */
 const STRONG_PRECISION = 0.85, STRONG_MIN = 25, STRONG_TRUTH_MAX = 0.15;
 const SPECIAL = new Set(['bad-page', 'next-to-bad', 'page-bars']);
 /* strong by what they ARE, not by a statistic (the benchmark replay has too few of them to count, or none): the importer or the normaliser says
@@ -152,13 +152,15 @@ function fit(docs, truthDocs, log) {
     params = best.p; cur = best.r; curV = best.val;
     log(best.what + ' -> ' + fmt(cur));
   }
-  /* the smallest rule that is as good: a weak signal whose removal changes nothing that matters goes */
+  /* the smallest rule that is as good as the one found (measured against that one, so the drift of many small prunes cannot add up): a weak
+     signal whose removal changes nothing that matters goes */
+  const base = curV;
   for (let again = true; again;) {
     again = false;
     for (const code of params.weak.slice()) {
       const p = { strong: params.strong, weak: params.weak.filter(c => c !== code), weakNeeded: 2, thr: params.thr };
       const r = score(docs, truthDocs, p), val = value(r);
-      if (val.penalty <= curV.penalty + 1e-9 && val.minRatio >= curV.minRatio - 0.003 && val.meanP >= curV.meanP - 0.003) {
+      if (val.penalty <= base.penalty + 1e-9 && val.minRatio >= base.minRatio - 0.003 && val.meanP >= base.meanP - 0.003) {
         params = p; cur = r; curV = val; again = true; log('prune ' + code + ' -> ' + fmt(cur)); break;
       }
     }
