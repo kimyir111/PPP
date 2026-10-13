@@ -33,7 +33,11 @@ function rmCopy(dir) { try { fs.rmSync(dir, { recursive: true, force: true }); }
 
 /* what tools/notices/build.js reads */
 const BUILD_INPUTS = ['tools/notices/notices.json', 'tools/notices/build.js', 'vendor', 'audio/piano/README.md', 'catalog/hymns/README.md', 'catalog/hymns/index.json',
-  'catalog/method/index.json', 'catalog/index.json', 'catalog/shared-seeds.json', 'Piano Coach App.dc.html', 'support.js', 'THIRD_PARTY_NOTICES.md'];
+  'catalog/method/index.json', 'catalog/index.json', 'catalog/shared-seeds.json', 'Piano Coach App.dc.html', 'support.js', 'THIRD_PARTY_NOTICES.md',
+  /* the served code it scans (static-allow.js says which files; a few of the folders are enough to plant a defect in), the pinned packages, the models of the setup
+     scripts, the runtime dependencies and the files that state a licence */
+  'static-allow.js', 'rec', 'engrave', 'scoregraph', 'i18n.js', 'requirements-arranger.txt', 'requirements-transcription.txt', 'package.json',
+  'tools/home-worker/setup-yourmt3.cmd', 'tools/home-worker/setup-sheetsage2.cmd', 'tools/home-worker/README.md', 'README.md', 'omr-service.js', 'sheetsage2_run.py'];
 
 /* Replace the first occurrence of `from` (once, it must be there once) in a file of a copy; a Windows checkout's CRLF is honoured. */
 function edit(dir, rel, from, to) {

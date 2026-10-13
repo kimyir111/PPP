@@ -62,6 +62,16 @@ function req(port, method, p, o) {
     r.end(body);
   });
 }
+/* the page as the server sends it for /?share=<id>: the head's meta tags are the link's preview */
+function html(port, p) {
+  return new Promise((resolve, reject) => {
+    http.get({ host: '127.0.0.1', port: port, path: p }, res => {
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => resolve({ status: res.statusCode, text: Buffer.concat(chunks).toString('utf8') }));
+    }).on('error', reject);
+  });
+}
 const score = source => ({
   title: 'Practice', composer: '', tempo: 90, staves: 2,
   measures: [{ number: 1 }, { number: 2 }],
@@ -197,6 +207,32 @@ test('shares already posted are not touched: they stay in the list, can be taken
     assert.equal(down.body.listed, false);
     const again = await req(srv.port, 'PATCH', '/api/shares/' + old.id, { cookie: a.cookie, body: { listed: true } });
     assert.equal(again.status, 403, 'once taken down it is a new posting, and the rule applies');
+  } finally { await srv.close(); rm(dir); }
+});
+
+test('the link of a YouTube-derived score stays link-only: noindex, and no title or description of it in the preview; an ordinary share keeps its preview', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-ytshare-'));
+  const srv = await boot(dir);
+  try {
+    const a = await account(srv.port);
+    const yt = (await req(srv.port, 'POST', '/api/shares', { cookie: a.cookie, body: share({ title: 'Secret Practice Title', youtubeDerived: true, score: score({ kind: 'shared', youtubeDerived: true }) }) })).body;
+    const plain = (await req(srv.port, 'POST', '/api/shares', { cookie: a.cookie, body: share({ title: 'Ordinary Practice Title' }) })).body;
+    const guest = (await req(srv.port, 'POST', '/api/shares', { guest: GUEST_KEY, body: share({ title: 'Guest Secret Title', youtubeDerived: true, score: score({ kind: 'shared', youtubeDerived: true }) }) })).body;
+    const guestPlain = (await req(srv.port, 'POST', '/api/shares', { guest: 'h'.repeat(40), body: share({ title: 'Guest Ordinary Title' }) })).body;
+    const a1 = await html(srv.port, '/?share=' + yt.id);
+    assert.equal(a1.status, 200);
+    assert.match(a1.text, /<meta name="robots" content="noindex">/, 'not for a search engine');
+    assert.ok(!/og:title|og:description|twitter:title|name="description"/.test(a1.text), 'no preview text');
+    assert.ok(!a1.text.includes('Secret Practice Title'), 'and not the title');
+    const g1 = await html(srv.port, '/?share=' + guest.id);
+    assert.match(g1.text, /noindex/);
+    assert.ok(!/og:title/.test(g1.text) && !g1.text.includes('Guest Secret Title'));
+    const o1 = await html(srv.port, '/?share=' + plain.id);
+    assert.match(o1.text, /og:title" content="Ordinary Practice Title/, 'an ordinary share keeps its preview');
+    assert.ok(!/<meta name="robots" content="noindex">/.test(o1.text), 'and is not hidden from search (an account\'s share may be posted)');
+    const g2 = await html(srv.port, '/?share=' + guestPlain.id);
+    assert.match(g2.text, /noindex/, 'a guest link is still noindex, as before');
+    assert.match(g2.text, /og:title" content="Guest Ordinary Title/, 'with the preview it had');
   } finally { await srv.close(); rm(dir); }
 });
 

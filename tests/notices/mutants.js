@@ -29,7 +29,7 @@ function makeCopy() {
   for (const e of fs.readdirSync(REPO, { withFileTypes: true })) {
     if (e.isFile() && /\.(js|json|html|md|yaml|yml|py|txt)$/.test(e.name)) fs.copyFileSync(path.join(REPO, e.name), path.join(dir, e.name));
   }
-  for (const d of DIRS.concat(['tools/notices'])) if (fs.existsSync(path.join(REPO, d))) copyDir(path.join(REPO, d), path.join(dir, d));
+  for (const d of DIRS.concat(['tools/notices', 'tools/home-worker'])) if (fs.existsSync(path.join(REPO, d))) copyDir(path.join(REPO, d), path.join(dir, d));
   return dir;
 }
 
@@ -57,6 +57,8 @@ const M = [
     ["if (body.listed === true && !row.listed && youtubeDerivedShare(", "if (!row.listed === false && youtubeDerivedShare("], SERVER],
   ['S10', 'server.js', 'the refusal has no code',
     ["return jsonError(res, 403, YOUTUBE_NOT_PUBLIC, { code: 'youtube-not-public' });\n    }\n    const ownerId = guest ? guestId : user.id;", "return jsonError(res, 403, YOUTUBE_NOT_PUBLIC);\n    }\n    const ownerId = guest ? guestId : user.id;"], SERVER],
+  ['S13', 'server.js', 'the link of a YouTube-derived score has its title and description in the preview and is not noindex',
+    ["  if (youtubeDerivedShare(row.score, false)) return '<meta name=\"robots\" content=\"noindex\">';\n", ""], SERVER],
   ['S11', 'server.js', 'the notices file is sent as a download (text/markdown), not shown',
     ["'.md': 'text/plain; charset=utf-8'", "'.md': 'text/markdown; charset=utf-8'"], FILES],
   ['S12', 'static-allow.js', 'the notices file is not on the served list',
@@ -90,6 +92,12 @@ const M = [
     ["if ((src.kind || (card && card.kind)) === 'youtube' && inferredAudioNotation(src)) return true;", "if ((src.kind || (card && card.kind)) === 'youtube') return true;"], UI],
   ['P15', 'Piano Coach App.dc.html', 'a copy that only has a YouTube source gets the mark when it is added (a hymn is blocked in the hands of whoever adds it)',
     ["const ytMark = !!(score.source && score.source.youtubeDerived === true);", "const ytMark = !!(score.source && (score.source.youtubeDerived === true || score.source.kind === 'youtube'));"], UI],
+  ['P16', 'Piano Coach App.dc.html', 'the disabled Post button does not point at its reason',
+    [" aria-describedby=\"ppp-share-post-note\"", ""], UI],
+  ['P17', 'Piano Coach App.dc.html', 'a transcription saved before the version stamp (labelled only Basic Pitch) is not taken for a YouTube one',
+    ["(inferredAudioNotation(src) || labelledAudioEngine(src))", "inferredAudioNotation(src)"], UI],
+  ['P18', 'Piano Coach App.dc.html', 'the engine label of a score uploaded beside a video (referenceScore) makes it YouTube-derived',
+    ["const labelledAudioEngine = src => !!src && !src.referenceScore && !src.retrieved\n", "const labelledAudioEngine = src => !!src && !src.retrieved\n"], UI],
   ['P14', 'Piano Coach App.dc.html', 'the page posts it anyway when asked (the client does not stop a post)',
     ["    if (ytDerived && listed === true) return Promise.reject(new Error(tx('A score made from a YouTube link cannot be posted to Shared Scores. You can still send its link.')));\n", ""], UI]
 ];

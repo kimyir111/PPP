@@ -59,27 +59,56 @@ test('the notices say every item of G13 section E8', () => {
     /* code and fonts */
     'React and ReactDOM 18.3.1', 'VexFlow 4.2.3', 'MIT', 'Babel standalone', 'pdf.js', 'TensorFlow.js', 'Magenta.js', 'Basic Pitch', 'Apache-2.0',
     'Bravura', 'Petaluma', 'Leland', 'Gonville', 'Figtree', 'Instrument Serif', 'JetBrains Mono', 'Noto Music', 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', 'SIL Open Font License 1.1',
-    '`support.js`', 'carries no licence header', 'Onsets and Frames checkpoint', 'not stated in this repository',
+    '`support.js`', 'carries no licence header', 'Onsets and Frames checkpoint', 'see the checkpoint\'s own terms',
     /* the catalogue */
-    'Open Hymnal', 'Beyer', 'Czerny 100', 'Czerny 30', 'Czerny 40', 'Hanon', 'Burgm', 'Sonatinas', 'PDMX', 'Typesets being replaced', 'Seed library',
-    /* the demo, and the decision that is pending */
-    'The built-in demo score', 'TODO(U6)',
-    /* YouTube */
-    'YouTube links', 'Use recordings you have the right to use', 'cannot be posted to Shared Scores',
-    /* tools */
-    'Audiveris', 'AGPL-3.0', 'Kong', 'TransKun', 'Aria-AMT', 'Beat This', 'PM2S', 'yt-dlp'
+    'Open Hymnal', 'Beyer', 'Czerny 100', 'Czerny 30', 'Czerny 40', 'Hanon', 'Burgm', 'Sonatinas', 'PDMX', 'Typesets under review', 'Seed library',
+    'public domain or under free licences',
+    /* the demo (its decision is pending: the note for whoever decides is in notices.json, not in what is served) */
+    'The built-in demo score',
+    /* YouTube: what really happens, including the fallback site that receives the link */
+    'YouTube links', 'Use recordings you have the right to use', 'cannot be posted to Shared Scores', 'loader.to', 'receives the link you pasted', 'youtube-nocookie.com',
+    /* tools, models and packages, with the licences this repository states (and none invented) */
+    'Audiveris', 'AGPL-3.0', 'Kong', 'TransKun', 'Aria-AMT', 'Beat This', 'PM2S', 'yt-dlp', 'YourMT3', 'SheetSage2', 'CC BY-NC 4.0: non-commercial use only',
+    'MERT-v2-FullSong', 'Demucs', 'Demucs: MIT', 'librosa', 'pYIN', 'music21', 'Basic Pitch (the Python package', 'pg (node-postgres)', 'zod', '@anthropic-ai/sdk',
+    'puppeteer', 'see the project\'s own licence'
   ];
   const missing = must.filter(s => !NOTICES.includes(s));
   assert.deepEqual(missing, []);
 });
 
-test('the quarantined-typesets count the notices state is the one the benchmark records', () => {
+test('what is served is what a reader may see: no internal note, no promise, no "not stated" that reads as "unlicensed", no unqualified public domain for all hymns', () => {
+  assert.ok(!/TODO\(/.test(NOTICES), 'an internal TODO is in the served notices (it belongs in tools/notices/notices.json)');
+  assert.ok(!NOTICES.includes('<!--'), 'an HTML comment is in the served notices');
+  assert.ok(!/not stated in this repository/.test(NOTICES), '"not stated" reads as "unlicensed": say "see the project\'s own licence"');
+  assert.ok(!/replac(?:e|es|ing) them/.test(NOTICES), 'the notices promise that PPP will replace something');
+  assert.ok(!/hymn tunes[^.]*are public[- ]domain/i.test(NOTICES), 'the hymns are said to be public domain without the qualification');
+  const reg = JSON.parse(read('tools/notices/notices.json'));
+  assert.match(reg.demo.todo, /^TODO\(U6\)/, 'the pending U6 note is kept in notices.json');
+  /* a table that is a table in markdown reads badly as the plain text it is served as: none is left */
+  assert.ok(!/^\| ---/m.test(NOTICES), 'a pipe table is in the served notices');
+});
+
+test('the pieces the notices mark "under review" are the ones the benchmark records as quarantined', () => {
   const reg = JSON.parse(read('tools/notices/notices.json'));
   const rel = 'tests/bench/corpus/provenance.json';
   if (!fs.existsSync(path.join(ROOT, rel))) return;   /* a copy without the benchmark */
   const prov = JSON.parse(read(rel));
-  const n = prov.entries.filter(e => e.quarantine_reason && /^catalog\/method\//.test(e.path || '')).length;
-  assert.equal(n, reg.catalogue.quarantined.count, 'tests/bench/corpus/provenance.json quarantines ' + n + ' method-book files: update the notice in tools/notices/notices.json (catalogue.quarantined) and regenerate');
+  const method = JSON.parse(read('catalog/method/index.json'));
+  const got = {};
+  prov.entries.filter(e => e.quarantine_reason).forEach(e => {
+    const m = /^catalog\/method\/([\w-]+)\/(\d+)\.mxl$/.exec(e.path || '');
+    if (m) (got[m[1]] = got[m[1]] || []).push(+m[2]);
+  });
+  const want = {};
+  Object.keys(reg.catalogue.underReview).forEach(id => {
+    const book = method.books.find(b => b.id === id);
+    const r = reg.catalogue.underReview[id];
+    want[id] = (r === 'all' ? book.pieces.map((p, i) => i + 1) : r).slice().sort((a, b) => a - b);
+  });
+  Object.keys(got).forEach(id => got[id].sort((a, b) => a - b));
+  assert.deepEqual(got, want, 'tests/bench/corpus/provenance.json quarantines other pieces than tools/notices/notices.json marks (catalogue.underReview): update the notice and regenerate');
+  const marked = NOTICES.split('\n').filter(l => /is under review$/.test(l));
+  assert.equal(marked.length, Object.keys(want).length, 'the method-book list marks each book that has pieces under review');
 });
 
 /* ---- served ---- */
@@ -157,6 +186,43 @@ const MUTANTS = [
   }, /storage\.googleapis\.com\/some-bucket\/model\.bin and tools\/notices\/notices\.json has no row/],
   ['the committed notices file edited by hand', c => { edit(c, 'THIRD_PARTY_NOTICES.md', 'Alexander Holm', 'A. Holm'); }, /is not what the sources say/],
   ['the committed notices file gone', c => { fs.rmSync(path.join(c, 'THIRD_PARTY_NOTICES.md')); }, /THIRD_PARTY_NOTICES\.md is missing/],
+  ['a pinned Python requirement with no helper row', c => {
+    fs.appendFileSync(path.join(c, 'requirements-transcription.txt'), 'brand-new-package==1.0\n');
+  }, /requirements-transcription\.txt names brand-new-package/],
+  ['a model a setup script downloads that has no row', c => {
+    edit(c, 'tools/home-worker/setup-yourmt3.cmd', "repo_id='mimbres/YourMT3'", "repo_id='someone/NewModel'");
+  }, /setup-yourmt3\.cmd names someone\/NewModel/],
+  ['a runtime dependency of the server with no row', c => {
+    const f = path.join(c, 'package.json');
+    const j = JSON.parse(fs.readFileSync(f, 'utf8'));
+    j.dependencies['left-pad'] = '1.3.0';
+    fs.writeFileSync(f, JSON.stringify(j));
+  }, /package\.json names left-pad/],
+  ['a licence statement a row relies on that is gone', c => { edit(c, 'sheetsage2_run.py', 'CC BY-NC 4.0', 'a licence'); }, /helper row "SheetSage2 weights[^"]*": sheetsage2_run\.py no longer says/],
+  ['a script from a host nobody has classified (cdnjs)', c => {
+    fs.appendFileSync(path.join(c, 'Piano Coach App.dc.html'), '\n<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>\n');
+  }, /names https:\/\/cdnjs\.cloudflare\.com .*does not know that host/],
+  ['a file from raw.githubusercontent.com', c => {
+    fs.appendFileSync(path.join(c, 'Piano Coach App.dc.html'), '\n<script>fetch("https://raw.githubusercontent.com/someone/repo/main/data.json");</script>\n');
+  }, /names https:\/\/raw\.githubusercontent\.com/],
+  ['a module the page loads (not the page itself) that names a new host', c => {
+    fs.appendFileSync(path.join(c, 'rec', 'key.js'), "\nconst EXTRA = 'https://cdn.example.net/lib.js';\n");
+  }, /names https:\/\/cdn\.example\.net \(rec\/key\.js\)/],
+  ['an unpinned path at a library host (a GitHub path at jsDelivr)', c => {
+    fs.appendFileSync(path.join(c, 'Piano Coach App.dc.html'), '\n<script>import("https://cdn.jsdelivr.net/gh/someone/repo@main/file.js");</script>\n');
+  }, /must be named with its version/],
+  ['a service row for a host no served file names any more', c => {
+    const f = path.join(c, 'tools', 'notices', 'notices.json');
+    const j = JSON.parse(fs.readFileSync(f, 'utf8'));
+    j.hosts.service['gone.example'] = 'nothing';
+    fs.writeFileSync(f, JSON.stringify(j));
+  }, /lists gone\.example under hosts \(service\) but no served file names it any more/],
+  ['a book marked "under review" that the catalogue does not have', c => {
+    const f = path.join(c, 'tools', 'notices', 'notices.json');
+    const j = JSON.parse(fs.readFileSync(f, 'utf8'));
+    j.catalogue.underReview['no-such-book'] = 'all';
+    fs.writeFileSync(f, JSON.stringify(j));
+  }, /names book no-such-book/],
   ['a licence code the catalogue notice does not name', c => {
     const f = path.join(c, 'catalog', 'method', 'index.json');
     fs.writeFileSync(f, fs.readFileSync(f, 'utf8').replace('"license": "pd"', '"license": "unknown"'));
@@ -166,6 +232,14 @@ const MUTANTS = [
 test('the unbroken copy passes (so each mutant below fails for its own reason)', () => {
   const c = makeCopy(BUILD_INPUTS);
   try { const r = check(c); assert.equal(r.code, 0, r.out); } finally { rmCopy(c); }
+});
+test('a host named only in a comment is not a finding, and a link to a known host is not either', () => {
+  const c = makeCopy(BUILD_INPUTS);
+  try {
+    fs.appendFileSync(path.join(c, 'rec', 'key.js'), "\n/* see https://not-loaded.example/paper.pdf */\n// and https://also-not-loaded.example/x\nconst YT = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';\n");
+    const r = check(c);
+    assert.equal(r.code, 0, r.out);
+  } finally { rmCopy(c); }
 });
 MUTANTS.forEach(([name, mutate, expected]) => {
   test('mutant: ' + name + ' is refused by build.js --check', () => {

@@ -32,6 +32,7 @@ const ko = (key, vars) => {
   return fill(v, vars);
 };
 const REASON = 'A score made from a YouTube link cannot be posted to Shared Scores. You can still send its link.';
+const LOCAL = 'Your songs are saved only in this browser. PPP\'s server receives a song only when you share it or ask it to arrange or read it.';
 const NOTICE = 'Use recordings you have the right to use. The score PPP writes is for your own practice.';
 const SOUNDS = 'Piano sounds: Salamander Grand Piano V3 by Alexander Holm, licensed under CC BY 3.0. Notes longer than nine seconds are shortened.';
 const WATCH = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
@@ -87,6 +88,12 @@ const WATCH = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
         /* a hymn with a performance to watch, and a public-domain score found by the title of a link: a YouTube source, and no transcription */
         ['song-hymn', 'Hymn with a performance', 'youtube', { kind: 'youtube', url: watch, youtubeId: id }, { url: watch }],
         ['song-found', 'Found by its title', 'youtube', { kind: 'youtube', url: watch, youtubeId: id, retrieved: true, engine: 'Public-domain catalog', catalogId: 'fur-elise' }, { url: watch }],
+        /* a transcription saved before transcriptionVersion / amt existed: only the engine's label; the audio of a link */
+        ['song-oldbp', 'Old Basic Pitch', 'youtube', { kind: 'youtube', url: watch, youtubeId: id, engine: 'Basic Pitch' }, { url: watch }],
+        ['song-oldof', 'Old Onsets and Frames', 'youtube', { kind: 'youtube', url: watch, youtubeId: id, engine: 'Piano Onsets & Frames' }, { url: watch }],
+        /* the notes are the person's own uploaded score, the video is only kept beside them; and a recording the person uploaded with a video link attached */
+        ['song-ref', 'Uploaded score beside a video', 'youtube', { kind: 'youtube', url: watch, youtubeId: id, referenceScore: { name: 'mine.musicxml' }, engine: 'Piano ensemble (Transkun + Kong)', transcriptionVersion: 7 }, { url: watch }],
+        ['song-audio', 'My own recording with a link', 'audio', { kind: 'audio', url: watch, youtubeId: id, engine: 'Basic Pitch', transcriptionVersion: 7 }, { url: watch }],
         ['song-legacy', 'Posted long ago', 'youtube', { kind: 'youtube', url: watch, youtubeId: id, engine: 'Piano ensemble (Transkun + Kong)', transcriptionVersion: 7 }, { url: watch }]
       ];
       const cards = [], slots = {};
@@ -98,7 +105,7 @@ const WATCH = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
       return { cards: cards, slots: slots };
     }, WATCH);
     await ctx0.close();
-    ok('8 songs were made by the page', PLANT.cards.length === 8 && Object.keys(PLANT.slots).length === 8);
+    ok('12 songs were made by the page', PLANT.cards.length === 12 && Object.keys(PLANT.slots).length === 12);
 
     /* ------------------------------------------------------------------------------------------ a profile */
     const ctx = await browser.createBrowserContext();
@@ -131,7 +138,7 @@ const WATCH = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
     ok('and it is drawn (not hidden)', shown);
     ok('its title is "정보 및 라이선스"', (await text(page, '[data-about-section] > div:first-child > div:first-child')) === ko('About & licences'), await text(page, '[data-about-section] > div:first-child > div:first-child'));
     ok('the build line: the app and the build the server runs', (await text(page, '[data-about-build]')) === ko('PPP — Piano Practice Partner') + ' · ' + ko('build {{build}}', { build: 'abc1234' }), await text(page, '[data-about-build]'));
-    ok('"your songs stay on this device unless you share them"', (await text(page, '[data-about-local]')) === ko('Your songs stay on this device unless you share them.'), await text(page, '[data-about-local]'));
+    ok('what stays in this browser and when the server receives a song (accurate: it also gets a song to arrange or read)', (await text(page, '[data-about-local]')) === ko(LOCAL), await text(page, '[data-about-local]'));
     ok('the YouTube rights notice and what it means for sharing', (await text(page, '[data-about-youtube]')) === ko(NOTICE) + ' ' + ko(REASON), await text(page, '[data-about-youtube]'));
     const sounds = await text(page, '[data-about-sounds]');
     ok('the CC BY attribution: title, author, licence', !!sounds && sounds.startsWith(ko(SOUNDS)) && sounds.includes('Salamander Grand Piano V3') && sounds.includes('Alexander Holm') && sounds.includes('CC BY 3.0'), sounds);
@@ -172,6 +179,7 @@ const WATCH = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
         const b = document.querySelector('[data-share-post]'), n = document.querySelector('[data-share-post-note]');
         return { disabled: !!b.disabled, aria: b.getAttribute('aria-disabled'), posted: b.getAttribute('data-posted'), label: b.innerText.replace(/\s+/g, ' ').trim(),
           note: n ? n.innerText.replace(/\s+/g, ' ').trim() : null, blocked: n ? n.getAttribute('data-blocked') : null,
+          describedBy: b.getAttribute('aria-describedby'), noteId: n ? n.id : null,
           linkButton: !!document.querySelector('[data-share-net="copy"]') };
       });
     };
@@ -185,11 +193,12 @@ const WATCH = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
     };
     const mineByKey = async () => { const r = await api(page, 'GET', '/api/shares?mine=1'); return Object.fromEntries((r.body.shares || []).map(s => [s.songKey, s])); };
 
-    const blockedIds = ['song-yt', 'song-arr-yt', 'song-marked'];
+    const blockedIds = ['song-yt', 'song-arr-yt', 'song-marked', 'song-oldbp', 'song-oldof'];
     for (const id of blockedIds) {
       const d = await openDialog(id);
       ok(id + ': the Post button is off', d.disabled && d.aria === 'true' && d.blocked === 'true', JSON.stringify(d));
       ok(id + ': one line says why (Korean)', d.note === ko(REASON), d.note);
+      ok(id + ': the disabled button points at that line (aria-describedby)', !!d.noteId && d.describedBy === d.noteId, JSON.stringify({ by: d.describedBy, id: d.noteId }));
       ok(id + ': the link can still be made', d.linkButton);
       const body = await sendLink();
       ok(id + ': the link was made as an unlisted share carrying the mark', !!body && body.listed === undefined && body.youtubeDerived === true && body.score && body.score.source && body.score.source.youtubeDerived === true, JSON.stringify({ listed: body && body.listed, flag: body && body.youtubeDerived, mark: body && body.score && body.score.source && body.score.source.youtubeDerived }));
@@ -203,12 +212,12 @@ const WATCH = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
     }
     {
       const mine = await mineByKey();
-      ok('the server holds the three as links only (listed false)', blockedIds.every(k => mine[k] && mine[k].listed === false), JSON.stringify(blockedIds.map(k => mine[k] && mine[k].listed)));
+      ok('the server holds the five as links only (listed false)', blockedIds.every(k => mine[k] && mine[k].listed === false), JSON.stringify(blockedIds.map(k => mine[k] && mine[k].listed)));
       const stored = await api(page, 'GET', '/api/shares/' + mine['song-arr-yt'].id);
       ok('what is stored for the arrangement of a YouTube song says it is one (its own source has no YouTube link)', stored.status === 200 && stored.body.score.source.youtubeDerived === true && stored.body.score.source.kind === 'shared', JSON.stringify(stored.body && stored.body.score && stored.body.score.source));
     }
 
-    const openIds = ['song-ok', 'song-arr-ok', 'song-hymn', 'song-found'];
+    const openIds = ['song-ok', 'song-arr-ok', 'song-hymn', 'song-found', 'song-ref', 'song-audio'];
     for (const id of openIds) {
       const d = await openDialog(id);
       ok(id + ': Post is on, with the usual invitation', !d.disabled && d.blocked === 'false' && d.note !== ko(REASON) && d.note === ko('Post it, and anyone using PPP can find it in Shared Scores and add it to their songs.'), JSON.stringify(d));
@@ -223,7 +232,9 @@ const WATCH = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
     {
       const pub = await api(page, 'GET', '/api/shares');
       const titles = (pub.body.shares || []).map(s => s.title);
-      ok('the public list has the four (ordinary, its arrangement, the hymn, the score found by a title) and none of the three', ['Ordinary', 'Arranged ordinary', 'Hymn with a performance', 'Found by its title'].every(t => titles.includes(t)) && !titles.some(t => /From YouTube|Arranged from YouTube|Marked copy/.test(t)), titles.join(' | '));
+      ok('the public list has the six that are not made from a link\'s audio (ordinary, its arrangement, the hymn, the score found by a title, the uploaded score beside a video, the own recording) and none of the five',
+        ['Ordinary', 'Arranged ordinary', 'Hymn with a performance', 'Found by its title', 'Uploaded score beside a video', 'My own recording with a link'].every(t => titles.includes(t))
+        && !titles.some(t => /From YouTube|Arranged from YouTube|Marked copy|Old Basic Pitch|Old Onsets/.test(t)), titles.join(' | '));
     }
 
     console.log('\n── 3b. the server says no when the page cannot tell ──');
