@@ -18,7 +18,9 @@
    Inputs
      graph            a ScoreGraph (scoregraph/import.js)
      opts.normalize   omr/normalize.js `report`: its `flags` by bar number (what the normaliser repaired, merged, switched) and `structure`
-     opts.layout      what the PAGES show: { pages: [[bars on system 1, bars on system 2, ...], ...] } (PdfLayer.layout), a page may be null
+     opts.layout      what the PAGES show: { pages: [[bars on system 1, bars on system 2, ...], ...] }, a page may be null. The app passes none: the bars per line
+                      PdfLayer finds were measured on omr-live-2's tuning half (precision 0.18-0.35 on vector PDFs, no better than the base rate on photos and
+                      scans, docs/GOALS/G12_OMR.md section 23), so `page-bars` is in neither list of PARAMS until a layout source is good enough
      opts.external    { "<bar number>": ["code" | {code, strength: 'strong'|'weak', text}] }: flags from outside (a second engine pass, the
                       app's own checks)
      opts.params      a PARAMS to use instead of the fitted ones (the fit tool, the tests)
@@ -44,7 +46,7 @@
 
   /* ---------------------------------------------------------------- parameters (fitted: see the header) */
   const PARAMS = {
-    strong: ['fill-overlap', 'dropped', 'unreadable-lengths', 'page-bars', 'fill-short', 'fill-over', 'empty-staff', 'many-voices', 'tuplet', 'x-misaligned', 'fragmented'],
+    strong: ['fill-overlap', 'dropped', 'unreadable-lengths', 'fill-short', 'fill-over', 'empty-staff', 'many-voices', 'tuplet', 'x-misaligned', 'fragmented'],
     weak: ['hands-cross', 'big-leap', 'sparse', 'rebuilt', 'bad-page', 'next-to-bad', 'voice-loss'],
     weakNeeded: 2,
     thr: { leap: 19, sparse: 0.6, voiceLoss: 1, badPage: 0.3, offKey: 2, ledger: 4, xMis: 20, dense: 1.6 }
@@ -349,7 +351,8 @@
     const tag = (code, r) => Object.assign({ code: code, strength: strongSet.has(code) ? 'strong' : 'weak' }, r);
     /* pass 1: the signals that look at one bar only; the page-wide and the neighbours' come from them */
     const fired = bars.map((b, i) => {
-      const c = { thr, n: nflags[i + 1] || [], shown: shownAt[i + 1] || null, badPage: 0, nextToBad: false };
+      const nf = nflags[i + 1];
+      const c = { thr, n: Array.isArray(nf) ? nf : (typeof nf === 'string' ? [nf] : []), shown: shownAt[i + 1] || null, badPage: 0, nextToBad: false };
       const list = [];
       CODES.forEach(code => {
         if (code === 'bad-page' || code === 'next-to-bad' || !(strongSet.has(code) || weakSet.has(code))) return;
@@ -435,7 +438,8 @@
     let feat;
     try { feat = derive(extract(graph)); } catch (e) { return { ok: false, error: 'internal-error', detail: String(e && e.message || e).slice(0, 160), bars: [], suspect: [], counts: {}, confidence: null }; }
     const params = opts.params || PARAMS;
-    const bars = decide(feat, { normalize: opts.normalize, layout: opts.layout, external: opts.external }, params);
+    let bars;
+    try { bars = decide(feat, { normalize: opts.normalize, layout: opts.layout, external: opts.external }, params); } catch (e) { return { ok: false, error: 'internal-error', detail: String(e && e.message || e).slice(0, 160), bars: [], suspect: [], counts: {}, confidence: null }; }
     const suspect = bars.filter(b => b.suspect).map(b => b.n);
     const counts = {};
     bars.forEach(b => b.reasons.forEach(r => { counts[r.code] = (counts[r.code] || 0) + 1; }));

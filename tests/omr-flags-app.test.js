@@ -12,7 +12,7 @@
      - v2 on a clean page: the flags run (report.flagsVersion), nothing is marked, the confidence and the level are the validator's
      - v2 on a page with a bar that does not fill: that bar joins report.suspectMeasures with its sentence (report.flagWhy) and code (report.flagCodes),
        the issue list names it, the confidence is below 0.85 and the level is not "good" (gate A3)
-     - v2 on a page that shows 4 bars where 3 were read: the page's own lines say so (the reason names both numbers), every bar of the line is marked
+     - v2 on a page that shows 4 bars where 3 were read: nothing is marked for it (the bars per line PdfLayer finds were measured on the benchmark and are not good enough to flag a bar by)
      - the review strip: the marked bar is red and its tooltip carries the sentence; a bar that was not marked is not
      - the language: the sentence is the page's (ko), the codes are not
      - the song slot keeps the reasons (writeSlot), and a reload of it gives them back
@@ -194,14 +194,12 @@ const IN_PAGE = `
   }
 
   /* ---------------------------------------------------------------- v2, the page shows more bars than were read */
-  console.log('v2: the page shows 4 bars on its line, 3 were read');
+  console.log('v2: the page shows 4 bars on its line, 3 were read (the count of bars per line is measured, not trusted: G12 section 23)');
   {
     const { page } = await fresh();
     const v = await run(page, recognition(3, []), 'v2', pdf4);
     ok('imports', !v.error && v.bars === 3, short(v.error || v.bars));
-    ok('every bar of the line is marked, with the two numbers', v.why && [1, 2, 3].every(m => v.why[m] && v.why[m].includes('The page shows 4 measures on this line, PPP read 3.')), short(v.why));
-    ok('the codes say page-bars', v.codes && [1, 2, 3].every(m => v.codes[m].includes('page-bars')), short(v.codes));
-    ok('and the page is not "good"', v.conf < 0.85, String(v.conf));
+    ok('no bar is marked for the number of bars on the page (the page passes no layout)', v.why === null && (v.suspect || []).length === 0, short(v.why));
     await page.close();
   }
 

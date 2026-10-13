@@ -29,8 +29,9 @@ const TRUTH_MAX = 0.9;                /* the gate says 1 flag per 20 bars on a t
 const STRONG_PRECISION = 0.85, STRONG_MIN = 25, STRONG_TRUTH_MAX = 0.15;
 const SPECIAL = new Set(['bad-page', 'next-to-bad', 'page-bars']);
 /* strong by what they ARE, not by a statistic (the benchmark replay has too few of them to count, or none): the importer or the normaliser says
-   that content was lost or that the page shows another number of bars. They stay strong whatever the table says. */
-const DESIGN_STRONG = ['fill-overlap', 'dropped', 'unreadable-lengths', 'page-bars'];
+   that content was lost. They stay strong whatever the table says. `page-bars` is not here: the bars per line PdfLayer finds were measured on the app
+   path (G12 section 23) and are not good enough to flag a bar by, so the signal is unused until a layout source is. */
+const DESIGN_STRONG = ['fill-overlap', 'dropped', 'unreadable-lengths'];
 const THR_GRID = {
   leap: [12, 15, 17, 19, 21, 24], sparse: [0.4, 0.5, 0.6, 0.7, 0.8], voiceLoss: [1], badPage: [0.15, 0.2, 0.25, 0.3, 0.4, 0.5],
   offKey: [1, 2, 3, 4], ledger: [3, 4, 5], xMis: [10, 15, 20, 30], dense: [1.3, 1.5, 1.8, 2.2]
@@ -135,7 +136,7 @@ function fit(docs, truthDocs, log) {
   const rows = table(docs, truthDocs, thr0);
   const byRule = rows.filter(r => r.n >= STRONG_MIN && r.precision >= STRONG_PRECISION && r.truthPer20 <= STRONG_TRUTH_MAX).map(r => r.code);
   const strong = Array.from(new Set(DESIGN_STRONG.concat(byRule))).filter(c => F.CODES.includes(c));
-  const candidates = F.CODES.filter(c => !strong.includes(c));
+  const candidates = F.CODES.filter(c => !strong.includes(c) && c !== 'page-bars');
   let params = { strong: strong.slice(), weak: candidates.slice(), weakNeeded: 2, thr: thr0 };
   let cur = score(docs, truthDocs, params), curV = value(cur);
   log('strong by the rule: ' + strong.join(', '));

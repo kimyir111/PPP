@@ -686,3 +686,127 @@ What PdfLayer found on the 60 vector pages (pdf-A, Verovio): **306 findings on 1
 - **Held-out discipline.** The tuning and held-out halves are reported pooled by `omr-live-2` (the held-out half as a number only); no threshold was fitted: there is none in this phase. The `diff`/`apply` rules were written from the Score fields and checked against the hand-written page and the 60-excerpt replay, which includes the held-out half; **I looked at one held-out excerpt by itself**: `hymns_all-creatures` is in the held-out half (`cases.json`), and I opened its four skipped findings to learn why the graph refused them (above). Nothing was changed because of it: no rule, no threshold; the finding stands as a limit.
 
 **Decisions of the Lead's kind taken here (reversible).** Hairpins that cannot pair are removed in the normaliser, not in the importer (the importer is shared by every MusicXML import and by the recording path; `scoregraph/` changed by one guarded line); the repair of a zero-length note by the bar's time signature (then the type, never a guess); `diff` against a scratch Score rather than a recorder inside `PdfLayer.apply` (no change to PdfLayer; `legacy` cannot move); findings are data (JSON), applied once per import, not per user edit; a refused edit is named and skipped, not forced; `markOmr` is the mark, in `ext` of the graph, not a flag the Score carries (so `agree`, the store and the renderer read one rule); a new gate step (`test:omr-apply`, 75 steps) rather than widening `test:omr-normalize`; `PPP.omr` untouched in meaning (still `'legacy'` by default); provenance only where the schema has a field for it, and what has none is counted and listed (`removed`, `applied`) rather than hidden in `ext`; a refusal is per edit, a budget is a reason, not a throw.
+
+## 23. G12-3 implementation record (Implementer, Sonnet, 2026-10-13)
+
+Branch `g12-3-flags` (`D:/PPP-g12p3`), from `main` `fb98439`, `origin/main` merged in after G12-2 (#246) landed. Row G12-3 of section 11, gate A3 of section 12. Everything is behind `PPP.omr = 'v2'`; with the default
+`'legacy'` the page never asks for `omr/flags.js` (browser suite) and its report has no flag field. `tests/omr/README.md` has the commands.
+
+**Built.**
+
+| What | Where |
+| --- | --- |
+| `omr/flags.js` (UMD, pure, deterministic, never throws): `extract` (per bar, facts only: does each voice fill the bar, voices, registers, leaps, doubled pitches, off-key notes, ledger lines, how the page spaced simultaneous notes, notation-check classes 5-8, the engine's own system breaks), `derive` (what is relative: the piece's median and the neighbours'), `decide` (the rule), `analyze` (graph + `report.normalize` + optional layout + external flags -> per bar `{suspect, strong, weak, reasons}`), `confidenceOf`, `reasonText(reason, tx)`. 28 signals; `PARAMS` says which are strong, which weak, and every threshold | `omr/flags.js` |
+| **the rule**: a bar is suspect when ANY strong signal fires or TWO weak ones. "This page was read badly as a whole" (more than 30 % of its bars carry a strong signal) and "next to a bar that carries one" are themselves weak signals, so on a badly read page one more doubt is enough. The confidence is `min(base, 0.84 - 0.6 x share of suspect bars)`: never 0.85 ("good") while any bar is suspect | `omr/flags.js` |
+| the page: after a v2 import `report.suspectMeasures` gains the flagged bars (the strip's red bars and the count of the review screen are the existing mechanism), `report.flagWhy[measure]` the sentences in the page's language (the strip's tooltip shows them), `report.flagCodes[measure]` the codes (for the correction screen), `report.issues` one `{kind: 'flag'}` line per bar, `report.confidence`/`level`/`summary`/`advice` follow; `report.flagsVersion`, or `report.flagsFailed` and the import as v2 made it when `omr/flags.js` could not be fetched. `flagWhy`/`flagCodes` are kept with the song (both save sites). `omr/flags.js` and the notation checker are fetched by a v2 import only; `static-allow.js` serves exactly those two files | `Piano Coach App.dc.html` (`loadOmrFlags`, `Import.omrFlags`, one call, two persisted fields, the strip's tooltip), `static-allow.js` |
+| 31 sentences in ko, ja, zh (the 30 reasons and "Measure {{n}}: {{why}}"); `tests/i18n/gaps.js --check` stays at 0 | `i18n/*.json` |
+| the dataset and the fit: `omr-live-2 flags-data` (every output bar of a RECORDED engine run, its signals, whether it is wrong and why; tuning and held-out halves in separate files), `tests/omr/node/flags-fit.js` (`table`, `fit`, `eval`, `record-held`), `tests/omr/baselines/flags-fit.json` (the record) | `tests/omr/omrbench/flagdata.py`, `tests/omr/node/flags-cli.js`, `flags-fit.js` |
+| 106 Node tests, a step of the gate in `shard-g` (`npm run test:omr-flags`: **76 steps**): a case for every signal (it fires on one named bar and on no other), the same music without the fault, pickups, the rule, the page and next-to signals, outside flags, the confidence, the sentences, "never throws", the module without the notation checker, eight catalogue scores fed back (at most one flag in twenty bars), the parameters against the record; and **87 mutants** of the module (and a control) (each signal replaced by "never fires", and each line of the extraction, the rule, the confidence, the page signals broken once), each caught by a named case | `tests/omr/flags/` |
+| the browser suite (`npm run test:omr-flags-app`, local): legacy asks for none of the files and has no flag field; v2 on a clean page marks nothing; a short bar is marked with its sentence and code, joins the issue list and the strip (red, tooltip), the confidence is below 0.85; the sentence is Korean in ko; the song slot keeps the reasons; the module in the page has the repository's parameters and the checker loaded before it; a page that cannot get `omr/flags.js` is v2's import and says why | `tests/omr-flags-app.test.js` |
+
+**How it was fitted and judged (section 8.2).** The 60 excerpts of `omr-live-2`: 42 tuning, 18 held out (`cases.json`); engine output recorded by G12-0 (`out/engine`, 480 reads, 417 of them importable before G12-2's repairs and **all of them
+after**: the dataset is the engine's files through `omr/normalize.js` as G12-2 leaves it, then the ScoreGraph importer, then `omr/flags.js`). The label of a bar is the benchmark's own: an output bar is wrong unless it aligns to a truth bar
+it reproduces exactly (`omr.bar_exact`). 5,475 bars of the tuning half (clean 1,609, scan 2,404, photo 1,462; 2,254 of them wrong), 2,314 of the held-out half (clean 682, scan 1,003, photo 629; 617 wrong); `scan150-B` reads nothing and is not in it.
+Truth files fed back as if recognised: the 60 catalogue excerpts (1,169 bars; 825 and 344 by half).
+
+1. **Signals are measured one by one** on the tuning half (`flags-fit.js table`, the table below, also in the record).
+2. **Strong by a statistic**: right at least 85 % of the time, fires at least 25 times, at most 0.15 times in 20 bars of truth files. **Strong by what it is** (the importer or the normaliser says content was lost): overlap in a voice, a bar the
+   normaliser dropped notes from, a length it could not work out. Nothing else is strong.
+3. **The weak set and the thresholds**: start with every other signal weak at its default threshold; move one thing at a time (drop one, add one back, change one threshold from a small grid) while the objective improves, then drop what costs nothing.
+   The objective is, in order: precision at least 0.65 on every tier and at most 0.9 flags in 20 bars of truth files (the gate says 0.60 and 1.0: the margin is for the other half), then the weakest tier's recall against its target (0.90 clean and
+   scan, 0.85 photo) up to 4 % above it, then precision. Five-fold cross-validation by case inside the tuning half says how much of it is luck.
+4. **The held-out half was judged once**, by `flags-fit.js eval --half held` (which refuses a second time and keeps a mark), with the parameters of the commit before it. Nothing was changed after it for its sake.
+
+| signal | what | role | n (tune) | precision | truth files /20 bars |
+| --- | --- | --- | --- | --- | --- |
+| `fill-short` | a voice does not fill its bar (a hole, or it ends early) | strong | 1650 | 0.94 | 0.10 |
+| `fill-over` | a voice runs past the bar, or the bar is longer than its metre | strong | 974 | 1.00 | 0.00 |
+| `fill-overlap` | two notes of one voice overlap | strong (design) | 0 | - | 0.00 |
+| `empty-staff` | a hand has nothing in the bar | strong | 171 | 0.90 | 0.00 |
+| `many-voices` | three or more voices on a staff | strong | 706 | 1.00 | 0.00 |
+| `tuplet` | notation-check class 7 | strong | 57 | 1.00 | 0.00 |
+| `x-misaligned` | two notes that start together are 20 or more tenths apart on the page (the engine's `default-x`) | strong | 662 | 0.99 | 0.00 (truth files carry no x: vacuous) |
+| `fragmented` | the normaliser could not join the parts | strong | 36 | 1.00 | 0.00 |
+| `dropped`, `unreadable-lengths` | the normaliser dropped notes / could not work out a length | strong (design) | 0 | - | 0.00 |
+| `hands-cross` | the right hand's lowest note is below the left hand's highest | weak | 291 | 0.60 | 0.61 |
+| `big-leap` | 19 semitones or more between two notes of a voice | weak | 154 | 0.67 | 0.27 |
+| `sparse` | at most 0.6 of the notes of the bars around it | weak | 530 | 0.43 | 1.72 |
+| `voice-loss` | fewer voices than the piece's usual | weak | 648 | 0.73 | 0.92 |
+| `rebuilt` | the normaliser merged two staves or folded a pair of systems into it | weak | 646 | 0.46 | 0.00 |
+| `bad-page`, `next-to-bad` | the page's, and the neighbours', strong signals | weak | - | - | - |
+| not used: `value` (class 6), `sum-mismatch` (class 5), `same-note` (class 8), `dense`, `dup-pitch`, `off-key`, `ledger`, `switched`, `repaired`, `joined` | | | | 0.19-0.89 | 0.00-2.79 |
+| not used: `page-bars` (the page shows N bars on this line) | | none | | 0.18-0.35 | |
+
+Class 5 alone is right 0.89 of the time (recall 0.74-0.85) but adds nothing to `fill-short` / `fill-over`, which find the same bars with the pickup handled, and fires 0.56 times in 20 bars of correct music (a measure rest without a drawn value, a
+voice with a value the checker does not know). Class 6 and 8: 0.70 / 0.37, no use. `dup-pitch` is right 0.83 of the time on photos and 0.43 on clean pages, because a unison in two voices is correct music (2.79 flags in 20 bars of truth files).
+
+**Results (precision and recall of "this bar is wrong", pooled over the tier's bars; `scan` is scan150-A, scan200-A, scan200-B and scan150-B (which reads nothing); `photo` is photo-A and photo-B).**
+
+| | tuning half (fit) | tuning half, 5-fold cross-validation | **held-out half, once** | gate A3 |
+| --- | --- | --- | --- | --- |
+| clean | recall **0.929**, precision 0.732 (434 of 467 wrong bars, 593 flagged) | 0.908 / 0.707 | recall **0.929**, precision **0.595** (78 of 84, 131 flagged of 682 bars) | recall >= 0.90, precision >= 0.60 |
+| scan | recall **0.929**, precision 0.708 (922 of 992, 1,302 flagged) | 0.921 / 0.676 | recall **0.933**, precision **0.664** (251 of 269, 378 flagged of 1,003) | recall >= 0.90, precision >= 0.60 |
+| photo | recall **0.908**, precision 0.694 (722 of 795, 1,040 flagged) | 0.883 / 0.682 | recall **0.852**, precision **0.628** (225 of 264, 358 flagged of 629) | recall >= 0.85 |
+| truth files, flags per 20 bars | 0.53 (22 in 825 bars) | 0.65 | 0.06 (1 in 344 bars); all 1,169 bars: 23, **0.39** | <= 1 |
+| the app's own flags before (G12-2 replay, tuning half, app path) | recall 0.41-0.46, precision 0.92-0.95 | | | |
+
+**Through the page (the app path, replayed: `run --mode app --omr v2 --replay`, the page's own `Import.load`, PdfLayer and `omr/apply.js` on the recorded engine output; one rendering of each excerpt per tier, `pdf` = the vector PDF; the labels are the
+played Score's bars, so the hand rule and PdfLayer's edits are in them).** The suspect bars are the report's `suspectMeasures`: the validator's (empty, overfull, under half full, "the page shows more notes") and the flags'.
+
+| tier | tuning half: recall / precision (wrong bars) | held-out half, once: recall / precision (wrong bars) | the same before G12-3 (G12-2 replay), tuning / held-out |
+| --- | --- | --- | --- |
+| pdf-A (Verovio) | 0.894 / 0.756 (264) | 0.867 / 0.684 (45 of 344) | 0.458 / 0.945 ; 0.067 / 0.429 |
+| pdf-B (PPP's print) | 0.972 / 0.707 (211) | 0.951 / 0.488 (41 of 344) | 0.536 / 0.950 ; 0.049 / 0.333 |
+| pdf-A + pdf-B (clean) | 0.928 / 0.733 | **0.907 / 0.569** (86 wrong) | |
+| scan200-A (200 DPI scan) | 0.848 / 0.671 (178) | **0.865 / 0.662** (52 of 344) | 0.438 / 0.918 ; 0.173 / 0.692 |
+| photo-A (synthetic photo) | 0.878 / 0.619 (294) | **0.900 / 0.542** (100 of 344) | 0.408 / 0.930 ; 0.250 / 0.926 |
+
+The flags raise the share of wrong bars the review marks from 0.41-0.54 to 0.85-0.97 (tuning half) and from 0.07-0.25 to 0.87-0.95 (held-out half: the validator's own rules flagged 6 to 27 bars of 344). They cost precision: PPP's print on the
+held-out half is flagged 80 times for 41 wrong bars (0.49), the photos 166 times for 100 (0.54). Two things make the page numbers differ from the engine-alone ones above: the Score the page plays has PdfLayer's edits and the hand rule (bars the engine
+read right can be wrong in the Score, and the other way), and one rendering per piece is a small, uneven draw (18 pieces, 41-100 wrong bars a tier). **On the page, the gate's precision (0.60) is not met on held-out clean-B (0.49) or photo (0.54), and the recall of clean-A and
+scan is 0.87 (0.90 asked).** These numbers were not fitted for; the page was measured with the parameters of the engine-alone fit, after it was frozen, on the tuning half first and on the held-out half once, and nothing was changed afterwards.
+
+
+**A3, clause by clause.**
+
+| clause | result |
+| --- | --- |
+| recall >= 0.90 at precision >= 0.60, clean | recall 0.929 **met**; precision **0.595 on the held-out half: 0.005 under the line, not met** (0.732 on the tuning half, 0.707 cross-validated: the held-out clean excerpts are better read, 12 % of their bars wrong against 29 %, and precision falls with the base rate). 78 true flags in 131; a different draw of the same size moves it by about 0.04 |
+| recall >= 0.90 at precision >= 0.60, scan | recall 0.933, precision 0.664: **met** |
+| recall >= 0.85, photo (held-out) | recall 0.852, precision 0.628: **met by 0.002** (225 of 264; 3 bars are the difference: inside noise, not a margin) |
+| <= 1 flag per 20 bars on truth files | 0.39 over all 60 excerpts (0.06 held out): **met** (32 of the 42 tuning excerpts and 17 of the 18 held-out ones have none) |
+| no import with a suspect bar reports confidence >= 0.85 | **met** by construction (`confidenceOf`, a unit test over 100 combinations and a mutant that removes the cap) and in the page (browser suite) |
+
+**What the flags do not find, plainly.** The unflagged wrong bars of the tuning half are 33, 70 and 73 (clean, scan, photo; 7 %, 7 % and 9 %): a note the engine did not read in a bar that still adds up (20, 37 and 47 of them), a note it read twice (1, 10, 20), a pitch
+off by a clef or an accidental that nothing in the graph contradicts (12, 22, 5). The commonest whole-piece case is a time signature read as another (9/8 as 6/8: the engine then drops what does not fit and every bar "adds up"); no signal of the
+graph shows it. What is missing is evidence from the page itself: **printed heads against read heads per bar** (PdfLayer's `missing` exists for vector PDFs and fires only when the page bar count matches), a second reading (the 1.17x DPI pass:
+the nearest thing to an ensemble signal; it needs a second engine run, so it is not in the benchmark replay), and a bar-line finder that is right more often than PdfLayer's.
+
+**Measured and not used (negative results).**
+- **PdfLayer's bars per line** (`page-bars`; the example of section 8.2). The app path of the tuning half (`--mode app --omr v2 --replay`, 126 files) with the page's bar count per line passed in: recall 0.90-0.94 but precision 0.26-0.54; offline on the
+  same files, flagging only the bars of a line whose count differs (and only when the page and the read have the same number of lines): precision 0.35 on vector PDFs (37 bars; the base rate there is 0.26), 0 flags on photos (the number of lines
+  never agrees), 0.19 on 200 DPI scans. A "1" at the end of a line, the first bar of a line that holds a clef and a key, a pickup read as a bar: PdfLayer's own count is wrong in the same places the page gate (`PdfLayer.apply`, bars of the page
+  against the bars read) already fails. As a weak signal it lowers precision to 0.51 on scans. The signal is implemented (`opts.layout`, tested) and **unused**: the app passes no layout, and `page-bars` is in neither list of `PARAMS`.
+- **Audiveris' own symbol grades** (`ctx-grade` of heads and rests in the `.omr` project file, per bar, 216 single-sheet documents, 4,031 bars): on the bars the rule left unflagged, a head below 0.7 is wrong 0 of 34 (clean), 6 of 75 (scan, 8 %), 7 of 36 (photo, 19 %): the
+  base rate. The engine is as sure of what it dropped as of what it kept. (`stack` elements of the project file also hold the engine's own "expected / duration / excess" per measure: the same information as `fill-short` / `fill-over`.)
+- **Bar width against the piece's median**, **onset density against the neighbours**, **chord size**, **hands swapped (the right hand's register below the left's through a piece)**: no lift, or one the fit paid for in precision (onset density: +0.01 recall for -0.03 precision).
+- **Where the engine writes `<divisions>` 0 or a movement break** (`repaired`, `joined`): 77 and 20 bars, right 0.19 and 0.65 of the time; no use as signals, kept for the report.
+
+**Findings and limits, plainly.**
+- **Clean precision on the held-out half is 0.595: the gate's 0.60 is not met there.** It is not tuned for; the held-out half was looked at once. Photo recall is 0.852 against 0.85: no margin. Scan and the truth-file rate pass. The halves differ (held-out clean
+  is 12 % wrong, tuning clean 29 %), and 84 wrong bars is a small sample.
+- **The fit is a fit of 42 pieces, 8 renderings each**; the cross-validation is by piece, so the eight renderings of one piece are never on both sides, but the pieces are the catalogue's hymns and method books engraved by two engravers, flat paper. Real scans and
+  phone photos will be worse (K1-K3), and what "wrong" means for a bar nobody has a truth file of is the teacher's judgement (H-12).
+- **Flags per 20 bars on the OMR reads themselves are high**: 593 of 1,609 clean bars (37 %), 1,302 of 2,404 scan bars (54 %), 1,040 of 1,462 photo bars (71 %) are flagged, because 29 %, 41 % and 54 % of them are wrong. Precision 0.7 means three in ten flags
+  are bars that were right: the reviewer looks at about 1.4 bars per wrong bar found. On clean reads that is 2 false flags in 20 bars (159 in 1,609); most of them are a right bar beside a broken one on a page that is mostly broken (`bad-page` + `next-to-bad`, 118 of 1,040 on photos, 112 of 1,302 on scans).
+- **The page signal ("most of this page was hard to read") makes small scores all-or-nothing**: in a 3-bar excerpt one short bar is a third of the page. That is the threshold (30 %) and it is why the browser suite uses 8 bars.
+- **`x-misaligned` needs the engine's `default-x`** (Audiveris writes it; another engine, or a MusicXML export that lacks it, makes the signal silent) and `sum-mismatch` needs the notation checker (the page fetches it; without it that signal is silent and the rest stand).
+- **A flagged bar is not "fixed"**, and an unflagged bar is not "right": 7 to 15 % of the wrong bars of every tier stay unflagged (7 % clean, 7 % scan, 15 % photo on the held-out half).
+- **Sentences are in the page's language at import time**; a later language change leaves the stored sentences as they were (the codes are language-free). The strip shows the sentences of the bar; the issue list shows the first of each.
+- **The app-path replay uses recorded engine output**: nothing here ran Audiveris. G12-0's files (clean, photo, scan150, scan200; two engravers) are the only engine runs the fit has seen.
+
+**Decisions of the Lead's kind taken here (reversible).** Strong by a statistic or by design, nothing else; the weak count is 2 and fixed; "the page is bad" and "next to a bad bar" are weak signals, not a second rule; precision floor 0.65 and truth-file allowance 0.9
+inside the gate's 0.60 and 1.0 (the first fit at 0.70 / 0.7 reached 0.914 / 0.901 / 0.868 on the tuning half and 0.901 / 0.898 / 0.873 cross-validated, too close to the line; the second is the one judged); the confidence cap is 0.84 and falls with the share
+of suspect bars; the notation checker is served to the page (one file; `static-allow.js` and its test) rather than copied into `omr/`; the suspect bars are the report's own `suspectMeasures` (no new screen; the correction UI is G12-4); no layout is passed to the
+flags (above); `page-bars` was in the strong list when the held-out half was judged and was taken out afterwards because of the TUNING half's app-path replay: the dataset has no layout, so the signal never fired in any recorded number and the
+tuning and held-out numbers are those of the list without it (the record says so).

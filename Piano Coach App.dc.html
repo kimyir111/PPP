@@ -7806,30 +7806,15 @@ const Import = {
     } catch (e) { omr.graphFailed = 'threw: ' + String(e && (e.code || e.message) || e).slice(0, 160); return null; }
   },
 
-  /* G12-3 (PPP.omr = 'v2', docs/GOALS/G12_OMR.md section 8): the bars of a page the pages' own lines show, so that omr/flags.js can say "the page shows 6 measures on this line, PPP read 5".
-     One entry per page: the bar count of each system PdfLayer.layout finds (null when the page has no layer or none was found). Called before the layers are let go. */
-  pageLayout(pages, score) {
-    const per = Math.max(1, Math.min(4, (score && score.staves) || 2));
-    const out = (pages || []).map(p => {
-      const L = p && p.layer;
-      if (!L) return null;
-      try {
-        const counts = PdfLayer.layout(L, per).systems.map(s => s.bars.length).filter(c => c > 0);
-        return counts.length ? counts : null;
-      } catch (e) { return null; }
-    });
-    return out.some(Boolean) ? { pages: out } : null;
-  },
-
   /* G12-3: which bars of this import are suspect, and why (omr/flags.js: a bar is suspect when a strong signal fires, or two weak ones; fitted on omr-live-2's tuning half). The suspect bars join the
      report's (report.suspectMeasures: the strip's red bars, the count), each with its reasons in the language of the page (report.flagWhy, by measure number; report.flagCodes are the codes for the
      correction screen), and the confidence is never "good" (0.85) while any bar is suspect. Returns nothing; anything that fails leaves the report as it was and says why (report.flagsFailed). */
-  async omrFlags(omr, s4, score, report, layout) {
+  async omrFlags(omr, s4, score, report) {
     if (OMR_MODE !== 'v2' || !s4 || !s4.graph || !omr || !omr.normalize || !report) return;
     try {
       const FL = await loadOmrFlags();
       if (!FL) { report.flagsFailed = 'not-loaded'; return; }
-      const res = FL.analyze(s4.graph, { normalize: omr.normalize, layout: layout || null });
+      const res = FL.analyze(s4.graph, { normalize: omr.normalize });   /* no layout: the bars per line PdfLayer finds were measured (G12 section 23) and are not good enough to flag a bar by */
       if (!res.ok) { report.flagsFailed = String(res.error || 'not-ok') + (res.detail ? ': ' + res.detail : ''); return; }
       const measures = score.measures || [];
       if (res.bars.length !== measures.length) { report.flagsFailed = 'bars-differ'; return; }
@@ -9199,7 +9184,6 @@ const Import = {
       } catch (e) { /* the first pass stands as it is */ }
     }
 
-    const flagLayout = s4 ? Import.pageLayout(pages, score) : null;   /* G12-3: what the pages' own lines show, read before the layers go (null unless a v2 import) */
     if (kind === 'pdf') pages.forEach(p => { delete p.layer; });
 
     if (source.engine === 'pdf') {
@@ -9218,7 +9202,7 @@ const Import = {
     else if (omr && omr.normalizeFailed) report.normalizeFailed = omr.normalizeFailed;   /* PPP.omr = 'v2' but the import is the legacy one: why */
     if (s4) { report.graph = s4.applied; source.importReport = s4.importReport; }   /* G12-2: what the page's lines changed in the graph (counts, what was skipped and why), what the import kept and dropped */
     else if (omr && omr.graphFailed) report.graphFailed = omr.graphFailed;           /* PPP.omr = 'v2' but the import is the legacy one: why */
-    if (s4 && source.engine !== 'pdf') await Import.omrFlags(omr, s4, score, report, flagLayout);   /* G12-3: the bars that may be wrong, and why; the confidence is never "good" while one is suspect */
+    if (s4 && source.engine !== 'pdf') await Import.omrFlags(omr, s4, score, report);   /* G12-3: the bars that may be wrong, and why; the confidence is never "good" while one is suspect */
     source.status = report.level === 'poor' ? 'low-confidence' : 'recognised';
     score.source = source;
     /* page images stay in memory for the review screen; they are never persisted */

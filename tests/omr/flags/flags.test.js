@@ -156,6 +156,7 @@ test('never throws, never changes its input, is deterministic', async () => {
   assert.equal(JSON.stringify(F.analyze(g, { normalize: { flags: { 2: ['pair-merged'] } }, external: { 1: ['x'] } })), frozen, 'the same answer twice');
   assert.doesNotThrow(() => F.analyze(g, { normalize: 5, layout: 'x', external: 7, params: null }));
   assert.doesNotThrow(() => F.analyze(g, { normalize: { flags: { 2: 'pair-merged' }, structure: [null, { bars: 'x' }] }, layout: { pages: [null, 3, [1, 'a']] }, external: { 1: 'oops' } }));
+  assert.doesNotThrow(() => F.analyze(g, { normalize: { flags: { 2: 7, 3: { a: 1 } } }, params: { strong: ['fill-short'], weak: [], weakNeeded: 1 } }), 'parameters without thresholds, flags that are not lists');
 });
 
 test('the module is the same without the notation checker: sum-mismatch is the only signal that goes quiet', async () => {
