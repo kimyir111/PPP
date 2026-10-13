@@ -19920,19 +19920,12 @@ class Component extends DCLogic {
     return { screen: s };
   }
   go(s) {
-    const open = () => this.setState(st => {
+    return () => this.setState(st => {
       const patch = Object.assign({ playing: false, runHit: 0, runTot: 0, wrongNotes: [], sidebarOpen: false, learnFocus: false }, this.screenPatch(s));
       const [from] = this.range(Object.assign({}, st, patch));
       patch.beat = Score.startQ(st.score, from);
       return patch;
     });
-    /* G13-4e: Piano Basics reads lessons.js and Settings reads library-backup.js while they draw; both come in after the first paint, but a tap that comes first waits for the
-       file (a moment) instead of the page loading it synchronously in the middle of drawing */
-    const need = s === 'learn' ? ['lessons'] : s === 'settings' ? ['backup'] : null;
-    return () => {
-      if (need && lazyOn() && !window.PPP_LAZY.have(need)) { window.PPP_LAZY.ensure(need).then(open, open); return; }
-      open();
-    };
   }
   /* Loop a passage on the practice page. */
   drill(from, to, extra) {

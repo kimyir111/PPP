@@ -280,27 +280,28 @@ test('the arranger right after load (prefetch off): loadScoreModules asks for ev
   } finally { await o.close(); }
 });
 
-test('Piano Basics right after load (prefetch off): the lessons are there; no error', async () => {
+test('Piano Basics right after load (prefetch off): the screen opens at once and the lessons are there; no error', async () => {
   const o = await open({ prefetch: false });
   try {
     assert.equal(await nav(o.page, /^Piano Basics$/), true);
     await o.page.waitForFunction(() => window.PPP.app.state.screen === 'learn' && document.querySelector('main'), { timeout: 20000 });
     const s = await lazy(o.page);
     assert.ok(s.groups.includes('lessons:done'), 'lessons.js is in: ' + s.groups);
-    assert.equal(s.syncLoads, 0, 'asked for by the tap, not loaded in the middle of drawing: ' + JSON.stringify(s.syncLog));
+    /* no gate on the tap (a screen opens at once, as it always did): the page's read of PPP_LESSONS while it draws is what loads the file, once, by the safety net */
+    assert.ok(s.syncLoads <= 1 && s.syncLog.every(l => /^lessons <- PPP_LESSONS$/.test(l)), JSON.stringify(s.syncLog));
     assert.equal(await o.page.evaluate(() => typeof window.PPP_LESSONS.level), 'function');
     noErrors(o);
   } finally { await o.close(); }
 });
 
-test('Settings > My data right after load (prefetch off): the backup module is in and the section is drawn; no error', async () => {
+test('Settings > My data right after load (prefetch off): the screen opens at once, the backup module is in and the section is drawn; no error', async () => {
   const o = await open({ prefetch: false });
   try {
     assert.equal(await nav(o.page, /^Settings$/), true);
     await o.page.waitForFunction(() => document.querySelector('[data-backup-make], [data-backup-file]'), { timeout: 20000 });
     const s = await lazy(o.page);
     assert.ok(s.groups.includes('backup:done'), 'library-backup.js is in: ' + s.groups);
-    assert.equal(s.syncLoads, 0, JSON.stringify(s.syncLog));
+    assert.ok(s.syncLoads <= 1 && s.syncLog.every(l => /^backup <- PPPBackup$/.test(l)), JSON.stringify(s.syncLog));
     noErrors(o);
   } finally { await o.close(); }
 });

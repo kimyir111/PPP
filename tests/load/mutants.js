@@ -126,7 +126,6 @@ const M = [
   ['S2', 'Piano Coach App.dc.html', 'the readiness check reads a global (it loads the library at the first commit)', ["lazyPeek('PPPScoreGraph') && lazyPeek('PPPAudioScore')", "window.PPPScoreGraph && lazyPeek('PPPAudioScore')"], SPLITB],
   ['S3', 'Piano Coach App.dc.html', 'loadScoreModules does not ask for the groups (an import runs on the safety net)', ["window.PPP_LAZY.ensure(LAZY_SCORE_GROUPS).then(ok => {", "Promise.resolve(true).then(ok => {"], SPLITB],
   ['S4', 'Piano Coach App.dc.html', 'the backup module is loaded at every boot, not only for the note of a restore', ["    try { if (!window.sessionStorage.getItem('ppp-backup-flash')) return; } catch (e) { return; }\n", ""], SPLITB],
-  ['S5', 'Piano Coach App.dc.html', 'Piano Basics and Settings are drawn before their file is asked for', ["const need = s === 'learn' ? ['lessons'] : s === 'settings' ? ['backup'] : null;", "const need = null;"], SPLITB],
   ['S6', 'Piano Coach App.dc.html', 'PPP.split says on whatever this load did', ["get split() { return window.PPP_LAZY ? window.PPP_LAZY.mode : 'off'; },", "get split() { return 'on'; },"], SPLITB],
   ['S7', 'Piano Coach App.dc.html', 'the rest of the code is never prefetched', ["if (lazyOn()) window.PPP_LAZY.start();", ""], SPLITB],
   ['S8', 'Piano Coach App.dc.html', 'the piano recordings do not wait for the code', ["Promise.race([Promise.all([window.PPP_CJK_SETTLED, codeIn()]), new Promise(r => setTimeout(r, 7000))])", "Promise.race([window.PPP_CJK_SETTLED, new Promise(r => setTimeout(r, 7000))])"], SPLITB],
