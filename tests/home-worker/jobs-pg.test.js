@@ -87,7 +87,7 @@ const PRODUCTION_SQL = `
     await q(Store.SCHEMA_SQL); await q(Store.SCHEMA_SQL);
     ok('the migration run twice, by hand, on the production-shaped tables: no error, no row of theirs touched', JSON.stringify(await counts()) === JSON.stringify(before));
     /* two instances booting together (a deploy overlap): without a lock, CREATE TABLE IF NOT EXISTS from two sessions can fail on pg_type's unique index */
-    await q('DROP TABLE IF EXISTS ppp_worker_tokens, ppp_transcribe_jobs, ppp_pc_links');
+    await q('DROP TABLE IF EXISTS ppp_omr_pages, ppp_worker_tokens, ppp_transcribe_jobs, ppp_pc_links');
     const pool12 = new Pool({ connectionString: URL_, max: 12 });
     pool12.on('error', () => { /* a reset idle connection */ });
     const raced = await Promise.all(Array.from({ length: 12 }, () => Store.migrate(pool12).then(migrated, failure)));
@@ -118,7 +118,7 @@ const PRODUCTION_SQL = `
     await srv.close(); srv = null;
     await q(`DELETE FROM ppp_transcribe_jobs WHERE id = 'keepjob001'`);
     const sql = Store.SCHEMA_SQL;
-    const sqlNoDo = sql.replace(/DO \$\$[\s\S]*?END \$\$;/, '');
+    const sqlNoDo = sql.replace(/DO \$\$[\s\S]*?END \$\$;/, '').replace(/ON DELETE CASCADE/g, '');   /* (G12-5: a foreign key that cascades is not a DELETE) */
     ok('the migration is CREATE ... IF NOT EXISTS, and one DO block that drops the foreign keys on owner_id: no DROP TABLE, no DELETE, no TRUNCATE, no UPDATE, no column removed or renamed; and the DO block drops only a foreign key (DROP CONSTRAINT IF EXISTS), found by catalog lookup',
       !/\b(DROP|ALTER|DELETE|TRUNCATE|UPDATE)\b/i.test(sqlNoDo) && /IF NOT EXISTS/.test(sql) && (sql.match(/\bDROP\b/g) || []).length === 1 && /DROP CONSTRAINT IF EXISTS/.test(sql) && !/DROP COLUMN|RENAME|DROP TABLE|DROP INDEX/i.test(sql)
       && /contype = 'f'/.test(sql) && /attname = 'owner_id'/.test(sql) && !/ppp_users/.test(sql));
@@ -309,7 +309,7 @@ const PRODUCTION_SQL = `
     await q('DROP TABLE IF EXISTS ppp_worker_tokens, ppp_transcribe_jobs, ppp_pc_links, ppp_shares, ppp_progress, ppp_users CASCADE');
     const boots = await Promise.all(Array.from({ length: 12 }, () => startServer().then(s => s, err => ({ error: String(err && err.message) }))));
     const okBoots = boots.filter(b => !b.error).length;
-    ok('twelve real server.js processes booting together on an empty database (migration and seed library at once): all twelve come up and answer /health', okBoots === 12 && (await one("SELECT count(*)::int n FROM information_schema.tables WHERE table_schema = 'public' AND table_name LIKE 'ppp\\_%'"))[0].n === 6, okBoots + ' up; ' + boots.filter(b => b.error).map(b => b.error).slice(0, 2).join(' | '));
+    ok('twelve real server.js processes booting together on an empty database (migration and seed library at once): all twelve come up and answer /health', okBoots === 12 && (await one("SELECT count(*)::int n FROM information_schema.tables WHERE table_schema = 'public' AND table_name LIKE 'ppp\\_%'"))[0].n === 7, okBoots + ' up; ' + boots.filter(b => b.error).map(b => b.error).slice(0, 2).join(' | '));
     await Promise.all(boots.filter(b => !b.error).map(b => b.close()));
 
     heading('the queue is optional at the boot: a failure making its tables does not take the site down');
@@ -414,7 +414,9 @@ const PRODUCTION_SQL = `
       };
       const diff = (a, b) => ({ removed: a.filter(x => b.indexOf(x) < 0), added: b.filter(x => a.indexOf(x) < 0) });
       const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-      const NEW_COLS = ['ppp_pc_links.id text NO ', 'ppp_pc_links.client_hash text NO ', 'ppp_pc_links.created_at timestamp with time zone NO now()', 'ppp_pc_links.last_used_at timestamp with time zone NO now()', 'ppp_pc_links.last_worker_at timestamp with time zone YES ', "ppp_pc_links.created_ip_hash text NO ''::text", 'ppp_pc_links.revoked_at timestamp with time zone YES '];
+      const NEW_COLS = ['ppp_pc_links.id text NO ', 'ppp_pc_links.client_hash text NO ', 'ppp_pc_links.created_at timestamp with time zone NO now()', 'ppp_pc_links.last_used_at timestamp with time zone NO now()', 'ppp_pc_links.last_worker_at timestamp with time zone YES ', "ppp_pc_links.created_ip_hash text NO ''::text", 'ppp_pc_links.revoked_at timestamp with time zone YES ',
+        /* G13-5: the signup limiter's column on ppp_users, added by server.js's own boot SQL since the old code */ 'ppp_users.created_ip_tag text YES ',
+        /* G12-5: the page images of a score */ 'ppp_omr_pages.job_id text NO ', 'ppp_omr_pages.idx integer NO ', 'ppp_omr_pages.bytes bytea NO ', 'ppp_omr_pages.created_at timestamp with time zone NO now()'];
       const oldBoot = (db, env) => startServer(env, { script: path.join(oldDir, 'server.js'), cwd: oldDir, url: db.url });
       const newBoot = (db, env) => startServer(env, { url: db.url });
       const isFk = x => /^ppp_(transcribe_jobs|worker_tokens) .*FOREIGN KEY \(owner_id\) REFERENCES ppp_users/.test(x);
@@ -437,10 +439,13 @@ const PRODUCTION_SQL = `
           const logs = n1.log(); await n1.close();
           const dc = diff(s1.cols, s2.cols), dk = diff(s1.cons, s2.cons), di = diff(s1.idx, s2.idx);
           ok(sh.label + ': the code of ' + OLD_REV + ' boots on it (it makes or finds its tables, with the foreign keys: ' + hadFks + ')', hadFks === 2 && s1.cols.some(c => /^ppp_worker_tokens\./.test(c)), hadFks + '');
-          ok(sh.label + ': after this tree\'s boot the SCHEMA differs from the old boot\'s only by the new table (7 columns, its primary key and one index) and the two foreign keys on owner_id that are gone - nothing else added, removed or changed', dc.removed.length === 0 && same2(dc.added.slice().sort(), NEW_COLS.slice().sort())
-            && same2(dk.removed.filter(isFk).length, 2) && dk.removed.length === 2 && dk.added.length === 1 && /^ppp_pc_links ppp_pc_links_pkey PRIMARY KEY/.test(dk.added[0]) && di.removed.length === 0 && di.added.length === 2 && di.added.every(x => /ppp_pc_links/.test(x)),
-            JSON.stringify({ dc: dc, dk: dk, di: di }).slice(0, 400));
-          ok(sh.label + ': and the DATA is identical (every row of every table, the seed library included; an account\'s rows in the queue tables untouched)', same2(s1.rows, Object.assign({}, s2.rows, { ppp_pc_links: undefined })) && s2.rows.ppp_pc_links.length === 0
+          ok(sh.label + ': after this tree\'s boot the SCHEMA differs from the old boot\'s only by the two new tables (ppp_pc_links: 7 columns, its primary key and one index; G12-5 ppp_omr_pages: 4 columns, its primary key, its cascading foreign key to the job and one index) and the two foreign keys on owner_id that are gone - nothing else added, removed or changed', dc.removed.length === 0 && same2(dc.added.slice().sort(), NEW_COLS.slice().sort())
+            && same2(dk.removed.filter(isFk).length, 2) && dk.removed.length === 2 && dk.added.length === 3 && dk.added.filter(x => /^ppp_pc_links ppp_pc_links_pkey PRIMARY KEY/.test(x)).length === 1
+              && dk.added.filter(x => /^ppp_omr_pages ppp_omr_pages_pkey PRIMARY KEY \(job_id, idx\)/.test(x)).length === 1
+              && dk.added.filter(x => /^ppp_omr_pages ppp_omr_pages_job_id_fkey FOREIGN KEY \(job_id\) REFERENCES ppp_transcribe_jobs\(id\) ON DELETE CASCADE/.test(x)).length === 1
+              && di.removed.length === 0 && di.added.length === 4 && di.added.every(x => /ppp_pc_links|ppp_omr_pages/.test(x)),
+            JSON.stringify({ dc: dc, dk: dk, di: di }).slice(0, 700));
+          ok(sh.label + ': and the DATA is identical (every row of every table, the seed library included; an account\'s rows in the queue tables untouched)', same2(s1.rows, Object.assign({}, s2.rows, { ppp_pc_links: undefined, ppp_omr_pages: undefined, ppp_users: s2.rows.ppp_users.map(r => { const o = JSON.parse(r); if (o.created_ip_tag === null) delete o.created_ip_tag; return JSON.stringify(o); }) })) && s2.rows.ppp_pc_links.length === 0 && s2.rows.ppp_omr_pages.length === 0
             && (sh.name !== 'ppp_cmp_178' || (s2.rows.ppp_transcribe_jobs.length === 1 && s2.rows.ppp_worker_tokens.length === 1 && s2.rows.ppp_users.some(r => /acct-1/.test(r)))),
             Object.keys(s1.rows).filter(t => !same2(s1.rows[t], s2.rows[t])).join());
           ok(sh.label + ': the boot says nothing is wrong (no "queue: OFF" line)', !/queue: OFF/.test(logs) && /an idle worker is told to wait/.test(logs), logs.slice(-200));

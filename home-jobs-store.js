@@ -27,6 +27,9 @@ const path = require('path');
    only needs the two old tables to exist. A database that has the PR 178 tables and one that has none both end up the same (the new tables are
    made without the key); running it again changes nothing. Every table has an index made here: that is also what makes a name taken by something else (a
    view), or a table of another shape, fail in this SQL - and so switch the queue off at the boot, inside migrate()'s savepoint - and not later, one request at a time.
+   G12-5 adds one table, ppp_omr_pages: the page images of a job of kind 'omr' (a printed score the person's own PC reads), with a foreign key to the job that CASCADES, so
+   removing a job row (the purge, a removed link, the old code's own deletes) removes its images with it. Nothing existing is altered; the code before G12-5 boots on the result
+   and never touches the table. To drop the queue's tables by hand, drop ppp_omr_pages first (or use CASCADE): a foreign key refers to ppp_transcribe_jobs now.
    Run at every boot, inside migrate() below. */
 const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS ppp_transcribe_jobs (
@@ -68,6 +71,14 @@ const SCHEMA_SQL = `
     revoked_at TIMESTAMPTZ
   );
   CREATE INDEX IF NOT EXISTS ppp_pc_links_created ON ppp_pc_links (created_at);
+  CREATE TABLE IF NOT EXISTS ppp_omr_pages (
+    job_id TEXT NOT NULL REFERENCES ppp_transcribe_jobs (id) ON DELETE CASCADE,
+    idx INTEGER NOT NULL,
+    bytes BYTEA NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (job_id, idx)
+  );
+  CREATE INDEX IF NOT EXISTS ppp_omr_pages_created ON ppp_omr_pages (created_at);
   DO $$ DECLARE t text; c text; BEGIN
     FOREACH t IN ARRAY ARRAY['ppp_transcribe_jobs', 'ppp_worker_tokens'] LOOP
       FOR c IN SELECT k.conname FROM pg_constraint k JOIN pg_attribute a ON a.attrelid = k.conrelid AND a.attnum = ANY (k.conkey)
@@ -129,7 +140,7 @@ function jobOfRow(r) {
   return {
     id: r.id, ownerId: r.owner_id, kind: r.kind, url: r.url, title: r.title, status: r.status, attempts: r.attempts,
     workerId: r.worker_id || null, createdAt: ms(r.created_at), claimedAt: ms(r.claimed_at), finishedAt: ms(r.finished_at),
-    error: r.error || '', bytes: r.bytes || 0
+    error: r.error || '', bytes: r.bytes || 0, pages: r.pages | 0
   };
 }
 function tokenOfRow(r) {
@@ -156,7 +167,9 @@ function pgJobStore(query) {
       const r = await query(
         'SELECT ' + LINK_COLS + ' FROM ppp_pc_links;'
         + ' SELECT ' + TOKEN_COLS + ' FROM ppp_worker_tokens WHERE revoked_at IS NULL;'
-        + ' SELECT ' + JOB_COLS + ' FROM ppp_transcribe_jobs;');
+        /* G12-5: how many page images each job still holds (a job of kind 'omr' holds its pages until it is finished; a finished one holds none: a count above 0 on a job that is not
+           waiting is garbage the service deletes) - inside this one statement, so the boot read is still one round trip */
+        + ' SELECT ' + JOB_COLS + ', (SELECT count(*)::int FROM ppp_omr_pages p WHERE p.job_id = j.id) AS pages FROM ppp_transcribe_jobs j;');
       const parts = Array.isArray(r) ? r : [r];
       return { links: rowsOf(parts[0]).map(linkOfRow), tokens: rowsOf(parts[1]).map(tokenOfRow), jobs: rowsOf(parts[2]).map(jobOfRow) };
     },
@@ -206,6 +219,32 @@ function pgJobStore(query) {
         'INSERT INTO ppp_transcribe_jobs (id, owner_id, kind, url, title, status, attempts, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
         [j.id, j.ownerId, j.kind, j.url, j.title, 'queued', 0, at(j.createdAt)]);
     },
+    /* G12-5: a job of kind 'omr' and its page images (Buffers, in page order) in ONE statement: a job never exists without its pages. bytes is the images' total (the quota counts
+       it while the job waits; the result's size replaces it when the job is done) */
+    async insertOmrJob(j, pages) {
+      const params = [j.id, j.ownerId, j.kind, j.url, j.title, 'queued', 0, at(j.createdAt), j.bytes | 0];
+      const rows = pages.map((buf, i) => { params.push(buf); return '($1, ' + (i | 0) + ', $' + params.length + '::bytea)'; });
+      await query(
+        'WITH j AS (INSERT INTO ppp_transcribe_jobs (id, owner_id, kind, url, title, status, attempts, created_at, bytes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9))'
+        + ' INSERT INTO ppp_omr_pages (job_id, idx, bytes) VALUES ' + rows.join(', '),
+        params);
+    },
+    /* one page of a job that is being worked on (claimed), for the link that owns it; null otherwise (a queued job's images are not handed out: only a claim opens them) */
+    async getOmrPage(id, ownerId, idx) {
+      const r = await query(
+        "SELECT p.bytes AS bytes FROM ppp_omr_pages p JOIN ppp_transcribe_jobs j ON j.id = p.job_id WHERE p.job_id = $1 AND p.idx = $2 AND j.owner_id = $3 AND j.status = 'claimed'",
+        [id, idx | 0, ownerId]);
+      const row = rowsOf(r)[0];
+      return row && row.bytes ? row.bytes : null;
+    },
+    /* the page images of a job that is no longer waiting or being worked on (done, failed, cancelled, expired); never those of a job that is - the owner and the state are in the WHERE */
+    async deleteOmrPages(id, ownerId) {
+      if (!id || !ownerId) return 0;
+      const r = await query(
+        "DELETE FROM ppp_omr_pages p USING ppp_transcribe_jobs j WHERE p.job_id = j.id AND p.job_id = $1 AND j.owner_id = $2 AND j.status NOT IN ('queued', 'claimed')",
+        [id, ownerId]);
+      return r.rowCount || 0;
+    },
     /* queued -> claimed; false when it was not queued any more (another writer got it, or it was cancelled) */
     async claimJob(id, ownerId, workerId, t) {
       const r = await query(
@@ -246,10 +285,11 @@ function pgJobStore(query) {
       const row = rowsOf(r)[0];
       return row && row.result ? row.result : null;
     },
-    async purge(doneBefore, otherBefore) {
+    /* omrDoneBefore (G12-5): a finished 'omr' job is kept for a shorter time than a conversion's notes (its score was taken by the page at once; the image pages are long gone) */
+    async purge(doneBefore, otherBefore, omrDoneBefore) {
       const r = await query(
-        "DELETE FROM ppp_transcribe_jobs WHERE (status = 'done' AND finished_at < $1) OR (status IN ('failed', 'cancelled', 'expired') AND finished_at < $2)",
-        [at(doneBefore), at(otherBefore)]);
+        "DELETE FROM ppp_transcribe_jobs WHERE (status = 'done' AND finished_at < (CASE WHEN kind = 'omr' THEN $3::timestamptz ELSE $1::timestamptz END)) OR (status IN ('failed', 'cancelled', 'expired') AND finished_at < $2)",
+        [at(doneBefore), at(otherBefore), at(omrDoneBefore == null ? doneBefore : omrDoneBefore)]);
       return r.rowCount || 0;
     },
     async touchSeen(id, ownerId, t, pollS) {
@@ -279,13 +319,21 @@ function fileJobStore(dir) {
       }
     }
   }
+  /* G12-5: the page images of 'omr' jobs, one file each (omr-pages/<job id>.<n>.bin) beside jobs.json: a job id is the server's own (base64url), never a name from outside */
+  const pagesDir = path.join(dir, 'omr-pages');
+  const idOk = id => /^[A-Za-z0-9_-]{8,40}$/.test(String(id));
+  const pageFile = (id, i) => path.join(pagesDir, id + '.' + (i | 0) + '.bin');
+  const pageFilesOf = id => { try { return fs.readdirSync(pagesDir).filter(f => f.indexOf(id + '.') === 0 && /\.bin$/.test(f)); } catch (e) { return []; } };
+  const dropPages = ids => { let n = 0; ids.forEach(id => { if (!idOk(id)) return; pageFilesOf(id).forEach(f => { try { fs.unlinkSync(path.join(pagesDir, f)); n++; } catch (e) { /* gone */ } }); }); return n; };
+  const pageCounts = () => { const c = {}; try { fs.readdirSync(pagesDir).forEach(f => { const m = /^(.+)\.\d+\.bin$/.exec(f); if (m) c[m[1]] = (c[m[1]] || 0) + 1; }); } catch (e) { /* none */ } return c; };
   const plain = r => { const o = Object.assign({}, r); delete o.result; return o; };
   const find = (d, id, ownerId) => d.jobs.find(j => j.id === id && j.ownerId === ownerId);
   return {
     kind: 'file',
     async loadAll() {
       const d = load();
-      return { links: d.links.map(l => Object.assign({}, l)), tokens: d.tokens.filter(k => !k.revokedAt).map(k => Object.assign({}, k)), jobs: d.jobs.map(plain) };
+      const counts = pageCounts();
+      return { links: d.links.map(l => Object.assign({}, l)), tokens: d.tokens.filter(k => !k.revokedAt).map(k => Object.assign({}, k)), jobs: d.jobs.map(r => Object.assign(plain(r), { pages: counts[r.id] | 0 })) };
     },
     async createLink(l, k) {
       const d = load();
@@ -304,6 +352,7 @@ function fileJobStore(dir) {
     async revokeLink(id, t) {
       const d = load();
       const own = x => x.ownerId === id && String(x.ownerId).slice(0, 3) === 'pc_';
+      dropPages(d.jobs.filter(own).map(j => j.id));
       d.jobs = d.jobs.filter(j => !own(j));
       d.tokens = d.tokens.filter(k => !own(k));
       const l = d.links.find(x => x.id === id && !x.revokedAt);
@@ -321,6 +370,7 @@ function fileJobStore(dir) {
       if (!ids.length) return 0;
       const d = load(), n = d.links.length;
       const gone = x => ids.indexOf(x.ownerId) >= 0 && String(x.ownerId).slice(0, 3) === 'pc_';
+      dropPages(d.jobs.filter(gone).map(j => j.id));
       d.jobs = d.jobs.filter(j => !gone(j));
       d.tokens = d.tokens.filter(k => !gone(k));
       d.links = d.links.filter(l => !(ids.indexOf(l.id) >= 0 && String(l.id).slice(0, 3) === 'pc_'));
@@ -332,6 +382,30 @@ function fileJobStore(dir) {
       d.jobs.push({ id: j.id, ownerId: j.ownerId, kind: j.kind, url: j.url, title: j.title, status: 'queued', attempts: 0, workerId: null,
         createdAt: j.createdAt, claimedAt: 0, finishedAt: 0, error: '', bytes: 0, result: null });
       save(d);
+    },
+    /* G12-5: the job and its page images (Buffers, in page order): the images are written first, so a job row never names pages that are not there */
+    async insertOmrJob(j, pages) {
+      if (!idOk(j.id)) throw new Error('bad job id');
+      fs.mkdirSync(pagesDir, { recursive: true });
+      try {
+        pages.forEach((buf, i) => fs.writeFileSync(pageFile(j.id, i), buf));
+        const d = load();
+        d.jobs.push({ id: j.id, ownerId: j.ownerId, kind: j.kind, url: j.url, title: j.title, status: 'queued', attempts: 0, workerId: null,
+          createdAt: j.createdAt, claimedAt: 0, finishedAt: 0, error: '', bytes: j.bytes | 0, result: null });
+        save(d);
+      } catch (e) { dropPages([j.id]); throw e; }
+    },
+    async getOmrPage(id, ownerId, idx) {
+      if (!idOk(id)) return null;
+      const j = find(load(), id, ownerId);
+      if (!j || j.status !== 'claimed') return null;
+      try { return fs.readFileSync(pageFile(id, idx)); } catch (e) { return null; }
+    },
+    async deleteOmrPages(id, ownerId) {
+      if (!id || !ownerId || !idOk(id)) return 0;
+      const j = find(load(), id, ownerId);
+      if (!j || j.status === 'queued' || j.status === 'claimed') return 0;
+      return dropPages([id]);
     },
     async claimJob(id, ownerId, workerId, t) {
       const d = load(), j = find(d, id, ownerId);
@@ -365,7 +439,9 @@ function fileJobStore(dir) {
     async deleteJobs(ids, ownerId) {
       if (!ids.length || !ownerId) return 0;
       const d = load(), n = d.jobs.length;
-      d.jobs = d.jobs.filter(j => !(ids.indexOf(j.id) >= 0 && j.ownerId === ownerId && j.status !== 'queued' && j.status !== 'claimed'));
+      const gone = j => ids.indexOf(j.id) >= 0 && j.ownerId === ownerId && j.status !== 'queued' && j.status !== 'claimed';
+      dropPages(d.jobs.filter(gone).map(j => j.id));
+      d.jobs = d.jobs.filter(j => !gone(j));
       if (d.jobs.length !== n) save(d);
       return n - d.jobs.length;
     },
@@ -373,10 +449,13 @@ function fileJobStore(dir) {
       const j = find(load(), id, ownerId);
       return j && j.status === 'done' && j.result ? j.result : null;
     },
-    async purge(doneBefore, otherBefore) {
+    async purge(doneBefore, otherBefore, omrDoneBefore) {
       const d = load(), n = d.jobs.length;
-      d.jobs = d.jobs.filter(j => !((j.status === 'done' && j.finishedAt < doneBefore)
-        || ((j.status === 'failed' || j.status === 'cancelled' || j.status === 'expired') && j.finishedAt < otherBefore)));
+      const omrBefore = omrDoneBefore == null ? doneBefore : omrDoneBefore;
+      const gone = j => (j.status === 'done' && j.finishedAt < (j.kind === 'omr' ? omrBefore : doneBefore))
+        || ((j.status === 'failed' || j.status === 'cancelled' || j.status === 'expired') && j.finishedAt < otherBefore);
+      dropPages(d.jobs.filter(gone).map(j => j.id));
+      d.jobs = d.jobs.filter(j => !gone(j));
       if (d.jobs.length !== n) save(d);
       return n - d.jobs.length;
     },
