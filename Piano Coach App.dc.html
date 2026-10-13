@@ -1119,6 +1119,7 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
                 <span style="font-size: 14px; font-weight: 600;">From a YouTube link</span>
               </div>
               <div style="font-size: 12.5px; line-height: 1.5; color: var(--ink3); margin-top: 5px;">Paste a link to a piano performance. PPP downloads the sound, hears the notes and writes them out.</div>
+              <div data-youtube-notice style="font-size: 11.5px; line-height: 1.5; color: var(--ink3); margin-top: 4px;">Use recordings you have the right to use. The score PPP writes is for your own practice.</div>
               <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
                 <input type="url" data-youtube-url placeholder="https://www.youtube.com/watch?v=…" value="{{ ytUrl }}" onChange="{{ setYtUrl }}" onKeyDown="{{ ytKey }}" style="flex: 1; min-width: 0; flex-basis: 220px; padding: 10px 13px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px; outline: none;" />
                 <button onClick="{{ addYoutube }}" style="padding: 10px 16px; border-radius: 10px; border: 0; background: var(--ink); color: var(--surface); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;" style-hover="filter: brightness(1.3);">Make sheet music</button>
@@ -2757,6 +2758,25 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
               </div>
             </sc-if>
           </div>
+          <!-- G13-3 (G13-D15): About & licences. The attribution the piano recordings' licence (CC BY 3.0) asks for, what stays on this device, the rights notice for YouTube links (U9) and the generated licence notices. -->
+          <div data-about-section style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px 22px; display: flex; flex-direction: column; gap: 12px;">
+            <div>
+              <div style="font-size: 14.5px; font-weight: 600;">{{ aboutTitle }}</div>
+              <div data-about-build style="font-size: 12.5px; line-height: 1.5; color: var(--ink3); margin-top: 3px;">{{ aboutBuild }}</div>
+            </div>
+            <div data-about-local style="font-size: 12.5px; line-height: 1.55; color: var(--ink2);">{{ aboutLocal }}</div>
+            <div data-about-youtube style="font-size: 12.5px; line-height: 1.55; color: var(--ink2);">{{ aboutYoutube }}</div>
+            <div data-about-sounds style="font-size: 12.5px; line-height: 1.55; color: var(--ink2);">
+              <span>{{ aboutSounds }}</span>
+              <a data-about-cc href="{{ aboutCcHref }}" target="_blank" rel="noopener" style="color: var(--accent);">{{ aboutCcLabel }}</a>
+              <span aria-hidden="true">·</span>
+              <a data-about-source href="{{ aboutSourceHref }}" target="_blank" rel="noopener" style="color: var(--accent);">{{ aboutSourceLabel }}</a>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 3px; padding-top: 12px; border-top: 1px solid var(--line);">
+              <a data-about-notices href="{{ aboutNoticesHref }}" target="_blank" rel="noopener" style="font-size: 13px; font-weight: 600; color: var(--accent);">{{ aboutNoticesLabel }}</a>
+              <div style="font-size: 12px; line-height: 1.5; color: var(--ink3);">{{ aboutNoticesSub }}</div>
+            </div>
+          </div>
         </div>
       </sc-if>
 
@@ -3027,8 +3047,8 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
         <sc-if value="{{ shareCanPost }}" hint-placeholder-val="{{ true }}">
           <section style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg);">
             <div style="font-size: 13.5px; font-weight: 600;">{{ sharePostHeading }}</div>
-            <p style="margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink2);">{{ sharePostNote }}</p>
-            <button data-share-post data-posted="{{ sharePostedAttr }}" onClick="{{ sharePost }}" style="{{ sharePostStyle }}">{{ sharePostLabel }}</button>
+            <p id="ppp-share-post-note" data-share-post-note data-blocked="{{ sharePostBlockedAttr }}" style="margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink2);">{{ sharePostNote }}</p>
+            <button data-share-post data-posted="{{ sharePostedAttr }}" disabled="{{ sharePostDisabled }}" aria-disabled="{{ sharePostDisabled }}" aria-describedby="ppp-share-post-note" onClick="{{ sharePost }}" style="{{ sharePostStyle }}">{{ sharePostLabel }}</button>
           </section>
         </sc-if>
         <sc-if value="{{ shareCanLink }}" hint-placeholder-val="{{ true }}">
@@ -13890,6 +13910,23 @@ class Component extends DCLogic {
       this.bkSet({ phase: 'wipe-failed', busy: false, msg: tx('Some data could not be removed ({{what}}). Close other PPP tabs and try again.', { what: what }), msgKind: 'bad' });
     }
   }
+  /* G13-3: Settings > About & licences. Facts that are in THIRD_PARTY_NOTICES.md (generated by tools/notices/build.js from vendor/README.md, audio/piano/README.md and the
+     catalogues), in the four languages: the build, what stays on this device, the rights notice for YouTube links (U9) and the CC BY attribution of the piano sounds. */
+  aboutVals() {
+    const build = typeof window !== 'undefined' && window.PPP_BUILD ? tx('build {{build}}', { build: window.PPP_BUILD }) : '';
+    return {
+      aboutTitle: tx('About & licences'),
+      aboutBuild: [tx('PPP — Piano Practice Partner'), build].filter(Boolean).join(' · '),
+      aboutLocal: tx('Your songs are saved only in this browser. PPP\'s server receives a song only when you share it or ask it to arrange or read it.'),
+      aboutYoutube: tx('Use recordings you have the right to use. The score PPP writes is for your own practice.') + ' '
+        + tx('A score made from a YouTube link cannot be posted to Shared Scores. You can still send its link.'),
+      aboutSounds: tx('Piano sounds: Salamander Grand Piano V3 by Alexander Holm, licensed under CC BY 3.0. Notes longer than nine seconds are shortened.'),
+      aboutCcHref: 'https://creativecommons.org/licenses/by/3.0/', aboutCcLabel: tx('Licence text'),
+      aboutSourceHref: 'https://archive.org/details/SalamanderGrandPianoV3', aboutSourceLabel: tx('Source'),
+      aboutNoticesHref: './THIRD_PARTY_NOTICES.md', aboutNoticesLabel: tx('Open-source licences and notices'),
+      aboutNoticesSub: tx('Code, fonts, sounds and score catalogues, with their licences.')
+    };
+  }
   backupVals() {
     const S = this.state, bk = S.bk || {}, B = window.PPPBackup;
     const phase = bk.phase || 'idle';
@@ -13909,6 +13946,7 @@ class Component extends DCLogic {
     const solid = on => base + 'border:0;background:var(--bad);color:#fff;' + (on ? 'cursor:pointer;' : 'opacity:.45;cursor:not-allowed;');
     const box = bad => 'display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:12px;background:var(--bg);border:1px solid ' + (bad ? 'var(--bad)' : 'var(--accent-2)') + ';';
     return {
+      ...this.aboutVals(),   /* G13-3 */
       bkOn: !!B,
       bkTitle: tx('My data'),
       bkSub: tx('Your songs and practice progress are kept only in this browser. A backup file lets you keep them safe or move them to another device.'),
@@ -17960,6 +17998,8 @@ class Component extends DCLogic {
       provider: usedSingle ? 'PPP one-note-per-hand arranger' : (provider || (usedFallback ? 'PPP browser fallback' : 'PPP harmonic arranger')), createdAt: Clock.now()
     });
     if (singleFailure) source.arrangement = Object.assign({}, source.arrangement || {}, { singleFallback: singleFailure });
+    /* G13-3 (U9): the copy of a YouTube song is for its owner's practice too */
+    if (this.youtubeDerivedOf(d.songId)) source.youtubeDerived = true;
     arranged.source = source;
     /* which build made this copy (the server puts it in the page): a screenshot of the song then says whether it is an old copy */
     const buildTag = typeof window !== 'undefined' && window.PPP_BUILD ? tx('build {{build}}', { build: window.PPP_BUILD }) : '';
@@ -18085,6 +18125,32 @@ class Component extends DCLogic {
     try { if (/^https?:$/.test(location.protocol)) base = location.origin; } catch (e) {}
     return base + '/?share=' + encodeURIComponent(id);
   }
+  /* G13-3 (U9): was this song made from a YouTube link's audio? Its own notes were transcribed from it (source.kind 'youtube' AND notation inferred from audio:
+     inferredAudioNotation - not a public-domain score found by the title, not a score uploaded beside the video, not a hymn that has a performance to watch), or it is
+     an arrangement of such a song (an arrangement keeps its parent's id: arrangedFrom / parentSongId), or the copy it came from carried the mark (a score added from
+     Shared Scores keeps source.youtubeDerived). Such a score is for its owner's practice: it is not posted to the public Shared Scores; its link can still be sent.
+     This is the page's reading of what it knows; the server reads only the mark and the flag this page sends (server.js youtubeDerivedShare), as a policy guard, not
+     a security boundary. */
+  youtubeDerivedOf(songId, seen) {
+    /* a transcription saved before transcriptionVersion / amt existed carries only the engine's label ('Basic Pitch', 'Piano Onsets & Frames', ...). Not a catalogue score
+       found by the title (retrieved), not a score uploaded beside the video (referenceScore), and not a hymn with a performance to watch (no engine at all) */
+    const labelledAudioEngine = src => !!src && !src.referenceScore && !src.retrieved
+      && /basic pitch|onsets|transkun|kong|aria|ensemble|transcription|song separation|broad audio/i.test(src.engine || '');
+    seen = seen || {};
+    if (!songId || songId === 'demo' || seen[songId]) return false;
+    seen[songId] = true;
+    const S = this.state;
+    let score = null;
+    if (songId === (S.songId || 'demo')) score = S.score;
+    else { const slot = this.readSong(songId); score = slot && slot.score ? unpackScore(slot.score) : null; }
+    const src = score && score.source && typeof score.source === 'object' ? score.source : {};
+    let card = null;
+    try { card = this.libraryRead().songs.find(c => c.id === songId) || null; } catch (e) { card = null; }
+    if (src.youtubeDerived === true) return true;
+    if ((src.kind || (card && card.kind)) === 'youtube' && (inferredAudioNotation(src) || labelledAudioEngine(src))) return true;
+    const parent = src.parentSongId || (card && card.arrangedFrom) || null;
+    return parent ? this.youtubeDerivedOf(parent, seen) : false;
+  }
   /* The song as it is sent: its notes, and where it came from cut down to a
      YouTube link at most — the video is public, a file name is not. */
   shareScoreOf(songId) {
@@ -18101,6 +18167,8 @@ class Component extends DCLogic {
       ? { kind: 'youtube', url: yt.url, youtubeId: yt.id, barStarts: src.barStarts || null, tempo: src.tempo || null, seconds: src.seconds || null }
       : { kind: 'shared' };
     if (/^Transcribed from /.test(out.composer || '')) out.composer = '';
+    /* G13-3: the mark travels with the copy, so whoever adds it keeps it (an arrangement of a YouTube song has no YouTube source of its own) */
+    if (this.youtubeDerivedOf(songId)) out.source = Object.assign({}, out.source, { youtubeDerived: true });
     return out;
   }
   /* Send a song to the server: posted to Shared Scores (listed true), taken
@@ -18110,6 +18178,9 @@ class Component extends DCLogic {
   publishSong(songId, listed) {
     const guest = !this.state.user;
     if (guest && listed) return Promise.reject(new Error(tx('Posting to Shared Scores needs an account.')));
+    /* G13-3 (U9): a song made from a YouTube link is not posted to the public list; its link is made as for any song */
+    const ytDerived = this.youtubeDerivedOf(songId);
+    if (ytDerived && listed === true) return Promise.reject(new Error(tx('A score made from a YouTube link cannot be posted to Shared Scores. You can still send its link.')));
     const score = this.shareScoreOf(songId);
     if (!score) return Promise.reject(new Error(tx('That song could not be shared.')));
     const preview = openingBars(score, 2);
@@ -18119,7 +18190,8 @@ class Component extends DCLogic {
       songKey: songId, title: score.title,
       composer: score.composer === 'Unknown' ? '' : score.composer || '',
       genre: card.genre || '', kind: card.kind || '',
-      listed: listed, score: score, preview: preview
+      listed: listed, score: score, preview: preview,
+      youtubeDerived: ytDerived ? true : undefined
     });
     /* an account may share 4 MB; a guest link holds 1 MB */
     if (new Blob([body]).size > (guest ? 1024 * 1024 : 4 * 1024 * 1024)) {
@@ -18323,7 +18395,10 @@ class Component extends DCLogic {
       if (!score || !score.measures.length || !score.notes.some(n => !n.rest)) throw new Error(tx('That shared score could not be read.'));
       score.id = 'shared:' + row.id + ':' + Date.now();
       const source = { kind: 'shared', name: row.title, shareId: row.id, owner: row.owner, importedAt: Clock.now(), status: 'shared' };
+      /* G13-3: a copy that was made from a YouTube link stays one in the hands of whoever adds it (it is not posted again). Only the mark counts: a source of kind youtube alone is a hymn or a catalogue score with a performance to watch */
+      const ytMark = !!(score.source && score.source.youtubeDerived === true);
       if (!score.source || score.source.kind !== 'youtube') score.source = { kind: 'shared', shareId: row.id };
+      if (ytMark) score.source.youtubeDerived = true;
       this.cancelImport(true);
       this._file = null; this._yt = null; this._pageImages = null;
       this.dropRecording();
@@ -18827,6 +18902,8 @@ class Component extends DCLogic {
     const guest = !S.user;
     const guestHint = guest && !!t.card;
     const posted = !!(sh && sh.listed);
+    /* G13-3 (U9): a song made from a YouTube link is not posted to Shared Scores (its link can still be sent); a share that is already posted can still be taken down */
+    const ytBlocked = !posted && !!t.card && this.youtubeDerivedOf(t.card.id);
     const primary = 'align-self:flex-start;padding:10px 16px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;';
     const plain = 'align-self:flex-start;padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;';
     const nets = [
@@ -18844,10 +18921,12 @@ class Component extends DCLogic {
       shareSignInLabel: tx('Sign in'), shareSignInStyle: plain, shareSignIn: () => this.setState({ shareDlg: null, guest: false }),
       shareCanPost: t.mine && !guest,
       sharePostHeading: tx('Shared Scores'),
-      sharePostNote: tx(posted ? 'Posted — anyone using PPP can find it in Shared Scores and add it to their songs.'
-        : 'Post it, and anyone using PPP can find it in Shared Scores and add it to their songs.'),
+      sharePostNote: ytBlocked ? tx('A score made from a YouTube link cannot be posted to Shared Scores. You can still send its link.')
+        : tx(posted ? 'Posted — anyone using PPP can find it in Shared Scores and add it to their songs.'
+          : 'Post it, and anyone using PPP can find it in Shared Scores and add it to their songs.'),
+      sharePostBlockedAttr: ytBlocked ? 'true' : 'false', sharePostDisabled: ytBlocked,
       sharePostLabel: d.busy === 'post' ? tx(posted ? 'Taking down…' : 'Posting…') : tx(posted ? 'Take down' : 'Post to Shared Scores'),
-      sharePostStyle: posted ? plain : primary, sharePostedAttr: posted ? 'true' : 'false',
+      sharePostStyle: ytBlocked ? primary + 'opacity:.45;cursor:not-allowed;' : posted ? plain : primary, sharePostedAttr: posted ? 'true' : 'false',
       sharePost: () => this.postShared(!posted),
       shareCanLink: true,
       shareLinkHeading: tx('Send a link'),
