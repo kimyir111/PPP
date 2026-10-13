@@ -132,6 +132,7 @@ const M = [
   ['S8', 'Piano Coach App.dc.html', 'the piano recordings do not wait for the code', ["Promise.race([Promise.all([window.PPP_CJK_SETTLED, codeIn()]), new Promise(r => setTimeout(r, 7000))])", "Promise.race([window.PPP_CJK_SETTLED, new Promise(r => setTimeout(r, 7000))])"], SPLITB],
   ['S10', 'Piano Coach App.dc.html', 'the head names the score library as a plain script again (it is fetched before the paint)', ["<noscript data-ppp-lazy=\"score\" data-globals=\"PPPScoreGraph PPPScoreGraphModules\">\n", "<script src=\"./scoregraph/rational.js?v=8\"></script><noscript data-ppp-lazy=\"score\" data-globals=\"PPPScoreGraph PPPScoreGraphModules\">\n"], SPLITB],
   ['S11', 'Piano Coach App.dc.html', 'a file import reads the library and audio-score.js without asking for them first', ["async function importToGraph(bytes, name, kind) {\n  await needScoreGraph(kind === 'midi');", "async function importToGraph(bytes, name, kind) {"], SPLITB],
+  ['S12', 'Piano Coach App.dc.html', 'shelving the open song reads the engraver before it looks at what the song is (the demo has nothing to keep)', ["if (!score || score.id === 'demo' || !songId || songId === 'demo') return;\n    /* G13-4e: lazyPeek", "if (!window.PPPEngrave || !score || score.id === 'demo' || !songId || songId === 'demo') return;\n    /* G13-4e: lazyPeek"], SPLITB],
 ];
 
 function run(m, dir) {

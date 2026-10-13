@@ -29,6 +29,7 @@ const GROUP_URL = {
   audio: /\/audio-score\.js\?h=/, arranger: /\/(playability|difficulty|songgraph|arrangement|realize)\/[\w-]+\.js\?h=/,
   backup: /\/library-backup\.js\?h=/, lessons: /\/lessons\.js\?h=/
 };
+const groupsRe = (...names) => new RegExp(names.map(n => GROUP_URL[n].source).join('|'));
 const ANY_LAZY = new RegExp(Object.values(GROUP_URL).map(r => r.source).join('|'));
 
 let srv, browser;
@@ -217,8 +218,8 @@ test('Practice opened at once, with the engraver\'s files held 5 s and the prefe
   } finally { await o.close(); }
 });
 
-test('a MusicXML file added right after load (prefetch off): the song opens; the groups it needs come in by the importer\'s own request, with no synchronous load', async () => {
-  const o = await open({ prefetch: false });
+test('a MusicXML file added right after load (prefetch off, the library and the engraver held 2 s): the song opens; the groups it needs come in by the importer\'s own request, with no synchronous load', async () => {
+  const o = await open({ prefetch: false, hold: groupsRe('score', 'engrave'), holdMs: 2000 });
   try {
     const input = await addFileInput(o.page);
     await input.uploadFile(path.join(REPO, 'catalog', 'hymns', 'all-creatures.musicxml'));
@@ -243,10 +244,10 @@ function midiFile() {
   const trk = Buffer.from([0x4d, 0x54, 0x72, 0x6b, (len >>> 24) & 255, (len >>> 16) & 255, (len >>> 8) & 255, len & 255].concat(track));
   return Buffer.concat([hdr, trk]);
 }
-test('a MIDI file added right after load (prefetch off, audio-score.js held 2.5 s) needs audio-score.js: the import waits for it by asking, and the song opens', async () => {
+test('a MIDI file added right after load (prefetch off, the library, the engraver and audio-score.js held 2.5 s) needs audio-score.js: the import waits for it by asking, and the song opens', async () => {
   const file = path.join(os.tmpdir(), 'ppp-split-' + process.pid + '.mid');
   fs.writeFileSync(file, midiFile());
-  const o = await open({ prefetch: false, hold: GROUP_URL.audio, holdMs: 2500 });
+  const o = await open({ prefetch: false, hold: groupsRe('score', 'engrave', 'audio'), holdMs: 2500 });
   try {
     const before = await lazy(o.page);
     assert.ok(before.groups.includes('audio:no'), 'audio-score.js is not in yet');

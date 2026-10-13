@@ -6195,7 +6195,7 @@ function readerMessage(code, name, detail) {
    from it when asked. Nothing here changes the Score, and nothing here may stop an import: every failure is
    swallowed and counted in PPPEngrave.app.stats. */
 function engraveRemember(score, graph, producer) {
-  try { if (window.PPPEngrave && score && graph) window.PPPEngrave.app.remember(score, graph, producer); } catch (e) {}
+  try { if (score && graph && window.PPPEngrave) window.PPPEngrave.app.remember(score, graph, producer); } catch (e) {}
   return score;
 }
 /* the XML a Score was parsed from, read into a graph only if the renderer or the save asks for it */
@@ -6208,8 +6208,11 @@ function engraveRememberXml(score, xml, producer) {
 }
 function engravePersist(songId, score) {
   try {
-    if (!window.PPPEngrave || !score || score.id === 'demo' || !songId || songId === 'demo') return;
-    const app = window.PPPEngrave.app;
+    if (!score || score.id === 'demo' || !songId || songId === 'demo') return;
+    /* G13-4e: lazyPeek, not a read of the global: an engraver that is not in the page yet has remembered no graph, so there is nothing to keep, and shelving a song is no reason to load it */
+    const E = lazyPeek('PPPEngrave');
+    if (!E) return;
+    const app = E.app;
     if (!app.hasLive(score)) return;
     /* after the save that called it, when the page is idle: a graph is kept once per song */
     const run = () => { app.persist(songId, score).catch(() => {}); };
@@ -6217,7 +6220,7 @@ function engravePersist(songId, score) {
   } catch (e) {}
 }
 function engraveForget(songId) {
-  try { if (window.PPPEngrave && songId && songId !== 'demo') window.PPPEngrave.app.forget(songId).catch(() => {}); } catch (e) {}
+  try { if (songId && songId !== 'demo' && window.PPPEngrave) window.PPPEngrave.app.forget(songId).catch(() => {}); } catch (e) {}
 }
 
 /* MusicXML PPP already holds as text - a catalogue piece, a method book - through the same reader.
