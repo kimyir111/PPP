@@ -31,7 +31,11 @@ async function open(opts) {
   const ctx = await browser.createBrowserContext();
   const page = await ctx.newPage();
   await page.setViewport({ width: 1100, height: 800 });
-  await page.evaluateOnNewDocument(() => { try { localStorage.setItem('ppp-guest', '1'); localStorage.setItem('ppp-locale', 'en-US'); } catch (e) { /* */ } });
+  /* a device with none of the Noto families (this PC may have some: the head script then leaves them out of the request) */
+  await page.evaluateOnNewDocument(() => {
+    try { localStorage.setItem('ppp-guest', '1'); localStorage.setItem('ppp-locale', 'en-US'); } catch (e) { /* */ }
+    CanvasRenderingContext2D.prototype.measureText = function (t) { return { width: (/serif$/.test(this.font) && !/sans-serif$/.test(this.font) ? 8 : 6) * String(t).length }; };
+  });
   const log = { mp3: [], google: null, googleDone: null, load: null };
   const held = [];
   await page.setRequestInterception(true);
