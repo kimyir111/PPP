@@ -98,11 +98,12 @@ test('isServed: the examples that matter', () => {
     'difficulty/tools/dataset/method-books.json', 'i18n/ko-KR.json', 'audio/piano/A0.mp3', 'assets/hands/hand-right-black.png',
     'catalog/index.json', 'catalog/method/index.json', 'catalog/hymns/index.json', 'catalog/hymns/all-creatures.musicxml', 'catalog/method/beyer/001.mxl',
     'samples/prelude-fragment.musicxml', 'vendor/vexflow-4.2.3.js', 'vendor/LICENSE-vexflow.txt', 'vendor/react-18.3.1/react.production.min.js',
-    'vendor/react-18.3.1/LICENSE-react.txt', 'THIRD_PARTY_NOTICES.md', 'omr/normalize.js'].forEach(rel => assert.equal(allow.isServed(rel), true, rel));
-  ['server.js', 'render.yaml', 'package.json', 'package-lock.json', 'Dockerfile', 'README.md', 'index.html', 'static-allow.js', 'home-jobs.js', 'share-guest.js', 'omr-service.js',
+    'vendor/react-18.3.1/LICENSE-react.txt', 'THIRD_PARTY_NOTICES.md', 'omr/normalize.js',
+    'vendor/fonts/figtree-v9-latin.woff2', 'vendor/fonts/instrument-serif-v5-italic-latin-ext.woff2', 'vendor/fonts/noto-music-v21-music.woff2', 'vendor/fonts/LICENSE-figtree-OFL.txt'].forEach(rel => assert.equal(allow.isServed(rel), true, rel));
+  ['server.js', 'render.yaml', 'package.json', 'package-lock.json', 'Dockerfile', 'README.md', 'index.html', 'static-allow.js', 'static-assets.js', 'home-jobs.js', 'share-guest.js', 'omr-service.js',
     'arrange_score.py', 'transcribe.py', 'omr/helper-output.js', 'omr/normalize.js.map', 'omr/README.md', DOCS + '/PPP_MASTER_ROADMAP.md', WORKER_DIR + '/worker.js', 'tests/boot.js', 'tools/anything', 'rec/tools/train.js', 'rec/tools/key-eval.js', 'scoregraph/README.md',
     'scoregraph/tools/notation-check.js', 'difficulty/tools/train.js', 'audio/piano/README.md', 'catalog/shared-seeds.json', 'catalog/build-shared-seeds.js',
-    'catalog/hymns/build.js', 'catalog/method/books.json', 'catalog/method/build.py', 'catalog/method/src/beyer/001.abc', 'vendor/README.md', 'vendor/.gitattributes',
+    'catalog/hymns/build.js', 'catalog/method/books.json', 'catalog/method/build.py', 'catalog/method/src/beyer/001.abc', 'vendor/README.md', 'vendor/.gitattributes', 'vendor/fonts/../../server.js', 'vendor/fonts/figtree-v9-latin.woff2::$DATA', 'vendor/fonts/.hidden.woff2', 'vendor/fonts/Figtree-v9-latin.WOFF2.exe',
     '.env', '.git/config', '.github/workflows/bench.yml', 'data/store.json', 'node_modules/pg/package.json', 'review/build.js', 'Server.js', 'SUPPORT.JS', 'scoregraph/INDEX.JS',
     'scoregraph/../server.js', 'vendor/../server.js', 'vendor/./vexflow-4.2.3.js', 'vendor/react-18.3.1/../../server.js', '../server.js', '/server.js', 'scoregraph\\index.js', '', 'scoregraph/', 'scoregraph', 'scoregraph//index.js', 'support.js\0', 'support.js.',
     'support.js::$DATA'].forEach(rel => assert.equal(allow.isServed(rel), false, JSON.stringify(rel)));

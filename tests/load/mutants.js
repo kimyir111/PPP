@@ -37,7 +37,7 @@ function makeCopy() {
   return dir;
 }
 
-const LAZY = 'i18n-lazy.test.js', HASH = 'content-hash.test.js';
+const LAZY = 'i18n-lazy.test.js', HASH = 'content-hash.test.js', FONTS = 'fonts.test.js';
 
 /* id, file, what the mutant breaks, [from, to] or a list of them (each replaced once), the test that must fail */
 const M = [
@@ -49,6 +49,14 @@ const M = [
   ['A5', 'i18n.js', 'a catalog already fetched is fetched again at every switch', ["if (loaded[loc]) return Promise.resolve();\n    if (pending[loc]) return pending[loc];", "if (pending[loc]) return pending[loc];"], LAZY],
   ['A6', 'i18n.js', 'a catalog that failed is never asked for again', ["      .then(function () { pending[loc] = null; });", "      .then(function () { /* pending stays */ });"], LAZY],
   ['A7', 'i18n.js', 'ready stays the first catalog\'s promise after a switch', ["if (global.PPP_I18N) global.PPP_I18N.ready = wait;", ""], LAZY],
+  /* G13-4b: the page's head and vendor/fonts */
+  ['B1', 'Piano Coach App.dc.html', 'a font face blocks text again (display: block)', ["font-weight:700;font-display:swap;src:url(./vendor/fonts/figtree-v9-latin.woff2", "font-weight:700;font-display:block;src:url(./vendor/fonts/figtree-v9-latin.woff2"], FONTS],
+  ['B2', 'Piano Coach App.dc.html', 'a weight range replaces Google\'s steps (650 would draw as 650, not 700)', ["font-weight:600;font-display:swap;src:url(./vendor/fonts/figtree-v9-latin.woff2", "font-weight:400 700;font-display:swap;src:url(./vendor/fonts/figtree-v9-latin.woff2"], FONTS],
+  ['B3', 'Piano Coach App.dc.html', 'a blocking stylesheet from another site is back in the template', ["<helmet>", "<helmet>\n<link href=\"https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap\" rel=\"stylesheet\" />"], FONTS],
+  ['B4', 'Piano Coach App.dc.html', 'the CJK stylesheet is asked for at once, not after load', ["if (document.readyState === 'complete') later(); else window.addEventListener('load', later);", "add();"], FONTS],
+  ['B5', 'Piano Coach App.dc.html', 'the CJK request names the Latin families too (fetched twice)', ["family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+JP", "family=Figtree&family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+JP"], FONTS],
+  ['B6', 'vendor/README.md', 'a font\'s sha256 in the README is not the file\'s', ["| `4ba7d3d096695818fe0686be4f1e82c6b05134e18a22260336130335027462dd` |", "| `0ba7d3d096695818fe0686be4f1e82c6b05134e18a22260336130335027462dd` |"], FONTS],
+  ['B7', 'Piano Coach App.dc.html', 'the unicode-range of a latin face is not Google\'s (a glyph would not use it)', ["unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}\n@font-face{font-family:'Instrument Serif';font-style:italic", "unicode-range:U+0000-007F}\n@font-face{font-family:'Instrument Serif';font-style:italic"], FONTS],
   /* G13-4c: static-assets.js, server.js, i18n.js */
   ['C1', 'server.js', 'a wrong hash is answered immutable (any ?h= is believed)', ["if (e.hash === want) {", "if (true) {"], HASH],
   ['C2', 'static-assets.js', 'the hash ignores the content', [".update(body).digest('hex').slice(0, 12)", ".update('same').digest('hex').slice(0, 12)"], HASH],
@@ -93,7 +101,7 @@ function run(m, dir) {
   const base = makeCopy();
   let bad = 0;
   try {
-    for (const t of [LAZY, HASH]) {
+    for (const t of [LAZY, HASH, FONTS]) {
       const r = spawnSync(process.execPath, ['--test', '--test-timeout=20000', path.join(REPO, 'tests', 'load', t)], { env: Object.assign({}, process.env, { PPP_LOAD_ROOT: base }), encoding: 'utf8', timeout: 120000 });
       console.log((r.status === 0 ? 'ok      ' : 'FAIL    ') + 'unmutated copy: ' + t);
       if (r.status !== 0) { bad++; console.log((r.stdout || '').split('\n').filter(l => /✖|Error|expected|actual/.test(l)).slice(0, 12).join('\n')); }

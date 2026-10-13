@@ -46,7 +46,7 @@ const RULES = [
   /^i18n\/[\w-]+\.json$/,
   /* the piano recordings */
   /^audio\/piano\/[\w-]+\.mp3$/,
-  /* pictures (the hands of the fingering diagrams; self-hosted fonts later, G13-4) */
+  /* pictures (the hands of the fingering diagrams; the self-hosted fonts are under vendor/fonts, G13-4b) */
   /^assets\/(?:[\w-]+\/)*[\w.-]+\.(?:png|jpe?g|svg|webp|ico|woff2?)$/,
   /* the sample scores (the browser suites fetch samples/prelude-fragment.musicxml; they are public examples) */
   /^samples\/[\w.-]+\.(?:musicxml|xml|mxl)$/,
@@ -56,7 +56,7 @@ const RULES = [
   /^catalog\/[\w.-]+\.musicxml$/,
   /^catalog\/hymns\/[\w.-]+\.musicxml$/,
   /^catalog\/method\/[\w-]+\/[\w.-]+\.mxl$/,
-  /* third-party libraries kept in the repository (VexFlow now; React, pdf.js, fonts: G13-1, G13-4, G13-8) with the licence that must travel
+  /* third-party libraries and fonts kept in the repository (VexFlow, React, the Latin fonts of G13-4b; pdf.js: G13-8) with the licence that must travel
      with each. Not the README */
   /^vendor\/(?:[\w.-]+\/)*[\w.-]+\.(?:js|mjs|css|json|woff2?|txt)$/,
   /^vendor\/(?:[\w.-]+\/)*(?:LICENSE|NOTICE)(?:[-.][\w.-]+)?$/

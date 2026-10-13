@@ -34,6 +34,44 @@
 })();
 </script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231b1a18'/%3E%3Crect x='9' y='13' width='4' height='11' rx='2' fill='%23fffefc'/%3E%3Crect x='14' y='7' width='4' height='17' rx='2' fill='%237c5cd6'/%3E%3Crect x='19' y='16' width='4' height='8' rx='2' fill='%23fffefc'/%3E%3C/svg%3E">
+<style>
+/* G13-4b: the Latin fonts (Figtree, Instrument Serif, JetBrains Mono) and the music font are served by PPP itself - vendor/fonts, the files Google Fonts serves, SIL OFL, the licences beside them, README.md there -
+   so no text waits for another site, and the page has them offline. font-display: swap: the text is drawn at once in the system font and settles when the file is in. The weights are the ones the page has always
+   asked Google for (a variable file once per weight, as Google's own stylesheet does), so 650 and 800 resolve to 700 as before. Only the latin and latin-ext (music: music) pieces; each is fetched only when a character
+   of its unicode-range is on the page. */
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400;font-display:swap;src:url(./vendor/fonts/figtree-v9-latin-ext.woff2?v=1) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:400;font-display:swap;src:url(./vendor/fonts/figtree-v9-latin.woff2?v=1) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:500;font-display:swap;src:url(./vendor/fonts/figtree-v9-latin-ext.woff2?v=1) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:500;font-display:swap;src:url(./vendor/fonts/figtree-v9-latin.woff2?v=1) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:600;font-display:swap;src:url(./vendor/fonts/figtree-v9-latin-ext.woff2?v=1) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:600;font-display:swap;src:url(./vendor/fonts/figtree-v9-latin.woff2?v=1) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:700;font-display:swap;src:url(./vendor/fonts/figtree-v9-latin-ext.woff2?v=1) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Figtree';font-style:normal;font-weight:700;font-display:swap;src:url(./vendor/fonts/figtree-v9-latin.woff2?v=1) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Instrument Serif';font-style:italic;font-weight:400;font-display:swap;src:url(./vendor/fonts/instrument-serif-v5-italic-latin-ext.woff2?v=1) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Instrument Serif';font-style:italic;font-weight:400;font-display:swap;src:url(./vendor/fonts/instrument-serif-v5-italic-latin.woff2?v=1) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Instrument Serif';font-style:normal;font-weight:400;font-display:swap;src:url(./vendor/fonts/instrument-serif-v5-latin-ext.woff2?v=1) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Instrument Serif';font-style:normal;font-weight:400;font-display:swap;src:url(./vendor/fonts/instrument-serif-v5-latin.woff2?v=1) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:400;font-display:swap;src:url(./vendor/fonts/jetbrains-mono-v24-latin-ext.woff2?v=1) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:400;font-display:swap;src:url(./vendor/fonts/jetbrains-mono-v24-latin.woff2?v=1) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:500;font-display:swap;src:url(./vendor/fonts/jetbrains-mono-v24-latin-ext.woff2?v=1) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:500;font-display:swap;src:url(./vendor/fonts/jetbrains-mono-v24-latin.woff2?v=1) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Noto Music';font-style:normal;font-weight:400;font-display:swap;src:url(./vendor/fonts/noto-music-v21-music.woff2?v=1) format('woff2');unicode-range:U+25CC, U+2669-266F, U+1D000-1D0F5, U+1D100-1D245}
+</style>
+<script>
+/* G13-4b: Korean, Japanese and Chinese text stays in Google's Noto Sans (U7: not self-hosted), but its stylesheet (331 KB) no longer blocks the first paint: it is asked for once the page has loaded and the browser
+   is idle. Until it is in, the text is drawn in the system font (the font stack of body is unchanged: Figtree, Noto Sans KR, Noto Sans JP, Noto Sans SC, system-ui). Offline, or if Google is unreachable, it stays so. */
+(function () {
+  var CJK = 'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap';
+  function add() {
+    if (document.querySelector('link[data-ppp-cjk]')) return;
+    var l = document.createElement('link');
+    l.rel = 'stylesheet'; l.href = CJK; l.setAttribute('data-ppp-cjk', '');
+    document.head.appendChild(l);
+  }
+  function later() { if (window.requestIdleCallback) window.requestIdleCallback(add, { timeout: 4000 }); else setTimeout(add, 1500); }
+  if (document.readyState === 'complete') later(); else window.addEventListener('load', later);
+})();
+</script>
 <script src="./i18n.js"></script>
 <script src="./library-backup.js?v=1"></script>
 <script src="./scoregraph/rational.js?v=8"></script>
@@ -123,9 +161,6 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
 <helmet>
 <title>PPP — Piano Practice Partner</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231b1a18'/%3E%3Crect x='9' y='13' width='4' height='11' rx='2' fill='%23fffefc'/%3E%3Crect x='14' y='7' width='4' height='17' rx='2' fill='%237c5cd6'/%3E%3Crect x='19' y='16' width='4' height='8' rx='2' fill='%23fffefc'/%3E%3C/svg%3E" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Noto+Music&family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
   html, body { margin: 0; padding: 0; }
   body { background: #f7f5f2; font-family: Figtree, "Noto Sans KR", "Noto Sans JP", "Noto Sans SC", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
