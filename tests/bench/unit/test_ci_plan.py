@@ -439,7 +439,12 @@ class GateShape(unittest.TestCase):
     # made. A file that starts doing so is not necessarily a reader, but it might be one: this is the tripwire that makes someone look
     # (trace the gate's steps as the README says), instead of letting a light mode skip a step that has begun to read the path.
     NAMES_TESTS_REVIEW = {"package.json", "tests/bench/tools/ci_plan.py", "tests/bench/unit/test_ci_plan.py"}
-    NAMES_HOME_WORKER = {"Piano Coach App.dc.html", "package.json", "tests/bench/tools/ci_plan.py", "tests/bench/unit/test_ci_plan.py"}
+    # G13-3: the notices generator reads the home-PC worker's setup-*.cmd (the models they download) and its README (the licence of Demucs) as TEXT, to
+    # check that every model has a row in tools/notices/notices.json. Its command (`node tools/notices/build.js --check`) is a command of the light job in every
+    # mode, so a change that is only to those files still runs it; the tests (tests/notices/) copy those files to plant a defect in them.
+    NAMES_HOME_WORKER = {"Piano Coach App.dc.html", "package.json", "tests/bench/tools/ci_plan.py", "tests/bench/unit/test_ci_plan.py",
+                         "tools/notices/build.js", "tools/notices/notices.json", "tests/notices/lib.js", "tests/notices/notices.test.js",
+                         "tests/notices/mutants.js"}
     # tools/release/*.js (G13-7a): the release script appends a row to docs/RELEASES.md and the issue reporter names a doc in its text; the
     # gate's step `npm run test:monitoring` runs them only on in-memory files and a fake gh, and opens nothing under docs/ (read, not traced).
     NAMES_DOCS = {"review/h10/packet.js", "tests/bench/tools/ci_plan.py", "tests/bench/unit/test_ci_plan.py", "tests/engrave/corpus.json",

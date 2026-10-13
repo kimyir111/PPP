@@ -310,8 +310,8 @@ jobs:
       - run: npm run test:backup                                   # G13-6: Settings > My data, its module alone (library-backup.js against a fake storage and a fake IndexedDB): six safety properties and 15 mutants that each break one of them (Node only)
       - run: npm run test:server-hygiene                           # G13-5: the served-path allowlist (a lazy module the page loads must be on it), the security headers, the signup limit, the paged Shared Scores list (Node only; the Postgres part skips without PPP_TEST_PG_URL)
       - run: npm run test:load                                     # G13-4: load performance, Node only: the catalog of the language in use is the only one fetched (i18n.js), content-hash URLs (immutable only for the right hash), the self-hosted fonts
-      - run: npm run test:notices                                  # G13-3: THIRD_PARTY_NOTICES.md: every file of vendor/ and every library the page loads has a row, the CC BY attribution is there, 14 planted defects of the sources; and the YouTube rule of Shared Scores on this server.js (Node only)
-      - run: npm run test:notices-mutants-node                     # G13-3: 12 planted defects of server.js and static-allow.js, each one must make its suite fail (Node only, about 20 s)
+      - run: npm run test:notices                                  # G13-3: THIRD_PARTY_NOTICES.md: every file of vendor/ and every library the page loads has a row (and every host, pinned package, model and runtime dependency), the CC BY attribution is there, 24 planted defects of the sources; and the YouTube rule of Shared Scores on this server.js (Node only)
+      - run: npm run test:notices-mutants-node                     # G13-3: 13 planted defects of server.js and static-allow.js, each one must make its suite fail (Node only, about 20 s)
       - if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -926,7 +926,7 @@ jobs:
       - run: node tests/scoregraph-recovery-app.test.js
 
   # notices-suite (G13-3): the browser suite of Settings > About & licences, the YouTube rights notice and the Shared Scores block (tests/notices-ui.test.js: Korean, a real account on the
-  # real server, the page's own arranger) and the 15 planted defects of the page (tests/notices/mutants.js P1-P15, each must make that suite fail). Like backup-suite: needs puppeteer (npm ci),
+  # real server, the page's own arranger) and the 18 planted defects of the page (tests/notices/mutants.js P1-P18, each must make that suite fail). Like backup-suite: needs puppeteer (npm ci),
   # serves this tree on a free port itself, and is a check of its own, NOT a job the gate waits for; its Node-only halves (npm run test:notices, test:notices-mutants-node) are steps of shard-h.
   notices-suite:
     needs: plan
@@ -939,7 +939,7 @@ jobs:
         with: { node-version: '24' }
       - run: npm ci                                        # puppeteer (and its Chrome)
       - run: node tests/notices-ui.test.js
-      - run: node tests/notices/mutants.js P1 P2 P3 P4 P5 P6 P7 P8 P9 P10 P11 P12 P13 P14 P15
+      - run: node tests/notices/mutants.js P1 P2 P3 P4 P5 P6 P7 P8 P9 P10 P11 P12 P13 P14 P15 P16 P17 P18
 
   nightly:
     if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.event.inputs.only != 'practice'

@@ -320,47 +320,57 @@ All of this at $0 on the existing free tiers.
   TBT is NOT comparable between the two: the branch's first paint is 2.5 s earlier, so work that main does later (the engraver's first drawing, ~0.5 s at 4x) now falls inside the tool's observation window.
 
 
-**G13-3 as built (notices and the YouTube posture, PR "G13-3"; U9 decided by the user on 2026-10-13).**
+**G13-3 as built (notices and the YouTube posture, PR "G13-3" #265; U9 decided by the user on 2026-10-13; reviewed, then amended).**
 - *Decision (U9):* keep YouTube transcription; **add a notice** - "use recordings you have the right to use; the score is for your own practice" - where a link is entered and in About; **do not allow posting
   a score made from a YouTube link to the public Shared Scores** (its link may still be sent, as today; private use is unchanged); default the PC worker to download on the PC (below: not a one-line default,
-  so recorded, not changed). **U6 is still open:** the demo keeps its title "Interstellar Theme - Hans Zimmer - arr. solo piano"; the notices file says (true) that its notes are a generated pattern and carries an
-  HTML comment `TODO(U6)`, and `tools/notices/notices.json` (`demo.todo`) says what to do when it is decided (rename in `buildDemoScore`, id stays `demo`, then replace that section).
-- *`THIRD_PARTY_NOTICES.md`* (root, served at `/THIRD_PARTY_NOTICES.md` as `text/plain` so a link shows it instead of downloading it) is **generated** by `node tools/notices/build.js` (Node only; `--check` is the CI
-  and light-job form; `--root DIR` reads another tree). It gathers, and states no fact the repository does not hold: every `## section` of `vendor/README.md` (VexFlow 4.2.3 MIT with its five music fonts - Bravura,
-  Petaluma, Leland OFL-1.1, Gonville unrestricted, Custom MIT -, React and ReactDOM 18.3.1 MIT, the four Latin font families OFL-1.1: file, source, sha256, the licence file and its copyright line);
-  the Salamander attribution paragraph of `audio/piano/README.md` **verbatim** (CC BY 3.0: author, licence link, source, the nine-second cut); `catalog/hymns` (Open Hymnal), every book of
-  `catalog/method/index.json` (edition, licence), `catalog/index.json` and the seed library; the page's CDN list **read from the page and `support.js`** (pdf.js, tfjs 2.8.6/3.21.0, Magenta.js, Basic Pitch,
-  Babel standalone, the three Noto Sans families of Google Fonts, the Onsets and Frames checkpoint "terms not stated"), with licences from `tools/notices/notices.json`; `support.js` "no licence header, source not
-  in the repo"; the helper tools (Audiveris AGPL-3.0 local only, Kong Apache-2.0, TransKun / Aria-AMT / Beat This / PM2S "not stated in this repository", yt-dlp); the 15 licence-quarantined typesets (Czerny 40
-  and Burgmüller 1, 2, 4, 7, 18: composition public domain, the typeset states nothing); the demo; the YouTube paragraph.
-- *Nothing served can go without a row* (`build.js --check`, mutation-tested): every file of `vendor/` named in `vendor/README.md`, every top-level entry with a `## section`, every font file with its family's OFL
-  file and licence row, every licence file present; every package the page names at jsDelivr / unpkg / esm.sh and every `storage.googleapis.com` file with a row in `notices.json`, and a row whose package the page
-  no longer names fails too (G13-8 vendors a library: its row moves from `notices.json` to `vendor/README.md`); the committed file equal to the generated one; the attribution paragraph names Alexander Holm, links
-  the CC BY 3.0 licence and says what was changed. `tests/notices/notices.test.js` also fails if the quarantined count in the notice differs from `tests/bench/corpus/provenance.json`.
-- *Settings > About & licences* (ko/ja/zh/en; the last card of Settings, so **one tap** from anywhere): the app and the build the server runs, "your songs stay on this device unless you share them", the YouTube
-  notice and the sharing rule, the CC BY 3.0 attribution of the piano sounds with links to the licence text and the source, and the link to the notices file.
+  so recorded, not changed). **U6 is still open:** the demo keeps its title "Interstellar Theme - Hans Zimmer - arr. solo piano". The served notices say (true) that its notes are a generated pattern; the note for
+  whoever decides (`TODO(U6)`: rename in `buildDemoScore`, id stays `demo`, then replace that paragraph) is kept in `tools/notices/notices.json` (`demo.todo`) and is **not** written into the served file.
+- *`THIRD_PARTY_NOTICES.md`* (root, served at `/THIRD_PARTY_NOTICES.md` as `text/plain` so a link shows it instead of downloading it; lists, not pipe tables, so it reads as plain text) is **generated** by
+  `node tools/notices/build.js` (Node only; `--check` is the CI and light-job form; `--root DIR` reads another tree). It gathers, and states no fact the repository does not hold: every `## section` of
+  `vendor/README.md` (VexFlow 4.2.3 MIT with its five music fonts - Bravura, Petaluma, Leland OFL-1.1, Gonville unrestricted, Custom MIT -, React and ReactDOM 18.3.1 MIT, the four Latin font families OFL-1.1:
+  file, source, sha256, the licence file and its copyright line); the Salamander attribution paragraph of `audio/piano/README.md` **verbatim** (CC BY 3.0: author, licence link, source, the nine-second cut);
+  `catalog/hymns` (Open Hymnal: "public domain or under free licences", one statement per file in the index, not checked tune by tune), every book of `catalog/method/index.json` (edition, licence; the 15 pieces
+  of Czerny 40 and Burgmüller 25 that the benchmark quarantines are marked "per the dataset listing; the piece-level statement is under review", the composition is public domain, no promise is made),
+  `catalog/index.json` and the seed library; the CDN list **read from the served code** (pdf.js, tfjs 2.8.6/3.21.0, Magenta.js, Basic Pitch, Babel standalone, the three Noto Sans families of Google Fonts, the Onsets
+  and Frames checkpoint "see its own terms") and the sites the page contacts (the YouTube embed and oEmbed); `support.js` "no licence header, source not in the repo"; the **tools, models and packages**:
+  Audiveris AGPL-3.0 (README.md), Kong Apache-2.0 (omr-service.js), Demucs MIT (tools/home-worker/README.md), the **SheetSage2 weights CC BY-NC 4.0, non-commercial use only** (sheetsage2_run.py,
+  setup-sheetsage2.cmd) with MERT-v2-FullSong, YourMT3, TransKun, Aria-AMT, Beat This, PM2S, librosa/pYIN, Basic Pitch (Python), music21, PyTorch and the audio packages, huggingface_hub, yt-dlp, FFmpeg and the
+  runtime dependencies pg, zod and @anthropic-ai/sdk - each "see the project's own licence" unless this repository states one (then the file that says so is named and read by `--check`); the demo; the YouTube
+  paragraph, which says the real fallback: when YouTube refuses the server it asks the third-party site loader.to, which then receives the link.
+- *Nothing served or run can go without a row* (`build.js --check`, mutation-tested): every file of `vendor/` named in `vendor/README.md`, every top-level entry with a `## section`, every font file with its family's
+  OFL file and licence row, every licence file present; every package the served code names at jsDelivr / unpkg / esm.sh (pinned, or it fails), every `storage.googleapis.com` file, and **every http(s) host any served
+  file names** (a host nobody has classified in `notices.json` `hosts`: a cdnjs script, a raw.githubusercontent.com file, a new module's URL fails; a host only in a comment does not), and a row whose package or
+  host is no longer named fails too (G13-8 vendors a library: its row moves from `notices.json` to `vendor/README.md`); every pinned requirement of `requirements-*.txt`, every model a `setup-*.cmd` downloads and
+  every runtime dependency of `package.json` in a helper row or an explicit omission (puppeteer is a devDependency); a licence a row states is checked against the file it names; the committed file equal to
+  the generated one; the attribution paragraph names Alexander Holm, links the CC BY 3.0 licence and says what was changed. `tests/notices/notices.test.js` also fails if the pieces marked under review are
+  not the ones `tests/bench/corpus/provenance.json` quarantines, or if the served file holds a TODO, an HTML comment, "not stated", a promise or a pipe table.
+- *Settings > About & licences* (ko/ja/zh/en; the last card of Settings, so **one tap** from anywhere): the app and the build the server runs; "Your songs are saved only in this browser. PPP's server receives a
+  song only when you share it or ask it to arrange or read it." (the first draft said they stay on the device unless shared: the page sends a whole score to `/arrange-score`, and audio, links and PDFs go to
+  the server for transcription and OMR); the YouTube notice and the sharing rule; the CC BY 3.0 attribution of the piano sounds with links to the licence text and the source; the link to the notices file.
 - *The notice at the point of use:* one line in the "From a YouTube link" box of the Add screen, above the link field (not a modal). Same text in About.
 - *What "made from a YouTube link" means* (the page, `youtubeDerivedOf(songId)`): the notes were **transcribed from that link's audio** - `source.kind === 'youtube'` **and** notation inferred from audio
-  (`inferredAudioNotation`: a transcription version, engine or AMT, and not `retrieved` / `referenceScore`); or an **arrangement** of such a song (the Song Arranger's copy has `kind: 'arrangement'`,
-  `parentSongId` and no YouTube link of its own: followed through `arrangedFrom` / `parentSongId`, and stamped `source.youtubeDerived = true` at creation); or a **copy somebody else added from a link** (the
-  mark `source.youtubeDerived` travels in the shared score and is kept when it is added). It is **not** a score whose `source.kind` is merely `'youtube'`: a hymn with a performance to watch, a public-domain
-  score the app found by the link's title ("Found a public-domain score for this title"), or a score uploaded beside a video are posted as before. (First draft read `source.kind` alone and would have
-  blocked the 100 hymns; `tests/hymns-share.test.js` caught it.)
-- *The block:* the share dialog's Post button is **off** with one line of reason (Korean first); "Send a link" works as before; a share already posted can be taken down; `publishSong(id, true)` refuses too.
-  `server.js` (`youtubeDerivedShare`) reads **only** the payload's `youtubeDerived: true` and the mark inside the score's source (what a stored copy carries): a public post (`listed: true`, an account) or a
-  later `PATCH {listed: true}` of a stored score that carries it is **403 `{code: 'youtube-not-public'}`**, error text = the reason (a key of the catalogs, so the page shows it translated). Guest links
-  are never listed and are untouched; a link send (`listed` left out) is untouched; a PATCH that changes nothing, and any take-down, are untouched; **shares already posted are not touched** (their
-  number is not known and was not looked up). A share the page cannot recognise (not on this shelf) shows its Post button, and the server's reason when it is refused.
+  (`inferredAudioNotation`: a transcription version, engine or AMT, and not `retrieved` / `referenceScore`; or - for a transcription saved before those stamps - an engine label such as "Basic Pitch" or
+  "Piano Onsets & Frames", with the same two exclusions); or an **arrangement** of such a song (the Song Arranger's copy has `kind: 'arrangement'`, `parentSongId` and no YouTube link of its own: followed
+  through `arrangedFrom` / `parentSongId`, and stamped `source.youtubeDerived = true` at creation); or a **copy somebody else added from a link** (the mark `source.youtubeDerived` travels in the shared
+  score and is kept when it is added; a bare YouTube source does not make one). It is **not** a score whose `source.kind` is merely `'youtube'`: a hymn with a performance to watch, a public-domain score the
+  app found by the link's title ("Found a public-domain score for this title"), or a score uploaded beside a video (`referenceScore`), or the person's own recording with a video link attached (kind `audio`)
+  are posted as before. (First draft read `source.kind` alone and would have blocked the 100 hymns; `tests/hymns-share.test.js` caught it.)
+- *The block:* the share dialog's Post button is **off** (and `aria-describedby` points at its reason) with one line of reason (Korean first); "Send a link" works as before; a share already posted can be taken
+  down; `publishSong(id, true)` refuses too. `server.js` (`youtubeDerivedShare`) reads **only** the payload's `youtubeDerived: true` and the mark inside the score's source (what a stored copy carries): a public
+  post (`listed: true`, an account) or a later `PATCH {listed: true}` of a stored score that carries it is **403 `{code: 'youtube-not-public'}`**, error text = the reason (a key of the catalogs, so the page
+  shows it translated). Guest links are never listed and are untouched; a link send (`listed` left out) is untouched; a PATCH that changes nothing, and any take-down, are untouched; **shares already posted
+  are not touched** (their number is not known and was not looked up). A share the page cannot recognise (not on this shelf) shows its Post button, and the server's reason when it is refused. The link of a marked
+  share stays link-only: `shareMeta` answers it with `noindex` and no title or description (og:*, twitter:*), as a guest link has `noindex`.
 - *Limits, said plainly:* it is a **policy guard, not a security boundary**: the server only knows what the client says, so a modified or older client can leave the marks out (the last test of
   `tests/youtube-share.test.js` asserts exactly that, and that the server does not guess from a YouTube link). Shares posted before this change carry no mark: they stay, and can be taken down and posted
-  again. An arrangement made BEFORE this change whose parent song was removed from the library cannot be recognised. A re-send of the link of an already posted share updates its content while it
-  stays posted (as today). A person can post an ordinary song and later send a changed one by link: the server cannot tell.
+  again. An arrangement made BEFORE this change whose parent song was removed from the library cannot be recognised, and a transcription whose engine label is none of the known ones (and has no stamp)
+  is not. A re-send of the link of an already posted share updates its content while it stays posted (as today). A person can post an ordinary song and later send a changed one by link: the server cannot tell.
 - *The PC worker's download (U9, "default to download on the PC"):* **not a one-line default, recorded not changed.** The worker's `ytdlpPath` is `''` (tools/home-worker/worker.js, `DEFAULTS`), so it asks the
   site's `/api/youtube-audio`; with a path set it runs yt-dlp on the PC and falls back to the site. A default of `'yt-dlp'` would need the worker to find the binary on the PATH (or in `tools/`), say plainly when
   it is missing instead of logging a failure per job, and every `tests/home-worker` fixture that builds a config to name its tool; `setup-*.cmd` would have to install it. Follow-up phase (small, tooling
   class): "auto-detect yt-dlp, prefer it, keep the site as the fallback".
-- *Tests:* `npm run test:notices` (in the gate, shard-h: the generator and its 14 planted defects, `youtube-share.test.js` on this `server.js`), `npm run test:notices-mutants-node` (12 planted defects of
-  `server.js` / `static-allow.js`, shard-h), `node tools/notices/build.js --check` (a shard and the light job), `tests/notices-ui.test.js` + the 15 page mutants (job `notices-suite`: Korean, a real account,
+- *Tests:* `npm run test:notices` (in the gate, shard-h: the generator and its 24 planted defects, `youtube-share.test.js` on this `server.js`), `npm run test:notices-mutants-node` (13 planted defects of
+  `server.js` / `static-allow.js`, shard-h), `node tools/notices/build.js --check` (a shard and the light job), `tests/notices-ui.test.js` + the 18 page mutants (job `notices-suite`: Korean, a real account,
   the page's own arranger). `tests/static-allow.test.js` names the notices file as the one served root document; the i18n gaps checker stays at 0.
 
 ---
