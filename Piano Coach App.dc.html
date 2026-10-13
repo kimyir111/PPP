@@ -62,10 +62,13 @@
    is idle. Until it is in, the text is drawn in the system font (the font stack of body is unchanged: Figtree, Noto Sans KR, Noto Sans JP, Noto Sans SC, system-ui). Offline, or if Google is unreachable, it stays so. */
 (function () {
   var CJK = 'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap';
+  /* PPP_CJK_SETTLED: resolved shortly after that stylesheet has arrived or failed (G13-4d: the piano recordings wait for it, so they do not hold it up) */
+  var settle; window.PPP_CJK_SETTLED = new Promise(function (r) { settle = r; });
   function add() {
     if (document.querySelector('link[data-ppp-cjk]')) return;
     var l = document.createElement('link');
     l.rel = 'stylesheet'; l.href = CJK; l.setAttribute('data-ppp-cjk', '');
+    l.onload = l.onerror = function () { setTimeout(settle, 600); };
     document.head.appendChild(l);
   }
   function later() { if (window.requestIdleCallback) window.requestIdleCallback(add, { timeout: 4000 }); else setTimeout(add, 1500); }
@@ -12992,8 +12995,17 @@ class Component extends DCLogic {
     this._iv = setInterval(() => this.tick(), 40);
     /* The piano loads once the page has had its first paint, and sound is
        unlocked by the first click or key anywhere — so a MIDI keyboard, which
-       cannot unlock it itself, is audible from the start. */
-    this._pianoLoad = setTimeout(() => PianoSamples.load(), 1200);
+       cannot unlock it itself, is audible from the start. G13-4d: "once it has had its first paint" is now what it says - after the window's load, two
+       frames and an idle moment, and after the Korean/Japanese/Chinese stylesheet has arrived or been given up (head: PPP_CJK_SETTLED), so the 1.3 MB of
+       recordings never compete with what draws the page or with the text's font. Until they are in, the synthesized stand-in sounds a note
+       (PianoPlayer.synth), and a tap or key starts them at once (wake()). */
+    {
+      const go = () => { if (!this._dead) PianoSamples.load(); };
+      const idle = cb => { if (window.requestIdleCallback) window.requestIdleCallback(cb, { timeout: 3000 }); else setTimeout(cb, 400); };
+      const fontsIn = () => (window.PPP_CJK_SETTLED && window.PPP_CJK_SETTLED.then ? Promise.race([window.PPP_CJK_SETTLED, new Promise(r => setTimeout(r, 7000))]) : Promise.resolve());
+      const start = () => requestAnimationFrame(() => requestAnimationFrame(() => idle(() => fontsIn().then(go))));
+      if (document.readyState === 'complete') start(); else window.addEventListener('load', start, { once: true });
+    }
     /* a touch only counts as a gesture when the finger lifts — iOS will not
        start sound from pointerdown, and a context created then can stay dead */
     this._unlockOn = ['pointerup', 'click', 'touchend', 'keydown'];

@@ -37,7 +37,7 @@ function makeCopy() {
   return dir;
 }
 
-const LAZY = 'i18n-lazy.test.js', HASH = 'content-hash.test.js', FONTS = 'fonts.test.js';
+const LAZY = 'i18n-lazy.test.js', HASH = 'content-hash.test.js', FONTS = 'fonts.test.js', SAMPLES = 'load-app/samples.test.js';
 
 /* id, file, what the mutant breaks, [from, to] or a list of them (each replaced once), the test that must fail */
 const M = [
@@ -57,6 +57,12 @@ const M = [
   ['B5', 'Piano Coach App.dc.html', 'the CJK request names the Latin families too (fetched twice)', ["family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+JP", "family=Figtree&family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+JP"], FONTS],
   ['B6', 'vendor/README.md', 'a font\'s sha256 in the README is not the file\'s', ["| `4ba7d3d096695818fe0686be4f1e82c6b05134e18a22260336130335027462dd` |", "| `0ba7d3d096695818fe0686be4f1e82c6b05134e18a22260336130335027462dd` |"], FONTS],
   ['B7', 'Piano Coach App.dc.html', 'the unicode-range of a latin face is not Google\'s (a glyph would not use it)', ["unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}\n@font-face{font-family:'Instrument Serif';font-style:italic", "unicode-range:U+0000-007F}\n@font-face{font-family:'Instrument Serif';font-style:italic"], FONTS],
+  /* G13-4d: the piano recordings, in the app's componentDidMount (a browser test: load-app/samples.test.js; not part of the unmutated-copy check above) */
+  ['D1', 'Piano Coach App.dc.html', 'the recordings are asked for at mount again (not after the load event)', ["if (document.readyState === 'complete') start(); else window.addEventListener('load', start, { once: true });", "go();"], SAMPLES],
+  ['D2', 'Piano Coach App.dc.html', 'the recordings do not wait for the CJK stylesheet', ["idle(() => fontsIn().then(go))", "idle(go)"], SAMPLES],
+  ['D3', 'Piano Coach App.dc.html', 'a stylesheet that never answers holds the recordings for ever', ["Promise.race([window.PPP_CJK_SETTLED, new Promise(r => setTimeout(r, 7000))])", "window.PPP_CJK_SETTLED"], SAMPLES],
+  ['D4', 'Piano Coach App.dc.html', 'a tap no longer starts the recordings', ["this._wakeAt = (window.performance || Date).now();\n    PianoSamples.load();\n    if (!ac) return;", "this._wakeAt = (window.performance || Date).now();\n    if (!ac) return;"], SAMPLES],
+  ['D5', 'Piano Coach App.dc.html', 'no stand-in: a note with no recording in is silent', ["    } else {\n      this.synth(voice, midi, t, peak, tone);\n    }", "    } else {\n      voice.srcs.push(ac.createBufferSource());\n    }"], SAMPLES],
   /* G13-4c: static-assets.js, server.js, i18n.js */
   ['C1', 'server.js', 'a wrong hash is answered immutable (any ?h= is believed)', ["if (e.hash === want) {", "if (true) {"], HASH],
   ['C2', 'static-assets.js', 'the hash ignores the content', [".update(body).digest('hex').slice(0, 12)", ".update('same').digest('hex').slice(0, 12)"], HASH],
@@ -84,14 +90,17 @@ const M = [
 function run(m, dir) {
   const [, file, , edits, test] = m;
   const list = Array.isArray(edits[0]) ? edits : [edits];
-  for (const [from, to] of list) {
+  for (let [from, to] of list) {
     const f = path.join(dir, file);
     const src = fs.readFileSync(f, 'utf8');
+    const CR = String.fromCharCode(13), LF = String.fromCharCode(10);
+    if (src.indexOf(from) < 0 && src.indexOf(CR + LF) >= 0) { from = from.split(LF).join(CR + LF); to = to.split(LF).join(CR + LF); }   /* a Windows checkout */
     const first = src.indexOf(from);
     if (first < 0 || src.indexOf(from, first + 1) >= 0) throw new Error(m[0] + ': the text to break is ' + (first < 0 ? 'not in ' : 'more than once in ') + file + ': ' + JSON.stringify(from.slice(0, 80)));
     fs.writeFileSync(f, src.slice(0, first) + to + src.slice(first + from.length));
   }
-  const r = spawnSync(process.execPath, ['--test', '--test-timeout=8000', path.join(REPO, 'tests', 'load', test)], { env: Object.assign({}, process.env, { PPP_LOAD_ROOT: dir }), encoding: 'utf8', timeout: 120000 });
+  const browser = test.includes('/');          /* a browser test: slower, and it finds puppeteer through NODE_PATH or D:/PPP/node_modules */
+  const r = spawnSync(process.execPath, ['--test', '--test-timeout=' + (browser ? 60000 : 8000), path.join(REPO, 'tests', browser ? '' : 'load', test)], { env: Object.assign({}, process.env, { PPP_LOAD_ROOT: dir }), encoding: 'utf8', timeout: browser ? 300000 : 120000 });
   return r.status;
 }
 
