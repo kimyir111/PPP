@@ -202,6 +202,8 @@ Every op is undoable by keeping the previous frozen graph (graphs are immutable 
 
 ### 7.5 Home-PC queue kind `omr` (only if U1 = C)
 
+> **Built in G12-5 (section 24), with these differences from the paragraph below:** its own route `POST /api/jobs/omr`; one atomic upload (12 pages, 1.5 MB a page, 12 MB a job, 24 pages when asked); a result of up to 4 MB; quotas per link (2 scores, 16 MB of images), per creating address (16 MB, 12 an hour) and for the site (64 MB); a score nobody's PC takes expires after a day, a finished one is purged after a day, images are deleted the moment the job ends; and the kind is reachable only with a PC link's code, a job only by the token of its own link.
+
 Additive to G10b, same security model (§6 of the G10B doc): `POST /api/jobs {kind:'omr', pages:[…]}` from a linked
 browser (PC link or account), images as grey PNG/JPEG ≤ 1.5 MB each, ≤ 12 pages a job (24 with an explicit "large"),
 ≤ 12 MB a job; a new table `ppp_omr_pages(job_id, idx, bytes bytea)` (or the job row's JSON for one page), deleted when
@@ -822,3 +824,123 @@ inside the gate's 0.60 and 1.0 (the first fit at 0.70 / 0.7 reached 0.914 / 0.90
 of suspect bars; the notation checker is served to the page (one file; `static-allow.js` and its test) rather than copied into `omr/`; the suspect bars are the report's own `suspectMeasures` (no new screen; the correction UI is G12-4); the reasons are saved as codes and made into sentences at display time (the review's preference; a code is small and language-free); the confidence cap does not wait for a flag; no layout is passed to the
 flags (above); `page-bars` was in the strong list when the held-out half was judged and was taken out afterwards because of the TUNING half's app-path replay: the dataset has no layout, so the signal never fired in any recorded number and the
 tuning and held-out numbers are those of the list without it (the record says so).
+
+## 24. G12-5 implementation record (Implementer, Sonnet, 2026-10-13)
+
+Branch `g12-5-omr-queue` (`D:/PPP-g12p5`), from `origin/main` `adb9f3f` (live `f64d06b` + docs). Row G12-5 of section 11, gate A5 of section 12. **User decision of 2026-10-13: U1 = C (the engine runs on THEIR PC, $0), U2 = only the user's
+linked PC: only a browser that holds a PC-link capability code may queue or read a score; nobody else's job ever runs on that computer; the site stays usable with no login.** Everything is behind `PPP.omr = 'v2'` and a PC link
+on the device; `'legacy'` (the default) and a device with no link make no request to the new routes and import what they imported (proof below). Nothing was deployed or merged.
+
+**Built.**
+
+| What | Where |
+| --- | --- |
+| the kind `omr` of the home-PC queue: `POST /api/jobs/omr` (a score as page images), the job answers `GET /api/jobs/:id` / `POST .../cancel` / `DELETE` as any job; a worker claims it only when its claim says `omr: true`, fetches each page with `GET /api/worker/jobs/:id/pages/:n`, posts `{engine, engineVersion, ms, pages: [{index, ok, ms, error?, movements}]}` to the existing result route; `heartbeat` carries the page number; the list of conversions never shows a score; `PPP_OMR_JOBS=0` switches the kind off | `home-jobs.js` |
+| what may go up and come back, one file for the site and the worker: PNG/JPEG read by header (type, width, height), every cap, base64 and data: URLs, a content fingerprint; MusicXML checked as text (standard DOCTYPE cut out, every other DOCTYPE, entities, CDATA, control characters, nesting, tag count, root) and the result's shape | `home-omr.js` (new) |
+| the table `ppp_omr_pages(job_id, idx, bytes, created_at)`, a foreign key to the job that CASCADES; the job row and its pages in ONE statement; a page is read only for the owner's CLAIMED job; pages are deleted only for a job that is no longer waiting or claimed; the boot read counts each job's pages inside its one statement; `purge` has a shorter keeping time for a score; the file store keeps pages as files | `home-jobs-store.js` |
+| the call to Audiveris, the `.mxl` reader and `movements`, shared: `readMxlSync`, `findAudiveris`, `recognisePage(audiveris, image, outDir, {timeoutMs, extraArgs, onChild, lowPriority})`, `engineVersion`; the local helper now calls it with no option (its answers are what they were), the worker adds the step time-out and the priority | `omr/engine.js` (new), `omr-service.js` (delegates; an optional `require`: the service starts without the file, `/omr` then says "engine missing") |
+| the worker: `omr: true/false` in every claim, scores handled by `processScore` (pages fetched and re-checked, one at a time, below-normal priority of the worker and of the engine, a page time-out, the result validated with the site's own rules before it leaves the PC, cancel kills the engine's process by its PID, the scratch folder removed); `--check` says what the engine is; settings `omr`, `audiverisPath`, `omrPageTimeoutSeconds`; README (Korean first) | `tools/home-worker/worker.js`, `README.md`, `worker.config.example.json` |
+| the page: under `'v2'`, a PC link, and no local helper, `Import.load` sends the pages to the PC (`Import.recogniseOnPc`), shows "Sending ... / Waiting for your PC to read the pages / Your PC is reading page n of N", and goes on with the result through `Import.omrXml`, S4 and the flags as a helper's answer does; **Use the draft instead** (cancels the job), Cancel, a PC that is not on (a hint), a PC that fails (its line): the browser draft, and the review says why (a `pc-omr-fallback` issue). 20 sentences in ko, ja, zh; `tests/i18n/gaps.js --check` stays at 0 | `Piano Coach App.dc.html` (module-level `PC_OMR`/`pcOmrApi`, five `Import` methods, one hunk in `Import.load`, three in `runAnalysis`, `cancelImport`, `usePcDraft`, one button in the template) |
+
+**The contract.**
+
+| Route | Who | Answers |
+| --- | --- | --- |
+| `POST /api/jobs/omr` `{title?, pages: [base64 PNG/JPEG or data: URL], large?}` | a browser with the link's code (`X-PPP-PC`, this site as origin) | 201 `{job, worker}`; 200 `existing` for the same pages while they wait; 401 `no-link` / `bad-code` (before a byte of the body is read); 403 `cross-site`; 409 `no-pc` (the PC has never connected), `no-omr-pc` (its worker said it cannot); 413 `too-large`, `too-many-pages`, `page-too-large`, `job-too-large`; 422 `no-pages`, `bad-image`, `image-size`, `bad-body`; 429 `queue-full`, `quota`, `too-many`; 503 `busy`, `quota`, `omr-off`, `store` |
+| `GET /api/jobs/:id`, `POST /api/jobs/:id/cancel`, `DELETE /api/jobs/:id` | the same | as for a conversion; a score that is done answers with `result`, a read counted in the link's 60 an hour; cancel deletes the images at once; the page DELETEs the job when it has taken the score |
+| `GET /api/worker/status` (and the `worker` of every answer) | the link's code | gains `omrMode`: `true` (the PC's worker said at its last claim that it can read a score), `false` (it cannot: an older worker, or no engine), `null` (not heard since the server started), `'off'` (this site has the kind switched off); the page offers the PC path unless it is `false` or `'off'` |
+| `POST /api/worker/claim {…, omr: true}` | a worker token | the oldest queued job of ITS link that it can do; a score comes as `{id, kind: 'omr', url: '', title, pages, attempt, maxAttempts}` |
+| `GET /api/worker/jobs/:id/pages/:n` | the token that holds the claim | the page's bytes (`image/png` or `image/jpeg`, `no-store`, `attachment`); 409 when the job is not claimed or another token holds it; 410 gone; 429 past 3 reads of a page per claim or 300 pages an hour per token |
+| `POST /api/worker/jobs/:id/result` | the token that holds the claim (or, after a lease ran out, any token of the link: a late result is still taken) | 200; 422 `bad-result`, `bad-xml`, `nothing-read`, `too-large`; 409; the shape depends on the job's KIND, so notes for a score and pages for a conversion are 422 |
+| `heartbeat`, `fail` | as above | `page` (0..n) in a heartbeat is shown by the page; `fail` with `retry` keeps the images, a final failure deletes them |
+
+**Caps and quotas** (`home-jobs.js` `LIMITS`, `home-omr.js` `LIMITS`; the three byte caps are also settings of the service, `PPP_OMR_TOTAL_IMAGE_MB` the site's):
+
+| What | Cap | Refusal |
+| --- | --- | --- |
+| pages in a job | 12 (24 when the body says `large`) | 413 `too-many-pages` |
+| one page / a whole job | 1.5 MB / 12 MB of image bytes (the body: 16.25 MB as base64) | 413 `page-too-large`, `job-too-large`, `too-large` |
+| a picture | PNG or JPEG, 200 to 6000 px a side, 20 megapixels | 422 `image-size` (a PNG header that claims 100,000 x 100,000 pixels is refused from its 33 bytes) |
+| scores waiting or being read, per link | 2 (and 5 with conversions) | 429 `queue-full` |
+| scores asked for | 6 an hour per link, 12 an hour per address (links made from one address share it) | 429 `too-many`, Retry-After |
+| page images held (waiting or claimed jobs) | 16 MB per link, 16 MB per creating address, 64 MB for the site | 429 `quota`, 503 `quota`, 503 `busy` |
+| uploads being read at one moment | 2 in the whole site (a body is held in memory while it is decoded) | 503 `busy`, Retry-After 10 |
+| keeping time | a score nobody's PC took expires after **1 day**; a finished score is purged after 1 day (a conversion: 3); images are deleted when the job is done, failed, cancelled, expired or removed (and by the cascade when its row goes) | |
+| a result | 4 MB of JSON (one movement 3 MB, 400,000 tags, depth 40, 16 movements a page), counted in the link's 8 MB of notes (the oldest finished one makes room), 16 MB per address, 64 MB site (the existing result caps) | 422 `too-large`, 503 `quota` / `busy` |
+| a page handed to a PC | 3 times per claim, 300 an hour per token | 429 |
+
+**The abuse analysis** (one row per threat; each has a test, named, in `tests/home-worker/`):
+
+| Threat | What stops it | Tested by |
+| --- | --- | --- |
+| a stranger with no code queues a score | no header is 401 `no-link` before the body is read; a code that is not a live link's is 401 `bad-code`, counted per address (20 an hour, then 429), failures only; a session cookie, a code in the body or in the query, a worker token and a link id are not codes; another site as origin is 403 | `omr-jobs` "a score: who may ask"; `omr-abuse` "what a stranger learns" |
+| a valid code reads, cancels, removes or opens another link's score | the job is "not there" (404), answered byte for byte as a job that never existed (status and body), for the browser routes and the worker routes | `omr-jobs`; `omr-abuse` ("answered exactly as ... an id that never existed") |
+| a stranger makes a link of their own and queues scores | possible (as for YouTube: a link is free): their job belongs to THEIR link, so only their own worker token can claim it - it never reaches the user's PC (the owner's worker, asking with `omr: true`, is told there is none). What it can store is bounded per link (2 scores, 16 MB), per creating address (16 MB, 12 scores an hour), for the site (64 MB), and lives a day | `omr-abuse` "a stranger with a link of their own"; `omr-limits` |
+| a stranger fills the site's 64 MB of images (four addresses can) | the owner's score is then 503 `busy` until the images are a day old or deleted; the page falls back to the draft and says so. No data is at risk (64 MB of a 0.5 GB database); the knobs are `PPP_OMR_TOTAL_IMAGE_MB` and `PPP_OMR_JOBS=0`. **Said plainly: the kind opens a resource that strangers can exhaust for a day; it cannot run anything on the user's PC.** | `omr-limits` "the images held" |
+| oversized, many, malformed or hostile pictures | caps above; the type and size are read from the bytes, not the name; a decompression bomb is refused by its header; the worker re-checks every page it is handed and writes it under its own name | `omr-jobs` "page images"; `omr-limits` "uploads"; `omr-worker` "what the worker does not trust" |
+| XML bombs and entity tricks in a result (billion laughs, XXE, a huge document) | text checks without building a tree: no DOCTYPE but the standard one (cut out), no entity declaration, no CDATA, only the five entities and character numbers, depth 40, 400,000 tags, 3 MB a movement, 4 MB a result; the page reads it with the importer that already ignores a DOCTYPE | `omr-jobs` "what comes back"; `omr-flow` "a document with entities" |
+| a zip bomb in the engine's `.mxl` | the worker inflates at most 64 MB (`maxOutputLength`); only Audiveris writes there | `omr-worker` "a .mxl that inflates past 64 MB" |
+| a worker token posts a result of the wrong kind, or for a job another token holds | the result's shape is chosen by the job's kind (422 both ways); a score answers to the token that claimed it (409 `not-yours` for another token of the same link, e.g. after a rotation; the lease then gives it back); pages go only to the claiming token while the job is claimed | `omr-flow` "what a worker token may do with a score" |
+| two claims of one score | the state change is made in memory before anything is awaited and the SQL has `status = 'queued'` in its WHERE: of eight claims at once exactly one wins | `omr-flow` "eight claims at once"; `omr-jobs-pg` guards |
+| a name becomes a path | job ids are the server's (96 random bits, base64url); the file store names its files by them only after a pattern check; the worker names its files itself; a title is text; a job id with `..` is no route | `omr-abuse` "the site fetches nothing, and a name is never a path" |
+| the site fetches an address from a score (SSRF) | nothing in this feature fetches a URL; a score that names addresses in its body is queued as if it did not, and none is kept | `omr-abuse` |
+| images or results in a log | none is ever logged (the service's log lines, the job file, server.js's output are searched for marker bytes); the worker logs titles and counts | `omr-abuse` "what is kept"; `omr-jobs-pg` |
+| images kept after the job | deleted at the result, a failure, a cancel, an expiry, a removed link (cascade); a delete that fails is retried at the next purge and found again by the boot read | `omr-flow` "the keeping time"; `omr-jobs-pg` "a restart" |
+| the queue's idle poll costs SQL or keeps the site awake | unchanged: an idle claim (now also saying `omr: true`) runs no statement, counted on the store and in the database's own log | `omr-flow` "the free-tier rule"; `omr-jobs-pg` |
+
+**Free-tier arithmetic.** The idle poll is the same claim (an hour apart, zero SQL, 26 % of the shared Render hours with the PC on all day; none with the shortcut). A score costs: one statement to queue it (job and pages), one to claim, one
+read per page the PC fetches, one to finish and one to delete its images, plus the page's polls while the person waits on the Add screen (a look per 3 s, then 10 s, then 30 s: they keep the free instance awake only while the tab
+is open and waiting; a job the person abandons costs nothing more than its day). Storage: at most 12 MB of images per job and 64 MB for the site, held only from the upload until the PC has read them (minutes to an hour); a result
+is 20-300 KB a page and goes when the page has taken it. Egress: a score of 3 pages is about 1.5 MB up and 1.5 MB read by the PC plus 0.3 MB for the page's one read of the result; 65 pages a month is about 0.2 GB of Neon's 5.
+
+**Migration and rollback.** `SCHEMA_SQL` gains `CREATE TABLE IF NOT EXISTS ppp_omr_pages` and one index: nothing is altered, nothing dropped, in the same transaction under the same advisory lock, inside the savepoint that makes the queue
+optional. The code before G12-5 boots on the result (tested on a Postgres 17: it migrates, reads the queue, purges, claims; its `DELETE` of a job row removes the page rows by the cascade). **A manual `DROP TABLE ppp_transcribe_jobs`
+now needs `ppp_omr_pages` dropped first (or `CASCADE`); the rollback line of section 10 of `G10B_HOME_WORKER.md` becomes `DROP TABLE ppp_omr_pages, ppp_worker_tokens, ppp_transcribe_jobs;`.** Rolling back the code leaves score rows
+in the table; the old worker never receives one (it does not say `omr: true`); a score row that the old server hands to a new-enough worker does not exist.
+
+**What the independent review will find first, said here.** (1) The kind is reachable by anybody who makes a link (the YouTube conversion is the same); the bound is the quotas above, not the user's identity. (2) A worker trusts the
+site for what its engine opens: the page header is checked, the decoder is the Java runtime's. (3) `PPP_OMR_JOBS` defaults to ON: the route exists on the live site as soon as this is deployed, and only a page with
+`PPP.omr = 'v2'` uses it. (4) A phone that queues a score waits for the PC's next check (an hour by default) unless the PC's own browser queued it (`pppworker://run`); the page says so and offers the draft.
+
+**Verification.** `npm run test:home-worker` (in `shard-h` of the gate): `jobs` 297, `links` 166, `server` 39, `worker` 147, `omr-jobs` 115 (the module's rules, every refusal, the queue's rows), `omr-limits` 44, `omr-flow` 88 (a whole job,
+the six ways it ends, the keeping time, a delete that fails, the scope of a worker, the kind switched off, idle polls, eight claims at once, the quota of results), `omr-abuse` 23, `omr-worker` 60 (settings, the claim, a whole score
+with a stand-in for the engine, pages the worker does not trust, priority, cancel by PID, a rejected token, `--check`; plus, where there is a shell, the real `omr/engine.js` with a script for Audiveris), `jobs-pg` 118 and `omr-jobs-pg` 49
+(on a throwaway Postgres 17 with `log_statement=all`: skipped in the gate, like `jobs-pg`); `npm run test:home-worker-page` (local, puppeteer): `omr-page` 33 (the gate: legacy / no link / PC never seen / PC cannot / site switched off: no request to the queue; the flow with a
+fake worker; the draft; a failing PC; Cancel; a big photo re-encoded; 13 pages "large"; Korean), the old page suites unchanged and green (`page` all, `findable` 115, `pairing` 271), and the browser suites of G12-1..3 (`omr-normalize-app`, `omr-apply-app`, `omr-flags-app`) pass; on Linux (Docker, Node 24) the Node suites above and the two helper suites pass, the helper's shell-script stand-in tests included (10 of 10). `tests/omr/normalize/helper-service.test.js` and `helper-output.test.js` were updated for
+`omr/engine.js` (the helper's answer is the same; a service without the module starts). `tests/home-worker/jobs-pg.test.js` was already out of date on `main` (G13-5's `ppp_users.created_ip_tag` is in the boot SQL): its schema
+and data comparisons now name that column and the new table.
+
+**The real end-to-end run** (this PC, Windows 11, Audiveris 5.11.0 as installed in `D:/PPP/tools/audiveris`; a local server of this tree on a free port with the file store; the Add screen driven by puppeteer as a person drives it, with
+`PPP.omr = 'v2'` and a PC link; the real `worker.js --once` started by the script, which put itself and the engine at below-normal priority; the PC was loaded by other sessions' jobs; one page at a time):
+
+| File | Pages | The engine, per page | Worker `--once` | Score in the review |
+| --- | --- | --- | --- | --- |
+| `tests/fixtures/piano-clean.png` | 1 | 5.1 s | 6.5 s (file chosen to review: 7.6 s) | 8 bars, 2 staves, 48 notes, "good", confidence 1.00, no suspect bar; the result 20 KB; v2's normaliser and the flags ran; "Audiveris on your PC" |
+| `tests/fixtures/piano-clean.jpg` | 1 | 4.3 s | 5.8 s (7.3 s) | the same score |
+| `tests/fixtures/piano-multipage.pdf` | 2 | 9.4 s and 8.5 s | 19.3 s | the same 8 bars and 48 notes, the pages joined; 25 KB |
+
+The site then held no job (the page removed it). 0 page errors. The engine was started with `-batch -export -option org.audiveris.omr.Main.sheetStepTimeOut=1800 -output <dir> -- <page>`: Audiveris 5.11.0 accepts that option
+(the pages were read). Nothing was sent to the live site and no other Audiveris was running (the PC's other work was other sessions' browsers and tests).
+
+**Memory of the site while uploading.** A local server (Node 24) held 74 MB; one 12 MB job (12 pages of 1 MB) took 83 ms to accept and the working set peaked at 128 MB when two such uploads were in flight (the second was refused
+by the link's 16 MB of images after it had been read: 429 `quota`). Render's free instance has 512 MB; two uploads at once is the cap (`OMR_UPLOADS_AT_ONCE`).
+
+**What could not be tested.**
+- **Production.** Nothing was deployed or contacted: Render's spin-down, its request limits for a 16 MB body, Neon's quotas and a real Neon are argued from the numbers, not measured. The Postgres tests ran on a throwaway
+  `postgres:17` container, with `log_statement=all`; the migration is plain `CREATE TABLE/INDEX IF NOT EXISTS`.
+- **A phone, and a real photograph.** The page drives a headless desktop Chrome; the photo path was exercised with a JPEG fixture and a synthetic noisy canvas, not a camera's output (curl, shadows, perspective: K2).
+- **Documents of many pages through the real engine.** One and two pages ran for real; 12 and 24 pages are tested with stand-ins (the caps, the page loop, the heartbeat), not with 24 real Audiveris runs.
+- **A busy PC under load for long.** The runs above were beside other sessions' work and no page timed out, but the 1800 s step time-out and the 600 s page time-out were not driven to their limits with the real engine.
+- **The real `pppworker://` launch.** The page's call is intercepted in the tests (as in G10b-4); nothing starts the real worker from a browser here.
+- **The AGPL question** was not looked at again: Audiveris stays a separate process on the user's PC (G12-D1), nothing of it is bundled or served.
+
+**Decisions of the Lead's kind taken here (reversible).** (1) A route of its own, `POST /api/jobs/omr`, so that `POST /api/jobs` (4 KB body, YouTube links) is byte for byte what it was. (2) One atomic JSON upload (base64, 16.25 MB at most)
+rather than per-page uploads: a job never exists half uploaded; the price is memory while it is decoded, bounded by two uploads at once. (3) Images in Postgres `bytea`, never in memory, deleted at the result; a cascading foreign key
+so that no path that deletes a job row can leave them. (4) The kind is ON by default (`PPP_OMR_JOBS=0` turns it off; `PPP_OMR_TOTAL_IMAGE_MB` sizes the images); only a page on `'v2'` uses it. (5) A PC must have connected and not have
+said it cannot (resource hygiene, not security: a stranger's own worker can say anything). (6) A result may be 4 MB, not the 2 MB of section 7.5 (twelve dense pages are about 3.6 MB of text). (7) The wait is on the Add screen with an
+escape, not a background list: the page images are never persisted, so a later "Open" could not show the page beside the bars; closing the tab abandons the read (the job expires in a day). (8) The PC path is used only where no local
+helper is, and has no second DPI pass. (9) The file name (without its extension, 120 characters at most) is stored on the site for up to a day, as the title of the job. (10) The worker passes the step time-out option of G12-0 (on a
+busy PC at below-normal priority the 120 s default would lose pages); the local helper still runs the engine as it did.
+
+**Found on the way.** `tests/home-worker/jobs-pg.test.js` was out of date on `main` (G13-5 added `ppp_users.created_ip_tag` to the boot SQL; its schema and data comparisons failed before this change) and seven mutants of
+`mutants.js` named code that G10d had reworded (A5, A18, B3, R7, L35, R13, T2): all are fixed here, with the new table added to the comparisons. A manual `DROP TABLE ppp_transcribe_jobs` now needs `ppp_omr_pages` dropped first.

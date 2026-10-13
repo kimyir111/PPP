@@ -4,6 +4,8 @@
 
 > **G10b-3 (2026-10-07, user decision: "it is too complicated: make connecting my PC worker easy, minimize the steps") makes connecting a device ONE tap (section 14): opening `https://<site>/#pc=<client code>` - a URL fragment, never sent to a server - on any device pairs it; `pair.cmd` / `worker.js --pair` copies that link and opens it from the PC; the Settings card keeps one button and puts the rest under "More". Page and worker only: no server, route, table or limit changes.**
 
+> **G12-5 (2026-10-13, user decision U1 = C, U2 = the user's linked PC only) adds a second kind of job to this queue: `omr`, a printed score (a PDF or a photo) that the PC's worker reads with Audiveris (docs/GOALS/G12_OMR.md section 24). It uses the same PC link, the same worker token, the same claim (the worker says `omr: true`), and adds one table, `ppp_omr_pages`, for the page images (a foreign key to the job that cascades). Nothing in sections 1-16 below changes for a conversion; the idle poll still runs no SQL.**
+
 | | |
 | --- | --- |
 | Status | **G10b-1 is merged (`b7f9fb5`); G10b-2 (the login-free link, section 12) is built and tested, not deployed.** PR "G10b-2: the home-PC link needs no account" from `g10b-2-loginfree` (from `main` `b7f9fb5`). The Lead deploys and migrates after an independent security review. |
@@ -150,7 +152,7 @@ The PC must be on and the worker running; latency is up to the poll interval (an
 - **Deploy** (Lead): nothing to configure; the two tables are created at boot (`CREATE ... IF NOT EXISTS`, after `ppp_users`). Optional env: `PPP_WORKER_IDLE_POLL_S` (default 3600, floor 900 - section 3.1), `PPP_WORKER_ACTIVE_POLL_S` (15), `PPP_WORKER_TOTAL_RESULT_MB` (64). Verify beyond `/health`: **(G10b-2)** `GET /api/jobs` with no `X-PPP-PC` header is 401 `{"error":"No PC link on this device.","code":"no-link"}`; `GET /api/worker/ping` without a token is 401; `POST /api/pc-links` with `{}` is 201 with a client code and a worker token (this makes a real link: remove it afterwards with `DELETE /api/pc-links/me` and its code); Settings shows "Connect my PC" for everybody, signed in or not. (G10b-1 said: 401 `Sign in to use this.`, and the card for a signed-in account only.)
 - **First use**: (G10b-2) Settings > Connect my PC > Create my PC link (no sign-in), copy the PC token, copy `worker.config.example.json` to `worker.config.json` with `siteUrl` and `token`, `node tools/home-worker/worker.js --check`, `--once`; the button appears after the worker's first contact. (G10b-1: sign in, Make a token.)
 - **Watching the cost**: Render dashboard instance hours (compare with the table); Neon console compute hours. If either climbs, raise `PPP_WORKER_IDLE_POLL_S` or use `--once`.
-- **Rollback**: revert the PR; optionally `DROP TABLE ppp_worker_tokens, ppp_transcribe_jobs;`.
+- **Rollback**: revert the PR; optionally `DROP TABLE ppp_worker_tokens, ppp_transcribe_jobs;` (G12-5: `DROP TABLE ppp_omr_pages, ppp_worker_tokens, ppp_transcribe_jobs;` - a foreign key from the page images refers to the jobs).
 - **A stuck job**: it returns to the queue after 30 minutes without a heartbeat; the owner can cancel it any time; a revoked token loses its claim at the lease end.
 
 ## 11. Verification
