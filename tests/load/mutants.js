@@ -37,7 +37,7 @@ function makeCopy() {
   return dir;
 }
 
-const LAZY = 'i18n-lazy.test.js', HASH = 'content-hash.test.js', FONTS = 'fonts.test.js', SAMPLES = 'load-app/samples.test.js';
+const LAZY = 'i18n-lazy.test.js', HASH = 'content-hash.test.js', FONTS = 'fonts.test.js', SAMPLES = 'load-app/samples.test.js', TEMPLATE = 'load-app/template.test.js';
 
 /* id, file, what the mutant breaks, [from, to] or a list of them (each replaced once), the test that must fail */
 const M = [
@@ -63,6 +63,8 @@ const M = [
   ['D3', 'Piano Coach App.dc.html', 'a stylesheet that never answers holds the recordings for ever', ["Promise.race([window.PPP_CJK_SETTLED, new Promise(r => setTimeout(r, 7000))])", "window.PPP_CJK_SETTLED"], SAMPLES],
   ['D4', 'Piano Coach App.dc.html', 'a tap no longer starts the recordings', ["this._wakeAt = (window.performance || Date).now();\n    PianoSamples.load();\n    if (!ac) return;", "this._wakeAt = (window.performance || Date).now();\n    if (!ac) return;"], SAMPLES],
   ['D5', 'Piano Coach App.dc.html', 'no stand-in: a note with no recording in is silent', ["    } else {\n      this.synth(voice, midi, t, peak, tone);\n    }", "    } else {\n      voice.srcs.push(ac.createBufferSource());\n    }"], SAMPLES],
+  /* G13-4c (template re-fetch): the line in the head that turns the runtime's second fetch of the page off */
+  ['E1', 'Piano Coach App.dc.html', 'the runtime fetches the page a second time again', ["<script>window.__resources = window.__resources || {};", "<script>window.__noResources = window.__resources || {};"], TEMPLATE],
   /* G13-4c: static-assets.js, server.js, i18n.js */
   ['C1', 'server.js', 'a wrong hash is answered immutable (any ?h= is believed)', ["if (e.hash === want) {", "if (true) {"], HASH],
   ['C2', 'static-assets.js', 'the hash ignores the content', [".update(body).digest('hex').slice(0, 12)", ".update('same').digest('hex').slice(0, 12)"], HASH],

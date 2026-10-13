@@ -155,6 +155,7 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
 <script src="./vendor/react-18.3.1/react.production.min.js?h=d949f1c3687a"></script>
 <script src="./vendor/react-18.3.1/react-dom.production.min.js?h=35f4f974f4b2"></script>
 <script>if (window.PPP_CDN) { delete window.React; delete window.ReactDOM; } /* support.js then finds no React and loads the SRI-pinned unpkg copies, as before */</script>
+<script>window.__resources = window.__resources || {}; /* G13-4c: an empty resource map makes support.js (generated, not edited) skip the second fetch of this page (329 KB on the wire, a second render of everything): the template it would recompile from the raw text is the one it already has - the browser only lower-cased 8 event attributes (onClick -> onclick), which the runtime maps back to the same React props (tests/load-app/template-refetch.js). Nothing else reads __resources here. */</script>
 <script src="./support.js"></script>
 <script src="./lessons.js"></script>
 <script src="./course.js"></script>
