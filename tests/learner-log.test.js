@@ -23,6 +23,8 @@
                'typed' alike (history, memory, section bars, coach and Loop counters, minutes, xp, weekly bars, the log), and the card says so in four languages;
                'count' is the opt-out
      demolive  the same on the page's own clock: five and five real laps in Korean without a keyboard leave the progress as it was; with a (fake) keyboard they count
+     democonnect  a keyboard that goes live after Play is judged from the next lap (the lap in which it came is lost, with a line that says so); when the card says a run was not
+               recorded (while it plays, and after it until a recorded run replaces it), and what Progress and Home say of a run that was not
      ui        Settings > Practice log and the rating row exist only under 'typed', in four languages
    Needs puppeteer; 127.0.0.1:8777 (tests/engrave/tools/with-port.js rewrites it; tests/practice/run-suites.js does).
    ========================================================================== */
@@ -956,15 +958,19 @@ async function demoSection(browser) {
   ok('typed with demoRuns count: the laps are folded in and named simulated', tc.second.hist.runs.slice(-4).every(r => r.source === 'simulated') && tc.second.hist.runs.length === tc.before.hist.runs.length + 4);
   ok('no page error', sep.errors.length + lg.errors.length + ty.errors.length + tc.errors.length === 0, [sep, lg, ty, tc].map(x => x.errors.join('|')).join(';'));
 
-  /* ---- C. the line on the card and the hint, in the four languages */
+  /* ---- C. the line on the card and the hint, in the four languages: with no keyboard, and after one has been connected */
   const WORDS = {
-    'en-US': { note: 'No keyboard connected, so this run is not recorded. (Demo Input)', toast: 'Not recorded: connect a MIDI keyboard and turn MIDI on to record your practice.' },
-    'ko-KR': { note: '건반이 연결되지 않아 이번 연습은 기록되지 않아요. (데모 입력)', toast: '기록되지 않았어요. MIDI 건반을 연결하고 MIDI 입력을 켜면 연습이 기록돼요.' },
-    'ja-JP': { note: 'キーボードがつながっていないため、今回の練習は記録されません。（デモ入力）', toast: '記録されませんでした。MIDIキーボードをつないでMIDI入力をオンにすると、練習が記録されます。' },
-    'zh-CN': { note: '没有连接键盘，所以这次练习不会被记录。（演示输入）', toast: '这次没有记录。连接 MIDI 键盘并打开 MIDI 输入后，练习才会被记录。' }
+    'en-US': { note: 'No keyboard connected, so this run is not recorded. (Demo Input)', last: 'The last run was played without a keyboard, so it was not recorded. (Demo Input)',
+      toast: 'Not recorded. To record your practice, click "Demo Input" at the top and connect a MIDI keyboard.' },
+    'ko-KR': { note: '건반이 연결되지 않아 이번 연습은 기록되지 않아요. (데모 입력)', last: '직전 연습은 건반 없이 해서 기록되지 않았어요. (데모 입력)',
+      toast: '기록되지 않았어요. 연습을 기록하려면 위쪽의 "데모 입력"을 눌러 MIDI 건반을 연결해 주세요.' },
+    'ja-JP': { note: 'キーボードがつながっていないため、今回の練習は記録されません。（デモ入力）', last: '直前の練習はキーボードなしだったため、記録されていません。（デモ入力）',
+      toast: '記録されませんでした。練習を記録するには、上の「デモ入力」を押してMIDIキーボードをつないでください。' },
+    'zh-CN': { note: '没有连接键盘，所以这次练习不会被记录。（演示输入）', last: '上一遍练习没有键盘，所以没有记录。（演示输入）',
+      toast: '这次没有记录。要记录练习，请点击上方的“演示输入”并连接 MIDI 键盘。' }
   };
   for (const loc of Object.keys(WORDS)) {
-    const p = await open(browser, { init: [[l => { localStorage.setItem('ppp-locale', l); }, loc]] });
+    const p = await open(browser, { midi: true, init: [[l => { localStorage.setItem('ppp-locale', l); }, loc]] });
     await toPractice(p.page, false);
     const r = await p.page.evaluate(async () => {
       const A = PPP.app, sl = ms => new Promise(res => setTimeout(res, ms));
@@ -974,11 +980,32 @@ async function demoSection(browser) {
       A.setState(A.completeLap(A.state, ev.hit, ev.tot, null));
       const toast = A.state.toast;
       await sl(300);
-      const n = document.querySelector('[data-demo-note]');
-      return { note: n ? n.innerText.trim() : null, toast: toast };
+      const text = () => { const n = document.querySelector('[data-demo-note]'); return n ? n.innerText.trim() : null; };
+      const note = text();
+      /* the keyboard comes (no run has been played on it): the line is about the LAST run now, and no number of an older one stands next to it */
+      await A.connectMidi();
+      await sl(900);
+      const acc = document.querySelector('[data-run-accuracy]');
+      return { note: note, toast: toast, last: text(), live: A.liveMidi(), acc: acc ? acc.innerText.trim() : null };
     });
     ok(loc + ': the card says ' + WORDS[loc].note, r.note === WORDS[loc].note, JSON.stringify(r.note));
-    ok(loc + ': and the hint says what to do', r.toast === WORDS[loc].toast, JSON.stringify(r.toast));
+    ok(loc + ': and the hint says where to click', r.toast === WORDS[loc].toast, JSON.stringify(r.toast));
+    ok(loc + ': with a keyboard connected since, the line says the last run was not recorded, and its accuracy is not a stale number', r.live && r.last === WORDS[loc].last && r.acc === '—', JSON.stringify({ live: r.live, last: r.last, acc: r.acc }));
+    await p.close();
+  }
+  {
+    /* a browser without Web MIDI (an iPhone, an iPad): the hint does not send anyone to a button that cannot work */
+    const p = await open(browser, { init: [[() => { try { delete navigator.requestMIDIAccess; Object.defineProperty(Navigator.prototype, 'requestMIDIAccess', { value: undefined, configurable: true }); } catch (e) { /* none */ } }, null]] });
+    await toPractice(p.page, false);
+    const r = await p.page.evaluate(async () => {
+      const A = PPP.app, sl = ms => new Promise(res => setTimeout(res, ms));
+      A.setState({ practiceMode: 'practice', loop: true, tempo: 200, hands: 'both' }); A.setLoop(1, 2); await sl(300);
+      A._sim = A.newSim();
+      const ev = A.fire(A.state, 0, 1e6);
+      A.setState(A.completeLap(A.state, ev.hit, ev.tot, null));
+      return { toast: A.state.toast, web: A.midiLayer().supported() };
+    });
+    ok('no Web MIDI: the hint says the browser cannot record, instead of pointing at the Demo Input button', !r.web && /no Web MIDI/.test(r.toast || ''), JSON.stringify(r));
     await p.close();
   }
 }
@@ -1054,6 +1081,118 @@ async function demoLiveSection(browser) {
     ok('no page error', p.probe.errors.length === 0, p.probe.errors.join('|'));
     await p.close();
   }
+}
+
+/* ---------------------------------------------------------------- 7c. a keyboard that goes live after Play */
+/* Play without a keyboard, then connect one (or the MIDI permission resolves): the lap in progress is a Demo Input lap, the next one is judged. The page used to decide at the START of
+   a lap whether the next one was a real run, so a keyboard that came later was never judged until Stop and Play. Also the rules of when the card says so (the line shows while a run
+   without a keyboard plays, and, about the last run, after a keyboard has come, until a recorded run replaces it) and what the Progress and Home screens say of it. */
+async function demoConnectSection(browser) {
+  console.log('\n-- a keyboard that goes live after Play is judged from the next lap; what the card, Progress and Home say meanwhile --');
+  const p = await open(browser, { midi: true });
+  await toPractice(p.page, false);
+  const state = () => p.page.evaluate(() => {
+    const A = PPP.app, S = A.state;
+    const n = document.querySelector('[data-demo-note]'), a = document.querySelector('[data-run-accuracy]');
+    return { runs: S.history.runs.length, xp: S.xp, laps: S.laps, lastDemo: !!S.lastDemo, lastRec: !!S.lastRec, playing: S.playing, live: A.liveMidi(), note: n ? n.innerText.trim() : null, acc: a ? a.innerText.trim() : null };
+  });
+  /* the value under a label on a screen, by its English label (the page is en-US): the first word of the line after it */
+  const progressAccuracy = async () => {
+    await p.page.evaluate(l => window.__pppTest.nav(l), 'Progress');
+    await sleep(600);
+    return p.page.evaluate(() => {
+      const el = document.querySelector('[data-progress-song]');
+      const lines = (el ? el.innerText : '').split('\n').map(x => x.trim()).filter(Boolean);
+      const i = lines.indexOf('Accuracy');
+      return i >= 0 && lines[i + 1] ? lines[i + 1].split(' ')[0] : null;
+    });
+  };
+  const homePracticed = async () => {
+    await p.page.evaluate(l => window.__pppTest.nav(l), 'Home');
+    await sleep(600);
+    return p.page.evaluate(() => {
+      const lines = document.body.innerText.split('\n').map(x => x.trim()).filter(Boolean);
+      const i = lines.indexOf('Last practiced');
+      return i >= 0 ? lines[i + 1] : null;
+    });
+  };
+
+  // 1. no keyboard: a run in progress is already named, before any lap has ended
+  await p.page.evaluate(async () => {
+    const A = PPP.app, sl = ms => new Promise(r => setTimeout(r, ms));
+    A.setState({ toggles: Object.assign({}, A.state.toggles, { follow: false }), practiceMode: 'practice', loop: true, tempo: 200, hands: 'both' });
+    A.setLoop(1, 2); await sl(300);
+    window.__l0 = A.state.laps;
+    A.togglePlay();
+  });
+  await sleep(700);
+  const during = await state();
+  ok('while the FIRST lap without a keyboard plays (no lap has ended yet) the card already says that this run is not recorded', during.playing && during.laps === 0 && during.note === 'No keyboard connected, so this run is not recorded. (Demo Input)', JSON.stringify(during));
+  await p.page.evaluate(async () => { const A = PPP.app, sl = ms => new Promise(r => setTimeout(r, ms)); const t0 = performance.now(); while (A.state.laps < 2 && performance.now() - t0 < 30000) await sl(100); A.togglePlay(); await sl(500); });
+  const demoOnly = await state();
+  ok('after two laps without a keyboard: nothing recorded (history, xp), the line is there, the card shows no number', demoOnly.laps >= 2 && demoOnly.runs === 23 && demoOnly.xp === 1240 && demoOnly.lastDemo && /not recorded/.test(demoOnly.note || '') && demoOnly.acc === '—', JSON.stringify(demoOnly));
+  const acc0 = await progressAccuracy();
+  const prac0 = await homePracticed();
+  ok('Progress shows no accuracy for a run that was not recorded (not the 91% of a fresh page), and Home does not say "just now"', acc0 === '—' && prac0 !== 'just now', JSON.stringify({ acc: acc0, practiced: prac0 }));
+  await p.page.evaluate(l => window.__pppTest.practice(null, 'Practice'), null);
+  await sleep(500);
+
+  // 2. Play again with no keyboard, connect one in the middle of the loop, press the notes that are due
+  const mid = await p.page.evaluate(async () => {
+    const A = PPP.app, sl = ms => new Promise(r => setTimeout(r, ms));
+    A.setLoop(1, 2); await sl(300);
+    A.togglePlay();
+    const t0 = performance.now();
+    const l1 = A.state.laps;
+    while (A.state.laps < l1 + 1 && performance.now() - t0 < 30000) await sl(100);      /* one more lap without a keyboard, so that the loop is running */
+    const hist0 = A.state.history.runs.length, xp0 = A.state.xp, lapsAtConnect = A.state.laps;
+    const nextTo = () => { const n = document.querySelector('[data-demo-note]'); return n ? n.innerText.trim() : null; };
+    await A.connectMidi();
+    const t1 = performance.now();
+    while (!A.liveMidi() && performance.now() - t1 < 5000) await sl(50);
+    await sl(150);
+    const lineOnConnect = nextTo();
+    const accOnConnect = (document.querySelector('[data-run-accuracy]') || {}).innerText;
+    const pressed = new WeakSet();
+    const t2 = performance.now();
+    let lineWhileJudged = null, lapsToRecord = null;
+    while (performance.now() - t2 < 45000) {
+      await sl(100);
+      const now = performance.now();
+      ((A._perf && A._perf.expected) || []).forEach((x, i) => {      /* the notes of every lap, as they come due */
+        if (pressed.has(x) || i % 5 === 4) return;
+        const due = x.tMs - now;
+        if (due < 400 && due > -60) { pressed.add(x); setTimeout(() => { window.__press(x.midi); setTimeout(() => window.__release(x.midi), 50); }, Math.max(0, due)); }
+      });
+      if (A.state.history.runs.length > hist0) { lapsToRecord = A.state.laps - lapsAtConnect; break; }
+    }
+    await sl(500);                                       /* still playing: the next lap of the loop is under way, with a keyboard */
+    lineWhileJudged = nextTo();
+    const playingThen = A.state.playing;
+    const accWhileJudged = (document.querySelector('[data-run-accuracy]') || {}).innerText;
+    const lastDemoThen = !!A.state.lastDemo;
+    if (A.state.playing) A.togglePlay();
+    await sl(600);
+    return { hist0: hist0, hist1: A.state.history.runs.length, xp0: xp0, xp1: A.state.xp, lapsToRecord: lapsToRecord, lineOnConnect: lineOnConnect, accOnConnect: accOnConnect,
+      lineWhileJudged: lineWhileJudged, accWhileJudged: accWhileJudged, playingThen: playingThen, lastDemoThen: lastDemoThen, live: A.liveMidi(), last: A.state.history.runs[A.state.history.runs.length - 1] };
+  });
+  ok('a keyboard connected in the middle of a loop that began without one is judged from the next lap: one run is recorded within three laps, and xp goes up',
+    mid.live && mid.hist1 === mid.hist0 + 1 && mid.xp1 > mid.xp0 && mid.lapsToRecord >= 1 && mid.lapsToRecord <= 3 && mid.last && mid.last.simulated === false && mid.last.counts && mid.last.counts.matched > 0, JSON.stringify({ hist: mid.hist0 + '->' + mid.hist1, xp: mid.xp0 + '->' + mid.xp1, laps: mid.lapsToRecord, last: mid.last && mid.last.simulated }));
+  ok('meanwhile the line is about the LAST run (it was without a keyboard)', mid.lineOnConnect === 'The last run was played without a keyboard, so it was not recorded. (Demo Input)', JSON.stringify({ line: mid.lineOnConnect }));
+  ok('and once a run is recorded, while the loop goes on with the keyboard, the line is gone and the run is no longer called unrecorded', mid.playingThen && mid.lineWhileJudged === null && !mid.lastDemoThen, JSON.stringify({ line: mid.lineWhileJudged, lastDemo: mid.lastDemoThen, playing: mid.playingThen }));
+  const acc1 = await progressAccuracy();
+  const prac1 = await homePracticed();
+  ok('Progress now shows the accuracy of the recorded run, and Home says "just now"', /^\d+%$/.test(acc1 || '') && prac1 === 'just now', JSON.stringify({ acc: acc1, practiced: prac1 }));
+  await p.page.evaluate(l => window.__pppTest.practice(null, 'Practice'), null);
+  await sleep(500);
+
+  // 3. unplug: a recorded run is never called unrecorded afterwards
+  await p.page.evaluate(() => { const A = PPP.app; A.setState({ toggles: Object.assign({}, A.state.toggles, { midi: false }) }); });
+  await sleep(500);
+  const gone = await state();
+  ok('after the keyboard is switched off, the last run was a recorded one: no line, and its accuracy is still on the card', !gone.live && !gone.lastDemo && gone.note === null && /%$/.test(gone.acc || ''), JSON.stringify(gone));
+  ok('no page error', p.probe.errors.length === 0, p.probe.errors.join('|'));
+  await p.close();
 }
 
 /* ---------------------------------------------------------------- 8. what a person sees */
@@ -1246,6 +1385,7 @@ async function frozenSection(browser) {
       if (want('budget')) await budgetSection(browser);
       if (want('demo')) await demoSection(browser);
       if (want('demolive')) await demoLiveSection(browser);
+      if (want('democonnect')) await demoConnectSection(browser);
       if (want('ui')) await uiSection(browser);
     }
   } finally {
