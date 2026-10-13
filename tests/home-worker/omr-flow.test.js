@@ -265,7 +265,7 @@ async function scopeOfAWorker() {
     const b = await result(S, tok, id, bomb);
     ok('a document with entities (a billion laughs) is 422 bad-xml, and nothing of it is kept', b.status === 422 && b.body.code === 'bad-xml' && jobOf(S, id).status === 'claimed');
     const huge = await post(S, tok, '/api/worker/jobs/' + id + '/result', { pages: [{ index: 0, ok: true, movements: ['A'.repeat(6 * MiB)] }, { index: 1, ok: false }] });
-    ok('a body of 6 MB is 413 (the result body is capped: 5 MB)', huge.status === 413 || huge.status === 422, huge.status + '');
+    ok('a body of 6 MB is 413 (the result body is capped: 5 MB), and nothing of it is stored', huge.status === 413 && jobOf(S, id).status === 'claimed', huge.status + '');
     const tooBig = L.omrResult(2);
     tooBig.pages[0].movements = [bigXml(2.9)]; tooBig.pages[1].movements = [bigXml(2.9)];
     const tb = await result(S, tok, id, tooBig);
@@ -396,6 +396,25 @@ async function freeTier() {
   }
 }
 
+/* a waiting score whose images are gone (lost by a restore, a manual delete): nothing can read it, so it is failed with a sentence instead of waiting a day for a PC */
+async function aScoreWithNoImages() {
+  heading('a waiting score whose images are not there');
+  const S = await L.startService({ users: ['u1'] });
+  try {
+    await ready(S, 'u1');
+    const q = await sendOmr(S, 'u1', L.omrPages(2, { w: 770 }));
+    const id = q.body.job.id;
+    L.fs.readdirSync(L.path.join(S.dir, 'omr-pages')).forEach(f => L.fs.unlinkSync(L.path.join(S.dir, 'omr-pages', f)));
+    const S2 = await L.startService({ store: S.inner, resume: S.creds() });
+    try {
+      S2.clock.t = S.clock.t;
+      const list = await S2.as('u1').get('/api/jobs');
+      ok('a score whose page files are gone is failed by the first look at the queue, with a sentence that says to send it again', list.status === 200 && S2.svc._state.jobs.get(id).status === 'failed' && /images of this job are gone/.test(S2.svc._state.jobs.get(id).error), JSON.stringify(S2.svc._state.jobs.get(id)).slice(0, 160));
+      ok('and a PC is not handed it', (await claimOmr(S2, S2.token('u1'))).body.job === null);
+    } finally { await S2.close(); }
+  } finally { await S.close(); }
+}
+
 async function resultsAndTheirQuota() {
   heading('a finished score counts among the link\'s notes: the oldest finished one makes room');
   const S = await L.startService({ users: ['u1'] });
@@ -428,5 +447,6 @@ async function resultsAndTheirQuota() {
   await whoIsHandedWhat();
   await freeTier();
   await resultsAndTheirQuota();
+  await aScoreWithNoImages();
   L.finish('the home-PC queue, kind omr: the life of a job and the scope of a worker');
 })().catch(e => { console.error(e); process.exit(1); });

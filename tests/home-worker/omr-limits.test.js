@@ -41,7 +41,7 @@ async function uploadRules() {
     const huge = await S.as('u1').post('/api/jobs/omr', { pages: ['A'.repeat(17 * MiB)] });
     ok('a body over the cap (17 MB): 413 too-large, nothing stored', huge.status === 413 && huge.body && huge.body.code === 'too-large' && noJobs(), huge.status + ' ' + huge.text.slice(0, 100));
     const declared = await req(S.port, 'POST', '/api/jobs/omr', { user: 'u1', headers: { 'Content-Length': String(40 * MiB), 'Content-Type': 'application/json' }, abortAfter: 1500 }).catch(e => ({ status: 0, error: String(e) }));
-    ok('a body that ANNOUNCES 40 MB is refused before a byte is read (413, or the connection cut), nothing stored', (declared.status === 413 || declared.status === 0) && noJobs(), JSON.stringify(declared).slice(0, 120));
+    ok('a body that ANNOUNCES 40 MB is refused before a byte is read: 413 at once, nothing stored (not read until the sender gives up)', declared.status === 413 && noJobs(), JSON.stringify(declared).slice(0, 120));
     const first = await sendOmr(S, 'u1', L.omrPages(1, { w: 1200 }));
     ok('every refusal above gave its hourly budget back: a score is accepted at the end (six an hour, a dozen refused)', first.status === 201, first.status + ' ' + first.text.slice(0, 100));
   } finally { await S.close(); }

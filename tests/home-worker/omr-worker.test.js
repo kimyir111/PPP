@@ -261,10 +261,12 @@ async function queued(S, user, w, n, o) {
       for (let i = 0; i < 100 && !child; i++) await sleep(20);
       ok('(the engine stand-in is running as a process of its own)', !!child && child.exitCode === null);
       const pid = child.pid;
+      const tCancel = Date.now();
       await S.as('u1').post('/api/jobs/' + id + '/cancel', {});
       const done = await run;
+      const stoppedIn = Date.now() - tCancel;
       let alive = true; try { process.kill(pid, 0); } catch (e) { alive = false; }
-      ok('cancelled on the site: the worker stops the engine\'s process, does not go on to page 2, posts no result, and logs it', done === false && !alive && st.calls.length === 1 && lines().some(l => /cancelled on the site/.test(l)) && jobOf(S, id).status === 'cancelled', done + ' alive=' + alive + ' calls=' + st.calls.length);
+      ok('cancelled on the site: the worker stops the engine\'s process within seconds (at its next heartbeat; the stand-in would run a minute), does not go on to page 2, posts no result, and logs it', stoppedIn < 15000 && done === false && !alive && st.calls.length === 1 && lines().some(l => /cancelled on the site/.test(l)) && jobOf(S, id).status === 'cancelled', done + ' alive=' + alive + ' calls=' + st.calls.length);
       ok('and nothing is left in the scratch folder', scratchLeft(cfg) === 0);
     } finally { await S.close(); }
   }

@@ -731,7 +731,7 @@ function createWorker(cfg, deps) {
       clearInterval(hbTimer);
       restorePriority();
       ctl.child = null;
-      if (!cfg.keepScratch) { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { /* the temp folder is cleaned by the OS in the end */ } }
+      if (cfg.keepScratch !== true) { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { /* the temp folder is cleaned by the OS in the end */ } }
     }
   }
 
@@ -796,7 +796,7 @@ function createWorker(cfg, deps) {
     } finally {
       clearInterval(hbTimer);
       ctl.child = null;
-      if (cfg.keepScratch !== true) { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { /* the temp folder is cleaned by the OS in the end */ } }
+      if (!cfg.keepScratch) { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { /* the temp folder is cleaned by the OS in the end */ } }
     }
   }
 
