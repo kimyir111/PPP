@@ -6607,6 +6607,7 @@ class PerformanceEngine {
     this.wrong = [];
     this.extras = [];
     this.held = {};
+    this.graces = [];
   }
 
   setScore(score) { this.score = score; }
@@ -6629,10 +6630,9 @@ class PerformanceEngine {
     /* a chord marked to be rolled: every note of it on that staff */
     const rolled = {};
     Score.notesIn(score, from, to).forEach(n => { if (n.arp) rolled[n.m + '|' + n.b + '|' + (n.staff || 1)] = true; });
-    /* G11a-4: a grace note sounds and is drawn, and is never asked (G11 U2: graces are not judged); vIdx is the visit (a bar played twice is two visits of one bar, mIdx) */
-    const visitAt = new Map((plan.visits || []).map((v, k) => [v, k]));
-    this.expected = (plan.strikes || [])
-      .filter(s => !s.grace)
+    /* G11a-4: a grace note sounds and is drawn, and is never asked (G11 U2: graces are not judged); a plan with none (the legacy plan, most pieces) is read as it was */
+    const graced = plan.graceStrikes > 0;
+    this.expected = (graced ? plan.strikes.filter(s => !s.grace) : (plan.strikes || []))
       .filter(s => this._handOk(s.note, run.hands))
       .map((s, i) => ({
         id: i,
@@ -6640,7 +6640,6 @@ class PerformanceEngine {
         evId: s.ev,        /* the graph's event id; `ev` is where noteOn keeps the key event that matched the note */
         head: s.head,
         mIdx: s.visit ? s.visit.index : undefined,
-        vIdx: s.visit ? visitAt.get(s.visit) : undefined,
         midi: s.midi,
         m: s.m,
         hand: s.hand,
@@ -6653,9 +6652,21 @@ class PerformanceEngine {
         closed: false
       }));
     /* G11a-4: where a grace note sounds, a key pressed is neither a note matched nor a wrong one (graces are heard, not judged; a legacy plan has none) */
-    this.graces = (plan.strikes || []).filter(s => s.grace && this._handOk(s.note, run.hands))
-      .map(s => ({ midi: s.midi, tMs: run.startedAt + PianoScore.msAt(plan, s.q, scale) - PianoScore.msAt(plan, 0, scale) }));
+    this.graces = graced ? plan.strikes.filter(s => s.grace && this._handOk(s.note, run.hands))
+      .map(s => ({ midi: s.midi, tMs: run.startedAt + PianoScore.msAt(plan, s.q, scale) - PianoScore.msAt(plan, 0, scale) })) : [];
     return this;
+  }
+
+  /* G11a-4: the visit (its place in plan.visits) of an expected note, worked out on demand (the matcher does not carry it): a bar the plan plays twice is two visits and one bar (mIdx) */
+  visitOf(x) {
+    const plan = this._plan, run = this.run;
+    if (!plan || !run) return -1;
+    if (this._visitIdxFor !== this.expected) {
+      const at = new Map((plan.visits || []).map((v, k) => [v, k]));
+      this._visitIdx = (plan.strikes || []).filter(s => !s.grace && this._handOk(s.note, run.hands)).map(s => (s.visit ? at.get(s.visit) : -1));
+      this._visitIdxFor = this.expected;
+    }
+    return this._visitIdx[x.id];
   }
 
   _handOk(n, hands) {
@@ -6693,7 +6704,7 @@ class PerformanceEngine {
     }
 
     /* a grace note of the plan is heard, not judged: pressing it is not a wrong note */
-    if (this.graces && this.graces.length) {
+    if (this.graces.length) {
       for (let i = 0; i < this.graces.length; i++) {
         if (this.graces[i].midi === ev.midi && Math.abs(ev.t - this.graces[i].tMs) <= w) return { verdict: 'grace', midi: ev.midi };
       }

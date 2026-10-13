@@ -49,7 +49,7 @@
      hold     Map head id -> quarters       a tied chain's length, at its first note
      cont     Set of head ids               the notes a tie carries into: not struck
      dyn      {marks, wedges, velAt}        written dynamics
-     soundLengthQ, written (the notes and rests of the range in Score order, for the gates), span, range,
+     soundLengthQ, graceStrikes (how many strikes are grace notes), written (the notes and rests of the range in Score order, for the gates), span, range,
      jumps    [{kind, from, to}]            the signs that were followed (empty unless opts.jumps)
    ============================================================================ */
 (function (root, factory) {
@@ -800,6 +800,9 @@
     /* the notes and rests of the range in Score order, for the follow gates (Score.allIn) */
     plan.written = L.n ? items.filter(n => n.abs >= plan.span.a - 1e-9 && n.abs < plan.span.b - 1e-9) : [];
     plan.strikes = strikesOf(plan, items, graces, ccsWritten);
+    /* how many of the strikes are grace notes: the matcher reads it so a plan with none (the usual one) costs it nothing */
+    plan.graceStrikes = 0;
+    if (opts.graces === 'play') plan.strikes.forEach(s => { if (s.grace) plan.graceStrikes++; });
     return plan;
   }
 

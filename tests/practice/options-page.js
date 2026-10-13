@@ -168,10 +168,10 @@
       if (A.expected.some(x => x.note && x.note.grace)) rec.fail.push(name + ': a grace note is expected');
       if (J(A.graces.map(g => g.midi)) !== J(graces.map(g => g.midi))) rec.fail.push(name + ': the engine does not know the plan\'s graces');
       /* the visit of every expected note: its place in the plan's visits, and the bar it plays */
-      const visitOk = A.expected.every(x => Number.isInteger(x.vIdx) && plan.visits[x.vIdx] && plan.visits[x.vIdx].index === x.mIdx);
+      const visitOk = A.expected.every(x => { const k = A.visitOf(x); return Number.isInteger(k) && plan.visits[k] && plan.visits[k].index === x.mIdx; });
       if (!visitOk) rec.fail.push(name + ': an expected note names a visit that is not the bar it is in');
       const visitsOf = new Map();
-      A.expected.forEach(x => { if (!visitsOf.has(x.mIdx)) visitsOf.set(x.mIdx, new Set()); visitsOf.get(x.mIdx).add(x.vIdx); });
+      A.expected.forEach(x => { if (!visitsOf.has(x.mIdx)) visitsOf.set(x.mIdx, new Set()); visitsOf.get(x.mIdx).add(A.visitOf(x)); });
       visitsOf.forEach(s => { if (s.size > 1) rec.repeatedBars++; });
       /* a perfect performance matches everything, wrong and extra are nothing */
       const resA = C.replay(A, C.streamEvents(A.expected, 'perfect'));
@@ -200,17 +200,17 @@
         const resD = C.replay(D, C.streamEvents(D.expected, 'perfect'));
         const totals = x => J(Object.keys(x.byMeasure).sort((p, q) => p - q).map(k => [k, x.byMeasure[k].total, x.byMeasure[k].matched]));
         if (totals(resD) !== totals(resA)) rec.fail.push(name + ': graces on or off, the per-bar totals differ');
-        const asked = e => J(e.expected.map(x => [x.midi, x.m, x.mIdx, x.vIdx, r6(x.absQ)]).map(String).sort());
+        const asked = e => J(e.expected.map(x => [x.midi, x.m, x.mIdx, e.visitOf(x), r6(x.absQ)]).map(String).sort());
         if (asked(D) !== asked(A)) rec.fail.push(name + ': graces on or off, the asked notes differ');
       }
       /* only the first time through each bar: what is missed is every later visit, and a bar is ONE bucket of byMeasureIdx */
       if (hands === 'both' && visitsOf.size) {
         const E = begin('on', r, hands);
         const seenBar = new Set(), firstVisit = new Map();
-        E.expected.forEach(x => { if (!firstVisit.has(x.mIdx)) firstVisit.set(x.mIdx, x.vIdx); });
-        const ev2 = C.streamEvents(E.expected.filter(x => x.vIdx === firstVisit.get(x.mIdx)), 'perfect');
+        E.expected.forEach(x => { if (!firstVisit.has(x.mIdx)) firstVisit.set(x.mIdx, E.visitOf(x)); });
+        const ev2 = C.streamEvents(E.expected.filter(x => E.visitOf(x) === firstVisit.get(x.mIdx)), 'perfect');
         const res = C.replay(E, ev2);
-        const later = E.expected.filter(x => x.vIdx !== firstVisit.get(x.mIdx)).length;
+        const later = E.expected.filter(x => E.visitOf(x) !== firstVisit.get(x.mIdx)).length;
         if (res.counts.missed !== later) rec.fail.push(name + ': playing each bar once misses ' + res.counts.missed + ' notes, the later visits are ' + later);
         if (Object.keys(res.byMeasureIdx).length !== visitsOf.size) rec.fail.push(name + ': byMeasureIdx has ' + Object.keys(res.byMeasureIdx).length + ' bars, the run plays ' + visitsOf.size);
         let total = 0;
@@ -426,7 +426,7 @@
         a.liveMidi = () => true;
         try {
           a.beginRun(S, beat, 1000);
-          const exp = a._perf.expected.filter(x => x.vIdx === vIdx && x.absQ >= beat - 1e-6).sort((p, q) => p.absQ - q.absQ);
+          const exp = a._perf.expected.filter(x => a._perf.visitOf(x) === vIdx && x.absQ >= beat - 1e-6).sort((p, q) => p.absQ - q.absQ);
           out.near = exp.length ? exp[0].tMs - 1000 : null;
           out.perQ = 60000 / (S.tempo || 84);
           out.dq = exp.length ? exp[0].absQ - beat : null;

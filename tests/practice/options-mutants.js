@@ -20,11 +20,11 @@ const ROWS = [
   /* the four fixes are on, and each is one thing */
   ['O1', 'the jumps are not followed (D.C./D.S./Fine/To Coda are not played)', [[FIX, "jumps: false, graces: PRACTICE_FIX.indexOf('graces') >= 0 ? 'play' : false });"]], 'plans,laps,fixture,sweep'],
   ['O2', 'the grace notes do not sound', [[FIX, "jumps: PRACTICE_FIX.indexOf('jumps') >= 0 ? 'once' : false, graces: false });"]], 'plans,spies,visual,sweep'],
-  ['O3', 'the grace notes are judged (the matcher asks them)', [["      .filter(s => !s.grace)", "      .filter(s => true)"]], 'plans,matcher,fixture,sweep'],
+  ['O3', 'the grace notes are judged (the matcher asks them)', [["(graced ? plan.strikes.filter(s => !s.grace) : (plan.strikes || []))", "(plan.strikes || [])"]], 'plans,matcher,fixture,sweep'],
   ['O4', 'a grace note that is played is a wrong note', [["        if (this.graces[i].midi === ev.midi && Math.abs(ev.t - this.graces[i].tMs) <= w) return { verdict: 'grace', midi: ev.midi };", "        if (false) return { verdict: 'grace', midi: ev.midi };"]], 'matcher'],
   ['O5', 'follow mode asks a repeated bar once (the repeats are not asked each time)', [["{ repeats: PRACTICE_FIX.indexOf('repeats') >= 0, ties:", "{ repeats: false, ties:"]], 'gates,fixture,sweep,small'],
   ['O6', 'follow mode skips a tie that leads nowhere (the notes the clock strikes are not all asked)', [["ties: PRACTICE_FIX.indexOf('ties') >= 0 });", "ties: false });"]], 'gates,fixture,sweep'],
-  ['O7', 'an expected note names the bar as its visit', [["        vIdx: s.visit ? visitAt.get(s.visit) : undefined,", "        vIdx: s.visit ? s.visit.index : undefined,"]], 'matcher'],
+  ['O7', 'an expected note names the bar as its visit', [["map(s => (s.visit ? at.get(s.visit) : -1))", "map(s => (s.visit ? s.visit.index : -1))"]], 'matcher'],
   ['O8', 'a grace note is looked up as a Score note (every piece with graces falls back to the legacy plan)', [["      if (strikes[i].grace) continue;", ""]], 'plans,sweep'],
   ['O9', 'the simulation (no keyboard) judges a grace note', [["      if (s.grace || !this.handOk(s.note, this.playHands(S))) continue;", "      if (!this.handOk(s.note, this.playHands(S))) continue;"]], 'small'],
   ['O10', 'the plan is kept without the option that made it', [["  const key = a + ':' + b + ':' + PRACTICE_FIX.join(',');", "  const key = a + ':' + b;"]], 'small'],

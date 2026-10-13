@@ -624,7 +624,7 @@ player to the bit) or a list of the ones to keep (`'jumps,ties'`; names `jumps`,
 
 **Where this differs from §6.** (1) A fifth thing next to JUMP/GRACE/FOLLOW_*: **the tie at a jump** is part of JUMP's cause (the parity harness reads it from the old plan's own tie links: `ctx.ties`, `tie {struck, cut, silent, held}`); (2) graces
 are not only absent from `expected` but tolerated when played (§6.1 said "never in the matcher's expected until a later decision"; a pressed grace would otherwise have counted as a wrong note); (3) `PPP.practiceFix` is new (§6.1 had the four
-options reachable by default under 'graph' only; a list is the cheapest way to give the user a way back from one of them); (4) `heldQ` and `jumped` are new fields of the plan, `vIdx` (the visit of an expected note: the place in `plan.visits`) is new on `expected`.
+options reachable by default under 'graph' only; a list is the cheapest way to give the user a way back from one of them); (4) `heldQ` and `jumped` are new fields of the plan, `graceStrikes` is new on the plan, and `PerformanceEngine.visitOf(x)` (the visit of an expected note: its place in `plan.visits`, worked out on demand; nothing is carried per note) is new.
 
 **Tests.** `tests/practice/options.js` (+ `options-page.js`, `options-mutants.js`; `npm run test:practice-options`, CI job `practice-options` with `--sample 5` on a pull request and the whole corpus every night, **131 checks, 22 s**):
 choice (the default, a list, what is no choice, the address, a throwing storage); plans (the 7 open catalogue pieces with a D.C. al Fine, the grace pieces, the hand-written D.S. al Coda: planned from the graph, the page's plan equal to `practice/plan.js`

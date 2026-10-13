@@ -8,7 +8,7 @@
      plans       the 7 open catalogue pieces that carry a D.C. al Fine and a hand-written D.S. al Coda: planned from the graph, longer, the jump named; the grace pieces: the graces in the plan
                  and not in the matcher's list; the page's plan is practice/plan.js built with the same options
      laps        "Start to finish" and a loop window that holds a sign and its target are longer; a window without its target is the legacy lap, to the bit
-     matcher     scripted performances: graces are never expected, a played grace is not a wrong note, graces on or off the same verdicts; each expected note names its visit (vIdx) and bar (mIdx),
+     matcher     scripted performances: graces are never expected, a played grace is not a wrong note, graces on or off the same verdicts; each expected note names its bar (mIdx) and, through the engine's visitOf, its visit,
                  a bar played twice is two visits and one bucket of byMeasureIdx
      gates       follow mode asks exactly the notes Play strikes, as many times, in the order Play plays them; each option alone does what its name says
      spies       the real scheduler queues every strike once, graces included, and the plan's controller events and clicks
