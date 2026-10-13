@@ -113,6 +113,9 @@ test('a note struck at once, before any recording is in, is the synthesized stan
     assert.equal(first.loaded, 0, 'no recording is in yet');
     assert.ok(first.kinds && first.kinds.length >= 1 && first.kinds.every(k => k === 'OscillatorNode'), 'the stand-in sounds: ' + JSON.stringify(first.kinds));
     assert.ok(first.end > 0.3, 'and lasts (' + first.end + ' s)');
+    /* the tap asks for all thirty in one burst; this process learns of them as the page's other requests (the page's own code, G13-4e) are answered beside them, so it is given a moment to count - the mutant
+       D4 (no load on a tap) is still caught: with it nothing is asked for before the 7 s the held stylesheet is waited for */
+    for (let i = 0; i < 100 && p.log.mp3.length < 30; i++) await sleep(50);
     assert.ok(p.log.mp3.length >= 30, 'the tap asked for the recordings at once (' + p.log.mp3.length + ')');
     p.release();
     await p.page.waitForFunction(() => window.PPP.PianoSamples.count() === 30, { timeout: 30000 });
