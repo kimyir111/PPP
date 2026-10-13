@@ -110,6 +110,62 @@ const CHECKS = {
   keyOfD: async M => {
     const g = await L.graphOf(L.doc([0, 1, 2].map(() => ({ rh: [L.n('C#5', 1), L.n('D5', 1), L.n('E5', 1), L.n('F#5', 1)], lh: [L.n('D3', 1), L.n('A3', 1), L.n('D3', 1), L.n('A3', 1)] })), { fifths: 2 }));
     return M.analyze(g, { params: L.only('off-key') }).suspect.length === 0;
+  },
+  /* the boundaries (boundaries.test.js has the same, with their reasons) */
+  reasonOrder: async M => {
+    const g = await L.graphOf(L.doc(bars(3, { 2: { rh: [L.n('C3', 1), L.n('D3', 1), L.n('E3', 1), L.n('F3', 1)], lh: [L.n('C4', 1), L.n('G3', 1), L.n('C4', 1), L.n('G3', 1)] } })));
+    const res = M.analyze(g, { normalize: { flags: { 2: ['pair-merged'] } }, params: { strong: ['rebuilt'], weak: ['hands-cross'], weakNeeded: 2, thr: M.PARAMS.thr }, external: { 2: ['ext-weak', { code: 'ext-strong', strength: 'strong' }] } });
+    return res.bars[1].reasons.map(r => r.code).join() === 'rebuilt,ext-strong,hands-cross,ext-weak';
+  },
+  badPageBoundary: async M => {
+    const short = { rh: [L.n('C5', 1), L.n('D5', 1), L.n('E5', 1)] };
+    const params = { strong: ['fill-short'], weak: ['bad-page'], weakNeeded: 1, thr: Object.assign({}, M.PARAMS.thr, { badPage: 0.3 }) };
+    const three = M.analyze(await L.graphOf(L.doc(bars(10, { 1: short, 4: short, 7: short }))), { params });
+    const two = M.analyze(await L.graphOf(L.doc(bars(10, { 1: short, 4: short }))), { params });
+    return three.bars[9].suspect === true && two.bars[9].suspect === false;
+  },
+  xBoundary: async M => {
+    const at = d => L.graphOf(L.doc(bars(3, { 2: { rh: [L.n('C5', 1, { x: 10 }), L.n('D5', 1, { x: 60 }), L.n('E5', 1, { x: 110 }), L.n('F5', 1, { x: 160 })],
+      lh: [L.n('C3', 1, { x: 10 + d }), L.n('G3', 1, { x: 60 }), L.n('C3', 1, { x: 110 }), L.n('G3', 1, { x: 160 })] } })));
+    return M.analyze(await at(20), { params: L.only('x-misaligned') }).suspect.join() === '2' && M.analyze(await at(19), { params: L.only('x-misaligned') }).suspect.length === 0;
+  },
+  sparseWindow: async M => {
+    const heads = k => (k === 12 ? { rh: new Array(8).fill(0).map((_, i) => L.n(['C5', 'D5', 'E5', 'F5'][i % 4], 0.5)), lh: [L.n('C3', 1), L.n('G3', 1), L.n('C3', 1), L.n('G3', 1)] }
+      : k === 4 ? { rh: [L.n('C5', 2), L.n('E5', 2)], lh: [L.n('C3', 2), L.n('G3', 2)] } : { rh: [L.n('C5', 4)], lh: [L.n('C3', 4)] });
+    const g = await L.graphOf(L.doc([4, 2, 12, 4, 4, 4, 12, 2, 4].map(heads)));
+    return M.analyze(g, { params: L.only('sparse', 'weak') }).bars[4].weak.includes('sparse');
+  },
+  ledgerBoundary: async M => M.ledgers(39, 30) === 0 && M.ledgers(40, 30) === 1 && M.ledgers(42, 30) === 2 && M.ledgers(29, 30) === 0 && M.ledgers(28, 30) === 1 && M.ledgers(27, 30) === 1 && M.ledgers(26, 30) === 2,
+  chordLeap: async M => {
+    const g = await L.graphOf(L.doc(bars(3, { 2: { rh: [L.n('C5', 1), L.n('D5', 1), L.n('E5', 1), L.n(['C3', 'E3'], 1)] } })));
+    return M.extract(g).bars[1].leap < M.PARAMS.thr.leap;
+  },
+  graceIgnored: async M => {
+    const g = JSON.parse(JSON.stringify(await L.graphOf(L.doc(bars(3)))));
+    const staff = g.parts[0].staves[0].id, m = g.timeline.measures[1].id;
+    const third = g.parts[0].events.filter(e => e.m === m && e.staff === staff)[2];
+    g.parts[0].events.push({ id: 'eg1', kind: 'note', m: m, at: third.at, dur: '0', voice: third.voice, staff: staff, grace: { order: 1 }, display: { type: 'eighth' }, heads: [{ id: 'hg1', pitch: { step: 'D', oct: 6 } }] });
+    const f = M.extract(g).bars[1];
+    return f.overlap === 0 && f.hole === 0 && f.short === 0 && f.notes === 8 && f.heads === 8;
+  },
+  /* the report merge */
+  mergeCap: async M => {
+    const numbers = [1, 2, 3, 4, 5, 6, 7, 8];
+    const res = M.analyze(await L.graphOf(L.doc(bars(8))), {});
+    const out = M.mergeIntoReport({ confidence: 0.8875, level: 'good', suspectMeasures: [3], issues: [], summary: 'Recognition looks clean: 8 measures, 31 notes.', advice: null }, res, { numbers, notes: 31 });
+    const clean = M.mergeIntoReport({ confidence: 1, level: 'good', suspectMeasures: [], issues: [], summary: 'clean', advice: null }, res, { numbers, notes: 32 });
+    return out.confidence < M.GOOD && out.level !== 'good' && out.suspectMeasures.join() === '3' && /need checking/.test(out.summary) && clean.confidence === 1 && clean.summary === 'clean';
+  },
+  mergeFlags: async M => {
+    const numbers = [1, 2, 3, 4, 5, 6, 7, 8];
+    const res = M.analyze(await L.graphOf(L.doc(bars(8, { 5: { rh: [L.n('C5', 1), L.n('D5', 1), L.n('E5', 1)] } }))), {});
+    const both = M.mergeIntoReport({ confidence: 0.95, level: 'good', suspectMeasures: [2], issues: [], summary: 's', advice: null }, res, { numbers, notes: 30 });
+    return both.suspectMeasures.join() === '2,5' && JSON.stringify(both.flagCodes) === '{"5":["fill-short"]}' && both.issues.some(i => i.measure === 5 && i.kind === 'flag') && both.confidence < M.GOOD && both.flagsVersion === M.VERSION;
+  },
+  mergePartial: async M => {
+    const res = M.analyze(await L.graphOf(L.doc(bars(4))), {});
+    const part = M.mergeIntoReport({ confidence: 1, level: 'good', suspectMeasures: [], issues: [] }, res, { numbers: [1, 2, 3, 4], notes: 16, partial: 'no-notation-checker' });
+    return part.flagsPartial === 'no-notation-checker' && part.issues.some(i => i.kind === 'flags-partial' && i.measure === null);
   }
 };
 
@@ -187,7 +243,28 @@ const MUTATIONS = [
   { id: 'MUT-SUSPECT-LIST', why: 'the suspect list is empty', edits: [['const suspect = bars.filter(b => b.suspect).map(b => b.n);', 'const suspect = [];']], checks: ['numbers'] },
   { id: 'MUT-COUNTS', why: 'the reasons are not counted', edits: [['bars.forEach(b => b.reasons.forEach(r => { counts[r.code] = (counts[r.code] || 0) + 1; }));', '']], checks: ['numbers'] },
   { id: 'MUT-TX-ONE-NUMBER', why: 'only the first number of a sentence is filled in', edits: [['/\\{\\{(\\w+)\\}\\}/g', '/\\{\\{(\\w+)\\}\\}/']], checks: ['sentences'] },
-  { id: 'MUT-PAGE-SENTENCE', why: 'a page-level mismatch is worded as a line', edits: [["r.page\n        ? tx('The page shows {{shown}} measures in all, PPP read {{read}}.', { shown: r.shown, read: r.read })\n        :", 'false ? null :']], checks: ['sentences'] }
+  { id: 'MUT-PAGE-SENTENCE', why: 'a page-level mismatch is worded as a line', edits: [["return r.page\n          ? tx('The page shows {{shown}} measures in all, PPP read {{read}}.', { shown: r.shown, read: r.read })\n          :", 'return false ? null :']], checks: ['sentences'] },
+  /* what the independent review's mutants found unpinned, and the report merge */
+  { id: 'MUT-REASON-ORDER', why: 'reasons are not said strong first', edits: [["list.sort((a, b) => (a.strength === b.strength ? 0 : a.strength === 'strong' ? -1 : 1));", '']], checks: ['reasonOrder'] },
+  { id: 'MUT-BADPAGE-STRICT', why: 'a score is bad only above the threshold, not at it', edits: [['const badPage = share >= thr.badPage ? share : 0;', 'const badPage = share > thr.badPage ? share : 0;']], checks: ['badPageBoundary'] },
+  { id: 'MUT-X-STRICT', why: 'x-misaligned fires only above 20 tenths', edits: [['b.xMis >= c.thr.xMis', 'b.xMis > c.thr.xMis']], checks: ['xBoundary'] },
+  { id: 'MUT-X-LOOSE', why: 'x-misaligned fires from 19 tenths', edits: [['b.xMis >= c.thr.xMis', 'b.xMis >= c.thr.xMis - 1']], checks: ['xBoundary'] },
+  { id: 'MUT-SPARSE-WINDOW-ONE', why: 'a bar is compared with one bar on each side', edits: [['for (let j = Math.max(0, i - 2); j <= Math.min(n - 1, i + 2); j++)', 'for (let j = Math.max(0, i - 1); j <= Math.min(n - 1, i + 1); j++)']], checks: ['sparseWindow'] },
+  { id: 'MUT-SPARSE-WINDOW-THREE', why: 'a bar is compared with three bars on each side', edits: [['for (let j = Math.max(0, i - 2); j <= Math.min(n - 1, i + 2); j++)', 'for (let j = Math.max(0, i - 3); j <= Math.min(n - 1, i + 3); j++)']], checks: ['sparseWindow'] },
+  { id: 'MUT-LEDGER-ABOVE', why: 'the first ledger line above the staff is one step too high', edits: [['return Math.floor((dpos - (bottom + 8)) / 2);', 'return Math.floor((dpos - (bottom + 9)) / 2);']], checks: ['ledgerBoundary'] },
+  { id: 'MUT-LEDGER-BELOW', why: 'the ledger lines below the staff are counted from the wrong step', edits: [['return Math.floor((bottom - dpos) / 2);', 'return Math.floor((bottom - dpos + 1) / 2);']], checks: ['ledgerBoundary'] },
+  { id: 'MUT-LEDGER-COUNT', why: 'one ledger line more is counted', edits: [['return Math.floor((dpos - (bottom + 8)) / 2);', 'return Math.floor((dpos - (bottom + 8)) / 2) + 1;']], checks: ['ledgerBoundary'] },
+  { id: 'MUT-CHORD-LEAP', why: 'a chord is measured as a leap from its first head', edits: [['if (prev !== undefined && e.heads.length === 1) b.leap', 'if (prev !== undefined) b.leap']], checks: ['chordLeap'] },
+  { id: 'MUT-GRACE-FILL', why: 'a grace note counts in the fill of its voice', edits: [['const evs = vb.evs.filter(e => !e.grace).sort(', 'const evs = vb.evs.slice().sort(']], checks: ['graceIgnored'] },
+  { id: 'MUT-GRACE-NOTES', why: 'a grace note is a note of the bar', edits: [["e.kind === 'note' && !e.grace && e.heads && e.heads.length", "e.kind === 'note' && e.heads && e.heads.length"]], checks: ['graceIgnored'] },
+  { id: 'MUT-MERGE-VALIDATOR-UNCAPPED', why: 'the confidence is capped only when the flags marked a bar (the review\'s major finding)', edits: [['if (!suspect.length) return report;', 'if (!Object.keys(codes).length) return report;']], checks: ['mergeCap'] },
+  { id: 'MUT-MERGE-NO-CAP', why: 'the confidence is not capped', edits: [['report.confidence = confidenceOf(suspect.length, numbers.length, report.confidence);', '']], checks: ['mergeCap', 'mergeFlags'] },
+  { id: 'MUT-MERGE-LEVEL', why: 'the level is not recomputed', edits: [["report.level = report.confidence >= GOOD ? 'good' : report.confidence >= 0.55 ? 'fair' : 'poor';", '']], checks: ['mergeCap'] },
+  { id: 'MUT-MERGE-SUMMARY', why: 'the summary still says clean', edits: [['report.summary = tx(suspect.length === 1', 'void tx(suspect.length === 1']], checks: ['mergeCap'] },
+  { id: 'MUT-MERGE-DROPS-VALIDATOR', why: 'the validator\'s suspect bars are replaced by the flags\'', edits: [['const had = new Set(report.suspectMeasures || []);', 'const had = new Set();']], checks: ['mergeFlags'] },
+  { id: 'MUT-MERGE-CODES', why: 'the codes are not kept', edits: [['if (Object.keys(codes).length) report.flagCodes = codes;', '']], checks: ['mergeFlags'] },
+  { id: 'MUT-MERGE-ISSUE', why: 'a flagged bar has no issue line', edits: [["report.issues.push({ measure: m, kind: 'flag',", "void ({ measure: m, kind: 'flag',"]], checks: ['mergeFlags'] },
+  { id: 'MUT-MERGE-PARTIAL', why: 'a partial run is said to be a whole one', edits: [["report.flagsPartial = String(info.partial);", '']], checks: ['mergePartial'] }
 ];
 
 test('MUT-NOOP: a copy of the module with a comment changed is the module', async () => {

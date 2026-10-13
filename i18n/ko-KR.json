@@ -2309,9 +2309,11 @@
     "This measure starts a separate piece of the page.": "이 마디는 페이지의 다른 덩어리가 시작되는 곳이에요.",
     "The page shows {{shown}} measures in all, PPP read {{read}}.": "페이지에는 마디가 모두 {{shown}}개 보이는데, PPP는 {{read}}개를 읽었어요.",
     "The page shows {{shown}} measures on this line, PPP read {{read}}.": "이 줄에는 마디가 {{shown}}개 보이는데, PPP는 {{read}}개를 읽었어요.",
-    "Much of this page was hard to read.": "이 페이지는 대부분 읽기 어려웠어요.",
     "Next to a measure that does not add up.": "박자가 맞지 않는 마디 바로 옆이에요.",
     "Another check doubts this measure.": "다른 검사에서도 이 마디를 의심하고 있어요.",
-    "Measure {{n}}: {{why}}": "{{n}}마디: {{why}}"
+    "Measure {{n}}: {{why}}": "{{n}}마디: {{why}}",
+    "Much of this score was hard to read.": "이 악보는 대부분 읽기 어려웠어요.",
+    "{{n}} more measures are marked on the strip above.": "위쪽 막대에 {{n}}마디가 더 표시되어 있어요.",
+    "Some of the checks could not run, so some bars that are wrong may not be marked.": "일부 검사를 실행하지 못해서, 틀린 마디가 모두 표시되지는 않았을 수 있어요."
   }
 }

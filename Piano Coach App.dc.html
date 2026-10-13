@@ -5633,7 +5633,10 @@ function loadOmrFlags() {
   });
   _omrFlagsPromise = (async () => {
     if (!(window.PPPScoreGraphModules && window.PPPScoreGraphModules.notationCheck)) await add('./scoregraph/tools/notation-check.js?v=1');
-    return (await add('./omr/flags.js?v=1')) ? (window.PPPOmrFlags || null) : null;
+    const m = (await add('./omr/flags.js?v=1')) ? (window.PPPOmrFlags || null) : null;
+    /* a module that came without its checker (the fetch failed) says so (hasChecker; the import reports it) and is not kept: the next import asks for both again */
+    if (m && !m.hasChecker) { _omrFlagsPromise = null; try { delete window.PPPOmrFlags; } catch (e) { window.PPPOmrFlags = undefined; } }
+    return m;
   })().then(m => { if (!m) _omrFlagsPromise = null; return m; });
   return _omrFlagsPromise;
 }
@@ -7991,8 +7994,9 @@ const Import = {
   },
 
   /* G12-3: which bars of this import are suspect, and why (omr/flags.js: a bar is suspect when a strong signal fires, or two weak ones; fitted on omr-live-2's tuning half). The suspect bars join the
-     report's (report.suspectMeasures: the strip's red bars, the count), each with its reasons in the language of the page (report.flagWhy, by measure number; report.flagCodes are the codes for the
-     correction screen), and the confidence is never "good" (0.85) while any bar is suspect. Returns nothing; anything that fails leaves the report as it was and says why (report.flagsFailed). */
+     report's (report.suspectMeasures: the strip's red bars, the count), with the reasons' codes (report.flagCodes, by measure number: the sentences are made from them when they are shown), and the
+     confidence is never "good" (0.85) while any bar is suspect, the validator's included (FL.mergeIntoReport). Returns nothing; anything that fails leaves the report as it was and says why
+     (report.flagsFailed); a notation checker that could not be fetched is said too (report.flagsPartial and an issue line: the signals built on it are silent). */
   async omrFlags(omr, s4, score, report) {
     if (OMR_MODE !== 'v2' || !s4 || !s4.graph || !omr || !omr.normalize || !report) return;
     try {
@@ -8002,32 +8006,7 @@ const Import = {
       if (!res.ok) { report.flagsFailed = String(res.error || 'not-ok') + (res.detail ? ': ' + res.detail : ''); return; }
       const measures = score.measures || [];
       if (res.bars.length !== measures.length) { report.flagsFailed = 'bars-differ'; return; }
-      const had = new Set(report.suspectMeasures || []);
-      const why = {}, codes = {};
-      res.bars.forEach((b, i) => {
-        if (!b.suspect) return;
-        const m = measures[i].number;
-        had.add(m);
-        why[m] = b.reasons.map(r => FL.reasonText(r, tx));
-        codes[m] = b.reasons.map(r => r.code);
-        if (!(report.issues || []).some(x => x.measure === m))
-          report.issues.push({ measure: m, kind: 'flag', message: tx('Measure {{n}}: {{why}}', { n: m, why: why[m][0] }) });
-      });
-      report.flagsVersion = FL.VERSION;
-      if (!Object.keys(why).length) return;
-      report.suspectMeasures = Array.from(had).sort((a, b) => a - b);
-      report.flagWhy = why;
-      report.flagCodes = codes;
-      report.confidence = FL.confidenceOf(report.suspectMeasures.length, measures.length, report.confidence);
-      report.level = report.confidence >= 0.85 ? 'good' : report.confidence >= 0.55 ? 'fair' : 'poor';
-      const sounding = (score.notes || []).filter(n => !n.rest).length;
-      const found = tx('{{n}} measures, {{m}} notes', { n: measures.length, m: sounding });
-      report.summary = tx(report.suspectMeasures.length === 1
-        ? 'Recognised {{found}}, but {{n}} measure need checking before you practise.'
-        : 'Recognised {{found}}, but {{n}} measures need checking before you practise.', { found: found, n: report.suspectMeasures.length });
-      const runs = [];
-      report.suspectMeasures.forEach(m => { const last = runs[runs.length - 1]; if (last && m === last[1] + 1) last[1] = m; else runs.push([m, m]); });
-      report.advice = tx('PPP may have had trouble reading measures {{list}}.', { list: runs.slice(0, 3).map(r => r[0] === r[1] ? r[0] : r[0] + '–' + r[1]).join(', ') });
+      FL.mergeIntoReport(report, res, { numbers: measures.map(m => m.number), notes: (score.notes || []).filter(n => !n.rest).length, partial: FL.hasChecker ? null : 'no-notation-checker' }, tx);
     } catch (e) { report.flagsFailed = 'threw: ' + String(e && (e.code || e.message) || e).slice(0, 160); }
   },
 
@@ -13374,7 +13353,7 @@ class Component extends DCLogic {
             suspectMeasures: S.importReport.suspectMeasures, summary: S.importReport.summary,
             advice: S.importReport.advice
           }, S.importReport.uncertainMeasures ? { uncertainMeasures: S.importReport.uncertainMeasures, uncertainWhy: S.importReport.uncertainWhy || {}, uncertainPiece: S.importReport.uncertainPiece || null } : {},
-            S.importReport.flagWhy ? { flagWhy: S.importReport.flagWhy, flagCodes: S.importReport.flagCodes || {} } : {}) : null
+            S.importReport.flagCodes ? { flagCodes: S.importReport.flagCodes } : {}) : null
         };
         /* The score itself lives once in its song slot. The old duplicate here
            doubled storage use and made large transcriptions disappear after a
@@ -14454,6 +14433,36 @@ class Component extends DCLogic {
     const rep = S.importReport, list = (rep && rep.issues) || [], p = rep && rep.uncertainPiece;
     return p ? list.concat([{ measure: null, kind: 'recording-metre',
       message: tx('PPP read this piece as {{metre}} but was not sure of it ({{pct}}%); the bar lines may be in the wrong place.', { metre: p.metre, pct: Math.round(p.posterior * 100) }) }]) : list;
+  }
+  /* G12-3: the sentences of a bar's flag codes, in the language of now (a saved report keeps the codes). The module that makes them (omr/flags.js) is fetched when a saved report asks for
+     it, and the screen is drawn again when it has come. */
+  flagSentences(codes) {
+    const FL = this._flagsModule || window.PPPOmrFlags;
+    if (!FL) {
+      if (!this._flagsAsked) { this._flagsAsked = true; loadOmrFlags().then(m => { if (m) { this._flagsModule = m; this.setState({}); } }); }
+      return [];
+    }
+    return codes.map(c => FL.reasonText({ code: c }, tx));
+  }
+  /* G12-3: the issue lines of the review. A report with no flagged bar: the first 8, as before. One whose bars were flagged (a v2 import): the lines of the bars on show first, then the others, 12 in
+     all, and a line that says how many more are marked on the strip. */
+  reviewIssueLines(S, score) {
+    let all = this.reviewIssueList(S);
+    /* a saved report has no issue lines (they are made at import time and not kept) but it has the codes: the lines are made from them, once the module that says them is here */
+    const saved = S.importReport && S.importReport.flagCodes;
+    if (saved && S.screen === 'review' && !all.some(i => i.kind === 'flag')) {
+      const made = Object.keys(saved).map(Number).sort((a, b) => a - b).map(m => ({ m: m, why: this.flagSentences(saved[m]).slice(0, 3).join(' · ') }))
+        .filter(x => x.why).map(x => ({ measure: x.m, kind: 'flag', message: tx('Measure {{n}}: {{why}}', { n: x.m, why: x.why }) }));
+      all = all.concat(made);
+    }
+    if (!all.some(i => i.kind === 'flag')) return all.slice(0, 8);
+    const from = S.reviewFrom, to = Score.step(score, S.reviewFrom, 3);
+    const onShow = i => i.measure != null && i.measure >= from && i.measure <= to;
+    const ordered = all.filter(onShow).concat(all.filter(i => !onShow(i)));
+    const out = ordered.slice(0, 12);
+    const rest = ordered.length - out.length;
+    if (rest > 0) out.push({ measure: null, kind: 'more', message: tx('{{n}} more measures are marked on the strip above.', { n: rest }) });
+    return out;
   }
   /* G10a-4: v2's scripts and weights (about 250 KB, 17 requests), fetched ahead of the first conversion when a screen that converts a recording opens. A no-op while the classic method is set. */
   warmRecordingModules() {
@@ -17273,7 +17282,7 @@ class Component extends DCLogic {
         summary: rep.summary, advice: rep.advice, confidenceKind: rep.confidenceKind,
         modelAgreement: rep.modelAgreement, modelCount: rep.modelCount
       }, rep.uncertainMeasures ? { uncertainMeasures: rep.uncertainMeasures, uncertainWhy: rep.uncertainWhy || {}, uncertainPiece: rep.uncertainPiece || null } : {},
-        rep.flagWhy ? { flagWhy: rep.flagWhy, flagCodes: rep.flagCodes || {} } : {}) : null
+        rep.flagCodes ? { flagCodes: rep.flagCodes } : {}) : null
     };
     try { localStorage.setItem(SONG_KEY + id, JSON.stringify(slot)); }
     catch (e) { this.storageFull(); return false; }
@@ -20401,9 +20410,10 @@ class Component extends DCLogic {
         /* G10a-4: the bars the new method was not sure about (report.uncertainWhy: 'grid' = the beat, 'hands' = which hand), amber; red (needs checking) wins the colour */
         const why = (S.importReport && S.importReport.uncertainWhy && S.importReport.uncertainWhy[mm.number]) || null;
         const shown = mm.number >= S.reviewFrom && mm.number <= Score.step(score, S.reviewFrom, 3);
-        const flagWhy = (S.importReport && S.importReport.flagWhy && S.importReport.flagWhy[mm.number]) || null;   /* G12-3: the sentences omr/flags.js gave this bar (v2 imports) */
+        const flagCodes = (S.importReport && S.importReport.flagCodes && S.importReport.flagCodes[mm.number]) || null;   /* G12-3: the codes omr/flags.js gave this bar (v2 imports); the sentences are made now, in the language of now */
+        const flagText = flagCodes && S.screen === 'review' ? this.flagSentences(flagCodes) : [];   /* only a screen that shows them asks for the module */
         const reasons = (why ? [why.indexOf('grid') > -1 ? tx('PPP was not sure of the beat') : '', why.indexOf('hands') > -1 ? tx('PPP was not sure which hand plays some notes') : ''].filter(Boolean) : [])
-          .concat(Array.isArray(flagWhy) ? flagWhy : []).join(' · ');
+          .concat(flagText).join(' · ');
         return {
           title: tx(suspect ? 'Measure {{n}} · needs checking' : 'Measure {{n}}', { n: mm.number }) + (reasons ? ' · ' + reasons : ''),
           style: 'flex:1;min-width:3px;height:22px;padding:0;border-radius:4px;cursor:pointer;border:1px solid '
@@ -20412,14 +20422,14 @@ class Component extends DCLogic {
           on: () => this.setState({ reviewFrom: mm.number })
         };
       }),
-      reviewIssues: this.reviewIssueList(S).slice(0, 8).map(i => ({
+      reviewIssues: this.reviewIssueLines(S, score).map(i => ({
         message: i.message,
         style: 'display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border-radius:11px;background:var(--bg);border:1px solid var(--line);font-size:12.5px;line-height:1.5;color:var(--ink2);',
         dotStyle: 'width:7px;height:7px;border-radius:999px;flex:none;margin-top:6px;background:'
           + (i.kind === 'page' || i.kind === 'empty' ? 'var(--bad)' : 'var(--warn)') + ';'
       })),
-      hasReviewIssues: !!this.reviewIssueList(S).length,
-      noReviewIssues: !this.reviewIssueList(S).length,
+      hasReviewIssues: !!this.reviewIssueLines(S, score).length,
+      noReviewIssues: !this.reviewIssueLines(S, score).length,
 
       analyzeSummary: failed ? S.parseError
         : added

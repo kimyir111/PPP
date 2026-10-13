@@ -359,6 +359,44 @@
    "truthFlags": 1,
    "truthBars": 344
   },
-  "note": "Judged once, with page-bars still in the strong list. The benchmark dataset holds no page layout, so that signal was inert in every number here and in the tuning numbers: they are the numbers of the list without it (the list was changed afterwards because of the app-path replay of the TUNING half, section 23 of G12_OMR.md; the held-out half was not looked at again)."
+  "note": "Judged once, with page-bars still in the strong list. The benchmark dataset holds no page layout, so that signal was inert in every number here and in the tuning numbers: they are the numbers of the list without it (the list was changed afterwards because of the app-path replay of the TUNING half, section 23 of G12_OMR.md; the held-out half was not looked at again).",
+  "params": {
+   "strong": [
+    "fill-overlap",
+    "dropped",
+    "unreadable-lengths",
+    "page-bars",
+    "fill-short",
+    "fill-over",
+    "empty-staff",
+    "many-voices",
+    "tuplet",
+    "x-misaligned",
+    "fragmented"
+   ],
+   "weak": [
+    "hands-cross",
+    "big-leap",
+    "sparse",
+    "rebuilt",
+    "bad-page",
+    "next-to-bad",
+    "voice-loss"
+   ],
+   "weakNeeded": 2,
+   "thr": {
+    "leap": 19,
+    "sparse": 0.6,
+    "voiceLoss": 1,
+    "badPage": 0.3,
+    "offKey": 2,
+    "ledger": 4,
+    "xMis": 20,
+    "dense": 1.6
+   }
+  },
+  "judgedModuleSha256": "feb2ac21793046df83b3c6e3404719e469f30251bbf2311799e51c7d80f75f43",
+  "judgedCommit": "6acccca41e434fd697998432265dcbca52f8ead7",
+  "judgedAbout": "The parameters and the module (sha-256 of omr/flags.js at that commit, as git stores it) the held-out half was judged with, once. The module in the repository differs from those parameters by page-bars leaving the strong list (see note) and by what the review fixes added (report merge, reasons order, hardening): no signal, threshold or rule."
  }
 }

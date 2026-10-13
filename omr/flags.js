@@ -10,8 +10,8 @@
 
        a bar is suspect when ANY strong signal fires, or TWO weak ones
 
-   "This page was read badly as a whole" is itself a weak signal that every bar of such a page carries, so on a badly read page one more
-   doubt is enough. Which signals are strong, which are weak and every threshold is in PARAMS, fitted on the tuning half of omr-live-2
+   "This score was read badly as a whole" (the share of its bars, all pages of the import together, that carry a strong signal) is itself a weak
+   signal that every bar of it carries, so on a badly read score one more doubt is enough. Which signals are strong, which are weak and every threshold is in PARAMS, fitted on the tuning half of omr-live-2
    (tests/omr/node/flags-fit.js; the record is tests/omr/flags/flags-fit.json, which a test compares with PARAMS) and judged once on the
    other half. Nothing here learns at run time. Pure (no DOM, no network, no clock), Node and browser, deterministic; it never throws.
 
@@ -415,10 +415,12 @@
       case 'dropped': return tx('Two readings of this measure disagreed and the smaller one was dropped.');
       case 'fragmented': return tx('The staves of this page could not be put together into one piano part.');
       case 'joined': return tx('This measure starts a separate piece of the page.');
-      case 'page-bars': return r.page
-        ? tx('The page shows {{shown}} measures in all, PPP read {{read}}.', { shown: r.shown, read: r.read })
-        : tx('The page shows {{shown}} measures on this line, PPP read {{read}}.', { shown: r.shown, read: r.read });
-      case 'bad-page': return tx('Much of this page was hard to read.');
+      case 'page-bars':
+        if (r.shown === undefined || r.read === undefined) return tx('Another check doubts this measure.');           /* a saved report keeps the code, not the numbers */
+        return r.page
+          ? tx('The page shows {{shown}} measures in all, PPP read {{read}}.', { shown: r.shown, read: r.read })
+          : tx('The page shows {{shown}} measures on this line, PPP read {{read}}.', { shown: r.shown, read: r.read });
+      case 'bad-page': return tx('Much of this score was hard to read.');
       case 'next-to-bad': return tx('Next to a measure that does not add up.');
       default: return r.text ? String(r.text) : tx('Another check doubts this measure.');
     }
@@ -431,6 +433,50 @@
     if (!suspectCount) return b;
     const share = suspectCount / Math.max(1, barCount);
     return Math.max(0.05, Math.min(b, GOOD - 0.01 - 0.6 * share));
+  }
+
+  /* The suspect bars of `res` (analyze's answer) put into an import report, the way the review screen reads one (App: Import.omrFlags). The bars join
+     report.suspectMeasures (the validator's own stay), report.flagCodes keeps each marked bar's codes by measure number (the sentences are made from them
+     when they are shown, in the language of the moment), report.issues gets a line for each marked bar, and the confidence is capped whenever ANY bar is
+     suspect, the flags' or the validator's: never 0.85 ("good") with a suspect bar (gate A3). info: { numbers: the measure number of each bar, notes:
+     how many sounding notes the score has, partial: why a part of the checks could not run }. Returns the report. */
+  function mergeIntoReport(report, res, info, tx) {
+    info = info || {};
+    tx = typeof tx === 'function' ? tx : plain;
+    if (!report || !res || !Array.isArray(res.bars)) return report;
+    const numbers = Array.isArray(info.numbers) && info.numbers.length === res.bars.length ? info.numbers : res.bars.map(b => b.n);
+    if (!Array.isArray(report.issues)) report.issues = [];
+    const had = new Set(report.suspectMeasures || []);
+    const codes = {};
+    res.bars.forEach((b, i) => {
+      if (!b.suspect) return;
+      const m = numbers[i];
+      had.add(m);
+      codes[m] = b.reasons.map(r => r.code);
+      if (!report.issues.some(x => x.measure === m)) {
+        const why = b.reasons.slice(0, 3).map(r => reasonText(r, tx)).join(' · ');
+        report.issues.push({ measure: m, kind: 'flag', message: tx('Measure {{n}}: {{why}}', { n: m, why: why }) });
+      }
+    });
+    report.flagsVersion = VERSION;
+    if (info.partial) {
+      report.flagsPartial = String(info.partial);
+      report.issues.push({ measure: null, kind: 'flags-partial', message: tx('Some of the checks could not run, so some bars that are wrong may not be marked.') });
+    }
+    const suspect = Array.from(had).sort((a, b) => a - b);
+    if (!suspect.length) return report;
+    if (Object.keys(codes).length) report.flagCodes = codes;
+    report.suspectMeasures = suspect;
+    report.confidence = confidenceOf(suspect.length, numbers.length, report.confidence);
+    report.level = report.confidence >= GOOD ? 'good' : report.confidence >= 0.55 ? 'fair' : 'poor';
+    const found = tx('{{n}} measures, {{m}} notes', { n: numbers.length, m: info.notes || 0 });
+    report.summary = tx(suspect.length === 1
+      ? 'Recognised {{found}}, but {{n}} measure need checking before you practise.'
+      : 'Recognised {{found}}, but {{n}} measures need checking before you practise.', { found: found, n: suspect.length });
+    const runs = [];
+    suspect.forEach(m => { const last = runs[runs.length - 1]; if (last && m === last[1] + 1) last[1] = m; else runs.push([m, m]); });
+    report.advice = tx('PPP may have had trouble reading measures {{list}}.', { list: runs.slice(0, 3).map(r => (r[0] === r[1] ? r[0] : r[0] + '–' + r[1])).join(', ') });
+    return report;
   }
 
   function analyze(graph, opts) {
@@ -446,5 +492,5 @@
     return { ok: true, version: VERSION, bars, suspect, counts, confidence: confidenceOf(suspect.length, bars.length, 1), features: feat, params };
   }
 
-  return { VERSION, PARAMS, SIGNALS, CODES, GOOD, extract, derive, decide, analyze, confidenceOf, pageBarsCheck, reasonText, midiOf, clefBottom, ledgers };
+  return { VERSION, PARAMS, SIGNALS, CODES, GOOD, hasChecker: !!NC, extract, derive, decide, analyze, confidenceOf, mergeIntoReport, pageBarsCheck, reasonText, midiOf, clefBottom, ledgers };
 });

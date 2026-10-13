@@ -2309,9 +2309,11 @@
     "This measure starts a separate piece of the page.": "这个小节是页面上另一个部分的开头。",
     "The page shows {{shown}} measures in all, PPP read {{read}}.": "页面上一共有{{shown}}个小节，PPP读到了{{read}}个。",
     "The page shows {{shown}} measures on this line, PPP read {{read}}.": "这一行有{{shown}}个小节，PPP读到了{{read}}个。",
-    "Much of this page was hard to read.": "这一页大部分内容很难读取。",
     "Next to a measure that does not add up.": "紧挨着一个对不上的小节。",
     "Another check doubts this measure.": "另一项检查也对这个小节有疑问。",
-    "Measure {{n}}: {{why}}": "第{{n}}小节：{{why}}"
+    "Measure {{n}}: {{why}}": "第{{n}}小节：{{why}}",
+    "Much of this score was hard to read.": "这份乐谱大部分内容很难读取。",
+    "{{n}} more measures are marked on the strip above.": "上方的条上还标出了{{n}}个小节。",
+    "Some of the checks could not run, so some bars that are wrong may not be marked.": "部分检查没能运行，所以有些错误的小节可能没有被标出来。"
   }
 }

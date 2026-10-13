@@ -260,7 +260,7 @@ function main() {
     const target = path.join(REPO, 'tests', 'omr', 'flags', 'flags-fit.json');
     const rec = JSON.parse(fs.readFileSync(target, 'utf8'));
     if (JSON.stringify(mark.params) !== JSON.stringify(rec.params)) { console.log('REFUSED: the held-out half was judged with other parameters than the record holds'); process.exit(3); }
-    rec.heldOut = { at: mark.at, heldSha256: sha(path.join(dir, 'held.jsonl')), heldTruthSha256: sha(path.join(dir, 'held-truth.jsonl')), result: mark.result };
+    rec.heldOut = { at: mark.at, params: mark.params, judgedModuleSha256: sha(path.join(REPO, 'omr', 'flags.js')), heldSha256: sha(path.join(dir, 'held.jsonl')), heldTruthSha256: sha(path.join(dir, 'held-truth.jsonl')), result: mark.result };
     fs.writeFileSync(target, JSON.stringify(rec, null, 1) + '\n');
     console.log('recorded the held-out result in ' + path.relative(REPO, target));
   } else {

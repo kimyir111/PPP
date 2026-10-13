@@ -159,7 +159,7 @@ test('never throws, never changes its input, is deterministic', async () => {
   assert.doesNotThrow(() => F.analyze(g, { normalize: { flags: { 2: 7, 3: { a: 1 } } }, params: { strong: ['fill-short'], weak: [], weakNeeded: 1 } }), 'parameters without thresholds, flags that are not lists');
 });
 
-test('the module is the same without the notation checker: sum-mismatch is the only signal that goes quiet', async () => {
+test('without the notation checker the four signals built on it (tuplet, value, sum-mismatch, same-note) go quiet and every other signal stands', async () => {
   const src = fs.readFileSync(path.join(L.REPO, 'omr', 'flags.js'), 'utf8');
   const cut = src.replace("NC = require('../scoregraph/tools/notation-check.js');", () => 'NC = null;');
   assert.notEqual(cut, src);
@@ -167,9 +167,15 @@ test('the module is the same without the notation checker: sum-mismatch is the o
   try {
     fs.writeFileSync(path.join(dir, 'flags.js'), cut);
     const M = require(path.join(dir, 'flags.js'));
+    assert.equal(M.hasChecker, false, 'the module says it has no checker');
+    assert.equal(F.hasChecker, true, 'and the real one says it has');
+    const need = ['tuplet', 'value', 'same-note', 'sum-mismatch'];
+    for (const c of S.CASES) {
+      const r = await S.runCase(M, c);
+      assert.equal(r.ok, !need.includes(c.code), c.id + (need.includes(c.code) ? ': silent without the checker' : ': does not need the checker'));
+    }
     const g = await L.graphOf(L.doc(bars(3, { 2: { rh: [L.n('C5', 1), L.n('D5', 1), L.n('E5', 1)] } })));
     const res = M.analyze(g, { params: { strong: ['fill-short', 'sum-mismatch', 'tuplet', 'value', 'same-note'], weak: [], weakNeeded: 2, thr: M.PARAMS.thr } });
-    assert.deepEqual(res.suspect, [2]);
     assert.deepEqual(res.bars[1].strong, ['fill-short'], 'the fill check does not need the checker');
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
@@ -206,13 +212,19 @@ test('catalogue scores fed back as if they had been recognised: at most one flag
   assert.ok(flagged * 20 <= total, flagged + ' flags in ' + total + ' bars of correct music');
 });
 
-test('PARAMS is what the fit recorded, and uses only signals that exist', () => {
+test('PARAMS is what the fit recorded; the one change since the judgement is stored; every signal it names exists', () => {
   const rec = JSON.parse(fs.readFileSync(path.join(L.REPO, 'tests', 'omr', 'flags', 'flags-fit.json'), 'utf8'));
   assert.deepEqual(F.PARAMS, rec.params, 'omr/flags.js PARAMS and tests/omr/flags/flags-fit.json params differ: refit (tests/omr/node/flags-fit.js fit --record) or restore');
+  /* the parameters the held-out half was judged with are stored with its numbers; the module differs from them by `page-bars` leaving the strong list (the
+     benchmark has no page layout: the signal never fired in any number) and by nothing else */
+  const judged = rec.heldOut.params;
+  assert.ok(judged && Array.isArray(judged.strong), 'the judged parameters are in the record');
+  assert.deepEqual(F.PARAMS, Object.assign({}, judged, { strong: judged.strong.filter(c => c !== 'page-bars') }), 'PARAMS differ from the judged ones by more than page-bars');
+  assert.ok(judged.strong.includes('page-bars') && !F.PARAMS.strong.includes('page-bars'));
+  assert.ok(/^[0-9a-f]{64}$/.test(rec.heldOut.judgedModuleSha256), 'the sha of the module that was judged is in the record');
   [].concat(F.PARAMS.strong, F.PARAMS.weak).forEach(code => assert.ok(F.CODES.includes(code), code));
   assert.equal(new Set([].concat(F.PARAMS.strong, F.PARAMS.weak)).size, F.PARAMS.strong.length + F.PARAMS.weak.length, 'a signal is strong or weak, not both');
   assert.ok(F.PARAMS.weakNeeded >= 2);
-  assert.ok(rec.heldOut === undefined || typeof rec.heldOut === 'object');
 });
 
 test('pageBarsCheck: a page without a layout, or without a structure, says nothing', async () => {
