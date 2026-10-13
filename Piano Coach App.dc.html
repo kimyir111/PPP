@@ -12484,25 +12484,12 @@ Object.defineProperties(window.PPP, {
   engraveStats: { enumerable: true, get: () => ENGRAVE_STATE.stats }
 });
 let _engravePromise = null;
-let _engraveWarmed = false;
-/* G13-4e: the fifteen files of the drawing code (ENGRAVE_FILES) are named by this page and not by the head, so they used to be asked for only after the library and the
-   engraver's source were in. They are immutable by hash: asked for now, at the same time, they are in the browser's cache when their script elements are made. */
-function warmEngraveFiles() {
-  if (_engraveWarmed || typeof fetch !== 'function') return;
-  _engraveWarmed = true;
-  ENGRAVE_FILES.forEach(([name, hash]) => {
-    try { fetch('./engrave/' + name + '.js?h=' + hash, { credentials: 'same-origin' }).then(r => r.arrayBuffer()).catch(() => {}); } catch (e) { /* the script element asks later */ }
-  });
-}
 function loadEngrave() {
   let wait = null;
   if (lazyOn()) {
     /* G13-4e: a drawing needs the ScoreGraph and the engraver's own files, not the arranger or audio-score.js: asked for alone, so that Home's first drawing is not held
        behind 150 KB it never uses (the rest comes in behind it, lazy-load.js start) */
-    if (!window.PPP_LAZY.have(['score', 'engrave'])) {
-      window.PPP_LAZY.afterPaint().then(warmEngraveFiles);   /* not before the first paint, like everything deferred */
-      wait = window.PPP_LAZY.ensure(['score', 'engrave']);
-    }
+    if (!window.PPP_LAZY.have(['score', 'engrave'])) wait = window.PPP_LAZY.ensure(['score', 'engrave']);
   } else if (_scoreModulesPromise || !scoreModulesReady()) wait = loadScoreModules();
   if (wait) return wait.then(ok => {
     if (!ok) throw importError('score-not-loaded', tx('The files needed to write the score could not be loaded. Try again in a moment.'));
