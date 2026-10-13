@@ -67,6 +67,10 @@ const M = [
   ['D5', 'Piano Coach App.dc.html', 'no stand-in: a note with no recording in is silent', ["    } else {\n      this.synth(voice, midi, t, peak, tone);\n    }", "    } else {\n      voice.srcs.push(ac.createBufferSource());\n    }"], SAMPLES],
   /* G13-4c (template re-fetch): the line in the head that turns the runtime's second fetch of the page off */
   ['E1', 'Piano Coach App.dc.html', 'the runtime fetches the page a second time again', ["<script>window.__resources = window.__resources || {};", "<script>window.__noResources = window.__resources || {};"], TEMPLATE],
+  /* G13-4c3 (PR 2): the page's ETag */
+  ['P1', 'server.js', 'the page\'s tag is not of its bytes (a new release is answered 304)', ["const etag = '\"' + crypto.createHash('sha256').update(body).digest('hex').slice(0, 20) + '\"';", "const etag = '\"00000000000000000000\"';"], HASH],
+  ['P2', 'server.js', 'the page is answered 304 whatever tag the browser has', ["if (assets.ifNoneMatchHas(req.headers['if-none-match'], etag)) return send(res, 304, Buffer.alloc(0), headers);", "if (req.headers['if-none-match']) return send(res, 304, Buffer.alloc(0), headers);"], HASH],
+  ['P3', 'server.js', 'the page is kept for an hour without asking', ["const headers = { 'Cache-Control': 'no-cache', 'ETag': etag };", "const headers = { 'Cache-Control': 'public, max-age=3600', 'ETag': etag };"], HASH],
   /* G13-4c: static-assets.js, server.js, i18n.js */
   ['C1', 'server.js', 'a wrong hash is answered immutable (any ?h= is believed)', ["if (e.hash === want) {", "if (true) {"], HASH],
   ['C2', 'static-assets.js', 'the hash ignores the content', [".update(body).digest('hex').slice(0, 12)", ".update('same').digest('hex').slice(0, 12)"], HASH],
@@ -78,7 +82,6 @@ const M = [
   ['C8', 'static-assets.js', 'an answer says gzip but sends the plain bytes', ["if (gz) { body = await gzipOnce(e, buf); headers['Content-Encoding'] = 'gzip'; }", "if (gz) { headers['Content-Encoding'] = 'gzip'; }"], HASH],
   ['C9', 'static-assets.js', 'the hash of a file is kept for ever (a changed file keeps its old hash)', ["if (c && c.mtimeMs === st.mtimeMs && c.size === st.size) return c;\n  const e = { mtimeMs: st.mtimeMs, size: st.size, hash: hashBytes(", "if (c) return c;\n  const e = { mtimeMs: st.mtimeMs, size: st.size, hash: hashBytes("], HASH],
   ['C10', 'static-assets.js', 'mp3 and pictures become hashable', ["const HASHABLE = new Set(['.js', '.json', '.css', '.woff2', '.woff']);", "const HASHABLE = new Set(['.js', '.json', '.css', '.woff2', '.woff', '.mp3', '.png']);"], HASH],
-  ['C11', 'server.js', 'the page itself is kept by the browser', ["send(res, 200, Buffer.from(text, 'utf8'), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });", "send(res, 200, Buffer.from(text, 'utf8'), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=3600' });"], HASH],
   ['C12', 'server.js', 'the served list is not asked (a server file is handed out)', ["if (!staticAllow.isServed(rel)) { noteNotServed(abs, rel); return jsonError(res, 404, 'Not found'); }", "if (false) { noteNotServed(abs, rel); return jsonError(res, 404, 'Not found'); }"], HASH],
   ['C13', 'static-assets.js', 'a file the server does not serve gets a hash in the page (a probe)', ["if (!HASHABLE.has(path.extname(r).toLowerCase()) || !allow.isServed(r)) return null;", "if (!HASHABLE.has(path.extname(r).toLowerCase())) return null;"], HASH],
   ['C14', 'static-assets.js', 'a Range request gets a slice of the (gzip) body', ["let body = buf;\n  if (gz)", "let body = buf;\n  if (req.headers.range) return { status: 206, headers: Object.assign(headers, { 'Content-Range': 'bytes 0-9/' + buf.length }), body: buf.slice(0, 10) };\n  if (gz)"], HASH],

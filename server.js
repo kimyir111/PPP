@@ -1086,7 +1086,16 @@ async function servePage(req, res, url) {
     text = /<meta charset="utf-8">/i.test(text) ? text.replace(/<meta charset="utf-8">/i, m => m + '\n' + tag) : text.replace(/<head>/i, m => m + '\n' + tag);
   }
   text = assets.preparePage(text, ROOT);
-  send(res, 200, Buffer.from(text, 'utf8'), { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+  const body = Buffer.from(text, 'utf8');
+  /* G13-4c3: the page is revalidated, not stored for nothing. The browser keeps it (it must ask before it uses it: no-cache) with the tag of its bytes, and a visit
+     that finds the same bytes - same build, same hashes - is answered 304 with no body: a returning visitor no longer downloads the 306 KB page again. The tag is of the
+     bytes sent (the share's tags and the build stamp are in them), so a deploy, a changed script (its hash is in the page) or another ?share= is another tag: nothing
+     stale can be shown. */
+  const etag = '"' + crypto.createHash('sha256').update(body).digest('hex').slice(0, 20) + '"';
+  const headers = { 'Cache-Control': 'no-cache', 'ETag': etag };
+  if (assets.ifNoneMatchHas(req.headers['if-none-match'], etag)) return send(res, 304, Buffer.alloc(0), headers);
+  headers['Content-Type'] = 'text/html; charset=utf-8';
+  send(res, 200, body, headers);
 }
 async function serveStatic(req, res, urlPath, url) {
   if (urlPath === '/' || urlPath === '/index.html') return servePage(req, res, url);
