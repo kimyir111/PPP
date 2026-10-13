@@ -26,7 +26,7 @@ const ROWS = [
     "    const plan = PianoScore.of(S.score, from, to);\n    const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);\n    const t0 = now + this.leadMs(now);")], 'leak,spies'],
   ['W6', 'a transport planned again (hands changed) asks PianoScore.of again', [CALL_SITE("      const plan = practicePlan(S.score, from, to);\n      const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);\n      if (sq < -0.001",
     "      const plan = PianoScore.of(S.score, from, to);\n      const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);\n      if (sq < -0.001")], 'leak'],
-  ['W7', 'the simulation (fire) asks PianoScore.of again', [CALL_SITE("    const plan = practicePlan(S.score, from, to);\n    const list = plan.strikes || [];", "    const plan = PianoScore.of(S.score, from, to);\n    const list = plan.strikes || [];")], 'leak'],
+  ['W7', 'the simulation (fire) asks PianoScore.of again', [CALL_SITE("    const plan = (PRACTICE_MODE === 'graph' && this._tp && this._tp.plan) || practicePlan(S.score, from, to);\n    const list = plan.strikes || [];", "    const plan = PianoScore.of(S.score, from, to);\n    const list = plan.strikes || [];")], 'leak'],
   ['W8', "follow mode's gates are the legacy ones under 'graph'", [["    const viaGraph = !!(gp && gp.graph && practiceModuleReady());", "    const viaGraph = false;"]], 'gates,leak'],
   /* the switch */
   ['W9', "legacy is no longer the default", [["const PRACTICE_DEFAULT = 'legacy';", "const PRACTICE_DEFAULT = 'graph';"]], 'switch'],
@@ -57,7 +57,7 @@ const ROWS = [
   ['W33', 'the falling notes\' timeline is kept whichever plan it was built on', [["c.tempo === tempo && c.plan === plan) return c.timeline;", "c.tempo === tempo) return c.timeline;"]], 'late'],
   ['W34', 'a lap of a running transport asks for a plan again (a switch flipped in the run changes the matcher)', [["    const keep = !!(tp && tp.plan && (PRACTICE_MODE === 'graph' || tp.plan.graph) && tp.key === this.transportKey(S));", "    const keep = false;"]], 'leak'],
   ['W35', 'a stray key (wrong) is counted in bar index 0', [["bucket(byMeasure, x.m).wrong++; const i = idxAt(x.t);", "bucket(byMeasure, x.m).wrong++; const i = 0;"]], 'matcher'],
-  ['W36', "follow mode's gate cache does not know which plan the gates come from", [["(viaGraph ? ':graph' : '')", "''"]], 'gates'],
+  ['W36', "follow mode's gate cache does not know which plan the gates come from", [["(viaGraph ? ':graph:' + PRACTICE_FIX.join(',') : '')", "''"]], 'gates'],
   ['W38', "practicePlan returns the legacy plan under 'graph': the practice suites on --practice graph say the graph plan was not engaged", [["  return practiceGraphPlan(score, from, to);", "  return PianoScore.of(score, from, to);"]], 'suites:playback-scheduler'],
   ['W37', 'the bar index of an expected note is one bar early', [["        mIdx: s.visit ? s.visit.index : undefined,", "        mIdx: s.visit ? Math.max(0, s.visit.index - 1) : undefined,"]], 'matcher'],
   ['W26', 'the matcher\'s result has no byMeasureIdx', [["      byMeasureIdx: byMeasureIdx,", ""]], 'matcher'],

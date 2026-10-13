@@ -41,6 +41,7 @@ HARNESS_FILES = (".github/workflows/bench.yml", "tests/engrave/tools/with-port.j
                  "tests/practice/canon.js", "tests/practice/lib.js", "tests/practice/mutants.js", "tests/practice/perf.js", "tests/practice/perf-selftest.js",
                  "tests/practice/parity.js", "tests/practice/parity-core.js", "tests/practice/parity-mutants.js",
                  "tests/practice/switch.js", "tests/practice/switch-page.js", "tests/practice/switch-mutants.js",
+                 "tests/practice/options.js", "tests/practice/options-page.js", "tests/practice/options-mutants.js",
                  "tests/practice/plan.py",
                  "tests/practice/record.js", "tests/practice/run-suites.js",
                  "tests/practice/learner-mutants.js", "tests/practice/learner-proxy.js", "tests/practice/learner-record.js")

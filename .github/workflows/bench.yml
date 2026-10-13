@@ -889,6 +889,44 @@ jobs:
       - run: npm ci
       - run: node tests/practice/switch-mutants.js --shard ${{ matrix.part }}/3
 
+  # practice-options (G11a-4): the four fixes under 'graph' in a real page on a free port (tests/practice/options.js, docs/GOALS/G11 section 10.5): PPP.practiceFix; D.C./D.S./Fine/To Coda
+  # played (the 7 open catalogue pieces and the hand-written D.S. al Coda), grace notes that sound and are never asked, follow mode that asks a repeated bar each time and asks what Play
+  # strikes, the tie at a jump, a pause resumed in the visit it was in, the corpus swept with the fixes on (fallbacks on the catalogue: 0; the counts per cause equal to G11a-2's).
+  # The whole corpus takes a minute or two; a pull request reads every 5th catalogue file, every file the baseline gives a cause, and every fixture.
+  practice-options:
+    needs: practice-plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.run == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci
+      - run: node tests/practice/options.js --sample 5
+        if: ${{ github.event_name == 'pull_request' }}
+      - run: node tests/practice/options.js
+        if: ${{ github.event_name != 'pull_request' }}
+
+  # practice-options-mutants: does the options test notice a fix that got worse? tests/practice/options-mutants.js breaks ONE line of the page at a time (the jumps not followed, the graces
+  # judged, a played grace a wrong note, follow mode that asks a bar once or skips a tie that leads nowhere, a visit counted as its bar, an option a cache does not see, ...) and the test, run
+  # on the sections the row names, must go red; 22 rows, 5-15 s each (two shards). On a pull request only when the probes themselves changed (practice-plan's `harness`), every night otherwise.
+  practice-options-mutants:
+    needs: practice-plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.harness == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci
+      - run: node tests/practice/options-mutants.js --shard ${{ matrix.part }}/2
+
   # backup-suite (G13-6): the browser suite of Settings > My data (tests/backup-ui.test.js: back up, restore, refuse, delete everything, on fresh profiles, in
   # Korean, with mutants of library-backup.js served to the page). Like the practice suites it needs puppeteer (npm ci), serves this tree on a free port itself
   # (tests/serve-free.js) and is a check of its own: NOT a job the gate waits for (test_ci_plan.py reads only plan, light, shard-* and merge-*). It runs whenever the
