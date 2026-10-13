@@ -17,6 +17,7 @@
      sim(item)              the simulation without a keyboard judges the notes the matcher would, and a run keeps its plan
      switching(item)        a change of PPP.practiceFix is seen by the next plan and by follow mode's gates (their cache keys)
      hint(item)             the keyboard hint shows the note a tie leads into from nowhere
+     run(item)              the transport itself (advance on a clock of the probe's own): the playhead walks the plan's visits, a lap is its length, a loop starts over at its first bar
      resume(item)           a pause in a bar the plan plays twice is resumed in that visit (transport, falling notes, matcher); under 'legacy' as ever, the first
      sweep(items)           every file of a corpus: planned from the graph (no fallback), Play = Follow, the counts per cause */
 (function () {
@@ -472,6 +473,69 @@
     return rec;
   }
 
+  /* ---- the transport itself: the playhead walks the plan's visits, a lap is the plan's length, a loop starts over at its first bar ---- */
+  /* app.advance(now) stepped on a clock of this probe's own (no piano, no keyboard: the simulation judges), setState applied at once. Returns the bars the playhead stood in, in order, each
+     once per stay, and the written beats; `laps` is how many times completeLap ran. */
+  function walkTransport(app, S, score, plan, o) {
+    const out = { bars: [], laps: 0, ended: false };
+    const savedSet = app.setState, savedCl = app.completeLap;
+    app.setState = function (p) { if (typeof p === 'function') p = p(S); Object.assign(S, p); };
+    app.completeLap = function () { out.laps++; return savedCl.apply(this, arguments); };
+    try {
+      S.playing = true;
+      S.beat = Score.startQ(score, o.from);
+      app.startTransport(S, S.beat);
+      const tp = app._tp;
+      tp.waiting = false;
+      tp.t0 = 1000;
+      const lap = PPP.PianoScore.msAt(plan, plan.soundLengthQ, tp.scale);
+      const stop = 1000 + lap * (o.laps || 1) + 80;
+      let last = null;
+      for (let now = 1000; now <= stop; now += 20) {
+        app.advance(now);
+        if (!S.playing) { out.ended = true; break; }                 /* the beat is put back to the start when a lap ends: not a stay */
+        const m = Score.at(score, S.beat);
+        if (m !== last) { out.bars.push(m); last = m; }
+      }
+      out.beat = S.beat;
+    } finally { app.setState = savedSet; app.completeLap = savedCl; app._tp = null; S.playing = false; }
+    return out;
+  }
+  async function run(item, o) {
+    o = o || {};
+    const rec = { file: item.file, fail: [] };
+    const score = await SW.loadScore(item);
+    const w = wholeOf(score);
+    const barsOf = plan => { const b = []; plan.visits.forEach(v => { if (b[b.length - 1] !== v.number) b.push(v.number); }); return b; };
+    await inMode('on', async () => {
+      /* Start to finish: one lap, and it ends where the plan ends */
+      withState(Object.assign(stateFor(score, w), { tempo: score.tempo || 84 }), (app, S) => {
+        const plan = PPP.practicePlan(score, w.from, w.to);
+        const r = walkTransport(app, S, score, plan, { from: w.from, laps: 1 });
+        rec.whole = { want: barsOf(plan), got: r.bars, laps: r.laps, ended: r.ended };
+        if (J(r.bars) !== J(rec.whole.want)) rec.fail.push('the playhead walked the bars ' + r.bars.slice(0, 40).join(' ') + ' ..., the plan has ' + rec.whole.want.slice(0, 40).join(' ') + ' ...');
+        if (r.laps !== 1 || !r.ended) rec.fail.push('Start to finish: ' + r.laps + ' lap(s) completed, ended ' + r.ended);
+      });
+      /* a loop over a window that holds the sign: two laps, the second begins at the loop's first bar */
+      const plan0 = PPP.practicePlan(score, w.from, w.to);
+      const j = (plan0.jumps || [])[0];
+      if (j) {
+        const sign = plan0.visits[j.from].index, target = j.to, ms = score.measures;
+        const win = { from: ms[Math.min(sign, target)].number, to: ms[Math.max(sign, target)].number };
+        withState(Object.assign(stateFor(score, win), { tempo: score.tempo || 84, loop: true, loopFrom: win.from, loopTo: win.to }), (app, S) => {
+          const plan = PPP.practicePlan(score, win.from, win.to);
+          const r = walkTransport(app, S, score, plan, { from: win.from, laps: 2 });
+          const one = barsOf(plan);
+          rec.loop = { win: win, want: one, got: r.bars, laps: r.laps };
+          if (r.laps < 1) rec.fail.push('the loop completed no lap');
+          if (J(r.bars.slice(0, one.length)) !== J(one)) rec.fail.push('the loop walked ' + r.bars.slice(0, 40).join(' ') + ' ..., the plan has ' + one.slice(0, 40).join(' ') + ' ...');
+          if (r.bars[one.length] !== one[0]) rec.fail.push('the second lap of the loop does not begin at the loop start (bar ' + r.bars[one.length] + ', not ' + one[0] + ')');
+        });
+      }
+    });
+    return rec;
+  }
+
   /* ---- the tie at a jump, on the hand-written piece ---- */
   async function fixture(item) {
     const out = { fail: [] };
@@ -645,5 +709,5 @@
     return out;
   }
 
-  window.PPPOptionsProbe = { choice, plan, lap, matcher, gates, spies, visual, fixture, fallbacks, perf, sweep, sim, switching, hint, resume };
+  window.PPPOptionsProbe = { choice, plan, lap, matcher, gates, spies, visual, fixture, fallbacks, perf, sweep, sim, switching, hint, resume, run };
 })();

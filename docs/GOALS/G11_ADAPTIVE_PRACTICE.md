@@ -29,6 +29,8 @@ recording lead sheet as generators and a new, verified measure-aligned splice.
 
 **G11a-3 is built** (2026-10-08): `PPP.practice` (`'legacy'` default | `'graph'`) and `practicePlan()` at the nine call sites; the graph plan runs in compat mode, so `'graph'` is the legacy player to the bit (scheduler queue, matcher, falling notes, follow gates), counted fallbacks 0 on the 325 catalogue files and 93 fixtures; all eleven practice suites pass on both players; the record, the call sites and the numbers are §10.4.
 
+**G11a-4 is built** (2026-10-14): under `PPP.practice = 'graph'` the four fixes are ON (U2: D.C./D.S./Fine/To Coda played, graces sound and are not judged; U3: follow mode asks a repeated bar as often as Play plays it and exactly the notes Play strikes); `PPP.practiceFix` ('on' | 'off' | a list) takes any of them away; the default of `PPP.practice` stays `'legacy'`; the rule for a tie at a jump, the options test (131 checks), the mutants and the numbers are §10.5, the user's listening check is `tests/practice/listen-check.md`.
+
 **G11b-1 is built** (2026-10-08): `PPP.learner = 'legacy' | 'typed'`, `practice/runlog.js` (typed evidence, the bounded run log in IndexedDB, the export), the Settings card and the rating row, and `PPP.demoRuns` (decision U4, off); the legacy aggregates are proved byte-identical against the page before the phase; the record, the budgets and the places that count Demo Input today are §19.
 
 ## 1. What was measured before designing (evidence)
@@ -549,7 +551,7 @@ is not run against a second oracle (there is none); the check is that the engine
 
 **Findings and limits.**
 (a) A tie is kept or broken by the *note*, not by the visit: a bar that the way back reaches from another bar than its written predecessor (the segno bar after a D.S., the coda after a To Coda) starts with its tied-to notes **silent**. The cause table cannot flag it (the bar sounds what the old plan plays for that bar, as JUMP promises). It does not occur on the catalogue (the harness counts it: `silentTies` 0 on all 325 files)
-and does in one of the new fixtures (`ds-al-coda-repeat-volta`: the coda's first note is tied from the bar before it on the page). Whether the way back should re-strike such a note is a choice for G11a-4 (U2), not a parity matter.
+and does in one of the new fixtures (`ds-al-coda-repeat-volta`: the coda's first note is tied from the bar before it on the page). Whether the way back should re-strike such a note is a choice for G11a-4 (U2), not a parity matter. **Decided in G11a-4 (§10.5): it is struck.**
 (b) The nested-repeat fixture records an old-player quirk (a first ending whose repeat sign is skipped on the second time leaves the inner start on the stack, so an outer `times=3` goes back to the inner start); the graph plan keeps it in both modes, as E4 says kept quirks are kept.
 (c) Windows exist only for pieces of more than four bars; the 12 tiny fixtures with four bars or fewer are checked whole.
 (d) `PM24`/`PM25` above are the only parts of the plan's contract that parity does not read; both are read by `plan.test.js`.
@@ -599,6 +601,65 @@ New hand-written songs in `tests/practice/fixtures/switch/`, swept with the corp
 (5) *Tests that could be passed by luck.* `mIdx` is now asserted against the bar that holds the note's position, computed in the test; `byMeasureIdx` is compared bucket for bucket with `byMeasure` through `Score.measure(number).index` (stray keys included: a mutant that counted every stray key in bar 0 survived before; W35); follow mode's gates are asked of **one object** through the switch and back (dropping `:graph` from the cache key survived; W36); `run-suites.js --practice graph` now **asserts the graph was engaged**: every page on `'graph'`, and at least one graph plan in every suite that plans (coach, lessons, course and alignment are marked `noPlans` in `SUITES`, because they never ask the player for a plan; they ran 0 graph plans before and still do) - the run says `N graph plans` on each line and is red otherwise; a mutant page whose `practicePlan` returns the legacy plan turns it red (W38).
 *A run keeps its plan* (the hazard for G11a-4): `beginRun` used to ask for a plan at every lap while `tp.plan` stayed fixed - equal today, but with the jump options on a legacy-to-graph flip in the middle of a run would change the length of the next lap. A lap of a transport that is running now begins on the transport's own plan (`run.plan` for `PerformanceEngine.begin`; the call it always was when the switch is `'legacy'` and the plan is a legacy one); test and mutant W34. Still asked again on their own: `fire` (the simulation, each tick, no scoring) and the re-plan of `advance` when hands, range or tempo change - G11a-4 should decide the plan at Play and keep it until Stop.
 
+
+### 10.5 G11a-4 record (2026-10-14, Sonnet; branch `g11a-4-options`)
+
+**What it does.** With `PPP.practice = 'graph'` the page builds the plan with the four fixes on (the user's decisions of 2026-10-13: U2 yes, U3 yes). `PPP.practiceFix` is `'on'` (default), `'off'` (the plan of G11a-3: the legacy
+player to the bit) or a list of the ones to keep (`'jumps,ties'`; names `jumps`, `graces`, `repeats`, `ties`); any other value is no choice and puts the default back, like every switch of this goal; it is remembered on the device
+(`ppp.practiceFix.v1`), `?practiceFix=` is for that visit, and it is read **only** under `'graph'`. **`PPP.practice` stays `'legacy'` by default; nothing a person sees today changes.** `practiceGraphBuild` passes `jumps`/`graces` to
+`practice/plan.js` (still `legacyCompat: true`: the quirks of E4 are kept), the plan cache key and follow mode's gate cache key carry the options, `followGates` gets `{repeats, ties}`, `PPP.practiceStats` also counts `jumps` and
+`graces` (plans that followed a sign; plans that hold a grace note).
+
+**The rules chosen.**
+
+| Question | Rule | Where it is read |
+| --- | --- | --- |
+| **A tie into a bar the way back reaches by a jump (silentTies, G11a-2 (a))** | A tie joins two notes the play order puts one after the other; a note that leads nowhere is struck (the old player's own rule for a dangling tie, E4, kept). So **at the arrival of a D.S. / D.C. / To Coda a note tied from a bar the way back did not come from is struck again, for its own length (and for the notes tied on that the play order reaches), and the note before the sign, tied into a bar the way back does not go to, sounds its own length and no longer.** Only the arrival of a jump changes anything: the return of a repeat is the old player's (kept quirk), a tie inside one bar is never cut. A note carried into from the visit before it is carried as ever. | `practice/plan.js` `tieBrokenAtArrival`, `holdAt`; `plan.visits[].jumped`; `strike.heldQ` |
+| **Grace notes in the matcher** | A grace sounds and is **never** in `expected`. A key pressed where a grace of the plan sounds (same pitch, within the matcher's window, and no asked note of that pitch nearer) is **neither a note matched nor a wrong note** (verdict `'grace'`): a student who plays what is drawn is not punished. A grace on the pitch of a note that is asked within the window is the same key to the matcher, and the asked note takes it (that note may then be early or late; a second key of that pitch near the grace is ignored). | `PerformanceEngine.begin` (`graces`), `noteOn` |
+| **Grace notes on the falling notes** | They are **drawn**, flagged `grace`, **half as wide** as a key, for the length they sound (a slashed grace is crushed: at most 1/8 of a quarter; an unslashed one is as long as it takes from its main note, at most half of it), and a main note a grace shortened is drawn shortened (`heldQ`). The engraved score's highlighter works on written places and does not light a grace (it has none); the sound is the plan's. | `scoreToVisualTimeline`, `PianoVisualizerCanvas` |
+| **The simulation (no keyboard)** | Judges the notes the matcher would: no grace; and a run keeps its plan (`fire` reads the transport's own plan under `'graph'`: a `PPP.practiceFix` changed in the middle of a run changes nothing until the next Play). | `fire` |
+| **A D.C. inside a loop window** | Goes back to the **start of the loop** (G11a-1, the repeat sign's rule E4 a): a loop that ends on D.C. plays its bars twice per lap, a D.S. whose segno is outside the loop and a To Coda with no D.S. before it are not followed there. Flagged to the user in the listening check. | `practice/plan.js` walk |
+| **Resuming a pause** | A bar the plan plays twice is two places; a pause in the second is resumed in the second (transport, falling notes while it waits, and the matcher: `beginRun` takes the transport's own start). `legacy`: the first visit, as ever. | `soundAt`, `stopTransport`, `beginRun` |
+| **The keyboard hint** | `expected()`/`guideOnset()` skip a tied-to note only when the clock does not strike it (`plan.cont`), so the hint agrees with the matcher and follow mode for a tie that leads nowhere (6 catalogue files, 20 notes). `'legacy'`: every tied-to note, as ever. | `carriedFn` |
+
+**Where this differs from §6.** (1) A fifth thing next to JUMP/GRACE/FOLLOW_*: **the tie at a jump** is part of JUMP's cause (the parity harness reads it from the old plan's own tie links: `ctx.ties`, `tie {struck, cut, silent, held}`); (2) graces
+are not only absent from `expected` but tolerated when played (§6.1 said "never in the matcher's expected until a later decision"; a pressed grace would otherwise have counted as a wrong note); (3) `PPP.practiceFix` is new (§6.1 had the four
+options reachable by default under 'graph' only; a list is the cheapest way to give the user a way back from one of them); (4) `heldQ` and `jumped` are new fields of the plan, `vIdx` (the visit of an expected note: the place in `plan.visits`) is new on `expected`.
+
+**Tests.** `tests/practice/options.js` (+ `options-page.js`, `options-mutants.js`; `npm run test:practice-options`, CI job `practice-options` with `--sample 5` on a pull request and the whole corpus every night, **131 checks, 22 s**):
+choice (the default, a list, what is no choice, the address, a throwing storage); plans (the 7 open catalogue pieces with a D.C. al Fine, the grace pieces, the hand-written D.S. al Coda: planned from the graph, the page's plan equal to `practice/plan.js`
+built with the same options, longer by the jump, graces counted); laps (Start to finish and the loop windows holding the sign and its target are longer, a window without the target is the legacy lap to the bit); the matcher (graces never asked; a perfect
+performance matches everything; the graces played too give the same result; graces on or off the same asked notes and per-bar totals; each expected note names its visit and its bar, and a bar played twice is two visits and **one** bucket of `byMeasureIdx`);
+gates (Play and Follow: the same notes, as many times, in the same order, on 9 runs per piece); the real scheduler on a fake piano and a fake MIDI output (every strike queued once, graces included, the plan's controller events and clicks);
+the falling notes; the transport itself (`advance` on a clock of the probe's own: the playhead walks the plan's visits, one lap is the plan's length, a loop starts over at its first bar); the tie at a jump on the hand-written piece (clock, matcher, follow, drawn); a piece the plan cannot be made for (BUILD_ERROR, LINK_FAILED, IDENTITY: the legacy plan, counted, with the fixes on); the simulation; a change of option seen by the next plan and
+the gates; the keyboard hint; a pause resumed in its visit; the plan build time; the corpus swept with the fixes on (349 files: **fallbacks on the catalogue 0**, Play strikes what the matcher asks and Follow asks what Play strikes on every file).
+
+**Counts per cause, read through the page** (325 catalogue files, the licence-quarantined ones included; equal to G11a-2's, which the plan-level harness reports again): JUMP **8** files, GRACE **17** files / **244** events, FOLLOW_REPEAT **168**, FOLLOW_TIE **6** files / **20** notes.
+The parity harness (`tests/practice/parity.js`, 418 files, 5,499 ranges): compat equals the legacy player everywhere, **0 UNEXPLAINED** with the fixes on; in all 418 files: JUMP 15 files, GRACE 21 files (264 events), FOLLOW_REPEAT 192, FOLLOW_TIE 10 files (26 notes);
+`silentTies` 0 (was 1: the fixture), `tieStruck` 1, `tieCut` 1 (the fixture; none on the catalogue). The baseline `tests/practice/baselines/parity.json` was re-recorded: the diff is that one file's `js 31 -> 32`, `jt 1 -> 0`, `jr 0 -> 1`, `jc 0 -> 1`, and the two new totals.
+
+**Suites.** `tests/practice/run-suites.js` **green on both players, unedited**: the twelve suites, 604 checks, under `'legacy'` (451 s) and under `'graph'` with the fixes on (456 s; 0 fallbacks except the 3 `LINK_FAILED` of the suites that build their Scores by hand, as in G11a-3).
+No suite's expectation had to change: none of them plays a piece with a sign or a grace. The off-path identity is proved again: the scheduler queue of the 12 pieces at 8x under `'legacy'` equals the digests recorded on `a070d70` (`switch.js`, 160 checks), the legacy recorder's 394 digests
+equal (`record.js check`), the legacy practice simulator's 144 rows are identical (`baseline.js --check`: only `appCode.declarations` gained the four names the options need, re-stamped in both baselines), the perf probe is within its baseline.
+`switch.js`, `switch-page.js` and the switch mutants now run the graph plan with `PPP.practiceFix = 'off'` (the compat plan they are about); W7 and W36 name the new lines.
+
+**Mutants.** `options-mutants.js`: **22 of 22 killed** (jumps not followed, graces not sounding, graces judged, a played grace a wrong note, follow without repeats / without ties, a visit counted as its bar, a grace looked up as a Score note, the simulation judging a grace,
+the plan and the gate caches blind to the option, the fixes off by default, a bad list accepted, a no-choice value not forgotten, the hint skipping a tie, a grace not flagged, a cut tie drawn whole, a jump not counted, a run not keeping its plan, a pause resumed in the first visit,
+the matcher beginning at the first visit). `mutation.test.js` +5 (the tie at an arrival, the cut hold, the gate, a To Coda that is not an arrival, a shortened note drawn whole), `parity-mutants.js` +4 (PM26-PM29; PM23 re-anchored).
+
+**Budgets (§11).** Plan build with the fixes on, 1x, medians of 7 x 15 on a shared laptop: the longest piece (sonatina/020, 1,776 notes, no sign) 1.7 ms against the legacy build's 2.6 ms; with a D.C. and 15 graces (sonatina/017) 0.9 ms against 0.6-0.7 ms
+(the plan holds 38% more music: 90 visits against 65, 1,355 notes drawn, 15 of them graces); a grace-heavy piece (czerny849/017, 160 graces) 0.7 ms against 0.55 ms; asking again is the same object (0 ms). The +25% rule with its 0.5 ms floor for the timer holds; the plan with a jump costs
+what the music it makes costs.
+
+**Findings and limits.**
+(a) **A loop that ends on a D.C. plays twice per lap** (the rule above); a user who loops the last bars of a D.C. piece will notice. One line in `walk` (`goal` of a D.C. = the piece's first bar, not followed when the loop does not hold it) would stop it; G11a-1 chose the other (mutant MUT-DC-TARGET), so it is left and flagged.
+(b) `completeLap`'s "minutes" still count the *written* length of the range (repeats and jumps are not in it: as with repeats in the legacy player); not touched (another phase edits that region).
+(c) Follow mode does not tolerate a played grace: pressing the pitch of a grace while following is a wrong key as it was (the gates carry no graces).
+(d) The keyboard hint at the *arrival* of a jump does not show the re-struck tied note (the hint reads written places, not visits): 0 catalogue pieces, one fixture.
+(e) `PPP.practiceFix` is read when a plan is asked for; a transport that is running keeps its plan, and a change of hands/tempo under it re-plans with the option of that moment (a developer's action, not a user path).
+(f) The rule reads the plan's own tie links (by pitch and place in compat mode, by the tie spanner in the graph rule); the page always builds with `legacyCompat: true`, so only that reading is exercised in a page.
+
+**The user's listening check** is `tests/practice/listen-check.md` (Korean, 3 catalogue pieces: Burgmüller 25 No. 6 D.C. al Fine, No. 3 grace notes, No. 21 repeats with endings and the tie that leads nowhere in follow mode; the hand-written D.S. al Coda as an option).
 
 ## 11. Performance budgets
 

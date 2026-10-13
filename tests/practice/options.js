@@ -13,6 +13,7 @@
      gates       follow mode asks exactly the notes Play strikes, as many times, in the order Play plays them; each option alone does what its name says
      spies       the real scheduler queues every strike once, graces included, and the plan's controller events and clicks
      visual      the falling notes: every strike a note, a grace flagged and short, a tie cut at a jump drawn cut
+     run         the transport itself: the playhead walks the plan's visits (advance on a clock of the probe's own), a lap is the plan's length, a loop starts over at its first bar
      fixture     the tie at a jump (parity/ds-al-coda-repeat-volta): the coda's D5 is struck once (clock, matcher, follow), the note before the sign is held for its own length
      small       the simulation (no keyboard) judges what the matcher asks and a run keeps its plan; a change of option is seen by the next plan and by the gates; the keyboard hint
                  shows a note a tie leads into from nowhere
@@ -24,7 +25,7 @@
      node tests/practice/options.js                      all of it (about 4-6 minutes; the sweep is the 325 catalogue files)
      node tests/practice/options.js --quick              the pieces of every section, every 12th catalogue file for the sweep (about 1 minute)
      node tests/practice/options.js --sample 5           the sweep reads every 5th catalogue file (+ the files the baseline gives a cause)
-     node tests/practice/options.js --only choice,plans  some sections: choice, plans, laps, matcher, gates, spies, visual, fixture, small, fallbacks, perf, sweep
+     node tests/practice/options.js --only choice,plans  some sections: choice, plans, laps, matcher, gates, spies, visual, run, fixture, small, fallbacks, perf, sweep
      node tests/practice/options.js --url URL            a page already served (the mutation check's proxy)
    Needs puppeteer (npm ci; on a developer's machine NODE_PATH may point at another tree's node_modules). Exit code 1 when a check fails. */
 'use strict';
@@ -241,6 +242,16 @@ async function sectionVisual(browser, url, files) {
   await h.close();
 }
 
+/* ---- run ---- */
+async function sectionRun(browser, url, files) {
+  head('the transport itself');
+  const h = await openPage(browser, url);
+  const rows = await each(h, 'run', files);
+  rows.forEach(r => check(short(r.file) + ': the playhead walks ' + (r.whole ? r.whole.got.length : 0) + ' stays, ' + (r.whole ? r.whole.laps : 0) + ' lap' + (r.loop ? '; the loop [' + r.loop.win.from + '..' + r.loop.win.to + '] ' + r.loop.want.length + ' stays a lap' : ''), r.fail.length === 0, failList(r)));
+  check('the page ran without an error', h.errors.length === 0, h.errors.join(' | '));
+  await h.close();
+}
+
 /* ---- fixture ---- */
 async function sectionFixture(browser, url) {
   head('the tie at a jump (D.S. al Coda over a volta: bar 6 ends on a D5 tied into the coda, bar 7)');
@@ -388,6 +399,7 @@ async function main() {
     if (want('gates')) await sectionGates(browser, url, items(some([JUMPS[0], JUMPS[5], GRACES[0], REPEATS[0], REPEATS[1], TIES[2], PLAIN[0]], 5)).concat([fixtureItem()]));
     if (want('spies')) await sectionSpies(browser, url, items(some([JUMPS[0], JUMPS[6], GRACES[0], REPEATS[0]], 3)).concat([fixtureItem()]));
     if (want('visual')) await sectionVisual(browser, url, items(some([JUMPS[0], JUMPS[6], GRACES[0], GRACES[1], PLAIN[0]], 3)).concat([fixtureItem()]));
+    if (want('run')) await sectionRun(browser, url, items(some([JUMPS[0], JUMPS[3], REPEATS[0], GRACES[4]], 2)).concat([fixtureItem()]));
     if (want('fixture')) await sectionFixture(browser, url);
     if (want('small')) await sectionSmall(browser, url);
     if (want('fallbacks')) await sectionFallbacks(browser, url);
