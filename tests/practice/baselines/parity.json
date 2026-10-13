@@ -58,7 +58,9 @@
      "files": 7,
      "visits": 152,
      "strikes": 1717,
-     "silentTies": 0
+     "silentTies": 0,
+     "tieStruck": 0,
+     "tieCut": 0
     },
     "GRACE": {
      "files": 16,
@@ -99,7 +101,9 @@
      "files": 1,
      "visits": 4,
      "strikes": 9,
-     "silentTies": 0
+     "silentTies": 0,
+     "tieStruck": 0,
+     "tieCut": 0
     },
     "GRACE": {
      "files": 1,
@@ -140,7 +144,9 @@
      "files": 0,
      "visits": 0,
      "strikes": 0,
-     "silentTies": 0
+     "silentTies": 0,
+     "tieStruck": 0,
+     "tieCut": 0
     },
     "GRACE": {
      "files": 0,
@@ -181,7 +187,9 @@
      "files": 4,
      "visits": 12,
      "strikes": 12,
-     "silentTies": 0
+     "silentTies": 0,
+     "tieStruck": 0,
+     "tieCut": 0
     },
     "GRACE": {
      "files": 1,
@@ -221,8 +229,10 @@
     "JUMP": {
      "files": 2,
      "visits": 9,
-     "strikes": 43,
-     "silentTies": 1
+     "strikes": 44,
+     "silentTies": 0,
+     "tieStruck": 1,
+     "tieCut": 1
     },
     "GRACE": {
      "files": 2,
@@ -264,7 +274,9 @@
     "files": 1,
     "visits": 8,
     "strikes": 122,
-    "silentTies": 0
+    "silentTies": 0,
+    "tieStruck": 0,
+    "tieCut": 0
    },
    "GRACE": {
     "files": 1,
@@ -282,7 +294,7 @@
     "notes": 0
    }
   },
-  "digest": "689d13938206ab62"
+  "digest": "8d2951c614c9f716"
  },
  "spies": {
   "files": 12,
@@ -480,7 +492,7 @@
  "tests/practice/fixtures/parity/cue-part-hands.musicxml": {"fr":7},
  "tests/practice/fixtures/parity/dangling-ties.musicxml": {"fr":6,"ft":2},
  "tests/practice/fixtures/parity/dc-al-fine-early-fine.musicxml": {"jf":1,"jv":3,"js":12,"fr":9},
- "tests/practice/fixtures/parity/ds-al-coda-repeat-volta.musicxml": {"jf":1,"jv":6,"js":31,"jt":1,"ge":1,"gs":2,"gc":2,"fr":8},
+ "tests/practice/fixtures/parity/ds-al-coda-repeat-volta.musicxml": {"jf":1,"jv":6,"js":32,"jr":1,"jc":1,"ge":1,"gs":2,"gc":2,"fr":8},
  "tests/practice/fixtures/parity/grace-before-chord.musicxml": {"ge":6,"gs":11,"gm":8,"gc":4,"fr":10},
  "tests/practice/fixtures/parity/meters-6-4-6-8-9-8.musicxml": {"fr":9},
  "tests/practice/fixtures/parity/nested-repeats-voltas.musicxml": {"fr":20},

@@ -48,6 +48,7 @@ function mutant(edits) {
 const memo = {};
 const fx = name => memo[name] || (memo[name] = H.fixtureGraph(name));
 const sg = name => memo['sg:' + name] || (memo['sg:' + name] = H.graphOfText(fs.readFileSync(path.join(H.REPO, 'tests', 'scoregraph', 'fixtures', 'xml', name + '.musicxml'), 'utf8').split('\r\n').join('\n'), name));
+const pf = name => memo['pf:' + name] || (memo['pf:' + name] = H.graphOfText(fs.readFileSync(path.join(H.FIX, 'parity', name + '.musicxml'), 'utf8').split('\r\n').join('\n'), name));
 const e = name => memo['e:' + name] || (memo['e:' + name] = H.graphOfText(fs.readFileSync(path.join(H.REPO, 'tests', 'engrave', 'fixtures', 'e', name + '.musicxml'), 'utf8').split('\r\n').join('\n'), name));
 const ord = (PL, g, opts) => H.order(PL.build(g, opts));
 const strike = (PL, g, opts, f) => PL.build(g, opts).strikes.find(f);
@@ -131,11 +132,27 @@ const MUTATIONS = [
     edits: [['            s.upQ = cut;', '            s.upQ = s.upQ;']],
     probe: PL => strike(PL, fx('grace-notes'), { graces: 'play' }, x => !x.grace && x.m === 2 && x.midi === 76).upQ, clean: 4.75 },
   { id: 'MUT-GATE-TIES', why: 'follow mode (FOLLOW_TIE) still skips a tie that leads nowhere',
-    edits: [['if (strikeTies ? !struck(plan, n) : n.tieStop) return;', 'if (n.tieStop) return;']],
+    edits: [['if (strikeTies ? !struck(plan, n) && !(run.jumped && tieBrokenAtArrival(plan, run.from, n)) : n.tieStop) return;', 'if (n.tieStop) return;']],
     probe: PL => PL.followGates(PL.build(fx('ties-edge')), 'both', { ties: true }).length, clean: 9 },
   { id: 'MUT-GATE-VISIT', why: 'follow mode (FOLLOW_REPEAT) loses track of which visit a gate belongs to',
     edits: [['last.b = v.startQ + v.lenQ; last.to = k; }', 'last.b = v.startQ + v.lenQ; }']],
-    probe: PL => PL.followGates(PL.build(sg('repeats-simple')), 'both', { repeats: true }).map(x => x.visit).join(','), clean: '0,1,2,3,4' }
+    probe: PL => PL.followGates(PL.build(sg('repeats-simple')), 'both', { repeats: true }).map(x => x.visit).join(','), clean: '0,1,2,3,4' },
+  /* G11a-4: the tie at a jump (fixture ds-al-coda-repeat-volta: bar 6 ends on a D5 tied into bar 7, the coda; the way back goes 5 -> 7) */
+  { id: 'MUT-TIE-ARRIVAL', why: 'a note tied from a bar the way back did not come from is carried into all the same: the coda starts with a silent note',
+    edits: [['if (!struck(plan, n) && !(jumping && v.jumped && tieBrokenAtArrival(plan, vk, n))) continue;', 'if (!struck(plan, n)) continue;']],
+    probe: PL => PL.build(pf('ds-al-coda-repeat-volta'), { jumps: 'once' }).strikes.filter(s => s.m === 7 && s.midi === 74).length, clean: 1 },
+  { id: 'MUT-TIE-CUT', why: 'the note before the sign is held for the whole chain: it rings on into the bar the way back turns to',
+    edits: [['return cut || !plan.hold.has(n.head) ? Math.max(0.05, q) : holdOf(plan, n);', 'return holdOf(plan, n);']],
+    probe: PL => PL.build(pf('ds-al-coda-repeat-volta'), { jumps: 'once' }).strikes.find(s => s.m === 6 && s.midi === 74 && !s.visit.leg).heldQ, clean: 1 },
+  { id: 'MUT-GATE-ARRIVAL', why: 'follow mode does not ask the note the clock strikes again at the arrival of a jump',
+    edits: [['!(run.jumped && tieBrokenAtArrival(plan, run.from, n))', '!(false && run.jumped && tieBrokenAtArrival(plan, run.from, n))']],
+    probe: PL => PL.followGates(PL.build(pf('ds-al-coda-repeat-volta'), { jumps: 'once' }), 'both', { repeats: true, ties: true }).filter(x => x.m === 7 && x.notes.some(n => n.midi === 74)).length, clean: 1 },
+  { id: 'MUT-JUMPED-TOCODA', why: 'the bar a To Coda turns to is not known to be an arrival: its tied-to note stays silent',
+    edits: [["if (toCoda) { i = toCoda.to; arriving = true;", 'if (toCoda) { i = toCoda.to;']],
+    probe: PL => PL.build(pf('ds-al-coda-repeat-volta'), { jumps: 'once' }).strikes.filter(s => s.m === 7 && s.midi === 74).length, clean: 1 },
+  { id: 'MUT-HELD-GRACE', why: 'a note an unslashed grace shortened is still drawn at its written length',
+    edits: [['s.heldQ = Math.max(0.05, s.heldQ - spent); });', '});']],
+    probe: PL => { const s = strike(PL, fx('grace-notes'), { graces: 'play' }, x => !x.grace && x.m === 1 && x.midi === 77); return s.heldQ; }, clean: 1.5 }
 ];
 
 test('MUT-NOOP: a comment changes nothing (the control)', () => {
@@ -158,7 +175,7 @@ MUTATIONS.forEach(m => {
 test('every mutation is a distinct anchor and the table is not shrinking quietly', () => {
   const ids = MUTATIONS.map(m => m.id);
   assert.equal(new Set(ids).size, ids.length);
-  assert.ok(MUTATIONS.length >= 27, MUTATIONS.length + ' mutations');
+  assert.ok(MUTATIONS.length >= 32, MUTATIONS.length + ' mutations');
   const anchors = MUTATIONS.map(m => m.edits[0][0]);
   assert.equal(new Set(anchors).size, anchors.length, 'no two mutations share an anchor');
 });

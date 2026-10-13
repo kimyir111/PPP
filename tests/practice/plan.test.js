@@ -14,6 +14,7 @@ const T = require('../timing.js');
 const { SG, PLAN, fixtureGraph, fixtureText, graphOfText, order, numbers } = H;
 const sgFixture = name => H.graphOfText(require('fs').readFileSync(require('path').join(H.REPO, 'tests', 'scoregraph', 'fixtures', 'xml', name + '.musicxml'), 'utf8'), name);
 const eFixture = name => H.graphOfText(require('fs').readFileSync(require('path').join(H.REPO, 'tests', 'engrave', 'fixtures', 'e', name + '.musicxml'), 'utf8'), name);
+const pFixture = name => H.graphOfText(require('fs').readFileSync(require('path').join(H.FIX, 'parity', name + '.musicxml'), 'utf8').split(String.fromCharCode(13, 10)).join(String.fromCharCode(10)), name);
 const strikes = (plan, f) => plan.strikes.filter(f || (() => true)).map(s => [s.q, s.upQ, s.midi, s.vel]);
 const R = x => H.round(x, 6);
 
@@ -164,6 +165,51 @@ test('ROW jumps: the options are checked (a typo is an error, not a silent no)',
   assert.throws(() => PLAN.build(g, { graces: 'yes' }), e => e.code === 'E-OPTION');
   assert.throws(() => PLAN.build(g, { defaultQpm: 0 }), e => e.code === 'E-OPTION');
   assert.throws(() => PLAN.build(g, { defaultQpm: 'fast' }), e => e.code === 'E-OPTION');
+});
+
+/* G11a-4: the tie at a jump. Fixture parity/ds-al-coda-repeat-volta: bar 6 ends on a D5 tied into bar 7, the coda; written order 1..9, and the way back goes 5 -> 7. */
+test('ROW jumps (tie at a jump): the way back strikes a note tied from a bar it did not come from, and the note before the sign is held for its own length', () => {
+  const g = pFixture('ds-al-coda-repeat-volta');
+  const D5 = (plan, m) => plan.strikes.filter(s => s.m === m && s.midi === 74 && !s.grace);
+  /* the old player's order (jumps off): bar 6 is followed by bar 7, so the tie is a tie - held for 2, and bar 7's D5 is carried into */
+  const off = PLAN.build(g);
+  assert.equal(numbers(off), '1 2 3 4 2 3 5 6 7 8 9');
+  assert.deepEqual(D5(off, 6).map(s => [s.heldQ, s.upQ - s.q]), [[2, 2]], 'held for the chain: this quarter and the next bar');
+  assert.equal(D5(off, 7).length, 0, 'the D5 of the coda is carried into, not struck');
+  /* as an engraver reads it: ... 6 | 2 3 5 (To Coda) 7 8 9 - bar 6 is followed by bar 2, bar 7 comes from bar 5 */
+  const on = PLAN.build(g, { jumps: 'once' });
+  assert.equal(order(on), "1 2 3 4 2^2 3^2 5^2 6^2 2' 3' 5' 7' 8' 9'");
+  assert.deepEqual(on.visits.map(v => v.jumped), [false, false, false, false, false, false, false, false, true, false, false, true, false, false],
+    'the arrivals: the segno bar after the D.S., the coda after the To Coda');
+  assert.deepEqual(D5(on, 6).map(s => [s.heldQ, s.upQ - s.q]), [[1, 1]], 'bar 6 is followed by the segno bar, not by the coda: the D5 sounds its own quarter and no more');
+  const coda = D5(on, 7);
+  assert.equal(coda.length, 1, 'a tie that leads nowhere strikes: the D5 of the coda sounds');
+  assert.deepEqual([coda[0].visit.leg, coda[0].visit.jumped, coda[0].heldQ, coda[0].q], [1, true, 1, on.visits[11].soundQ], 'at the arrival, for its own quarter');
+  /* the note-level fields the old readers use are the old ones: the chain is still the chain */
+  assert.equal(on.cont.size, 1);
+  assert.deepEqual([...on.hold.values()], [2]);
+});
+
+test('ROW jumps (tie at a jump): the tie of a repeat that is played again is the old players (kept), and a tie inside one bar is never cut', () => {
+  /* the arrival rule belongs to the jump, not to the repeat: a plan with no jump taken is the old plan, tie by tie */
+  for (const name of ['tie-across-repeat-volta', 'pickup-repeat', 'nested-repeats-voltas', 'dangling-ties']) {
+    const g = pFixture(name);
+    assert.deepEqual(H.canon(PLAN.build(g, { jumps: 'once' })), H.canon(PLAN.build(g)), name + ': no sign, no change');
+  }
+  /* the two D.S./D.C. pieces of the G11a-1 fixtures hold no tie over the sign: the plan is the way back the old plan gives for each bar */
+  const g = fixtureGraph('jump-ds-al-coda');
+  const on = PLAN.build(g, { jumps: 'once' });
+  assert.equal(on.strikes.every(s => s.heldQ === PLAN.holdOf(on, s.note)), true, 'heldQ is the hold of the note');
+});
+
+test('ROW jumps (tie at a jump): follow mode asks exactly what the clock strikes at the arrival (FOLLOW_REPEAT + FOLLOW_TIE), and not otherwise', () => {
+  const g = pFixture('ds-al-coda-repeat-volta');
+  const on = PLAN.build(g, { jumps: 'once' });
+  const asked = gates => gates.filter(x => x.m === 7 && x.notes.some(n => n.midi === 74)).length;
+  assert.equal(asked(PLAN.followGates(on, 'both', { repeats: true, ties: true })), 1, 'the D5 of the coda is asked once, on the way back (the written bar 7 is not on the first leg)');
+  assert.equal(asked(PLAN.followGates(on, 'both', { repeats: true })), 0, 'with the tie option off the old rule stands: a tied-to note is not asked');
+  const first = PLAN.followGates(on, 'both', { repeats: true, ties: true }).filter(x => x.m === 6 && x.notes.some(n => n.midi === 74));
+  assert.equal(first.length, 1, 'the D5 of bar 6 (the note before the sign) is asked where bar 6 is played, once');
 });
 
 /* ====================================================================== struck or tied */

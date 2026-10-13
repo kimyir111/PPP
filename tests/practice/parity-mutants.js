@@ -45,8 +45,12 @@ const ROWS = [
   ['PM20', false, 'the jumps are on unless they are asked off', [["jumps: o.jumps === 'once' ? 'once' : false", "jumps: o.jumps === false ? false : 'once'"]], ''],
   ['PM21', false, 'a grace that is crushed in does not shorten the note before it', [['            s.upQ = cut;', '            s.upQ = s.upQ;']], ''],
   ['PM22', false, 'an unslashed grace is played on the beat and the main note does not wait for it', [['mains.forEach(s => { s.q = base + spent;', 'mains.forEach(s => { s.q = s.q;']], ''],
-  ['PM23', false, 'follow mode (FOLLOW_TIE) still skips a tie that leads nowhere', [['if (strikeTies ? !struck(plan, n) : n.tieStop) return;', 'if (n.tieStop) return;']], ''],
+  ['PM23', false, 'follow mode (FOLLOW_TIE) still skips a tie that leads nowhere', [['if (strikeTies ? !struck(plan, n) && !(run.jumped && tieBrokenAtArrival(plan, run.from, n)) : n.tieStop) return;', 'if (n.tieStop) return;']], ''],
   ['PM24', false, 'follow mode (FOLLOW_REPEAT) loses track of which stretch a gate belongs to', [['last.b = v.startQ + v.lenQ; last.to = k; }', 'last.b = v.startQ + v.lenQ; }']], 'a detail of the gate (its visit and q) that the app\'s gates do not have, so the oracle cannot compare it; plan.test.js MUT-GATE-VISIT reads it'],
+  ['PM26', false, 'a note tied from a bar the way back did not come from stays silent at the arrival (the tie at a jump)', [['if (!struck(plan, n) && !(jumping && v.jumped && tieBrokenAtArrival(plan, vk, n))) continue;', 'if (!struck(plan, n)) continue;']], ''],
+  ['PM27', false, 'the note before the sign is held through a tie into a bar the way back does not go to', [['return cut || !plan.hold.has(n.head) ? Math.max(0.05, q) : holdOf(plan, n);', 'return holdOf(plan, n);']], ''],
+  ['PM28', false, 'follow mode does not ask the note the clock strikes again at the arrival of a jump', [['!(run.jumped && tieBrokenAtArrival(plan, run.from, n))', '!(false && run.jumped && tieBrokenAtArrival(plan, run.from, n))']], ''],
+  ['PM29', false, 'the bar a To Coda turns to is not an arrival', [["if (toCoda) { i = toCoda.to; arriving = true;", 'if (toCoda) { i = toCoda.to;']], ''],
   ['PM25', false, 'a pair of graces is played backwards', [['grp.notes.sort((a, c) => a.grace.order - c.grace.order);', 'grp.notes.sort((a, c) => c.grace.order - a.grace.order);']], 'which grace sounds first is a detail of GRACE that the cause table does not look into (only where and how much may move); plan.test.js MUT-GRACE-ORDER reads it']
 ];
 
