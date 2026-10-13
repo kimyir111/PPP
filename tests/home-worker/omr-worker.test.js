@@ -240,7 +240,7 @@ async function queued(S, user, w, n, o) {
       const { w } = newWorker(S, 'u1', st, null, { noPriority: false });
       const { id } = await queued(S, 'u1', w, 1, { w: 940 });
       await w.processJob((await w.poll(true)).job);
-      ok('while the engine runs, the worker itself is below normal priority (what it starts inherits it), and it is put back after', seen === os.constants.priority.PRIORITY_BELOW_NORMAL && os.getPriority(process.pid) === before && jobOf(S, id).status === 'done', seen + ' ' + before + ' ' + os.getPriority(process.pid));
+      ok(process.platform === 'win32' ? 'while the engine runs, the worker itself is below normal priority (what it starts inherits it), and it is put back after' : 'off Windows the worker leaves its own priority alone (it could not raise it again; the engine\'s process is lowered instead) - the same before, during and after', (process.platform === 'win32' ? seen === os.constants.priority.PRIORITY_BELOW_NORMAL : seen === before) && os.getPriority(process.pid) === before && jobOf(S, id).status === 'done', seen + ' ' + before + ' ' + os.getPriority(process.pid));
     } finally { await S.close(); }
   }
   {

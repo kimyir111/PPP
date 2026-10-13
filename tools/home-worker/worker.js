@@ -643,7 +643,10 @@ function createWorker(cfg, deps) {
     return { buf: r.raw, type: info.type };
   }
   function lowerPriority() {
-    /* the engine (and what it starts) inherits it: Windows gives a child the below-normal class of its parent. Put back as it was. */
+    /* the engine (and what it starts) inherits it: Windows gives a child the below-normal class of its parent. Put back as it was. Only on Windows: on Linux and macOS a process
+       cannot raise its own priority again without privileges, so the worker would stay lowered for every conversion after the score; there the engine's own process is
+       lowered (omr/engine.js, lowPriority) and the worker is left as it is. */
+    if (process.platform !== 'win32') return () => {};
     let was = null;
     try { was = os.getPriority(process.pid); os.setPriority(process.pid, os.constants.priority.PRIORITY_BELOW_NORMAL); } catch (e) { was = null; }
     return () => { if (was !== null) { try { os.setPriority(process.pid, was); } catch (e) { /* as it is */ } } };
