@@ -6632,7 +6632,8 @@ class PerformanceEngine {
     /* G11a-4: a grace note sounds and is drawn, and is never asked (G11 U2: graces are not judged); vIdx is the visit (a bar played twice is two visits of one bar, mIdx) */
     const visitAt = new Map((plan.visits || []).map((v, k) => [v, k]));
     this.expected = (plan.strikes || [])
-      .filter(s => !s.grace && this._handOk(s.note, run.hands))
+      .filter(s => !s.grace)
+      .filter(s => this._handOk(s.note, run.hands))
       .map((s, i) => ({
         id: i,
         note: s.note,
