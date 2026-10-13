@@ -243,10 +243,10 @@ function midiFile() {
   const trk = Buffer.from([0x4d, 0x54, 0x72, 0x6b, (len >>> 24) & 255, (len >>> 16) & 255, (len >>> 8) & 255, len & 255].concat(track));
   return Buffer.concat([hdr, trk]);
 }
-test('a MIDI file added right after load (prefetch off) needs audio-score.js: it is asked for by the import, and the song opens', async () => {
+test('a MIDI file added right after load (prefetch off, audio-score.js held 2.5 s) needs audio-score.js: the import waits for it by asking, and the song opens', async () => {
   const file = path.join(os.tmpdir(), 'ppp-split-' + process.pid + '.mid');
   fs.writeFileSync(file, midiFile());
-  const o = await open({ prefetch: false });
+  const o = await open({ prefetch: false, hold: GROUP_URL.audio, holdMs: 2500 });
   try {
     const before = await lazy(o.page);
     assert.ok(before.groups.includes('audio:no'), 'audio-score.js is not in yet');

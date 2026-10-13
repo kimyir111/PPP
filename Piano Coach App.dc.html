@@ -6126,7 +6126,16 @@ function applyRecordingMark(source, built) {
   return source;
 }
 
+/* G13-4e: the ScoreGraph library and the engraver's source (engraveRemember reads it after every import; for a MIDI file also audio-score.js) may not be in the page yet - they come after the first
+   paint, or when a screen asks for them. The entry points that read them synchronously ask first, so that the read is never a synchronous load (PPP_LAZY.ensure; with PPP.split 'off' it is not there
+   to wait for). */
+async function needScoreGraph(audio) {
+  if (!lazyOn()) return;
+  const ok = await window.PPP_LAZY.ensure(audio ? ['score', 'engrave', 'audio'] : ['score', 'engrave']);
+  if (!ok) throw importError('score-not-loaded', tx('The files needed to write the score could not be loaded. Try again in a moment.'));
+}
 async function importToGraph(bytes, name, kind) {
+  await needScoreGraph(kind === 'midi');
   if (kind === 'midi') {
     let r;
     try { r = PPPAudioScore.fromMidi(bytes, { scoreId: scoreIdFor(name), sourceName: name, title: null }); }
@@ -18604,6 +18613,7 @@ class Component extends DCLogic {
     fetch('catalog/method/' + p.file, { cache: 'force-cache' })
       .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
       .then(buf => /\.mxl$/i.test(p.file) ? readMxl(buf) : new TextDecoder().decode(buf))
+      .then(xml => needScoreGraph().then(() => xml))
       .then(xml => {
         const score = scoreFromXml(xml, title);
         if (!score || !score.measures.length || !score.notes.some(n => !n.rest)) throw new Error('empty');

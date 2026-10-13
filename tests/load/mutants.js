@@ -130,7 +130,8 @@ const M = [
   ['S6', 'Piano Coach App.dc.html', 'PPP.split says on whatever this load did', ["get split() { return window.PPP_LAZY ? window.PPP_LAZY.mode : 'off'; },", "get split() { return 'on'; },"], SPLITB],
   ['S7', 'Piano Coach App.dc.html', 'the rest of the code is never prefetched', ["if (lazyOn()) window.PPP_LAZY.start();", ""], SPLITB],
   ['S8', 'Piano Coach App.dc.html', 'the piano recordings do not wait for the code', ["Promise.race([Promise.all([window.PPP_CJK_SETTLED, codeIn()]), new Promise(r => setTimeout(r, 7000))])", "Promise.race([window.PPP_CJK_SETTLED, new Promise(r => setTimeout(r, 7000))])"], SPLITB],
-  ['S10', 'Piano Coach App.dc.html', 'the head names the score library as a plain script again (it is fetched before the paint)', ["<noscript data-ppp-lazy=\"score\" data-globals=\"PPPScoreGraph PPPScoreGraphModules\">\n", "<script src=\"./scoregraph/rational.js?v=8\"></script><noscript data-ppp-lazy=\"score\" data-globals=\"PPPScoreGraph PPPScoreGraphModules\">\n"], SPLITB]
+  ['S10', 'Piano Coach App.dc.html', 'the head names the score library as a plain script again (it is fetched before the paint)', ["<noscript data-ppp-lazy=\"score\" data-globals=\"PPPScoreGraph PPPScoreGraphModules\">\n", "<script src=\"./scoregraph/rational.js?v=8\"></script><noscript data-ppp-lazy=\"score\" data-globals=\"PPPScoreGraph PPPScoreGraphModules\">\n"], SPLITB],
+  ['S11', 'Piano Coach App.dc.html', 'a file import reads the library and audio-score.js without asking for them first', ["async function importToGraph(bytes, name, kind) {\n  await needScoreGraph(kind === 'midi');", "async function importToGraph(bytes, name, kind) {"], SPLITB],
 ];
 
 function run(m, dir) {
