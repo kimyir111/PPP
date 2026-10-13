@@ -12,11 +12,18 @@ const { spawn } = require('child_process');
 /* PPP_LOAD_ROOT: run the tests against a copy of the tree (tests/load/mutants.js plants a defect in a copy and expects the tests to notice) */
 const REPO = process.env.PPP_LOAD_ROOT ? path.resolve(process.env.PPP_LOAD_ROOT) : path.resolve(__dirname, '..', '..');
 
-function freePort() {
+function listenOn(port) {
   return new Promise((resolve, reject) => {
-    const s = net.createServer().listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); });
+    const s = net.createServer().listen(port, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); });
     s.on('error', reject);
   });
+}
+/* PPP_PORT_RANGE=9760-9799 keeps a machine that reserves a band of ports for its suites inside it (the same switch as tests/serve-free.js); without it the operating system chooses */
+async function freePort() {
+  const m = /^(\d+)-(\d+)$/.exec(process.env.PPP_PORT_RANGE || '');
+  if (!m) return listenOn(0);
+  for (let p = +m[1]; p <= +m[2]; p++) { try { return await listenOn(p); } catch (e) { /* taken: the next one */ } }
+  throw new Error('no free port in ' + process.env.PPP_PORT_RANGE);
 }
 
 /* a running server.js. `root` is the folder holding server.js (default: this tree). */

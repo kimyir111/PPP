@@ -28,17 +28,26 @@ const KEEP_8788 = process.env.PPP_KEEP_8788 === '1';
 /* PPP_PRACTICE=graph (G11a-3): every document the suite opens starts on PPP.practice 'graph' (the remembered choice, set before the app runs - the same way PPP_STRICT works), so a
    suite written for the legacy player is run against the graph plan without being edited. Nothing set (or any other value): the page's own default. */
 const PRACTICE = process.env.PPP_PRACTICE === 'graph' ? 'graph' : '';
+/* PPP_SPLIT=on|off (G13-4e): every document the suite opens starts with PPP.split remembered as that (localStorage 'ppp.split.v1', set before the app runs), so a suite is run on
+   the lazy page or on the page with every script in its head without being edited. PPP_SPLIT_START=0 also keeps the idle prefetch from starting ('ppp.splitStart'): only what the
+   page itself asks for is loaded, and every read that came too early shows in the "split sync loads" line (a caller without PPP_LAZY.ensure). Nothing set: the page's own default. */
+const SPLIT = process.env.PPP_SPLIT === 'on' || process.env.PPP_SPLIT === 'off' ? process.env.PPP_SPLIT : '';
+const SPLIT_START = process.env.PPP_SPLIT_START === '0' ? '0' : '';
 const fix = u => (typeof u === 'string' ? u.replace(/(127\.0\.0\.1|localhost):8777/g, '127.0.0.1:' + TO) : u);
 const helperUrl = u => /^https?:\/\/(127\.0\.0\.1|localhost):8788\//.test(String(u || ''));
 
-const summary = { pages: 0, versions: new Set(), draws: 0, fallbacks: {}, fallbackWarnings: 0, fallbackTexts: [], songs: [], errors: 0, practice: { modes: new Set(), graph: 0, fallback: 0, reasons: {} } };
+const summary = { syncLoads: new Map(), pages: 0, versions: new Set(), draws: 0, fallbacks: {}, fallbackWarnings: 0, fallbackTexts: [], songs: [], errors: 0, practice: { modes: new Set(), graph: 0, fallback: 0, reasons: {} } };
 async function collect(p) {
   try {
     if (p.isClosed && p.isClosed()) return;
     const r = await Promise.race([
       p.evaluate(() => {
+        /* a read of a lazily loaded global must not be the thing that loads it (G13-4e) */
+        const pk = n => (window.PPP_LAZY && window.PPP_LAZY.peek ? window.PPP_LAZY.peek(n) : window[n]);
+        const E = pk('PPPEngrave');
         const S = window.PPPEngravePage && window.PPPEngravePage.stats;
-        return { v: window.PPPEngrave && window.PPPEngrave.version,
+        const sync = window.PPP_LAZY && window.PPP_LAZY.status ? window.PPP_LAZY.status().syncLog : [];
+        return { sync, v: E && E.version,
           draws: S ? S.draws : 0, fb: window.PPP && window.PPP.engraveStats ? window.PPP.engraveStats.fallbacks : null,
           songs: window.PPP && window.PPP.engraveStats ? Object.keys(window.PPP.engraveStats.bySong).map(k => k + ' ' + window.PPP.engraveStats.bySong[k]) : [],
           pr: window.PPP && window.PPP.practiceStats ? { mode: window.PPP.practice, g: window.PPP.practiceStats.graph, f: window.PPP.practiceStats.practiceFallback.total, r: window.PPP.practiceStats.practiceFallback.reasons } : null };
@@ -46,6 +55,11 @@ async function collect(p) {
       new Promise(res => setTimeout(() => res(null), 1500))
     ]);
     if (!r) return;
+    (r.sync || []).forEach(s => {
+      const top = String(s.stack || '').split('\n').map(l => l.trim().replace(/^at /, '').replace(/https?:\/\/[^/]+/g, '').replace(/\(eval at [^)]*\), /g, '')).slice(0, 3).join(' < ');
+      const k = s.group + ' ' + (s.global || '') + ' <- ' + top;
+      summary.syncLoads.set(k, (summary.syncLoads.get(k) || 0) + 1);
+    });
     if (r.v) summary.versions.add(r.v);
     summary.draws += r.draws || 0;
     Object.keys(r.fb || {}).forEach(k => { summary.fallbacks[k] = (summary.fallbacks[k] || 0) + r.fb[k]; });
@@ -73,6 +87,11 @@ const patchPage = p => {
     p.evaluateOnNewDocument(() => {
       try { localStorage.setItem('ppp.strictEngrave', '1'); } catch (e) { /* no storage */ }
     }).catch(() => {});
+  }
+  if (SPLIT || SPLIT_START) {
+    p.evaluateOnNewDocument((s, st) => {
+      try { if (s) localStorage.setItem('ppp.split.v1', s); if (st) localStorage.setItem('ppp.splitStart', st); } catch (e) { /* no storage */ }
+    }, SPLIT, SPLIT_START).catch(() => {});
   }
   if (PRACTICE) {
     p.evaluateOnNewDocument(v => {
@@ -167,6 +186,10 @@ process.on('exit', () => {
     ', engraver draws ' + summary.draws + ', fallbacks ' + fb + ' (warnings ' + summary.fallbackWarnings + ')' +
     ', pages ' + summary.pages + '\n');
   summary.fallbackTexts.forEach(t => process.stdout.write('[with-port]   ' + t + '\n'));
+  if (summary.syncLoads.size) {
+    process.stdout.write('[with-port]   split sync loads (a read of a lazy global before it was in): ' + summary.syncLoads.size + ' distinct\n');
+    [...summary.syncLoads.entries()].slice(0, 25).forEach(([k, n]) => process.stdout.write('[with-port]     x' + n + ' ' + k.slice(0, 420) + '\n'));
+  }
   if (summary.songs.length) process.stdout.write('[with-port]   songs: ' + summary.songs.join('; ') + '\n');
   /* G11a-3: which practice plan the suite ran on, and what the graph plan did (plans made from a graph; plans that stayed legacy, by reason) */
   const pr = summary.practice;

@@ -13,9 +13,9 @@ const { spawnSync } = require('child_process');
 
 const REPO = path.resolve(__dirname, '..', '..');
 const SERVER = ['server.js', 'static-allow.js', 'static-assets.js', 'share-guest.js', 'home-jobs.js', 'home-jobs-store.js', 'home-result.js', 'signup-limit.js', 'server-stats.js'];
-const ROOT_FILES = ['Piano Coach App.dc.html', 'i18n.js', 'support.js', 'lessons.js', 'course.js', 'score-search.js', 'library-backup.js', 'audio-score.js', 'package.json', 'render.yaml'];
-const DIRS = ['scoregraph', 'playability', 'difficulty', 'songgraph', 'arrangement', 'realize', 'engrave', 'vendor', 'i18n'];
-const SINGLES = ['audio/piano/A0.mp3', 'assets/hands/hand-right-black.png', 'catalog/shared-seeds.json'];
+const ROOT_FILES = ['Piano Coach App.dc.html', 'i18n.js', 'lazy-load.js', 'support.js', 'lessons.js', 'course.js', 'score-search.js', 'library-backup.js', 'audio-score.js', 'package.json', 'render.yaml'];
+const DIRS = ['scoregraph', 'playability', 'difficulty', 'songgraph', 'arrangement', 'realize', 'engrave', 'vendor', 'i18n', 'candidates', 'critics', 'repair', 'rec'];
+const SINGLES = ['audio/piano/A0.mp3', 'assets/hands/hand-right-black.png', 'catalog/shared-seeds.json', 'catalog/hymns/all-creatures.musicxml', 'difficulty/tools/dataset/method-books.json'];
 
 function copyDir(from, to) {
   fs.mkdirSync(to, { recursive: true });
@@ -37,6 +37,7 @@ function makeCopy() {
   return dir;
 }
 
+const SPLITN = 'lazy-load.test.js', SPLITB = 'load-app/split.test.js';
 const LAZY = 'i18n-lazy.test.js', HASH = 'content-hash.test.js', FONTS = 'fonts.test.js', SAMPLES = 'load-app/samples.test.js', TEMPLATE = 'load-app/template.test.js', CJK = 'load-app/cjk-fonts.test.js';
 
 /* id, file, what the mutant breaks, [from, to] or a list of them (each replaced once), the test that must fail */
@@ -69,7 +70,7 @@ const M = [
   /* G13-4d: the piano recordings, in the app's componentDidMount (a browser test: load-app/samples.test.js; not part of the unmutated-copy check above) */
   ['D1', 'Piano Coach App.dc.html', 'the recordings are asked for at mount again (not after the load event)', ["if (document.readyState === 'complete') start(); else window.addEventListener('load', start, { once: true });", "go();"], SAMPLES],
   ['D2', 'Piano Coach App.dc.html', 'the recordings do not wait for the CJK stylesheet', ["idle(() => fontsIn().then(go))", "idle(go)"], SAMPLES],
-  ['D3', 'Piano Coach App.dc.html', 'a stylesheet that never answers holds the recordings for ever', ["Promise.race([window.PPP_CJK_SETTLED, new Promise(r => setTimeout(r, 7000))])", "window.PPP_CJK_SETTLED"], SAMPLES],
+  ['D3', 'Piano Coach App.dc.html', 'a stylesheet that never answers holds the recordings for ever', ["Promise.race([Promise.all([window.PPP_CJK_SETTLED, codeIn()]), new Promise(r => setTimeout(r, 7000))])", "Promise.all([window.PPP_CJK_SETTLED, codeIn()])"], SAMPLES],
   ['D4', 'Piano Coach App.dc.html', 'a tap no longer starts the recordings', ["this._wakeAt = (window.performance || Date).now();\n    PianoSamples.load();\n    if (!ac) return;", "this._wakeAt = (window.performance || Date).now();\n    if (!ac) return;"], SAMPLES],
   ['D5', 'Piano Coach App.dc.html', 'no stand-in: a note with no recording in is silent', ["    } else {\n      this.synth(voice, midi, t, peak, tone);\n    }", "    } else {\n      voice.srcs.push(ac.createBufferSource());\n    }"], SAMPLES],
   /* G13-4c (template re-fetch): the line in the head that turns the runtime's second fetch of the page off */
@@ -100,7 +101,36 @@ const M = [
   ['C21', 'static-assets.js', 'a woff2 is gzipped again', ["&& !/^font\\//.test(type) && acceptsGzip", "&& acceptsGzip"], HASH],
   ['C18', 'i18n.js', 'a hashed catalog is fetched with cache: no-store (the browser never keeps it)', ["fetch(url, /[?]h=[0-9a-f]{12}$/.test(url) ? undefined : { cache: 'no-store' })", "fetch(url, { cache: 'no-store' })"], LAZY],
   ['C19', 'i18n.js', 'the catalog url ignores window.PPP_HASHES', ["var hash = hashes && hashes['i18n/' + loc + '.json'];", "var hash = null;"], LAZY],
-  ['C20', 'i18n.js', 'the hash of i18n.js itself is passed on as the catalog\'s', [".replace(/\\?$|#$/, '').replace(/\\?h=[0-9a-f]+/, '')", ".replace(/\\?$|#$/, '')"], LAZY]
+  ['C20', 'i18n.js', 'the hash of i18n.js itself is passed on as the catalog\'s', [".replace(/\\?$|#$/, '').replace(/\\?h=[0-9a-f]+/, '')", ".replace(/\\?$|#$/, '')"], LAZY],
+  /* G13-4e: lazy-load.js (the module, tests/load/lazy-load.test.js) */
+  ['L1', 'lazy-load.js', 'a read of a global before its group is in answers undefined (no safety net)', ["loadSync(m.group, name);", ";"], SPLITN],
+  ['L2', 'lazy-load.js', 'the safety net loads a group without what it needs first', ["var list = closure([g.name]);", "var list = [g];"], SPLITN],
+  ['L3', 'lazy-load.js', 'a failed file is not asked for again', ["return afterPaint().then(attempt).then(function (ok) { return ok ? true : attempt(); });", "return afterPaint().then(attempt);"], SPLITN],
+  ['L4', 'lazy-load.js', 'the second ask is for the same url (a cached failure would answer it)', ["function urlOf(f) { return f.failures ? withRetry(f.url) : f.url; }", "function urlOf(f) { return f.url; }"], SPLITN],
+  ['L5', 'lazy-load.js', 'a group runs before the group it needs', ["var deps = g.after.map(function (n) { return byName[n]; }).filter(Boolean);", "var deps = [];"], SPLITN],
+  ['L6', 'lazy-load.js', 'a group whose scripts did not make its globals counts as in', ["if (!g.globals.every(present)) {", "if (false) {"], SPLITN],
+  ['L7', 'lazy-load.js', 'off still defers (the blocks are not written back)', ["if (mode === 'off') {\n      if (doc.readyState", "if (false) {\n      if (doc.readyState"], SPLITN],
+  ['L8', 'lazy-load.js', 'off writes the blocks after the page was parsed (document.write would blank it)', ["if (doc.readyState === 'loading') doc.write(el.textContent);", "doc.write(el.textContent);"], SPLITN],
+  ['L9', 'lazy-load.js', 'a remembered value that is garbage is taken for a choice', ["return m === 'on' || m === 'off' ? m : DEFAULT;", "return m || DEFAULT;"], SPLITN],
+  ['L10', 'lazy-load.js', 'peek loads the group (a readiness check starts a download)', ["function peek(name) { return managed[name] ? managed[name].value : win[name]; }", "function peek(name) { return win[name]; }"], SPLITN],
+  ['L11', 'lazy-load.js', 'the prefetch does not wait for the first paint', ["afterPaint().then(function () {\n      drain()", "Promise.resolve().then(function () {\n      drain()"], SPLITN],
+  ['L12', 'lazy-load.js', 'ensure does not wait for the first paint', ["return afterPaint().then(attempt).then(", "return attempt().then("], SPLITN],
+  ['L13', 'lazy-load.js', 'a download in flight is not shared (a second ask fetches every file again)', ["if (g.fetching) return g.fetching;", ""], SPLITN],
+  ['L15', 'lazy-load.js', 'the accessors stay after the group is in', ["g.globals.forEach(unmanage);", ""], SPLITN],
+  ['L16', 'lazy-load.js', 'a read from inside a running file starts a load of its own', ["if (mode !== 'on' || g.done || evaluating) return;", "if (mode !== 'on' || g.done) return;"], SPLITN],
+  ['L17', 'lazy-load.js', 'a refused synchronous load is asked again at every read', ["if (g.syncFailedAt && Date.now() - g.syncFailedAt < 5000) return;", ""], SPLITN],
+  ['L18', 'lazy-load.js', 'a tab in the background waits for ever for a paint', ["win.setTimeout(fire, hidden ? 1000 : 10000);", "win.setTimeout(fire, 1e9);"], SPLITN],
+  ['L19', 'lazy-load.js', 'the first-paint entry (a blank paint) is taken for Home', ["if (es[i].name === 'first-contentful-paint') {", "if (es[i].name === 'first-paint' || es[i].name === 'first-contentful-paint') {"], SPLITN],
+  /* G13-4e: the page's use of it (a browser test: load-app/split.test.js) */
+  ['S1', 'Piano Coach App.dc.html', 'a drawing waits for every group, the arranger and audio-score.js too', ["function loadEngrave() {\n  let wait = null;\n  if (lazyOn()) {", "function loadEngrave() {\n  let wait = null;\n  if (false) {"], SPLITB],
+  ['S2', 'Piano Coach App.dc.html', 'the readiness check reads a global (it loads the library at the first commit)', ["lazyPeek('PPPScoreGraph') && lazyPeek('PPPAudioScore')", "window.PPPScoreGraph && lazyPeek('PPPAudioScore')"], SPLITB],
+  ['S3', 'Piano Coach App.dc.html', 'loadScoreModules does not ask for the groups (an import runs on the safety net)', ["window.PPP_LAZY.ensure(LAZY_SCORE_GROUPS).then(ok => {", "Promise.resolve(true).then(ok => {"], SPLITB],
+  ['S4', 'Piano Coach App.dc.html', 'the backup module is loaded at every boot, not only for the note of a restore', ["    try { if (!window.sessionStorage.getItem('ppp-backup-flash')) return; } catch (e) { return; }\n", ""], SPLITB],
+  ['S5', 'Piano Coach App.dc.html', 'Piano Basics and Settings are drawn before their file is asked for', ["const need = s === 'learn' ? ['lessons'] : s === 'settings' ? ['backup'] : null;", "const need = null;"], SPLITB],
+  ['S6', 'Piano Coach App.dc.html', 'PPP.split says on whatever this load did', ["get split() { return window.PPP_LAZY ? window.PPP_LAZY.mode : 'off'; },", "get split() { return 'on'; },"], SPLITB],
+  ['S7', 'Piano Coach App.dc.html', 'the rest of the code is never prefetched', ["if (lazyOn()) window.PPP_LAZY.start();", ""], SPLITB],
+  ['S8', 'Piano Coach App.dc.html', 'the piano recordings do not wait for the code', ["Promise.race([Promise.all([window.PPP_CJK_SETTLED, codeIn()]), new Promise(r => setTimeout(r, 7000))])", "Promise.race([window.PPP_CJK_SETTLED, new Promise(r => setTimeout(r, 7000))])"], SPLITB],
+  ['S10', 'Piano Coach App.dc.html', 'the head names the score library as a plain script again (it is fetched before the paint)', ["<noscript data-ppp-lazy=\"score\" data-globals=\"PPPScoreGraph PPPScoreGraphModules\">\n", "<script src=\"./scoregraph/rational.js?v=8\"></script><noscript data-ppp-lazy=\"score\" data-globals=\"PPPScoreGraph PPPScoreGraphModules\">\n"], SPLITB]
 ];
 
 function run(m, dir) {
@@ -126,7 +156,7 @@ function run(m, dir) {
   const base = makeCopy();
   let bad = 0;
   try {
-    for (const t of [LAZY, HASH, FONTS]) {
+    for (const t of [LAZY, HASH, FONTS, SPLITN]) {
       const r = spawnSync(process.execPath, ['--test', '--test-timeout=20000', path.join(REPO, 'tests', 'load', t)], { env: Object.assign({}, process.env, { PPP_LOAD_ROOT: base }), encoding: 'utf8', timeout: 120000 });
       console.log((r.status === 0 ? 'ok      ' : 'FAIL    ') + 'unmutated copy: ' + t);
       if (r.status !== 0) { bad++; console.log((r.stdout || '').split('\n').filter(l => /✖|Error|expected|actual/.test(l)).slice(0, 12).join('\n')); }
