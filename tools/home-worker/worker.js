@@ -14,6 +14,11 @@
      node tools/home-worker/worker.js --log-file [file]       also append every line (the token is hidden as ever) to a file; by itself: worker.log next to the settings file (used by run-once-hidden.cmd)
      node tools/home-worker/worker.js --config <file>
 
+   G12-5, scores: a job of kind 'omr' is a printed score (a PDF or a photo the person's browser sent): claim -> fetch each page image from the site (GET /api/worker/jobs/<id>/pages/<n>, the
+   same token) -> Audiveris on it, one page at a time, below-normal priority, with the same call the local helper makes (omr/engine.js) -> the MusicXML of each page (every movement:
+   omr/helper-output.js) -> POST them. The pages are written under a name this script picks (page-1.png), read only by Audiveris, and removed with the scratch folder. A PC without
+   Audiveris says so at every claim (omr: false) and is never handed a score; "omr": false in the settings does the same on purpose.
+
    One job: claim -> download the audio (the site's /api/youtube-audio, as the page does) -> ffmpeg to a 44.1 kHz stereo WAV and a
    16 kHz mono WAV -> transcribe.py (the same call omr-service.js makes) -> the helper's ACCEPTED notes as { on, off, midi, vel }
    (the same conversion as review/h10/helper-heard.js: no pedal) and, G10a-1d, beat_track.py's beats and downbeats -> POST them. Every step has a timeout; a failure is
@@ -37,6 +42,10 @@ const REPO = path.resolve(__dirname, '..', '..');
 const VERSION = '1.0';
 let lastLog = null;      /* the log of this run (main sets it), so that even the last words of a crash reach the log file */
 const Result = require(path.join(REPO, 'home-result.js'));
+/* G12-5: the score's rules (what may be fetched and sent) are the site's own file, and the engine call is the local helper's own module */
+const Omr = require(path.join(REPO, 'home-omr.js'));
+let Engine = null;
+try { Engine = require(path.join(REPO, 'omr', 'engine.js')); } catch (e) { Engine = null; }
 const { convertHelperNotes } = require(path.join(REPO, 'review', 'h10', 'helper-heard.js'));
 
 const sleepPlain = ms => new Promise(r => setTimeout(r, ms));
@@ -96,6 +105,11 @@ const DEFAULTS = {
   idlePollSeconds: 0,
   activePollSeconds: 0,
   maxSeconds: Result.LIMITS.MAX_SECONDS,
+  /* G12-5: reading printed scores with Audiveris (a PC that has it says so at every claim). audiverisPath: the program, when it is not found by itself (PPP_AUDIVERIS, tools/audiveris/ next
+     to transcribe.py or this repository's, C:\Program Files\Audiveris). omr: false switches it off here. omrPageTimeoutSeconds: one page, the whole call. */
+  omr: true,
+  audiverisPath: '',
+  omrPageTimeoutSeconds: 600,
   maxAudioMB: 120,
   allowInsecure: false,
   keepScratch: false
@@ -150,6 +164,18 @@ function loadConfig(file, env) {
     if (!cfg.ss2Dir) cfg.ss2Dir = firstExisting(toolDirs.map(d => path.join(d, 'sheetsage2', 'config.json'))).replace(/[\\/]config\.json$/, '');
     if (!cfg.ss2Python) cfg.ss2Python = firstExisting([].concat(...toolDirs.map(d => [path.join(d, 'sheetsage2-venv', 'Scripts', 'python.exe'), path.join(d, 'sheetsage2-venv', 'bin', 'python')])));
   }
+  /* Audiveris, for scores (G12-5): the setting, PPP_AUDIVERIS, a tools folder beside transcribe.py / this repository / the song library / the transcription Python, then the places omr-service.js looks */
+  cfg.omr = cfg.omr !== false;
+  cfg.omrPageTimeoutSeconds = Math.max(60, Math.min(3600, +cfg.omrPageTimeoutSeconds || 600));
+  if (cfg.omr) {
+    const toolDirs = [path.join(path.dirname(cfg.transcribePy), 'tools'), path.join(REPO, 'tools')]
+      .concat(cfg.songLib ? [path.dirname(cfg.songLib)] : [])
+      .concat(cfg.pythonPath ? [path.dirname(path.dirname(path.dirname(cfg.pythonPath)))] : []);
+    const explicit = firstExisting([String(cfg.audiverisPath || '').trim(), env.PPP_AUDIVERIS]);
+    cfg.audiverisPath = explicit
+      || firstExisting([].concat(...toolDirs.map(d => [path.join(d, 'audiveris', 'Audiveris', 'Audiveris.exe'), path.join(d, 'audiveris', 'Audiveris', 'bin', 'Audiveris.bat')])))
+      || (Engine ? Engine.findAudiveris('', REPO) || '' : '');
+  } else cfg.audiverisPath = '';
   if (!cfg.kongCheckpoint) cfg.kongCheckpoint = env.PPP_TRANSCRIBE_CHECKPOINT || findKongCheckpoint(path.join(path.dirname(cfg.transcribePy), 'tools', 'piano-transcription')) || findKongCheckpoint(path.join(REPO, 'tools', 'piano-transcription'));
   cfg.maxSeconds = Math.max(30, Math.min(Result.LIMITS.MAX_SECONDS, +cfg.maxSeconds || Result.LIMITS.MAX_SECONDS));
   cfg.idlePollSeconds = Math.max(0, Math.min(86400, +cfg.idlePollSeconds || 0));
@@ -233,9 +259,10 @@ function request(cfg, method, p, o) {
       res.on('data', c => { n += c.length; if (n > 8 * 1024 * 1024) { req.destroy(new NetError('the answer was larger than 8 MB')); return; } chunks.push(c); });
       res.on('end', () => {
         clearTimeout(timer);
-        const text = Buffer.concat(chunks).toString('utf8');
+        const raw = Buffer.concat(chunks);
+        const text = raw.toString('utf8');
         let json = null; try { json = JSON.parse(text); } catch (e) { json = null; }
-        resolve({ status: res.statusCode, body: json, text: text, headers: res.headers });
+        resolve({ status: res.statusCode, body: json, text: o.binary ? '' : text, headers: res.headers, raw: o.binary ? raw : null });
       });
       res.on('error', e => { clearTimeout(timer); reject(new NetError(e.code || e.message)); });
     });
@@ -409,6 +436,10 @@ function createWorker(cfg, deps) {
   };
   const scratchRoot = cfg.scratchDir;
   const stats = { done: 0, failed: 0, checks: 0 };
+  /* can this PC read a printed score? Audiveris is there and the settings do not switch it off. Told to the site at every claim (omr), so a PC without it is never handed one. */
+  const omrAble = () => cfg.omr !== false && !!Engine && !!cfg.audiverisPath && fs.existsSync(cfg.audiverisPath);
+  const recognise = deps.recognisePage || ((img, outDir, o) => Engine.recognisePage(cfg.audiverisPath, img, outDir, o));
+  let engineVersionCache;
 
   /* a crash or a power cut leaves a job-XXXXXX folder (audio, WAVs) behind: at the start, those older than 2 hours go (a newer one may belong to another
      run of this script that is working right now) */
@@ -429,9 +460,9 @@ function createWorker(cfg, deps) {
   }
 
   /* tell the site where the job is; the answer says whether the person cancelled it meanwhile */
-  async function beat(job, stage, pct) {
+  async function beat(job, stage, pct, pageNo) {
     try {
-      const r = await callSite(cfg, 'POST', '/api/worker/jobs/' + job.id + '/heartbeat', { json: { stage: stage, pct: pct }, timeoutMs: 20000 });
+      const r = await callSite(cfg, 'POST', '/api/worker/jobs/' + job.id + '/heartbeat', { json: pageNo === undefined ? { stage: stage, pct: pct } : { stage: stage, pct: pct, page: pageNo }, timeoutMs: 20000 });
       if ((r.status === 200 && r.body && r.body.cancelled) || r.status === 404) { ctl.cancelled = true; killTree(ctl.child); }
     } catch (e) { /* the next beat, or the result, tells the site */ }
   }
@@ -590,8 +621,123 @@ function createWorker(cfg, deps) {
     } catch (e) { return false; }
   }
 
+  /* ---- G12-5: a printed score ----
+     The site hands out a job of kind 'omr' (id, title, page count). Each page image is fetched with this PC's token, checked again here (the site is trusted with the queue, not with what the
+     engine is made to open: type, size, pixels), written as page-<n>.png/.jpg in the job's own scratch folder - a name this script picks, never one from the site - and read by Audiveris
+     alone, one page at a time, below-normal priority (the PC belongs to its person). What comes back is MusicXML text, checked by the site's own rules before it is sent. */
+  const JOB_ID_RE = /^[A-Za-z0-9_-]{8,40}$/;
+  async function engineVersion() {
+    if (engineVersionCache !== undefined) return engineVersionCache;
+    let v = null;
+    try { v = deps.engineVersion ? await deps.engineVersion() : (Engine ? await Engine.engineVersion(cfg.audiverisPath, { lowPriority: true, timeoutMs: 60000 }) : null); } catch (e) { v = null; }
+    engineVersionCache = v || null;
+    return engineVersionCache;
+  }
+  async function fetchPage(job, i) {
+    const r = await withRetry('Fetching page ' + (i + 1), 4, () => callSite(cfg, 'GET', '/api/worker/jobs/' + job.id + '/pages/' + i, { binary: true, timeoutMs: 120000 }), ctl, log);
+    if (r.status === 401) throw Object.assign(new Error('token'), { fatalToken: true });
+    if (r.status === 404 || r.status === 409 || r.status === 410) throw new Cancelled('the site no longer has this score for this PC');
+    if (r.status !== 200 || !Buffer.isBuffer(r.raw)) throw new JobError('The site did not give page ' + (i + 1) + ' (' + r.status + ').', true);
+    const info = Omr.checkImage(r.raw, i + 1);
+    if (!info.ok) throw new JobError('The site sent a page that is not a usable image: ' + info.error, false);
+    return { buf: r.raw, type: info.type };
+  }
+  function lowerPriority() {
+    /* the engine (and what it starts) inherits it: Windows gives a child the below-normal class of its parent. Put back as it was. */
+    let was = null;
+    try { was = os.getPriority(process.pid); os.setPriority(process.pid, os.constants.priority.PRIORITY_BELOW_NORMAL); } catch (e) { was = null; }
+    return () => { if (was !== null) { try { os.setPriority(process.pid, was); } catch (e) { /* as it is */ } } };
+  }
+  async function processScore(job) {
+    const t0 = Date.now();
+    const idOk = typeof job.id === 'string' && JOB_ID_RE.test(job.id);
+    const n = job.pages;
+    if (!idOk || !Number.isInteger(n) || n < 1 || n > Omr.LIMITS.PAGES_MAX_LARGE) {
+      log.warn('The site sent a score job that cannot be run (its id or page count is not usable); it is not run.');
+      stats.failed++;
+      if (idOk) await postFail(job, 'The job is not usable.', false);
+      return false;
+    }
+    if (!omrAble()) {
+      log.warn('A score is waiting but this PC cannot read scores (no Audiveris: see the README, "Reading scores").');
+      stats.failed++;
+      await postFail(job, 'Audiveris is not installed on this PC.', false);
+      return false;
+    }
+    log('A score is waiting: ' + (job.title ? '"' + job.title + '"' : 'a score') + ', ' + n + ' page' + (n === 1 ? '' : 's') + (job.attempt > 1 ? ' (attempt ' + job.attempt + ' of ' + (job.maxAttempts || 3) + ')' : ''));
+    fs.mkdirSync(scratchRoot, { recursive: true });
+    const dir = fs.mkdtempSync(path.join(scratchRoot, 'job-'));
+    ctl.cancelled = false;
+    let stage = 'page', pct = 0, pageNo = 0;
+    const hbTimer = setInterval(() => { beat(job, stage, pct, pageNo); }, deps.heartbeatMs || 60000);
+    if (hbTimer.unref) hbTimer.unref();
+    const restorePriority = deps.noPriority ? () => {} : lowerPriority();
+    try {
+      const version = await engineVersion();
+      const pages = [];
+      for (let i = 0; i < n; i++) {
+        check();
+        stage = 'page'; pageNo = i + 1; pct = i / n;
+        await beat(job, stage, pct, pageNo);
+        check();
+        const got = await fetchPage(job, i);
+        check();
+        const img = path.join(dir, 'page-' + (i + 1) + (got.type === 'png' ? '.png' : '.jpg'));
+        const outDir = path.join(dir, 'out-' + (i + 1));
+        fs.mkdirSync(outDir);
+        fs.writeFileSync(img, got.buf);
+        const r = await recognise(img, outDir, {
+          timeoutMs: cfg.omrPageTimeoutSeconds * 1000, extraArgs: Engine ? Engine.STEP_TIMEOUT_ARGS.slice() : [], lowPriority: true, onChild: c => { ctl.child = c; }
+        });
+        ctl.child = null;
+        check();
+        if (r && r.ok && Array.isArray(r.movements) && r.movements.length) {
+          pages.push({ index: i, ok: true, ms: r.ms || 0, movements: r.movements });
+          log('Page ' + (i + 1) + ' of ' + n + ': read in ' + ((r.ms || 0) / 1000).toFixed(1) + ' s (' + r.movements.length + ' movement' + (r.movements.length === 1 ? '' : 's') + ').');
+        } else {
+          pages.push({ index: i, ok: false, ms: (r && r.ms) || 0, error: (r && r.error) || 'This page could not be read.' });
+          log('Page ' + (i + 1) + ' of ' + n + ': not read (' + ((r && r.error) || 'unknown') + ').');
+        }
+        /* the image and the engine's output are not kept a moment longer than the page needs */
+        try { fs.rmSync(outDir, { recursive: true, force: true }); fs.unlinkSync(img); } catch (e) { /* the scratch folder goes at the end */ }
+      }
+      if (!pages.some(p => p.ok)) {
+        stats.failed++;
+        const why = (pages.find(p => p.error) || {}).error || 'No page could be read.';
+        log('This score failed: ' + why);
+        await postFail(job, why, false);
+        return false;
+      }
+      const body = { engine: 'Audiveris', engineVersion: version, ms: Date.now() - t0, pages: pages };
+      /* the site's own rules, here first: what it would refuse is not sent, and the standard DOCTYPE is cut out before it leaves this PC */
+      const v = Omr.validateOmrResult(body, { pages: n });
+      if (!v.ok) throw new JobError('The reading did not pass the site\'s checks: ' + v.error, false);
+      stage = 'upload'; pct = 1;
+      check();
+      const sent = await postResult(job, v.result);
+      if (sent === 'ok') { stats.done++; log('Done: the score is on the site (' + (v.bytes / 1024).toFixed(0) + ' KB, ' + pages.filter(p => p.ok).length + ' of ' + n + ' pages read, ' + Math.round((Date.now() - t0) / 1000) + ' s here). Open PPP to see it.'); }
+      else log('The site no longer wanted this score (' + (sent === 'cancelled' ? 'you cancelled it' : 'it was already finished') + ').');
+      return true;
+    } catch (e) {
+      if (e && e.fatalToken) throw e;
+      if (e instanceof Cancelled || ctl.cancelled) { log('That score was cancelled on the site (or is no longer this PC\'s). Stopped.'); return false; }
+      const jobErr = e instanceof JobError ? e : new JobError('Something unexpected went wrong on this PC.', true);
+      if (!(e instanceof JobError)) log.warn('Unexpected: ' + (e && e.stack || e));
+      stats.failed++;
+      log('This score failed: ' + jobErr.message + (jobErr.retry ? ' (the site will try again)' : ''));
+      await postFail(job, jobErr.message, jobErr.retry);
+      return false;
+    } finally {
+      clearInterval(hbTimer);
+      restorePriority();
+      ctl.child = null;
+      if (!cfg.keepScratch) { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { /* the temp folder is cleaned by the OS in the end */ } }
+    }
+  }
+
   /* one claimed job, start to finish. Never throws except for a rejected token (fatalToken). */
   async function processJob(job) {
+    if (job && job.kind === 'omr') return processScore(job);
     const t0 = Date.now();
     /* the site is trusted with the queue, not with what this PC runs: only a YouTube watch link is ever handed to the download or to yt-dlp */
     if (!job || typeof job.id !== 'string' || !YT_RE.test(String(job.url || ''))) {
@@ -650,14 +796,14 @@ function createWorker(cfg, deps) {
     } finally {
       clearInterval(hbTimer);
       ctl.child = null;
-      if (!cfg.keepScratch) { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { /* the temp folder is cleaned by the OS in the end */ } }
+      if (cfg.keepScratch !== true) { try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { /* the temp folder is cleaned by the OS in the end */ } }
     }
   }
 
   /* one poll: { job, nextPollSeconds } or { error } */
   async function poll(once) {
     /* song: this worker knows song mode (G10d), so the site may hand it song jobs (a PC without the separation fails them with what to install) */
-    const r = await callSite(cfg, 'POST', '/api/worker/claim', { json: { once: !!once, waitSeconds: cfg.idlePollSeconds || 0, song: true }, timeoutMs: 60000 });
+    const r = await callSite(cfg, 'POST', '/api/worker/claim', { json: { once: !!once, waitSeconds: cfg.idlePollSeconds || 0, song: true, omr: omrAble() }, timeoutMs: 60000 });
     stats.checks++;
     if (r.status === 401) throw Object.assign(new Error('token'), { fatalToken: true });
     if (r.status === 200 && r.body) return { job: r.body.job || null, next: secs(r.body.nextPollSeconds, 0) };
@@ -768,7 +914,7 @@ function createWorker(cfg, deps) {
     return 0;
   }
 
-  return { runOnce: runOnce, runForever: runForever, processJob: processJob, poll: poll, waitFor: waitFor, toResult: toResult, ctl: ctl, stats: stats, failureWait: failureWait, sweepScratch: sweepScratch, getAudio: getAudio, decode: decode, transcribe: transcribe, log: log };
+  return { runOnce: runOnce, runForever: runForever, processJob: processJob, poll: poll, waitFor: waitFor, toResult: toResult, ctl: ctl, stats: stats, failureWait: failureWait, sweepScratch: sweepScratch, getAudio: getAudio, decode: decode, transcribe: transcribe, omrAble: omrAble, log: log };
 }
 
 /* --check: say what is set up and what is not, without claiming a job */
@@ -799,6 +945,14 @@ async function checkSetup(cfg, log, deps) {
       : 'note  song mode without YourMT3 (tools/home-worker/setup-yourmt3.cmd adds it): songs use the separation; nothing to fix');
     log(cfg.ss2Python && cfg.ss2Dir ? 'ok    song mode: SheetSage2 is there (' + cfg.ss2Dir + '); a song\'s melody comes from it'
       : 'note  song mode without SheetSage2 (tools/home-worker/setup-sheetsage2.cmd adds it): the melody comes from YourMT3; nothing to fix');
+  }
+  /* G12-5: reading printed scores is optional (a PC without Audiveris converts recordings as before); this says which it is */
+  if (cfg.omr === false) log('note  reading scores is switched off in the settings ("omr": false): scores are not taken by this PC; conversions of recordings work');
+  else if (!Engine) log('note  omr/engine.js is not in this checkout: scores are not read here (update the checkout); conversions of recordings work');
+  else if (!cfg.audiverisPath || !fs.existsSync(cfg.audiverisPath)) log('note  no Audiveris found (tools/audiveris/Audiveris/Audiveris.exe, PPP_AUDIVERIS or "audiverisPath"): scores are not read by this PC; conversions of recordings work. See README, "Reading scores"');
+  else {
+    const v = await (deps.engineVersion ? deps.engineVersion() : Engine.engineVersion(cfg.audiverisPath, { lowPriority: true, timeoutMs: 60000 }));
+    say(true, 'scores: Audiveris ' + (v || '(version not read)') + ' at ' + cfg.audiverisPath + ' - one page at a time, below-normal priority, ' + cfg.omrPageTimeoutSeconds + ' s a page at most');
   }
   if (!problems.some(p => /^(siteUrl|token)/.test(p))) {
     try {
