@@ -62,11 +62,21 @@
     const cls = attacks.classes(att);
     const tracks = beats.tracks(att, { tight: W.tight, maxTracks: W.maxTracks });
     /* the helper's audio beats, when the caller has them (Beat This on the helper; the browser path has none): one more
-       track, and its downbeats are evidence for the bar lines */
-    const audio = opts.beats ? beats.audioTrack(opts.beats, att) : null;
+       track, and its downbeats are evidence for the bar lines.
+       G10a-1d (a model with `phase`, G10 section 36): only beats the caller marks as known bar lines (opts.beatsTrusted: the benchmark's
+       own performer, whose downbeats are the score's bar lines) that are also steady - the beat track one pulse (helperGate.maxIrregular,
+       .maxExtra) and the downbeats one bar (helperGate.minSteady of their intervals within 15 % of the median). The beats of a real
+       tracker (Beat This on the user's PC, any helper) never reach the metre model: steady is not right (regular half-bar downbeats
+       would make a 4/4 piece 2/4), so the metre and the tempo are read from the notes alone, exactly as without beats, and the
+       downbeats are evidence of the bar phase only (the phase step of metre.choose). */
+    const downs = opts.downbeats && opts.downbeats.length ? opts.downbeats : null;
+    const helper = helperUse(opts.beats, downs, att, W, !!opts.beatsTrusted);
+    const audio = helper === 'used' ? beats.audioTrack(opts.beats, att) : null;
     if (audio) tracks.unshift(audio);
     if (!tracks.length) return null;
-    const ch = metre.choose(att, cls, tracks, W, { downbeats: audio && opts.downbeats && opts.downbeats.length ? opts.downbeats : null });
+    /* the phase step runs when the metre model heard no downbeats (they decide the phase there, as before) */
+    const ch = metre.choose(att, cls, tracks, W, { downbeats: audio && downs ? downs : null, phaseDownbeats: phaseOk(W) && downs && helper ? downs : null,
+      phaseStep: !(audio && downs) });
     if (!ch) return null;
     const wb = metre.writtenBeats(ch.best, tracks, ch.slots, att);
     if (wb.beats.length < 2) return null;
@@ -81,9 +91,34 @@
       model: { name: W.name, version: W.version, sha256: W.sha256 || null },
       report: { tracks: tracks.map(t => Math.round(t.period * 1e4) / 1e4), readings: ch.count,
         chosen: Object.assign({ track: ch.best.track, audio: !!tracks[ch.best.track].audio, rho: ch.best.rho, phi: ch.best.phi, metre: m.key },
-          ch.best.swing ? { swing: ch.best.swing } : {}) }
+          ch.best.swing ? { swing: ch.best.swing } : {}, ch.phase ? { phase: ch.phase } : {}, helper ? { helperBeats: helper } : {}) }
     };
   }
 
-  return Object.freeze({ VERSION, skeleton, loadWeights, attacks, beats, model, metre, hands });
+  /* G10a-1d: how the helper's beats are used: null (none given), 'used' (as before: one more track, and the downbeats in the metre model),
+     'phase' (a model with `phase`: the downbeats are phase evidence only). A model without `phase` (v1.1) reads them as it always did.
+     With `phase`: 'used' only for beats the caller trusts as bar lines (the benchmark's performer) that pass a well-formed helperGate;
+     anything else - a real tracker, a missing or broken gate - fails closed to 'phase' */
+  function helperUse(beatTimes, downs, att, W, trusted) {
+    if (!beatTimes || !beatTimes.length) return null;
+    if (!W.phase) return 'used';
+    const g = W.phase.helperGate;
+    if (!trusted || !gateOk(g)) return 'phase';
+    /* judged on a whole song only: a short performance has too few beats to tell a tracker's slip from its noise, and is used as before */
+    if (beatTimes.length >= g.minBeats && !beats.audioTrack(beatTimes, att, { maxIrregular: g.maxIrregular, maxExtra: g.maxExtra })) return 'phase';
+    if (downs && downs.length - 1 >= g.minDownbeats && beats.steadyShare(downs) < g.minSteady) return 'phase';
+    return 'used';
+  }
+
+  /* a weights file's phase step and helper gate are used only when well formed (fails closed: no phase step, no beats to the metre model) */
+  const fin = x => typeof x === 'number' && isFinite(x);
+  function gateOk(g) {
+    return !!g && ['maxIrregular', 'maxExtra', 'minSteady', 'minBeats', 'minDownbeats'].every(k => fin(g[k]));
+  }
+  function phaseOk(W) {
+    const p = W && W.phase;
+    return !!p && Array.isArray(p.weights) && p.weights.length === 3 && p.weights.every(fin) && (p.margin == null || fin(p.margin)) && (p.chordSat == null || (fin(p.chordSat) && p.chordSat > 0));
+  }
+
+  return Object.freeze({ VERSION, skeleton, loadWeights, helperUse, gateOk, phaseOk, attacks, beats, model, metre, hands });
 });

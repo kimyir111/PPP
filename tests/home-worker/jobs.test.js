@@ -61,11 +61,33 @@ async function resultRules() {
   const vs = R.validateResult(shuffled);
   ok('a result whose notes arrive in any order is stored in order: by onset, then pitch (so the page, which reads them in order, can)', vs.ok && vs.result.notes.every((n, i, a) => !i || a[i - 1].on < n.on || (a[i - 1].on === n.on && a[i - 1].midi <= n.midi)) && vs.result.notes[0].on === 0, vs.ok ? JSON.stringify(vs.result.notes.slice(0, 3)) : vs.error);
   ok('the result keeps only on, off, midi, vel per note', v.ok && v.result.notes.every(n => Object.keys(n).sort().join() === 'midi,off,on,vel'));
-  const dirty = Object.assign({}, good, { pedals: [{ on: 1, off: 2 }], beats: [1, 2, 3], downbeats: [1], uncertainNotes: [{ on: 1, off: 2, midi: 60 }], __proto__x: 1, evil: '<script>' });
+  const dirty = Object.assign({}, good, { pedals: [{ on: 1, off: 2 }], uncertainNotes: [{ on: 1, off: 2, midi: 60 }], __proto__x: 1, evil: '<script>' });
   dirty.notes = good.notes.map(n => Object.assign({}, n, { confidence: 1, support: 2, models: ['x'], extra: 'y' }));
   const vd = R.validateResult(dirty);
-  ok('pedals, beats, uncertain notes, per-note extras and unknown keys are stripped', vd.ok && Object.keys(vd.result).sort().join() === 'device,duration,engine,ensemble,model,notes,v'
+  ok('pedals, uncertain notes, per-note extras and unknown keys are stripped', vd.ok && Object.keys(vd.result).sort().join() === 'device,duration,engine,ensemble,model,notes,v'
     && vd.result.notes.every(n => Object.keys(n).length === 4), vd.ok ? Object.keys(vd.result).join() : vd.error);
+  /* G10a-1d: the helper's beats and downbeats are kept, strictly bounded */
+  const withBeats = Object.assign({}, good, { beats: [0.5, 1, 1.5000004, 2], downbeats: [0.5, 2] });
+  const vbt = R.validateResult(withBeats);
+  ok('beats and downbeats are kept (rounded to 0.1 ms)', vbt.ok && JSON.stringify(vbt.result.beats) === '[0.5,1,1.5,2]' && JSON.stringify(vbt.result.downbeats) === '[0.5,2]', vbt.ok ? JSON.stringify(vbt.result.beats) : vbt.error);
+  /* never a failed result because of beats: malformed ones are left out and the notes kept (beatsLeftOut) */
+  const badBeats = (name, extra) => { const r = R.validateResult(Object.assign({}, good, extra)); ok(name.replace('are refused', 'are left out, the notes kept'), r.ok && !('beats' in r.result) && !('downbeats' in r.result) && r.result.beatsLeftOut === 'malformed' && r.result.notes.length === good.notes.length, r.ok ? JSON.stringify(r.result.beatsLeftOut) : r.code); };
+  badBeats('beats that do not rise are refused', { beats: [1, 2, 2, 3] });
+  badBeats('a beat that is not a number is refused', { beats: [1, '2', 3] });
+  badBeats('a beat that is not finite is refused', { beats: [1, 2, Infinity] });
+  badBeats('a negative beat is refused', { beats: [-1, 2, 3] });
+  badBeats('a beat past the end of the piece (+ 1 s) is refused', { beats: [1, 2, good.notes[good.notes.length - 1].off + 30] });
+  badBeats('beats that are not a list are refused', { beats: { a: 1 } });
+  badBeats('more than 20,000 beats are refused', { beats: Array.from({ length: 20001 }, (x, i) => i * 0.01) });
+  badBeats('downbeats without beats are refused', { downbeats: [1, 2] });
+  badBeats('downbeats that do not rise are refused', { beats: [1, 2, 3, 4], downbeats: [3, 1] });
+  {
+    /* beats that would take a result past its size cap are left out first (a small cap makes the notes alone fit, notes and beats not) */
+    const many = Array.from({ length: 20000 }, (x, i) => Math.round(i * 0.004 * 1e4) / 1e4).filter(t => t <= good.duration);
+    const plain = R.validateResult(good), cap = plain.bytes + 200;
+    const r = R.validateResult(Object.assign({}, good, { beats: many, downbeats: many.filter((t, i) => i % 4 === 0) }), { RESULT_MAX_BYTES: cap });
+    ok('beats that would pass the size cap are left out, the notes kept', r.ok && !('beats' in r.result) && r.result.beatsLeftOut === 'size', r.ok ? r.result.beatsLeftOut : r.code);
+  }
   const bad = (name, mut, code) => {
     const b = JSON.parse(JSON.stringify(good)); mut(b);
     const r = R.validateResult(b);
@@ -141,6 +163,23 @@ async function songMode() {
   ok('a layer that is not 1, 2 or 3 is refused', !R.validateResult(badLayer).ok);
   ok('an unknown mode is refused', !R.validateResult(Object.assign({}, good, { mode: 'band' })).ok);
   ok('a separation name that is not a plain name is refused', !R.validateResult(Object.assign({}, layered, { song: { separation: '<b>x</b>' } })).ok);
+  const tracked = R.validateResult(Object.assign({}, layered, { song: { separation: 'htdemucs_6s', melodyFrom: 'guitar', melodyTracker: 'basic-pitch' } }));
+  ok('a song result keeps which method followed the tune (shown on the review so a person can see what ran)', tracked.ok && tracked.result.song.melodyTracker === 'basic-pitch' && tracked.result.song.melodyFrom === 'guitar');
+  ok('a result from an older worker has no method: it is null, not refused', v.ok && v.result.song.melodyTracker === null);
+  const sheet = R.validateResult(Object.assign({}, layered, { song: { separation: 'yourmt3', melodyFrom: 'guitar', melodyTracker: 'lead-sheet' } }));
+  ok('a song whose tune Sheet Sage wrote says so (lead-sheet)', sheet.ok && sheet.result.song.melodyTracker === 'lead-sheet');
+  ok('a method that is not one of the two is refused', !R.validateResult(Object.assign({}, layered, { song: { separation: 'htdemucs_6s', melodyTracker: '<b>x</b>' } })).ok);
+  /* G10d: a lead sheet's chords as the accompaniment, its bars and its key */
+  const beatsOf = n => Array.from({ length: n }, (_, i) => i * 0.5);
+  const lead = R.validateResult(Object.assign({}, layered, { beats: beatsOf(16), downbeats: [0, 2, 4, 6],
+    song: { separation: 'yourmt3', melodyTracker: 'lead-sheet', accompFrom: 'lead-sheet', beatsFrom: 'lead-sheet', key: { tonic: 6, mode: 'minor' } } }));
+  ok('a lead sheet\'s accompaniment source, bars and key are kept', lead.ok && lead.result.song.accompFrom === 'lead-sheet' && lead.result.song.beatsFrom === 'lead-sheet'
+    && lead.result.song.key.tonic === 6 && lead.result.song.key.mode === 'minor' && lead.result.beats.length === 16, lead.ok ? '' : lead.error);
+  const noBeats = R.validateResult(Object.assign({}, layered, { song: { separation: 'yourmt3', beatsFrom: 'lead-sheet' } }));
+  ok('"bars from the lead sheet" without beats is dropped, not kept', noBeats.ok && !('beatsFrom' in noBeats.result.song));
+  ok('a key that is not a tonic 0-11 and major/minor is refused', !R.validateResult(Object.assign({}, layered, { song: { separation: 'yourmt3', key: { tonic: 12, mode: 'major' } } })).ok
+    && !R.validateResult(Object.assign({}, layered, { song: { separation: 'yourmt3', key: { tonic: 2, mode: 'dorian' } } })).ok);
+  ok('an unknown accompaniment source is refused', !R.validateResult(Object.assign({}, layered, { song: { separation: 'yourmt3', accompFrom: 'x' } })).ok);
   const piano = R.validateResult(Object.assign({}, good, { notes: good.notes.map(n => Object.assign({}, n, { track: 1 })) }));
   ok('a piano result (no mode) keeps no layer: on, off, midi, vel only, and no song summary', piano.ok && piano.result.notes.every(n => n.track === undefined) && piano.result.mode === undefined && piano.result.song === undefined);
 

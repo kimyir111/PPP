@@ -16,7 +16,7 @@
 
    One job: claim -> download the audio (the site's /api/youtube-audio, as the page does) -> ffmpeg to a 44.1 kHz stereo WAV and a
    16 kHz mono WAV -> transcribe.py (the same call omr-service.js makes) -> the helper's ACCEPTED notes as { on, off, midi, vel }
-   (the same conversion as review/h10/helper-heard.js: no pedal, no beats) -> POST them. Every step has a timeout; a failure is
+   (the same conversion as review/h10/helper-heard.js: no pedal) and, G10a-1d, beat_track.py's beats and downbeats -> POST them. Every step has a timeout; a failure is
    reported to the site in one short line; the scratch folder is always removed. The loop never ends on a network error, and
    stops (exit 2) when the site says the token is not valid, so a revoked token is not tried for ever.
 
@@ -74,8 +74,21 @@ const DEFAULTS = {
   transcribePy: path.join(REPO, 'transcribe.py'),
   kongCheckpoint: '',
   ariaCheckpoint: '',
+  /* G10a-1d: beat_track.py (Beat This) beside transcribe.py, run after the piano models; its beats and downbeats go with the notes as evidence of
+     the bar phase (the page's v2 conversion reads them so, never as bar lines). false turns it off; a PC without beat-this sends notes only */
+  beats: true,
+  beatTrackPy: '',
   /* G10d song mode: the folder that holds the source separation (demucs), when it is not installed in the Python itself (pip install --target <folder> demucs ...) */
   songLib: '',
+  /* song mode, optional: YourMT3 (multi-instrument transcription) in its own Python. Found by itself in a tools folder (the one beside
+     transcribe.py, this repository's, or the one that holds the song-lib or the transcription Python): tools/yourmt3 (the code and checkpoints,
+     a clone of the Hugging Face space mimbres/YourMT3) and tools/yourmt3-venv (its Python). setup-yourmt3.cmd makes both */
+  mt3Python: '',
+  mt3Dir: '',
+  /* song mode's melody from SheetSage2 (a lead-sheet transcriber), found the same way: tools/sheetsage2 (the model m-a-p/SheetSage2) and
+     tools/sheetsage2-venv (its Python). setup-sheetsage2.cmd makes both; without them the melody comes from YourMT3's lines */
+  ss2Python: '',
+  ss2Dir: '',
   ffmpegPath: 'ffmpeg',
   ytdlpPath: '',
   audioBase: '',
@@ -125,7 +138,18 @@ function loadConfig(file, env) {
   if (!cfg.pythonPath) {
     cfg.pythonPath = firstExisting([env.PPP_TRANSCRIBE_PYTHON, path.join(REPO, 'tools', 'transcribe-venv', 'Scripts', 'python.exe'), path.join(REPO, 'tools', 'transcribe-venv', 'bin', 'python')]);
   }
+  if (!cfg.beatTrackPy) cfg.beatTrackPy = path.join(path.dirname(cfg.transcribePy), 'beat_track.py');
+  cfg.beats = cfg.beats !== false;
   if (!cfg.songLib) cfg.songLib = firstExisting([path.join(path.dirname(cfg.transcribePy), 'tools', 'song-lib'), path.join(REPO, 'tools', 'song-lib')]);
+  if (!cfg.mt3Dir || !cfg.mt3Python || !cfg.ss2Dir || !cfg.ss2Python) {
+    const toolDirs = [path.join(path.dirname(cfg.transcribePy), 'tools'), path.join(REPO, 'tools')]
+      .concat(cfg.songLib ? [path.dirname(cfg.songLib)] : [])
+      .concat(cfg.pythonPath ? [path.dirname(path.dirname(path.dirname(cfg.pythonPath)))] : []);
+    if (!cfg.mt3Dir) cfg.mt3Dir = firstExisting(toolDirs.map(d => path.join(d, 'yourmt3', 'model_helper.py'))).replace(/[\\/]model_helper\.py$/, '');
+    if (!cfg.mt3Python) cfg.mt3Python = firstExisting([].concat(...toolDirs.map(d => [path.join(d, 'yourmt3-venv', 'Scripts', 'python.exe'), path.join(d, 'yourmt3-venv', 'bin', 'python')])));
+    if (!cfg.ss2Dir) cfg.ss2Dir = firstExisting(toolDirs.map(d => path.join(d, 'sheetsage2', 'config.json'))).replace(/[\\/]config\.json$/, '');
+    if (!cfg.ss2Python) cfg.ss2Python = firstExisting([].concat(...toolDirs.map(d => [path.join(d, 'sheetsage2-venv', 'Scripts', 'python.exe'), path.join(d, 'sheetsage2-venv', 'bin', 'python')])));
+  }
   if (!cfg.kongCheckpoint) cfg.kongCheckpoint = env.PPP_TRANSCRIBE_CHECKPOINT || findKongCheckpoint(path.join(path.dirname(cfg.transcribePy), 'tools', 'piano-transcription')) || findKongCheckpoint(path.join(REPO, 'tools', 'piano-transcription'));
   cfg.maxSeconds = Math.max(30, Math.min(Result.LIMITS.MAX_SECONDS, +cfg.maxSeconds || Result.LIMITS.MAX_SECONDS));
   cfg.idlePollSeconds = Math.max(0, Math.min(86400, +cfg.idlePollSeconds || 0));
@@ -468,7 +492,12 @@ function createWorker(cfg, deps) {
     const argv = [cfg.transcribePy, '--wav', wavs.master, '--kong-wav', wavs.kong, '--out', out, '--engine', 'auto'];
     if (cfg.kongCheckpoint) argv.push('--checkpoint', cfg.kongCheckpoint);
     if (cfg.ariaCheckpoint) argv.push('--aria-checkpoint', cfg.ariaCheckpoint);
-    if (isSong(job)) { argv.push('--mode', 'song'); if (cfg.songLib) argv.push('--song-lib', cfg.songLib); }
+    if (isSong(job)) {
+      argv.push('--mode', 'song');
+      if (cfg.songLib) argv.push('--song-lib', cfg.songLib);
+      if (cfg.mt3Python && cfg.mt3Dir) argv.push('--mt3-python', cfg.mt3Python, '--mt3-dir', cfg.mt3Dir);
+      if (cfg.ss2Python && cfg.ss2Dir) argv.push('--ss2-python', cfg.ss2Python, '--ss2-dir', cfg.ss2Dir);
+    }
     let engines = '';
     const r = await run(cfg.pythonPath, argv, {
       cwd: dir, timeoutMs: Math.max(10 * 60 * 1000, wavs.seconds * 8000), onChild: c => { ctl.child = c; },
@@ -477,6 +506,8 @@ function createWorker(cfg, deps) {
         if (m) onPct(Math.min(1, +m[1]));
         const e = /^ENGINE\s+(\S+)/.exec(line);
         if (e) { engines += (engines ? ' + ' : '') + e[1]; log('Listening with ' + e[1] + '...'); }
+        /* transcribe.py's NOTE lines say why an optional engine (YourMT3, Basic Pitch) gave way to the next one: without them a fallback is silent */
+        if (/^NOTE\s/.test(line)) log(line.slice(0, 600));
       }
     });
     check();
@@ -493,8 +524,27 @@ function createWorker(cfg, deps) {
     return raw;
   }
 
-  /* the helper's notes -> what the site accepts (the accepted notes only, no pedal, no beats), cut to the 15-minute limit */
-  function toResult(raw) {
+  /* G10a-1d: Beat This's beats and downbeats (beat_track.py, on the CPU: a few seconds a song), or null. Never fails the job: a PC without beat-this, a
+     crash or a timeout sends the notes alone, as before */
+  async function beatTrack(dir, wavs) {
+    if (!cfg.beats || !cfg.beatTrackPy || !fs.existsSync(cfg.beatTrackPy)) return null;
+    const out = path.join(dir, 'beats.json');
+    const r = await run(cfg.pythonPath, [cfg.beatTrackPy, '--wav', wavs.master, '--out', out], { cwd: dir, timeoutMs: Math.max(3 * 60 * 1000, wavs.seconds * 2000), onChild: c => { ctl.child = c; } });
+    check();
+    let raw = null;
+    try { raw = JSON.parse(fs.readFileSync(out, 'utf8')); } catch (e) { raw = null; }
+    if (r.code !== 0 || !raw || !Array.isArray(raw.beats)) { log('The beat tracker did not run here (beat-this missing or failed): the notes go alone.'); return null; }
+    return { beats: raw.beats, downbeats: Array.isArray(raw.downbeats) ? raw.downbeats : [] };
+  }
+  /* rising, finite, within the cut, at most MAX_BEATS: what the site accepts (home-result.js) */
+  function beatList(xs, cut) {
+    const outList = [];
+    (xs || []).forEach(t => { if (typeof t === 'number' && Number.isFinite(t) && t >= 0 && t <= cut && (!outList.length || t > outList[outList.length - 1] + 1e-4)) outList.push(Math.round(t * 10000) / 10000); });
+    return outList.slice(0, Result.LIMITS.MAX_BEATS);
+  }
+
+  /* the helper's notes -> what the site accepts (the accepted notes only, no pedal; G10a-1d: the beats and downbeats when beat_track.py ran), cut to the 15-minute limit */
+  function toResult(raw, bt) {
     let c;
     try { c = convertHelperNotes(raw); } catch (e) { throw new JobError(/at least/.test(e.message) ? 'No piano notes were heard in this recording.' : 'The piano models gave nothing usable.', false); }
     const h = c.heard, hh = h.helper || {};
@@ -504,8 +554,22 @@ function createWorker(cfg, deps) {
       notes: notes, duration: Math.min(h.duration, cut), engine: h.engine, model: hh.model || null, device: hh.device || null,
       ensemble: { models: hh.models || [], primary: hh.primary || null, agreement: hh.agreement, accepted: notes.length, uncertain: hh.uncertain || 0 }
     };
+    if (bt) {
+      const beats = beatList(bt.beats, result.duration + 1);
+      if (beats.length >= 4) {
+        result.beats = beats;
+        const downs = beatList(bt.downbeats, result.duration + 1);
+        if (downs.length) result.downbeats = downs;
+      }
+    }
     /* G10d song mode: the notes carry their layer (convertHelperNotes keeps it), and the result says so */
-    if (h.song) { result.mode = 'song'; result.song = { separation: h.song.separation || null, melodyFrom: h.song.melodyFrom || null }; }
+    if (h.song) {
+      result.mode = 'song';
+      result.song = { separation: h.song.separation || null, melodyFrom: h.song.melodyFrom || null, melodyTracker: h.song.melodyTracker || null };
+      if (h.song.accompFrom) result.song.accompFrom = h.song.accompFrom;
+      if (h.song.beatsFrom && result.beats) result.song.beatsFrom = h.song.beatsFrom;
+      if (h.song.key) result.song.key = h.song.key;
+    }
     const v = Result.validateResult(result);
     if (!v.ok) throw new JobError('The notes did not pass the site\'s checks: ' + v.error, false);
     return { result: result, report: c.report, bytes: v.bytes };
@@ -559,11 +623,15 @@ function createWorker(cfg, deps) {
         const s = Math.floor(p * 10) * 10;
         if (s > lastShown) { lastShown = s; log('  listening: ' + Math.round(p * 100) + '%'); }
       });
-      const r = toResult(raw);
+      stage = 'beats'; pct = 0;
+      /* a song's lead sheet (SheetSage2) came with its beats and bar lines: those are the song's, Beat This is not run */
+      const bt = raw && Array.isArray(raw.beats) && raw.beats.length >= 4 ? { beats: raw.beats, downbeats: Array.isArray(raw.downbeats) ? raw.downbeats : [] } : await beatTrack(dir, wavs);
+      const r = toResult(raw, bt);
+      const beatsNote = r.result.beats ? ' and ' + r.result.beats.length + ' beats' : '';
       if (r.result.mode === 'song') {
         const layer = k => r.result.notes.filter(n => n.track === Result.SONG_TRACKS[k]).length;
-        log('Heard ' + r.result.notes.length + ' notes: melody ' + layer('melody') + ', bass ' + layer('bass') + ', accompaniment ' + layer('accomp') + ' (the drums are left out), ' + Math.round(r.result.duration) + ' s of music, ' + Math.round((Date.now() - t0) / 1000) + ' s here. Sending them to the site...');
-      } else log('Heard ' + r.result.notes.length + ' notes (' + r.result.ensemble.uncertain + ' more were kept apart: the models did not agree), ' + Math.round(r.result.duration) + ' s of music, ' + Math.round((Date.now() - t0) / 1000) + ' s here. Sending them to the site...');
+        log('Heard ' + r.result.notes.length + ' notes: melody ' + layer('melody') + ', bass ' + layer('bass') + ', accompaniment ' + layer('accomp') + ' (the drums are left out)' + beatsNote + ', ' + Math.round(r.result.duration) + ' s of music, ' + Math.round((Date.now() - t0) / 1000) + ' s here. Sending them to the site...');
+      } else log('Heard ' + r.result.notes.length + ' notes (' + r.result.ensemble.uncertain + ' more were kept apart: the models did not agree)' + beatsNote + ', ' + Math.round(r.result.duration) + ' s of music, ' + Math.round((Date.now() - t0) / 1000) + ' s here. Sending them to the site...');
       stage = 'upload'; pct = 1;
       check();
       const sent = await postResult(job, r.result);
@@ -718,9 +786,19 @@ async function checkSetup(cfg, log, deps) {
   if (cfg.pythonPath && fs.existsSync(cfg.pythonPath)) {
     const py = await (deps.runTool || runTool)(cfg.pythonPath, ['-c', 'import torch, soundfile, transkun; print("cuda" if torch.cuda.is_available() else "cpu")'], { timeoutMs: 60000 });
     say(py.code === 0, py.code === 0 ? 'Python has torch, soundfile and transkun; it will run on the ' + String(py.tail).trim().split(/\s+/).pop().toUpperCase() : 'Python cannot import torch, soundfile and transkun: ' + String(py.tail).trim().split('\n').pop());
+    /* G10a-1d: optional; without it the notes go alone (not a thing to fix) */
+    if (cfg.beats) {
+      const bt = await (deps.runTool || runTool)(cfg.pythonPath, ['-c', 'import beat_this.inference'], { timeoutMs: 60000 });
+      log(bt.code === 0 && fs.existsSync(cfg.beatTrackPy) ? 'ok    the beat tracker (beat-this) is there: the beats go with the notes'
+        : 'note  no beat tracker (beat-this in the Python and beat_track.py beside transcribe.py): the notes go alone; nothing to fix');
+    }
     /* song mode is optional: without the separation only song-mode conversions fail (with a message that says what to install) */
     const sep = await (deps.runTool || runTool)(cfg.pythonPath, ['-c', 'import sys\nif sys.argv[1]: sys.path.insert(0, sys.argv[1])\nimport demucs, librosa\nprint("ok")', cfg.songLib || ''], { timeoutMs: 60000 });
     log(sep.code === 0 ? 'ok    song mode: the source separation (demucs) is there' + (cfg.songLib ? ' (' + cfg.songLib + ')' : '') : 'note  song mode is not set up (no demucs): piano conversions work; see tools/home-worker/README.md, "Song mode"');
+    log(cfg.mt3Python && cfg.mt3Dir ? 'ok    song mode: YourMT3 is there (' + cfg.mt3Dir + '); a song is transcribed by it first, by the separation if it fails'
+      : 'note  song mode without YourMT3 (tools/home-worker/setup-yourmt3.cmd adds it): songs use the separation; nothing to fix');
+    log(cfg.ss2Python && cfg.ss2Dir ? 'ok    song mode: SheetSage2 is there (' + cfg.ss2Dir + '); a song\'s melody comes from it'
+      : 'note  song mode without SheetSage2 (tools/home-worker/setup-sheetsage2.cmd adds it): the melody comes from YourMT3; nothing to fix');
   }
   if (!problems.some(p => /^(siteUrl|token)/.test(p))) {
     try {

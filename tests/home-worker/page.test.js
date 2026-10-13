@@ -367,6 +367,10 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
     });
     ok('the review screen opened (no error)', rv.screen === 'review' && !rv.err, rv.err || rv.screen);
     ok('the heard object is the page\'s own format: tier local-piano-ensemble, engine ensemble, notes only (no pedals, no beats)', rv.heard.tier === 'local-piano-ensemble' && rv.heard.engine === 'ensemble' && rv.heard.homePc === true && !rv.heard.pedals && !rv.heard.beats && rv.heard.n === heard.length, JSON.stringify(rv.heard));
+    /* G10a-1d: a result with the PC's beats carries them into the heard object (v2 reads them as bar-phase evidence); one without carries none */
+    const hb = await pg.evaluate(() => { const A = window.PPP.app; const b = [0.5, 1, 1.5, 2, 2.5]; const x = A.homeHeard({ notes: [], duration: 3, beats: b, downbeats: [0.5, 2.5] }), y = A.homeHeard({ notes: [], duration: 3, beats: [1, 2] });
+      return { beats: x.beats, downbeats: x.downbeats, none: !('beats' in y) && !('downbeats' in y) }; });
+    ok('a PC result with beats gives the heard object its beats and downbeats; fewer than four beats, none', JSON.stringify(hb.beats) === '[0.5,1,1.5,2,2.5]' && JSON.stringify(hb.downbeats) === '[0.5,2.5]' && hb.none, JSON.stringify(hb));
     ok('it carries the ensemble summary (models, agreement 0.83, 12 kept apart)', rv.heard.agreement === 0.83 && rv.heard.models.join() === 'transkun,piano-transcription' && rv.heard.uncertain === 12 && rv.heard.device === 'cuda');
     ok('v2 was selected, so v2 wrote the notation (pipeline v2, version 8)', rv.pipeline === 'v2' && rv.version === 8, JSON.stringify({ p: rv.pipeline, v: rv.version }));
     ok('the source says where it came from: YouTube, this link, "Piano ensemble on your PC"', rv.kind === 'youtube' && rv.url === YT && rv.engineLabel === 'Piano ensemble on your PC' && rv.amt === 'ensemble' && rv.device === 'cuda', JSON.stringify({ k: rv.kind, e: rv.engineLabel }));

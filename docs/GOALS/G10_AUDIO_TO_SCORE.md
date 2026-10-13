@@ -3651,3 +3651,214 @@ The blind check of section 34 ran on 2026-10-07 (H-10c, packet `42fc52d9649f`, t
 **The user's decision (same day): '바꿔' (switch).** The change is the one line of section 34.2: `RECORDING_ARRANGE_DEFAULT = 'leadsheet'` (was `'reduce'` since PR #186). Nothing else changes: a device that pressed the chip keeps its stored choice; `?recordingArrange=reduce` and the chip's off state give the reduction, byte for byte (section 34.6); the reduction remains the fallback when the lead sheet cannot load. Verified after the flip: `tests/recording-leadsheet-app.test.js` and `tests/single-note-app.test.js` all passed, `node --test tests/rec` 222 (220 pass, 2 known todo).
 
 **Open (the user's words, TD24):** the left hand's low notes of a lead-sheet copy ('조금 고치면' for 7 of 9). Not claimed: that the lead sheet is better for every piece (five covers, one reviewer).
+
+## 36. G10a-1d: bar phase and off-beat notes (2026-10-08; implementer on Opus, AI-5a/5b)
+
+Worktree `D:/PPP-g10a1d`, branch `g10-a1d-phase` from main `3567e27`, PR #229. **The finding** (section 32, TD25): the teacher's second blind
+review tagged 'bars/metre' as "a note or two off-beat and a note or two missing"; two covers (p3, p5) read from the browser model's notes and
+from the helper ensemble's notes had the same tempo and metre but bar lines about two beats apart; p4's helper reading was a tempo octave (171
+against 86); and the helper's own beats (Beat This), as wired, made v2 write bars 2-4 times too short. **The six pieces stay private** (G10-D15):
+outside the repository, nothing fitted on them, named p1-p6 here. **The only ground truth for the covers is the user's word that all six are
+4/4** (not a score); Beat This's downbeats serve as an audio-derived **proxy** for the phase, marked "proxy" everywhere below.
+
+**Three rounds.** The first version (36.6) changed the metre model itself and lost p6's 4/4; the Lead rejected it. The second decoupled: the
+metre model of ai5a v1.1 decides metre, pulse and tempo (byte-identical weights and tables) and a separate **phase step** may only move the bar
+lines inside that metre and pulse. The independent review of the second (MERGE AFTER FIXES) found that steady-but-wrong helper beats still
+reached the metre model, that the harmonic term moved right phases on melody-only and octave-doubled music, and that the confidence went stale
+after a move; **the shipped version is the third** (36.7 lists what the review round changed).
+
+### 36.1 Baselines reproduced
+
+At `3567e27`: `node rec/tools/train.js` into a scratch folder gives the committed `ai5a-v1.json` byte for byte; the six pieces through the page's
+conversion give G10a-1b's table (v2 6 of 6 in 4/4, 28.5) and the H-10b agreement numbers (30.3).
+
+### 36.2 Error analysis
+
+**The six covers** (B = the browser model's notes, H = the helper's notes, HB = the helper's notes with Beat This's beats and downbeats;
+proxy = the share of Beat This's downbeats on the reading's bar lines, within 80 ms):
+
+| piece | B (main) | H (main) | HB (main, as wired) | B and H bar lines in common | what decided it (main) |
+| --- | --- | --- | --- | --- | --- |
+| p1 | 4/4 162, proxy 0.78 | 4/4 162, 0.71 | **2/4 167, 257 bars** | 0.91 | - |
+| p2 | 4/4 120 swung, 0.59 | the same | **3/8 180, 305 bars** | 1.00 | - |
+| p3 | 4/4 97, 0.15 | 4/4 97, 0.18 | **2/4 194, 511 bars** | **0.00** (B two beats before H all through) | the first onset: H's first note falls on beat 3 of B's bars (the first-onset term, 2.9 nats); the beat accents of the two half-bar phases differ by 0.19 nats |
+| p4 | 4/4 86, 0.56 | **4/4 171**, 0.91 | **3/8 129, 347 bars** | 0.99 (a tempo octave, the same downbeats) | - |
+| p5 | 4/4 132, **0.07** | 4/4 132, 0.41 | **2/4 130, 277 bars** | **0.04** | S1: B's reading tracks a pulse of three quarters (rho 3) under 4/4, which slips a beat at a time when the tempo moves (6 beats over 4 minutes) |
+| p6 | 4/4 140, 0.29 | 4/4 140, 0.27 | **3/4 143**, 107 bars | 0.86 | (Beat This marks a downbeat every three beats) |
+
+Beat This on these six: its downbeat period is the confirmed 4/4 bar in **2 of 6** (p1, p5), half a bar in 3, three beats in 1; its beat track
+changes pulse level or adds beats in 5 of 6. As wired, the share of the downbeats on the bar lines (which every shorter bar raises) and a
+4.9-nat bonus for standing on the helper's track made all six HB readings wrong. **Steady is not right**: perfectly regular half-bar downbeats
+on a 4/4 piece read as 2/4, regular three-beat downbeats as 6/8 or 3/4 (the review's synthetic cases), so a real tracker's beats must not
+choose the bar length at all.
+
+**The catalogue** (the trainer's hold-out performances, never fitted): with metre and tempo right, the phase is right in 202 of 213 (95 %). The
+covers' cause was not in the benchmark: a cover starts with an intro, a pickup or in the middle of a phrase. Made measurable with a held-out
+family (`startsLater`: each hold-out performance cut 1-3 beats after a bar line, k from its id): v1.1 is right in 0.456 of these (294; with
+metre and tempo right, 134 of 183, 37 two beats off) - the first-onset prior decides the half-bar phase, the accents of beats 1 and 3 are too
+alike to overrule it.
+
+**The off-beat notes (part B).** Both note sets of each cover on ONE skeleton (H's), S3 on each, notes matched by key and onset within 80 ms:
+**887 of 10,009 matched notes (8.9 %) are written on different grid positions** (p1 3.1 %, p2 4.1 %, p3 7.6 %, p4 3.6 %, p5 18.9 %, p6 10.2 %). Of
+these **79 % sit in beats whose grid kind differs** (triplet against 16ths or swing), **70 % in beats where the browser heard fewer onsets** (three of
+four 16ths heard at 0, 0.36, 0.64 of a beat read as a triplet), and only **29 % are heard more than 25 ms apart**; the browser's onsets are all on its
+32-ms frames. On the benchmark S3 with the true beats places 98 % of onsets right in every family. **The browser's off-beat notes are mostly its
+missing notes** (the AMT ceiling the helper path removes), then the grid kind of an ambiguous beat; S3 was not changed.
+
+### 36.3 What was built (the shipped version)
+
+| Piece | File | What it is |
+| --- | --- | --- |
+| the metre model | `rec/weights/ai5a-v1.json` | v1.1's weights and tables, byte for byte (`train.js` fits them exactly as before; every v1.1 evaluation number identical); the file is v1.2 because it carries the phase step |
+| the phase step | `rec/metre.js` `choose` (`phaseGroup`, `phaseFeatures`); the weights' `phase` | After the metre model has chosen its reading, the readings of the **same pulse frame (track, rho, swing) and metre** - its other bar phases, nothing else - are scored by three learned weights: the metre model's own score difference (0.99), the harmonic rhythm weighed by the chord share (0.51) and the helper's downbeats as phase evidence (4.89). Another phase replaces the metre model's own **only when it scores at least the learned margin (0.5) more**. Runs only when the metre model heard no downbeats. The **posterior and confidence returned are the metre model's own reading's** (they say how sure the metre choice is; a phase move does not change them). |
+| harmonic rhythm | `rec/model.js` `harmonicContrast`, `chordShare` | The attacks' pitch classes (the bass twice) summed per window (half a bar in 4/4, 2/2, 12/8; a beat otherwise); per bar, the chord change at its bar line minus the mean change at its inner boundaries; the mean, times the square root of the beats (capped at 100), **times min(1, chord share / 0.3)**, the chord share being the share of attacks that sound two or more pitch classes at once. A melody alone or in octaves has a chord share of 0: its "harmonic" contrast was its own melodic steps, and it no longer counts. |
+| downbeats as phase evidence | `rec/model.js` `phaseShares`, `phaseDown` | The share of the downbeats on each phase's bar lines minus the best phase's, times how far the best is above chance: downbeats every half bar leave the two half-bar phases alike; every three beats under 4/4 they say nothing. |
+| the helper's beats | `rec/index.js` `helperUse`, `gateOk`, `phaseOk`; `audio-score.js` (one line in `recordingV2`); `rec/beats.js` `steadyShare`, `audioTrack` options | **The beats of a real tracker (Beat This on the user's PC, any helper, a replay) never reach the metre model**: their downbeats are phase evidence only. Only beats the caller marks as the score's bar lines (`opts.recBeats: 'oracle'`, which the benchmark's adapters set for its own performer's beats, recognised by `beatConfidence`, and the trainers for their humanized data) reach it as before, and only through a well-formed `helperGate` (one pulse, one steady bar). A missing or broken `phase` or gate fails closed: no phase step, no beats to the metre model. |
+| training | `rec/tools/train.js` (CONFIG `phase`) | The metre model is fitted as before. The phase step afterwards, **on the training half only**: for each chord-share saturation in {0.1, 0.2, 0.3, 0.5, 1}, a conditional logit over each performance's group (3 weights, Newton) and the margin in {0, 0.25, ..., 4} with the most right training readings (then the fewest broken, then the larger margin); the saturation by the same rule. Data: the training performances, every 4th performance of the first row starting 1-3 beats after a bar line (`startsLater`), and the helper rows with their beats withheld from the metre model (`phaseOnly`). Evaluated once on the hold-out (`evaluation.phase`). `--check` in the gate. |
+| S6 | `rec/weights/ai5b-rests-v1.json` | Refitted by `train_rests.js`'s own rule on the new phases (threshold 0.45, as main). |
+| plumbing | `tools/home-worker/worker.js` (+ README), `home-result.js`, the page (three small hunks) | The worker runs `beat_track.py` (Beat This, CPU, about 4 s a song) after the piano models when it sits beside `transcribe.py` (setting `beats`, default on; failure sends the notes alone); the result carries `beats` and `downbeats`. `home-result.js` keeps them only well formed (at most 20,000 each, finite, rising, within the duration + 1 s, downbeats only with beats) and **never fails a result because of them**: malformed ones, or ones that would pass the 2 MB cap, are left out and the notes kept (`beatsLeftOut`). The page puts them in the heard object (`homeHeard`, four beats or more) and gives them to the v2 conversion only (`finishHeard`, and `writeNotationAgain` the same way; a PC result written the classic way stays notes-only). **A song reopened later has no beats**: `heardForSong` rebuilds the heard notes from the kept graph, which does not keep them, so "Write the notation again" after a reload reads the notes alone (the phase evidence of the original conversion is lost; the metre and tempo are not affected, since the beats never reach them). |
+| tests | `tests/rec/skeleton-phase.test.js`, `phase-fixtures.js`, `skeleton-covers-mutation.test.js`, `v2.test.js`; `tests/home-worker/{jobs,worker,page}.test.js`, `fake-beat-track.js` | The phase step changes only the phase; its candidates are one frame and one metre; a 4/4 piece starting 1-3 beats into a bar keeps its bar lines; **a real tracker's steady bar, half-bar and three-beat downbeats and a mixture leave the notes' 4/4 and tempo** (only trusted, steady beats are used); a real tracker's downbeats reach the phase step (they move the bar lines of a piece whose notes cannot tell); **a phase move leaves the posterior and confidence**; the audio gate; the downbeat evidence's shape; the harmonic contrast; the committed configuration; `startsLater`. Eight planted defects, each caught: no phase step, no harmonic rhythm, a phase step that may change metre, the downbeats not wired to the phase step, a real tracker's beats used, the confidence of the moved phase, no helper gate, no extra-beat gate. The worker's beats, their validation (left out, never failing a result), the page's heard object. |
+
+### 36.4 Results
+
+**The six covers** (the page's conversion; main -> now). **v2 6 of 6 in 4/4** (`real-covers.js`; classic 4 of 6). B and H are **identical to main**
+on all six; HB (helper notes + beats) is **the helper-notes reading** on all six (the beats never reach the metre model, and their phase evidence moved
+no bar line), where main as wired read 2/4, 3/8, 2/4, 3/8, 2/4, 3/4.
+
+| piece | B | H | HB: main -> now | B and H bar lines in common | proxy B / H |
+| --- | --- | --- | --- | --- | --- |
+| p1 | 4/4 162, 89 bars | 4/4 162, 89 | 2/4 167, 257 -> 4/4 162, 89 (= H) | 0.91 | 0.78 / 0.71 |
+| p2 | 4/4 120 swung, 76 | the same | 3/8 180, 305 -> 4/4 120 swung, 76 (= H) | 1.00 | 0.59 / 0.59 |
+| p3 | 4/4 97, 122 | 4/4 97, 121 | 2/4 194, 511 -> 4/4 97, 121 (= H) | **0.00** (the second round's 0.75 is gone) | 0.15 / 0.18 |
+| p4 | 4/4 86, 86 | 4/4 171, 172 | 3/8 129, 347 -> 4/4 171, 172 (= H) | 0.99 | 0.56 / 0.91 |
+| p5 | 4/4 132, 136 | 4/4 132, 134 | 2/4 130, 277 -> 4/4 132, 134 (= H) | 0.04 | 0.07 / 0.41 |
+| p6 | 4/4 140, 77 | 4/4 140, 77 | 3/4 143, 107 -> 4/4 140, 77 (= H) | 0.86 | 0.29 / 0.27 |
+
+**p3's gain is lost in this round**: its browser reading's other half-bar phase scores 0.37 more than the metre model's own, under the margin of 0.5
+the training half chose. (It was agreement between two transcriptions of one recording, not truth against a score.)
+
+**The review's synthetic families** (its scripts, 120 longer and 100 short pieces per row, random melodies in 4/4 at 80-150; right = the written bar
+lines on the true ones; main -> now): melody alone starting on a bar line **80 -> 80 (0 broken)**, in octaves **82 -> 82 (0 broken)**, the short clips
+60 -> 60 and 56 -> 56 (0 broken); the second round had broken 8, 12 and 8. With a bass: 0 broken except bass2 (a bass on beats 1 and 3) starting on
+beat 4 (5 broken, 6 gained) and its short clips starting on beat 2 (4 broken, 1 gained). Melody-only pieces starting inside a bar gain nothing now
+(the second round gained 5 + 3 + 2 + 1; those were the same noise that broke the others).
+
+**The skeleton** (`rec/tools/ai5a-v1.evaluation.json`): every number of v1.1's evaluation identical. The phase step (`evaluation.phase`; right = metre,
+tempo and 90 % of the bar lines; the metre and tempo never move; chord-share saturation 0.3 and margin 0.5 chosen on the training half):
+
+| set | n | right before -> after | moved | broken / gained |
+| --- | --- | --- | --- | --- |
+| training performances | 3,084 | 0.660 -> 0.665 | 36 | 2 / 18 |
+| training, later starts and helper rows phase-only | 1,006 | 0.505 -> 0.546 | 48 | 0 / 41 |
+| hold-out | 312 | 0.651 = 0.651 | 0 | 0 / 0 |
+| **hold-out starting 1-3 beats into a bar** | 294 | 0.456 -> **0.500** | 16 | 1 / 14 |
+| hold-out helper rows, downbeats as phase evidence only | 104 | 0.587 -> 0.606 | 4 | 0 / 2 |
+
+(The second round reached 0.517 on the later-start hold-out without the chord share and the margin; this round gives up 0.017 of it.)
+
+**The benchmark** (v2 rows, main -> now; **metre and tempo identical in every row and class of every suite**; the legacy and app rows identical case by
+case; bold = better). **These suites are in-sample for the phase step**: their references are the catalogue's, whose training performances (8 rows a
+reference in train0) the step was fitted on; the hold-out references are measured only in the trainer's evaluation above.
+
+| suite | rows | n | usable | rec.usable | metre | tempo | beat pl. | structure | values | downbeat F1 | onset_pos | false rests / 100 bars |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| rec-core | none | 564 | 0.378 -> **0.385** | 0.204 | 0.598 | 0.846 | 0.553 -> **0.567** | 0.629 -> **0.637** | 0.784 | 0.769 -> **0.783** | 0.601 -> **0.615** | 18.8 -> **18.7** |
+| rec-core | none, 4/4 | 220 | 0.573 -> **0.591** | 0.282 | 0.927 | 0.900 | 0.745 -> **0.764** | 0.836 | 0.750 | 0.859 -> **0.878** | 0.802 -> **0.821** | 18.0 -> **17.6** |
+| rec-core | none, 2/2 | 16 | 0.000 | 0.000 | 0.000 | 0.750 | 0.500 -> **0.750** | 0.625 -> **0.875** | 0.688 | 0.679 -> **0.927** | 0.512 -> **0.762** | 16.2 -> 18.3 |
+| rec-core | oracle-noisy | 282 | 0.521 | 0.216 | 0.791 | 0.872 | 0.791 | 0.887 | 0.872 | 0.954 | 0.831 | 10.5 -> **10.4** |
+| rec-robust | none | 141 | 0.454 -> **0.461** | 0.142 | 0.624 | 0.858 | 0.553 -> **0.567** | 0.638 -> **0.645** | 0.809 | 0.776 -> **0.790** | 0.615 -> **0.629** | 25.5 -> 25.6 |
+| rec-robust | oracle-noisy | 141 | 0.645 | 0.220 | 0.794 | 0.887 | 0.809 | 0.887 | 0.858 | 0.956 | 0.844 | 18.1 -> **18.0** |
+| rec-grid | none | 141 | 0.426 -> **0.433** | 0.163 | 0.582 | 0.837 | 0.518 -> **0.532** | 0.596 -> **0.603** | 0.787 | 0.752 -> **0.766** | 0.575 -> **0.589** | 21.8 -> **21.7** |
+| rec-grid | oracle | 564 | 0.559 | 0.216 | 0.787 | 0.879 | 0.803 | 0.883 | 0.855 | 0.956 | 0.839 | 13.5 = |
+| rec-smoke, replay-of-v2, rec-arrange-smoke | - | 48 / 20 / 64 | identical (PASS, no change) | | | | | | | | | |
+| replay-public-v2 (the real helper's output, its beats now phase evidence only) | - | 6 | every gate identical; one case writes different music | | | | | | | | | |
+
+The oracle-beat 2/4 and 3/8 rows are identical to main (rec-core oracle-noisy 2/4 metre 0.833, 3/8 0.833; rec-grid oracle 2/4 0.823, 3/8 0.778).
+
+**What still loses** (per case, v2 rows, main -> now):
+- **False rests**: rec-core 5 cases worse against 11 better - *how-firm-a-foundation* in four families (0 or 6.3 -> 11.8 per 100 bars) and czerny599/048
+  (37.5 -> 44.4); rec-grid 6 worse / 8 better; rec-robust 1 / 3. The 2/2 class's mean 16.2 -> 18.3 (16 cases). (beyer/033's 16.7 -> 30.8 of the second
+  round is gone.)
+- **Note-value accuracy** (`notation.duration.accuracy`): rec-grid **13 small drops against 5 gains** (o-holy-spirit-enter -0.004 twice, burgmuller25/021,
+  czerny849/002 and /011, sonatina/021, /027 three times, /028 twice: each -0.001 to -0.004; M08 -0.051 twice), rec-core 5 against 4 (czerny599/048
+  -0.019, M08 -0.051 / -0.054). Most of the rec-grid ones are oracle rows, where the phase step does not run: they come from S6's refit (its own rule
+  on the new phases), not from a phase move.
+- **M08** (a 4/4 pickup micro piece): its bar lines became right in four rows (beat placement 0 -> 1, usable 0 -> 1) while its note-value accuracy fell
+  0.966 -> 0.915 and 0.946 -> 0.893 in two (the gate's no-drop rule for micro pieces; rebaselined with this reason).
+- **The hold-out**: the only hold-out slice of the gate and nightly suites (rec-hands-play's hymns in octave texture) - see 36.8.
+
+### 36.5 Identity, determinism, budget
+
+- **The classic path is byte-identical** (the legacy and app rows of rec-core 1,692, rec-robust 564, rec-smoke 96 case by case). **The metre model is
+  v1.1's** (weights and tables byte-identical). A model file without `phase` reads as v1.1 did (beats included).
+- **Determinism**: `train.js --check`, `train_rests.js --check` and `train_hands.js --check` "same" on Windows; the first two in the gate on Linux.
+- **Budget**: the phase step scores one group (8 readings in 4/4) after the metre model. `train.js --check` extracts the later-start, phase-only and
+  evaluation sets too and fits the step for five saturations (seconds; the gate's step time is in the PR).
+
+### 36.6 The first version, and why it was replaced (tried and lost)
+
+The first version (commits `856c122`, `286abe7`) changed the metre model itself: `hbar` as its 27th feature (absolute, so it also voted on the metre),
+readings restricted to metrical pulse levels, training on later starts, and the helper's downbeats as phase evidence only for every input. It made all
+six HB readings equal H's and the browser and helper readings of p3, p1, p4 and p5 agree, but **p6 became 3/4 (H) and 6/8 (B)**, rec-robust without
+beats lost 0.021 usable, false rests rose 1-2.6 per 100 bars, and the benchmark's exact-downbeat 2/4 and 3/8 rows fell to the no-beats level. Other
+variants measured and dropped: the downbeats' period as metre evidence (broke p3 and p4 again), no bonus or an unrestricted bonus for the helper's
+track (p2 and p4 read 3/8), the harmonic rhythm as a relative phase feature inside the metre model (no effect), a gate on irregular intervals only.
+**S3 for the off-beat notes**: not changed; a miss-aware occupancy model would need the engine at conversion time and a benchmark family with the
+browser's real miss rate (about 30 % on covers against 2-4 % in `cover+of`).
+
+### 36.7 The review round (the independent review of the second version, MERGE AFTER FIXES)
+
+1. **Steady-but-wrong helper beats reached the metre model** (the second version's gate tested steadiness only): now a real tracker's beats are never
+   'used'; only the benchmark's own performer's beats are (`opts.recBeats 'oracle'`). Synthetic regression cases: steady bar, half-bar and three-beat
+   downbeats and a mixture on a 4/4 piece leave the notes' 4/4 at the same tempo.
+2. **The harmonic term moved right phases on melody-only and octave-doubled music** (the review: 8, 12 and 8 broken on its melody, octave and clip
+   families; *my-hope-is-built* in octave texture lost its bar lines): weighed by the chord share and gated by a margin, both chosen on the training half
+   (0 broken now on those three families; *my-hope-is-built*: 36.8).
+3. **Posterior and confidence were stale after a move** (confidence 0.65 -> 0.03 made the review screen say "the metre was hard to hear" on the pieces the
+   step fixed): they are the metre model's own reading's now (tested on the later-start fixtures: unchanged by a move).
+4. Mutation cases for the downbeats' wiring, the real-beats rule and the confidence.
+5. `writeNotationAgain` hands the PC's beats to v2 only, as `finishHeard`; a reloaded song has no beats (stated in 36.3).
+6. The weights' `phase` and `helperGate` are validated (fail closed); beats never fail a result (left out first, also at the size cap).
+7. This section states what is in-sample, what is agreement rather than truth, and what still loses.
+
+### 36.8 Nightly suites
+
+Run locally one after another in the order of bench.yml nightly-rec, then rec-full unsharded (11,196 cases); against main:
+
+| suite | result | what moved (v2 rows, main -> now) |
+| --- | --- | --- |
+| mutation-check --rec | PASS | every harmful mutation caught, the no-op identical (REC-V2-NO-AUDIO-BEATS plants its defect on the gated line of rec/index.js) |
+| mutation-check --rec-arrange, --rec-arrange-lead | PASS | - |
+| rec-arrange-core, rec-arrange-full, rec-arrange-play | PASS | no gated change; not rebaselined |
+| rec-hands-play (the hold-out references, seed 11, among them) | rebaselined | 10 of 772 v2 rows change a phase metric, all on training references: how-firm-a-foundation (4 rows) and M08 (4) bar lines right now (beat placement 0 -> 1), czerny849/002 downbeat F1 0.667 -> 0.630 (2 rows); **no hold-out row changes a phase metric**; *my-hope-is-built* (octave texture) identical to main; usable 0.253 -> 0.257, beat placement 0.368 -> 0.377, downbeat F1 0.629 -> 0.639, false rests 85.0 -> 85.0, metre identical |
+| rec-full (aggregates) | rebaselined | usable 0.443 -> 0.448, rec.usable 0.193 -> 0.194, beat placement 0.643 -> 0.651, structure 0.721 -> 0.727, downbeat F1 0.808 -> 0.817, onset_pos 0.687 -> 0.696, false rests 15.77 -> 15.68; metre and tempo identical; lost: the irregular metre class (6/4, 5/4) rest precision 0.074 -> 0.069 |
+
+### 36.9 Limits
+
+1. **No ground truth for a cover's phase** beyond the user's word for the metre; the phase step moved no bar line of the six.
+2. **The benchmark gains are in-sample**; on hold-out references the step is measured only by the trainer (later-start family 0.456 -> 0.500, the plain
+   hold-out unchanged).
+3. **The browser's slips (p5) and tempo octaves (p4) are the metre model's** and stay as on main.
+4. **The benchmark has no family with Beat This's real behaviour** (half-bar downbeats, level changes, extra beats); with the beats kept out of the metre
+   model that no longer decides a reading.
+5. **The browser's off-beat notes are mostly its missing notes**: unchanged.
+6. **The PC path needs the worker on the user's PC updated** (`D:/PPP-worker`, `beat-this` in its venv) and the site deployed before beats arrive; even
+   then they only inform the phase.
+
+### 36.10 Verification (commands)
+
+- `node rec/tools/train.js --check` (gate; the metre model and the phase step), `node rec/tools/train.js --check --cv --families`;
+  `node tests/bench/tools/train_rests.js --check` (gate); `python tests/bench/tools/hands_data.py && node tests/bench/tools/train_hands.js --check`.
+- `npm run test:rec`, `npm run test:home-worker`, `node tests/home-worker/page.test.js` (puppeteer on `NODE_PATH`).
+- `python tests/bench/run.py run --suite S` and `check --suite S`: rec-core, rec-grid, rec-robust rebaselined ("G10a-1d review round: ..."); rec-smoke,
+  rec-arrange-smoke, replay-of-v2, replay-public-v2 unchanged against main.
+- The six pieces (private): `node rec/tools/real-covers.js --heard <dir> --truth <private truth.json>`; the review's synthetic families: its scripts
+  (`mc2.js`, `mc4.js`) on main and on this tree.
+
+**Roadmap line.** G10a-1d (AI-5a/5b, Opus): the bar phase. Causes measured (the first onset decides beat 1 on covers: a held-out family of pieces
+starting inside a bar is right in 0.456; the helper's Beat This beats read as bar lines made all six real covers wrong). Built: a phase step after the
+unchanged v1.1 metre model (the harmonic rhythm weighed by the chord share, later-start training, a learned margin) and a real tracker's beats as phase
+evidence only, never metre or tempo. Metre and tempo identical everywhere; the later-start hold-out 0.456 -> 0.500; rec-core without beats usable 0.378 ->
+0.385, beat placement 0.553 -> 0.567, downbeat F1 0.769 -> 0.783 (in-sample); all six covers 4/4 from browser, helper and helper+beats notes (HB = the
+helper-notes reading); no bar line of the six moved. The browser's off-beat notes: measured (70 % of the browser-helper differences in beats where the
+browser missed notes), not changed.

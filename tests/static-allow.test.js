@@ -68,13 +68,14 @@ function expectedServed(rel) {
   const ext = path.extname(name);
   if (parts.length === 1) return ROOT_SERVED.indexOf(name) > -1;
   const top = parts[0];
+  /* G11a-3: PPP.practice 'graph' loads practice/plan.js; G11b-1: PPP.learner 'typed' loads practice/runlog.js. Nothing else of practice/ (the simulator and the variant splice are not loaded by any page) */
+  if (top === 'practice') return rel === 'practice/plan.js' || rel === 'practice/runlog.js';
   if (CODE_DIRS.indexOf(top) > -1) {
     if (parts.length === 2) return ext === '.js';
     if (parts.length === 3 && parts[1] === 'weights') return ext === '.json' && (top === 'rec' || top === 'difficulty');
     return rel === 'difficulty/tools/dataset/method-books.json';
   }
-  if (top === 'omr') return rel === 'omr/normalize.js';           /* G12-1: the page's lazy normaliser; omr/helper-output.js is the local helper's */
-  if (top === 'practice') return rel === 'practice/runlog.js';    /* G11b-1: the run log, fetched only under PPP.learner 'typed'; plan.js, sim.js and variant.js are Node-only */
+  if (top === 'omr') return rel === 'omr/normalize.js' || rel === 'omr/apply.js';           /* G12-1, G12-2: the page's lazy normaliser and findings module; omr/helper-output.js is the local helper's */
   if (top === 'i18n') return parts.length === 2 && ext === '.json';
   if (top === 'audio') return parts.length === 3 && parts[1] === 'piano' && ext === '.mp3';
   if (top === 'assets') return ext === '.png';
@@ -99,14 +100,14 @@ test('isServed: the examples that matter', () => {
     'difficulty/tools/dataset/method-books.json', 'i18n/ko-KR.json', 'audio/piano/A0.mp3', 'assets/hands/hand-right-black.png',
     'catalog/index.json', 'catalog/method/index.json', 'catalog/hymns/index.json', 'catalog/hymns/all-creatures.musicxml', 'catalog/method/beyer/001.mxl',
     'samples/prelude-fragment.musicxml', 'vendor/vexflow-4.2.3.js', 'vendor/LICENSE-vexflow.txt', 'vendor/react-18.3.1/react.production.min.js',
-    'vendor/react-18.3.1/LICENSE-react.txt', 'THIRD_PARTY_NOTICES.md', 'omr/normalize.js'].forEach(rel => assert.equal(allow.isServed(rel), true, rel));
+    'vendor/react-18.3.1/LICENSE-react.txt', 'THIRD_PARTY_NOTICES.md', 'omr/normalize.js', 'omr/apply.js', 'practice/plan.js', 'practice/runlog.js'].forEach(rel => assert.equal(allow.isServed(rel), true, rel));
   ['server.js', 'render.yaml', 'package.json', 'package-lock.json', 'Dockerfile', 'README.md', 'index.html', 'static-allow.js', 'home-jobs.js', 'share-guest.js', 'omr-service.js',
     'arrange_score.py', 'transcribe.py', 'omr/helper-output.js', 'omr/normalize.js.map', 'omr/README.md', DOCS + '/PPP_MASTER_ROADMAP.md', WORKER_DIR + '/worker.js', 'tests/boot.js', 'tools/anything', 'rec/tools/train.js', 'rec/tools/key-eval.js', 'scoregraph/README.md',
     'scoregraph/tools/notation-check.js', 'difficulty/tools/train.js', 'audio/piano/README.md', 'catalog/shared-seeds.json', 'catalog/build-shared-seeds.js',
     'catalog/hymns/build.js', 'catalog/method/books.json', 'catalog/method/build.py', 'catalog/method/src/beyer/001.abc', 'vendor/README.md', 'vendor/.gitattributes',
     '.env', '.git/config', '.github/workflows/bench.yml', 'data/store.json', 'node_modules/pg/package.json', 'review/build.js', 'Server.js', 'SUPPORT.JS', 'scoregraph/INDEX.JS',
     'scoregraph/../server.js', 'vendor/../server.js', 'vendor/./vexflow-4.2.3.js', 'vendor/react-18.3.1/../../server.js', '../server.js', '/server.js', 'scoregraph\\index.js', '', 'scoregraph/', 'scoregraph', 'scoregraph//index.js', 'support.js\0', 'support.js.',
-    'support.js::$DATA'].forEach(rel => assert.equal(allow.isServed(rel), false, JSON.stringify(rel)));
+    'support.js::$DATA', 'practice/sim.js', 'practice/variant.js', 'practice/plan.js.map', 'practice/../server.js', 'practice/tools/anything.js', 'Practice/plan.js'].forEach(rel => assert.equal(allow.isServed(rel), false, JSON.stringify(rel)));
   assert.equal(allow.isServed(null), false);
   assert.equal(allow.isServed(undefined), false);
   assert.equal(allow.isServed({}), false);

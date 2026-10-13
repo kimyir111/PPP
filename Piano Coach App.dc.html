@@ -50,7 +50,7 @@
 <script src="./scoregraph/musicxml-export.js?v=8"></script>
 <script src="./scoregraph/midi-file.js?v=8"></script>
 <script src="./scoregraph/midi-import.js?v=8"></script>
-<script src="./scoregraph/legacy-score.js?v=10"></script>
+<script src="./scoregraph/legacy-score.js?v=11"></script>
 <script src="./scoregraph/import.js?v=8"></script>
 <script src="./scoregraph/meter-grid.js?v=8"></script>
 <script src="./scoregraph/pro-critic.js?v=8"></script>
@@ -3516,6 +3516,169 @@ const PianoScore = {
   }
 };
 
+/* ============================ G11a-3: practice on the graph (PPP.practice) ============================
+   docs/GOALS/G11_ADAPTIVE_PRACTICE.md sections 5 (G11-D1, G11-D11) and 6.3. PPP.practice = 'legacy' (default) | 'graph'; a value that is neither is no choice, and no choice is the default.
+   'legacy' is the player the app has always had: practicePlan() below IS PianoScore.of (the same call, the same cache, the same object), the page asks for nothing of practice/ and
+   nothing else changes. 'graph' makes the plan from the ScoreGraph the renderer already resolves for the song (practice/plan.js, loaded only then, the first time it is asked for) and
+   hands the player, the matcher, the falling notes and follow mode the SAME shape of plan PianoScore.build makes, with the graph's ids on it (ev, head on a strike, id on a visit).
+   In this phase the plan runs in compat mode (every fix option off: the play order, the notes, the pedal, the beats are the legacy player's to the last bit, proved event by event by
+   tests/practice/parity.js), so 'graph' must look and sound exactly like 'legacy'; the fix options (jumps, graces, follow mode repeats and ties) are not reachable from the page (G11a-4).
+   A song whose graph does not state its music (the source is not resolved yet, its link is not ok, or the module is not here yet) keeps the legacy plan, and the fallback is counted
+   (PPP.practiceStats.practiceFallback: total, by reason, by song); nothing throws and playback is never held up.
+   The choice is remembered on this device (localStorage 'ppp.practice.v1'); ?practice=graph or ?practice=legacy in the address is for that visit only. */
+const PRACTICE_KEY = 'ppp.practice.v1';
+const PRACTICE_DEFAULT = 'legacy';
+const PRACTICE_PLAN_SCRIPT = 'practice/plan.js';
+const PRACTICE_FILE_V = 1; /* the ?v= of practice/plan.js: bump it when the file changes */
+function practiceChoice(v) { return v === 'legacy' || v === 'graph' ? v : null; }
+let PRACTICE_MODE = (() => {
+  let m = PRACTICE_DEFAULT;
+  try { m = practiceChoice(localStorage.getItem(PRACTICE_KEY)) || m; } catch (e) { /* no storage: the default */ }
+  try { const u = practiceChoice(new URLSearchParams(location.search).get('practice')); if (u) m = u; } catch (e) { /* no address to read */ }
+  return m;
+})();
+/* a choice is remembered; a value that is no choice puts the default back and forgets the remembered one. 'graph' asks for practice/plan.js. */
+function setPracticeMode(v) {
+  const c = practiceChoice(v);
+  PRACTICE_MODE = c || PRACTICE_DEFAULT;
+  try { if (c) localStorage.setItem(PRACTICE_KEY, c); else localStorage.removeItem(PRACTICE_KEY); } catch (e) { /* not remembered */ }
+  if (c === 'graph') loadPracticeModule();
+  return PRACTICE_MODE;
+}
+/* what 'graph' did: plans made from a graph, and the plans that stayed legacy, by reason and by song (the id of the Score, like PPP.engraveStats.bySong) */
+const PRACTICE_STATS = { graph: 0, practiceFallback: { total: 0, reasons: {}, bySong: {} } };
+function practiceCountFallback(score, reason) {
+  const f = PRACTICE_STATS.practiceFallback;
+  f.total++;
+  f.reasons[reason] = (f.reasons[reason] || 0) + 1;
+  const id = String(score && score.id != null ? score.id : '?');
+  const s = f.bySong[id] || (f.bySong[id] = { total: 0, reasons: {} });
+  s.total++;
+  s.reasons[reason] = (s.reasons[reason] || 0) + 1;
+}
+function practiceModuleReady() {
+  const P = typeof window !== 'undefined' && window.PPPPractice && window.PPPPractice.plan;
+  return !!(P && typeof P.build === 'function' && typeof P.followGates === 'function');
+}
+let _practicePromise = null, _practiceFailedAt = 0;
+/* practice/plan.js, once; resolves true when PPPPractice.plan is on the page, false when it could not be had (asked for again, at most every 20 s, by the next plan). Never rejects. */
+function loadPracticeModule() {
+  if (practiceModuleReady()) return Promise.resolve(true);
+  if (_practicePromise) return _practicePromise;
+  _practicePromise = new Promise(resolve => {
+    const done = () => { _practicePromise = null; const ok = practiceModuleReady(); if (!ok) _practiceFailedAt = Date.now(); resolve(ok); };
+    try {
+      const el = document.createElement('script');
+      el.src = './' + PRACTICE_PLAN_SCRIPT + '?v=' + PRACTICE_FILE_V;
+      el.async = true;
+      el.onload = done;
+      el.onerror = done;
+      document.head.appendChild(el);
+    } catch (e) { done(); }
+  });
+  return _practicePromise;
+}
+/* something that could turn a fallback into a graph plan has happened since: the module arrived, or the engraver resolved another Score (the source of a song is resolved without a
+   wait only after the renderer, or an import, has made it) */
+function practiceStamp() {
+  let n = 0;
+  try {
+    const st = window.PPPEngrave && window.PPPEngrave.app.stats;
+    if (st) n = (st.remembered || 0) + (st.resolved.live || 0) + (st.resolved.store || 0) + (st.resolved.projected || 0) + (st.resolved.none || 0);
+  } catch (e) { /* no engraver */ }
+  return (practiceModuleReady() ? 'm' : 'x') + n;
+}
+/* Score note of every graph head: the link of the source says which graph event and head each Score note is (engrave/source.js identity) */
+const PRACTICE_HEADS = new WeakMap();
+function practiceHeads(score, link) {
+  const by = link && link.byNote, notes = score && score.notes;
+  if (!by || !notes || by.length !== notes.length) return null;
+  let m = PRACTICE_HEADS.get(link);
+  if (!m) {
+    m = new Map();
+    for (let i = 0; i < notes.length; i++) { const l = by[i]; if (l && l.head) m.set(l.head, notes[i]); }
+    PRACTICE_HEADS.set(link, m);
+  }
+  return m;
+}
+/* The graph plan of a range, or {reason} (never throws). `a`/`b` are measure numbers, as PianoScore.of takes them. The strikes name their Score note (strike.note: what the matcher, the falling
+   notes and the scheduler read today) next to the graph's ev/head, and plan.hold / plan.cont answer for the Score notes too (PianoScore.hold and .struck take a Score note), so every reader of
+   the plan reads what it read before. */
+function practiceGraphBuild(score, a, b, src0) {
+  if (!practiceModuleReady()) {
+    if (!_practicePromise && Date.now() - _practiceFailedAt > 20000) loadPracticeModule();
+    return { reason: 'NOT_LOADED' };
+  }
+  if (typeof window === 'undefined' || !window.PPPEngrave) return { reason: 'NO_ENGRAVER' };
+  const ms = score.measures || [];
+  if (!ms.length || !score.notes) return { reason: 'EMPTY' };
+  let src = src0;
+  if (!src) { try { src = window.PPPEngrave.app.resolveSync(score); } catch (e) { return { reason: 'RESOLVE_ERROR' }; } }
+  if (!src || !src.graph) return { reason: 'NO_GRAPH' };
+  if (!src.link || !src.link.ok) return { reason: 'LINK_FAILED' };
+  const tl = src.graph.timeline && src.graph.timeline.measures;
+  if (!tl || tl.length !== ms.length) return { reason: 'MEASURES' };
+  const heads = practiceHeads(score, src.link);
+  if (!heads) return { reason: 'IDENTITY' };
+  const qpm = +score.tempo > 0 && isFinite(+score.tempo) ? +score.tempo : 84;
+  let plan;
+  try {
+    const i0 = (Score.measure(score, a) || ms[0]).index, i1 = (Score.measure(score, b) || ms[ms.length - 1]).index;
+    plan = window.PPPPractice.plan.build(src.graph, { range: { from: i0, to: i1 }, defaultQpm: qpm, legacyCompat: true, jumps: false, graces: false });
+    const strikes = plan.strikes;
+    for (let i = 0; i < strikes.length; i++) {
+      const n = heads.get(strikes[i].head);
+      if (!n) return { reason: 'IDENTITY' };
+      /* The Score puts a note where its measure NUMBER says, the graph where the measure IS: with two measures of one number (1, 2, 2, 3) the Score has both at the later one and the
+         graph at their own places, and the highlighter and the hand guide (which read the Score) would not follow the sound. Such a song keeps the legacy plan, counted. */
+      if (Math.abs(strikes[i].abs - n.abs) > 1e-6) return { reason: 'ABS_MISMATCH' };
+      strikes[i].note = n;
+    }
+    const holds = [], conts = [];
+    plan.hold.forEach((q, head) => { const n = heads.get(head); if (n) holds.push([n, q]); });
+    plan.cont.forEach(head => { const n = heads.get(head); if (n) conts.push(n); });
+    holds.forEach(h => plan.hold.set(h[0], h[1]));
+    conts.forEach(n => plan.cont.add(n));
+  } catch (e) {
+    return { reason: 'BUILD_ERROR' };
+  }
+  return { plan: plan, src: src };
+}
+const PRACTICE_CACHE = typeof WeakMap === 'function' ? new WeakMap() : null;
+/* One plan per (Score, range), like PianoScore.of: a graph plan is kept for good; a fallback whose reason can change (the module is not here, the engraver has no graph or no good link for the Score yet) is kept until
+   something that could change it has happened (practiceStamp), and then decided again, at most five times; the others (the graph and the Score disagree about the measures, a plan that cannot be built) for good. */
+const PRACTICE_RETRY = { NOT_LOADED: 1, NO_ENGRAVER: 1, RESOLVE_ERROR: 1, NO_GRAPH: 1, LINK_FAILED: 1 };
+function practiceGraphPlan(score, from, to) {
+  if (!score) return PianoScore.of(score, from, to);
+  const a = from == null ? Score.first(score) : from;
+  const b = to == null ? Score.last(score) : to;
+  const key = a + ':' + b;
+  let bag = PRACTICE_CACHE && PRACTICE_CACHE.get(score);
+  const hit = bag && bag[key];
+  if (hit && (hit.graph || !(hit.tries < 5 && PRACTICE_RETRY[hit.reason] && hit.stamp !== practiceStamp()))) return hit.plan;
+  const r = practiceGraphBuild(score, a, b, bag && bag.src);
+  const tries = hit && !hit.graph ? hit.tries + 1 : 1;
+  let entry;
+  if (r.plan) {
+    PRACTICE_STATS.graph++;
+    entry = { plan: r.plan, graph: true };
+  } else {
+    practiceCountFallback(score, r.reason);
+    entry = { plan: PianoScore.of(score, from, to), graph: false, reason: r.reason, tries: tries, stamp: practiceStamp() };
+  }
+  if (PRACTICE_CACHE) {
+    if (!bag) { bag = {}; PRACTICE_CACHE.set(score, bag); }
+    bag[key] = entry;
+    if (r.src) bag.src = r.src;
+  }
+  return entry.plan;
+}
+/* THE ONE FUNCTION the practice code asks for a plan (it replaced PianoScore.of at its nine call sites). Under 'legacy' it is PianoScore.of, with nothing else done. */
+function practicePlan(score, from, to) {
+  if (PRACTICE_MODE !== 'graph') return PianoScore.of(score, from, to);
+  return practiceGraphPlan(score, from, to);
+}
+
 /* ============================================================================
    FALLING-NOTE TIMELINE
 
@@ -3584,7 +3747,7 @@ function scoreToVisualTimeline(score, options) {
   }
   const from = options.from == null ? Score.first(score) : options.from;
   const to = options.to == null ? Score.last(score) : options.to;
-  const plan = options.plan || PianoScore.of(score, from, to);
+  const plan = options.plan || practicePlan(score, from, to);
   const practiceTempo = +options.tempo || score.tempo || 84;
   const scale = practiceTempo / Math.max(1, score.tempo || practiceTempo);
   const notes = [];
@@ -5193,6 +5356,47 @@ function graphToReviewScore(g, title) {
    NOT in the page's script list: they are fetched in the background once the page has settled (warmSingleModules), or by the
    first arrangement if that comes sooner, in this order (each file's own header says which it needs before it; all are UMD,
    none calls Node's require in the browser). Nothing is loaded while another mode (legacy, g8) is set. */
+/* A failed eager script does not stop the page from opening, but index.js then
+   cannot publish PPPScoreGraph. Retry the head's own list, in its original order.
+   Reload its consumers too: their factories may have kept a missing dependency.
+   Healthy pages make no extra requests; concurrent callers share one recovery. */
+let _scoreModulesPromise = null;
+let _scoreModulesFailed = false;
+function scoreModulesReady() {
+  return !_scoreModulesFailed && !!(window.PPPScoreGraph && window.PPPAudioScore && window.PPPSongGraph && window.PPPRealize && window.PPPEngrave);
+}
+function loadScoreModules() {
+  if (_scoreModulesPromise) return scoreModulesWait(_scoreModulesPromise);
+  if (scoreModulesReady()) return Promise.resolve(true);
+  const scripts = [...document.head.querySelectorAll('script[src]:not([data-score-recovery])')]
+    .map(el => el.getAttribute('src'))
+    .filter(src => /^\.\/(?:scoregraph|playability|difficulty|songgraph|arrangement|realize|engrave)\/|^\.\/audio-score\.js(?:\?|$)/.test(src));
+  if (!scripts.length) return Promise.resolve(false);
+  const stamp = Date.now();
+  _scoreModulesPromise = Promise.all(scripts.map(src => new Promise(resolve => {
+    const el = document.createElement('script');
+    el.setAttribute('data-score-recovery', '');
+    el.src = src + (src.includes('?') ? '&' : '?') + 'retry=' + stamp;
+    el.async = false;
+    el.onload = () => { el.remove(); resolve(true); };
+    el.onerror = () => { el.remove(); resolve(false); };
+    document.head.appendChild(el);
+  }))).then(results => {
+    _scoreModulesFailed = false;
+    const ok = results.every(Boolean) && scoreModulesReady();
+    _scoreModulesFailed = !ok;
+    return ok;
+  }).catch(() => { _scoreModulesFailed = true; return false; })
+    .then(ok => { _scoreModulesPromise = null; return ok; });
+  return scoreModulesWait(_scoreModulesPromise);
+}
+function scoreModulesWait(promise) {
+  /* A stalled request cannot hold an import forever. Keep sharing the actual
+     download after the wait expires, so a retry cannot execute a late copy twice. */
+  let timer;
+  return Promise.race([promise, new Promise(resolve => { timer = setTimeout(() => resolve(false), 15000); })])
+    .then(ok => { clearTimeout(timer); return ok; });
+}
 const SINGLE_SCRIPTS = [
   'realize/handchords.js', 'realize/clefs.js', 'realize/ottava.js',
   'critics/voice-leading.js', 'critics/register-density.js', 'critics/register-floor.js', 'critics/left-hand-jump.js',
@@ -5202,6 +5406,7 @@ const SINGLE_SCRIPTS = [
 let _singleScriptsPromise = null;
 const _singleLoaded = new Set(); /* the scripts of the list that have loaded (and so run) */
 function loadSingleModules() {
+  if (_scoreModulesPromise || !scoreModulesReady()) return loadScoreModules().then(ok => ok ? loadSingleModules() : false);
   /* ready only when EVERY script has loaded: a run where one of the twelve others failed is not ready, even though candidates and repair are there */
   if (SINGLE_SCRIPTS.every(src => _singleLoaded.has(src))) return Promise.resolve(true);
   if (_singleScriptsPromise) return _singleScriptsPromise; /* a download in flight is shared: nothing is asked for twice */
@@ -5467,7 +5672,8 @@ function forgetRunLog(songId) {
    'legacy' is the import this page made before G12-1, byte for byte: the helper's `musicxml` field, Import.mergeMusicXml, the hand rule as it was. 'v2' keeps what the
    engine read (omr/normalize.js): every movement of every page, a repaired <divisions>, one grand staff for a piano the engine split into parts, bars counted once; and
    a piano import from the engine never has a silent staff. Layers, the first that holds a choice wins: ?omr= in the address (this visit only), the device's remembered
-   choice (localStorage 'ppp.omr.v1'), the default. omr/normalize.js is fetched when a v2 import needs it, never by a page that does not import a scan or a photo. */
+   choice (localStorage 'ppp.omr.v1'), the default. omr/normalize.js is fetched when a v2 import needs it, never by a page that does not import a scan or a photo.
+   G12-2: a 'v2' import is also a ScoreGraph (Import.omrS4: scoregraph/import.js, the findings of the page's lines as edits of it, omr/apply.js, fetched the same way) kept with the song; 'legacy' never asks for omr/. */
 const OMR_KEY = 'ppp.omr.v1';
 const OMR_DEFAULT = 'legacy';
 function omrChoice(v) { return v === 'v2' || v === 'legacy' ? v : null; }
@@ -5490,12 +5696,26 @@ function loadOmrNormalize() {
   if (_omrNormalizePromise) return _omrNormalizePromise;
   _omrNormalizePromise = new Promise(resolve => {
     const el = document.createElement('script');
-    el.src = './omr/normalize.js?v=1';
+    el.src = './omr/normalize.js?v=2';
     el.onload = () => resolve(window.PPPOmrNormalize || null);
     el.onerror = () => resolve(null);
     document.head.appendChild(el);
   }).then(m => { if (!m) _omrNormalizePromise = null; return m; });   /* a failed fetch is asked for again next time */
   return _omrNormalizePromise;
+}
+/* G12-2: omr/apply.js (the findings of the page's own text and lines as graph edits), fetched the same way, by a v2 import only */
+let _omrApplyPromise = null;
+function loadOmrApply() {
+  if (window.PPPOmrApply) return Promise.resolve(window.PPPOmrApply);
+  if (_omrApplyPromise) return _omrApplyPromise;
+  _omrApplyPromise = new Promise(resolve => {
+    const el = document.createElement('script');
+    el.src = './omr/apply.js?v=1';
+    el.onload = () => resolve(window.PPPOmrApply || null);
+    el.onerror = () => resolve(null);
+    document.head.appendChild(el);
+  }).then(m => { if (!m) _omrApplyPromise = null; return m; });
+  return _omrApplyPromise;
 }
 const _recLoaded = new Set();
 const _recGlobals = new Set();
@@ -5592,6 +5812,7 @@ function recordingScriptsToLoad() {
 /* Resolves true when v2 is ready, false when a file could not be loaded (RECORDING_LOAD_ERROR names it). Never rejects. A download in flight is shared; what has loaded is not asked for again,
    and nor is it run again: a file that failed is asked for alone (with the few that read its export when they loaded, recordingScriptsToLoad). */
 function loadRecordingModules() {
+  if (_scoreModulesPromise || !scoreModulesReady()) return loadScoreModules().then(ok => ok ? loadRecordingModules() : false);
   if (recordingModulesReady()) return Promise.resolve(true);
   if (_recPromise) return _recPromise;
   _recPromise = recRaceTimeout((async () => {
@@ -5618,6 +5839,7 @@ function loadRecordingModules() {
 /* rec/app.js alone: the heard notes of a kept graph, "Play as recorded", the flags. It needs none of the stages, so a song written the classic way can play as recorded
    without the weights. */
 function loadRecApp() {
+  if (_scoreModulesPromise || !scoreModulesReady()) return loadScoreModules().then(ok => ok ? loadRecApp() : false);
   if (typeof window !== 'undefined' && window.PPPRecApp) return Promise.resolve(true);
   if (_recAppPromise) return _recAppPromise;
   _recAppPromise = recRaceTimeout(recScriptTag(REC_APP_SCRIPT).then(ok => ok && !!window.PPPRecApp)).then(ok => { _recAppPromise = null; return ok; });
@@ -5684,6 +5906,7 @@ const LEADSHEET_NEEDS = ['rec/grid.js', 'rec/writer.js'];
 const LEADSHEET_MODEL = ['PPPRecGridModel', 'rec/weights/ai5b-grid-v1.json'];
 let _leadPromise = null;
 function loadLeadsheetModule() {
+  if (_scoreModulesPromise || !scoreModulesReady()) return loadScoreModules().then(ok => ok ? loadLeadsheetModule() : false);
   /* the module AND what it reads are on the page: nothing to ask for */
   if (typeof window !== 'undefined' && window.PPPRecLeadsheet && LEADSHEET_NEEDS.every(recScriptGlobalPresent)) return Promise.resolve(true);
   if (_leadPromise) return _leadPromise;
@@ -6272,7 +6495,7 @@ class PerformanceEngine {
     const from = run.from, to = run.to;
     const startQ = Score.startQ(score, from);
     const perQuarterMs = 60000 / Math.max(1, run.tempo);
-    const plan = PianoScore.of(score, from, to);
+    const plan = run.plan || practicePlan(score, from, to);
     const scale = (run.tempo || score.tempo || 84) / Math.max(1, score.tempo || run.tempo || 84);
     this._plan = plan;
     this._scale = scale;
@@ -6289,6 +6512,9 @@ class PerformanceEngine {
       .map((s, i) => ({
         id: i,
         note: s.note,
+        evId: s.ev,        /* the graph's event id; `ev` is where noteOn keeps the key event that matched the note */
+        head: s.head,
+        mIdx: s.visit ? s.visit.index : undefined,
         midi: s.midi,
         m: s.m,
         hand: s.hand,
@@ -6445,18 +6671,19 @@ class PerformanceEngine {
 
     /* Per measure the learning model needs more than a ratio: what went wrong,
        how far off the timing was, and which hand it happened in. */
-    const byMeasure = {};
-    const bucket = m => {
-      if (!byMeasure[m]) byMeasure[m] = {
+    /* byMeasure is keyed by the measure NUMBER (what Learning.record reads); byMeasureIdx holds the same buckets by the measure's INDEX in the score (G11-D4: numbers repeat and skip) */
+    const byMeasure = {}, byMeasureIdx = {};
+    const bucket = (map, m) => {
+      if (!map[m]) map[m] = {
         total: 0, matched: 0, missed: 0, wrong: 0, extra: 0,
         onTime: 0, early: 0, late: 0, timingAbsSum: 0, timingCount: 0,
         hands: { r: { total: 0, matched: 0, timingAbsSum: 0, timingCount: 0 },
                  l: { total: 0, matched: 0, timingAbsSum: 0, timingCount: 0 } }
       };
-      return byMeasure[m];
+      return map[m];
     };
-    exp.forEach(x => {
-      const b = bucket(x.m), hb = b.hands[x.hand] || b.hands.r;
+    const tally = (b, x) => {
+      const hb = b.hands[x.hand] || b.hands.r;
       b.total++; hb.total++;
       if (x.matched) {
         b.matched++; hb.matched++;
@@ -6465,17 +6692,34 @@ class PerformanceEngine {
         hb.timingAbsSum += d; hb.timingCount++;
         if (x.verdict === 'on') b.onTime++; else if (x.verdict === 'early') b.early++; else b.late++;
       } else b.missed++;
+    };
+    exp.forEach(x => {
+      tally(bucket(byMeasure, x.m), x);
+      if (x.mIdx != null) tally(bucket(byMeasureIdx, x.mIdx), x);
     });
-    this.wrong.forEach(x => { if (x.m != null) bucket(x.m).wrong++; });
-    this.extras.forEach(x => { if (x.m != null) bucket(x.m).extra++; });
-    Object.keys(byMeasure).forEach(k => {
-      const b = byMeasure[k];
+    /* a stray key has no note: its bar by index is where the playhead was (worked out here, once per run, not at every key) */
+    const idxAt = t => {
+      const ms = this.score.measures || [];
+      if (!ms.length || !this.run) return null;
+      const q = this._plan
+        ? Math.max(0, PianoScore.writtenAtSound(this._plan, PianoScore.qAt(this._plan, Math.max(0, t - this.run.startedAt), this._scale || 1)))
+        : Math.max(0, this.run.startQ + (t - this.run.startedAt) / this.run.perQuarterMs);
+      if (q < ms[0].startQ) return 0;
+      let lo = 0, hi = ms.length - 1;
+      while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (ms[mid].startQ <= q) lo = mid; else hi = mid - 1; }
+      return lo;
+    };
+    this.wrong.forEach(x => { if (x.m != null) { bucket(byMeasure, x.m).wrong++; const i = idxAt(x.t); if (i != null) bucket(byMeasureIdx, i).wrong++; } });
+    this.extras.forEach(x => { if (x.m != null) { bucket(byMeasure, x.m).extra++; const i = idxAt(x.t); if (i != null) bucket(byMeasureIdx, i).extra++; } });
+    [byMeasure, byMeasureIdx].forEach(map => Object.keys(map).forEach(k => {
+      const b = map[k];
       b.accuracy = b.total ? b.matched / b.total : 1;
-    });
+    }));
 
     return {
       accuracy, noteAccuracy, timingAccuracy,
       byMeasure: byMeasure,
+      byMeasureIdx: byMeasureIdx,
       byHand: group(x => x.hand),
       bySection: group(x => sectionOf(x.m)),
       meanDeltaMs: matched.length ? Math.round(matched.reduce((a, x) => a + x.deltaMs, 0) / matched.length) : 0,
@@ -7796,6 +8040,39 @@ const Import = {
     return r.xml;
   },
 
+  /* G12-2 (PPP.omr = 'v2', docs/GOALS/G12_OMR.md section 7.2): the engine's document is read by the ScoreGraph importer, the one door a MusicXML file uses; the findings of the page's own text and lines
+     (PdfLayer.apply: accidentals, phantom arpeggio notes, a late voice, 8va, chord names, segno and coda, title and tempo) are edits of that graph (omr/apply.js, op 'inferred', source omr / pdflayer);
+     and the Score is made from the edited graph (toScore), so the graph the renderer draws, the Score the player plays and the checks read are one thing and the engine's beams are drawn.
+     PdfLayer.apply runs on a scratch copy of the Score, never on the one kept. Returns {score, graph, fromPdf, applied, importReport}, or null when this is not a v2 import or anything failed (omr.graphFailed
+     says why): the caller then does what legacy does with the same document. layersOf: a function that gives the layers, one per page (a PDF's), or null - called here, inside the try, so a page
+     that cannot give them is a fallback and not an exception; docs: omr.musicxml (each page's bar count). */
+  async omrS4(omr, xml, name, layersOf, docs) {
+    if (OMR_MODE !== 'v2' || !omr || !omr.normalize) return null;
+    try {
+      const layers = typeof layersOf === 'function' ? layersOf() : layersOf;
+      const A = await loadOmrApply();
+      if (!A) { omr.graphFailed = 'apply-not-loaded'; return null; }
+      const got = await importToGraph(new TextEncoder().encode(xml), name, 'musicxml');
+      let graph = A.markOmr(got.graph, { engine: String(omr.engine || 'omr') }).graph;
+      let fromPdf = null, applied = { findings: A.count(A.emptyFindings()), applied: {}, already: 0, skipped: [], conflicts: 0 };   /* a photo or a scan has no lines of its own: nothing to apply */
+      if (layers && layers.some(Boolean)) {
+        try {
+          const scratch = Score.finalize(PPPScoreGraph.legacy.toScore(graph, { name: name, ids: true }));
+          const before = JSON.parse(JSON.stringify(scratch));
+          fromPdf = PdfLayer.apply(scratch, layers, docs, name);
+          const f = A.diff(before, scratch);
+          const r = A.apply(graph, f);
+          graph = r.graph;
+          applied = { findings: A.count(f), applied: r.applied, already: r.already, skipped: r.skipped.map(s => ({ group: s.group, why: s.why })), removed: r.removed, work: r.work, conflicts: f.conflicts.length };
+        } catch (e) { applied = { error: String(e && e.message || e).slice(0, 160) }; }   /* the page's lines could not be read: the recognised graph stands as it is */
+      }
+      graph = graphForScore(graph);
+      got.graph = graph;
+      const score = Score.finalize(PPPScoreGraph.legacy.toScore(graph, { name: name }));
+      return { score: score, graph: graph, fromPdf: fromPdf, applied: applied, importReport: Import.summariseGraph(got) };
+    } catch (e) { omr.graphFailed = 'threw: ' + String(e && (e.code || e.message) || e).slice(0, 160); return null; }
+  },
+
   /* ---- stitch per-page MusicXML into one document ----
      Audiveris numbers every page from 1 because it cannot know what came
      before, so measures are renumbered continuously as pages are appended.
@@ -8598,11 +8875,15 @@ const Import = {
     const wantV2 = RECORDING_MODE === 'v2' && what.mode !== 'arrange';
     const useV2 = wantV2 && recordingModulesReady();
     let rejectedV2 = false;
+    /* G10a-1d: the home PC's Beat This beats go to v2 only (as bar-phase evidence); the classic conversion of a PC result stays notes-only */
+    const pcClassic = v2 => heard.homePc && !v2;
     const convert = v2 => window.PPPAudioScore.toMusicXml({
       notes: heard.notes, pedals: heard.pedals,
-      beats: heard.beats, downbeats: heard.downbeats,
+      beats: pcClassic(v2) ? undefined : heard.beats, downbeats: pcClassic(v2) ? undefined : heard.downbeats,
       grid: heard.grid, title: title
-    }, Object.assign({ title: title, easy: what.mode === 'arrange', closeGaps: true, exactBars: true }, v2 ? { recording: 'v2' } : {}));
+    }, Object.assign({ title: title, easy: what.mode === 'arrange', closeGaps: true, exactBars: true }, v2 ? { recording: 'v2' } : {},
+      /* a song's layers are its hands: the melody above, the bass and the accompaniment (one chord a beat) below */
+      isSongHeard(heard) && what.mode !== 'arrange' ? songNotation(null, heard) : {}));
     try {
       built = convert(useV2);
       /* a v2 result the page cannot believe (a tempo outside what the rhythm controls accept, bars far off the length of the heard notes) is not kept: the classic conversion writes this score and the review screen says so */
@@ -8700,6 +8981,7 @@ const Import = {
   },
   /* v2's files, asked for before the notes are written (a no-op for the classic conversion) */
   async readyRecording(what) {
+    if (!(await loadScoreModules())) throw importError('score-not-loaded', tx('The files needed to write the score could not be loaded. Try again in a moment.'));
     if (RECORDING_MODE === 'v2' && what.mode !== 'arrange') await loadRecordingModules();
   },
 
@@ -8715,6 +8997,7 @@ const Import = {
        The old listen-first order allowed four approximate model notes to
        bypass an exact catalog match. Search by the YouTube title / filename
        before spending time on transcription. */
+    await Import.readyRecording({ mode: 'arrange' }); /* recover the notation core before any dependent lazy module runs */
     if (RECORDING_MODE === 'v2' && what.mode !== 'arrange') loadRecordingModules(); /* G10a-4: asked for now, while the person waits for the transcription */
     stage('search', {});
     let query = nameGuess;
@@ -8942,7 +9225,7 @@ const Import = {
       /* G10d: a song's figure is the estimate (no measured agreement covers its melody and bass): said as one, with the notes of each layer and the accompaniment notes set apart */
       confidenceKind: songMode ? 'song-estimate' : modelCount > 1 ? 'model-agreement' : 'single-model-estimate',
       modelAgreement: modelAgreement, modelCount: modelCount,
-      songLayers: songMode ? { melody: heard.song.melody | 0, bass: heard.song.bass | 0, accomp: heard.song.accomp | 0, melodyFrom: heard.song.melodyFrom || null } : undefined
+      songLayers: songMode ? { melody: heard.song.melody | 0, bass: heard.song.bass | 0, accomp: heard.song.accomp | 0, melodyFrom: heard.song.melodyFrom || null, melodyTracker: heard.song.melodyTracker || null } : undefined
     };
   },
 
@@ -9064,8 +9347,9 @@ const Import = {
     let score;
     let scoreXml = xml;
     const handOpts = omr && omr.normalize ? { omrPiano: true } : undefined;   /* G12-1: PPP.omr = 'v2' */
+    let s4 = await Import.omrS4(omr, xml, file.name, () => (kind === 'pdf' ? pages.map(p => p.layer || null) : null), omr && omr.musicxml);   /* G12-2: null unless a v2 import; then the graph, the Score made from it, PdfLayer's findings as its edits */
     try {
-      score = parseMusicXML(xml, file.name, handOpts);
+      score = s4 ? s4.score : parseMusicXML(xml, file.name, handOpts);
     } catch (e) {
       throw importError('bad-musicxml',
         tx('The notation was recognised but could not be turned into a score: {{message}}', { message: e.message }),
@@ -9078,7 +9362,7 @@ const Import = {
        chance to merge — the overlays are per-bar coordinates on the page. */
     if (kind === 'pdf') {
       try {
-        source.fromPdf = PdfLayer.apply(score, pages.map(p => p.layer || null), omr ? omr.musicxml : [xml], file.name);
+        source.fromPdf = s4 ? s4.fromPdf : PdfLayer.apply(score, pages.map(p => p.layer || null), omr ? omr.musicxml : [xml], file.name);
       } catch (e) { /* the recognised score stands as it is */ }
     }
 
@@ -9100,8 +9384,9 @@ const Import = {
         const omr2 = await Import.recognise(pages2, onStage);
         const xml2 = await Import.omrXml(omr2);
         stage('parse', {});
-        const score2 = parseMusicXML(xml2, file.name, handOpts);
-        const fromPdf2 = PdfLayer.apply(score2, pages2.map(p => p.layer || null), omr2.musicxml, file.name);
+        const s42 = await Import.omrS4(omr2, xml2, file.name, () => pages2.map(p => p.layer || null), omr2.musicxml);
+        const score2 = s42 ? s42.score : parseMusicXML(xml2, file.name, handOpts);
+        const fromPdf2 = s42 ? s42.fromPdf : PdfLayer.apply(score2, pages2.map(p => p.layer || null), omr2.musicxml, file.name);
         pages2.forEach(p => { delete p.layer; });
         const report2 = Import.validate(score2, { pageCount: pages2.length, pages: omr2.pages, missing: fromPdf2.missing });
         const flags = rep => new Set((rep.issues || []).filter(i => i.measure != null).map(i => i.measure));
@@ -9109,13 +9394,15 @@ const Import = {
         stage('merge', { pages: pages.length });
         const mergedXml = Import.mergeMeasuresWhereBetter(xml, xml2, f1, f2);
         if (mergedXml && mergedXml !== xml) {
-          const scoreM = parseMusicXML(mergedXml, file.name, handOpts);
-          const fromPdfM = PdfLayer.apply(scoreM, pages.map(p => p.layer || null), omr.musicxml, file.name);
+          const s4M = await Import.omrS4(omr, mergedXml, file.name, () => pages.map(p => p.layer || null), omr.musicxml);
+          const scoreM = s4M ? s4M.score : parseMusicXML(mergedXml, file.name, handOpts);
+          const fromPdfM = s4M ? s4M.fromPdf : PdfLayer.apply(scoreM, pages.map(p => p.layer || null), omr.musicxml, file.name);
           const reportM = Import.validate(scoreM, { pageCount: pages.length, pages: omr.pages, missing: fromPdfM.missing });
           /* adopt only when the merged score is strictly closer to the page */
           if (reportM.issues.length < report.issues.length) {
             score = scoreM;
             scoreXml = mergedXml;
+            s4 = s4M;
             source.fromPdf = fromPdfM;
             report = reportM;
           }
@@ -9139,11 +9426,13 @@ const Import = {
     }
     if (omr && omr.normalize) report.normalize = omr.normalize;   /* G12-1: what omr/normalize.js changed, for the review (and G12-3's flags) */
     else if (omr && omr.normalizeFailed) report.normalizeFailed = omr.normalizeFailed;   /* PPP.omr = 'v2' but the import is the legacy one: why */
+    if (s4) { report.graph = s4.applied; source.importReport = s4.importReport; }   /* G12-2: what the page's lines changed in the graph (counts, what was skipped and why), what the import kept and dropped */
+    else if (omr && omr.graphFailed) report.graphFailed = omr.graphFailed;           /* PPP.omr = 'v2' but the import is the legacy one: why */
     source.status = report.level === 'poor' ? 'low-confidence' : 'recognised';
     score.source = source;
     /* page images stay in memory for the review screen; they are never persisted */
-    engraveRememberXml(score, scoreXml, 'omr');
-    return { score: score, source: source, report: report, pageImages: pages, musicxml: xml };
+    if (s4) engraveRemember(score, s4.graph, 'omr'); else engraveRememberXml(score, scoreXml, 'omr');
+    return Object.assign({ score: score, source: source, report: report, pageImages: pages, musicxml: xml }, s4 ? { graph: s4.graph } : {});
   }
 };
 
@@ -10687,13 +10976,19 @@ window.PPP = {
   /* G08b §11: 'single' (default since G9e default-on: one note per hand) | 'legacy' | 'g8'. Any other value is 'legacy' (G4-F2-1's convention). */
   get arranger() { return ARRANGER_MODE; },
   set arranger(v) { ARRANGER_MODE = v === 'g8' ? 'g8' : v === 'single' ? 'single' : 'legacy'; },
+  /* G11a-3 (docs/GOALS/G11 section 6.3): 'legacy' (default) | 'graph'. Any other value is no choice: the default comes back and the remembered choice is forgotten (PPP.recording's rule). A choice is remembered on this device; ?practice= in the address is for that visit only.
+     practicePlan is the one function the practice code asks for a plan; practiceStats counts what 'graph' did (plans from the graph, and the plans that stayed legacy by reason and by song); loadPracticeModule resolves true once practice/plan.js is on the page. */
+  get practice() { return PRACTICE_MODE; },
+  set practice(v) { setPracticeMode(v); },
+  practicePlan, loadPracticeModule, practiceGraphBuild,
+  get practiceStats() { return PRACTICE_STATS; },
   /* G13-1 (G13-D3): true = React came from unpkg (?cdn=1 or the remembered '1'), false (default) = vendor/react-18.3.1/. Read-only truth about THIS load; a new value applies on the next load. Any value but '1' is no choice: the default returns and the remembered choice is forgotten. */
   get cdn() { return window.PPP_CDN === true; },
   set cdn(v) { try { if (v === '1' || v === 1 || v === true) localStorage.setItem('ppp.cdn', '1'); else localStorage.removeItem('ppp.cdn'); } catch (e) { /* not remembered */ } },
   /* G10a-4/G10a-5b: 'v2' (default: the staged recording conversion, docs/GOALS/G10 section 6) | 'legacy' (the classic one). Any other value is no choice: the default comes back and the remembered choice is forgotten. A choice is remembered on this device. */
   get recording() { return RECORDING_MODE; },
   set recording(v) { setRecordingMode(v); },
-  loadRecordingModules, recordingModulesReady, recWeightsShapeOk, TRANSCRIPTION_VERSION_V2, RECORDING_SCRIPTS, RECORDING_WEIGHTS,
+  loadScoreModules, loadRecordingModules, recordingModulesReady, recWeightsShapeOk, TRANSCRIPTION_VERSION_V2, RECORDING_SCRIPTS, RECORDING_WEIGHTS,
   /* G10c-1b (docs/GOALS/G10 section 34): 'leadsheet' (the default: RECORDING_ARRANGE_DEFAULT, one line to flip) | 'reduce' (what the page did before). How a recording is arranged at the easier levels by the one-note-per-hand arranger.
      Any other value is no choice: the default comes back and the remembered choice is forgotten (PPP.recording's rule). A choice is remembered on this device; ?recordingArrange= in the address is for that visit only. */
   get recordingArrange() { return RECORDING_ARRANGE_MODE; },
@@ -10732,6 +11027,8 @@ window.PPP = {
   ScoreSearch: (typeof window !== 'undefined' ? window.PPPScoreSearch : null),
   Coach, COACH, Fingering, HandArt, tx: tx
 };
+/* G11a-3: a page that starts on PPP.practice 'graph' asks for practice/plan.js now (a page on 'legacy' never does) */
+if (PRACTICE_MODE === 'graph') loadPracticeModule();
 /* ============================================================================
    WHAT A PDF SAYS IN ITS OWN WORDS
 
@@ -12036,6 +12333,10 @@ Object.defineProperties(window.PPP, {
 });
 let _engravePromise = null;
 function loadEngrave() {
+  if (_scoreModulesPromise || !scoreModulesReady()) return loadScoreModules().then(ok => {
+    if (!ok) throw importError('score-not-loaded', tx('The files needed to write the score could not be loaded. Try again in a moment.'));
+    return loadEngrave();
+  });
   if (window.PPPEngravePage) return Promise.resolve(window.PPPEngravePage);
   if (_engravePromise) return _engravePromise;
   _engravePromise = new Promise((resolve, reject) => {
@@ -12760,8 +13061,21 @@ const isSongHeard = heard => !!(heard && heard.song);
 /* the review's words for where a song's tune came from (transcribe.py: the voice, or the stem whose line it followed in an instrumental) */
 function melodyFromLabel(layers) {
   const f = layers && layers.melodyFrom;
-  return !layers || !layers.melody ? tx('no melody line (the lead sheet finds one)')
+  const from = !layers || !layers.melody ? tx('no melody line (the lead sheet finds one)')
     : f === 'vocals' ? tx('voice') : f === 'guitar' ? tx('guitar') : f === 'piano' ? tx('piano') : f === 'other' ? tx('synth / other instrument') : tx('not recorded (an earlier conversion)');
+  /* the method is a name, shown as is: a person testing a new PC setup sees which one ran */
+  const by = layers && layers.melody ? { 'basic-pitch': 'Basic Pitch', 'multi-instrument': 'YourMT3', 'lead-sheet': 'SheetSage2' }[layers.melodyTracker] : null;
+  return by ? from + ' · ' + by : from;
+}
+/* audio-score.js's option for a song-mode recording written again: its layers (each heard note's track) are its hands */
+function songNotation(S, heard) {
+  const layers = isSongHeard(heard) ? heard.song : S && S.importSource && S.importSource.songLayers;
+  if (!layers) return {};
+  return Object.assign({ songLayers: true },
+    /* the key the lead sheet states, written instead of the one read from the notes */
+    layers.key && Number.isInteger(layers.key.tonic) ? { keyHint: { tonic: layers.key.tonic, mode: layers.key.mode } } : {},
+    /* its beats are the song's bars (not only evidence of the bar phase, as a beat tracker's are) when they came with these notes */
+    layers.beatsFrom === 'lead-sheet' && heard && Array.isArray(heard.beats) && heard.beats.length >= 4 ? { recBeats: 'lead-sheet' } : {});
 }
 function withSongLayers(plan, source, heard) { return isSongHeard(heard) || (source && source.songLayers) ? Object.assign({}, plan, { melodyTrack: SONG_TRACKS.melody }) : plan; }
 
@@ -14264,16 +14578,22 @@ class Component extends DCLogic {
      lap start its clock aligned to where the playhead actually is. */
   beginRun(S, beatNow, at) {
     const [from, to] = this.range(S);
-    const plan = PianoScore.of(S.score, from, to);
+    /* G11a-3: a run keeps the plan it began on. A lap of a transport that is running begins on the transport's own plan, so a PPP.practice flipped in the middle of a run changes neither what is heard
+       nor what the matcher expects (under 'legacy' with a legacy plan this is the call it always was). */
+    const tp = this._tp;
+    const keep = !!(tp && tp.plan && (PRACTICE_MODE === 'graph' || tp.plan.graph) && tp.key === this.transportKey(S));
+    const plan = keep ? tp.plan : practicePlan(S.score, from, to);
     const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);
     const startQ = Score.startQ(S.score, from);
     const sq = PianoScore.soundAtWritten(plan, beatNow == null ? startQ : beatNow);
     /* `at` is when beatNow is heard; the transport starts a beat a moment
        ahead so its first notes land whole */
-    this.perf().begin({
+    const run = {
       from, to, hands: S.hands, tempo: S.tempo, practiceMode: S.practiceMode,
       startedAt: (at == null ? nowMs() : at) - PianoScore.msAt(plan, sq, scale)
-    });
+    };
+    if (keep) run.plan = plan;
+    this.perf().begin(run);
   }
 
   /* ======================== follow mode ========================
@@ -14313,8 +14633,16 @@ class Component extends DCLogic {
   followGates() {
     const S = this.state;
     const [from, to] = this.range(S);
-    const key = S.score.id + ':' + from + ':' + to + ':' + S.hands;
+    /* G11a-3: under PPP.practice 'graph' the gates are the graph plan's (practice/plan.js followGates: with every fix option off, today's gates, plus the graph's ids) when this song has one */
+    const gp = PRACTICE_MODE === 'graph' ? practicePlan(S.score, from, to) : null;
+    const viaGraph = !!(gp && gp.graph && practiceModuleReady());
+    const key = S.score.id + ':' + from + ':' + to + ':' + S.hands + (viaGraph ? ':graph' : '');
     if (this._gatesKey === key && this._gates) return this._gates;
+    if (viaGraph) {
+      this._gatesKey = key;
+      this._gates = window.PPPPractice.plan.followGates(gp, S.hands);
+      return this._gates;
+    }
     const playAt = {}, restAt = {}, spans = [];
     const tok = t => t.toFixed(5);
     Score.allIn(S.score, from, to).forEach(n => {
@@ -14683,7 +15011,7 @@ class Component extends DCLogic {
     if (this._tp && this.midiOutLive()) this.midiOutLayer().panic(nowMs());
     const now = nowMs();
     const [from, to] = this.range(S);
-    const plan = PianoScore.of(S.score, from, to);
+    const plan = practicePlan(S.score, from, to);
     const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);
     const t0 = now + this.leadMs(now);
     const writtenStart = Score.startQ(S.score, from);
@@ -14742,7 +15070,7 @@ class Component extends DCLogic {
     } else if (tp.key !== key) {
       /* What the audio thread already has cannot be taken back without a
          click, so it stays, and the new plan picks up exactly where it ends. */
-      const oldPlan = tp.plan || PianoScore.of(S.score, from, to);
+      const oldPlan = tp.plan || practicePlan(S.score, from, to);
       const oldScale = tp.scale || 1;
       let sq = PianoScore.qAt(oldPlan, PianoScore.msAt(oldPlan, tp.b0, oldScale) + Math.max(0, now - tp.t0), oldScale);
       let t0 = Math.max(now, tp.t0), skip = -Infinity;
@@ -14755,7 +15083,7 @@ class Component extends DCLogic {
           t0 = heard; skip = sq;
         }
       }
-      const plan = PianoScore.of(S.score, from, to);
+      const plan = practicePlan(S.score, from, to);
       const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);
       if (sq < -0.001 || sq >= plan.soundLengthQ) {
         this.startTransport(S, writtenStart);
@@ -14787,7 +15115,7 @@ class Component extends DCLogic {
       }
     }
 
-    const plan = tp.plan || PianoScore.of(S.score, from, to);
+    const plan = tp.plan || practicePlan(S.score, from, to);
     const scale = tp.scale || 1;
     const endB = plan.soundLengthQ;
     let prevSq = tp.soundQ != null ? tp.soundQ : tp.b0;
@@ -14882,7 +15210,7 @@ class Component extends DCLogic {
     const clicks = audioOk && S.metro && S.toggles.sound;
     if (!sendMidi && !sendAudio && !clicks) return;
     const [rf, rt] = this.range(S);
-    const plan = tp.plan || PianoScore.of(S.score, rf, rt);
+    const plan = tp.plan || practicePlan(S.score, rf, rt);
     const scale = tp.scale || 1;
     const endB = plan.soundLengthQ;
     const list = plan.strikes || [];
@@ -14949,7 +15277,7 @@ class Component extends DCLogic {
        performance engine scores them, so the simulation stands down. */
     if (this.liveMidi()) return out;
     const [from, to] = this.range(S);
-    const plan = PianoScore.of(S.score, from, to);
+    const plan = practicePlan(S.score, from, to);
     const list = plan.strikes || [];
     for (let i = firstAtOrAfter(list, a, 'q'); i < list.length; i++) {
       const s = list[i];
@@ -15656,18 +15984,22 @@ class Component extends DCLogic {
       this.setState({ homeBusy: false, ytError: e.message });
     }
   }
-  /* the notes the PC heard, as the page's heard-notes object: the accepted notes only (no pedal, no beats: the helper's own beats made v2 write bars
-     two to four times too short), and the ensemble's summary, which the review screen reads for its model-agreement figure */
+  /* the notes the PC heard, as the page's heard-notes object: the accepted notes (no pedal), and the ensemble's summary, which the review screen reads for
+     its model-agreement figure. G10a-1d: the PC's Beat This beats and downbeats when it sent them; v2 reads them as evidence of the bar phase only */
   homeHeard(res) {
     const e = res.ensemble || {};
     const song = res.mode === 'song' && res.song ? res.song : null;
-    const heard = {
+    /* G10a-1d: the PC's Beat This beats and downbeats when it sent them; v2 reads them as evidence of the bar phase only */
+    const beats = Array.isArray(res.beats) && res.beats.length >= 4 ? { beats: res.beats, downbeats: Array.isArray(res.downbeats) ? res.downbeats : [] } : {};
+    const heard = Object.assign(beats, {
       notes: res.notes, duration: res.duration, engine: res.engine || 'ensemble', qualityTier: song ? 'local-song-separated' : 'local-piano-ensemble', homePc: true,
       truncated: res.duration >= IMPORT_LIMITS.maxAudioMinutes * 60 - 1, device: res.device || null, model: res.model || null,
       ensemble: { models: e.models || [], primary: e.primary || null, agreement: e.agreement, accepted: e.accepted, uncertain: e.uncertain || 0 }
-    };
+    });
     /* G10d song mode: every note keeps its layer (track 1 melody, 2 bass, 3 accompaniment); the lead sheet takes the tune from the melody layer */
-    if (song) heard.song = { separation: song.separation || null, melodyFrom: song.melodyFrom || null, melody: song.melody | 0, bass: song.bass | 0, accomp: song.accomp | 0 };
+    if (song) heard.song = Object.assign({ separation: song.separation || null, melodyFrom: song.melodyFrom || null, melodyTracker: song.melodyTracker || null, melody: song.melody | 0, bass: song.bass | 0, accomp: song.accomp | 0 },
+      /* a lead sheet's (SheetSage2) chords as the accompaniment, its beats as the bars, its key (home-result.js checked them) */
+      song.accompFrom ? { accompFrom: song.accompFrom } : {}, song.beatsFrom ? { beatsFrom: song.beatsFrom } : {}, song.key ? { key: { tonic: song.key.tonic, mode: song.key.mode } } : {});
     return heard;
   }
   async openHomeJob(id) {
@@ -16488,8 +16820,10 @@ class Component extends DCLogic {
       let built;
       try {
         built = window.PPPAudioScore.toMusicXml({
-          notes: heard.notes, pedals: heard.pedals, beats: heard.beats, downbeats: heard.downbeats, grid: heard.grid, title: S.score.title
-        }, Object.assign({ title: S.score.title, closeGaps: true, exactBars: true }, wantV2 ? { recording: 'v2' } : {}));
+          /* G10a-1d: as finishHeard: the home PC's beats go to v2 only (bar-phase evidence); a song reopened later has no beats (heardForSong) */
+          notes: heard.notes, pedals: heard.pedals, beats: heard.homePc && !wantV2 ? undefined : heard.beats, downbeats: heard.homePc && !wantV2 ? undefined : heard.downbeats,
+          grid: heard.grid, title: S.score.title
+        }, Object.assign({ title: S.score.title, closeGaps: true, exactBars: true }, wantV2 ? { recording: 'v2' } : {}, songNotation(S, heard)));
       } catch (e) { return done((e && e.message) || tx('The rhythm could not be rewritten.')); }
       if (wantV2 && (!writtenByV2(built) || !v2Plausible(built, heard))) return done(tx('The new transcription method could not read this performance, so nothing was changed.'));
       let score;
@@ -16650,8 +16984,8 @@ class Component extends DCLogic {
       built = A.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
         beats: heard.beats, downbeats: heard.downbeats
-      }, this.recordingRewriteV2(S) ? { title: S.score.title, closeGaps: true, exactBars: true, recording: 'v2' } /* G10a-4: the same conversion that wrote this song */
-        : { title: S.score.title, lock: lock, closeGaps: true, exactBars: true });
+      }, Object.assign(this.recordingRewriteV2(S) ? { title: S.score.title, closeGaps: true, exactBars: true, recording: 'v2' } /* G10a-4: the same conversion that wrote this song */
+        : { title: S.score.title, lock: lock, closeGaps: true, exactBars: true }, songNotation(S, heard)));
       if (singleRoute(plan)) {
         /* G9e-lite: one note per hand, from the same unarranged built.graph. A refusal is NOT a silent legacy result: the
            standard arrangement below is then shown with a notice that stays on screen, and the result is marked in its source. */
@@ -16915,8 +17249,8 @@ class Component extends DCLogic {
       built = window.PPPAudioScore.toMusicXml({
         notes: heard.notes, pedals: heard.pedals,
         beats: heard.beats, downbeats: heard.downbeats
-      }, v2 ? { title: S.score.title, arrangement: arrangement, closeGaps: true, exactBars: true, recording: 'v2' }
-        : { title: S.score.title, lock: lock, arrangement: arrangement, closeGaps: true, exactBars: true });
+      }, Object.assign(v2 ? { title: S.score.title, arrangement: arrangement, closeGaps: true, exactBars: true, recording: 'v2' }
+        : { title: S.score.title, lock: lock, arrangement: arrangement, closeGaps: true, exactBars: true }, arrangement ? {} : songNotation(S, heard)));
     } catch (e) {
       this.say((e && e.message) || tx('The rhythm could not be rewritten.'));
       return;
@@ -18698,9 +19032,12 @@ class Component extends DCLogic {
     const range = this.range(S), from = range[0], to = range[1];
     const tempo = +S.tempo || S.score.tempo || 84;
     const c = this._visualTimeline;
-    if (c && c.score === S.score && c.from === from && c.to === to && c.tempo === tempo) return c.timeline;
-    const timeline = scoreToVisualTimeline(S.score, { from: from, to: to, tempo: tempo });
-    this._visualTimeline = { score: S.score, from: from, to: to, tempo: tempo, timeline: timeline };
+    /* G11a-3: the plan is part of the key: a timeline built on the legacy plan while practice/plan.js was still on its way is not the one the transport (which has the graph plan by now) is on,
+       and visualTransportFrame would fall back to the 40 ms beat for want of the same plan */
+    const plan = S.score.measures && S.score.measures.length ? practicePlan(S.score, from, to) : null;
+    if (c && c.score === S.score && c.from === from && c.to === to && c.tempo === tempo && c.plan === plan) return c.timeline;
+    const timeline = scoreToVisualTimeline(S.score, { from: from, to: to, tempo: tempo, plan: plan });
+    this._visualTimeline = { score: S.score, from: from, to: to, tempo: tempo, plan: plan, timeline: timeline };
     return timeline;
   }
   /* The canvas samples this on every animation frame. During playback it reads

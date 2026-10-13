@@ -157,6 +157,10 @@ function read(xml) {
           if (!chord && !grace) { last = cur; cur += dur; }
         }
       });
+      /* where the bar's content ends (the furthest end of any note or rest, in quarters) and how long the time signature in force makes the bar */
+      B.end = B.notes.reduce((m, n) => (n.grace ? m : Math.max(m, n.on + n.dur)), 0);
+      const tm = /^(\d+)\/(\d+)$/.exec(time || '');
+      B.expected = tm ? parseInt(tm[1], 10) * 4 / parseInt(tm[2], 10) : null;
       B.key = key; B.time = time; B.clefs = Object.assign({}, clefs); B.div = div;
       P.bars.push(B);
     });
@@ -181,4 +185,15 @@ function run(pages, opts) {
   return Object.assign({ r: r }, r.ok ? { out: read(r.xml) } : {});
 }
 
-module.exports = { REPO, N, XML, note, rest, back, fwd, raw, bar, part, doc, read, sig, sigs, multiset, pitched, run, pitchXml, clefXml };
+/* The bars whose content does not end where the time signature says the bar ends: [{part, bar, end, expected}] in quarters. Bars with no note at all (a part padded
+   with empty bars) and implicit bars (a pick-up) are not asked. A repaired rest that doubled its bar is exactly this. */
+function barProblems(xml) {
+  const out = [];
+  read(xml).parts.forEach((p, pi) => p.bars.forEach((b, bi) => {
+    if (!b.notes.length || b.attrs.implicit === 'yes' || b.expected === null) return;
+    if (Math.abs(b.end - b.expected) > 1e-9) out.push({ part: pi, bar: bi + 1, end: b.end, expected: b.expected });
+  }));
+  return out;
+}
+
+module.exports = { barProblems, REPO, N, XML, note, rest, back, fwd, raw, bar, part, doc, read, sig, sigs, multiset, pitched, run, pitchXml, clefXml };

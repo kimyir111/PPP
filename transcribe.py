@@ -18,6 +18,7 @@ Progress goes to stdout, one line at a time, for omr-service.js to relay.
 import argparse
 import json
 import os
+import re
 import shutil
 import statistics
 import subprocess
@@ -405,6 +406,7 @@ JOIN_GAP_S = 0.04      # two pieces of the same pitch closer than this (no onset
 DIP_RATIO = 0.6        # a held pitch is struck again only where the level fell under this share of the note's own level just before an onset
 DIP_LOOK_S = 0.05      # how far back that fall is looked for
 OCTAVE_SLIP_S = 0.2    # a piece an octave off the note before it, shorter than this and not struck again, is the pitch tracker slipping
+MELODY_GATE = 0.05     # a tracked melody frame quieter than this share of its stem's 95th-percentile level is silence (0.10 dropped the soft notes of an uneven line: recall 0.76 on a synthetic tune with known notes, 0.97 at 0.05, precision 1.00 with bleed down to -25 dB)
 LAYER_MIN = 0.08       # a stem quieter than this share of the mix (95th-percentile frame level) is not there at all
 DOUBLE_TOL_S = 0.06    # an accompaniment note on the same key as a melody or bass note this close is the same sound heard twice
 LEAD_STEMS = ('other', 'guitar', 'piano')   # where an instrumental's tune can be
@@ -511,6 +513,576 @@ def track_notes(mono, sr, fmin, fmax, gate):
     return out
 
 
+BP_AMP_MIN = 0.4       # a Basic Pitch note weaker than this is not the lead (a pad that bled into the stem: precision 0.60 -> 0.93 on a synthetic stem with a known answer)
+BP_SKY_WIN_S = 0.05    # notes starting within this of each other are one attack; the highest is the tune
+
+
+def basic_pitch_ready():
+    """Basic Pitch (Spotify, ONNX) is optional: without it the lead line is followed by the pitch tracker, as before."""
+    try:
+        import basic_pitch.inference  # noqa: F401
+        import onnxruntime  # noqa: F401
+        return True
+    except Exception:
+        return False
+
+
+def track_notes_bp(mono, sr, fmin, fmax, work):
+    """The lead line of a stem with Basic Pitch: it hears chords and stacked voices that follow-one-pitch tracking loses (chord stabs on a synthetic
+    stem: recall 0.55 -> 1.00; the line is the highest note of each attack). Same note dicts as track_notes."""
+    import contextlib
+    import soundfile as sf
+    from basic_pitch.inference import predict
+    from basic_pitch import ICASSP_2022_MODEL_PATH
+    path = os.path.join(work, 'lead.wav')
+    sf.write(path, mono.astype('float32'), sr, subtype='PCM_16')
+    with contextlib.redirect_stdout(sys.stderr):
+        _m, _midi, events = predict(path, ICASSP_2022_MODEL_PATH, onset_threshold=0.5, frame_threshold=0.3, minimum_note_length=58,
+                                    minimum_frequency=float(fmin), maximum_frequency=float(fmax))
+    ev = sorted(({'on': float(e[0]), 'off': float(e[1]), 'midi': int(e[2]), 'amp': float(e[3])} for e in events if float(e[3]) >= BP_AMP_MIN),
+                key=lambda n: (n['on'], n['midi']))
+    out, i = [], 0
+    while i < len(ev):
+        j, group = i, []
+        while j < len(ev) and ev[j]['on'] - ev[i]['on'] <= BP_SKY_WIN_S:
+            group.append(ev[j])
+            j += 1
+        top = max(group, key=lambda n: n['midi'])
+        if 21 <= top['midi'] <= 108 and top['off'] - top['on'] >= NOTE_MIN_S * 0.6:
+            out.append({'on': round(top['on'], 4), 'off': round(top['off'], 4), 'midi': top['midi'],
+                        'vel': int(round(40 + 75 * min(1.0, top['amp'] ** 0.5))), '_n': len(group)})
+        i = j
+    return out
+
+
+LEAD_WIN_S = 4.0       # an instrumental's tune may pass from one instrument to another: the lead is chosen again every this many seconds
+                       # (synthetic tune moving from guitar to synth at half time, the guitar then strumming: one stem for the song recall 0.47,
+                       # precision 0.53 (0.39 with the strum twice as loud); per window 0.94 / 0.94 both)
+
+
+def lead_by_window(lines, levels, duration, win=LEAD_WIN_S):
+    """An instrumental's melody when the tune moves between instruments. lines: [(held, stem, notes, tracker)]; levels: {stem: (rms, dt)}.
+    In each window the stem whose line there is most like a tune wins: its level x the share of the window its line covers x how melodic it
+    is (one note at a time, and moving: 1 / the mean notes per attack x the share of distinct pitches). Level alone picks a loud strummed
+    accompaniment over a quieter lead. A single window that disagrees with both neighbours that agree is taken as theirs.
+    Returns (notes without the private '_n', the stem that leads the longest, its tracker)."""
+    if not lines:
+        return [], None, None
+    n_win = max(1, int(-(-duration // win)))
+    by_stem = {k: (line, tracker) for _held, k, line, tracker in lines}
+
+    def coverage(line, a, b):
+        return sum(max(0.0, min(n['off'], b) - max(n['on'], a)) for n in line) / (b - a)
+
+    def melodic(line, a, b):
+        inside = [n for n in line if a <= n['on'] < b]
+        if not inside:
+            return 0.0
+        per_attack = sum(n.get('_n', 1) for n in inside) / len(inside)
+        return (1.0 / per_attack) * (len({n['midi'] for n in inside}) / len(inside))
+
+    def level(k, a, b):
+        rms, dt = levels[k]
+        seg = rms[int(a / dt):max(int(a / dt) + 1, int(b / dt))]
+        return float(sum(seg)) / len(seg) if len(seg) else 0.0   # a numpy array (stems) or a list (instruments)
+
+    pick = []
+    for w in range(n_win):
+        a, b = w * win, min(duration, (w + 1) * win)
+        if b <= a:
+            pick.append(None)
+            continue
+        scores = {k: level(k, a, b) * coverage(by_stem[k][0], a, b) * melodic(by_stem[k][0], a, b) for k in by_stem}
+        best = max(scores, key=lambda k: (scores[k], k))
+        pick.append(best if scores[best] > 0 else None)
+    for w in range(1, n_win - 1):
+        if pick[w - 1] is not None and pick[w - 1] == pick[w + 1] != pick[w]:
+            pick[w] = pick[w - 1]
+    notes = []
+    for k, (line, _t) in by_stem.items():
+        for n in line:
+            w = min(n_win - 1, int(n['on'] // win))
+            if pick[w] == k:
+                notes.append({key: v for key, v in n.items() if key != '_n'})
+    notes.sort(key=lambda n: (n['on'], n['midi']))
+    counts = {}
+    for k in pick:
+        if k is not None:
+            counts[k] = counts.get(k, 0) + 1
+    lead = max(counts, key=lambda k: (counts[k], k)) if counts else None
+    return notes, lead, (by_stem[lead][1] if lead else None)
+
+
+MT3_FRAME_S = 0.01      # the level of an instrument's notes (for choosing the lead) is read on this grid
+MT3_BASS_PROGRAMS = range(32, 40)   # General MIDI basses
+MELODY_LOW = 50         # a melody note below D3 is a bass or the low string of an arpeggio, not the tune: it is accompaniment
+MELODY_DIP = 10         # ... and so is a note this many semitones under the tune around it (MELODY_NEAR_S either side)
+MELODY_NEAR_S = 2.0
+FILL_GAP_S = 1.0        # a stretch this long with no melody note is filled from the mix's most salient line (melody_contour.py)
+FILL_PAD_S = 0.5        # the audio read around each such stretch
+
+
+def _skyline(notes, win=BP_SKY_WIN_S):
+    """The highest note of each attack (notes starting within win of the first), with '_n' = notes in the attack."""
+    ev = sorted(notes, key=lambda n: (n['on'], n['midi']))
+    out, i = [], 0
+    while i < len(ev):
+        j = i
+        while j < len(ev) and ev[j]['on'] - ev[i]['on'] <= win:
+            j += 1
+        top = max(ev[i:j], key=lambda n: n['midi'])
+        out.append({'on': top['on'], 'off': top['off'], 'midi': top['midi'], 'vel': top['vel'], '_n': j - i})
+        i = j
+    return out
+
+
+def _note_level(notes, duration, dt=MT3_FRAME_S):
+    """The sum of the sounding notes' velocities on a dt grid (plain lists: this path needs no numpy)."""
+    lv = [0.0] * max(1, int(duration / dt) + 1)
+    for n in notes:
+        for k in range(int(n['on'] / dt), min(len(lv), max(int(n['on'] / dt) + 1, int(n['off'] / dt)))):
+            lv[k] += n['vel'] / 127.0
+    return lv, dt
+
+
+def melody_family(program):
+    """The review's word for the instrument a tune came from (home-result.js MELODY_FROM)."""
+    return 'piano' if 0 <= program <= 7 else 'guitar' if 24 <= program <= 31 else 'other'
+
+
+def drop_dips(melody):
+    """The melody without the notes no tune has: below MELODY_LOW, or MELODY_DIP semitones under the median of the melody around
+    it. An instrument's skyline takes a single low attack (a guitar's arpeggio dips to its bass string between two tune notes; an
+    instrument chosen for a window where the model heard no tune plays bass notes), and the score wrote it as a wrong tune note."""
+    out = []
+    for n in melody:
+        near = [m['midi'] for m in melody if abs(m['on'] - n['on']) <= MELODY_NEAR_S]
+        if n['midi'] >= MELODY_LOW and statistics.median(near) - n['midi'] < MELODY_DIP:
+            out.append(n)
+    return out
+
+
+def song_from_instruments(notes, duration):
+    """A song's layers from a multi-instrument transcription (notes with 'channel' and 'program'): drums (channel 9) left out, the
+    General MIDI basses are the bass, the melody is chosen every LEAD_WIN_S among the other instruments by lead_by_window (the
+    instrument's notes as its level), and everything else of those instruments is the accompaniment.
+    Returns (melody, bass, accomp, melody_from)."""
+    groups, bass = {}, []
+    for n in notes:
+        if n.get('channel') == 9:
+            continue
+        clean = {'on': round(float(n['on']), 4), 'off': round(float(n['off']), 4), 'midi': int(n['midi']), 'vel': int(n.get('vel', 80))}
+        if not (21 <= clean['midi'] <= 108) or clean['off'] <= clean['on']:
+            continue
+        prog = int(n.get('program', 0))
+        (bass if prog in MT3_BASS_PROGRAMS else groups.setdefault(prog, [])).append(clean)
+    lines = [(sum(x['off'] - x['on'] for x in sky), str(prog), sky, 'multi-instrument')
+             for prog, sky in ((prog, _skyline(g)) for prog, g in groups.items())]
+    levels = {str(prog): _note_level(g, duration) for prog, g in groups.items()}
+    melody, lead, _tracker = lead_by_window(lines, levels, duration) if lines else ([], None, None)
+    melody = drop_dips(melody)
+    taken = {(n['on'], n['midi']) for n in melody}
+    accomp = sorted((n for g in groups.values() for n in g if (n['on'], n['midi']) not in taken), key=lambda n: (n['on'], n['midi']))
+    return melody, sorted(bass, key=lambda n: (n['on'], n['midi'])), accomp, (melody_family(int(lead)) if lead is not None else None)
+
+
+def mt3_ready(a):
+    return bool(getattr(a, 'mt3_python', '') and getattr(a, 'mt3_dir', '') and os.path.exists(a.mt3_python) and os.path.isdir(a.mt3_dir))
+
+
+def run_mt3(a, device, duration, work):
+    """YourMT3 (multi-instrument transcription) in its own Python, through yourmt3_run.py next to this file: the mix in, a MIDI with one
+    program per instrument out. Its notes, each with 'channel' and 'program'."""
+    import midi_notes
+    mid = os.path.join(work, 'mt3.mid')
+    runner = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'yourmt3_run.py')
+    cmd = [a.mt3_python, runner, '--space', a.mt3_dir, '--wav', a.wav, '--mid', mid, '--device', device]
+    env = dict(os.environ, PYTHONIOENCODING='utf-8')   # YourMT3 prints emoji; read its output as UTF-8 whatever the console's code page
+    r = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', env=env, timeout=max(600, int(duration * 10)))
+    if r.returncode != 0 or not os.path.exists(mid):
+        raise RuntimeError('YourMT3 failed (exit %s): %s' % (r.returncode, (r.stderr or r.stdout or '')[-400:]))
+    # the last song's raw YourMT3 MIDI stays beside the YourMT3 folder (tools/yourmt3-last.mid), so a person can listen to what the model
+    # heard before PPP picks the melody and writes the score: is a missing tune the model's or PPP's?
+    try:
+        shutil.copyfile(mid, os.path.join(os.path.dirname(os.path.abspath(a.mt3_dir)), 'yourmt3-last.mid'))
+    except OSError:
+        pass
+    keep_audio(a.wav, os.path.join(os.path.dirname(os.path.abspath(a.mt3_dir)), 'yourmt3-last.wav'))
+    return midi_notes.read_notes(mid, instruments=True)['notes']
+
+
+def keep_audio(src, dst):
+    """The same song's audio beside its MIDI (tools/yourmt3-last.wav: mono, 16 bit, at most 22.05 kHz, ~8 MB for three minutes),
+    so the two can be compared where the original cannot be fetched (tools/home-worker/send-last-song.cmd sends both). Best
+    effort: a song is transcribed whether or not this works."""
+    try:
+        import numpy as np
+        import soundfile as sf
+        data, sr = sf.read(src, dtype='float32', always_2d=True)
+        x = data.mean(axis=1)
+        step = max(1, int(sr // 22050))
+        if step > 1:
+            x = x[:len(x) // step * step].reshape(-1, step).mean(axis=1)
+        sf.write(dst, np.clip(x, -1, 1), int(sr // step), subtype='PCM_16')
+    except Exception:
+        pass
+
+
+def run_song_mt3(a, device, duration, t0):
+    say('ENGINE multi-instrument')
+    say('PROGRESS 0.050')
+    work = tempfile.mkdtemp(prefix='mt3-', dir=os.path.dirname(os.path.abspath(a.out)))
+    try:
+        heard = run_mt3(a, device, duration, work)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    say('PROGRESS 0.900')
+    melody, bass, accomp, melody_from = song_from_instruments(heard, duration)
+    tracker, filled, accomp_from = 'multi-instrument', [], 'multi-instrument'
+    lead = lead_sheet(a, heard, duration)
+    if lead and lead['melody']:
+        # the tune a lead sheet writes (SheetSage2); the instrument line chosen above goes back to the accompaniment
+        accomp = sorted(accomp + melody, key=lambda n: (n['on'], n['midi']))
+        melody, tracker = lead['melody'], 'lead-sheet'
+    if lead and lead['chords'] and lead['beats']:
+        # and its chords, a chord a beat, are the accompaniment: what a pianist plays from a lead sheet, not every strum the band played
+        downs = lead['downbeats'] or lead['beats'][::4]
+        from_chords = chord_accompaniment(lead['chords'], lead['beats'], downs)
+        if len(from_chords) >= 8:
+            accomp, accomp_from = from_chords, 'lead-sheet'
+            # and the bass that alternates with them, the chords' roots (YourMT3's bass line, eighths that fought the chords, is left out)
+            roots = chord_bass(lead['chords'], downs, lead['beats'])
+            if roots:
+                bass = roots
+    if tracker != 'lead-sheet':
+        try:
+            filled = fill_melody_gaps(melody, a.wav, duration)
+        except Exception as e:   # the fill is an addition: a song is written without it
+            say('NOTE the melody gaps were not filled: %s: %s' % (type(e).__name__, e))
+        melody = sorted(melody + filled, key=lambda n: (n['on'], n['midi']))
+    accomp, doubles = drop_doubles(accomp, melody + bass)
+    for layer, name in ((melody, 'melody'), (bass, 'bass'), (accomp, 'accomp')):
+        for n in layer:
+            n['track'] = SONG_TRACK[name]
+    notes = sorted(melody + bass + accomp, key=lambda n: (n['on'], n['midi']))
+    if len(notes) < 4:
+        raise RuntimeError('YourMT3 heard almost nothing')
+    out = {
+        'engine': 'song', 'mode': 'song', 'model': 'YourMT3 (multi-instrument)', 'device': device, 'duration': duration,
+        'ms': int((time.time() - t0) * 1000), 'notes': notes, 'pedals': [], 'uncertainNotes': [],
+        'ensemble': {'models': ['yourmt3'], 'primary': 'yourmt3', 'agreement': None, 'accepted': len(notes), 'uncertain': 0},
+        'song': {'separation': 'yourmt3', 'melody': len(melody), 'melodyFrom': melody_from if melody else None,
+                 'melodyTracker': tracker if melody else None, 'melodyFilled': len(filled), 'accompFrom': accomp_from, 'bass': len(bass), 'accomp': len(accomp),
+                 'doublesDropped': doubles},
+        'modelFailures': []
+    }
+    if lead and lead['beats']:
+        # the lead sheet's beats and bar lines, which the page writes the bars on (song.beatsFrom 'lead-sheet'), and its key
+        out['beats'], out['downbeats'], out['song']['beatsFrom'] = lead['beats'], lead['downbeats'], 'lead-sheet'
+    if lead and lead['key']:
+        out['song']['key'] = lead['key']
+    return out
+
+
+def ss2_ready(a):
+    return bool(getattr(a, 'ss2_python', '') and getattr(a, 'ss2_dir', '') and os.path.exists(a.ss2_python) and os.path.isdir(a.ss2_dir))
+
+
+LEAD_FILES = ('melody.mid', 'beat.lab', 'downbeat.lab', 'key.lab', 'chord.lab', 'events.json', 'result.json')
+
+
+def lead_sheet(a, heard, duration):
+    """SheetSage2's lead sheet (m-a-p/SheetSage2: a full song to melody, chords, beats and key) when it is installed
+    (tools/home-worker/setup-sheetsage2.cmd), run in its own Python through sheetsage2_run.py: {'melody', 'beats', 'downbeats',
+    'key', 'chords'} (each empty when the model gave none), or None when it is not installed or failed (a NOTE line; the song is
+    then written from YourMT3 as before). Its files are kept in tools/sheetsage2-last/ for send-last-song.cmd."""
+    if not ss2_ready(a):
+        return None
+    import midi_notes
+    work = tempfile.mkdtemp(prefix='ss2-', dir=os.path.dirname(os.path.abspath(a.out)))
+    try:
+        say('PROGRESS 0.920')
+        runner = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sheetsage2_run.py')
+        env = dict(os.environ, PYTHONIOENCODING='utf-8')
+        r = subprocess.run([a.ss2_python, runner, '--model-dir', a.ss2_dir, '--wav', a.wav, '--out-dir', work], capture_output=True,
+                           text=True, encoding='utf-8', errors='replace', env=env, timeout=max(600, int(duration * 10)))
+        mid = os.path.join(work, 'melody.mid')
+        if r.returncode != 0 or not os.path.exists(mid):
+            raise RuntimeError('exit %s: %s' % (r.returncode, (r.stderr or r.stdout or '')[-400:]))
+        keep = os.path.join(os.path.dirname(os.path.abspath(a.ss2_dir)), 'sheetsage2-last')
+        try:
+            shutil.rmtree(keep, ignore_errors=True)
+            os.makedirs(keep, exist_ok=True)
+            for name in LEAD_FILES:
+                if os.path.exists(os.path.join(work, name)):
+                    shutil.copyfile(os.path.join(work, name), os.path.join(keep, name))
+        except OSError:
+            pass
+        melody = [{'on': round(float(n['on']), 4), 'off': round(float(n['off']), 4), 'midi': int(n['midi'])}
+                  for n in midi_notes.read_notes(mid)['notes'] if float(n['off']) > float(n['on'])]
+        lab = lambda name: read_lab(os.path.join(work, name))
+        beats, downbeats = lab_times(lab('beat.lab')), lab_times(lab('downbeat.lab'))
+        key, chords = lead_key(lab('key.lab')), lead_chords(lab('chord.lab'))
+    except Exception as e:
+        say('NOTE the lead sheet (SheetSage2) did not run: %s: %s' % (type(e).__name__, str(e)[:300]))
+        return None
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    melody = melody_octaves(sorted(melody, key=lambda n: (n['on'], n['midi'])), heard)
+    return {'melody': [dict(n, vel=80) for n in fold_outliers(melody)], 'beats': beats if len(beats) >= 4 else [],
+            'downbeats': downbeats if len(beats) >= 4 else [], 'key': key, 'chords': chords}
+
+
+# ---------------------------------------------------------------- lead-sheet annotations (LAB files: "time [time] [label]" a line)
+PITCH_CLASS = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}
+CHORD_INTERVALS = {   # Harte shorthands (MIREX chord labels); a quality not listed is read by its leading letters below
+    'maj': (0, 4, 7), 'min': (0, 3, 7), 'dim': (0, 3, 6), 'aug': (0, 4, 8), 'sus2': (0, 2, 7), 'sus4': (0, 5, 7), 'sus': (0, 5, 7),
+    '7': (0, 4, 7, 10), 'maj7': (0, 4, 7, 11), 'min7': (0, 3, 7, 10), 'minmaj7': (0, 3, 7, 11), 'dim7': (0, 3, 6, 9), 'hdim7': (0, 3, 6, 10),
+    'maj6': (0, 4, 7, 9), 'min6': (0, 3, 7, 9), '9': (0, 4, 7, 10), 'maj9': (0, 4, 7, 11), 'min9': (0, 3, 7, 10), '5': (0, 7), '1': (0,),
+    'm': (0, 3, 7), 'm7': (0, 3, 7, 10), '': (0, 4, 7)}
+
+
+def read_lab(path):
+    """[(start, end or None, label or '')] of a LAB file; [] when it is not there. Lines that do not start with a number are skipped."""
+    out = []
+    if not os.path.isfile(path):
+        return out
+    with open(path, 'r', encoding='utf-8', errors='replace') as f:
+        for line in f:
+            parts = line.strip().split()
+            nums = []
+            for p in parts:
+                try:
+                    nums.append(float(p))
+                except ValueError:
+                    break
+                if len(nums) == 2:
+                    break
+            if not nums:
+                continue
+            out.append((nums[0], nums[1] if len(nums) > 1 else None, ' '.join(parts[len(nums):])))
+    return out
+
+
+def lab_times(rows):
+    """The start times of a beat or downbeat LAB, rising."""
+    times = sorted(r[0] for r in rows if r[0] >= 0)
+    return [round(t, 4) for i, t in enumerate(times) if i == 0 or t - times[i - 1] > 1e-3]
+
+
+def pitch_class(label):
+    m = re.match(r'^\s*([A-Ga-g])([#b♯♭]*)', label or '')
+    if not m:
+        return None
+    return (PITCH_CLASS[m.group(1).upper()] + m.group(2).count('#') + m.group(2).count('♯') - m.group(2).count('b') - m.group(2).count('♭')) % 12
+
+
+def chord_tones(label):
+    """The pitch classes of a chord label ('F#:min', 'D:7/3', 'Bbmaj7', 'E'), root first; None for no chord ('N', 'X')."""
+    label = (label or '').strip()
+    if not label or label[0] in 'NX':
+        return None
+    root = pitch_class(label)
+    if root is None:
+        return None
+    rest = re.sub(r'^\s*[A-Ga-g][#b♯♭]*', '', label).lstrip(':').split('/')[0].split('(')[0].strip()
+    quality = rest if rest in CHORD_INTERVALS else ('min' if rest.startswith(('min', 'm')) and not rest.startswith('maj') else
+                                                    'dim' if rest.startswith('dim') else 'aug' if rest.startswith('aug') else
+                                                    'sus4' if rest.startswith('sus') else '7' if rest[:1].isdigit() else 'maj')
+    return [(root + i) % 12 for i in CHORD_INTERVALS[quality]]
+
+
+def lead_chords(rows):
+    """[(start, end, [pitch classes])] of a chord LAB, no-chord stretches left out."""
+    out = []
+    for i, (t0, t1, label) in enumerate(rows):
+        tones = chord_tones(label)
+        end = t1 if t1 is not None else (rows[i + 1][0] if i + 1 < len(rows) else None)
+        if tones and end is not None and end > t0:
+            out.append((t0, end, tones))
+    return out
+
+
+def lead_key(rows):
+    """{'tonic': 0-11, 'mode': 'major'|'minor'} of a key LAB: the key held longest; None when it states none."""
+    held = {}
+    for i, (t0, t1, label) in enumerate(rows):
+        tonic = pitch_class(label)
+        if tonic is None:
+            continue
+        low = label.lower()
+        mode = 'minor' if re.search(r'(:|\s)(min|minor|m)\b|^[a-g][#b]*m\b|minor', low) else 'major'
+        end = t1 if t1 is not None else (rows[i + 1][0] if i + 1 < len(rows) else t0 + 1.0)
+        held[(tonic, mode)] = held.get((tonic, mode), 0.0) + max(0.0, end - t0)
+    if not held:
+        return None
+    tonic, mode = max(held, key=lambda k: held[k])
+    return {'tonic': tonic, 'mode': mode}
+
+
+CHORD_RANGE = (50, 62)   # the left hand's chord: three notes in close position, all from D3 to D4 (one hand, no stretch)
+BASS_LOW = 40            # the lead sheet's bass: the chord's root from E2 to D#3 (on the bass staff, not below it)
+
+
+def _bass_times(chords, downbeats):
+    """Where the lead sheet's bass strikes: every chord change and every downbeat under a chord."""
+    return sorted(set([round(c[0], 4) for c in chords] + [round(t, 4) for t in downbeats if chords and chords[0][0] <= t < chords[-1][1]]))
+
+
+def chord_bass(chords, downbeats, beats=()):
+    """The bass of a lead sheet's "boom-chick" left hand: the chord's root, from E2 to D#3, struck where the chord changes and on every
+    downbeat, for one beat (the chord answers it on the next). [] without chords."""
+    if not chords:
+        return []
+    beat_s = statistics.median([b1 - b0 for b0, b1 in zip(beats[:-1], beats[1:])]) if len(beats) >= 2 else 0.5
+    times = _bass_times(chords, downbeats)
+    out = []
+    for i, t in enumerate(times):
+        here = [c for c in chords if c[0] <= t + 1e-3 < c[1]]
+        if not here:
+            continue
+        end = min(times[i + 1] if i + 1 < len(times) else here[0][1], here[0][1], t + beat_s * 1.05)
+        if end > t:
+            out.append({'on': round(t, 4), 'off': round(end, 4), 'midi': BASS_LOW + (here[0][2][0] - BASS_LOW) % 12, 'vel': 72})
+    return out
+
+
+def _close_voicing(pcs, prev):
+    """Three pitch classes as a close-position chord inside CHORD_RANGE, the inversion nearest the previous chord (the hand moves
+    least); the lowest such inversion for the first."""
+    lo, hi = CHORD_RANGE
+    options = []
+    for k in range(len(pcs)):
+        order = pcs[k:] + pcs[:k]
+        for base in range(lo, hi + 1):
+            if base % 12 != order[0]:
+                continue
+            v = [base]
+            for pc in order[1:]:
+                v.append(v[-1] + (pc - v[-1]) % 12 or 12)
+            if v[-1] <= hi + 2 and v[-1] - v[0] <= 12:
+                options.append(v)
+    if not options:
+        return None
+    if prev is None:
+        return min(options, key=lambda v: (v[0], v))
+    return min(options, key=lambda v: (sum(abs(a - b) for a, b in zip(sorted(v), sorted(prev))), v))
+
+
+def chord_accompaniment(chords, beats, downbeats=()):
+    """The chords of a lead sheet's "boom-chick" left hand: on every beat where the bass does not strike (chord_bass), the chord
+    sounding there, root, third and fifth (the seventh in place of the fifth), in close position inside CHORD_RANGE, each inversion
+    the nearest to the one before. [] without beats or chords."""
+    out = []
+    if len(beats) < 2 or not chords:
+        return out
+    strikes = set(_bass_times(chords, downbeats))
+    prev = None
+    for b0, b1 in zip(beats[:-1], beats[1:]):
+        if any(abs(b0 - t) < 0.05 for t in strikes):
+            continue
+        mid = (b0 + b1) / 2.0
+        here = [c for c in chords if c[0] <= mid < c[1]]
+        if not here:
+            continue
+        tones = here[0][2]
+        pick = tones[:3] if len(tones) <= 3 else [tones[0], tones[1], tones[3]]
+        voicing = _close_voicing(pick, prev)
+        if not voicing:
+            continue
+        prev = voicing
+        for midi in voicing:
+            out.append({'on': round(b0, 4), 'off': round(b1, 4), 'midi': midi, 'vel': 64})
+    return out
+
+
+def melody_octaves(notes, heard, near_s=0.12):
+    """A lead sheet writes a tune in the octave that reads best, not always the one it sounds in: each note takes the octave of a
+    note of its pitch class that YourMT3 heard starting within near_s of it (drums and basses aside), the one nearest the melody's
+    previous note; a note with none keeps its own. On the test song this took the notes at Melodia's pitch from 48 to 111 of 535."""
+    import bisect
+    pitched = sorted((n for n in heard if n.get('channel') != 9 and int(n.get('program', 0)) not in MT3_BASS_PROGRAMS
+                      and int(n['midi']) >= MELODY_LOW), key=lambda n: n['on'])
+    starts = [float(n['on']) for n in pitched]
+    out, prev = [], None
+    for n in notes:
+        lo, hi = bisect.bisect_left(starts, n['on'] - near_s), bisect.bisect_right(starts, n['on'] + near_s)
+        same = [int(m['midi']) for m in pitched[lo:hi] if (int(m['midi']) - n['midi']) % 12 == 0]
+        if same:
+            ref = prev if prev is not None else n['midi']
+            midi = min(same, key=lambda p: (abs(p - ref), abs(p - n['midi'])))
+        else:
+            midi = n['midi']
+        out.append(dict(n, midi=midi))
+        prev = midi
+    return out
+
+
+def fold_outliers(notes):
+    """A melody note more than an octave from the melody around it (MELODY_NEAR_S either side), or below MELODY_LOW, is written
+    in the melody's octave."""
+    if not notes:
+        return notes
+    heard = [n['midi'] for n in notes]
+    for n in notes:
+        mid = statistics.median([heard[j] for j, m in enumerate(notes) if abs(m['on'] - n['on']) <= MELODY_NEAR_S])
+        while n['midi'] - mid > 12:
+            n['midi'] -= 12
+        while mid - n['midi'] > 12 or n['midi'] < MELODY_LOW:
+            n['midi'] += 12
+    return notes
+
+
+def melody_gaps(melody, duration, min_s=FILL_GAP_S):
+    """The stretches of at least min_s where no melody note sounds: [(start, end)]."""
+    gaps, end = [], 0.0
+    for n in sorted(melody, key=lambda n: n['on']):
+        if n['on'] - end >= min_s:
+            gaps.append((end, n['on']))
+        end = max(end, n['off'])
+    if duration - end >= min_s:
+        gaps.append((end, duration))
+    return gaps
+
+
+def fill_melody_gaps(melody, wav, duration):
+    """Melody notes for the stretches the multi-instrument model left without a tune, from the predominant line of the mix
+    (melody_contour.py) read in each stretch alone: a quiet lead under a loud band can be lost by a note transcriber and still
+    be the most salient line. Notes below MELODY_LOW are left out, as everywhere."""
+    gaps = melody_gaps(melody, duration)
+    if not gaps:
+        return []
+    import numpy as np
+    import soundfile as sf
+    import melody_contour
+    y, sr = sf.read(wav, dtype='float32', always_2d=True)
+    y = y.mean(axis=1)
+    out = []
+    for g0, g1 in gaps:
+        a0 = max(0.0, g0 - FILL_PAD_S)
+        seg = y[int(a0 * sr):int(min(duration, g1 + FILL_PAD_S) * sr)]
+        if len(seg) < sr // 2:
+            continue
+        times, midi = melody_contour.contour(seg, sr)
+        got = []
+        for n in melody_contour.notes(times, midi):
+            on, off = n['on'] + a0, n['off'] + a0
+            if on >= g0 + 0.02 and on < g1 - 0.05:
+                got.append({'on': round(on, 4), 'off': round(min(off, g1), 4), 'midi': n['midi'], 'vel': 80})
+        # a salience peak an octave off (the second harmonic's line) is written in the octave of the tune around it: the
+        # stretch's own notes and the melody within FILL_GAP_S * 4 of it
+        around = [m['midi'] for m in melody if g0 - 4 * FILL_GAP_S <= m['on'] <= g1 + 4 * FILL_GAP_S] + [n['midi'] for n in got]
+        if around:
+            mid = statistics.median(around)
+            for n in got:
+                while n['midi'] - mid > 7:
+                    n['midi'] -= 12
+                while mid - n['midi'] > 7:
+                    n['midi'] += 12
+        out.extend(n for n in got if n['midi'] >= MELODY_LOW)
+    return out
+
+
 def drop_doubles(accomp, others):
     """Accompaniment notes that are the melody or the bass heard again (the same key, starting within DOUBLE_TOL_S) go."""
     by_key = {}
@@ -526,6 +1098,11 @@ def drop_doubles(accomp, others):
 
 
 def run_song(a, device, duration, t0):
+    if mt3_ready(a):
+        try:
+            return run_song_mt3(a, device, duration, t0)
+        except Exception as e:
+            say('NOTE YourMT3 did not work, separating the stems instead: ' + str(e)[:300])
     import numpy as np
     import soundfile as sf
     say('ENGINE separation')
@@ -547,23 +1124,40 @@ def run_song(a, device, duration, t0):
     melody, bass = [], []
     if present.get('vocals'):
         say('ENGINE vocal-melody')
-        melody = track_notes(mono['vocals'], sr, librosa.note_to_hz('C2'), librosa.note_to_hz('C6'), gate=0.1 * p95['vocals'])
+        melody = track_notes(mono['vocals'], sr, librosa.note_to_hz('C2'), librosa.note_to_hz('C6'), gate=MELODY_GATE * p95['vocals'])
         for n in melody:
             n['track'] = SONG_TRACK['melody']
     melody_from = 'vocals' if melody else None
+    melody_tracker = 'pitch-tracker' if melody else None   # which method followed the tune: shown on the review so a person can see which one ran
     if not present.get('vocals'):
         # no voice (an instrumental): the tune is played by an instrument - a synth, a guitar, a piano - that the piano models hear badly (a synth lead:
         # 43-55% of its notes on a synthetic piece with a known answer). The line of the stem that holds one clear pitch for the longest is the melody.
         lines = []
-        for k in LEAD_STEMS:
-            if present.get(k):
-                say('ENGINE lead-line ' + k)
-                line = track_notes(mono[k], sr, librosa.note_to_hz('C3'), librosa.note_to_hz('C7'), gate=0.1 * p95[k])
-                lines.append((sum(n['off'] - n['on'] for n in line), k, line))
+        use_bp = basic_pitch_ready()
+        bp_work = tempfile.mkdtemp(prefix='lead-', dir=os.path.dirname(os.path.abspath(a.out))) if use_bp else None
+        try:
+            for k in LEAD_STEMS:
+                if present.get(k):
+                    line, tracker = None, 'pitch-tracker'
+                    if use_bp:
+                        try:
+                            say('ENGINE lead-line-basic-pitch ' + k)
+                            line = track_notes_bp(mono[k], sr, librosa.note_to_hz('C3'), librosa.note_to_hz('C7'), bp_work)
+                            tracker = 'basic-pitch'
+                        except Exception as e:
+                            say('NOTE basic pitch failed on ' + k + ', following the pitch instead: ' + str(e)[:160])
+                            line = None
+                    if line is None:
+                        say('ENGINE lead-line ' + k)
+                        line = track_notes(mono[k], sr, librosa.note_to_hz('C3'), librosa.note_to_hz('C7'), gate=MELODY_GATE * p95[k])
+                    lines.append((sum(n['off'] - n['on'] for n in line), k, line, tracker))
+        finally:
+            if bp_work:
+                shutil.rmtree(bp_work, ignore_errors=True)
         if lines:
-            held, k, line = max(lines)
-            if held >= LEAD_MIN_SHARE * duration:
-                melody, melody_from = line, k
+            line, k, tracker = lead_by_window(lines, {name: (frame_level(mono[name]), PT_HOP / float(sr)) for _h, name, _l, _t in lines}, duration)
+            if sum(n['off'] - n['on'] for n in line) >= LEAD_MIN_SHARE * duration:
+                melody, melody_from, melody_tracker = line, k, tracker
                 for n in melody:
                     n['track'] = SONG_TRACK['melody']
     say('PROGRESS 0.400')
@@ -612,7 +1206,7 @@ def run_song(a, device, duration, t0):
         'uncertainNotes': merged['uncertainNotes'] if merged else [],
         'ensemble': ens,
         'song': {
-            'separation': SONG_MODEL, 'melody': len(melody), 'melodyFrom': melody_from, 'bass': len(bass), 'accomp': len(accomp), 'doublesDropped': doubles,
+            'separation': SONG_MODEL, 'melody': len(melody), 'melodyFrom': melody_from, 'melodyTracker': melody_tracker, 'bass': len(bass), 'accomp': len(accomp), 'doublesDropped': doubles,
             'layers': {k: round(p95[k] / mix_p95, 3) for k in sorted(p95)}
         },
         'modelFailures': failures
@@ -630,6 +1224,10 @@ def main():
     ap.add_argument('--engine', default='auto')
     ap.add_argument('--mode', default='piano', choices=['piano', 'song'])
     ap.add_argument('--song-lib', default='')
+    ap.add_argument('--mt3-python', default='', help='song mode: the Python of a YourMT3 install (multi-instrument transcription)')
+    ap.add_argument('--mt3-dir', default='', help='song mode: the YourMT3 code and checkpoints (the Hugging Face space mimbres/YourMT3)')
+    ap.add_argument('--ss2-python', default='', help='song mode: the Python of a SheetSage2 install (the melody as a lead sheet writes it)')
+    ap.add_argument('--ss2-dir', default='', help='song mode: the SheetSage2 model (the Hugging Face model m-a-p/SheetSage2)')
     a = ap.parse_args()
 
     t0 = time.time()

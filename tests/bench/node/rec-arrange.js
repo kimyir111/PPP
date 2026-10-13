@@ -256,6 +256,7 @@ async function runJob(job, refs) {
   const jobOpts = Object.assign({}, job.opts || {});
   const mode = jobOpts.recordingArrange === 'leadsheet' ? 'leadsheet' : 'reduce';
   delete jobOpts.recordingArrange;                        /* an option of the arranger, not of audio-score.js */
+  if (job.input && job.input.beats && job.input.beatConfidence != null) jobOpts.recBeats = 'oracle';   /* the performer's beats (notate.js oracleBeats) */
   const built = A.toMusicXml(job.input, jobOpts);
   const g = built.graph;
   const perf = g && g.performances && g.performances[0];
