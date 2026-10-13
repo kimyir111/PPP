@@ -355,6 +355,9 @@ const screenTitle = page => page.evaluate(() => {
   const att0 = await attemptsOf(21);
   const untouched0 = await attemptsOf(45);
 
+  /* This flow plays without a keyboard, which since decision U4 (2026-10-13) records nothing by default: it checks that a finished run reaches the
+     progress page and the saved history, so it asks for the legacy folding explicitly (the default is tests/learner-log.test.js section `demo`). */
+  await page.evaluate(() => { PPP.demoRuns = 'count'; });
   /* Loop a single weak measure so laps complete fast enough to observe. */
   await page.evaluate(() => window.__pppTest.practice('Loop a passage'));
   await sleep(200);
@@ -387,6 +390,7 @@ const screenTitle = page => page.evaluate(() => {
   step('undrilled measure is left alone', 'measure 45: ' + untouched0 + ' → ' + untouched1 + ' attempts');
   if (!(att1 > att0)) errors.push('drilling measure 21 recorded no new attempts (' + att0 + ' → ' + att1 + ')');
   if (untouched1 !== untouched0) errors.push('measure 45 changed without being played');
+  await page.evaluate(() => { PPP.demoRuns = null; });      /* the default again for the rest of the flow */
 
   /* ---------- 7. memory progression ---------- */
   await page.evaluate(() => window.__pppTest.practice('Memorize'));
