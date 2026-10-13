@@ -104,6 +104,5 @@ Licences (SIL Open Font License 1.1), each the family's own `OFL.txt` from githu
 | Noto Music | Copyright 2022 The Noto Project Authors (https://github.com/notofonts/music) | `fonts/LICENSE-noto-music-OFL.txt` |
 
 The page asks for each file as `./vendor/fonts/<file>?h=<12 hex of the sha256 of its bytes>` (server.js rewrites the `?v=1` of the source,
-`static-assets.js`), which the server answers `immutable` (no gzip: a woff2 is compressed already). The three the first screen is drawn with (the latin files of Figtree, Instrument Serif and JetBrains Mono)
-are also preloaded by `<link rel="preload">` in the template's `<helmet>`, so the text is drawn in them and not in the system font that is swapped out a moment later. `tests/load/fonts.test.js` checks the table above against
+`static-assets.js`), which the server answers `immutable` (no gzip: a woff2 is compressed already). `tests/load/fonts.test.js` checks the table above against
 the files, the licences against the families, and the `@font-face` rules of the page against Google's published faces.

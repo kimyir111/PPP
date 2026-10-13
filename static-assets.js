@@ -141,10 +141,7 @@ function hashMap(root) {
 /* the page text with the hashes in it: the head rewritten and window.PPP_HASHES set before any script runs (right after the charset, where PPP_BUILD goes) */
 function preparePage(text, root) {
   const cut = text.indexOf('</head>');
-  /* the head, and the <helmet> block that follows it in the template (the runtime moves its links into the head; the font preloads are there) */
-  const h = text.indexOf('</helmet>');
-  const end = cut < 0 ? -1 : (h > cut ? h : cut);
-  let out = end < 0 ? text : rewriteHead(text.slice(0, end), root) + text.slice(end);
+  let out = cut < 0 ? text : rewriteHead(text.slice(0, cut), root) + text.slice(cut);
   const tag = '<script>window.PPP_HASHES=' + JSON.stringify(hashMap(root)) + ';</script>';
   const m = /<meta charset="utf-8">/i.exec(out);
   out = m ? out.slice(0, m.index + m[0].length) + '\n' + tag + out.slice(m.index + m[0].length) : out.replace(/<head>/i, h => h + '\n' + tag);

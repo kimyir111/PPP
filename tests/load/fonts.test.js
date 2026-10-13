@@ -104,7 +104,7 @@ test('every family has its OFL licence beside the files, and the README quotes i
 test('the first paint waits for no other site: no stylesheet link to another host in the page, and the CJK sheet comes from a script after load', () => {
   const links = [...PAGE.matchAll(/<link\b[^>]*>/g)].map(m => m[0]);
   for (const l of links) assert.ok(!/rel=["']stylesheet["']/i.test(l) || !/href=["']https?:/i.test(l), 'no render-blocking stylesheet from another site: ' + l.slice(0, 100));
-  assert.ok(!links.some(l => /fonts\.googleapis\.com|fonts\.gstatic\.com/.test(l)), 'the Google Fonts links are gone from the page markup');
+  assert.ok(!links.some(l => /fonts\.googleapis\.com|fonts\.gstatic\.com/.test(l) && !/rel="(preconnect|dns-prefetch)"/.test(l)), 'the only links left to Google Fonts are connection hints (nothing is fetched by them)');
   /* the script that adds Google's Noto Sans */
   const m = /\(function \(\) \{\s*var CJK = '([^']+)';[\s\S]*?\}\)\(\);/.exec(head);
   assert.ok(m, 'the head has the script that adds the CJK stylesheet');
@@ -142,19 +142,14 @@ test('the server hands out each font by its hash: immutable, a woff2 is not gzip
   } finally { srv.close(); }
 });
 
-test('the three fonts the first screen draws with are preloaded where the removed Google links were, and each is a file a rule uses', () => {
-  const pre = [...PAGE.matchAll(/<link rel="preload"[^>]*>/g)].map(m => m[0]);
-  assert.equal(pre.length, 3, 'one preload each for Figtree, Instrument Serif and JetBrains Mono (latin)');
-  const used = new Set(rules().map(r => fileOf(r.url)));
-  const files = pre.map(l => fileOf((/href="([^"]+)"/.exec(l) || [])[1]));
-  assert.deepEqual(files.slice().sort(), ['figtree-v9-latin.woff2', 'instrument-serif-v5-latin.woff2', 'jetbrains-mono-v24-latin.woff2']);
-  for (const l of pre) {
-    assert.match(l, /as="font"/);
-    assert.match(l, /type="font\/woff2"/);
-    assert.match(l, /crossorigin="anonymous"/, 'a font is always fetched with CORS: a preload without it is fetched twice');
-  }
-  for (const f of files) assert.ok(used.has(f), f + ' is declared by a @font-face rule (a preload nothing uses is a wasted request)');
-  /* they sit in the template's <helmet>, in place of the three links they replace, so the template has as many elements as before and every data-dc-tpl stamp is where it was */
+test('the template keeps as many elements as it had: the three Google links of its <helmet> are two preconnects and a dns-prefetch, so no data-dc-tpl stamp of the DOM moves', () => {
   const helmet = PAGE.slice(PAGE.indexOf('<helmet>'), PAGE.indexOf('</helmet>'));
-  for (const l of pre) assert.ok(helmet.includes(l), 'inside the helmet');
+  const links = [...helmet.matchAll(/<link\b[^>]*>/g)].map(m => m[0]);
+  const kinds = links.map(l => (/rel="([^"]+)"/.exec(l) || [])[1]);
+  /* the icon, then the three that stood where Google's two preconnects and its stylesheet were */
+  assert.deepEqual(kinds, ['icon', 'preconnect', 'preconnect', 'dns-prefetch']);
+  for (const l of links.slice(1)) assert.match(l, /href="https:\/\/fonts\.(googleapis|gstatic)\.com"/, 'hints for the host the CJK stylesheet comes from; nothing is fetched by them');
+  assert.ok(!links.some(l => /rel="(stylesheet|preload)"/.test(l)), 'nothing in the helmet asks for a file: the fonts are fetched when text needs them');
+  /* the page's own preload/stylesheet links: none (a preload in the body is found by the browser's scanner at once and would take 72 KB from the scripts) */
+  assert.deepEqual([...PAGE.matchAll(/<link\b[^>]*rel="(?:preload|stylesheet)"[^>]*>/g)].map(m => m[0]), []);
 });

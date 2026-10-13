@@ -46,11 +46,8 @@ test('the old ?v=N is gone from the head of the served page, and stays in the so
   const served = (await request(srv.port, '/')).body.toString('utf8');
   assert.ok(!/<script\b[^>]*\bsrc="\.\/[^"]*\?v=/.test(headOf(served)), 'no script of the head is named by ?v=');
   assert.ok(/<script\b[^>]*\bsrc="\.\/[^"]*\?v=/.test(headOf(SRC_PAGE)), 'the source keeps ?v= (an older server, the tests that read the file)');
-  /* the rest of the page is not touched: after the <helmet> block (whose font preloads are named by hash too) the body is the source's, byte for byte */
-  assert.equal(served.slice(served.indexOf('</helmet>')), SRC_PAGE.slice(SRC_PAGE.indexOf('</helmet>')));
-  const pre = [...served.slice(0, served.indexOf('</helmet>')).matchAll(/<link rel="preload"[^>]*href="\.\/(vendor\/fonts\/[\w-]+\.woff2)\?h=([0-9a-f]{12})"/g)];
-  assert.equal(pre.length, 3, 'the three first-paint fonts are preloaded by hash');
-  for (const [, rel, h] of pre) assert.equal(h, hashOf(read(rel), true), rel);
+  /* the rest of the page is not touched: after the head the body is the source's, byte for byte */
+  assert.equal(served.slice(served.indexOf('</head>')), SRC_PAGE.slice(SRC_PAGE.indexOf('</head>')));
 });
 
 test('the catalogs\' hashes are in window.PPP_HASHES before any script of the page', async () => {
