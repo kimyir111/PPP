@@ -100,6 +100,7 @@ class CaseResult:
     metrics: Dict[str, Optional[float]] = field(default_factory=dict)
     counts: Dict[str, int] = field(default_factory=dict)
     structure: Optional[str] = None
+    wrong_bars: List[int] = field(default_factory=list)   # the read's bars that are wrong (G12-3 labels its flags with them)
 
 
 COUNT_KEYS = ("truth_bars", "out_bars", "aligned", "exact", "wrong", "truth_notes", "out_notes", "matched", "matched_dur",
@@ -198,7 +199,7 @@ def judge(truth: Score, out: Optional[Score], *, external_flags: Optional[Dict[s
         c[f"flag.{name}.tp"] = tp
         m[f"omr.flag.{name}.recall"] = tp / len(wrong) if wrong else None
         m[f"omr.flag.{name}.precision"] = tp / len(flags) if flags else None
-    return CaseResult(True, m, c, out.structure)
+    return CaseResult(True, m, c, out.structure, wrong)
 
 
 def _zero_metrics(truth: Score) -> Dict[str, Optional[float]]:

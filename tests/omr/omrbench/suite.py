@@ -1,6 +1,7 @@
 """omr-live-2: `python tests/bench/run.py omr-live-2 <command>` (docs/GOALS/G12_OMR.md section 10; G12-0).
 
     cases [--check | --write]      the 60 excerpts (tests/omr/cases.json) against the corpus registry
+    flags-data [--cases S] [--tiers T]   (G12-3) the bars of a recorded engine run with omr/flags.js' signals and whether each is wrong (tests/omr/out/flags/)
     render [--cases S] [--tiers T] the page images (cached; tests/omr/out/render/)
     run    [--cases S] [--tiers T] [--mode engine|app] ...   render, read, judge; writes tests/omr/out/<mode>/results.json
     check  [--results P] [--baseline P]                       a run against the committed baseline (exit 1 on a regression)
@@ -406,6 +407,27 @@ def cmd_cases(args) -> int:
     return casesmod.main(["--check"] if args.check else ["--write"] if args.write else [])
 
 
+# ---------------------------------------------------------------------------------------- flags (G12-3)
+def cmd_flags_data(args) -> int:
+    """The per-bar dataset of omr/flags.js on a RECORDED engine run (nothing is rendered or recognised again): tune.jsonl, held.jsonl, truth.jsonl."""
+    from . import flagdata
+    doc = casesmod.load()
+    sel = select_cases(doc, args.cases or "all")
+    tiers = [t for t in parse_tiers(args.tiers) if t != "brace-less"]
+    base = args.out or OUT
+    engine_root = os.path.join(base, "engine" + render.SUFFIX)
+    if not os.path.isdir(engine_root):
+        print(f"ERROR NO_ENGINE_RUN: {rel(engine_root)} does not exist (run `omr-live-2 run` first, or copy a recorded run there)")
+        return 2
+    render_root = os.path.join(base, "render" + render.SUFFIX)
+    rows, skipped = flagdata.build(sel, tiers, engine_root, render_root)
+    truth = flagdata.truth_rows(doc["cases"], render_root)
+    out_dir = os.path.join(base, "flags")
+    counts = flagdata.write_dataset(out_dir, rows, truth)
+    print(f"flags-data: {len(rows)} bars from {len(sel)} cases x {len(tiers)} tiers ({skipped}); {counts}; wrote {rel(out_dir)}")
+    return 0
+
+
 # ---------------------------------------------------------------------------------------- CLI
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="run.py omr-live-2", description="omr-live-2: the OMR benchmark (G12-0)")
@@ -459,6 +481,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--check", action="store_true")
     p.add_argument("--write", action="store_true")
     p.set_defaults(fn=cmd_cases)
+    p = sub.add_parser("flags-data", help="(G12-3) the bars of a recorded engine run, their omr/flags.js signals and whether each is wrong")
+    p.add_argument("--cases", default=None)
+    p.add_argument("--tiers", default=None)
+    p.add_argument("--out", default=None)
+    p.set_defaults(fn=cmd_flags_data)
     p = sub.add_parser("fetch-real", help="the real-scan tier's page images (never run by the gate)")
     p.add_argument("rest", nargs=argparse.REMAINDER)
     p.set_defaults(fn=lambda a: __import__("omrbench.fetch_real", fromlist=["main"]).main(a.rest))

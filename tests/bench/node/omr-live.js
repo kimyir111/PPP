@@ -96,7 +96,9 @@ function recorded(job) {
             pages: (r.pageImages || []).length,
             report: { confidence: rep.confidence == null ? null : rep.confidence, level: rep.level || null,
               suspectMeasures: (rep.suspectMeasures || []).map(x => typeof x === 'object' ? x.m || x.number : x),
-              issues: (rep.issues || []).length },
+              issues: (rep.issues || []).length,
+              /* G12-3: the reasons omr/flags.js gave each suspect measure (codes), and what went wrong if it could not run */
+              flagCodes: rep.flagCodes || null, flagsFailed: rep.flagsFailed || null, flagsVersion: rep.flagsVersion || null },
             projection: {
               title: s.title, tempo: s.tempo, staves: s.staves,
               measures: s.measures.map(m => ({ number: String(m.number), startQ: m.startQ, lenQ: m.lenQ,
