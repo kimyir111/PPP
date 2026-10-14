@@ -36,6 +36,8 @@ const guestShare = require('./share-guest');
 const R = require('./home-result');
 /* G12-5: kind 'omr' (a printed score read by Audiveris on the person's own PC): what may be sent up and back (home-omr.js, shared with the worker) */
 const H = require('./home-omr');
+/* the one function every body of this queue (and of server.js) is read with: size, time, shape and memory are bounded as it arrives */
+const bodyReader = require('./body-reader');
 
 const HOUR = 3600 * 1000;
 const DAY = 24 * HOUR;
@@ -156,6 +158,8 @@ const LIMITS = {
   OMR_EGRESS_PER_HOUR: 64 * 1048576,
   OMR_EGRESS_PER_DAY: 128 * 1048576,
   /* ... and what the site WRITES for scores (the images it accepts), all links together: every byte written to Postgres is also write-ahead log and history on the free plan, deleted or not */
+  /* the part of each budget one PC link, and one creating address (the links made from one address together), may use: a stranger's own links can use no more than that */
+  OMR_BUDGET_SHARE: 0.25,
   OMR_INGRESS_PER_HOUR: 64 * 1048576,
   OMR_INGRESS_PER_DAY: 128 * 1048576,
   /* what a finished job's result is given room for among its link's notes when the job is queued (it is up to H.LIMITS.RESULT_MAX_BYTES) */
@@ -197,6 +201,8 @@ function configFrom(env, over) {
     omrPageReadsPerHour: LIMITS.OMR_PAGE_READS_PER_HOUR,
     omrEgressPerHour: int(env.PPP_OMR_EGRESS_MB_HOUR, LIMITS.OMR_EGRESS_PER_HOUR / 1048576, 1, 4096) * 1048576,
     omrEgressPerDay: int(env.PPP_OMR_EGRESS_MB_DAY, LIMITS.OMR_EGRESS_PER_DAY / 1048576, 1, 65536) * 1048576,
+    /* the part of each budget one PC link, and one creating address, may use */
+    omrShare: LIMITS.OMR_BUDGET_SHARE,
     omrIngressPerHour: int(env.PPP_OMR_INGRESS_MB_HOUR, LIMITS.OMR_INGRESS_PER_HOUR / 1048576, 1, 4096) * 1048576,
     omrIngressPerDay: int(env.PPP_OMR_INGRESS_MB_DAY, LIMITS.OMR_INGRESS_PER_DAY / 1048576, 1, 65536) * 1048576,
     bodyTotalMs: LIMITS.BODY_TOTAL_MS,
@@ -264,10 +270,11 @@ function addrKey(ip) {
 const iso = t => (t ? new Date(t).toISOString() : null);
 
 /* ---- how a body of the queue is read (G12-5, after the security review of PR 269) ----
-   Three things are bounded while the bytes ARRIVE, before anything is parsed or held:
-   its size (as always), its time (a deadline for the whole body and one for the gap between two chunks: a socket that sends its headers and a few bytes and then waits is cut, so it
-   cannot hold a place for the five minutes the server's own timeout allows), and its SHAPE (home-omr.js jsonGuard: the structure a JSON body may have, counted outside strings; JSON.parse of
-   `[{},{},...]` takes 22 bytes of heap for every 3 bytes of body). Each route gives the structure its legitimate bodies need. */
+   Four things are bounded while the bytes ARRIVE, before anything is parsed or held (body-reader.js): its size (as always), its time (a deadline for the whole body and one for the gap
+   between two chunks: a socket that sends its headers and a few bytes and then waits is cut, so it cannot hold a place for the five minutes the server's own timeout allows), its
+   MEMORY (chunks are coalesced as they arrive: a body sent a byte at a time costs what its bytes cost, not 350 bytes of Buffer for each) and its SHAPE (home-omr.js jsonGuard: the
+   structure a JSON body may have, counted outside strings; JSON.parse of `[{},{},...]` takes 22 bytes of heap for every 3 bytes of body). Each route gives the structure its
+   legitimate bodies need. */
 const SHAPES = (() => {
   const O = H.LIMITS, N = R.LIMITS;
   return Object.freeze({
@@ -281,44 +288,6 @@ const SHAPES = (() => {
     result: Object.freeze({ tokens: 64 + N.SONG_MAX_NOTES * 16 + N.MAX_BEATS * 2, containers: N.SONG_MAX_NOTES + 64, depth: 8 })
   });
 })();
-
-/* One body, as a Buffer. o = { limit, drain, shape, totalMs, idleMs }. Rejects with an Error whose .code is
-     TOO_LARGE  over `limit` (read and thrown away up to `drain` so the answer reaches the sender on an open connection; beyond that the socket is cut),
-     SHAPE      its structure is over the shape's bounds (the same: read on and thrown away, nothing is kept),
-     SLOW       the deadline for the whole body or for the gap between two chunks passed,
-     ABORTED    the sender went away (or the stream failed).
-   Everything it set (timers, listeners) is removed when it settles, whichever way. */
-function readQueueBody(req, o) {
-  return new Promise((resolve, reject) => {
-    const guard = o.shape ? H.jsonGuard(o.shape) : null;
-    let chunks = [], n = 0, why = null, settled = false, total = null, idle = null;
-    const err = (code, message) => Object.assign(new Error(message || code), { code: code });
-    const cleanup = () => {
-      clearTimeout(total); clearTimeout(idle);
-      req.removeListener('data', onData); req.removeListener('end', onEnd); req.removeListener('error', onError); req.removeListener('close', onClose);
-    };
-    const settle = (fn, v) => { if (settled) return; settled = true; cleanup(); chunks = []; fn(v); };
-    const onData = c => {
-      if (settled) return;
-      n += c.length;
-      idle.refresh();
-      if (why) { if (n > o.drain) { req.destroy(); settle(reject, err(why)); } return; }
-      if (n > o.limit) {
-        if (o.drain && n <= o.drain) { why = 'TOO_LARGE'; chunks = []; return; }
-        req.destroy();
-        return settle(reject, err('TOO_LARGE'));
-      }
-      if (guard && guard.push(c) === 'shape') { why = 'SHAPE'; chunks = []; return; }
-      chunks.push(c);
-    };
-    const onEnd = () => (why ? settle(reject, err(why)) : settle(resolve, Buffer.concat(chunks)));
-    const onError = e => settle(reject, err('ABORTED', e && e.message));
-    const onClose = () => settle(reject, err('ABORTED'));
-    total = setTimeout(() => settle(reject, err('SLOW', 'total')), o.totalMs);
-    idle = setTimeout(() => settle(reject, err('SLOW', 'idle')), o.idleMs);
-    req.on('data', onData); req.on('end', onEnd); req.on('error', onError); req.on('close', onClose);
-  });
-}
 
 /* bytes read out of the database over a sliding window, in one-minute buckets (so a day of many small reads is at most 1,440 numbers) */
 function byteWindow(limit, windowMs) {
@@ -335,6 +304,18 @@ function byteWindow(limit, windowMs) {
       const b = t - (t % BUCKET), last = buckets[buckets.length - 1];
       if (last && last[0] === b) last[1] += bytes; else buckets.push([b, bytes]);
       sum += bytes;
+    },
+    /* take back `bytes` that were added at time t0 (a score nobody read, or a write that did not happen): from the bucket of t0, and only while that bucket is still in the window */
+    sub(t0, bytes, now) {
+      trim(now);
+      const b0 = t0 - (t0 % BUCKET);
+      for (let i = 0; i < buckets.length; i++) {
+        if (buckets[i][0] !== b0) continue;
+        const d = Math.min(bytes, buckets[i][1]);
+        buckets[i][1] -= d; sum -= d;
+        return d;
+      }
+      return 0;
     },
     /* seconds until the oldest bucket leaves the window (when something is free again), at least 60 */
     wait(t) { trim(t); return buckets.length ? Math.max(60, Math.min(Math.ceil(windowMs / 1000), Math.ceil((buckets[0][0] + windowMs - t) / 1000))) : 60; }
@@ -398,14 +379,64 @@ function create(deps) {
     let given = false;
     return () => { if (given) return; given = true; s.site--; s.by.delete(kl); s.by.delete(ka); };
   }
-  /* what the site has read out of the database for scores (a page for a PC, a finished score for a page): see OMR_EGRESS_PER_HOUR */
-  const egress = { hour: byteWindow(C.omrEgressPerHour, HOUR), day: byteWindow(C.omrEgressPerDay, DAY) };
-  const egressLeft = t => Math.min(egress.hour.left(t), egress.day.left(t));
-  const egressAdd = (t, n) => { egress.hour.add(t, n); egress.day.add(t, n); };
-  const egressWait = t => (egress.hour.left(t) <= egress.day.left(t) ? egress.hour.wait(t) : egress.day.wait(t));
-  const ingress = { hour: byteWindow(C.omrIngressPerHour, HOUR), day: byteWindow(C.omrIngressPerDay, DAY) };
-  const ingressLeft = t => Math.min(ingress.hour.left(t), ingress.day.left(t));
-  const ingressAdd = (t, n) => { ingress.hour.add(t, n); ingress.day.add(t, n); };
+  /* ----- the budgets for what the site writes for scores ('in': the images it accepts) and reads for them ('out': a page for a PC, a finished score for a page) -----
+     Each is held three ways at once: the SITE's (OMR_EGRESS_* / OMR_INGRESS_*), and a SHARE of it (omrShare, a quarter) for each PC link and for each creating address (the links made
+     from one address share one). Anybody can make links, so without the shares one stranger could use up the site's budget for everybody else (the review's experiment: upload and
+     cancel, five times, and an honest person's upload was 503 for the rest of the hour). With them a stranger can use a quarter per address. A score that nobody read and that is cancelled,
+     expired or removed is given back to the SITE's windows (not to the sender's own share: the write happened, and the sender is limited by it). Windows slide, in memory (a restart
+     forgets them: G12_OMR.md section 24). */
+  const budget = {
+    in: { hour: byteWindow(C.omrIngressPerHour, HOUR), day: byteWindow(C.omrIngressPerDay, DAY), owners: new Map() },
+    out: { hour: byteWindow(C.omrEgressPerHour, HOUR), day: byteWindow(C.omrEgressPerDay, DAY), owners: new Map() }
+  };
+  const ownerKeys = link => (link.ipTag ? ['l:' + link.id, 'a:' + link.ipTag] : ['l:' + link.id]);
+  function ownerWindows(kind, key) {
+    const b = budget[kind];
+    let w = b.owners.get(key);
+    if (!w) {
+      w = { hour: byteWindow(Math.floor(b.hour.limit * C.omrShare), HOUR), day: byteWindow(Math.floor(b.day.limit * C.omrShare), DAY) };
+      b.owners.set(key, w);
+    }
+    return w;
+  }
+  const windowsOf = (kind, link) => {
+    const b = budget[kind], out = [b.hour, b.day];
+    ownerKeys(link).forEach(k => { const w = ownerWindows(kind, k); out.push(w.hour, w.day); });
+    return out;
+  };
+  /* null when `bytes` more may be taken now; 'site' when the site's own budget has not that much left; 'share' when this link's or its address's has not */
+  function budgetWhy(kind, t, link, bytes) {
+    const b = budget[kind];
+    if (Math.min(b.hour.left(t), b.day.left(t)) < bytes) return 'site';
+    for (const k of ownerKeys(link)) {
+      const w = ownerWindows(kind, k);
+      if (Math.min(w.hour.left(t), w.day.left(t)) < bytes) return 'share';
+    }
+    return null;
+  }
+  const budgetAdd = (kind, t, link, bytes) => { windowsOf(kind, link).forEach(w => w.add(t, bytes)); };
+  /* take back an add of time t0 from every window (a write that did not happen) */
+  const budgetUndo = (kind, t0, t, link, bytes) => { windowsOf(kind, link).forEach(w => w.sub(t0, bytes, t)); };
+  /* ... or from the site's two windows only (a score nobody read: the sender's share stays used) */
+  const budgetRefund = (kind, t0, t, bytes) => { budget[kind].hour.sub(t0, bytes, t); budget[kind].day.sub(t0, bytes, t); };
+  /* when something frees: the longest wait among the windows that are short of `bytes` */
+  function budgetWait(kind, t, link, bytes) {
+    let s = 60;
+    windowsOf(kind, link).forEach(w => { if (w.left(t) < bytes) s = Math.max(s, w.wait(t)); });
+    return s;
+  }
+  /* the refusal for a budget: 503 'budget' (the site's) or 429 'share' (this link's or its address's), each with a Retry-After and a sentence that says which */
+  function budgetError(why, kind, t, link, bytes) {
+    const wait = budgetWait(kind, t, link, bytes);
+    if (why === 'site') return httpError(503, 'The site has taken in and sent as many scores as it may for now. Use the draft, or try again later.', 'budget', { retryAfter: wait });
+    return httpError(429, 'This PC link, or this network, has used its share of what the site takes in and sends for scores. Use the draft, or try again in a while.', 'share', { retryAfter: wait });
+  }
+  /* a score that was never read (no page went to a PC) and is cancelled, expired or removed: its images are given back to the site's budget for what it writes */
+  function refundUnread(job, t) {
+    if (!job || job.kind !== 'omr' || !job.budgetAt || (job.pageReads | 0) > 0 || job.refunded) return;
+    job.refunded = true;
+    budgetRefund('in', job.budgetAt, t, job.bytes || 0);
+  }
   const maxAttemptsOf = j => (j.kind === 'omr' ? L.OMR_MAX_ATTEMPTS : L.MAX_ATTEMPTS);
 
   function fill(data) {
@@ -655,6 +686,7 @@ function create(deps) {
         try {
           if (await store.finishJob(j.id, j.ownerId, 'expired', t, { error: 'No PC picked this up in time.' })) {
             Object.assign(j, { status: 'expired', finishedAt: t, error: 'No PC picked this up in time.' });
+            refundUnread(j, t);
             await dropPages(j);
           }
         } catch (e) { logError(e); }
@@ -702,6 +734,8 @@ function create(deps) {
   async function purgeIfDue(t, force) {
     if (!force && t - lastPurge < L.PURGE_EVERY_MS) return;
     lastPurge = t;
+    /* the shares of links and addresses that have used nothing for a day leave memory */
+    ['in', 'out'].forEach(kind => budget[kind].owners.forEach((w, k) => { if (!w.hour.used(t) && !w.day.used(t)) budget[kind].owners.delete(k); }));
     const seen = seenByLink();
     const dead = [];
     links.forEach(l => { if (linkExpired(l, t, seen)) dead.push(l.id); });
@@ -743,7 +777,7 @@ function create(deps) {
     const declared = Number(req.headers['content-length']);
     if (Number.isFinite(declared) && declared > cap) throw httpError(413, 'That is larger than this accepts.', 'too-large', { close: true });
     let raw;
-    try { raw = await readQueueBody(req, { limit: limit, drain: cap, shape: shape || SHAPES.small, totalMs: C.bodyTotalMs, idleMs: C.bodyIdleMs }); } catch (e) {
+    try { raw = await bodyReader.readBody(req, { limit: limit, drain: cap, shape: shape || SHAPES.small, totalMs: C.bodyTotalMs, idleMs: C.bodyIdleMs }); } catch (e) {
       if (e && e.code === 'SLOW') throw httpError(408, 'That took too long to arrive.', 'slow', { close: true });
       if (e && e.code === 'SHAPE') throw httpError(422, 'That cannot be stored.', 'bad-body');
       if (e && e.code === 'ABORTED') throw httpError(400, 'The request was cut off.', 'aborted', { close: true });
@@ -876,7 +910,11 @@ function create(deps) {
         throw httpError(429, 'You already have scores waiting for your PC. Wait for one to be read, or cancel one.', 'queue-full');
       }
       if (omrImageBytes(() => true) >= C.omrImageBytesTotal) throw httpError(503, 'The queue is full right now. Try again later.', 'busy');
-      if (egressLeft(now()) <= 0 || ingressLeft(now()) <= 0) throw httpError(503, 'The site has taken in and sent as many scores as it may for now. Use the draft, or try again later.', 'budget', { retryAfter: egressWait(now()) });
+      {
+        const t0 = now();
+        const wi = budgetWhy('in', t0, link, 1), wo = wi ? null : budgetWhy('out', t0, link, 1);
+        if (wi || wo) throw budgetError(wi || wo, wi ? 'in' : 'out', t0, link, 1);
+      }
       /* (the third number is where reading stops for good: an upload a little over the cap is read to the end and answered 413 on an open connection; a bigger one is cut) */
       const body = await readJson(req, L.OMR_BODY, L.OMR_BODY + 4 * 1048576, SHAPES.omrUpload);
       title = R.cleanText(body.title, H.LIMITS.TITLE_MAX);
@@ -892,19 +930,39 @@ function create(deps) {
     if (!still) { release(); throw httpError(401, 'That PC link is not valid.', 'bad-code'); }
     link = still;
     const fp = H.fingerprint(checked.pages);
-    /* at its cap, a new score (not the same pages again) takes the place of the oldest waiting one that no PC has taken: that one is cancelled and its images go. A score being read is never touched. */
+    /* what the page's pages would take, as the byte quotas stand once `freed` bytes of a waiting score that is to be replaced are gone: null, or the refusal */
+    const quotaError = freed => {
+      if (omrImageBytes(j => j.ownerId === link.id) - freed + checked.bytes > C.omrImageBytesPerLink) return httpError(429, 'The scores waiting for your PC are as large as this keeps. Wait for one to be read, or cancel one.', 'quota');
+      if (link.ipTag && omrImageBytes(addressOf(link.ipTag)) - freed + checked.bytes > C.omrImageBytesPerAddress) return httpError(503, 'This network has as many scores waiting as the site keeps for it. Try again later.', 'quota');
+      if (omrImageBytes(() => true) - freed + checked.bytes > C.omrImageBytesTotal) return httpError(503, 'The queue is full right now. Try again later.', 'busy');
+      return null;
+    };
+    /* the budgets (the site's, and this link's and address's share of it): the PC will read these pages out of the database and they are written to it now, so both must have room for
+       them once - a score that could never be sent is not taken. Checked BEFORE anything is cancelled for it: a refused score takes nobody's place. */
+    const budgetRefusal = at => {
+      const wi = budgetWhy('in', at, link, checked.bytes), wo = wi ? null : budgetWhy('out', at, link, checked.bytes);
+      return wi || wo ? budgetError(wi || wo, wi ? 'in' : 'out', at, link, checked.bytes) : null;
+    };
+    /* at its cap, a new score (not the same pages again) takes the place of the oldest waiting one that no PC has taken: that one is cancelled and its images go. A score being read is
+       never touched, and a score that would be refused anyway (the budgets, the quotas) cancels nothing. */
     {
       const now0 = ownJobs(link.id);
       const same = now0.some(j => j.kind === 'omr' && pending(j) && j.url === fp);
+      if (!same) {
+        const be = budgetRefusal(t);
+        if (be) { release(); throw be; }
+      }
       if (!same && (omrPendingOf(link.id) >= L.OMR_PENDING_PER_LINK || now0.filter(pending).length >= PENDING_CAP)) {
         const oldest = now0.filter(j => j.kind === 'omr' && j.status === 'queued' && !j.writing).sort((x, y) => x.createdAt - y.createdAt)[0];
         if (oldest) {
+          const qe = quotaError(oldest.bytes || 0);
+          if (qe) { release(); throw qe; }
           const was = { status: oldest.status, finishedAt: oldest.finishedAt, error: oldest.error };
           oldest.status = 'cancelled'; oldest.finishedAt = t; oldest.progress = null; oldest.error = 'A newer score from this PC link took its place.';
           let ok = false;
           try { await persist(() => Object.assign(oldest, was), async () => { ok = await store.cancelJob(oldest.id, link.id, t); }); } catch (e) { release(); throw e; }
           if (!ok) Object.assign(oldest, was);        /* a PC took it at that moment: it stays, and the cap below refuses */
-          else await dropPages(oldest);
+          else { refundUnread(oldest, t); await dropPages(oldest); }
           still = currentLink(link);
           if (!still) { release(); throw httpError(401, 'That PC link is not valid.', 'bad-code'); }
           link = still;
@@ -923,11 +981,8 @@ function create(deps) {
       release();
       throw httpError(429, 'You already have scores waiting for your PC. Wait for one to be read, or cancel one.', 'queue-full');
     }
-    if (omrImageBytes(j => j.ownerId === link.id) + checked.bytes > C.omrImageBytesPerLink) { release(); throw httpError(429, 'The scores waiting for your PC are as large as this keeps. Wait for one to be read, or cancel one.', 'quota'); }
-    if (link.ipTag && omrImageBytes(addressOf(link.ipTag)) + checked.bytes > C.omrImageBytesPerAddress) { release(); throw httpError(503, 'This network has as many scores waiting as the site keeps for it. Try again later.', 'quota'); }
-    if (omrImageBytes(() => true) + checked.bytes > C.omrImageBytesTotal) { release(); throw httpError(503, 'The queue is full right now. Try again later.', 'busy'); }
-    /* the PC will read these pages out of the database: the site's budget for that must have room for them once (a score that could never be sent is not taken) */
-    if (egressLeft(t) < checked.bytes || ingressLeft(t) < checked.bytes) { release(); throw httpError(503, 'The site has taken in and sent as many scores as it may for now. Use the draft, or try again later.', 'budget', { retryAfter: egressWait(t) }); }
+    { const qe = quotaError(0); if (qe) { release(); throw qe; } }
+    { const be = budgetRefusal(t); if (be) { release(); throw be; } }
     if (jobs.size >= L.MAX_ROWS) { release(); throw httpError(503, 'The queue is full right now. Try again later.', 'busy'); }
     const job = { id: crypto.randomBytes(12).toString('base64url'), ownerId: link.id, kind: 'omr', url: fp, title: title, status: 'queued', attempts: 0, workerId: null,
       createdAt: t, claimedAt: 0, finishedAt: 0, error: '', bytes: checked.bytes, pages: checked.pages.length, beatAt: 0, progress: null };
@@ -935,9 +990,10 @@ function create(deps) {
     job.settle = null;
     job.settled = new Promise(resolve => { job.settle = resolve; });
     jobs.set(job.id, job);
-    ingressAdd(t, checked.bytes);          /* what is written for it counts at once (given back below when nothing is written) */
+    budgetAdd('in', t, link, checked.bytes);          /* what is written for it counts at once (given back below when nothing is written) */
+    job.budgetAt = t;
     /* a place that cannot be kept is given back in the order the slot was taken: the waiting promise first, then the row */
-    const giveUp = e => { job.settle(false); jobs.delete(job.id); ingressAdd(t, -checked.bytes); release(); throw e; };
+    const giveUp = e => { job.settle(false); jobs.delete(job.id); budgetUndo('in', t, t, link, checked.bytes); release(); throw e; };
     /* room among the link's own finished rows and notes (the oldest go), with room kept for this job's result */
     try { await evict(link.id, L.OMR_RESULT_RESERVE_BYTES, 1, job); } catch (e) { giveUp(e); }
     const rowsOfAddress = link.ipTag ? addressRows(link.ipTag) : 0;
@@ -974,11 +1030,14 @@ function create(deps) {
       /* a finished SCORE is up to 4 MB out of the database: it counts against the site's budget for scores (a conversion's notes have their own limits above) */
       const tr = now();
       if (job.kind === 'omr') {
-        if (egressLeft(tr) < (job.bytes || 0)) {
+        const why = budgetWhy('out', tr, link, job.bytes || 0);
+        if (why) {
           limiters.reads.release(link.id); limiters.readsIp.release(ip);
-          throw httpError(503, 'The site has sent as many scores as it may for now. Your score is kept; look again in a little while.', 'budget', { retryAfter: egressWait(tr) });
+          const e = budgetError(why, 'out', tr, link, job.bytes || 0);
+          e.message = 'Your score is kept; look again in a little while. ' + e.message;
+          throw e;
         }
-        egressAdd(tr, job.bytes || 0);
+        budgetAdd('out', tr, link, job.bytes || 0);
       }
       const result = await store.getResult(job.id, link.id);
       if (!result) throw httpError(410, 'The notes of that conversion are no longer kept.', 'gone');
@@ -1008,6 +1067,7 @@ function create(deps) {
       /* false: the row was not queued or claimed any more (finished at the same moment); the memory is put right below */
       if (!(await store.cancelJob(job.id, link.id, t))) { Object.assign(job, was); throw httpError(409, 'That conversion has already finished.', 'finished'); }
     });
+    refundUnread(job, t);
     await dropPages(job);          /* G12-5: a score that is cancelled holds no images (the PC that is reading it hears "cancelled" at its next heartbeat) */
     reply(res, 200, { job: publicJob(job) });
   }
@@ -1107,6 +1167,7 @@ function create(deps) {
     const ownTokens = Array.from(tokens.values()).filter(k => k.ownerId === link.id);
     const ownJobsList = ownJobs(link.id);
     const lf = lastFinished.get(link.id);
+    ownJobsList.forEach(j => { if (pending(j)) refundUnread(j, t); });          /* scores nobody read go back to the site's budget (the link's own share goes with the link) */
     link.revokedAt = t;
     ownTokens.forEach(k => tokens.delete(k.id));
     ownJobsList.forEach(j => jobs.delete(j.id));
@@ -1356,14 +1417,14 @@ function create(deps) {
   /* GET /api/worker/jobs/:id/pages/:n (G12-5): one page image of a score this token has claimed, as the bytes it was uploaded as. Only the token that holds the claim, only while the job is
      claimed, each page a few times at most, and a token only so many pages an hour: the free database's egress is small. */
   async function workerPage(req, res, id, idxRaw) {
-    const { rec, job } = await workerJob(req, id, ['claimed']);
+    const { rec, link, job } = await workerJob(req, id, ['claimed']);
     if (job.kind !== 'omr') throw httpError(404, 'That job has no pages.', 'not-found');
     const idx = parseInt(idxRaw, 10);
     if (!Number.isInteger(idx) || idx < 0 || idx >= job.pages) throw httpError(404, 'That page is not there.', 'not-found');
     if (job.workerId !== rec.id) throw httpError(409, 'That job was taken by another worker.', 'not-yours', { status: job.status });
     /* the site's budget for what it reads out of the database for scores (checked first: a refused request costs nothing else) */
     const t0 = now();
-    if (egressLeft(t0) <= 0) throw httpError(503, 'The site has sent as many page images as it may for now. Try again later.', 'budget', { retryAfter: egressWait(t0) });
+    { const why = budgetWhy('out', t0, link, 1); if (why) throw budgetError(why, 'out', t0, link, 1); }
     if (!limiters.pageReads.take(rec.id)) throw httpError(429, 'This token is fetching pages too often.', 'too-many', { retryAfter: 600 });
     /* page reads are counted over the job's whole LIFETIME, never reset by a claim: every claim (there are at most OMR_MAX_ATTEMPTS) may read each page once and a few pages again
        (a download that was cut). A job is read about twice its own weight at the most, however the PC behaves. */
@@ -1373,7 +1434,7 @@ function create(deps) {
     job.beatAt = now();       /* a page that takes a while to arrive is the PC at work */
     const buf = await store.getOmrPage(job.id, rec.ownerId, idx);
     if (!buf) throw httpError(410, 'That page is not kept any more.', 'gone');
-    egressAdd(now(), buf.length);
+    budgetAdd('out', now(), link, buf.length);
     /* the job may have been cancelled, or the token replaced, while the page was read */
     if (!alive(rec) || job.status !== 'claimed') throw httpError(409, 'That job is not waiting for this any more.', 'not-open', { status: job.status });
     const info = H.sniffImage(buf);
@@ -1451,7 +1512,7 @@ function create(deps) {
     disable: why => { disabledWhy = String(why || 'disabled'); },
     isDisabled: () => !!disabledWhy,
     /* for tests */
-    _state: { jobs: jobs, tokens: tokens, links: links, limiters: limiters, stats: stats, config: C, isLoaded: () => loaded, forgetAll: () => { loaded = false; }, purge: t => purgeIfDue(t, true), sweep: t => { lastSweep = 0; return sweep(t); } }
+    _state: { jobs: jobs, tokens: tokens, links: links, limiters: limiters, stats: stats, config: C, budget: (kind, t) => ({ hour: budget[kind].hour.used(t), day: budget[kind].day.used(t) }), isLoaded: () => loaded, forgetAll: () => { loaded = false; }, purge: t => purgeIfDue(t, true), sweep: t => { lastSweep = 0; return sweep(t); } }
   };
 }
 

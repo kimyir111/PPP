@@ -404,26 +404,20 @@ function findYtDlp() {
 /* `drain`, when given, is how much of an oversized body is read and thrown away so the caller can still answer 413 on
    an open connection (a browser shows a reset, not the answer, when the server hangs up mid-upload). Beyond it the
    connection is cut as before. Either way the promise rejects with code TOO_LARGE. */
-function readBody(req, limit, drain) {
+const bodyReader = require('./body-reader');
+/* G12-5 (the two security reviews of PR 269): every JSON body of this server is read by body-reader.js - the same function the home-PC queue uses. Before it, one socket of 1.4 million
+   1-byte writes (1.4 MB, inside every cap) held about 350 bytes of Buffer per byte and ended the process by its heap in ten seconds, on /api/auth/login and everywhere else. Now: chunks are
+   coalesced as they arrive, a body has 60 s in all and 10 s without a byte (the socket is cut), and its JSON structure is bounded as it arrives (a container per 16 bytes at the most, depth 80,
+   or the few fields of a small body). A refusal rejects with code TOO_LARGE | SHAPE | SLOW | ABORTED; every caller answers 400 or 413 for any rejection. */
+/* (PPP_BODY_TOTAL_MS and PPP_BODY_IDLE_MS only let a test see a deadline pass in seconds; nothing sets them in production) */
+const BODY_TOTAL_MS = parseInt(process.env.PPP_BODY_TOTAL_MS, 10) || 60 * 1000;
+const BODY_IDLE_MS = parseInt(process.env.PPP_BODY_IDLE_MS, 10) || 10 * 1000;
+function readBody(req, limit, drain, shape) {
   const max = limit || 2 * 1024 * 1024;
-  return new Promise((resolve, reject) => {
-    let chunks = [];
-    let n = 0, over = false;
-    const tooLarge = () => { const e = new Error('payload too large'); e.code = 'TOO_LARGE'; return e; };
-    req.on('data', c => {
-      n += c.length;
-      if (n > max) {
-        if (drain && n <= drain) { over = true; chunks = []; return; }
-        req.destroy();
-        reject(tooLarge());
-        return;
-      }
-      chunks.push(c);
-    });
-    req.on('end', () => (over ? reject(tooLarge()) : resolve(Buffer.concat(chunks))));
-    req.on('error', reject);
-  });
+  return bodyReader.readBody(req, { limit: max, drain: drain, shape: shape || bodyReader.stockShape(max), totalMs: BODY_TOTAL_MS, idleMs: BODY_IDLE_MS, destroyOnSlow: true });
 }
+/* the bodies of a few fields (an email and a password, {listed}): 64 KB at the most, 8 containers, depth 6 */
+const SMALL_BODY_BYTES = 64 * 1024;
 
 function parseCookies(req) {
   const out = {};
@@ -1006,7 +1000,7 @@ const store = process.env.DATABASE_URL ? postgresStore(process.env.DATABASE_URL)
 /* G10b-1: ONE instance holds the queue in memory (home-jobs.js says why); the database is only its durable copy. G10b-2: no account, no session: ipSecret keys the hash of the
    address a PC link was made from (the address itself is never kept) */
 const jobsService = homeJobs.create({
-  store: store.jobStore, send: send, jsonError: jsonError, readBody: readBody, parseYoutube: parseYoutubeWatch,
+  store: store.jobStore, send: send, jsonError: jsonError, parseYoutube: parseYoutubeWatch,
   clientIp: guestShare.clientIp, ipSecret: SECRET, logError: logStoreError,
   warn: w => console.warn('Home-PC worker queue: ' + w)
 });
@@ -1211,7 +1205,7 @@ async function handleApi(req, res, url) {
     const refuse = (message, reason) => send(res, 429, { error: message, code: 'too-many' }, { 'Retry-After': String(signupLimit.retryAfter(reason)) });
     if (!local && !signupAttempts.take(tag)) return refuse('Too many attempts. Try again later.', 'attempts');
     let body;
-    try { body = JSON.parse((await readBody(req)).toString('utf8') || '{}'); }
+    try { body = JSON.parse((await readBody(req, SMALL_BODY_BYTES, undefined, bodyReader.SMALL_SHAPE)).toString('utf8') || '{}'); }
     catch (e) { return jsonError(res, 400, 'Invalid JSON'); }
     const email = normalizeEmail(body.email);
     const password = String(body.password || '');
@@ -1255,7 +1249,7 @@ async function handleApi(req, res, url) {
     /* G13-5b: the same refusal as the signup limiter's (code 'too-many': the page shows it and stops, where any other 429 it takes for a busy edge and tries again), and the longest it can last */
     if (tooMany(ip)) return send(res, 429, { error: 'Too many attempts. Try again later.', code: 'too-many' }, { 'Retry-After': String(LOGIN_WINDOW_MS / 1000) });
     let body;
-    try { body = JSON.parse((await readBody(req)).toString('utf8') || '{}'); }
+    try { body = JSON.parse((await readBody(req, SMALL_BODY_BYTES, undefined, bodyReader.SMALL_SHAPE)).toString('utf8') || '{}'); }
     catch (e) { return jsonError(res, 400, 'Invalid JSON'); }
     const email = normalizeEmail(body.email);
     const password = String(body.password || '');
@@ -1368,7 +1362,11 @@ async function handleShares(req, res, url) {
     };
     let raw, body;
     try { raw = await readBody(req, guest ? GUEST.MAX_BYTES : SHARE_MAX_BYTES, guest ? GUEST_DRAIN_BYTES : undefined); }
-    catch (e) { return refuse(413, guest ? GUEST_TOO_BIG : 'That score is too large to share.'); }
+    catch (e) {
+      /* a structure that cannot be a score (a nesting past 80, a container for every few bytes) is the same 422 as one that parses and is refused below; only a size is a 413 */
+      if (e && e.code === 'SHAPE') return refuse(422, 'That is not a score PPP can share.');
+      return refuse(413, guest ? GUEST_TOO_BIG : 'That score is too large to share.');
+    }
     try { body = JSON.parse(raw.toString('utf8') || '{}'); }
     catch (e) { return refuse(400, 'Invalid JSON'); }
     /* a NUL, a lone surrogate or a nesting of more than 64 cannot be stored (or read back): it is not a score */
@@ -1478,7 +1476,7 @@ async function handleShares(req, res, url) {
   if (!userOwns && !(method === 'DELETE' && guestOwns)) return jsonError(res, 403, 'Only the person who shared it can change that.');
   if (method === 'PATCH') {
     let body;
-    try { body = JSON.parse((await readBody(req)).toString('utf8') || '{}'); }
+    try { body = JSON.parse((await readBody(req, SMALL_BODY_BYTES, undefined, bodyReader.SMALL_SHAPE)).toString('utf8') || '{}'); }
     catch (e) { return jsonError(res, 400, 'Invalid JSON'); }
     if (typeof body.listed !== 'boolean') return jsonError(res, 422, 'Nothing to change.');
     /* G13-3: posting a stored score that came from a YouTube link is refused like the first post; one already posted stays as it is, and taking down is always allowed */
@@ -1675,6 +1673,13 @@ function sweepGuestShares() {
     .then(() => store.purgeSignupTags(Date.now()))
     .catch(e => console.error('Guest link sweep failed:', e.message));
 }
+
+/* G12-5 (second review): a socket that never finishes its headers, or never ends a request, held memory for Node's defaults (60 s for the headers, 300 s for the request); 3000 of them were
+   about 32 MB. The headers must arrive in 20 s, the whole request in 120 s (the body's own deadline is 60 s), and no more than PPP_MAX_CONNECTIONS (1000) sockets are open at once: past
+   that a new one is dropped by Node, so a flood of sockets is an outage for its length, never an out-of-memory. An honest browser or Render's proxy holds a few dozen. */
+server.headersTimeout = 20 * 1000;
+server.requestTimeout = 120 * 1000;
+server.maxConnections = Math.max(50, parseInt(process.env.PPP_MAX_CONNECTIONS, 10) || 1000);
 
 store.ready().then(() => {
   seedSharedScores().catch(e => console.error('Seed library skipped:', e.message));
