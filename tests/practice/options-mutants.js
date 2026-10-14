@@ -39,6 +39,11 @@ const ROWS = [
   ['O19', 'the simulation reads the plan of the moment, not the run\'s own', [["const plan = (PRACTICE_MODE === 'graph' && this._tp && this._tp.plan) || practicePlan(S.score, from, to);\n    const list = plan.strikes || [];", "const plan = practicePlan(S.score, from, to);\n    const list = plan.strikes || [];"]], 'small'],
   ['O21', 'a pause is resumed in the first visit of its bar (the transport and the falling notes forget where the run was)', [["if (PRACTICE_MODE === 'graph' && r && r.plan === plan && Math.abs(PianoScore.writtenAtSound(plan, r.sq) - b) < 1e-6) return r.sq;", "if (false) return r.sq;"]], 'small'],
   ['O22', 'the matcher begins at the first visit of the bar the transport resumed in (every expected note is a stretch away)', [["< 1e-6 ? tp.b0 : sq0;", "< 1e-6 ? sq0 : sq0;"]], 'small'],
+  ['O23', 'a seek after a pause is resumed at the place of the pause (the next Play ignores where the person put the playhead)', [["Math.abs(PianoScore.writtenAtSound(plan, r.sq) - b) < 1e-6) return r.sq;", "true) return r.sq;"]], 'small'],
+  ['O24', 'follow mode counts a key pressed for a grace note of the onset as a wrong note', [["    if (want.indexOf(ev.midi) < 0 && g.graces && g.graces.indexOf(ev.midi) >= 0) return;", ""]], 'followgrace'],
+  ['O25', 'follow mode counts a key pressed for a grace note of the onset after a rest as a wrong note', [["(g.graces && g.graces.indexOf(ev.midi) >= 0) || (ng && ng.graces && ng.graces.indexOf(ev.midi) >= 0 && wantOf(ng).indexOf(ev.midi) < 0)", "false"]], 'followgrace'],
+  ['O26', 'a grace is drawn as wide as its key', [["  if (note.grace) { const w = Math.max(2, rect.width * 0.5); rect.x += (rect.width - w) / 2; rect.width = w; }", ""]], 'visual'],
+  ['O27', 'the grace window of the matcher is a second wide: a wrong key long after a grace is forgiven', [["Math.abs(ev.t - this.graces[i].tMs) <= w) return { verdict: 'grace'", "Math.abs(ev.t - this.graces[i].tMs) <= w * 4) return { verdict: 'grace'"]], 'matcher'],
   ['O20', 'the setter does not read the list (anything is "on")', [["  if (typeof v !== 'string' || !v) return null;\n  const parts = v.split(',');", "  if (typeof v !== 'string' || !v) return null;\n  return PRACTICE_FIX_NAMES.slice();\n  const parts = v.split(',');"]], 'choice']
 ];
 

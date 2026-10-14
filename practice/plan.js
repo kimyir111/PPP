@@ -51,6 +51,7 @@
      dyn      {marks, wedges, velAt}        written dynamics
      soundLengthQ, graceStrikes (how many strikes are grace notes), written (the notes and rests of the range in Score order, for the gates), span, range,
      jumps    [{kind, from, to}]            the signs that were followed (empty unless opts.jumps)
+     (a gate of followGates carries `graces` [midi] when grace notes sound at its place)
    ============================================================================ */
 (function (root, factory) {
   'use strict';
@@ -181,8 +182,8 @@
   }
 
   /* The signs that jump (G11-D3 JUMP): {kind, mi, to}, `to` the measure index it turns to (null: nowhere). A D.S. goes to
-     the segno before it (the nearest one; else the first), a To Coda to the coda after it (the nearest; else none), a D.C.
-     to the start of the range (`to` null: the walk supplies it). A jump that names its target (Jump.target) goes there.
+     the segno before it (the nearest one; none before it: ignored), a To Coda to the coda after it (the nearest; else none), a D.C.
+     to the first bar of the piece (`to` null: the walk supplies it). A jump that names its target (Jump.target) goes there.
      A sign acts at the end of the measure that holds it: the importer states where in the measure a direction was
      written, not where the music turns, and a D.C. above the last bar is as often written at the bar's start as at its end. */
   function jumpsOf(g, L) {
@@ -198,8 +199,9 @@
       let t = null;
       if (j.target && byId.has(j.target)) t = byId.get(j.target).mi;
       else if (j.kind === 'dalsegno') {
+        /* the nearest segno at or before the sign; one that comes AFTER it is not what a D.S. goes back to (it would drop the bars between), so the sign is ignored (G11a-4, F4) */
         const before = segnos.filter(s => s.mi <= j.mi);
-        t = before.length ? before[before.length - 1].mi : segnos.length ? segnos[0].mi : null;
+        t = before.length ? before[before.length - 1].mi : null;
       } else if (j.kind === 'tocoda') {
         const after = codas.filter(c => c.mi > j.mi);
         t = after.length ? after[0].mi : null;
@@ -212,8 +214,11 @@
   /* ----------------------------------------------------------- play order */
   /* Score.form (App 4124), over measure indexes: the repeats, voltas and the loop-start target as the app reads them,
      for the range i0..i1. With `jumps` it also follows D.C. / D.S. / To Coda / Fine, once:
-       - a D.C. or D.S. in a measure that is played (not skipped by a volta) turns back after that measure, to the start
-         of the range or to the segno; only when the target lies inside the range, and only the first one;
+       - a D.C. or D.S. in a measure that is played (not skipped by a volta) turns back after that measure, to the first
+         bar of the piece or to the segno; only when the target lies inside the range, and only the first one;
+       - a LOOP that ends on the sign (the sign is the range's last bar and its target is the range's first) does not take it: the loop's
+         own wrap goes back to that bar, so the jump would play the loop twice a lap; a practice loop plays its written bars. The range
+         that is the whole piece takes it (Start to finish; the piece's own D.C. at its last bar) (G11a-4, F1);
        - on the way back the repeat signs are not taken (an engraver's reading) and a volta plays the last ending the
          piece has (`backPass`), so a repeated section is played once, through its last ending;
        - on the way back a To Coda turns to its coda, and a Fine ends the piece.
@@ -260,8 +265,10 @@
           const toCoda = here.find(j => j.kind === 'tocoda' && j.to !== null && j.to >= i0 && j.to <= i1);
           if (toCoda) { i = toCoda.to; arriving = true; log.push({ kind: 'tocoda', from: visits.length - 1, to: i }); continue; }
         } else if (!turned) {
-          const goal = j => (j.kind === 'dacapo' && j.to === null ? i0 : j.to);
-          const back = here.find(j => (j.kind === 'dacapo' || j.kind === 'dalsegno') && goal(j) !== null && goal(j) >= i0 && goal(j) <= i1);
+          const goal = j => (j.kind === 'dacapo' && j.to === null ? 0 : j.to);
+          const whole = i0 === 0 && i1 === ms - 1;
+          const back = here.find(j => (j.kind === 'dacapo' || j.kind === 'dalsegno') && goal(j) !== null && goal(j) >= i0 && goal(j) <= i1 &&
+            !(i === i1 && goal(j) === i0 && !whole));
           if (back) {
             turned = true; leg = 1; openEnding = null; arriving = true;
             i = goal(back);
@@ -512,10 +519,26 @@
   }
   function pedalCCs(written, visits) {
     const out = [];
+    let down = 0;                                    /* the damper as the played order has left it */
     visits.forEach(v => {
+      /* the arrival of a jump (G11a-4, F3): a damper that is down comes up, and goes down again where the written pedal is down at that place (a pedal change), so a pedal
+         pressed before the sign does not stay down through the way back and the strings of the bar before the sign stop. A repeat's return is not touched (the old player's:
+         the damper is where the written events left it). `type: 'jump'` marks these. A piece with no damper pedal gets nothing. */
+      if (v.jumped) {
+        let state = 0;
+        for (let i = 0; i < written.length; i++) {
+          if (written[i].q >= v.startQ - 1e-9) break;
+          if ((written[i].kind || 'damper') === 'damper') state = written[i].value > 0 ? written[i].value : 0;
+        }
+        if (down > 0) out.push({ q: v.soundQ, kind: 'damper', cc: 64, value: 0, type: 'jump' });
+        if (state > 0) out.push({ q: v.soundQ, kind: 'damper', cc: 64, value: state, type: 'jump' });
+        down = state;
+      }
       written.forEach(e => {
-        if (e.q >= v.startQ - 1e-9 && e.q < v.startQ + v.lenQ - 1e-9)
+        if (e.q >= v.startQ - 1e-9 && e.q < v.startQ + v.lenQ - 1e-9) {
           out.push({ q: v.soundQ + (e.q - v.startQ), kind: e.kind, cc: PEDAL_CC[e.kind] || 64, value: e.value, type: e.type });
+          if ((e.kind || 'damper') === 'damper') down = e.value > 0 ? e.value : 0;
+        }
       });
     });
     return out.sort((a, b) => a.q - b.q);
@@ -855,6 +878,15 @@
       here.forEach(s => out.push(s));
       previous = here;
     });
+    /* the damper comes up at the arrival of a jump (F3): no string the pedal or the sostenuto holds rings on into the bar the way back turns to, whichever bar it was struck in */
+    if (jumping) {
+      const arrivals = plan.visits.filter(v => v.jumped).map(v => v.soundQ);
+      out.forEach(s => {
+        for (let i = 0; i < arrivals.length; i++) {
+          if (arrivals[i] > s.q + 1e-9) { if (s.upQ > arrivals[i]) s.upQ = Math.max(arrivals[i], s.q + 0.05); break; }
+        }
+      });
+    }
     return out.sort((a, b) => a.q - b.q || a.midi - b.midi);
   }
 
@@ -954,6 +986,18 @@
         gates.push(gate);
       });
     });
+    /* the grace notes that sound at a gate's place (G11a-4, F2): a key pressed for one is forgiven by follow mode as the matcher forgives it - graces are heard, not judged */
+    if (plan.graceStrikes > 0) {
+      const at = new Map();
+      plan.strikes.forEach(s => {
+        if (!s.grace || !handOk(s.note, hands)) return;
+        const k = s.abs.toFixed(5);
+        let a = at.get(k);
+        if (!a) at.set(k, a = []);
+        if (a.indexOf(s.midi) < 0) a.push(s.midi);
+      });
+      gates.forEach(g => { const a = at.get(g.b.toFixed(5)); if (a) g.graces = a.slice(); });
+    }
     return gates;
   }
   function gatesOfRun(plan, L, hands, run, strikeTies) {

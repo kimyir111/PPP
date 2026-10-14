@@ -3616,7 +3616,7 @@ const PianoScore = {
 const PRACTICE_KEY = 'ppp.practice.v1';
 const PRACTICE_DEFAULT = 'legacy';
 const PRACTICE_PLAN_SCRIPT = 'practice/plan.js';
-const PRACTICE_FILE_V = 2; /* the ?v= of practice/plan.js: bump it when the file changes */
+const PRACTICE_FILE_V = 3; /* the ?v= of practice/plan.js: bump it when the file changes */
 function practiceChoice(v) { return v === 'legacy' || v === 'graph' ? v : null; }
 let PRACTICE_MODE = (() => {
   let m = PRACTICE_DEFAULT;
@@ -4000,7 +4000,10 @@ function getNoteRect(note, currentTime, geometry, hitLineY, noteAreaHeight, look
   const height = Math.max(5, note.duration * pxPerSecond);
   const bottom = hitLineY - (note.startTime - currentTime) * pxPerSecond;
   const inset = Math.max(1, key.width * 0.1);
-  return { x: key.x + inset, y: bottom - height, width: Math.max(2, key.width - inset * 2), height: height, bottom: bottom };
+  const rect = { x: key.x + inset, y: bottom - height, width: Math.max(2, key.width - inset * 2), height: height, bottom: bottom };
+  /* G11a-4: a grace note is heard, and drawn half as wide as the key (it is never asked) */
+  if (note.grace) { const w = Math.max(2, rect.width * 0.5); rect.x += (rect.width - w) / 2; rect.width = w; }
+  return rect;
 }
 
 /* One per page. Times in are audio-clock seconds; clockOffset() relates them
@@ -12892,7 +12895,6 @@ class PianoVisualizerCanvas extends React.Component {
       const note = visible[i];
       const rect = getNoteRect(note, currentTime, geometry, hitLineY, noteAreaHeight, lookAhead);
       if (!rect || rect.y > hitLineY + 16 || rect.y + rect.height < -4) continue;
-      if (note.grace) { const w = Math.max(2, rect.width * 0.5); rect.x += (rect.width - w) / 2; rect.width = w; }   /* G11a-4: a grace note is heard, and drawn half as wide */
       const selected = this.selected(note);
       const isActive = note.startTime <= currentTime + 1e-6 && note.endTime >= currentTime - 1e-6;
       const approaching = note.startTime > currentTime && note.startTime - currentTime < 0.45;
@@ -15048,6 +15050,8 @@ class Component extends DCLogic {
       let ni = gi + 1;
       while (ni < gates.length && (gates[ni].rest || !gates[ni].notes.length)) ni++;
       const ng = gates[ni];
+      /* G11a-4 (F2): a grace note of the rest's place or of the onset that follows it is heard, not judged: the key is neither a wrong note nor a step (Play forgives it the same way) */
+      if ((g.graces && g.graces.indexOf(ev.midi) >= 0) || (ng && ng.graces && ng.graces.indexOf(ev.midi) >= 0 && wantOf(ng).indexOf(ev.midi) < 0)) return;
       if (!ng || wantOf(ng).indexOf(ev.midi) < 0) {
         const t = this.followStat(g.m);
         t.wrong++; t.extra++;
@@ -15064,6 +15068,7 @@ class Component extends DCLogic {
     }
 
     const want = wantOf(g);
+    if (want.indexOf(ev.midi) < 0 && g.graces && g.graces.indexOf(ev.midi) >= 0) return;   /* G11a-4 (F2): a grace note of this onset is heard, not judged */
     if (want.indexOf(ev.midi) < 0) {
       const t = this.followStat(g.m);
       t.wrong++; t.extra++;

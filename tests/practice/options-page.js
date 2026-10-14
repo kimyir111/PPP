@@ -123,20 +123,22 @@
       rec.whole = { legacy: lw.soundLengthQ, graph: whole.soundLengthQ, jumps: whole.jumps.length };
       if (!whole.jumps.length) return;
       const ms = score.measures;
-      /* every jump the plan followed: the bar with the sign (the visit it was taken at) and the bar it turned to */
+      /* every jump the plan followed: the bar with the sign (the visit it was taken at) and the bar it turned to. A practice loop plays its written bars; the jump is taken by the whole
+         piece and by a loop that holds the bar it turns to and goes on past the sign (or starts before the bar it turns to) - G11a-4 F1 */
+      const last = ms.length - 1;
+      const win = (what, lo, hi, kind) => {
+        const a = PPP.practicePlan(score, ms[lo].number, ms[hi].number), b = PPP.PianoScore.of(score, ms[lo].number, ms[hi].number);
+        rec.windows.push({ kind: kind, what: what, from: ms[lo].number, to: ms[hi].number, legacy: b.soundLengthQ, graph: a.soundLengthQ, jumps: a.jumps.length, same: J(C.planOf(a)) === J(C.planOf(b)),
+          wholePiece: lo === 0 && hi === last, visits: a.visits.length, visitsLegacy: b.visits.length });
+      };
       whole.jumps.forEach(j => {
         const sign = whole.visits[j.from].index, target = j.to;
-        const lo = Math.min(sign, target), hi = Math.max(sign, target);
-        const inside = { from: ms[lo].number, to: ms[hi].number };
-        /* a To Coda is only taken on the way back of a D.S., so its own window (the sign and the coda) holds no way back: not tested here, the fixture's windows hold the D.S. as well */
-        if (j.kind !== 'tocoda') {
-          const a = PPP.practicePlan(score, inside.from, inside.to), b = PPP.PianoScore.of(score, inside.from, inside.to);
-          rec.windows.push({ kind: j.kind, what: 'sign and target inside', from: inside.from, to: inside.to, legacy: b.soundLengthQ, graph: a.soundLengthQ, visitsLegacy: b.visits.length, visits: a.visits.length, jumps: a.jumps.length });
-        }
-        /* the sign's own bar alone: nothing to turn to inside it */
-        const alone = PPP.practicePlan(score, ms[sign].number, ms[sign].number), aloneL = PPP.PianoScore.of(score, ms[sign].number, ms[sign].number);
-        rec.windows.push({ kind: j.kind, what: 'sign alone', from: ms[sign].number, to: ms[sign].number, legacy: aloneL.soundLengthQ, graph: alone.soundLengthQ, jumps: alone.jumps.length,
-          same: J(C.planOf(alone)) === J(C.planOf(aloneL)) });
+        /* a To Coda is only taken on the way back of a D.S., so its own windows are not tested here, the fixture's windows hold the D.S. as well */
+        if (j.kind === 'tocoda') return;
+        win('ends on the sign, from the bar it turns to', Math.min(sign, target), sign, j.kind);
+        win('the sign alone', sign, sign, j.kind);
+        if (sign + 1 <= last) win('goes on past the sign', Math.min(sign, target), sign + 1, j.kind);
+        if (target >= 1) win('starts before the bar it turns to', target - 1, sign, j.kind);
       });
     });
     return rec;
@@ -192,6 +194,21 @@
         const g = eng.graces[0];
         const v = eng.noteOn({ midi: g.midi, t: g.tMs, type: 'on' });
         if (v.verdict !== 'grace' && !(v.expected)) rec.fail.push(name + ': a key pressed where a grace sounds is "' + v.verdict + '"');
+      }
+      /* the window is tight: the pitch of a grace pressed 400 ms after it (no asked note of that pitch near it) is a wrong or a stray key, never a 'grace' */
+      if (graces.length) {
+        const eng = begin('on', r, hands);
+        const late = eng.graces.find(g => !eng.expected.some(x => x.midi === g.midi && Math.abs(x.tMs - (g.tMs + 400)) <= eng.timing.window) &&
+          !eng.graces.some(o => o !== g && o.midi === g.midi && Math.abs(o.tMs - (g.tMs + 400)) <= eng.timing.window) &&
+          !eng.graces.some(o => o !== g && o.midi === g.midi && Math.abs(o.tMs - (g.tMs - 400)) <= eng.timing.window));
+        if (late) {
+          const v = eng.noteOn({ midi: late.midi, t: late.tMs + 400, type: 'on' });
+          if (v.verdict !== 'wrong' && v.verdict !== 'extra') rec.fail.push(name + ': a key 400 ms after a grace is "' + v.verdict + '", not a wrong note');
+          const early = begin('on', r, hands);
+          const ve = early.noteOn({ midi: late.midi, t: late.tMs - 400, type: 'on' });
+          if (ve.verdict === 'grace') rec.fail.push(name + ': a key 400 ms before a grace is forgiven as the grace');
+          rec.lateGrace = (rec.lateGrace || 0) + 1;
+        }
       }
       /* graces off, everything else on: the same notes are asked and the same totals */
       const D = begin('jumps,repeats,ties', r, hands);
@@ -324,6 +341,14 @@
       });
       if (wrong) rec.fail.push(wrong + ' note(s) drawn for another length than the plan holds them');
       if (graces.some(n => n.duration > 1)) rec.fail.push('a grace drawn longer than a second');
+      /* half as wide as the same note not marked as a grace: read from the rectangle the canvas draws (getNoteRect), X5 */
+      if (graces.length) {
+        const geo = PPP.PianoVisual.buildKeyboardGeometry(tl.range, 800, 120);
+        const n = graces[0];
+        const ra = PPP.PianoVisual.getNoteRect(n, n.startTime, geo, 300, 300, 4), rb = PPP.PianoVisual.getNoteRect(Object.assign({}, n, { grace: false }), n.startTime, geo, 300, 300, 4);
+        if (!(ra && rb && ra.width > 1.9 && Math.abs(ra.width - Math.max(2, rb.width * 0.5)) < 1e-9)) rec.fail.push('a grace is drawn ' + (ra && rb ? ra.width + ' wide against ' + rb.width : 'nowhere') + ', not half as wide');
+        else if (Math.abs((ra.x + ra.width / 2) - (rb.x + rb.width / 2)) > 1e-9) rec.fail.push('a grace is not centred on its key');
+      }
     });
     return rec;
   }
@@ -435,9 +460,35 @@
         return out;
       });
     };
+    /* a seek after the pause: the next Play starts where the person put it, in the first visit of that bar, not at the place the pause was (X2) */
+    const seek = async () => {
+      PPP.practice = 'graph';
+      PPP.practiceFix = 'on';
+      await PPP.loadPracticeModule();
+      return withState(stateFor(score, w), (a, S) => {
+        const plan = PPP.practicePlan(score, w.from, w.to);
+        const seen = new Set();
+        let vIdx = -1;
+        plan.visits.forEach((v, k) => { if (vIdx < 0 && seen.has(v.index) && v.lenQ > 1) vIdx = k; seen.add(v.index); });
+        if (vIdx < 0) return { none: true };
+        a.startTransport(S, Score.startQ(score, w.from));
+        a._tp.soundQ = plan.visits[vIdx].soundQ + 1;
+        a.stopTransport();
+        /* the person clicks another bar: the first bar of the range, which the plan plays first */
+        const beat = Score.startQ(score, w.from);
+        S.beat = beat;
+        const out = { want: PPP.PianoScore.soundAtWritten(plan, beat), paused: a._resume && a._resume.sq };
+        out.frame = a.visualTransportFrame(a.visualTimeline(S)).soundQ;
+        a.startTransport(S, beat);
+        out.b0 = a._tp.b0;
+        a._tp = null;
+        return out;
+      });
+    };
     try {
       rec.graph = await once('graph');
       rec.legacy = await once('legacy');
+      rec.seek = await seek();
     } finally { PPP.practice = 'legacy'; PPP.practiceFix = 'on'; app._resume = null; }
     const g = rec.graph;
     if (g.none) { rec.fail.push('no bar is played twice in this piece'); return rec; }
@@ -447,6 +498,11 @@
     if (Math.abs(g.first - g.sq) < 1e-6) rec.fail.push('the first visit of the bar is the visit that was paused: the probe proves nothing');
     const l = rec.legacy;
     if (!l.none && Math.abs(l.b0 - l.first) > 1e-6) rec.fail.push('legacy: the transport does not resume at the first visit, as it always has (' + l.b0 + ' against ' + l.first + ')');
+    const sk = rec.seek;
+    if (sk && !sk.none) {
+      if (Math.abs(sk.b0 - sk.want) > 1e-6) rec.fail.push('a seek after the pause: the transport starts at sounding quarter ' + sk.b0 + ', not at the bar that was picked (' + sk.want + ')');
+      if (Math.abs(sk.frame - sk.want) > 1e-6) rec.fail.push('a seek after the pause: the falling notes wait at ' + sk.frame + ', not at the bar that was picked (' + sk.want + ')');
+    }
     return rec;
   }
 
@@ -531,6 +587,20 @@
           if (J(r.bars.slice(0, one.length)) !== J(one)) rec.fail.push('the loop walked ' + r.bars.slice(0, 40).join(' ') + ' ..., the plan has ' + one.slice(0, 40).join(' ') + ' ...');
           if (r.bars[one.length] !== one[0]) rec.fail.push('the second lap of the loop does not begin at the loop start (bar ' + r.bars[one.length] + ', not ' + one[0] + ')');
         });
+        /* the last bars up to the sign (a practice of the last system of a D.C. piece): its four bars, once a lap, two laps (F1: it was eight bars a lap) */
+        if (sign >= 3) {
+          const tail = { from: ms[sign - 3].number, to: ms[sign].number };
+          withState(Object.assign(stateFor(score, tail), { tempo: score.tempo || 84, loop: true, loopFrom: tail.from, loopTo: tail.to }), (app, S) => {
+            const plan = PPP.practicePlan(score, tail.from, tail.to);
+            const r = walkTransport(app, S, score, plan, { from: tail.from, laps: 2 });
+            rec.tail = { win: tail, laps: r.laps, bars: r.bars.slice(0, 10), visits: plan.visits.length };
+            const written = PPP.PianoScore.of(score, tail.from, tail.to).visits.map(v => v.number);
+            if (J(plan.visits.map(v => v.number)) !== J(written)) rec.fail.push('the loop of the last four bars up to the sign plays ' + plan.visits.map(v => v.number).join(' ') + ', its written bars are ' + written.join(' '));
+            if (r.laps < 1) rec.fail.push('the last-four-bars loop completed no lap in the time of two laps');
+            const twice = written.concat(written).filter((m, i, a) => i === 0 || a[i - 1] !== m);
+            if (J(r.bars.slice(0, twice.length)) !== J(twice)) rec.fail.push('the last-four-bars loop walked ' + r.bars.slice(0, 12).join(' ') + ', not its written bars twice');
+          });
+        }
       }
     });
     return rec;
@@ -709,5 +779,76 @@
     return out;
   }
 
-  window.PPPOptionsProbe = { choice, plan, lap, matcher, gates, spies, visual, fixture, fallbacks, perf, sweep, sim, switching, hint, resume, run };
+  /* ---- follow mode forgives a key pressed for a grace note of the onset it waits on (F2) ---- */
+  async function followGrace(item) {
+    const rec = { file: item.file, fail: [] };
+    const score = await SW.loadScore(item);
+    const w = wholeOf(score);
+    await inMode('on', async () => {
+      withState(Object.assign(stateFor(score, w), { hands: 'both' }), (app, S) => {
+        const savedSet = app.setState, savedLive = app.liveMidi;
+        app.setState = function (p) { if (typeof p === 'function') p = p(S); Object.assign(S, p); };
+        app.liveMidi = () => true;
+        const rawNote = app.followNote;
+        /* a mutated page may throw where the real one does not (a lap that ends with no sections in this stand-in state): that is a failure of the check, not of the probe */
+        app.followNote = function (ev) { try { return rawNote.call(this, ev); } catch (e) { rec.fail.push('followNote threw: ' + String(e && e.message).slice(0, 80)); return undefined; } };
+        try {
+          app._gatesKey = null;
+          const gates = app.followGates();
+          const gi = gates.findIndex(g => g.graces && g.graces.length && !g.rest && g.notes.length && g.graces.some(m => g.notes.every(n => n.midi !== m)));
+          if (gi < 0) { rec.fail.push('no gate with a grace note of a pitch it does not ask'); return; }
+          const g = gates[gi];
+          const grace = g.graces.find(m => g.notes.every(n => n.midi !== m));
+          rec.graces = gates.filter(x => x.graces).length;
+          const park = () => { app._got = []; app._tally = {}; const p = { wrongNotes: [] }; app.followPark(gi, p); app.setState(p); };
+          const tally = () => JSON.stringify(app._tally || {});
+          /* a key for a grace of this onset: no wrong note, no extra, the gate stays */
+          park();
+          app.followNote({ midi: grace, t: 0, type: 'on' });
+          rec.forgiven = tally() === '{}' && S.gateIdx === gi && !(S.wrongNotes && S.wrongNotes.length);
+          if (!rec.forgiven) rec.fail.push('a key pressed for a grace note of the onset is counted: ' + tally() + ' gate ' + S.gateIdx + ' (' + gi + ')');
+          /* a key that is neither asked nor a grace here is wrong as ever */
+          const stray = [21, 22, 23, 108].find(m => g.notes.every(n => n.midi !== m) && g.graces.indexOf(m) < 0);
+          park();
+          app.followNote({ midi: stray, t: 0, type: 'on' });
+          const t1 = (app._tally || {})[g.m];
+          if (!(t1 && t1.wrong === 1 && t1.extra === 1)) rec.fail.push('a key that is neither asked nor a grace is not counted wrong: ' + tally());
+          /* the pitch of a grace that sounds at ANOTHER onset is wrong here */
+          const other = gates.find((x, i) => i !== gi && x.graces && x.graces.some(m => g.notes.every(n => n.midi !== m) && g.graces.indexOf(m) < 0));
+          if (other) {
+            const m = other.graces.find(k => g.notes.every(n => n.midi !== k) && g.graces.indexOf(k) < 0);
+            park();
+            app.followNote({ midi: m, t: 0, type: 'on' });
+            const t2 = (app._tally || {})[g.m];
+            if (!(t2 && t2.wrong === 1)) rec.fail.push('the pitch of a grace that sounds at another onset is forgiven here: ' + tally());
+            rec.other = true;
+          }
+          /* the asked notes are still asked: the right key advances */
+          park();
+          g.notes.forEach(n => app.followNote({ midi: n.midi, t: 0, type: 'on' }));
+          if (!(S.gateIdx > gi || app._tally && app._tally[g.m] && app._tally[g.m].matched >= g.notes.length)) rec.fail.push('the asked notes did not advance the gate');
+          /* a rest gate before an onset that has a grace: the key for that grace is forgiven while the rest is waited on, a stray key is wrong, the asked note steps over the rest */
+          const fake = [{ b: 0, m: g.m, notes: [], rest: true, dur: 1 }, { b: 1, m: g.m, notes: [{ midi: 60, hand: 'r' }], rest: false, graces: [62] }, { b: 2, m: g.m, notes: [{ midi: 64, hand: 'r' }], rest: false }];
+          app.followGates = () => fake;
+          try {
+            const rp = () => { app._got = []; app._tally = {}; const p = { wrongNotes: [] }; app.followPark(0, p); app.setState(p); };
+            rp();
+            app.followNote({ midi: 62, t: 0, type: 'on' });
+            if (JSON.stringify(app._tally) !== '{}' || S.gateIdx !== 0) rec.fail.push('a rest gate: a key for the grace of the next onset is counted: ' + JSON.stringify(app._tally));
+            rp();
+            app.followNote({ midi: 65, t: 0, type: 'on' });
+            const tr = app._tally[g.m];
+            if (!(tr && tr.wrong === 1)) rec.fail.push('a rest gate: a stray key is not counted wrong');
+            rp();
+            app.followNote({ midi: 60, t: 0, type: 'on' });
+            if (S.gateIdx !== 2) rec.fail.push('a rest gate: the asked note does not step over the rest (gate ' + S.gateIdx + ')');
+            rec.rest = true;
+          } finally { delete app.followGates; }
+        } finally { delete app.followNote; app.setState = savedSet; if (savedLive) app.liveMidi = savedLive; else delete app.liveMidi; app._gatesKey = null; }
+      });
+    });
+    return rec;
+  }
+
+  window.PPPOptionsProbe = { choice, plan, lap, matcher, gates, spies, visual, fixture, fallbacks, perf, sweep, sim, switching, hint, resume, run, followGrace };
 })();

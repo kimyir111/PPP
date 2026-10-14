@@ -49,6 +49,10 @@ const memo = {};
 const fx = name => memo[name] || (memo[name] = H.fixtureGraph(name));
 const sg = name => memo['sg:' + name] || (memo['sg:' + name] = H.graphOfText(fs.readFileSync(path.join(H.REPO, 'tests', 'scoregraph', 'fixtures', 'xml', name + '.musicxml'), 'utf8').split('\r\n').join('\n'), name));
 const pf = name => memo['pf:' + name] || (memo['pf:' + name] = H.graphOfText(fs.readFileSync(path.join(H.FIX, 'parity', name + '.musicxml'), 'utf8').split('\r\n').join('\n'), name));
+/* the D.S. fixture with a D.C. instead of its D.S., and a fifth bar after the sign: a D.C. in the MIDDLE of a loop that does not hold the head */
+const dcMid = () => memo.dcMid || (memo.dcMid = H.graphOfText(H.fixtureText('jump-ds-al-fine')
+  .replace('<words>D.S. al Fine</words></direction-type><sound dalsegno="segno1"/>', '<words>D.C. al Fine</words></direction-type><sound dacapo="yes"/>')
+  .replace('</part>', '<measure number="5"><note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>whole</type></note></measure></part>'), 'dc-mid'));
 const e = name => memo['e:' + name] || (memo['e:' + name] = H.graphOfText(fs.readFileSync(path.join(H.REPO, 'tests', 'engrave', 'fixtures', 'e', name + '.musicxml'), 'utf8').split('\r\n').join('\n'), name));
 const ord = (PL, g, opts) => H.order(PL.build(g, opts));
 const strike = (PL, g, opts, f) => PL.build(g, opts).strikes.find(f);
@@ -82,9 +86,27 @@ const MUTATIONS = [
   { id: 'MUT-TOCODA', why: 'a To Coda is not taken: the way back plays on past it and the coda is only reached by chance',
     edits: [["const toCoda = here.find(j => j.kind === 'tocoda' && j.to !== null && j.to >= i0 && j.to <= i1);", 'const toCoda = null;']],
     probe: PL => ord(PL, fx('jump-ds-al-coda'), { jumps: 'once' }), clean: "1 2 3 4 2' 3' 5' 6'" },
-  { id: 'MUT-DC-TARGET', why: 'a D.C. in a loop goes back to the start of the piece, out of the loop (so it cannot be followed there at all)',
-    edits: [["const goal = j => (j.kind === 'dacapo' && j.to === null ? i0 : j.to);", "const goal = j => (j.kind === 'dacapo' && j.to === null ? 0 : j.to);"]],
-    probe: PL => ord(PL, fx('jump-dc-al-fine-volta'), { jumps: 'once', range: { from: 4, to: 5 } }), clean: "5 6 5' 6'" },
+  { id: 'MUT-DC-TARGET', why: 'a D.C. in a loop goes back to the start of the LOOP, not the piece: a loop that ends on the D.C. plays its last bars twice a lap',
+    edits: [["const goal = j => (j.kind === 'dacapo' && j.to === null ? 0 : j.to);", "const goal = j => (j.kind === 'dacapo' && j.to === null ? i0 : j.to);"]],
+    probe: PL => ord(PL, dcMid(), { jumps: 'once', range: { from: 1, to: 4 } }), clean: '2 3 4 5' },
+  { id: 'MUT-LOOP-END-JUMP', why: 'a loop that is the written bars from the segno to the D.S. takes the D.S.: the loop is played twice a lap (G11a-4 F1)',
+    edits: [["            !(i === i1 && goal(j) === i0 && !whole));", "            true);"]],
+    probe: PL => ord(PL, fx('jump-ds-al-fine'), { jumps: 'once', range: { from: 1, to: 3 } }), clean: '2 3 4' },
+  { id: 'MUT-WHOLE-LAP', why: 'the whole piece, which ends on its own D.C., does not take it: Start to finish has no way back',
+    edits: [["const whole = i0 === 0 && i1 === ms - 1;", "const whole = false;"]],
+    probe: PL => ord(PL, fx('jump-dc-repeats'), { jumps: 'once' }), clean: "1 2 1^2 2^2 3^2 1' 2' 3'" },
+  { id: 'MUT-DS-NO-SEGNO', why: 'a D.S. with no segno before it goes to the first segno of the piece, which comes after it: the bars between are dropped (G11a-4 F4)',
+    edits: [["t = before.length ? before[before.length - 1].mi : null;", "t = before.length ? before[before.length - 1].mi : segnos.length ? segnos[0].mi : null;"]],
+    probe: PL => ord(PL, pf('ds-segno-after-sign'), { jumps: 'once' }), clean: '1 2 3 4 5 6' },
+  { id: 'MUT-DAMPER-ARRIVAL', why: 'the damper stays down through the way back: no pedal-up at the arrival of a D.S. (G11a-4 F3)',
+    edits: [["        if (down > 0) out.push({ q: v.soundQ, kind: 'damper', cc: 64, value: 0, type: 'jump' });", ""]],
+    probe: PL => PL.build(pf('ds-pedal-over-sign'), { jumps: 'once' }).ccs.filter(c => c.type === 'jump' && c.value === 0).length, clean: 1 },
+  { id: 'MUT-RING-ARRIVAL', why: 'a note the pedal holds rings on from the bar before the sign into the bar the way back arrives in (G11a-4 F3)',
+    edits: [["if (arrivals[i] > s.q + 1e-9) { if (s.upQ > arrivals[i]) s.upQ = Math.max(arrivals[i], s.q + 0.05); break; }", "if (arrivals[i] > s.q + 1e-9) { break; }"]],
+    probe: PL => PL.build(pf('ds-pedal-over-sign'), { jumps: 'once' }).strikes.find(s => s.m === 4 && !s.visit.leg).upQ, clean: 16 },
+  { id: 'MUT-GATE-GRACES', why: 'a gate does not know the grace notes that sound at its place: follow mode counts a key pressed for one as wrong (G11a-4 F2)',
+    edits: [["gates.forEach(g => { const a = at.get(g.b.toFixed(5)); if (a) g.graces = a.slice(); });", "gates.forEach(g => { void g; });"]],
+    probe: PL => PL.followGates(PL.build(fx('grace-notes'), { graces: 'play' }), 'both').filter(x => x.graces).length, clean: 5 },
   { id: 'MUT-JUMPS-DEFAULT', why: 'the jumps are on unless they are asked off: a student who did not ask gets a longer piece',
     edits: [["jumps: o.jumps === 'once' ? 'once' : false", "jumps: o.jumps === false ? false : 'once'"]],
     probe: PL => ord(PL, fx('jump-ds-al-fine')), clean: '1 2 3 4' },
@@ -175,7 +197,7 @@ MUTATIONS.forEach(m => {
 test('every mutation is a distinct anchor and the table is not shrinking quietly', () => {
   const ids = MUTATIONS.map(m => m.id);
   assert.equal(new Set(ids).size, ids.length);
-  assert.ok(MUTATIONS.length >= 32, MUTATIONS.length + ' mutations');
+  assert.ok(MUTATIONS.length >= 38, MUTATIONS.length + ' mutations');
   const anchors = MUTATIONS.map(m => m.edits[0][0]);
   assert.equal(new Set(anchors).size, anchors.length, 'no two mutations share an anchor');
 });

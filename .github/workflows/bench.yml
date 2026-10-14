@@ -914,7 +914,7 @@ jobs:
 
   # practice-options-mutants: does the options test notice a fix that got worse? tests/practice/options-mutants.js breaks ONE line of the page at a time (the jumps not followed, the graces
   # judged, a played grace a wrong note, follow mode that asks a bar once or skips a tie that leads nowhere, a visit counted as its bar, an option a cache does not see, ...) and the test, run
-  # on the sections the row names, must go red; 22 rows, 5-15 s each (two shards). On a pull request only when the probes themselves changed (practice-plan's `harness`), every night otherwise.
+  # on the sections the row names, must go red; 27 rows, 5-15 s each (two shards). On a pull request only when the probes themselves changed (practice-plan's `harness`), every night otherwise.
   practice-options-mutants:
     needs: practice-plan
     if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.harness == 'true')) }}

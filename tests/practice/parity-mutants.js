@@ -51,6 +51,10 @@ const ROWS = [
   ['PM27', false, 'the note before the sign is held through a tie into a bar the way back does not go to', [['return cut || !plan.hold.has(n.head) ? Math.max(0.05, q) : holdOf(plan, n);', 'return holdOf(plan, n);']], ''],
   ['PM28', false, 'follow mode does not ask the note the clock strikes again at the arrival of a jump', [['!(run.jumped && tieBrokenAtArrival(plan, run.from, n))', '!(false && run.jumped && tieBrokenAtArrival(plan, run.from, n))']], ''],
   ['PM29', false, 'the bar a To Coda turns to is not an arrival', [["if (toCoda) { i = toCoda.to; arriving = true;", 'if (toCoda) { i = toCoda.to;']], ''],
+  ['PM30', false, 'the damper stays down through the way back: no pedal-up at the arrival of a D.S.', [["        if (down > 0) out.push({ q: v.soundQ, kind: 'damper', cc: 64, value: 0, type: 'jump' });", ""]], ''],
+  ['PM31', false, 'a note the pedal holds rings on from the bar before the sign into the bar the way back arrives in', [["if (arrivals[i] > s.q + 1e-9) { if (s.upQ > arrivals[i]) s.upQ = Math.max(arrivals[i], s.q + 0.05); break; }", "if (arrivals[i] > s.q + 1e-9) { break; }"]], ''],
+  ['PM32', false, 'a D.S. with no segno before it goes to the segno after it (the bars between are dropped)', [["t = before.length ? before[before.length - 1].mi : null;", "t = before.length ? before[before.length - 1].mi : segnos.length ? segnos[0].mi : null;"]], ''],
+  ['PM33', false, 'a loop that is its bars from the bar a sign turns to up to the sign takes the jump (the loop is played twice a lap)', [["            !(i === i1 && goal(j) === i0 && !whole));", "            true);"]], 'a window of a catalogue piece that starts at the bar a sign turns to and ends on the sign is rare in the seeded windows; plan.test.js MUT-LOOP-END-JUMP reads it on the fixtures and Burgmuller 6'],
   ['PM25', false, 'a pair of graces is played backwards', [['grp.notes.sort((a, c) => a.grace.order - c.grace.order);', 'grp.notes.sort((a, c) => c.grace.order - a.grace.order);']], 'which grace sounds first is a detail of GRACE that the cause table does not look into (only where and how much may move); plan.test.js MUT-GRACE-ORDER reads it']
 ];
 

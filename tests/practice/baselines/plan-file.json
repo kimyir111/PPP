@@ -1,5 +1,5 @@
 {
  "about": "G11a-3: the bytes (LF) of practice/plan.js that the page asks for as practice/plan.js?v=PRACTICE_FILE_V (tests/practice/plan-version.test.js): change the file, raise PRACTICE_FILE_V in the page, write the new line here.",
- "PRACTICE_FILE_V": 2,
- "sha256": "0563eb3f594c4815e95689f1e66ed1c84a770da281a62d459ee32da586b46d5e"
+ "PRACTICE_FILE_V": 3,
+ "sha256": "cb4459bc2417152cad147f936afc41be779c59d4ddb11e68d7d217819bbe067a"
 }

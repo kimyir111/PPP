@@ -7,12 +7,14 @@
      choice      PPP.practiceFix: 'on' by default; 'off', a list such as 'jumps,ties', what is no choice (the default comes back, the remembered one is forgotten); 'legacy' never reads it
      plans       the 7 open catalogue pieces that carry a D.C. al Fine and a hand-written D.S. al Coda: planned from the graph, longer, the jump named; the grace pieces: the graces in the plan
                  and not in the matcher's list; the page's plan is practice/plan.js built with the same options
-     laps        "Start to finish" and a loop window that holds a sign and its target are longer; a window without its target is the legacy lap, to the bit
+     laps        "Start to finish" and a loop that holds the bar a sign turns to and does not END on the sign are longer; a loop that ends on the sign and starts where it turns to (it would play
+                 itself twice a lap), a window without the target, and the sign's bar alone are the legacy lap, to the bit (a practice loop plays its written bars)
      matcher     scripted performances: graces are never expected, a played grace is not a wrong note, graces on or off the same verdicts; each expected note names its bar (mIdx) and, through the engine's visitOf, its visit,
                  a bar played twice is two visits and one bucket of byMeasureIdx
      gates       follow mode asks exactly the notes Play strikes, as many times, in the order Play plays them; each option alone does what its name says
      spies       the real scheduler queues every strike once, graces included, and the plan's controller events and clicks
      visual      the falling notes: every strike a note, a grace flagged and short, a tie cut at a jump drawn cut
+     followgrace follow mode forgives a key pressed for a grace note of the onset it waits on; a stray key and the grace of another onset are wrong
      run         the transport itself: the playhead walks the plan's visits (advance on a clock of the probe's own), a lap is the plan's length, a loop starts over at its first bar
      fixture     the tie at a jump (parity/ds-al-coda-repeat-volta): the coda's D5 is struck once (clock, matcher, follow), the note before the sign is held for its own length
      small       the simulation (no keyboard) judges what the matcher asks and a run keeps its plan; a change of option is seen by the next plan and by the gates; the keyboard hint
@@ -25,7 +27,7 @@
      node tests/practice/options.js                      all of it (about 4-6 minutes; the sweep is the 325 catalogue files)
      node tests/practice/options.js --quick              the pieces of every section, every 12th catalogue file for the sweep (about 1 minute)
      node tests/practice/options.js --sample 5           the sweep reads every 5th catalogue file (+ the files the baseline gives a cause)
-     node tests/practice/options.js --only choice,plans  some sections: choice, plans, laps, matcher, gates, spies, visual, run, fixture, small, fallbacks, perf, sweep
+     node tests/practice/options.js --only choice,plans  some sections: choice, plans, laps, matcher, gates, spies, visual, run, followgrace, fixture, small, fallbacks, perf, sweep
      node tests/practice/options.js --url URL            a page already served (the mutation check's proxy)
    Needs puppeteer (npm ci; on a developer's machine NODE_PATH may point at another tree's node_modules). Exit code 1 when a check fails. */
 'use strict';
@@ -187,11 +189,13 @@ async function sectionLaps(browser, url) {
     if (!(r.whole.graph > r.whole.legacy)) problems.push('Start to finish is not longer: ' + r.whole.legacy + ' -> ' + r.whole.graph);
     if (!r.windows.length) problems.push('no jump in the plan');
     r.windows.forEach(w => {
-      if (w.what === 'sign and target inside' && !(w.graph > w.legacy && w.jumps >= 1)) problems.push('loop [' + w.from + '..' + w.to + '] holding the ' + w.kind + ' and its target is not longer: ' + w.legacy + ' -> ' + w.graph);
-      /* a D.C. goes back to the start of the loop (G11a-1: the range is the whole world, as a repeat sign in a loop does), so a loop that is the sign's bar alone is played twice; a D.S. whose
-         segno is outside the loop, and a To Coda that has no D.S. before it, cannot be followed there: the legacy lap, to the bit */
-      if (w.what === 'sign alone' && w.kind === 'dacapo' && !(w.graph === 2 * w.legacy && w.jumps === 1)) problems.push('loop [' + w.from + '] holding only the D.C. is not played twice: ' + w.legacy + ' -> ' + w.graph);
-      if (w.what === 'sign alone' && w.kind !== 'dacapo' && !(w.graph === w.legacy && w.same && w.jumps === 0)) problems.push('loop [' + w.from + '] holding only the ' + w.kind + ' is not the legacy lap');
+      const at = 'loop [' + w.from + '..' + w.to + '] (' + w.what + ', the ' + w.kind + ')';
+      /* G11a-4 F1: a practice loop plays its WRITTEN bars. The jump is taken by the whole piece, and by a loop that holds the bar it turns to and does not end on the sign (it goes on past
+         the sign, or starts before the bar the D.S. turns to); a loop that ends on the sign and starts at the bar it turns to would play itself twice a lap (its own wrap goes back there):
+         the legacy lap, to the bit. The sign's bar alone, and a D.C. whose head the loop does not hold, cannot be followed there either. */
+      const taken = w.wholePiece || w.what === 'goes on past the sign' || w.what === 'starts before the bar it turns to';
+      if (taken && !(w.graph > w.legacy && w.jumps >= 1)) problems.push(at + ' is not longer: ' + w.legacy + ' -> ' + w.graph);
+      if (!taken && !(w.graph === w.legacy && w.visits === w.visitsLegacy && w.jumps === 0)) problems.push(at + ' is not the legacy lap: ' + w.legacy + ' -> ' + w.graph + ', ' + w.visitsLegacy + ' -> ' + w.visits + ' visits');
     });
     check(short(r.file) + ': Start to finish ' + r.whole.legacy + ' -> ' + r.whole.graph + ' quarters; ' + r.windows.length + ' windows', problems.length === 0, problems.join(' | '));
   });
@@ -248,6 +252,16 @@ async function sectionRun(browser, url, files) {
   const h = await openPage(browser, url);
   const rows = await each(h, 'run', files);
   rows.forEach(r => check(short(r.file) + ': the playhead walks ' + (r.whole ? r.whole.got.length : 0) + ' stays, ' + (r.whole ? r.whole.laps : 0) + ' lap' + (r.loop ? '; the loop [' + r.loop.win.from + '..' + r.loop.win.to + '] ' + r.loop.want.length + ' stays a lap' : ''), r.fail.length === 0, failList(r)));
+  check('the page ran without an error', h.errors.length === 0, h.errors.join(' | '));
+  await h.close();
+}
+
+/* ---- follow mode and a grace ---- */
+async function sectionFollowGrace(browser, url, files) {
+  head('follow mode: a key pressed for a grace note');
+  const h = await openPage(browser, url);
+  const rows = await each(h, 'followGrace', files);
+  rows.forEach(r => check(short(r.file) + ' (' + r.graces + ' gates hold graces): a grace key is forgiven, a stray key and a grace of another onset are wrong', r.fail.length === 0, failList(r)));
   check('the page ran without an error', h.errors.length === 0, h.errors.join(' | '));
   await h.close();
 }
@@ -401,6 +415,7 @@ async function main() {
     if (want('spies')) await sectionSpies(browser, url, items(some([JUMPS[0], JUMPS[6], GRACES[0], REPEATS[0]], 3)).concat([fixtureItem()]));
     if (want('visual')) await sectionVisual(browser, url, items(some([JUMPS[0], JUMPS[6], GRACES[0], GRACES[1], PLAIN[0]], 3)).concat([fixtureItem()]));
     if (want('run')) await sectionRun(browser, url, items(some([JUMPS[0], JUMPS[3], REPEATS[0], GRACES[4]], 2)).concat([fixtureItem()]));
+    if (want('followgrace')) await sectionFollowGrace(browser, url, items(some([GRACES[0], GRACES[2], GRACES[1]], 2)).concat([fixtureItem()]));
     if (want('fixture')) await sectionFixture(browser, url);
     if (want('small')) await sectionSmall(browser, url);
     if (want('fallbacks')) await sectionFallbacks(browser, url);

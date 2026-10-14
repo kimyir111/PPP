@@ -13,6 +13,9 @@
                     the way back did not come from is STRUCK at the arrival (the old plan leaves it silent), and the note that was tied into a bar the way back does
                     not go to is released at its own length (the old plan holds it through the chain, into a bar that is not the one it is tied to). Both are read
                     from the old plan's own tie links (ctx.ties), at an arrival only; the return of a repeat is not one.
+                    And one rule for the damper (G11a-4, F3): at an arrival a pedal that is down comes up (and goes down again where the written pedal is down there:
+                    controller events marked `jump`, dump field 3), and a note the pedal or the sostenuto holds is released at the end of the bar before the sign
+                    at the latest (the old plan lets it ring on into the arrival).
      GRACE          grace notes sound. N has extra strikes, each marked `grace`, only in a bar that holds a grace note; a strike that is not a grace is L's strike
                     with the same bar, place, pitch, hand and loudness, moved LATER (the unslashed grace takes its time from the main note) or with its release CUT
                     SHORT (the slashed grace takes it from the note before), and only in or next to a bar that holds a grace note. Nothing else moves.
@@ -24,7 +27,8 @@
    A dump of a plan (dumpOf) is plain arrays of rounded numbers:
      v  visits   [measure index, number, pass, leg, startQ, lenQ, soundQ, arrival]   (arrival: 1 for the first visit after a D.C. / D.S. / To Coda)
      s  strikes  [visit, abs, q, upQ, midi, vel, hand, m, grace]            (in the plan's own order)
-     c  ccs      [q, cc, value]     b  beats [q, accent]     t  tempoMap [q, bpm]     len  soundLengthQ
+     c  ccs      [q, cc, value, jump]     b  beats [q, accent]     t  tempoMap [q, bpm]     len  soundLengthQ
+                (jump: 1 for the damper action at the arrival of a jump, which the old plan does not make)
    Gates are canon.js gatesOf: [b, m, rest, dur, [[midi, hand], ...]].
 
    A plain script (window.PPPParity) and a Node module. It needs canon.js (window.PPPPracticeCanon / require('./canon.js')). */
@@ -70,7 +74,7 @@
     return {
       v: visits.map(v => [v.index, v.number, v.pass, v.leg ? 1 : 0, r6(v.startQ), r6(v.lenQ), r6(v.soundQ), v.jumped ? 1 : 0]),
       s: (plan.strikes || []).map(s => [vIdx.get(s.visit), r6(s.abs), r6(s.q), r6(s.upQ), s.midi, s.vel, handOf(s.hand), s.m, s.grace ? 1 : 0]),
-      c: (plan.ccs || []).map(c => [r6(c.q), c.cc, c.value]),
+      c: (plan.ccs || []).map(c => [r6(c.q), c.cc, c.value, c.type === 'jump' ? 1 : 0]),
       b: (plan.beats || []).map(b => [r6(b.q), b.accent ? 1 : 0]),
       t: (plan.tempoMap || []).map(t => [r6(t.q), r6(t.bpm)]),
       len: r6(plan.soundLengthQ || 0)
@@ -96,9 +100,11 @@
     let list = svOf(D)[j].filter(s => !s[8]);
     if (tie && tie.drop) list = list.filter(s => !tie.drop.has(placeOf(s)));
     const cutOf = s => !!(tie && tie.cut && tie.cut.has(placeOf(s)));
-    const strikes = list.map(s => (timing ? [r6(s[2] - at), cutOf(s) ? null : r6(s[3] - s[2]), s[4], s[5], s[6], s[7]] : [s[4], s[5], s[6], s[7]]));
+    /* a visit that an arrival follows: no release is later than that arrival (the damper comes up there), on both sides - tie.endDist is the distance from this visit's start */
+    const rel = s => r6(tie && tie.endDist != null ? Math.min(s[3] - s[2], tie.endDist - (s[2] - at)) : s[3] - s[2]);
+    const strikes = list.map(s => (timing ? [r6(s[2] - at), cutOf(s) ? null : rel(s), s[4], s[5], s[6], s[7]] : [s[4], s[5], s[6], s[7]]));
     strikes.sort((x, y) => (J(x) < J(y) ? -1 : J(x) > J(y) ? 1 : 0));
-    return J([strikes, D.c.filter(e => inV(e[0])).map(e => [r6(e[0] - at), e[1], e[2]]), D.b.filter(e => inV(e[0])).map(e => [r6(e[0] - at), e[1]]),
+    return J([strikes, D.c.filter(e => inV(e[0]) && !e[3]).map(e => [r6(e[0] - at), e[1], e[2]]), D.b.filter(e => inV(e[0])).map(e => [r6(e[0] - at), e[1]]),
       D.t.filter(e => inV(e[0])).map(e => [r6(e[0] - at), e[1]])]);
   }
 
@@ -114,10 +120,12 @@
   function explainPlan(L, N, ctx) {
     const allow = ctx.allow || {}, gm = ctx.graceMeasures || new Set();
     const out = { unexplained: [], bad: 0, jump: { turned: 0, visitsAdded: 0, visitsSkipped: 0, strikes: 0, unchecked: 0 }, grace: { strikes: 0, moved: 0, cut: 0 },
-      tie: { struck: 0, cut: 0, silent: 0, held: 0 } };
+      tie: { struck: 0, cut: 0, silent: 0, held: 0, lifted: 0, ringing: 0, capped: 0 } };
     const tieEnds = (ctx.ties && ctx.ties.ends) || [], tieSources = (ctx.ties && ctx.ties.sources) || [];
     const sourceTo = new Map(tieSources.map(t => [t.place, t.to]));
     const isArrival = j => !!(N.v[j] && N.v[j][7]);
+    /* the sounding quarter of the first arrival that starts after q (Infinity: none): where the damper comes up */
+    const arrivalAfter = q => { for (let j = 0; j < N.v.length; j++) if (N.v[j][7] && N.v[j][6] > q + 1e-9) return N.v[j][6]; return Infinity; };
     const bad = msg => { out.bad++; if (out.unexplained.length < 8) out.unexplained.push(msg); };
 
     /* 1. the order: N's first leg is a prefix of L's visits */
@@ -173,6 +181,8 @@
         if (Math.abs(dq) <= EPS && Math.abs(du) <= EPS) return;
         /* the note before the sign, tied into a bar the way back does not go to: released at its own length (the tie at a jump) */
         if (allow.JUMP && Math.abs(dq) <= EPS && du < -EPS && isArrival(y[0] + 1) && sourceTo.has(placeOf(y)) && sourceTo.get(placeOf(y)) !== N.v[y[0] + 1][0] && y[3] > y[2] + EPS) { out.tie.cut++; return; }
+        /* the damper comes up at the arrival of a jump: a release that was later than the end of the bar before the sign is that end (F3) */
+        if (allow.JUMP && Math.abs(dq) <= EPS && du < -EPS && Math.abs(y[3] - Math.min(x[3], arrivalAfter(y[2]))) <= EPS) { out.tie.capped++; return; }
         if (!allow.GRACE) { bad('a strike moved (' + key + ': ' + x[2] + '..' + x[3] + ' became ' + y[2] + '..' + y[3] + ') and no GRACE option was on'); return; }
         if (!nearGrace(y[0])) { bad('a strike moved (' + key + ': ' + x[2] + '..' + x[3] + ' became ' + y[2] + '..' + y[3] + ') in a bar with no grace note near it'); return; }
         if (dq > EPS && du >= -EPS) out.grace.moved++;
@@ -199,7 +209,25 @@
         const next = N.v[j + 1][0];
         tieSources.forEach(t => { if (t.to !== next) tie.cut.add(t.place); });
       }
+      { const A = arrivalAfter(N.v[j][6]); if (A < Infinity) tie.endDist = A - N.v[j][6]; }
       if (visitSig(N, j, timing, tie) !== visitSig(L, lj, timing, tie)) bad('way-back visit ' + j + ' (bar index ' + idx + ') does not sound what the legacy plays for that bar');
+    }
+    /* 5a. the damper at an arrival: where it is down as the sign is left, it comes up (an event marked `jump`, cc 64, value 0, at the arrival's start); and where the written pedal is down at
+       the arrival's bar a pedal change presses it again. Read from N's own controller events. */
+    if (allow.JUMP) {
+      for (let j = k; j < N.v.length; j++) {
+        if (!isArrival(j)) continue;
+        const t0 = N.v[j][6];
+        let down = 0;
+        N.c.forEach(e => { if (e[1] === 64 && e[0] < t0 - 1e-9) down = e[2] > 0 ? e[2] : 0; });
+        const lifts = N.c.some(e => e[3] && e[1] === 64 && e[2] === 0 && Math.abs(e[0] - t0) < 1e-9);
+        if (down > 0 && !lifts) { out.tie.ringing++; bad('the damper is down as the way back leaves bar index ' + N.v[j - 1][0] + ' and is not lifted at the arrival in bar index ' + N.v[j][0]); }
+        else if (lifts) out.tie.lifted++;
+      }
+      /* ...and no string is released after an arrival that begins while it sounds (a note the pedal or the sostenuto holds stops where the damper comes up) */
+      let late = 0;
+      N.s.forEach(x => { if (x[3] > arrivalAfter(x[2]) + EPS) late++; });
+      if (late) { out.tie.ringing += late; bad(late + ' strike(s) are released after the arrival of a jump that begins while they sound (the damper comes up there)'); }
     }
     /* 5. the rule itself, read the other way round: where the tie leads nowhere the note is struck, and the note before the sign is not held through */
     if (allow.JUMP && (tieEnds.length || tieSources.length)) {
