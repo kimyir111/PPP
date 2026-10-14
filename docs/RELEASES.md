@@ -15,6 +15,7 @@ row is `docs/RELEASE_CHECKLIST.md`. `node tools/release/release.js <sha> --confi
 
 | Date (UTC) | Commit | Deploy | What changed | Rollback to | Smoke / verified | Phone cold (FCP / ready / KB) |
 | --- | --- | --- | --- | --- | --- | --- |
+| 2026-10-14 15:53 | `7ec69ae` | `dep-db7qb00473hc73e9kt40` | G13-4e: code splitting - Home no longer waits for 443 KB of code it does not draw with (phone FCP 5.9 -> 3.6 s) (#268) | `f64d06b` | `smoke.js --sha 7ec69ae --logs --pc-code-file`: 23 checks passed (release.js, 2026-10-14) | - |
 | 2026-10-13 10:44 | `f64d06b` | `dep-db70n63rjlhs739huoug` | G13-4c3: the page is revalidated by an ETag (stacked on #262) (#263) | `f022bd1` | `smoke.js --sha f64d06b --logs --pc-code-file`: 20 checks passed (release.js, 2026-10-13) | - |
 | 2026-10-09 07:11 | `7a3e2e4` | `dep-db4977jbc2fs73b2fidg` | Recover missing ScoreGraph modules before recording imports (#247) | `d324c44` | `smoke.js --sha 7a3e2e4 --logs`: 16 checks passed (release.js, 2026-10-09) | - |
 | 2026-10-08 05:55 | `b727ada` | `dep-db3j0g8m7kps73et2v60` | Score view: My Songs opens a song on its whole score (#219) | `3567e27` | `smoke.js --sha b727ada`: 15 checks passed (G13-0, 2026-10-08) | 8.6 s / 9.0 s / 1,407 KB |
