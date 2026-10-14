@@ -30,6 +30,8 @@ const path = require('path');
    G12-5 adds one table, ppp_omr_pages: the page images of a job of kind 'omr' (a printed score the person's own PC reads), with a foreign key to the job that CASCADES, so
    removing a job row (the purge, a removed link, the old code's own deletes) removes its images with it. Nothing existing is altered; the code before G12-5 boots on the result
    and never touches the table. To drop the queue's tables by hand, drop ppp_omr_pages first (or use CASCADE): a foreign key refers to ppp_transcribe_jobs now.
+   If that is not done (the jobs table dropped and made again on its own, a restore), the pages table survives WITHOUT its key and its images would stay for ever: the same DO block
+   deletes the page rows that no job names and puts the key back (the one DELETE of this schema; it removes nothing a job refers to), whatever it is called.
    Run at every boot, inside migrate() below. */
 const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS ppp_transcribe_jobs (
@@ -86,6 +88,10 @@ const SCHEMA_SQL = `
         EXECUTE format('ALTER TABLE %I DROP CONSTRAINT IF EXISTS %I', t, c);
       END LOOP;
     END LOOP;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint k WHERE k.conrelid = 'ppp_omr_pages'::regclass AND k.contype = 'f' AND k.confrelid = 'ppp_transcribe_jobs'::regclass) THEN
+      DELETE FROM ppp_omr_pages p WHERE NOT EXISTS (SELECT 1 FROM ppp_transcribe_jobs j WHERE j.id = p.job_id);
+      ALTER TABLE ppp_omr_pages ADD CONSTRAINT ppp_omr_pages_job_id_fkey FOREIGN KEY (job_id) REFERENCES ppp_transcribe_jobs (id) ON DELETE CASCADE;
+    END IF;
   END $$;
 `;
 
@@ -169,9 +175,12 @@ function pgJobStore(query) {
         + ' SELECT ' + TOKEN_COLS + ' FROM ppp_worker_tokens WHERE revoked_at IS NULL;'
         /* G12-5: how many page images each job still holds (a job of kind 'omr' holds its pages until it is finished; a finished one holds none: a count above 0 on a job that is not
            waiting is garbage the service deletes) - inside this one statement, so the boot read is still one round trip */
-        + ' SELECT ' + JOB_COLS + ', (SELECT count(*)::int FROM ppp_omr_pages p WHERE p.job_id = j.id) AS pages FROM ppp_transcribe_jobs j;');
+        + ' SELECT ' + JOB_COLS + ', (SELECT count(*)::int FROM ppp_omr_pages p WHERE p.job_id = j.id) AS pages FROM ppp_transcribe_jobs j;'
+        /* ... and how many page rows NO job names (none, unless the foreign key is missing or a crash cut a write): the service deletes them at its first purge */
+        + ' SELECT count(*)::int AS n FROM ppp_omr_pages p WHERE NOT EXISTS (SELECT 1 FROM ppp_transcribe_jobs j WHERE j.id = p.job_id);');
       const parts = Array.isArray(r) ? r : [r];
-      return { links: rowsOf(parts[0]).map(linkOfRow), tokens: rowsOf(parts[1]).map(tokenOfRow), jobs: rowsOf(parts[2]).map(jobOfRow) };
+      const orphan = rowsOf(parts[3])[0];
+      return { links: rowsOf(parts[0]).map(linkOfRow), tokens: rowsOf(parts[1]).map(tokenOfRow), jobs: rowsOf(parts[2]).map(jobOfRow), orphanPages: orphan ? (orphan.n | 0) : 0 };
     },
     /* a new link and its first worker token: ONE statement, so a link never exists without its token (or the other way round) */
     async createLink(l, k) {
@@ -245,6 +254,11 @@ function pgJobStore(query) {
         [id, ownerId]);
       return r.rowCount || 0;
     },
+    /* page rows that no job row names: nothing refers to them and nobody can ever read them (see the migration). Returns how many were deleted. */
+    async deleteOrphanPages() {
+      const r = await query('DELETE FROM ppp_omr_pages p WHERE NOT EXISTS (SELECT 1 FROM ppp_transcribe_jobs j WHERE j.id = p.job_id)');
+      return r.rowCount || 0;
+    },
     /* queued -> claimed; false when it was not queued any more (another writer got it, or it was cancelled) */
     async claimJob(id, ownerId, workerId, t) {
       const r = await query(
@@ -287,8 +301,10 @@ function pgJobStore(query) {
     },
     /* omrDoneBefore (G12-5): a finished 'omr' job is kept for a shorter time than a conversion's notes (its score was taken by the page at once; the image pages are long gone) */
     async purge(doneBefore, otherBefore, omrDoneBefore) {
+      /* (the same statement also removes the page rows that no job names: a purge is when the database is awake anyway, and with the foreign key there are none to remove) */
       const r = await query(
-        "DELETE FROM ppp_transcribe_jobs WHERE (status = 'done' AND finished_at < (CASE WHEN kind = 'omr' THEN $3::timestamptz ELSE $1::timestamptz END)) OR (status IN ('failed', 'cancelled', 'expired') AND finished_at < $2)",
+        "WITH o AS (DELETE FROM ppp_omr_pages p WHERE NOT EXISTS (SELECT 1 FROM ppp_transcribe_jobs j WHERE j.id = p.job_id))"
+        + " DELETE FROM ppp_transcribe_jobs WHERE (status = 'done' AND finished_at < (CASE WHEN kind = 'omr' THEN $3::timestamptz ELSE $1::timestamptz END)) OR (status IN ('failed', 'cancelled', 'expired') AND finished_at < $2)",
         [at(doneBefore), at(otherBefore), at(omrDoneBefore == null ? doneBefore : omrDoneBefore)]);
       return r.rowCount || 0;
     },
@@ -326,6 +342,8 @@ function fileJobStore(dir) {
   const pageFilesOf = id => { try { return fs.readdirSync(pagesDir).filter(f => f.indexOf(id + '.') === 0 && /\.bin$/.test(f)); } catch (e) { return []; } };
   const dropPages = ids => { let n = 0; ids.forEach(id => { if (!idOk(id)) return; pageFilesOf(id).forEach(f => { try { fs.unlinkSync(path.join(pagesDir, f)); n++; } catch (e) { /* gone */ } }); }); return n; };
   const pageCounts = () => { const c = {}; try { fs.readdirSync(pagesDir).forEach(f => { const m = /^(.+)\.\d+\.bin$/.exec(f); if (m) c[m[1]] = (c[m[1]] || 0) + 1; }); } catch (e) { /* none */ } return c; };
+  /* page files whose job is not in jobs.json (a crash between writing the images and the row; a jobs.json that was put back from a copy): how many, and removing them */
+  const orphanIds = (d, counts) => { const known = new Set(d.jobs.map(j => j.id)); return Object.keys(counts).filter(id => !known.has(id)); };
   const plain = r => { const o = Object.assign({}, r); delete o.result; return o; };
   const find = (d, id, ownerId) => d.jobs.find(j => j.id === id && j.ownerId === ownerId);
   return {
@@ -333,7 +351,11 @@ function fileJobStore(dir) {
     async loadAll() {
       const d = load();
       const counts = pageCounts();
-      return { links: d.links.map(l => Object.assign({}, l)), tokens: d.tokens.filter(k => !k.revokedAt).map(k => Object.assign({}, k)), jobs: d.jobs.map(r => Object.assign(plain(r), { pages: counts[r.id] | 0 })) };
+      return { links: d.links.map(l => Object.assign({}, l)), tokens: d.tokens.filter(k => !k.revokedAt).map(k => Object.assign({}, k)), jobs: d.jobs.map(r => Object.assign(plain(r), { pages: counts[r.id] | 0 })),
+        orphanPages: orphanIds(d, counts).reduce((n, id) => n + counts[id], 0) };
+    },
+    async deleteOrphanPages() {
+      return dropPages(orphanIds(load(), pageCounts()));
     },
     async createLink(l, k) {
       const d = load();
@@ -455,6 +477,7 @@ function fileJobStore(dir) {
       const gone = j => (j.status === 'done' && j.finishedAt < (j.kind === 'omr' ? omrBefore : doneBefore))
         || ((j.status === 'failed' || j.status === 'cancelled' || j.status === 'expired') && j.finishedAt < otherBefore);
       dropPages(d.jobs.filter(gone).map(j => j.id));
+      dropPages(orphanIds(d, pageCounts()));          /* (and the page files that no job names: the same turn) */
       d.jobs = d.jobs.filter(j => !gone(j));
       if (d.jobs.length !== n) save(d);
       return n - d.jobs.length;

@@ -18,5 +18,6 @@
 
   "omr": true,
   "audiverisPath": "",
-  "omrPageTimeoutSeconds": 600
+  "omrPageTimeoutSeconds": 600,
+  "omrHeapMb": 2048
 }

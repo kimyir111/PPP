@@ -77,15 +77,32 @@ function readMxlSync(file) {
 
 /* ---- locating Audiveris ---- (explicit: a path the person named; root: the repository, whose tools/ folder may hold it) */
 function findAudiveris(explicit, root) {
+  /* programs first, the .bat of a source build last: Node cannot start a .bat without a shell (see unstartable), so it is a place to say so, never the one chosen over a real program */
   const candidates = [
     explicit,
     root && path.join(root, 'tools', 'audiveris', 'Audiveris', 'Audiveris.exe'),
-    root && path.join(root, 'tools', 'audiveris', 'Audiveris', 'bin', 'Audiveris.bat'),
     'C:\\Program Files\\Audiveris\\Audiveris.exe',
-    '/usr/bin/audiveris', '/usr/local/bin/audiveris'
+    '/usr/bin/audiveris', '/usr/local/bin/audiveris',
+    root && path.join(root, 'tools', 'audiveris', 'Audiveris', 'bin', 'Audiveris.bat')
   ].filter(Boolean);
   for (const c of candidates) { try { if (fs.existsSync(c)) return c; } catch (e) { /* next */ } }
   return null;
+}
+
+/* A .bat or .cmd cannot be started by Node without a shell: since Node 18.20 / 20.12 (CVE-2024-27980) execFile and spawn refuse it with EINVAL, and a shell would put a person's path and a
+   page's name through cmd.exe. So it is not started: the sentence (what to do) when the program is one, '' when it is not. */
+function unstartable(audiveris) {
+  if (process.platform !== 'win32' || !/\.(bat|cmd)$/i.test(String(audiveris || ''))) return '';
+  return 'Audiveris is set to a .bat file, which Node cannot start safely (EINVAL). Point "audiverisPath" (or PPP_AUDIVERIS) at Audiveris.exe, from the installer or the "app" folder of the build.';
+}
+
+/* The environment the engine's Java runtime starts with: its heap is capped (a crafted image must not be able to take the PC's memory: -Xmx), ahead of the person's own
+   JAVA_TOOL_OPTIONS, so a cap they set themselves still wins (the last -Xmx is the one used). mb 0 or less: the environment as it is. */
+function heapEnv(mb, base) {
+  const env = Object.assign({}, base || process.env);
+  const n = Math.floor(Number(mb));
+  if (Number.isFinite(n) && n > 0) env.JAVA_TOOL_OPTIONS = ('-Xmx' + n + 'm ' + String(env.JAVA_TOOL_OPTIONS || '')).trim();
+  return env;
 }
 
 /* ---- run Audiveris on one page image ----
@@ -94,17 +111,20 @@ function findAudiveris(explicit, root) {
    o.extraArgs      options placed after -export (the worker: the step time-out)
    o.onChild(child) the process, so the caller can stop it (the worker's cancel); called with null when it has ended
    o.lowPriority    below-normal priority for the process (the worker: the PC belongs to its person)
+   o.env            the environment of the process (the worker: heapEnv - the Java heap is capped)
    Resolves { ok: true, ms, musicxml, movements } or { ok: false, ms, error, log? }; never rejects. */
 function recognisePage(audiveris, imgPath, outDir, o) {
   o = o || {};
   return new Promise(resolve => {
     if (!audiveris) return resolve({ ok: false, error: 'Audiveris is not installed' });
     const t0 = Date.now();
+    const bat = unstartable(audiveris);
+    if (bat) return resolve({ ok: false, ms: 0, error: bat });
     const args = ['-batch', '-export'].concat(o.extraArgs || [], ['-output', outDir, '--', imgPath]);
     let child = null;
     try {
       child = execFile(audiveris, args,
-        { timeout: o.timeoutMs || 180000, maxBuffer: 8 * 1024 * 1024, windowsHide: true },
+        { timeout: o.timeoutMs || 180000, maxBuffer: 8 * 1024 * 1024, windowsHide: true, env: o.env || process.env },
         (err, stdout, stderr) => {
           if (o.onChild) o.onChild(null);
           const log = String(stdout || '') + String(stderr || '');
@@ -148,7 +168,7 @@ function recognisePage(audiveris, imgPath, outDir, o) {
 function engineVersion(audiveris, o) {
   o = o || {};
   return new Promise(resolve => {
-    if (!audiveris) return resolve(null);
+    if (!audiveris || unstartable(audiveris)) return resolve(null);
     try {
       const child = execFile(audiveris, ['-version'], { timeout: o.timeoutMs || 60000, maxBuffer: 1024 * 1024, windowsHide: true }, (err, stdout) => {
         const m = /Version:\s*([0-9][0-9A-Za-z._+-]{0,19})/.exec(String(stdout || ''));
@@ -159,4 +179,4 @@ function engineVersion(audiveris, o) {
   });
 }
 
-module.exports = { readMxlSync, findAudiveris, recognisePage, engineVersion, pageMovements, STEP_TIMEOUT_ARGS: Object.freeze(['-option', 'org.audiveris.omr.Main.sheetStepTimeOut=1800']) };
+module.exports = { readMxlSync, findAudiveris, unstartable, heapEnv, recognisePage, engineVersion, pageMovements, STEP_TIMEOUT_ARGS: Object.freeze(['-option', 'org.audiveris.omr.Main.sheetStepTimeOut=1800']) };

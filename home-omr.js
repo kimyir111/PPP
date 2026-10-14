@@ -29,6 +29,9 @@ const LIMITS = Object.freeze({
   SIDE_MIN: 200,
   SIDE_MAX: 6000,
   PIXELS_MAX: 20 * 1000 * 1000,
+  /* a PNG is its picture: header, palette, image data, end. The chunks around them (text, colour profiles, thumbnails, trailing bytes) are what a crafted file hides a bomb in (a
+     compressed profile or text chunk that a decoder inflates to gigabytes); a page the browser drew has none of them. A picture with more than this around it is not accepted. */
+  PNG_EXTRA_MAX: 16 * 1024,
   /* the answer: MusicXML of a page is 20-300 KB; a job's whole answer is capped (stored as JSONB, read once by the page) */
   RESULT_MAX_BYTES: 4 * MiB,
   MOVEMENTS_PER_PAGE: 16,
@@ -42,6 +45,43 @@ const LIMITS = Object.freeze({
 });
 
 const bad = (error, code, status) => ({ ok: false, error: error, code: code, status: status || 422 });
+
+/* ---------------- what arrives as JSON: its SHAPE, before it is parsed ---------------- */
+
+/* JSON.parse of `[{},{},{},...]` costs about 22 bytes of heap per 3 bytes of body (a 16 MB body of that is 5.6 million objects, 357 MB, 650 ms of a blocked event loop), and a base64
+   page costs about one byte per byte. So the size cap of a body is not a cap of the memory it takes: the STRUCTURE is counted as the bytes arrive, before anything is parsed.
+   An incremental scanner over the raw bytes, O(n), no allocation: outside strings it counts the tokens that make structure ({ [ , :), the containers ({ [) and the nesting depth, and says
+   'shape' the moment one of them is over its bound. Inside a string (base64 pages, the MusicXML of a result) nothing is counted: a string is as cheap to parse as it is long. The caller
+   gives bounds proportional to what a body of its route legitimately holds (jsonShape in home-jobs.js). Malformed JSON is not judged here - JSON.parse does that afterwards, on a body
+   that is already known to be small in structure. push(chunk) -> null | 'shape'; the state carries from chunk to chunk (a string or an escape cut by a chunk boundary). */
+function jsonGuard(o) {
+  const maxTokens = o.tokens, maxContainers = o.containers, maxDepth = o.depth;
+  let tokens = 0, containers = 0, depth = 0, inStr = false, esc = false;
+  return {
+    push(buf) {
+      const n = buf.length;
+      let i = 0;
+      while (i < n) {
+        if (inStr) {
+          if (esc) { esc = false; i++; continue; }
+          /* the tight loop: a string's bytes (base64, XML) until its closing quote or an escape */
+          for (; i < n; i++) { const c = buf[i]; if (c === 0x22 || c === 0x5c) break; }
+          if (i >= n) break;
+          if (buf[i] === 0x5c) { esc = true; i++; continue; }
+          inStr = false; i++;
+          continue;
+        }
+        const c = buf[i++];
+        if (c === 0x22) inStr = true;
+        else if (c === 0x7b || c === 0x5b) { if (++tokens > maxTokens || ++containers > maxContainers || ++depth > maxDepth) return 'shape'; }
+        else if (c === 0x7d || c === 0x5d) { if (depth > 0) depth--; }
+        else if (c === 0x2c || c === 0x3a) { if (++tokens > maxTokens) return 'shape'; }
+      }
+      return null;
+    },
+    counts() { return { tokens: tokens, containers: containers, depth: depth }; }
+  };
+}
 
 /* ---------------- what goes up: page images ---------------- */
 
@@ -89,6 +129,22 @@ function decodePage(s) {
   return Buffer.from(t, 'base64');
 }
 
+/* the bytes of a PNG that are not the picture: every chunk but IHDR, PLTE, IDAT and IEND (with its length and checksum), and whatever follows IEND; null when the chunks do not run
+   from the signature to an IEND exactly (a cut file, a length that points outside it) */
+function pngExtraBytes(buf) {
+  let p = 8, extra = 0;
+  while (p + 12 <= buf.length) {
+    const len = buf.readUInt32BE(p);
+    const end = p + 12 + len;
+    if (len > buf.length || end > buf.length) return null;
+    const type = buf.toString('latin1', p + 4, p + 8);
+    if (type === 'IEND') return extra + (buf.length - end);
+    if (type !== 'IHDR' && type !== 'PLTE' && type !== 'IDAT') extra += 12 + len;
+    p = end;
+  }
+  return null;
+}
+
 /* One image's bytes -> { ok: true, type, width, height } or { ok: false, status, code, error, big? }: what the site checks of every page it is given and what the worker checks of every page it
    is handed (the site is trusted with the queue, not with what the PC's engine is made to open). n is the page's place, for the sentence. */
 function checkImage(buf, n) {
@@ -99,6 +155,11 @@ function checkImage(buf, n) {
   if (!info) return bad(at + ' is not a PNG or JPEG image.', 'bad-image', 422);
   if (info.width < LIMITS.SIDE_MIN || info.height < LIMITS.SIDE_MIN || info.width > LIMITS.SIDE_MAX || info.height > LIMITS.SIDE_MAX || info.width * info.height > LIMITS.PIXELS_MAX) {
     return bad(at + ' is ' + info.width + ' x ' + info.height + ' pixels; ' + LIMITS.SIDE_MIN + ' to ' + LIMITS.SIDE_MAX + ' a side and ' + (LIMITS.PIXELS_MAX / 1e6) + ' megapixels is what this reads.', 'image-size', 422);
+  }
+  if (info.type === 'png') {
+    const extra = pngExtraBytes(buf);
+    if (extra === null) return bad(at + ' is not a complete PNG image.', 'bad-image', 422);
+    if (extra > LIMITS.PNG_EXTRA_MAX) return bad(at + ' carries ' + Math.round(extra / 1024) + ' KB of data that is not the picture; this accepts ' + (LIMITS.PNG_EXTRA_MAX / 1024) + ' KB.', 'bad-image', 422);
   }
   return { ok: true, type: info.type, width: info.width, height: info.height };
 }
@@ -281,4 +342,4 @@ function validateOmrResult(body, o) {
   return { ok: true, result: result, bytes: bytes };
 }
 
-module.exports = { LIMITS, sniffImage, decodePage, checkImage, checkPages, fingerprint, checkMusicXml, validateOmrResult, DOCTYPE_STD };
+module.exports = { LIMITS, jsonGuard, pngExtraBytes, sniffImage, decodePage, checkImage, checkPages, fingerprint, checkMusicXml, validateOmrResult, DOCTYPE_STD };

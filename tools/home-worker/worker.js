@@ -106,10 +106,12 @@ const DEFAULTS = {
   activePollSeconds: 0,
   maxSeconds: Result.LIMITS.MAX_SECONDS,
   /* G12-5: reading printed scores with Audiveris (a PC that has it says so at every claim). audiverisPath: the program, when it is not found by itself (PPP_AUDIVERIS, tools/audiveris/ next
-     to transcribe.py or this repository's, C:\Program Files\Audiveris). omr: false switches it off here. omrPageTimeoutSeconds: one page, the whole call. */
+     to transcribe.py or this repository's, C:\Program Files\Audiveris). omr: false switches it off here. omrPageTimeoutSeconds: one page, the whole call. omrHeapMb: the engine's Java heap
+   is capped at this (a crafted image must not take the PC's memory; a page of 20 megapixels reads in well under 2 GB). */
   omr: true,
   audiverisPath: '',
   omrPageTimeoutSeconds: 600,
+  omrHeapMb: 2048,
   maxAudioMB: 120,
   allowInsecure: false,
   keepScratch: false
@@ -167,14 +169,17 @@ function loadConfig(file, env) {
   /* Audiveris, for scores (G12-5): the setting, PPP_AUDIVERIS, a tools folder beside transcribe.py / this repository / the song library / the transcription Python, then the places omr-service.js looks */
   cfg.omr = cfg.omr !== false;
   cfg.omrPageTimeoutSeconds = Math.max(60, Math.min(3600, +cfg.omrPageTimeoutSeconds || 600));
+  cfg.omrHeapMb = Math.max(512, Math.min(32768, Math.floor(+cfg.omrHeapMb) || 2048));
   if (cfg.omr) {
     const toolDirs = [path.join(path.dirname(cfg.transcribePy), 'tools'), path.join(REPO, 'tools')]
       .concat(cfg.songLib ? [path.dirname(cfg.songLib)] : [])
       .concat(cfg.pythonPath ? [path.dirname(path.dirname(path.dirname(cfg.pythonPath)))] : []);
     const explicit = firstExisting([String(cfg.audiverisPath || '').trim(), env.PPP_AUDIVERIS]);
+    /* programs first; a .bat (a source build) only when there is nothing else, so that --check can say what is wrong with it */
     cfg.audiverisPath = explicit
-      || firstExisting([].concat(...toolDirs.map(d => [path.join(d, 'audiveris', 'Audiveris', 'Audiveris.exe'), path.join(d, 'audiveris', 'Audiveris', 'bin', 'Audiveris.bat')])))
-      || (Engine ? Engine.findAudiveris('', REPO) || '' : '');
+      || firstExisting(toolDirs.map(d => path.join(d, 'audiveris', 'Audiveris', 'Audiveris.exe')))
+      || (Engine ? Engine.findAudiveris('', REPO) || '' : '')
+      || firstExisting(toolDirs.map(d => path.join(d, 'audiveris', 'Audiveris', 'bin', 'Audiveris.bat')));
   } else cfg.audiverisPath = '';
   if (!cfg.kongCheckpoint) cfg.kongCheckpoint = env.PPP_TRANSCRIBE_CHECKPOINT || findKongCheckpoint(path.join(path.dirname(cfg.transcribePy), 'tools', 'piano-transcription')) || findKongCheckpoint(path.join(REPO, 'tools', 'piano-transcription'));
   cfg.maxSeconds = Math.max(30, Math.min(Result.LIMITS.MAX_SECONDS, +cfg.maxSeconds || Result.LIMITS.MAX_SECONDS));
@@ -273,12 +278,14 @@ function request(cfg, method, p, o) {
   });
 }
 
-/* a request that is tried again, with a growing wait, while the network or the site is down (5xx, 429) */
-async function withRetry(label, tries, fn, ctl, log) {
+/* a request that is tried again, with a growing wait, while the network or the site is down (5xx, 429). stopOn(r): an answer that is final whatever its status (the site said "not now,
+   and not by waiting a minute": its budget for sending pages is used up) is returned at once. */
+async function withRetry(label, tries, fn, ctl, log, stopOn) {
   let wait = 5;
   for (let i = 1; ; i++) {
     let r = null, err = null;
     try { r = await fn(); } catch (e) { err = e; }
+    if (r && stopOn && stopOn(r)) return r;
     if (r && r.status < 500 && r.status !== 429) return r;
     if (i >= tries || (ctl && ctl.stopNow)) {
       if (r) return r;
@@ -437,7 +444,7 @@ function createWorker(cfg, deps) {
   const scratchRoot = cfg.scratchDir;
   const stats = { done: 0, failed: 0, checks: 0 };
   /* can this PC read a printed score? Audiveris is there and the settings do not switch it off. Told to the site at every claim (omr), so a PC without it is never handed one. */
-  const omrAble = () => cfg.omr !== false && !!Engine && !!cfg.audiverisPath && fs.existsSync(cfg.audiverisPath);
+  const omrAble = () => cfg.omr !== false && !!Engine && !!cfg.audiverisPath && fs.existsSync(cfg.audiverisPath) && !Engine.unstartable(cfg.audiverisPath);
   const recognise = deps.recognisePage || ((img, outDir, o) => Engine.recognisePage(cfg.audiverisPath, img, outDir, o));
   let engineVersionCache;
 
@@ -634,8 +641,11 @@ function createWorker(cfg, deps) {
     return engineVersionCache;
   }
   async function fetchPage(job, i) {
-    const r = await withRetry('Fetching page ' + (i + 1), 4, () => callSite(cfg, 'GET', '/api/worker/jobs/' + job.id + '/pages/' + i, { binary: true, timeoutMs: 120000 }), ctl, log);
+    /* the site's own "not now" (its budget for sending pages, or this job's reads) is not waited out minute by minute inside a claim: the score is given up for now with the site's words */
+    const final = x => (x.status === 503 && x.body && x.body.code === 'budget') || (x.status === 429 && x.body && x.body.code === 'too-many');
+    const r = await withRetry('Fetching page ' + (i + 1), 4, () => callSite(cfg, 'GET', '/api/worker/jobs/' + job.id + '/pages/' + i, { binary: true, timeoutMs: 120000 }), ctl, log, final);
     if (r.status === 401) throw Object.assign(new Error('token'), { fatalToken: true });
+    if (final(r)) throw new JobError('The site cannot hand out this score\'s pages right now (' + ((r.body && r.body.error) || r.status) + ').', false);
     if (r.status === 404 || r.status === 409 || r.status === 410) throw new Cancelled('the site no longer has this score for this PC');
     if (r.status !== 200 || !Buffer.isBuffer(r.raw)) throw new JobError('The site did not give page ' + (i + 1) + ' (' + r.status + ').', true);
     const info = Omr.checkImage(r.raw, i + 1);
@@ -690,7 +700,7 @@ function createWorker(cfg, deps) {
         fs.mkdirSync(outDir);
         fs.writeFileSync(img, got.buf);
         const r = await recognise(img, outDir, {
-          timeoutMs: cfg.omrPageTimeoutSeconds * 1000, extraArgs: Engine ? Engine.STEP_TIMEOUT_ARGS.slice() : [], lowPriority: true, onChild: c => { ctl.child = c; }
+          timeoutMs: cfg.omrPageTimeoutSeconds * 1000, extraArgs: Engine ? Engine.STEP_TIMEOUT_ARGS.slice() : [], lowPriority: true, env: Engine ? Engine.heapEnv(cfg.omrHeapMb) : undefined, onChild: c => { ctl.child = c; }
         });
         ctl.child = null;
         check();
@@ -952,10 +962,11 @@ async function checkSetup(cfg, log, deps) {
   /* G12-5: reading printed scores is optional (a PC without Audiveris converts recordings as before); this says which it is */
   if (cfg.omr === false) log('note  reading scores is switched off in the settings ("omr": false): scores are not taken by this PC; conversions of recordings work');
   else if (!Engine) log('note  omr/engine.js is not in this checkout: scores are not read here (update the checkout); conversions of recordings work');
+  else if (cfg.audiverisPath && fs.existsSync(cfg.audiverisPath) && Engine.unstartable(cfg.audiverisPath)) log('note  ' + Engine.unstartable(cfg.audiverisPath) + ' Scores are not read by this PC until then; conversions of recordings work.');
   else if (!cfg.audiverisPath || !fs.existsSync(cfg.audiverisPath)) log('note  no Audiveris found (tools/audiveris/Audiveris/Audiveris.exe, PPP_AUDIVERIS or "audiverisPath"): scores are not read by this PC; conversions of recordings work. See README, "Reading scores"');
   else {
     const v = await (deps.engineVersion ? deps.engineVersion() : Engine.engineVersion(cfg.audiverisPath, { lowPriority: true, timeoutMs: 60000 }));
-    say(true, 'scores: Audiveris ' + (v || '(version not read)') + ' at ' + cfg.audiverisPath + ' - one page at a time, below-normal priority, ' + cfg.omrPageTimeoutSeconds + ' s a page at most');
+    say(true, 'scores: Audiveris ' + (v || '(version not read)') + ' at ' + cfg.audiverisPath + ' - one page at a time, below-normal priority, ' + cfg.omrPageTimeoutSeconds + ' s a page at most, Java heap capped at ' + cfg.omrHeapMb + ' MB');
   }
   if (!problems.some(p => /^(siteUrl|token)/.test(p))) {
     try {
