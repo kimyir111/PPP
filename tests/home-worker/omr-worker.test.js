@@ -141,7 +141,7 @@ async function queued(S, user, w, n, o) {
 
   heading('the site\'s own "not now" is not waited out: a budget refusal ends the claim at once');
   {
-    const S = await L.startService({ users: ['u1', 'u2'], config: { omrEgressPerHour: 13000 } });
+    const S = await L.startService({ users: ['u1', 'u2'], config: { omrEgressPerHour: 13000, omrShare: 1 } });
     try {
       const st = state0();
       const reqs = [];

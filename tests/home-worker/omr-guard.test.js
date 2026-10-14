@@ -16,8 +16,49 @@ const { spawn } = require('child_process');
 const L = require('./lib');
 const { ok, heading, sleep } = L;
 const { claimOmr, ready, sendOmr, page, pageFilesIn, jobOf } = require('./omr-jobs.test.js');
+const path = L.path, fs = L.fs;
+const { freePort } = require('../serve-free');
 const MiB = 1048576;
 const HEAP_MB = 200;
+/* a socket that sends `count` bytes ONE AT A TIME after its headers and a prefix (the second review's N1: 1.4 million writes of one byte, inside every size cap, held about 350 bytes of
+   Buffer each and ended the server by its heap in ten seconds). Resolves { sent, ms } when they are all written (or the server closed first). */
+function oneByteFlood(port, p, o) {
+  return new Promise(resolve => {
+    const head = 'POST ' + p + ' HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\nContent-Length: ' + o.declared + '\r\n' + (o.headers || '') + '\r\n';
+    const s = net.connect(port, '127.0.0.1');
+    const one = Buffer.from('A');
+    let sent = 0, closed = false;
+    const t0 = Date.now();
+    s.on('error', () => { /* reset */ });
+    s.on('data', () => { /* an answer: ignored */ });
+    s.on('close', () => { closed = true; resolve({ sent: sent, ms: Date.now() - t0, closedByServer: sent < o.count }); });
+    s.setNoDelay(true);
+    s.on('connect', () => {
+      s.write(head + (o.first || ''));
+      const pump = () => {
+        let i = 0;
+        while (sent < o.count && !closed) {
+          sent++;
+          if (!s.write(one)) { s.once('drain', pump); return; }
+          if (++i % 20000 === 0) { setImmediate(pump); return; }
+        }
+        s.destroy();
+      };
+      pump();
+    });
+  });
+}
+/* the resident set of a process of ours, in MB (Windows: the working set; elsewhere /proc) */
+function rssMB(pid) {
+  try {
+    if (process.platform === 'win32') {
+      const out = require('child_process').execFileSync('powershell', ['-NoProfile', '-Command', '(Get-Process -Id ' + pid + ').WorkingSet64'], { encoding: 'utf8' });
+      return Math.round(parseInt(out.trim(), 10) / MiB);
+    }
+    const m = /VmRSS:\s+(\d+) kB/.exec(fs.readFileSync('/proc/' + pid + '/status', 'utf8'));
+    return m ? Math.round(parseInt(m[1], 10) / 1024) : -1;
+  } catch (e) { return -1; }
+}
 
 /* ---------------- the bodies ---------------- */
 /* `{"<key>":[{},{},...]}` of exactly `bytes` bytes (or one less): well formed, so an unguarded JSON.parse builds every object before it is done */
@@ -113,6 +154,17 @@ async function child() {
     await quiet();
     const rn = await rawPost(S, '/api/worker/jobs/' + c.body.job.id + '/result', bigNotes, { token: S.token('u2') });
     out.notes = { status: rn.status, code: rn.body && rn.body.code, ms: rn.ms, maxGap: maxGap };
+    /* N1: a body sent a byte at a time (the upload route's cap is 17 MB; 900,000 bytes is inside it): 900,000 chunks, ~350 bytes of Buffer each if every one is kept */
+    {
+      const jobsBefore = S.svc._state.jobs.size, filesBefore = pageFilesIn(S);
+      await quiet();
+      const heapBefore = (global.gc && global.gc(), process.memoryUsage().heapUsed);
+      const fl = await oneByteFlood(S.port, '/api/jobs/omr', { declared: 17000000, headers: 'X-PPP-PC: ' + S.code('u1') + '\r\n', first: '{"pages":["', count: 900000 });
+      await sleep(300);
+      const heapAfter = (global.gc && global.gc(), process.memoryUsage().heapUsed);
+      const ok2 = await S.as('u1').get('/api/worker/status');
+      out.flood = { sent: fl.sent, ms: fl.ms, heapBeforeMB: Math.round(heapBefore / MiB), heapAfterMB: Math.round(heapAfter / MiB), maxGap: maxGap, after: ok2.status, jobsBefore: jobsBefore, filesBefore: filesBefore, jobs: S.svc._state.jobs.size, files: pageFilesIn(S) };
+    }
     clearInterval(probe);
     out.heapMB = Math.round(process.memoryUsage().heapUsed / MiB);
     out.rssMB = Math.round(process.memoryUsage().rss / MiB);
@@ -122,7 +174,7 @@ async function child() {
 
 function runChild() {
   return new Promise(resolve => {
-    const c = spawn(process.execPath, ['--max-old-space-size=' + HEAP_MB, __filename], { env: Object.assign({}, process.env, { OMR_GUARD_CHILD: '1' }) });
+    const c = spawn(process.execPath, ['--max-old-space-size=' + HEAP_MB, '--expose-gc', __filename], { env: Object.assign({}, process.env, { OMR_GUARD_CHILD: '1' }) });
     let so = '', se = '';
     c.stdout.on('data', d => { so += d; });
     c.stderr.on('data', d => { se += d; });
@@ -160,6 +212,8 @@ async function amplification() {
   ok('16 MB of [ is refused the same way (the depth), the loop not blocked', g.deep.status === 422 && g.deep.maxGap < 150, JSON.stringify(g.deep));
   ok('5 MB of {} as the RESULT of a score is 422 bad-body, the job stays claimed, the loop not blocked', g.result.status === 422 && g.result.code === 'bad-body' && g.result.still === 'claimed' && g.result.maxGap < 150, JSON.stringify(g.result));
   ok('3 MB of {} as the notes of a CONVERSION is 422 bad-body, the loop not blocked', g.notes.status === 422 && g.notes.code === 'bad-body' && g.notes.maxGap < 150, JSON.stringify(g.notes));
+  ok('a body sent ONE BYTE AT A TIME (' + g.flood.sent + ' writes, inside every cap) is not held chunk by chunk: the heap after it is ' + g.flood.heapAfterMB + ' MB (' + g.flood.heapBeforeMB + ' before; held as it was it is about 350 MB and ends the child), and the site answers at once after it',
+    g.flood.sent >= 800000 && g.flood.heapAfterMB < g.flood.heapBeforeMB + 40 && g.flood.after === 200 && g.flood.jobs === g.flood.jobsBefore && g.flood.files === g.flood.filesBefore, JSON.stringify(g.flood));
   ok('the child\'s heap ends small (' + g.heapMB + ' MB used, ' + g.rssMB + ' MB resident)', g.heapMB < 120, JSON.stringify(g));
 
   /* every route that reads JSON has a bound, not only the big ones (in this process: 4 KB bodies cannot hurt, but they must not be taken either) */
@@ -284,7 +338,7 @@ async function egress() {
   }
   {
     /* the 11 MB job of the review: 11 pages of 1 MB, a worker that keeps failing with retry */
-    const S = await L.startService({ users: ['u1'] });
+    const S = await L.startService({ users: ['u1'], config: { omrShare: 1 } });
     try {
       await ready(S, 'u1');
       const tok = S.token('u1');
@@ -305,7 +359,7 @@ async function egress() {
   }
   {
     /* the site's budget, per hour: pages and finished scores together */
-    const S = await L.startService({ users: ['u1', 'u2'], config: { omrEgressPerHour: 18000, omrEgressPerDay: 10 * MiB } });
+    const S = await L.startService({ users: ['u1', 'u2'], config: { omrEgressPerHour: 18000, omrEgressPerDay: 10 * MiB, omrShare: 1 } });
     try {
       await ready(S, 'u1'); await ready(S, 'u2');
       const tok = S.token('u1');
@@ -328,7 +382,7 @@ async function egress() {
   }
   {
     /* what the site WRITES for scores: the images it accepts, per hour and per day, all links together */
-    const S = await L.startService({ users: ['u1', 'u2', 'u3'], config: { omrIngressPerHour: 10000, omrIngressPerDay: 15000 } });
+    const S = await L.startService({ users: ['u1', 'u2', 'u3'], config: { omrIngressPerHour: 10000, omrIngressPerDay: 15000, omrShare: 1 } });
     try {
       for (const u of ['u1', 'u2', 'u3']) await ready(S, u);
       const pg = (w, b) => L.omrPages(1, { w: w, bytes: b, vary: false });
@@ -339,7 +393,7 @@ async function egress() {
       const small = await sendOmr(S, 'u3', pg(903, 1500));
       ok('a refusal costs nothing: a smaller one that fits (1,500) is taken after it', small.status === 201, small.status + ' ' + small.text.slice(0, 80));
       ok('a score that is queued but whose write fails gives its bytes back (the budget is not used by what was never written)', await (async () => {
-        const T = await L.startService({ users: ['v1'], config: { omrIngressPerHour: 9000 } });
+        const T = await L.startService({ users: ['v1'], config: { omrIngressPerHour: 9000, omrShare: 1 } });
         try {
           await ready(T, 'v1');
           T.store.fail.on = true; T.store.fail.only = 'insertOmrJob';
@@ -356,7 +410,7 @@ async function egress() {
   }
   {
     /* per day: the hour's budget is large, the day's is not */
-    const S = await L.startService({ users: ['u1'], config: { omrEgressPerHour: 10 * MiB, omrEgressPerDay: 20000 } });
+    const S = await L.startService({ users: ['u1'], config: { omrEgressPerHour: 10 * MiB, omrEgressPerDay: 20000, omrShare: 1 } });
     try {
       await ready(S, 'u1');
       const tok = S.token('u1');
@@ -375,7 +429,7 @@ async function egress() {
   }
   {
     /* the finished score a page opens counts too; the notes of a conversion do not */
-    const S = await L.startService({ users: ['u1', 'u2'], config: { omrEgressPerHour: 1500 } });
+    const S = await L.startService({ users: ['u1', 'u2'], config: { omrEgressPerHour: 1500, omrShare: 1 } });
     try {
       await ready(S, 'u1'); await ready(S, 'u2');
       const tok = S.token('u1');
@@ -398,6 +452,154 @@ async function egress() {
       const rn = await S.as('u2').get('/api/jobs/' + c.body.job.id);
       ok('the notes of a conversion are read though the budget for scores is used up (the budget is for scores)', rn.status === 200 && rn.body.result && rn.body.result.notes.length === 40, rn.status + '');
     } finally { await S.close(); }
+  }
+}
+
+/* ---------------- a link's and an address's share of the budgets (the second review's N2) ---------------- */
+async function shares() {
+  heading('a quarter of each budget per link and per address; a score nobody read is given back to the site');
+  {
+    /* the site's hourly budget for what it writes: 40,000 bytes; a link's and an address's share of it 10,000 */
+    const S = await L.startService({ users: [], config: { omrIngressPerHour: 40000, omrIngressPerDay: 4000000, omrEgressPerHour: 4000000, omrEgressPerDay: 40000000 } });
+    try {
+      await S.makeLink('a1', { ip: '203.0.113.50' }); await S.makeLink('a2', { ip: '203.0.113.50' });
+      await S.makeLink('b1', { ip: '203.0.113.51' }); await S.makeLink('c1', { ip: '203.0.113.52' });
+      for (const u of ['a1', 'a2', 'b1', 'c1']) await ready(S, u);
+      const pg = (w, b) => L.omrPages(1, { w: w, bytes: b, vary: false });
+      const used = () => S.svc._state.budget('in', S.clock.t).hour;
+      const ra = await sendOmr(S, 'a1', pg(1001, 4000), null, { ip: '203.0.113.50' });
+      const rb = await sendOmr(S, 'a1', pg(1002, 4000), null, { ip: '203.0.113.50' });
+      ok('a link takes its share of the hour (10,000 of 40,000 bytes here): two images of 4,000 are taken', ra.status === 201 && rb.status === 201 && used() === 8000, ra.status + ' ' + rb.status + ' ' + used());
+      const rc = await sendOmr(S, 'a1', pg(1003, 4000), null, { ip: '203.0.113.50' });
+      ok('a third (12,000 > 10,000) is 429 "share", with a Retry-After, and it cancels nobody\'s place (the site has room: 32,000 left)', rc.status === 429 && rc.body.code === 'share' && Number(rc.headers['retry-after']) >= 60
+        && Array.from(S.svc._state.jobs.values()).filter(j => j.ownerId === S.linkId('a1') && j.status === 'queued').length === 2, rc.status + ' ' + rc.text.slice(0, 140));
+      const rd = await sendOmr(S, 'a2', pg(1004, 4000), null, { ip: '203.0.113.50' });
+      ok('another link made from the SAME address shares the address\'s share: 429 "share" too (the stranger\'s links do not each get their own)', rd.status === 429 && rd.body.code === 'share', rd.status + ' ' + rd.text.slice(0, 140));
+      const re = await sendOmr(S, 'b1', pg(1005, 4000), null, { ip: '203.0.113.51' });
+      const rf = await sendOmr(S, 'c1', pg(1006, 4000), null, { ip: '203.0.113.52' });
+      ok('an honest link on another address is taken (the site has 40,000 and a quarter of it is the stranger\'s at the most)', re.status === 201 && rf.status === 201 && used() === 16000, re.status + ' ' + rf.status + ' ' + used());
+      /* upload and cancel, the review's experiment: the site gets back what nobody read, the sender's own share does not */
+      const mine = Array.from(S.svc._state.jobs.values()).find(j => j.ownerId === S.linkId('a1'));
+      const cx = await S.as('a1').post('/api/jobs/' + mine.id + '/cancel', {});
+      ok('a score that nobody read is cancelled: the SITE\'s budget gets its 4,000 back (16,000 -> 12,000)', cx.status === 200 && used() === 12000, cx.status + ' ' + used());
+      const rg = await sendOmr(S, 'a1', pg(1007, 4000), null, { ip: '203.0.113.50' });
+      ok('... but the sender\'s own share stays used (8,000 of 10,000): its next one is still 429 "share" - cancelling is no way to get more', rg.status === 429 && rg.body.code === 'share', rg.status + ' ' + rg.text.slice(0, 100));
+      const one = await sendOmr(S, 'b1', pg(1008, 4000), null, { ip: '203.0.113.51' });
+      ok('and what the stranger did used none of the site\'s that an honest link needs: another honest score goes in (site 12,000 + 4,000)', one.status === 201 && used() === 16000, one.status + ' ' + used());
+      /* a score that the byte quotas refuse cancels nobody's place (the quota is looked at as it would stand without the waiting score that a new one replaces) */
+      const small = await L.startService({ users: ['q1'], config: { omrImageBytesPerLink: 5000, omrShare: 1 } });
+      try {
+        await ready(small, 'q1');
+        const a = await sendOmr(small, 'q1', pg(1201, 2000), null, { ip: '203.0.113.80' });
+        const b = await sendOmr(small, 'q1', pg(1202, 2000), null, { ip: '203.0.113.80' });
+        const big = await sendOmr(small, 'q1', pg(1203, 6000), null, { ip: '203.0.113.80' });
+        const live = Array.from(small.svc._state.jobs.values()).filter(j => j.status === 'queued').length;
+        ok('a score that no cancelling could make room for (6,000 against a link\'s 5,000) is 429 "quota" and cancels nobody: both waiting scores are still queued', a.status === 201 && b.status === 201 && big.status === 429 && big.body.code === 'quota' && live === 2, [a.status, b.status, big.status, live].join());
+      } finally { await small.close(); }
+      /* the whole site's hour used up by honest bytes: 503 "budget", not "share" */
+      const over = await L.startService({ users: ['h1', 'h2', 'h3'], config: { omrIngressPerHour: 12000, omrIngressPerDay: 4000000, omrShare: 1 } });
+      try {
+        for (const u of ['h1', 'h2', 'h3']) await ready(over, u);
+        await sendOmr(over, 'h1', pg(1101, 6000), null, { ip: '203.0.113.60' }); await sendOmr(over, 'h2', pg(1102, 6000), null, { ip: '203.0.113.61' });
+        const rs = await sendOmr(over, 'h3', pg(1103, 6000), null, { ip: '203.0.113.62' });
+        ok('the SITE\'s budget used up is 503 "budget" (a different answer from a share: nothing the sender did)', rs.status === 503 && rs.body.code === 'budget', rs.status + ' ' + rs.text.slice(0, 100));
+      } finally { await over.close(); }
+    } finally { await S.close(); }
+  }
+  {
+    /* a score the site could not SEND even once (what it may still read is less than the score weighs) is not taken: the budget for reads is looked at when a score is taken */
+    const S = await L.startService({ users: ['e1'], config: { omrEgressPerHour: 10000, omrShare: 1 } });
+    try {
+      await ready(S, 'e1');
+      const one = await sendOmr(S, 'e1', L.omrPages(1, { w: 1301, bytes: 6000, vary: false }));
+      await claimOmr(S, S.token('e1'));
+      await page(S, S.token('e1'), one.body.job.id, 0);
+      const two = await sendOmr(S, 'e1', L.omrPages(1, { w: 1302, bytes: 6000, vary: false }));
+      ok('6,000 bytes against 4,000 that the site may still read this hour: the score is refused at the door, 503 "budget" (not taken to wait for a read that cannot be made), nothing stored',
+        one.status === 201 && two.status === 503 && two.body.code === 'budget' && pageFilesIn(S) === 1, one.status + ' ' + two.status + ' ' + two.text.slice(0, 100));
+    } finally { await S.close(); }
+  }
+  {
+    /* the same shares for what the site READS: a link's reads of its pages are 429 "share" before the site's budget is touched */
+    const S = await L.startService({ users: [], config: { omrEgressPerHour: 40000, omrEgressPerDay: 4000000 } });
+    try {
+      await S.makeLink('x1', { ip: '203.0.113.70' }); await S.makeLink('y1', { ip: '203.0.113.71' });
+      await ready(S, 'x1'); await ready(S, 'y1');
+      const q = await sendOmr(S, 'x1', L.omrPages(4, { w: 1201, bytes: 2400 }), null, { ip: '203.0.113.70' });
+      await claimOmr(S, S.token('x1'));
+      const st = [];
+      for (let i = 0; i < 6; i++) st.push(await page(S, S.token('x1'), q.body.job.id, i % 4));
+      ok('reads of a link\'s pages stop at its share of the hour (10,000 of 40,000; the read that crosses it is served): 4 pages, then 429 "share"', st.map(r => r.status).join() === '200,200,200,200,200,429' && st[5].body.code === 'share', st.map(r => r.status).join() + ' ' + (st[5].text || '').slice(0, 100));
+      const qy = await sendOmr(S, 'y1', L.omrPages(1, { w: 1202, bytes: 3000 }), null, { ip: '203.0.113.71' });
+      await claimOmr(S, S.token('y1'));
+      ok('another link on another address still reads (the site has room)', (await page(S, S.token('y1'), qy.body.job.id, 0)).status === 200);
+    } finally { await S.close(); }
+  }
+}
+
+/* ---------------- the routes of server.js itself (the second review's N1 on the stock readBody) ---------------- */
+async function stockRoutes() {
+  heading('server.js: the same reader on its own routes (a real server with a 150 MB heap)');
+  const dir = L.tmpDir('ppp-guard-stock-');
+  const port = await freePort();
+  const env = Object.assign({}, process.env, { NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(port), PPP_DATA_DIR: dir, SESSION_SECRET: 'guard-stock',
+    PPP_BODY_IDLE_MS: '2500', PPP_MAX_CONNECTIONS: '60' });
+  delete env.DATABASE_URL;
+  const child = spawn(process.execPath, ['--max-old-space-size=150', path.join(L.MODS, 'server.js')], { cwd: L.REPO, env: env, stdio: ['ignore', 'pipe', 'pipe'] });
+  let logs = '', exited = null;
+  child.stdout.on('data', d => { logs += d; }); child.stderr.on('data', d => { logs += d; });
+  child.on('exit', c => { exited = c; });
+  const health = async () => { try { return (await L.req(port, 'GET', '/health')).status; } catch (e) { return 0; } };
+  try {
+    for (let i = 0; i < 150 && exited === null; i++) { if ((await health()) === 200) break; await sleep(200); }
+    await sleep(800);
+    ok('(a server.js with a 150 MB heap is up)', (await health()) === 200, logs.slice(-200));
+    const GUEST = 'x-ppp-guest: ' + 'ab'.repeat(32) + '\r\n';
+    const rss0 = rssMB(child.pid);
+    /* the flood, on the route that takes bodies from anybody: a guest's score (1 MB cap, 16 MB drain) */
+    const fl = await oneByteFlood(port, '/api/shares', { declared: 1000000, headers: GUEST, first: '{"songKey":"x","score":"', count: 900000 });
+    await sleep(500);
+    const h1 = await health();
+    const rss1 = rssMB(child.pid);
+    ok('900,000 one-byte writes to a stock route (' + Math.round(fl.ms / 100) / 10 + ' s): the server is alive and answers /health 200, and its resident set is ' + rss1 + ' MB (' + rss0 + ' before; held chunk by chunk it is about 350 MB and ends a 150 MB heap)',
+      fl.sent >= 800000 && h1 === 200 && exited === null && rss1 > 0 && rss1 < rss0 + 70, JSON.stringify({ sent: fl.sent, h1: h1, exited: exited, rss0: rss0, rss1: rss1 }));
+    /* the shape: a body that is a perfectly good score with 900 KB of {} in a field the server ignores - parsed, it would be taken (201); counted as it arrives it is refused (422) */
+    const body = '{"songKey":"pad-test","title":"t","score":{"title":"t","measures":[{"n":1}],"notes":[{"m":1,"midi":60}]},"pad":[' + '{},'.repeat(300000) + '{}]}';
+    const t0 = Date.now();
+    const sh = await L.req(port, 'POST', '/api/shares', { body: body, headers: { 'X-PPP-Guest': 'ab'.repeat(32) } });
+    ok('a good score with 900 KB of {} in a field the server ignores is refused as it arrives (422, in ' + (Date.now() - t0) + ' ms): not parsed and taken (201)', sh.status === 422 && Date.now() - t0 < 3000, sh.status + ' ' + sh.text.slice(0, 100));
+    const good = await L.req(port, 'POST', '/api/shares', { body: '{"songKey":"pad-ok","title":"t","score":{"title":"t","measures":[{"n":1}],"notes":[{"m":1,"midi":60}]}}', headers: { 'X-PPP-Guest': 'cd'.repeat(32) } });
+    ok('(and the same score without the padding is taken: 201 - the bound is not in an honest body\'s way)', good.status === 201, good.status + ' ' + good.text.slice(0, 100));
+    /* a sender that stalls on the login route: cut by the gap deadline (2.5 s here, 10 s in production) */
+    const stall = await new Promise(resolve => {
+      const s = net.connect(port, '127.0.0.1');
+      const t = Date.now();
+      let got = '';
+      s.on('data', d => { got += d; });
+      s.on('error', () => {});
+      s.on('close', () => resolve({ ms: Date.now() - t, got: got.slice(0, 20) }));
+      s.write('POST /api/auth/login HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\nContent-Length: 200\r\n\r\n{"email":');
+      setTimeout(() => { s.destroy(); }, 9000);
+    });
+    ok('a sender that sends part of a login body and stalls is cut by the server (' + stall.ms + ' ms: the gap deadline, 2.5 s here), not left to hold the socket', stall.ms > 2000 && stall.ms < 6000, JSON.stringify(stall));
+    /* many sockets: past PPP_MAX_CONNECTIONS (60 here) the server drops new ones */
+    const socks = await new Promise(resolve => {
+      const list = [];
+      let closed = 0;
+      for (let i = 0; i < 120; i++) {
+        const s = net.connect(port, '127.0.0.1');
+        s.on('error', () => {});
+        s.on('close', () => { closed++; });
+        list.push(s);
+      }
+      setTimeout(() => { const c = closed; list.forEach(s => s.destroy()); resolve(c); }, 2000);
+    });
+    await sleep(500);
+    ok('120 idle sockets against a limit of 60: the server drops the ones past it at once (' + socks + ' closed by it within 2 s), and is fine after', socks >= 40 && (await health()) === 200, socks + ' ' + (await health()));
+  } finally {
+    try { child.kill(); } catch (e) { /* gone */ }
+    await sleep(300);
+    L.rmDir(dir);
   }
 }
 
@@ -440,6 +642,8 @@ async function orphans() {
   await amplification();
   await slowSenders();
   await egress();
+  await shares();
+  await stockRoutes();
   await orphans();
   L.finish('the home-PC queue, kind omr: shape, time and egress of a body');
 })().catch(e => { console.error(e); process.exit(1); });

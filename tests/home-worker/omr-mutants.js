@@ -3,7 +3,7 @@
    A rule with two guards (the pre-check before the body is read and the one in the atomic section) breaks BOTH, as the earlier mutants do. */
 'use strict';
 const PAGE = 'Piano Coach App.dc.html';
-const J = 'home-jobs.js', O = 'home-omr.js', S = 'home-jobs-store.js', W = 'tools/home-worker/worker.js', E = 'omr/engine.js';
+const J = 'home-jobs.js', B = 'body-reader.js', SRV = 'server.js', O = 'home-omr.js', S = 'home-jobs-store.js', W = 'tools/home-worker/worker.js', E = 'omr/engine.js';
 const T = 'omr-jobs.test.js', LIM = 'omr-limits.test.js', FLOW = 'omr-flow.test.js', GRD = 'omr-guard.test.js', WK = 'omr-worker.test.js', PG = 'omr-jobs-pg.test.js', PG_PAGE = 'omr-page.test.js';
 
 module.exports = [
@@ -19,11 +19,11 @@ module.exports = [
     ["const capped = omrPendingOf(link.id) >= L.OMR_PENDING_PER_LINK || mine0.filter(pending).length >= PENDING_CAP;", "const capped = false;"],
     ["if (!same && (omrPendingOf(link.id) >= L.OMR_PENDING_PER_LINK || now0.filter(pending).length >= PENDING_CAP)) {", "if (false) {"],
     ["if (omrPendingOf(link.id) >= L.OMR_PENDING_PER_LINK || mine.filter(pending).length >= PENDING_CAP) {", "if (false) {"]], LIM],
-  ['O9', J, 'the images a link holds are not bounded', ["if (omrImageBytes(j => j.ownerId === link.id) + checked.bytes > C.omrImageBytesPerLink) {", "if (false) {"], LIM],
-  ['O10', J, 'the images the links of one address hold are not bounded', ["if (link.ipTag && omrImageBytes(addressOf(link.ipTag)) + checked.bytes > C.omrImageBytesPerAddress) {", "if (false) {"], LIM],
+  ['O9', J, 'the images a link holds are not bounded (both looks: before a replaced score is cancelled, and in the atomic section)', ["if (omrImageBytes(j => j.ownerId === link.id) - freed + checked.bytes > C.omrImageBytesPerLink) return", "if (false) return"], LIM],
+  ['O10', J, 'the images the links of one address hold are not bounded', ["if (link.ipTag && omrImageBytes(addressOf(link.ipTag)) - freed + checked.bytes > C.omrImageBytesPerAddress) return", "if (false) return"], LIM],
   ['O11', J, 'the images the site holds are not bounded (both guards)', [
     ["if (omrImageBytes(() => true) >= C.omrImageBytesTotal) throw", "if (false) throw"],
-    ["if (omrImageBytes(() => true) + checked.bytes > C.omrImageBytesTotal) {", "if (false) {"]], LIM],
+    ["if (omrImageBytes(() => true) - freed + checked.bytes > C.omrImageBytesTotal) return", "if (false) return"]], LIM],
   ['O12', J, 'the same pages asked for twice while they wait are two jobs', ["const dup = mine.find(j => j.kind === 'omr' && pending(j) && j.url === fp);", "const dup = null;"], LIM],
   ['O13', J, 'a worker that does not say omr: true is handed a score', ["(canOmr || j.kind !== 'omr') && ", ""], FLOW],
   ['O14', J, 'any truthy omr in a claim is taken for omr: true', ["rec.omr = body.omr === true;", "rec.omr = !!body.omr;"], FLOW],
@@ -96,29 +96,40 @@ module.exports = [
   ['Q6', S, 'Postgres: a finished score is purged on the conversions\' keeping time', ["(CASE WHEN kind = 'omr' THEN $3::timestamptz ELSE $1::timestamptz END)", "$1::timestamptz"], PG],
   ['Q7', S, 'Postgres: the boot read does not say how many images a job holds', [", (SELECT count(*)::int FROM ppp_omr_pages p WHERE p.job_id = j.id) AS pages FROM ppp_transcribe_jobs j;'", ", 0 AS pages FROM ppp_transcribe_jobs j;'"], PG],
 
+  /* ---- G12-5 second review: N1 (a body sent a byte at a time), N2 (shares of the budgets), N3 (trust from an address) ---- */
+  ['X41', B, 'small chunks are kept one by one (a body sent a byte at a time costs 350 bytes of Buffer a byte)', ["if (tail.length >= TAIL_CHUNKS || tailBytes >= TAIL_BYTES) flush();", ""], GRD],
+  ['X42', SRV, 'the stock routes of server.js read their bodies with no structure bound', ["shape: shape || bodyReader.stockShape(max),", "shape: shape,"], GRD],
+  ['X43', SRV, 'a stalled sender of a stock route is answered but its socket is left open', ["idleMs: BODY_IDLE_MS, destroyOnSlow: true", "idleMs: BODY_IDLE_MS"], GRD],
+  ['X44', SRV, 'the number of open sockets is not limited', ["server.maxConnections = Math.max(50, parseInt(process.env.PPP_MAX_CONNECTIONS, 10) || 1000);", ""], GRD],
+  ['X45', J, 'a link\'s and an address\'s share of a budget is not applied (a stranger can use all of the site\'s)', ["if (Math.min(w.hour.left(t), w.day.left(t)) < bytes) return 'share';", ""], GRD],
+  ['X46', J, 'the links made from one address do not share the address\'s share', ["const ownerKeys = link => (link.ipTag ? ['l:' + link.id, 'a:' + link.ipTag] : ['l:' + link.id]);", "const ownerKeys = link => ['l:' + link.id];"], GRD],
+  ['X47', J, 'a score nobody read, cancelled or expired, is not given back to the site\'s budget', ["budgetRefund('in', job.budgetAt, t, job.bytes || 0);", ""], GRD],
+  ['X48', J, 'a score that the budget refuses cancels the oldest waiting one first', ["        const be = budgetRefusal(t);\n        if (be) { release(); throw be; }\n", ""], GRD],
+  ['X49', J, 'a score that the byte quotas refuse cancels the oldest waiting one first', ["          const qe = quotaError(oldest.bytes || 0);\n          if (qe) { release(); throw qe; }\n", ""], GRD],
+
   /* ---- G12-5 security review: the shape of a body (home-omr.js jsonGuard, home-jobs.js readQueueBody) ---- */
-  ['X1', J, 'the shape of a body is not counted as it arrives (an unguarded JSON.parse of {} x millions)', ["if (guard && guard.push(c) === 'shape') { why = 'SHAPE'; chunks = []; return; }", ""], GRD],
+  ['X1', B, 'the shape of a body is not counted as it arrives (an unguarded JSON.parse of {} x millions)', ["if (guard && guard.push(c) === 'shape') { why = 'SHAPE'; chunks = []; tail = []; tailBytes = 0; return; }", ""], GRD],
   ['X2', O, 'the scanner counts nothing: no token or container is ever over its bound', ["if (++tokens > maxTokens || ++containers > maxContainers || ++depth > maxDepth) return 'shape'; }", "++tokens; ++containers; ++depth; }"], GRD],
   ['X3', O, 'the scanner counts what is INSIDE strings (a MusicXML text with commas is refused)', ["        if (inStr) {\n          if (esc) { esc = false; i++; continue; }", "        if (false) {\n          if (esc) { esc = false; i++; continue; }"], GRD],
   ['X4', O, 'the scanner does not know an escaped quote (a string ends at a backslash-quote)', ["if (buf[i] === 0x5c) { esc = true; i++; continue; }", "if (buf[i] === 0x5c) { i++; continue; }"], GRD],
   ['X5', J, 'a route that gives no shape is read with none (claim, heartbeat, fail, link, token, conversion)', ["shape: shape || SHAPES.small,", "shape: shape,"], GRD],
   /* ---- the time of a body and its place ---- */
-  ['X6', J, 'a body that stops arriving is waited for (no gap deadline)', ["idle = setTimeout(() => settle(reject, err('SLOW', 'idle')), o.idleMs);", "idle = setTimeout(() => {}, o.idleMs);"], GRD],
-  ['X7', J, 'a body that trickles is waited for (no total deadline)', ["total = setTimeout(() => settle(reject, err('SLOW', 'total')), o.totalMs);", "total = setTimeout(() => {}, o.totalMs);"], GRD],
+  ['X6', B, 'a body that stops arriving is waited for (no gap deadline)', ["idle = setTimeout(onIdle, idleMs);", "idle = setTimeout(() => {}, idleMs);"], GRD],
+  ['X7', B, 'a body that trickles is waited for (no total deadline)', ["total = setTimeout(() => slow('total'), totalMs);", "total = setTimeout(() => {}, totalMs);"], GRD],
   ['X8', J, 'one address may hold any number of places', ["if ((s.by.get(ka) | 0) > 0) throw httpError(503, 'Another score is being sent from this network right now. Try again in a moment.', 'busy', { retryAfter: 10 });", ""], GRD],
   ['X9', J, 'one link may hold any number of places', ["if ((s.by.get(kl) | 0) > 0) throw httpError(429, cls === 'up' ?", "if (false) throw httpError(429, cls === 'up' ?"], GRD],
   ['X10', J, 'a place is never given back', ["s.site--; s.by.delete(kl); s.by.delete(ka);", ""], GRD],
-  ['X11', J, 'a sender that goes away keeps its place until the deadline', ["req.on('data', onData); req.on('end', onEnd); req.on('error', onError); req.on('close', onClose);", "req.on('data', onData); req.on('end', onEnd);"], GRD],
+  ['X11', B, 'a sender that goes away keeps its place until the deadline', ["req.on('data', onData); req.on('end', onEnd); req.on('error', onError); req.on('close', onClose);", "req.on('data', onData); req.on('end', onEnd);"], GRD],
   ['X12', J, 'a body that announces far more than a route takes is read', ["if (Number.isFinite(declared) && declared > cap) throw httpError(413,", "if (false) throw httpError(413,"], GRD],
   ['X13', J, 'a result is read with no place taken for it', ["const slot = takeBodySlot('res', rec.ownerId, addrKey(deps.clientIp(req) || 'unknown'));", "const slot = () => {};"], GRD],
   /* ---- what the site reads for scores ---- */
   ['X14', J, 'a claim starts the count of page reads again', ["job.claimedAt = t; job.beatAt = t; job.progress = { stage: 'claimed', pct: 0 }; job.notBefore = 0;\n", "job.claimedAt = t; job.beatAt = t; job.progress = { stage: 'claimed', pct: 0 }; job.notBefore = 0; job.pageReads = 0;\n"], GRD],
   ['X15', J, 'a score has the attempts of a conversion (three)', ["const maxAttemptsOf = j => (j.kind === 'omr' ? L.OMR_MAX_ATTEMPTS : L.MAX_ATTEMPTS);", "const maxAttemptsOf = j => L.MAX_ATTEMPTS;"], FLOW],
-  ['X16', J, 'a page is handed out whatever the site\'s budget says', ["if (egressLeft(t0) <= 0) throw httpError(503,", "if (false) throw httpError(503,"], GRD],
-  ['X17', J, 'the pages handed out are not counted against the budget', ["egressAdd(now(), buf.length);", ""], GRD],
-  ['X18', J, 'the budget of the day is not applied (the hour\'s only)', ["const egressLeft = t => Math.min(egress.hour.left(t), egress.day.left(t));", "const egressLeft = t => egress.hour.left(t);"], GRD],
-  ['X19', J, 'a finished score is read out of the database without counting', ["egressAdd(tr, job.bytes || 0);", ""], GRD],
-  ['X20', J, 'a score the budget could not send once is taken', ["if (egressLeft(t) < checked.bytes || ingressLeft(t) < checked.bytes) { release(); throw httpError(503,", "if (false) { release(); throw httpError(503,"], GRD],
+  ['X16', J, 'a page is handed out whatever the budgets say', ["{ const why = budgetWhy('out', t0, link, 1); if (why) throw budgetError(why, 'out', t0, link, 1); }", "{ }"], GRD],
+  ['X17', J, 'the pages handed out are not counted against the budget', ["budgetAdd('out', now(), link, buf.length);", ""], GRD],
+  ['X18', J, 'the budget of the day is not applied (the hour\'s only)', ["if (Math.min(b.hour.left(t), b.day.left(t)) < bytes) return 'site';", "if (b.hour.left(t) < bytes) return 'site';"], GRD],
+  ['X19', J, 'a finished score is read out of the database without counting', ["budgetAdd('out', tr, link, job.bytes || 0);", ""], GRD],
+  ['X20', J, 'a score the budget could not send even once is taken (what the site reads is not looked at when a score is taken)', ["wo = wi ? null : budgetWhy('out', at, link, checked.bytes);", "wo = null;"], GRD],
   ['X21', J, 'a refused read of a page is counted against the job', ["const reads = (job.pageReads | 0) + 1;\n    if (reads >", "job.pageReads = (job.pageReads | 0) + 1;\n    const reads = job.pageReads;\n    if (reads >"], GRD],
   /* ---- a newer score takes the place of the oldest one nobody has taken ---- */
   ['X22', J, 'a newer score never takes the place of a waiting one (a closed tab holds its place for a day)', ["if (!same && (omrPendingOf(link.id) >= L.OMR_PENDING_PER_LINK || now0.filter(pending).length >= PENDING_CAP)) {", "if (false) {"], LIM],
@@ -139,15 +150,17 @@ module.exports = [
   ['X34', S, 'Postgres: the purge does not take the page rows that no job names', ["\"WITH o AS (DELETE FROM ppp_omr_pages p WHERE NOT EXISTS (SELECT 1 FROM ppp_transcribe_jobs j WHERE j.id = p.job_id))\"\n        + \" DELETE FROM ppp_transcribe_jobs WHERE (status", "\"DELETE FROM ppp_transcribe_jobs WHERE (status"], PG],
   ['X35', S, 'Postgres: the boot read does not count the page rows that no job names', ["orphanPages: orphan ? (orphan.n | 0) : 0", "orphanPages: 0"], PG],
   ['X36', J, 'the boot read\'s finding of page rows that no job names is not acted on', ["if ((data.orphanPages | 0) > 0) orphanPagesDue = true;", ""], GRD],
-  ['X38', J, 'what the site accepts is not counted against its budget for what it writes', ["    ingressAdd(t, checked.bytes);          /* what is written for it counts at once (given back below when nothing is written) */\n", ""], GRD],
-  ['X39', J, 'a score that fails to be written keeps its bytes in the budget', ["jobs.delete(job.id); ingressAdd(t, -checked.bytes); release(); throw e; };", "jobs.delete(job.id); release(); throw e; };"], GRD],
-  ['X40', J, 'the budget for what the site writes is never looked at', ["if (egressLeft(t) < checked.bytes || ingressLeft(t) < checked.bytes) {", "if (egressLeft(t) < checked.bytes) {"], GRD],
+  ['X38', J, 'what the site accepts is not counted against its budget for what it writes', ["    budgetAdd('in', t, link, checked.bytes);          /* what is written for it counts at once (given back below when nothing is written) */\n", ""], GRD],
+  ['X39', J, 'a score that fails to be written keeps its bytes in the budget', ["jobs.delete(job.id); budgetUndo('in', t, t, link, checked.bytes); release(); throw e; };", "jobs.delete(job.id); release(); throw e; };"], GRD],
+  ['X40', J, 'the budget for what the site writes is never looked at', ["const wi = budgetWhy('in', at, link, checked.bytes), wo = wi ? null", "const wi = null, wo = wi ? null"], GRD],
   ['X37', S, 'the file store: its purge leaves page files no job names', ["dropPages(orphanIds(d, pageCounts()));          /* (and the page files that no job names: the same turn) */", ""], GRD],
 
   /* ---- the page: whose PC ---- */
   ['G16', PAGE, 'the first send of a score\'s pages to a link this device did not make is not asked', ["if (!PcLink.trusted()) {\n      const answer = await Import.pcAskSend(", "if (false) {\n      const answer = await Import.pcAskSend("], PG_PAGE],
   ['G17', PAGE, 'a link made on this device is not remembered as its own (it is asked about its own link)', ["PcLink.set(r.clientCode, { trusted: true });", "PcLink.set(r.clientCode);"], PG_PAGE],
-  ['G18', PAGE, 'every pairing link is trusted (the zero-tap adoption sends page images at once)', ["{ trusted: !!(local && PcLocal.desktop()) }", "{ trusted: true }"], PG_PAGE],
+  ['G18', PAGE, 'a pairing link that says "&local=1" is trusted with page images (an attacker\'s link says it too: the address is not a proof)', ["if (!PcLink.set(code)) return this.pairNote(", "if (!PcLink.set(code, { trusted: !!(local && PcLocal.desktop()) })) return this.pairNote("], PG_PAGE],
+  ['G24', PAGE, 'every pairing link is trusted (the zero-tap adoption sends page images at once)', ["if (!PcLink.set(code)) return this.pairNote(", "if (!PcLink.set(code, { trusted: true })) return this.pairNote("], PG_PAGE],
+  ['G25', PAGE, 'a refusal for the site\'s budget or a share is shown as the general "could not take the pages"', ["      if (c === 'budget') return tx('The site is taking in as many scores as it may for now.');\n", ""], PG_PAGE],
   ['G19', PAGE, 'the answer "send" is not remembered: the person is asked at every score', ["      PcLink.trust();\n", ""], PG_PAGE],
   ['G20', PAGE, 'a job gone from the site (404) is drafted as a second copy, as before', ["if (e.status === 404) throw importError('pc-gone',", "if (false) throw importError('pc-gone',"], PG_PAGE],
   ['G21', PAGE, 'a job whose notes are gone (410) is waited for for ever', ["if (e.status === 410) throw fail(tx('The notes of this score are no longer kept on the site.'), e);", ""], PG_PAGE],

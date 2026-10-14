@@ -11,8 +11,8 @@
        a PC that is not on (the hint appears)
      - the pages that are sent: a big photo is re-encoded (JPEG) to fit 1.5 MB and 3500 px, a job of more than 12 pages asks for "large", the PNG of a clean page goes as it is
      - WHOSE PC: a link this device did not make (adopted from an address - the zero-tap pairing - or typed) is not sent a score's page images until the person says so once: the question
-       names the PC (the last six characters of its link), nothing is uploaded before "Send the pages", "Use the draft instead" uploads nothing; a link made here, or the PC's own pairing
-       link (&local=1), sends without asking
+       names the PC (the last six characters of its link), nothing is uploaded before "Send to that PC", "Use the draft instead" uploads nothing; only a link made on this device sends
+       without asking - NOT a pairing link with "&local=1" (the second review reproduced that an attacker's URL set trust through it: it is in the address, so anybody can write it)
      - the wait ends: the job gone from the site (404: another tab took it) is said so and not drafted; "notes no longer kept" (410) falls back instead of waiting for ever
      - the file is re-drawn: a PNG with a 100 KB zTXt chunk spliced in comes out of the page's own import as a canvas's PNG, with none of the file's chunks
      - Korean: the screen, the button and the line in the review
@@ -194,7 +194,7 @@ async function claimSoon(A, ms) {
       await chooseFile(p, PNG);
       const posted = await waitFor(p, () => true, null, 100) && await waitFor(p, () => (window.PPP.app.state.stageLog || []).some(x => /Waiting for your PC/.test(x.label)), null, 30000);
       ok('the screen says it is waiting for the PC (a stage that really is happening), and the "Use the draft instead" button is there', posted && (await has(p, '[data-pc-omr-draft]')) && (await text(p, '[data-pc-omr-draft]')) === 'Use the draft instead', JSON.stringify(await stages(p)));
-      ok('a link this device holds as its own sends without asking: no question was shown ("Send the pages" is not on the screen)', !(await has(p, '[data-pc-omr-send]')) && !(await stages(p)).some(l => /Send the pages of this score/.test(l)));
+      ok('a link this device holds as its own sends without asking: no question was shown ("Send to that PC" is not on the screen)', !(await has(p, '[data-pc-omr-send]')) && !(await stages(p)).some(l => /Send the pictures of this score/.test(l)));
       const post = p.__rec.bodies.find(b => b.path === '/api/jobs/omr');
       const body = post && JSON.parse(post.body);
       ok('one POST /api/jobs/omr: the file name without its extension as the title, one page that is the fixture\'s PNG as it is (it fits), nothing else', body && body.title === 'piano-clean' && body.pages.length === 1
@@ -366,9 +366,12 @@ async function claimSoon(A, ms) {
       await chooseFile(p, PNG);
       const asked = await waitFor(p, () => !!document.querySelector('[data-pc-omr-send]'), null, 30000);
       await sleep(1500);
-      const lab = (await stages(p)).find(l => /Send the pages of this score/.test(l)) || '';
-      ok('the question is on the screen: "Send the pages of this score to the PC ending in <tag>?" with the link\'s own name, a "Send the pages" button and "Use the draft instead"', !!asked && lab === 'Send the pages of this score to the PC ending in ' + tag + '?'
-        && (await text(p, '[data-pc-omr-send]')) === 'Send the pages' && (await text(p, '[data-pc-omr-draft]')) === 'Use the draft instead', JSON.stringify({ asked: asked, lab: lab, tag: tag }));
+      const lab = (await stages(p)).find(l => /Send the pictures of this score/.test(l)) || '';
+      ok('the question is on the screen: "Send the pictures of this score to the PC marked "<tag>"? Make sure it is your own computer." with the link\'s own name, a "Send to that PC" button and "Use the draft instead"',
+        !!asked && lab === 'Send the pictures of this score to the PC marked "' + tag + '"? Make sure it is your own computer.'
+        && (await text(p, '[data-pc-omr-send]')) === 'Send to that PC' && (await text(p, '[data-pc-omr-draft]')) === 'Use the draft instead', JSON.stringify({ asked: asked, lab: lab, tag: tag }));
+      ok('and it says where the person\'s own mark is, what to do if the link came from someone else, and how long the pictures stay',
+        (await state(p, 'importHints')).join(' ') === 'Your own PC\'s mark is shown in Settings. If someone else gave you the link, choose "Use the draft instead". The pictures wait on the site only until that PC takes them, then they are deleted.', JSON.stringify(await state(p, 'importHints')));
       ok('and NOTHING was uploaded before the answer: no POST to /api/jobs/omr, nothing queued for that PC, no page encoded into a request', !p.__rec.posts.some(x => /\/api\/jobs\/omr/.test(x.path)) && (await W.claim(A)) === null);
       /* "Use the draft instead" at the question: nothing is sent, the draft is made, the review says why, and the link is still not trusted */
       await p.evaluate(() => document.querySelector('[data-pc-omr-draft]').click());
@@ -376,13 +379,13 @@ async function claimSoon(A, ms) {
       const repD = await state(p, 'importReport');
       ok('"Use the draft instead": the draft, with the line "You chose the draft", and still nothing uploaded, still not trusted', repD && repD.issues.some(i => i.kind === 'pc-omr-fallback' && /You chose the draft/.test(i.message))
         && !p.__rec.posts.some(x => /\/api\/jobs\/omr/.test(x.path)) && (await record(p)).trusted === undefined, JSON.stringify(repD && repD.issues).slice(0, 200));
-      /* the same import again: asked again; "Send the pages" sends, and the link is trusted from then on */
+      /* the same import again: asked again; "Send to that PC" sends, and the link is trusted from then on */
       await goAdd(p);
       await chooseFile(p, PNG);
       await waitFor(p, () => !!document.querySelector('[data-pc-omr-send]'), null, 30000);
       await p.evaluate(() => document.querySelector('[data-pc-omr-send]').click());
       const job = await claimSoon(A);
-      ok('"Send the pages": now the pages go (one POST /api/jobs/omr), the PC finds the score, and the link is recorded as trusted on this device', !!job && job.kind === 'omr' && p.__rec.posts.filter(x => /\/api\/jobs\/omr$/.test(x.path)).length === 1 && (await record(p)).trusted === true, JSON.stringify({ job: job, rec: await record(p) }).slice(0, 200));
+      ok('"Send to that PC": now the pages go (one POST /api/jobs/omr), the PC finds the score, and the link is recorded as trusted on this device', !!job && job.kind === 'omr' && p.__rec.posts.filter(x => /\/api\/jobs\/omr$/.test(x.path)).length === 1 && (await record(p)).trusted === true, JSON.stringify({ job: job, rec: await record(p) }).slice(0, 200));
       ok('(the stage rows go on: the question is gone, "Waiting for your PC" is there)', !(await has(p, '[data-pc-omr-send]')) && await waitFor(p, () => (window.PPP.app.state.stageLog || []).some(x => /Waiting for your PC|reading page/.test(x.label)), null, 15000));
       await W.done(A, job.id, 1);
       await waitFor(p, () => window.PPP.app.state.screen === 'review', null, 60000);
@@ -397,17 +400,23 @@ async function claimSoon(A, ms) {
       ok('no page or console error', clean(p), errs(p));
       await p.close();
     }
-    {
-      /* the PC's own pairing link: worker.js --pair opens /#pc=<code>&local=1 in the PC's browser - that device IS the person's PC */
+    for (const variant of ['#pc=CODE&local=1', '#pc=CODE&local=1&utm=x']) {
+      /* the second review's N3, reproduced in a fresh Chromium: a link an ATTACKER sends can carry "&local=1" - it is in the address, which anybody can write - and it made the record
+         trusted, so the next import uploaded its pages at once. "&local=1" is the PC's own pairing link (worker.js --pair) but it cannot be told from the attacker's: it must not be trust. */
       const A = await mkLink(srv, 'able');
-      const p = await openPage(browser, srv, { omr: 'v2', hash: '#pc=' + A.code + '&local=1', pollMs: 300 });
+      const p = await openPage(browser, srv, { omr: 'v2', hash: variant.replace('CODE', A.code), pollMs: 300 });
       await waitFor(p, k => { try { return !!JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return false; } }, KEY, 15000);
       const rec = await record(p);
-      ok('a pairing link with &local=1 (the PC\'s own browser) is recorded as trusted', rec && rec.code === A.code && rec.trusted === true, JSON.stringify(rec && { trusted: rec.trusted }));
+      ok(variant.replace('CODE', 'xxxx') + ' (an attacker\'s link, a fresh profile): adopted, and the record is NOT trusted', rec && rec.code === A.code && rec.trusted === undefined, JSON.stringify(rec && { trusted: rec.trusted }));
+      ok('(what "&local=1" still does: the "this is the PC" flag, which only makes the page ask the browser to start the person\'s OWN worker - a launch with no data - from a click)', (await p.evaluate(() => localStorage.getItem('ppp.pclocal.v1'))) === '1');
       await goAdd(p);
       await chooseFile(p, PNG);
-      const posted = await waitFor(p, () => (window.PPP.app.state.stageLog || []).some(x => /Waiting for your PC|Sending/.test(x.label)), null, 30000);
-      ok('and its first score is sent without a question', !!posted && !(await has(p, '[data-pc-omr-send]')) && p.__rec.posts.some(x => /\/api\/jobs\/omr$/.test(x.path)));
+      const asked = await waitFor(p, () => !!document.querySelector('[data-pc-omr-send]'), null, 30000);
+      await sleep(1500);
+      ok('the question appears, and NOTHING was POSTed to /api/jobs/omr, queued for that PC, or sent to the site about it before the answer', !!asked && !p.__rec.posts.some(x => /\/api\/jobs\/omr/.test(x.path)) && (await W.claim(A)) === null, JSON.stringify({ asked: asked, posts: p.__rec.posts.map(x => x.path) }));
+      await p.evaluate(() => document.querySelector('[data-pc-omr-draft]').click());
+      await waitFor(p, () => window.PPP.app.state.screen === 'review' || window.PPP.app.state.analysis === 'error', null, 60000);
+      ok('"Use the draft instead": still nothing uploaded, still not trusted', !p.__rec.posts.some(x => /\/api\/jobs\/omr/.test(x.path)) && (await record(p)).trusted === undefined);
       await p.close();
     }
     {
@@ -451,6 +460,29 @@ async function claimSoon(A, ms) {
         await sleep(300);
         const back = await record(p);
         ok('Disconnect: the old link is back and is ' + (wasTrusted ? 'still trusted' : 'still NOT trusted (the undo does not make a link its own)'), back && back.code === A.code && (back.trusted === true) === wasTrusted, JSON.stringify(back && { code: back.code === A.code, trusted: back.trusted }));
+        await p.close();
+      }
+    }
+
+    {
+      /* the site's own refusals for its budgets are said in words (not as "the site could not take the pages") and fall back to the draft */
+      for (const [code, status, want] of [['budget', 503, /taking in as many scores as it may for now/], ['share', 429, /This device or network has sent as many scores/]]) {
+        const A = await mkLink(srv, 'able');
+        const p = await openPage(browser, srv, { omr: 'v2', store: storeOf(A.code), pollMs: 300 });
+        await p.evaluate((c, st) => {
+          const real = window.fetch.bind(window);
+          window.fetch = (u, o) => {
+            if (/\/api\/jobs\/omr$/.test(String(u)) && o && o.method === 'POST') {
+              return Promise.resolve(new Response(JSON.stringify({ error: 'x', code: c }), { status: st, headers: { 'Content-Type': 'application/json', 'Retry-After': '600' } }));
+            }
+            return real(u, o);
+          };
+        }, code, status);
+        await goAdd(p);
+        await chooseFile(p, PNG);
+        await waitFor(p, () => window.PPP.app.state.screen === 'review' || window.PPP.app.state.analysis === 'error', null, 60000);
+        const rep0 = await state(p, 'importReport');
+        ok('the site says ' + status + ' "' + code + '": the review says it in words and the draft is made', rep0 && rep0.issues.some(i => i.kind === 'pc-omr-fallback' && want.test(i.message)), JSON.stringify(rep0 && rep0.issues).slice(0, 220));
         await p.close();
       }
     }
@@ -528,9 +560,12 @@ async function claimSoon(A, ms) {
       await chooseFile(q, PNG);
       await waitFor(q, () => !!document.querySelector('[data-pc-omr-send]'), null, 30000);
       const labs = await stages(q);
-      ok('the question is in Korean, in the polite form, with the PC\'s name: "' + ko['Send the pages of this score to the PC ending in {{tag}}?'].replace('{{tag}}', tagB) + '", and the buttons "' + ko['Send the pages'] + '" and "' + ko['Use the draft instead'] + '"',
-        labs.some(l => l === ko['Send the pages of this score to the PC ending in {{tag}}?'].replace('{{tag}}', tagB)) && (await text(q, '[data-pc-omr-send]')) === ko['Send the pages'] && (await text(q, '[data-pc-omr-draft]')) === ko['Use the draft instead']
-        && (await state(q, 'importHints')).join(' ') === ko['The pages wait on the site only until that PC takes them, and are deleted after.'], JSON.stringify(labs));
+      const KQ = 'Send the pictures of this score to the PC marked "{{tag}}"? Make sure it is your own computer.';
+      const KH = 'Your own PC\'s mark is shown in Settings. If someone else gave you the link, choose "Use the draft instead". The pictures wait on the site only until that PC takes them, then they are deleted.';
+      ok('the question is in Korean, in the polite form, with the PC\'s mark: "' + ko[KQ].replace('{{tag}}', tagB) + '", and the buttons "' + ko['Send to that PC'] + '" and "' + ko['Use the draft instead'] + '"',
+        labs.some(l => l === ko[KQ].replace('{{tag}}', tagB)) && (await text(q, '[data-pc-omr-send]')) === ko['Send to that PC'] && (await text(q, '[data-pc-omr-draft]')) === ko['Use the draft instead']
+        && (await state(q, 'importHints')).join(' ') === ko[KH], JSON.stringify(labs));
+      ok('(and it is a plain question a layperson can answer: it says "그 PC" is marked, asks whether it is their own computer, and says what to do with a link from someone else)', /내 컴퓨터가 맞는지/.test(ko[KQ]) && /다른 사람에게 받은 연결 링크/.test(ko[KH]) && /설정/.test(ko[KH]));
       await q.close();
     }
     ok('(' + pageCount + ' pages opened)', true);

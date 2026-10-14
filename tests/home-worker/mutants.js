@@ -14,7 +14,7 @@ const { spawn } = require('child_process');
 const REPO = path.resolve(__dirname, '..', '..');
 /* (catalog/shared-seeds.json: the server.js copy is run for real by the Postgres test, and its seed library is read from beside it) */
 const PAGE = 'Piano Coach App.dc.html';
-const FILES = [PAGE, 'home-jobs.js', 'home-result.js', 'home-omr.js', 'home-jobs-store.js', 'server.js', 'share-guest.js', 'tools/home-worker/worker.js', 'review/h10/helper-heard.js', 'catalog/shared-seeds.json', 'omr/engine.js', 'omr/helper-output.js', 'i18n/ko-KR.json',
+const FILES = [PAGE, 'home-jobs.js', 'home-result.js', 'home-omr.js', 'body-reader.js', 'home-jobs-store.js', 'server.js', 'share-guest.js', 'tools/home-worker/worker.js', 'review/h10/helper-heard.js', 'catalog/shared-seeds.json', 'omr/engine.js', 'omr/helper-output.js', 'i18n/ko-KR.json',
   /* what server.js requires at its top (G13-4/G13-5 added these: a copy of server.js without them does not start) */
   'static-allow.js', 'static-assets.js', 'signup-limit.js', 'server-stats.js'];
 const OMR_TESTS = ['omr-jobs.test.js', 'omr-limits.test.js', 'omr-flow.test.js', 'omr-guard.test.js', 'omr-worker.test.js'], OMR_PG = 'omr-jobs-pg.test.js', OMR_PAGE = 'omr-page.test.js';
