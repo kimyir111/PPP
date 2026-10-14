@@ -7,6 +7,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const { REPO, SG, E, corpusGraphs, goldenGraphs, g3aGraphs, graphOf } = require('./helpers.js');
+const { budget } = require('../timing.js');
 
 const proBeam = require(path.join(REPO, 'scoregraph', 'pro-beam.js'));
 const R = SG.rational;
@@ -400,5 +401,6 @@ test('B1: a plan of the longest corpus score takes well under the budget', async
     E.plan(g);
     ms = Math.min(ms, Number(process.hrtime.bigint() - t0) / 1e6);
   }
-  assert.ok(ms < 60, ms.toFixed(1) + ' ms (budget B1 60 ms)');
+  /* the fastest of five was 83.9 ms on a busy CI runner (2026-10-14, main push): the budget goes through budget(), 2x under CI (tests/timing.js) */
+  assert.ok(ms < budget(60), ms.toFixed(1) + ' ms (budget B1 ' + budget(60) + ' ms)');
 });
