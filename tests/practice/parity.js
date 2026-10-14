@@ -137,6 +137,25 @@ async function parityInPage(items, opts) {
       }
       const whole = ranges[0];
 
+      /* the old plan's ties that cross a bar line, as the rule table reads them (the tie at a jump): the tied-to note and the note it is tied from, by place */
+      const ties = (() => {
+        const ends = [], sources = [];
+        const midiOf = n => (n.soundingMidi != null ? n.soundingMidi : n.midi);
+        const place = n => n.m + '|' + midiOf(n) + '|' + (n.hand == null ? '' : String(n.hand)) + '|' + C.r6(n.abs);
+        const at = new Map();
+        score.notes.forEach(n => { if (!n.rest && n.tieStop) at.set(n.midi + '@' + n.abs.toFixed(3), n); });
+        score.notes.forEach(n => {
+          if (n.rest || !n.tieStart) return;
+          const e = at.get(n.midi + '@' + (n.abs + n.dur).toFixed(3));
+          if (!e || e === n || !whole.Lp.cont.has(e)) return;
+          const a = Score.measure(score, n.m).index, b = Score.measure(score, e.m).index;
+          if (a === b) return;
+          ends.push({ place: place(e), bar: b, from: a, note: e });
+          sources.push({ place: place(n), to: b });
+        });
+        return { ends: ends, sources: sources };
+      })();
+
       /* ---- plan: bit for bit ---- */
       for (const r of ranges) {
         const at = '[' + r.from + '..' + r.to + ']';
@@ -211,9 +230,9 @@ async function parityInPage(items, opts) {
         const at = '[' + r.from + '..' + r.to + ']';
         if (J(r.dA) === J(r.dN)) continue;                                  /* no fix acted in this range */
         const Nj = PLAN.build(g, optsFor(r, { jumps: 'once' })), Ng = PLAN.build(g, optsFor(r, { graces: 'play' }));
-        const exA = X.explainPlan(r.dL, r.dA, { allow: { JUMP: true, GRACE: true }, graceMeasures: graceMeasures });
-        const exJ = X.explainPlan(r.dL, X.dumpOf(Nj), { allow: { JUMP: true }, graceMeasures: graceMeasures });
-        const exG = X.explainPlan(r.dL, X.dumpOf(Ng), { allow: { GRACE: true }, graceMeasures: graceMeasures });
+        const exA = X.explainPlan(r.dL, r.dA, { allow: { JUMP: true, GRACE: true }, graceMeasures: graceMeasures, ties: ties });
+        const exJ = X.explainPlan(r.dL, X.dumpOf(Nj), { allow: { JUMP: true }, graceMeasures: graceMeasures, ties: ties });
+        const exG = X.explainPlan(r.dL, X.dumpOf(Ng), { allow: { GRACE: true }, graceMeasures: graceMeasures, ties: ties });
         unexplained('plan ' + at + ' (all fixes)', exA.unexplained);
         unexplained('plan ' + at + ' (jumps alone)', exJ.unexplained);
         unexplained('plan ' + at + ' (graces alone)', exG.unexplained);
@@ -223,14 +242,12 @@ async function parityInPage(items, opts) {
           rec.c.jf = exJ.jump.turned;
           rec.c.jv = exJ.jump.visitsAdded;
           rec.c.js = exJ.jump.strikes;
-          /* not a cause but a limit of JUMP worth counting: a tie is kept or broken by the NOTE, not by the visit, so a bar that the way back reaches from another bar than the one
-             before it on the page (the segno after the D.S., the coda after the To Coda) starts with its tied-to notes silent */
-          const na = r.Na;
-          rec.c.jt = na.visits.reduce((n, v, j) => {
-            const prev = na.visits[j - 1];
-            if (!v.leg || (prev && prev.leg && v.index === prev.index + 1)) return n;
-            return n + na.written.filter(w => !w.rest && w.hand !== 'x' && w.tieStop && na.cont.has(w.head) && Math.abs(w.abs - v.startQ) < 1e-9).length;
-          }, 0);
+          /* the tie at a jump (G11a-4): a bar that the way back reaches from another bar than the one before it on the page (the segno after the D.S., the coda after the To Coda)
+             starts with its tied-to notes STRUCK (jr) - the old plan left them silent and G11a-2 counted them as `silentTies`; the note before the sign is released at its own
+             length (jc). A tied-to note that is still silent there (jt) is a failure, and is also reported as unexplained. */
+          rec.c.jt = exJ.tie.silent;
+          rec.c.jr = exJ.tie.struck;
+          rec.c.jc = exJ.tie.cut;
           rec.c.gs = exG.grace.strikes;
           rec.c.gm = exG.grace.moved;
           rec.c.gc = exG.grace.cut;
@@ -278,7 +295,11 @@ async function parityInPage(items, opts) {
           .map(n => [C.r6(n.abs), n.m, n.midi, n.hand === 'l' ? 'l' : 'r']);
       };
       /* the oracle for a play order that repeats: the app's own followGates, once per stretch, in order */
-      const stretches = (dump) => X.runsOf(dump).map(run => ({ from: nOf(run.first), to: nOf(run.last), ok: Score.measure(score, nOf(run.first)).index === run.first && Score.measure(score, nOf(run.last)).index === run.last }));
+      const stretches = (dump) => X.runsOf(dump).map(run => ({ from: nOf(run.first), to: nOf(run.last), first: run.first, arrival: run.arrival, ok: Score.measure(score, nOf(run.first)).index === run.first && Score.measure(score, nOf(run.last)).index === run.last }));
+      /* the notes the clock strikes again at the arrival of a jump (the tie at a jump) that follow mode must ask: tied from a bar the way back did not come from */
+      const arrivals = (runs, h) => [].concat(...runs.map((x, xi) => (!x.arrival ? [] : ties.ends
+        .filter(e => e.bar === x.first && e.from !== (xi ? runs[xi - 1].last : -1) && proto.handOk(e.note, h))
+        .map(e => [C.r6(e.note.abs), e.note.m, e.note.midi, e.note.hand === 'l' ? 'l' : 'r']))));
       for (const r of ranges) {
         const at = '[' + r.from + '..' + r.to + ']';
         const runsN = stretches(r.dN), runsA = stretches(r.dA);
@@ -313,7 +334,7 @@ async function parityInPage(items, opts) {
           const O3 = oracle(runsA);
           if (O3) {
             const G3 = C.gatesOf(PLAN.followGates(r.Na, h, { repeats: true, ties: true }));
-            const d3 = [].concat(...runsA.map(x => dangling(r.Lp.cont, x.from, x.to, h)));
+            const d3 = [].concat(...runsA.map(x => dangling(r.Lp.cont, x.from, x.to, h)), arrivals(runsA, h));
             const e3 = X.explainGatesTies(O3, G3, d3);
             unexplained('gates ' + at + ' ' + h + ' (repeats and ties, every fix on)', e3.unexplained);
           }
@@ -463,7 +484,7 @@ async function runAll(page, list, opts, spyList, onBatch) {
 }
 
 /* ---- the report and the baseline ---- */
-const CKEYS = ['jf', 'jv', 'js', 'jt', 'ge', 'gs', 'gm', 'gc', 'fr', 'ft'];
+const CKEYS = ['jf', 'jv', 'js', 'jt', 'jr', 'jc', 'ge', 'gs', 'gm', 'gc', 'fr', 'ft'];
 const SUMKEYS = ['ranges', 'strikes', 'ids', 'helpers', 'begin', 'matcher', 'gates', 'matcherFix', 'rangesJump', 'rangesGrace', 'rangesRepeat', 'rangesTie', 'oracleless'];
 
 function totalsOf(recs) {
@@ -472,7 +493,7 @@ function totalsOf(recs) {
   SUMKEYS.forEach(k => { t[k] = ok.reduce((a, r) => a + (r.k[k] || 0), 0); });
   t.causes = {
     JUMP: { files: ok.filter(r => r.c.jf).length, visits: ok.reduce((a, r) => a + (r.c.jv || 0), 0), strikes: ok.reduce((a, r) => a + (r.c.js || 0), 0),
-      silentTies: ok.reduce((a, r) => a + (r.c.jt || 0), 0) },
+      silentTies: ok.reduce((a, r) => a + (r.c.jt || 0), 0), tieStruck: ok.reduce((a, r) => a + (r.c.jr || 0), 0), tieCut: ok.reduce((a, r) => a + (r.c.jc || 0), 0) },
     GRACE: { files: ok.filter(r => r.c.gs).length, events: ok.reduce((a, r) => a + (r.c.ge || 0), 0), strikes: ok.reduce((a, r) => a + (r.c.gs || 0), 0),
       moved: ok.reduce((a, r) => a + (r.c.gm || 0), 0), cut: ok.reduce((a, r) => a + (r.c.gc || 0), 0) },
     FOLLOW_REPEAT: { files: ok.filter(r => r.c.fr).length, gates: ok.reduce((a, r) => a + (r.c.fr || 0), 0) },
@@ -684,7 +705,7 @@ function printSummary(report, nFiles, secs, args) {
   console.log('parity' + (nFiles ? ': ' + nFiles + ' files in ' + secs.toFixed(1) + ' s' + (args && args.sample ? ' (sample ' + args.sample + ')' : args && args.shard ? ' (shard ' + args.shard.join('/') + ')' : '') : ''));
   Object.keys(report.sets).forEach(k => line(k, report.sets[k]));
   line('quarantined', report.quarantined);
-  const all = { JUMP: { files: 0, visits: 0, strikes: 0, silentTies: 0 }, GRACE: { files: 0, events: 0, strikes: 0, moved: 0, cut: 0 }, FOLLOW_REPEAT: { files: 0, gates: 0 }, FOLLOW_TIE: { files: 0, notes: 0 } };
+  const all = { JUMP: { files: 0, visits: 0, strikes: 0, silentTies: 0, tieStruck: 0, tieCut: 0 }, GRACE: { files: 0, events: 0, strikes: 0, moved: 0, cut: 0 }, FOLLOW_REPEAT: { files: 0, gates: 0 }, FOLLOW_TIE: { files: 0, notes: 0 } };
   [...Object.values(report.sets), report.quarantined].forEach(t => CAUSES.forEach(c => Object.keys(all[c]).forEach(f => { all[c][f] += t.causes[c][f]; })));
   CAUSES.forEach(c => console.log('  ' + c.padEnd(14) + JSON.stringify(all[c])));
   console.log('  scheduler spies: ' + report.spies.files + ' files, ' + report.spies.runs + ' runs, ' + report.spies.events + ' queued events');

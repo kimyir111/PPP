@@ -3609,15 +3609,18 @@ const PianoScore = {
    'legacy' is the player the app has always had: practicePlan() below IS PianoScore.of (the same call, the same cache, the same object), the page asks for nothing of practice/ and
    nothing else changes. 'graph' makes the plan from the ScoreGraph the renderer already resolves for the song (practice/plan.js, loaded only then, the first time it is asked for) and
    hands the player, the matcher, the falling notes and follow mode the SAME shape of plan PianoScore.build makes, with the graph's ids on it (ev, head on a strike, id on a visit).
-   In this phase the plan runs in compat mode (every fix option off: the play order, the notes, the pedal, the beats are the legacy player's to the last bit, proved event by event by
-   tests/practice/parity.js), so 'graph' must look and sound exactly like 'legacy'; the fix options (jumps, graces, follow mode repeats and ties) are not reachable from the page (G11a-4).
+   G11a-3 ran the plan in compat mode (every fix option off: the play order, the notes, the pedal, the beats are the legacy player's to the last bit, proved event by event by
+   tests/practice/parity.js). G11a-4 turns the four fixes ON under 'graph' (the user's decisions U2 and U3, 2026-10-13): D.C. / D.S. / Fine / To Coda are played (once, as an engraver reads them),
+   grace notes sound and are drawn but are never asked of the matcher (they are not in `expected`), follow mode asks a repeated bar as often as Play plays it, and asks exactly the notes Play
+   strikes (a tie that leads nowhere is asked). PPP.practiceFix ('on' default | 'off' | a list such as 'jumps,ties') takes any of them away again, for that device (?practiceFix= for that visit);
+   it is read only under 'graph', and 'legacy' is untouched. The tie at a jump is the plan's rule (docs/GOALS/G11 section 10.5).
    A song whose graph does not state its music (the source is not resolved yet, its link is not ok, or the module is not here yet) keeps the legacy plan, and the fallback is counted
    (PPP.practiceStats.practiceFallback: total, by reason, by song); nothing throws and playback is never held up.
    The choice is remembered on this device (localStorage 'ppp.practice.v1'); ?practice=graph or ?practice=legacy in the address is for that visit only. */
 const PRACTICE_KEY = 'ppp.practice.v1';
 const PRACTICE_DEFAULT = 'legacy';
 const PRACTICE_PLAN_SCRIPT = 'practice/plan.js';
-const PRACTICE_FILE_V = 1; /* the ?v= of practice/plan.js: bump it when the file changes */
+const PRACTICE_FILE_V = 3; /* the ?v= of practice/plan.js: bump it when the file changes */
 function practiceChoice(v) { return v === 'legacy' || v === 'graph' ? v : null; }
 let PRACTICE_MODE = (() => {
   let m = PRACTICE_DEFAULT;
@@ -3633,8 +3636,34 @@ function setPracticeMode(v) {
   if (c === 'graph') loadPracticeModule();
   return PRACTICE_MODE;
 }
-/* what 'graph' did: plans made from a graph, and the plans that stayed legacy, by reason and by song (the id of the Score, like PPP.engraveStats.bySong) */
-const PRACTICE_STATS = { graph: 0, practiceFallback: { total: 0, reasons: {}, bySong: {} } };
+/* G11a-4: the four fixes under 'graph' (G11-D3): jumps (D.C./D.S./Fine/To Coda followed once), graces (they sound and are drawn, never judged), repeats (follow mode asks a repeated bar each time
+   it is played), ties (follow mode asks what the clock strikes: a tie that leads nowhere is asked). 'on' = all four (the default), 'off' = none (the plan of G11a-3, equal to the legacy
+   player to the bit), or a list of the ones to keep, 'jumps,ties'. Any other value is no choice: the default comes back and the remembered choice is forgotten (PPP.recording's rule).
+   Remembered on this device ('ppp.practiceFix.v1'); ?practiceFix= in the address is for that visit only. Read only while PPP.practice is 'graph'. */
+const PRACTICE_FIX_KEY = 'ppp.practiceFix.v1';
+const PRACTICE_FIX_NAMES = ['jumps', 'graces', 'repeats', 'ties'];
+function practiceFixChoice(v) {
+  if (v === 'on') return PRACTICE_FIX_NAMES.slice();
+  if (v === 'off') return [];
+  if (typeof v !== 'string' || !v) return null;
+  const parts = v.split(',');
+  return parts.every(p => PRACTICE_FIX_NAMES.indexOf(p) >= 0) ? PRACTICE_FIX_NAMES.filter(n => parts.indexOf(n) >= 0) : null;
+}
+function practiceFixText(list) { return list.length === PRACTICE_FIX_NAMES.length ? 'on' : list.length === 0 ? 'off' : list.join(','); }
+let PRACTICE_FIX = (() => {
+  let f = PRACTICE_FIX_NAMES.slice();
+  try { f = practiceFixChoice(localStorage.getItem(PRACTICE_FIX_KEY)) || f; } catch (e) { /* no storage: the default */ }
+  try { const u = practiceFixChoice(new URLSearchParams(location.search).get('practiceFix')); if (u) f = u; } catch (e) { /* no address to read */ }
+  return f;
+})();
+function setPracticeFix(v) {
+  const c = practiceFixChoice(v);
+  PRACTICE_FIX = c || PRACTICE_FIX_NAMES.slice();
+  try { if (c) localStorage.setItem(PRACTICE_FIX_KEY, practiceFixText(c)); else localStorage.removeItem(PRACTICE_FIX_KEY); } catch (e) { /* not remembered */ }
+  return practiceFixText(PRACTICE_FIX);
+}
+/* what 'graph' did: plans made from a graph (and how many followed a D.C./D.S./To Coda, and how many hold grace notes), and the plans that stayed legacy, by reason and by song (the id of the Score, like PPP.engraveStats.bySong) */
+const PRACTICE_STATS = { graph: 0, jumps: 0, graces: 0, practiceFallback: { total: 0, reasons: {}, bySong: {} } };
 function practiceCountFallback(score, reason) {
   const f = PRACTICE_STATS.practiceFallback;
   f.total++;
@@ -3712,9 +3741,12 @@ function practiceGraphBuild(score, a, b, src0) {
   let plan;
   try {
     const i0 = (Score.measure(score, a) || ms[0]).index, i1 = (Score.measure(score, b) || ms[ms.length - 1]).index;
-    plan = window.PPPPractice.plan.build(src.graph, { range: { from: i0, to: i1 }, defaultQpm: qpm, legacyCompat: true, jumps: false, graces: false });
+    plan = window.PPPPractice.plan.build(src.graph, { range: { from: i0, to: i1 }, defaultQpm: qpm, legacyCompat: true,
+      jumps: PRACTICE_FIX.indexOf('jumps') >= 0 ? 'once' : false, graces: PRACTICE_FIX.indexOf('graces') >= 0 ? 'play' : false });
     const strikes = plan.strikes;
     for (let i = 0; i < strikes.length; i++) {
+      /* a grace note is not a note of the Score (the importer drops it): its strike keeps the plan's own item for `note` (hand, bar, place), and the matcher never asks it */
+      if (strikes[i].grace) continue;
       const n = heads.get(strikes[i].head);
       if (!n) return { reason: 'IDENTITY' };
       /* The Score puts a note where its measure NUMBER says, the graph where the measure IS: with two measures of one number (1, 2, 2, 3) the Score has both at the later one and the
@@ -3740,7 +3772,7 @@ function practiceGraphPlan(score, from, to) {
   if (!score) return PianoScore.of(score, from, to);
   const a = from == null ? Score.first(score) : from;
   const b = to == null ? Score.last(score) : to;
-  const key = a + ':' + b;
+  const key = a + ':' + b + ':' + PRACTICE_FIX.join(',');
   let bag = PRACTICE_CACHE && PRACTICE_CACHE.get(score);
   const hit = bag && bag[key];
   if (hit && (hit.graph || !(hit.tries < 5 && PRACTICE_RETRY[hit.reason] && hit.stamp !== practiceStamp()))) return hit.plan;
@@ -3749,6 +3781,8 @@ function practiceGraphPlan(score, from, to) {
   let entry;
   if (r.plan) {
     PRACTICE_STATS.graph++;
+    if (r.plan.jumps && r.plan.jumps.length) PRACTICE_STATS.jumps++;
+    if (r.plan.strikes.some(x => x.grace)) PRACTICE_STATS.graces++;
     entry = { plan: r.plan, graph: true };
   } else {
     practiceCountFallback(score, r.reason);
@@ -3847,7 +3881,8 @@ function scoreToVisualTimeline(score, options) {
        deliberately not sounded, so showing it as a falling key would lie. */
     if (source.hand === 'x' || !isFinite(strike.midi)) return;
     const startTime = PianoScore.msAt(plan, strike.q, scale) / 1000;
-    const heldQ = Math.max(0.05, PianoScore.hold(plan, source));
+    /* a graph plan says how long each strike sounds on its own (heldQ: a tie cut at a jump, a note a grace shortened, a grace itself); a legacy plan asks the tie map */
+    const heldQ = strike.heldQ != null ? Math.max(0.05, strike.heldQ) : Math.max(0.05, PianoScore.hold(plan, source));
     const endTime = PianoScore.msAt(plan, strike.q + heldQ, scale) / 1000;
     const mm = Score.measure(score, strike.m);
     const sourceId = source.id != null ? String(source.id)
@@ -3868,6 +3903,7 @@ function scoreToVisualTimeline(score, options) {
       startQ: strike.q,
       endQ: strike.q + heldQ
     });
+    if (strike.grace) notes[notes.length - 1].grace = true;     /* G11a-4: heard, drawn small, never asked */
   });
   notes.sort((a, b) => a.startTime - b.startTime || a.midi - b.midi);
 
@@ -3968,7 +4004,10 @@ function getNoteRect(note, currentTime, geometry, hitLineY, noteAreaHeight, look
   const height = Math.max(5, note.duration * pxPerSecond);
   const bottom = hitLineY - (note.startTime - currentTime) * pxPerSecond;
   const inset = Math.max(1, key.width * 0.1);
-  return { x: key.x + inset, y: bottom - height, width: Math.max(2, key.width - inset * 2), height: height, bottom: bottom };
+  const rect = { x: key.x + inset, y: bottom - height, width: Math.max(2, key.width - inset * 2), height: height, bottom: bottom };
+  /* G11a-4: a grace note is heard, and drawn half as wide as the key (it is never asked) */
+  if (note.grace) { const w = Math.max(2, rect.width * 0.5); rect.x += (rect.width - w) / 2; rect.width = w; }
+  return rect;
 }
 
 /* One per page. Times in are audio-clock seconds; clockOffset() relates them
@@ -6596,6 +6635,7 @@ class PerformanceEngine {
     this.wrong = [];
     this.extras = [];
     this.held = {};
+    this.graces = [];
   }
 
   setScore(score) { this.score = score; }
@@ -6618,7 +6658,9 @@ class PerformanceEngine {
     /* a chord marked to be rolled: every note of it on that staff */
     const rolled = {};
     Score.notesIn(score, from, to).forEach(n => { if (n.arp) rolled[n.m + '|' + n.b + '|' + (n.staff || 1)] = true; });
-    this.expected = (plan.strikes || [])
+    /* G11a-4: a grace note sounds and is drawn, and is never asked (G11 U2: graces are not judged); a plan with none (the legacy plan, most pieces) is read as it was */
+    const graced = plan.graceStrikes > 0;
+    this.expected = (graced ? plan.strikes.filter(s => !s.grace) : (plan.strikes || []))
       .filter(s => this._handOk(s.note, run.hands))
       .map((s, i) => ({
         id: i,
@@ -6637,7 +6679,22 @@ class PerformanceEngine {
         verdict: null,
         closed: false
       }));
+    /* G11a-4: where a grace note sounds, a key pressed is neither a note matched nor a wrong one (graces are heard, not judged; a legacy plan has none) */
+    this.graces = graced ? plan.strikes.filter(s => s.grace && this._handOk(s.note, run.hands))
+      .map(s => ({ midi: s.midi, tMs: run.startedAt + PianoScore.msAt(plan, s.q, scale) - PianoScore.msAt(plan, 0, scale) })) : [];
     return this;
+  }
+
+  /* G11a-4: the visit (its place in plan.visits) of an expected note, worked out on demand (the matcher does not carry it): a bar the plan plays twice is two visits and one bar (mIdx) */
+  visitOf(x) {
+    const plan = this._plan, run = this.run;
+    if (!plan || !run) return -1;
+    if (this._visitIdxFor !== this.expected) {
+      const at = new Map((plan.visits || []).map((v, k) => [v, k]));
+      this._visitIdx = (plan.strikes || []).filter(s => !s.grace && this._handOk(s.note, run.hands)).map(s => (s.visit ? at.get(s.visit) : -1));
+      this._visitIdxFor = this.expected;
+    }
+    return this._visitIdx[x.id];
   }
 
   _handOk(n, hands) {
@@ -6672,6 +6729,13 @@ class PerformanceEngine {
       best.verdict = Math.abs(bestD) <= this.timing.perfect ? 'on' : (bestD < 0 ? 'early' : 'late');
       best.ev = ev;
       return { verdict: best.verdict, expected: best, deltaMs: bestD, midi: ev.midi };
+    }
+
+    /* a grace note of the plan is heard, not judged: pressing it is not a wrong note */
+    if (this.graces.length) {
+      for (let i = 0; i < this.graces.length; i++) {
+        if (this.graces[i].midi === ev.midi && Math.abs(ev.t - this.graces[i].tMs) <= w) return { verdict: 'grace', midi: ev.midi };
+      }
     }
 
     /* The right moment but the wrong key is a wrong note; nowhere near any
@@ -11111,6 +11175,10 @@ window.PPP = {
   set practice(v) { setPracticeMode(v); },
   practicePlan, loadPracticeModule, practiceGraphBuild,
   get practiceStats() { return PRACTICE_STATS; },
+  /* G11a-4: which of the four fixes 'graph' applies: 'on' (default) | 'off' | a list, 'jumps,graces,repeats,ties' or part of it. Any other value is no choice: the default comes back and the
+     remembered choice is forgotten. Remembered on this device; ?practiceFix= in the address is for that visit only. Read only while PPP.practice is 'graph'. */
+  get practiceFix() { return practiceFixText(PRACTICE_FIX); },
+  set practiceFix(v) { setPracticeFix(v); },
   /* G13-1 (G13-D3): true = React came from unpkg (?cdn=1 or the remembered '1'), false (default) = vendor/react-18.3.1/. Read-only truth about THIS load; a new value applies on the next load. Any value but '1' is no choice: the default returns and the remembered choice is forgotten. */
   get cdn() { return window.PPP_CDN === true; },
   set cdn(v) { try { if (v === '1' || v === 1 || v === true) localStorage.setItem('ppp.cdn', '1'); else localStorage.removeItem('ppp.cdn'); } catch (e) { /* not remembered */ } },
@@ -14772,7 +14840,10 @@ class Component extends DCLogic {
     const plan = keep ? tp.plan : practicePlan(S.score, from, to);
     const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);
     const startQ = Score.startQ(S.score, from);
-    const sq = PianoScore.soundAtWritten(plan, beatNow == null ? startQ : beatNow);
+    const sq0 = PianoScore.soundAtWritten(plan, beatNow == null ? startQ : beatNow);
+    /* G11a-4: the matcher begins where the transport began: when a pause was resumed in the second visit of a bar (the way back of a D.C., a repeat) the transport's own start is that visit's, and
+       the first visit's time for the same written place would put every expected note a whole stretch away. Under 'legacy' the transport's start is soundAtWritten of the same beat: the same number. */
+    const sq = keep && tp.b0 != null && Math.abs(PianoScore.writtenAtSound(plan, tp.b0) - (beatNow == null ? startQ : beatNow)) < 1e-6 ? tp.b0 : sq0;
     /* `at` is when beatNow is heard; the transport starts a beat a moment
        ahead so its first notes land whole */
     const run = {
@@ -14823,11 +14894,12 @@ class Component extends DCLogic {
     /* G11a-3: under PPP.practice 'graph' the gates are the graph plan's (practice/plan.js followGates: with every fix option off, today's gates, plus the graph's ids) when this song has one */
     const gp = PRACTICE_MODE === 'graph' ? practicePlan(S.score, from, to) : null;
     const viaGraph = !!(gp && gp.graph && practiceModuleReady());
-    const key = S.score.id + ':' + from + ':' + to + ':' + S.hands + (viaGraph ? ':graph' : '');
+    const key = S.score.id + ':' + from + ':' + to + ':' + S.hands + (viaGraph ? ':graph:' + PRACTICE_FIX.join(',') : '');
     if (this._gatesKey === key && this._gates) return this._gates;
     if (viaGraph) {
       this._gatesKey = key;
-      this._gates = window.PPPPractice.plan.followGates(gp, S.hands);
+      /* G11a-4: FOLLOW_REPEAT (a repeated bar is asked each time the clock plays it) and FOLLOW_TIE (exactly the notes the clock strikes); both off, the gates are today's */
+      this._gates = window.PPPPractice.plan.followGates(gp, S.hands, { repeats: PRACTICE_FIX.indexOf('repeats') >= 0, ties: PRACTICE_FIX.indexOf('ties') >= 0 });
       return this._gates;
     }
     const playAt = {}, restAt = {}, spans = [];
@@ -14983,6 +15055,8 @@ class Component extends DCLogic {
       let ni = gi + 1;
       while (ni < gates.length && (gates[ni].rest || !gates[ni].notes.length)) ni++;
       const ng = gates[ni];
+      /* G11a-4 (F2): a grace note of the rest's place or of the onset that follows it is heard, not judged: the key is neither a wrong note nor a step (Play forgives it the same way) */
+      if ((g.graces && g.graces.indexOf(ev.midi) >= 0) || (ng && ng.graces && ng.graces.indexOf(ev.midi) >= 0 && wantOf(ng).indexOf(ev.midi) < 0)) return;
       if (!ng || wantOf(ng).indexOf(ev.midi) < 0) {
         const t = this.followStat(g.m);
         t.wrong++; t.extra++;
@@ -14999,6 +15073,7 @@ class Component extends DCLogic {
     }
 
     const want = wantOf(g);
+    if (want.indexOf(ev.midi) < 0 && g.graces && g.graces.indexOf(ev.midi) >= 0) return;   /* G11a-4 (F2): a grace note of this onset is heard, not judged */
     if (want.indexOf(ev.midi) < 0) {
       const t = this.followStat(g.m);
       t.wrong++; t.extra++;
@@ -15205,7 +15280,7 @@ class Component extends DCLogic {
     const writtenEnd = Score.endQ(S.score, to);
     let b0 = 0;
     if (b != null && b >= writtenStart - 0.001 && b < writtenEnd - 1e-9)
-      b0 = PianoScore.soundAtWritten(plan, b);
+      b0 = this.soundAt(plan, b);
     this._tp = {
       b0: b0, t0: t0, scale: scale, msQ: 60000 / Math.max(1, S.tempo),
       key: this.transportKey(S),
@@ -15216,6 +15291,7 @@ class Component extends DCLogic {
       plan: plan, from: from, to: to
     };
     this._playAlong = false;
+    this._resume = null;
     if (this.midiOutLive() && this.midiOutIsAlsoIn()) this.midiOutLayer().localOn();
     return t0;
   }
@@ -15226,10 +15302,18 @@ class Component extends DCLogic {
     if (!p || !p.running()) return 60;
     return Math.max(60, Math.min(400, (p.now() + 0.025 - p.clockOffset()) * 1000 - now));
   }
+  /* G11a-4: the sounding place of a written beat. A bar the plan plays twice (a repeat, the way back of a D.C./D.S.) is two places: a pause in the second is resumed there, not in the first
+     (stopTransport keeps where the run was; the next transport, or the falling notes while it waits, asks for it). Under 'legacy' this is PianoScore.soundAtWritten. */
+  soundAt(plan, b) {
+    const r = this._resume;
+    if (PRACTICE_MODE === 'graph' && r && r.plan === plan && Math.abs(PianoScore.writtenAtSound(plan, r.sq) - b) < 1e-6) return r.sq;
+    return PianoScore.soundAtWritten(plan, b);
+  }
   /* Stopping lets go of what is sounding. Reaching the end does not come
      through here, so a last chord rings out as written. */
   stopTransport() {
     if (!this._tp) return;
+    if (PRACTICE_MODE === 'graph' && this._tp.plan) this._resume = { plan: this._tp.plan, sq: this._tp.soundQ != null ? this._tp.soundQ : this._tp.b0 };
     this._tp = null;
     if (this._piano) this._piano.silence();
     if (this.midiOutLive()) this.midiOutLayer().panic(nowMs());
@@ -15466,12 +15550,13 @@ class Component extends DCLogic {
        performance engine scores them, so the simulation stands down. */
     if (this.liveMidi()) return out;
     const [from, to] = this.range(S);
-    const plan = practicePlan(S.score, from, to);
+    /* G11a-4: a run keeps its plan (a PPP.practiceFix changed in the middle of a run changes nothing until the next Play) */
+    const plan = (PRACTICE_MODE === 'graph' && this._tp && this._tp.plan) || practicePlan(S.score, from, to);
     const list = plan.strikes || [];
     for (let i = firstAtOrAfter(list, a, 'q'); i < list.length; i++) {
       const s = list[i];
       if (s.q >= b) break;
-      if (!this.handOk(s.note, this.playHands(S))) continue;
+      if (s.grace || !this.handOk(s.note, this.playHands(S))) continue;
       out.tot++;
       const n = s.note;
       const mb = this._sim ? this.simBucket(n.m) : null;   /* not "b" — that is the span end */
@@ -19301,7 +19386,7 @@ class Component extends DCLogic {
       if (this.looping(S) && total > 0 && elapsed >= total) elapsed = elapsed % total;
       soundQ = PianoScore.qAt(plan, elapsed, transportScale);
     } else {
-      soundQ = PianoScore.soundAtWritten(plan, S.beat || 0);
+      soundQ = this.soundAt(plan, S.beat || 0);
     }
     return {
       currentTime: PianoScore.msAt(plan, soundQ, timeline.scale || 1) / 1000,
@@ -19873,6 +19958,14 @@ class Component extends DCLogic {
     }, h('g', { className: 'ppp-hand-skin', opacity: (100 - set.see) / 100, mask: 'url(#ppp-hand-fade)' }, skin), marks);
   }
 
+  /* a note a tie really carries into, which the clock does not strike (G11a-4: under 'graph' with the follow-tie fix a tie that leads nowhere is a struck note, so it is a hint too; today's rule is
+     "every tied-to note") */
+  carriedFn() {
+    if (PRACTICE_MODE !== 'graph' || PRACTICE_FIX.indexOf('ties') < 0 || !practiceModuleReady()) return n => n.tieStop;
+    const [from, to] = this.range(this.state);
+    const cont = practicePlan(this.state.score, from, to).cont;
+    return n => n.tieStop && cont.has(n);
+  }
   litNotes() {
     const S = this.state;
     /* With a device attached, the lit keys are the ones actually being held. */
@@ -19894,6 +19987,7 @@ class Component extends DCLogic {
       return g ? g.b : null;
     }
     const [from, to] = this.range(S);
+    const carried = this.carriedFn();
     const list = this.notesIn(from, to).filter(n => !n.rest && this.handOk(n, S.hands) && (!hand || n.hand === hand));
     /* During timed playback the score's current note is the guide target. The
        old implementation always searched strictly after the playhead, so the
@@ -19903,7 +19997,7 @@ class Component extends DCLogic {
     const active = list
       .filter(x => S.beat >= x.abs - 1e-6 && S.beat < scoreNoteEnd(x.abs, x.dur) - 1e-6)
       .sort((a, b) => b.abs - a.abs)[0];
-    const n = active || list.find(x => !x.tieStop && x.abs > S.beat + 1e-6);
+    const n = active || list.find(x => !carried(x) && x.abs > S.beat + 1e-6);
     return n ? n.abs : null;
   }
   expected() {
@@ -19914,13 +20008,14 @@ class Component extends DCLogic {
       return g ? g.notes.map(n => n.midi).filter(p => (this._got || []).indexOf(p) < 0) : [];
     }
     const [from, to] = this.range(S), notes = this.notesIn(from, to);
+    const carried = this.carriedFn();
     const hands = S.hands === 'right' ? ['r'] : S.hands === 'left' ? ['l'] : ['l', 'r'];
     const out = [];
     hands.forEach(hand => {
       const at = this.guideOnset(hand);
       if (at == null) return;
       notes.forEach(n => {
-        if (!n.rest && !n.tieStop && n.hand === hand && Math.abs(n.abs - at) < 1e-6 && out.indexOf(n.midi) < 0) out.push(n.midi);
+        if (!n.rest && !carried(n) && n.hand === hand && Math.abs(n.abs - at) < 1e-6 && out.indexOf(n.midi) < 0) out.push(n.midi);
       });
     });
     return out;

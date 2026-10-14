@@ -224,3 +224,42 @@ test('GATES: FOLLOW_REPEAT - the stretches of the play order, and the old functi
   assert.ok(X.explainGatesExact(oracle, wrong).bad > 0);
   assert.ok(X.explainGatesExact(oracle, nu.slice(0, -1)).bad > 0);
 });
+
+/* ---------------------------------------------------------------- the damper at the arrival of a jump (G11a-4, F3) */
+function setupParity(name, options) {
+  const text = require('fs').readFileSync(require('path').join(H.FIX, 'parity', name + '.musicxml'), 'utf8').split(String.fromCharCode(13, 10)).join(String.fromCharCode(10));
+  const g = H.graphOfText(text, name), score = app.scoreOf(g);
+  const first = app.Score.first(score), last = app.Score.last(score);
+  const L = app.PianoScore.build(score, first, last);
+  const N = PLAN.build(g, Object.assign({ defaultQpm: score.tempo }, options || {}));
+  return { g, score, L, N, dL: X.dumpOf(L), dN: X.dumpOf(N), graceMeasures: new Set() };
+}
+test('PLAN: the damper at an arrival - the lift is counted and explained, the strings are released where the damper comes up', () => {
+  const s = setupParity('ds-pedal-over-sign', { jumps: 'once' });
+  const ex = explain(s, null, { JUMP: true });
+  assert.deepEqual(ex.unexplained, []);
+  assert.deepEqual([ex.tie.lifted, ex.tie.ringing, ex.tie.silent], [1, 0, 0]);
+  assert.ok(ex.tie.capped >= 3, 'the strings of bars 2, 3 and 4 that the pedal held: ' + JSON.stringify(ex.tie));
+  /* the way back's own controller events are the written ones: the lift is not among what is compared */
+  assert.ok(s.dN.c.some(e => e[3] === 1 && e[2] === 0), 'the dump marks the lift');
+});
+
+test('PLAN planted: a damper that stays down through the way back, a string that rings into the arrival', () => {
+  const s = setupParity('ds-pedal-over-sign', { jumps: 'once' });
+  /* the lift taken out: the pedal is down as the sign is left and nothing says it comes up */
+  const noLift = clone(s.dN);
+  noLift.c = noLift.c.filter(e => !(e[3] === 1 && e[2] === 0));
+  const a = explain(s, noLift, { JUMP: true });
+  assert.ok(a.bad > 0 && a.unexplained.some(m => /damper is down/.test(m)), JSON.stringify(a.unexplained));
+  /* a string of the bar before the sign released at the written pedal end, after the arrival */
+  const rings = clone(s.dN);
+  const k = rings.s.findIndex(x => !x[8] && x[7] === 4 && rings.v[x[0]][3] === 0);
+  assert.ok(k >= 0);
+  rings.s[k][3] += 2;
+  const b = explain(s, rings, { JUMP: true });
+  assert.ok(b.bad > 0 && b.unexplained.some(m => /released after the arrival/.test(m)), JSON.stringify(b.unexplained));
+  /* and a lift that nothing needs (a piece with no pedal) is not asked for */
+  const plain = setup('jump-ds-al-fine', { jumps: 'once' });
+  assert.deepEqual(explain(plain).unexplained, []);
+  assert.equal(plain.dN.c.length, 0);
+});

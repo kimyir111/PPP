@@ -14,6 +14,8 @@ const T = require('../timing.js');
 const { SG, PLAN, fixtureGraph, fixtureText, graphOfText, order, numbers } = H;
 const sgFixture = name => H.graphOfText(require('fs').readFileSync(require('path').join(H.REPO, 'tests', 'scoregraph', 'fixtures', 'xml', name + '.musicxml'), 'utf8'), name);
 const eFixture = name => H.graphOfText(require('fs').readFileSync(require('path').join(H.REPO, 'tests', 'engrave', 'fixtures', 'e', name + '.musicxml'), 'utf8'), name);
+const pFixture = name => H.graphOfText(require('fs').readFileSync(require('path').join(H.FIX, 'parity', name + '.musicxml'), 'utf8').split(String.fromCharCode(13, 10)).join(String.fromCharCode(10)), name);
+const graphOfTextFixture = (text, id) => H.graphOfText(text, id);
 const strikes = (plan, f) => plan.strikes.filter(f || (() => true)).map(s => [s.q, s.upQ, s.midi, s.vel]);
 const R = x => H.round(x, 6);
 
@@ -122,18 +124,105 @@ test('ROW jumps: a sign that cannot be resolved (a D.S. with no segno, a To Coda
   assert.deepEqual(plan.jumps, []);
 });
 
-test('ROW jumps: in a loop range the signs outside it are not reached; a D.C. goes back to the start of the loop', () => {
+test('ROW jumps: in a loop range the signs outside it are not reached, a D.C. goes back to the first bar of the PIECE, and a loop that ends on the sign plays its written bars (G11a-4 F1)', () => {
   const g = fixtureGraph('jump-ds-al-fine');                           /* bars: 1, 2 segno, 3 Fine, 4 D.S. */
   const O = (a, b) => order(PLAN.build(g, { jumps: 'once', range: { from: a, to: b } }));
-  assert.equal(O(0, 3), "1 2 3 4 2' 3'");
-  assert.equal(O(1, 3), "2 3 4 2' 3'");
+  assert.equal(O(0, 3), "1 2 3 4 2' 3'", 'the whole piece takes its D.S.');
+  assert.equal(O(1, 3), '2 3 4', 'a loop from the segno to the D.S.: the loop\'s own wrap goes back to the segno, so taking the sign would play the loop twice a lap (it did, before G11a-4)');
   assert.equal(O(2, 3), '3 4', 'the segno is outside the loop: the D.S. cannot be followed');
   assert.equal(O(0, 2), '1 2 3', 'the D.S. is outside the loop');
   const dc = fixtureGraph('jump-dc-al-fine-volta');
   const D = (a, b) => order(PLAN.build(dc, { jumps: 'once', range: { from: a, to: b } }));
-  assert.equal(D(4, 5), "5 6 5' 6'", 'a D.C. goes back to the start of the loop, not of the piece');
+  assert.equal(D(4, 5), '5 6', 'a D.C. goes back to the first bar of the PIECE: a loop that does not hold it cannot take it, and the loop plays its written bars');
   assert.equal(D(0, 4), '1 2 3 1^2 2^2 4^2 5^2', 'the D.C. is outside the loop');
-  assert.equal(D(2, 5), "3 4^2 5^2 6^2 4'");
+  assert.equal(D(2, 5), '3 4^2 5^2 6^2', 'the loop ends on the D.C. and does not hold the head: its written bars');
+  assert.equal(D(0, 5), "1 2 3 1^2 2^2 4^2 5^2 6^2 1' 2' 4'", 'the whole piece takes the D.C.');
+});
+
+test('ROW jumps (G11a-4 F1): a practice loop of the last bars of a D.C. piece plays those bars once a lap; the whole piece and a loop that holds the head and goes past the sign take the jump', async () => {
+  /* Burgmüller Op. 100 No. 6: 16 bars, bars 1-8 repeated, D.C. al Fine at the end of bar 16, the Fine at the end of bar 8 */
+  const g = await H.graphOfFile('catalog/method/burgmuller25/006.mxl');
+  const visits = (a, b) => PLAN.build(g, { jumps: 'once', range: { from: a - 1, to: b - 1 } }).visits.length;
+  assert.equal(visits(1, 16), 32, 'bars 1-16 are the whole piece: 8 + 8 repeated, 8, and the way back through the Fine (8)');
+  assert.equal(PLAN.build(g, { jumps: 'once' }).visits.length, 32, 'the whole piece, no range');
+  assert.equal(visits(13, 16), 4, 'the last system: four bars, once a lap');
+  assert.equal(visits(9, 16), 8, 'the second half: eight bars, once a lap');
+  assert.equal(visits(16, 16), 1, 'the bar that holds the D.C. alone');
+  assert.equal(PLAN.build(g).visits.length, 24, 'with the jumps off: the old player\'s order');
+  /* the first leg is the old order, to the bit, whatever the range */
+  [[13, 16], [9, 16], [1, 16]].forEach(([a, b]) => {
+    const on = PLAN.build(g, { jumps: 'once', range: { from: a - 1, to: b - 1 } }), off = PLAN.build(g, { range: { from: a - 1, to: b - 1 } });
+    assert.deepEqual(on.visits.slice(0, off.visits.length).map(v => v.index), off.visits.map(v => v.index), a + '..' + b);
+  });
+});
+
+test('ROW jumps (G11a-4 F1): a D.C. in the MIDDLE of a loop that does not hold the head of the piece is not followed (it goes back to the first bar of the piece)', () => {
+  const g = H.graphOfText(fixtureText('jump-ds-al-fine')
+    .replace('<words>D.S. al Fine</words></direction-type><sound dalsegno="segno1"/>', '<words>D.C. al Fine</words></direction-type><sound dacapo="yes"/>')
+    .replace('</part>', '<measure number="5"><note><pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>whole</type></note></measure></part>'), 'dc-mid');
+  const O = (a, b) => order(PLAN.build(g, { jumps: 'once', range: { from: a - 1, to: b - 1 } }));
+  assert.equal(O(1, 5), "1 2 3 4 1' 2' 3'", 'the whole piece (the D.C. is not its last bar): the head is in the piece, the Fine ends the way back');
+  assert.equal(O(1, 4), '1 2 3 4', 'a loop of bars 1-4 that ends on the D.C. is not the whole piece, and the D.C. goes back to the loop first bar: the loop plays its written bars');
+  assert.equal(O(2, 5), '2 3 4 5', 'a loop that does not hold the head cannot go back to it');
+});
+
+test('ROW jumps (G11a-4 F1): the D.S. fixtures - a loop from the segno to the sign is its written bars, one that holds the bar before the segno takes the jump', () => {
+  const ds = pFixture('ds-al-coda-repeat-volta');                        /* 1, 2 segno, 3, 4 (1st), 5 (2nd, To Coda), 6 (D.S.), 7 coda, 8, 9 */
+  const R = (a, b) => order(PLAN.build(ds, { jumps: 'once', range: { from: a - 1, to: b - 1 } }));
+  assert.equal(R(2, 6), '2 3 4 2^2 3^2 5^2 6^2', 'segno to D.S.: the loop itself, once a lap (11 visits before G11a-4)');
+  assert.equal(R(1, 6), "1 2 3 4 2^2 3^2 5^2 6^2 2' 3' 5' 6'", 'the bar before the segno is in the loop: the D.S. goes to the segno inside it, the To Coda\'s coda is outside the loop');
+  assert.equal(R(1, 9), "1 2 3 4 2^2 3^2 5^2 6^2 2' 3' 5' 7' 8' 9'", 'the whole piece');
+  assert.equal(R(2, 7), "2 3 4 2^2 3^2 5^2 6^2 2' 3' 5' 7'", 'a loop that goes past the sign takes it: the segno is the first bar of the loop but the loop does not END on the sign');
+});
+
+test('ROW jumps (G11a-4 F4): a D.S. with no segno before it is ignored - the segno after it is not what it goes back to, and no bar is dropped', () => {
+  const g = pFixture('ds-segno-after-sign');                            /* 1, 2 D.S., 3, 4, 5 segno, 6 */
+  assert.equal(order(PLAN.build(g, { jumps: 'once' })), '1 2 3 4 5 6');
+  assert.deepEqual(PLAN.build(g, { jumps: 'once' }).jumps, []);
+  assert.equal(order(PLAN.build(g)), '1 2 3 4 5 6');
+  /* a D.S. WITH a segno before it is as before, and the nearest segno before it is the one it goes to */
+  assert.equal(order(PLAN.build(fixtureGraph('jump-ds-al-fine'), { jumps: 'once' })), "1 2 3 4 2' 3'");
+});
+
+test('ROW pedal (G11a-4 F3): the damper at the arrival of a D.S. - a pedal that is down comes up and goes down again where the written pedal is down, and no string rings on into the bar the way back turns to', () => {
+  const g = pFixture('ds-pedal-over-sign');                             /* 1, 2 segno + pedal down, 3 Fine, 4 D.S., 5 (pedal up in the middle: never played) */
+  const off = PLAN.build(g), on = PLAN.build(g, { jumps: 'once' });
+  const cc = p => p.ccs.filter(c => c.cc === 64).map(c => [c.q, c.value, c.type]);
+  assert.deepEqual(cc(off), [[4, 127, 'start'], [18, 0, 'stop']], 'the old player: pedal down at bar 2, up in the middle of bar 5');
+  assert.deepEqual(cc(on), [[4, 127, 'start'], [16, 0, 'jump'], [16, 127, 'start']], 'down at bar 2; at the arrival (sounding 16) it comes up and the written start of bar 2 presses it again');
+  const up = (p, m, leg) => p.strikes.find(s => s.m === m && (leg === undefined || s.visit.leg === leg)).upQ;
+  assert.equal(up(off, 4), 18, 'the old plan holds the strings of bar 4 to the written pedal end');
+  assert.equal(up(on, 4, 0), 16, 'with the jump they stop where the way back arrives');
+  assert.equal(up(on, 3, 0), 16, 'and so do the strings of bar 3 that the pedal held');
+  assert.equal(up(on, 2, 0), 16);
+  assert.equal(up(on, 2, 1), 30, 'on the way back the pedal is down and the Fine is not followed by another sign: held to the written end, as ever');
+  /* a pedal that is up as the sign is left is not lifted again: a piece with no damper gets no controller event at all */
+  const none = PLAN.build(fixtureGraph('jump-ds-al-fine'), { jumps: 'once' });
+  assert.deepEqual(none.ccs, [], 'no pedal, no controller event at the arrival');
+  /* the pedal pressed in bar 3 (after the segno): down as the sign is left, written up where the way back arrives (bar 2): it comes up, and bar 3 of the way back presses it again */
+  const moved = graphOfTextFixture(H.fixtureText('jump-ds-al-fine').replace('<measure number="3"><note>', '<measure number="3"><direction placement="below"><direction-type><pedal type="start" line="yes"/></direction-type></direction><note>'), 'ds-pedal-bar3');
+  assert.deepEqual(cc(PLAN.build(moved, { jumps: 'once' })), [[8, 127, 'start'], [16, 0, 'jump'], [20, 127, 'start']]);
+  /* a pedal that is down in the written music at the arrival's bar start but was up as the sign was left: pressed, not lifted first (a sign taken from a bar after the pedal's stop) */
+  const lateStop = graphOfTextFixture(H.fixtureText('jump-ds-al-fine').replace('<measure number="1"><attributes>', '<measure number="1"><direction placement="below"><direction-type><pedal type="start" line="yes"/></direction-type></direction><attributes>')
+    .replace('<measure number="4"><note>', '<measure number="4"><direction placement="below"><direction-type><pedal type="stop" line="yes"/></direction-type></direction><note>'), 'ds-pedal-up-at-sign');
+  assert.deepEqual(cc(PLAN.build(lateStop, { jumps: 'once' })), [[0, 127, 'start'], [12, 0, 'stop'], [16, 127, 'jump']], 'up at the sign, down in the written music at the segno: pressed once, with no lift');
+});
+
+test('followGates (G11a-4 F2): a gate carries the grace notes that sound at its place, so follow mode can forgive a key pressed for one', () => {
+  const g = fixtureGraph('grace-notes');
+  const plain = PLAN.followGates(PLAN.build(g), 'both');
+  assert.ok(plain.every(x => x.graces === undefined), 'no graces played, no field');
+  const plan = PLAN.build(g, { graces: 'play' });
+  const gates = PLAN.followGates(plan, 'both');
+  const withGraces = gates.filter(x => x.graces);
+  assert.ok(withGraces.length >= 3, withGraces.length + ' gates hold graces');
+  withGraces.forEach(x => {
+    const want = [...new Set(plan.strikes.filter(s => s.grace && Math.abs(s.abs - x.b) < 1e-6).map(s => s.midi))].sort();
+    assert.deepEqual(x.graces.slice().sort(), want, 'gate at ' + x.b);
+  });
+  /* the graces a gate carries are not asked: the gates' notes are the same with or without them */
+  assert.deepEqual(H.gatesCanon(gates), H.gatesCanon(PLAN.followGates(PLAN.build(g, { graces: 'play' }), 'both')));
+  assert.deepEqual(H.gatesCanon(gates), H.gatesCanon(plain), 'the asked notes do not change');
 });
 
 test('ROW jumps: E22 (repeat with endings, segno, To Coda, D.S. al Coda, coda) read as an engraver reads it', () => {
@@ -164,6 +253,51 @@ test('ROW jumps: the options are checked (a typo is an error, not a silent no)',
   assert.throws(() => PLAN.build(g, { graces: 'yes' }), e => e.code === 'E-OPTION');
   assert.throws(() => PLAN.build(g, { defaultQpm: 0 }), e => e.code === 'E-OPTION');
   assert.throws(() => PLAN.build(g, { defaultQpm: 'fast' }), e => e.code === 'E-OPTION');
+});
+
+/* G11a-4: the tie at a jump. Fixture parity/ds-al-coda-repeat-volta: bar 6 ends on a D5 tied into bar 7, the coda; written order 1..9, and the way back goes 5 -> 7. */
+test('ROW jumps (tie at a jump): the way back strikes a note tied from a bar it did not come from, and the note before the sign is held for its own length', () => {
+  const g = pFixture('ds-al-coda-repeat-volta');
+  const D5 = (plan, m) => plan.strikes.filter(s => s.m === m && s.midi === 74 && !s.grace);
+  /* the old player's order (jumps off): bar 6 is followed by bar 7, so the tie is a tie - held for 2, and bar 7's D5 is carried into */
+  const off = PLAN.build(g);
+  assert.equal(numbers(off), '1 2 3 4 2 3 5 6 7 8 9');
+  assert.deepEqual(D5(off, 6).map(s => [s.heldQ, s.upQ - s.q]), [[2, 2]], 'held for the chain: this quarter and the next bar');
+  assert.equal(D5(off, 7).length, 0, 'the D5 of the coda is carried into, not struck');
+  /* as an engraver reads it: ... 6 | 2 3 5 (To Coda) 7 8 9 - bar 6 is followed by bar 2, bar 7 comes from bar 5 */
+  const on = PLAN.build(g, { jumps: 'once' });
+  assert.equal(order(on), "1 2 3 4 2^2 3^2 5^2 6^2 2' 3' 5' 7' 8' 9'");
+  assert.deepEqual(on.visits.map(v => v.jumped), [false, false, false, false, false, false, false, false, true, false, false, true, false, false],
+    'the arrivals: the segno bar after the D.S., the coda after the To Coda');
+  assert.deepEqual(D5(on, 6).map(s => [s.heldQ, s.upQ - s.q]), [[1, 1]], 'bar 6 is followed by the segno bar, not by the coda: the D5 sounds its own quarter and no more');
+  const coda = D5(on, 7);
+  assert.equal(coda.length, 1, 'a tie that leads nowhere strikes: the D5 of the coda sounds');
+  assert.deepEqual([coda[0].visit.leg, coda[0].visit.jumped, coda[0].heldQ, coda[0].q], [1, true, 1, on.visits[11].soundQ], 'at the arrival, for its own quarter');
+  /* the note-level fields the old readers use are the old ones: the chain is still the chain */
+  assert.equal(on.cont.size, 1);
+  assert.deepEqual([...on.hold.values()], [2]);
+});
+
+test('ROW jumps (tie at a jump): the tie of a repeat that is played again is the old players (kept), and a tie inside one bar is never cut', () => {
+  /* the arrival rule belongs to the jump, not to the repeat: a plan with no jump taken is the old plan, tie by tie */
+  for (const name of ['tie-across-repeat-volta', 'pickup-repeat', 'nested-repeats-voltas', 'dangling-ties']) {
+    const g = pFixture(name);
+    assert.deepEqual(H.canon(PLAN.build(g, { jumps: 'once' })), H.canon(PLAN.build(g)), name + ': no sign, no change');
+  }
+  /* the two D.S./D.C. pieces of the G11a-1 fixtures hold no tie over the sign: the plan is the way back the old plan gives for each bar */
+  const g = fixtureGraph('jump-ds-al-coda');
+  const on = PLAN.build(g, { jumps: 'once' });
+  assert.equal(on.strikes.every(s => s.heldQ === PLAN.holdOf(on, s.note)), true, 'heldQ is the hold of the note');
+});
+
+test('ROW jumps (tie at a jump): follow mode asks exactly what the clock strikes at the arrival (FOLLOW_REPEAT + FOLLOW_TIE), and not otherwise', () => {
+  const g = pFixture('ds-al-coda-repeat-volta');
+  const on = PLAN.build(g, { jumps: 'once' });
+  const asked = gates => gates.filter(x => x.m === 7 && x.notes.some(n => n.midi === 74)).length;
+  assert.equal(asked(PLAN.followGates(on, 'both', { repeats: true, ties: true })), 1, 'the D5 of the coda is asked once, on the way back (the written bar 7 is not on the first leg)');
+  assert.equal(asked(PLAN.followGates(on, 'both', { repeats: true })), 0, 'with the tie option off the old rule stands: a tied-to note is not asked');
+  const first = PLAN.followGates(on, 'both', { repeats: true, ties: true }).filter(x => x.m === 6 && x.notes.some(n => n.midi === 74));
+  assert.equal(first.length, 1, 'the D5 of bar 6 (the note before the sign) is asked where bar 6 is played, once');
 });
 
 /* ====================================================================== struck or tied */
