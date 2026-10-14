@@ -22,7 +22,8 @@
        followGates(plan, hands, {repeats, ties})   FOLLOW_REPEAT, FOLLOW_TIE
    and the old player's quirks that are arguably right are kept in both modes (E4): a backward repeat with no
    forward repeat inside the range goes back to the start of the range, a pedal is copied into every visit,
-   a tie that leads nowhere strikes. legacyCompat:false reads four things from the graph more exactly than the
+   a tie that leads nowhere strikes (and with `jumps` the same rule is applied per visit at the arrival of a D.S. / To Coda: a note tied from a bar the way back
+   did not come from is struck, and the note before the sign is held for its own length). legacyCompat:false reads four things from the graph more exactly than the
    Score stated them, and nothing else: a repeat sign on either bar line, a tie by the head its spanner names
    (the old match was by pitch and place, which two voices in unison confuse), the beats by the meter's own
    groups (6/4 in two, 3+2/8 in two), the release of a half pedal (0, where the Score gave it the depth). It
@@ -33,11 +34,13 @@
    projection uses (legacy-score.js Q), so a position here is bit for bit the Score's.
 
    THE PLAN (same fields as PianoScore.build, plus ids)
-     visits   [{index, id, number, pass, leg, startQ, lenQ, soundQ}]   written quarters in, sounding quarters out
-     strikes  [{midi, vel, q, upQ, hand, m, abs, ev, head, visit, note, b, staff, arp, grace?}]
+     visits   [{index, id, number, pass, leg, jumped, startQ, lenQ, soundQ}]   written quarters in, sounding quarters out; `index` is the bar's place in the score
+              (a bar played twice is two visits with one index); `jumped` marks the first visit after a D.C. / D.S. / To Coda
+     strikes  [{midi, vel, q, upQ, heldQ, hand, m, abs, ev, head, visit, note, b, staff, arp, grace?}]
               sorted by (q, midi) like the old plan. `note` is the item of `written` the strike comes from (it
-              has the fields the matcher reads of a Score note: m, b, staff, hand, arp, abs, dur). A strike with
-              `grace` is a grace note: the matcher must not expect it (G11 §6.1: not judged until a later
+              has the fields the matcher reads of a Score note: m, b, staff, hand, arp, abs, dur). `heldQ` is how
+              long the note sounds on its own, in quarters, pedal left out: what the falling notes draw. A strike
+              with `grace` is a grace note: the matcher must not expect it (G11 §6.1: not judged until a later
               decision), the scheduler plays it like any other.
      ccs      [{q, kind, cc, value, type}]  sounding time; ccsWritten the same in written quarters
      beats    [{q, accent, m}]              sounding time; beatsWritten in written quarters
@@ -46,8 +49,9 @@
      hold     Map head id -> quarters       a tied chain's length, at its first note
      cont     Set of head ids               the notes a tie carries into: not struck
      dyn      {marks, wedges, velAt}        written dynamics
-     soundLengthQ, written (the notes and rests of the range in Score order, for the gates), span, range,
+     soundLengthQ, graceStrikes (how many strikes are grace notes), written (the notes and rests of the range in Score order, for the gates), span, range,
      jumps    [{kind, from, to}]            the signs that were followed (empty unless opts.jumps)
+     (a gate of followGates carries `graces` [midi] when grace notes sound at its place)
    ============================================================================ */
 (function (root, factory) {
   'use strict';
@@ -178,8 +182,8 @@
   }
 
   /* The signs that jump (G11-D3 JUMP): {kind, mi, to}, `to` the measure index it turns to (null: nowhere). A D.S. goes to
-     the segno before it (the nearest one; else the first), a To Coda to the coda after it (the nearest; else none), a D.C.
-     to the start of the range (`to` null: the walk supplies it). A jump that names its target (Jump.target) goes there.
+     the segno before it (the nearest one; none before it: ignored), a To Coda to the coda after it (the nearest; else none), a D.C.
+     to the first bar of the piece (`to` null: the walk supplies it). A jump that names its target (Jump.target) goes there.
      A sign acts at the end of the measure that holds it: the importer states where in the measure a direction was
      written, not where the music turns, and a D.C. above the last bar is as often written at the bar's start as at its end. */
   function jumpsOf(g, L) {
@@ -195,8 +199,9 @@
       let t = null;
       if (j.target && byId.has(j.target)) t = byId.get(j.target).mi;
       else if (j.kind === 'dalsegno') {
+        /* the nearest segno at or before the sign; one that comes AFTER it is not what a D.S. goes back to (it would drop the bars between), so the sign is ignored (G11a-4, F4) */
         const before = segnos.filter(s => s.mi <= j.mi);
-        t = before.length ? before[before.length - 1].mi : segnos.length ? segnos[0].mi : null;
+        t = before.length ? before[before.length - 1].mi : null;
       } else if (j.kind === 'tocoda') {
         const after = codas.filter(c => c.mi > j.mi);
         t = after.length ? after[0].mi : null;
@@ -209,8 +214,11 @@
   /* ----------------------------------------------------------- play order */
   /* Score.form (App 4124), over measure indexes: the repeats, voltas and the loop-start target as the app reads them,
      for the range i0..i1. With `jumps` it also follows D.C. / D.S. / To Coda / Fine, once:
-       - a D.C. or D.S. in a measure that is played (not skipped by a volta) turns back after that measure, to the start
-         of the range or to the segno; only when the target lies inside the range, and only the first one;
+       - a D.C. or D.S. in a measure that is played (not skipped by a volta) turns back after that measure, to the first
+         bar of the piece or to the segno; only when the target lies inside the range, and only the first one;
+       - a LOOP that ends on the sign (the sign is the range's last bar and its target is the range's first) does not take it: the loop's
+         own wrap goes back to that bar, so the jump would play the loop twice a lap; a practice loop plays its written bars. The range
+         that is the whole piece takes it (Start to finish; the piece's own D.C. at its last bar) (G11a-4, F1);
        - on the way back the repeat signs are not taken (an engraver's reading) and a volta plays the last ending the
          piece has (`backPass`), so a repeated section is played once, through its last ending;
        - on the way back a To Coda turns to its coda, and a Fine ends the piece.
@@ -223,6 +231,8 @@
     let backPass = 1;
     (endings || []).forEach(en => (en.numbers || []).forEach(x => { if (x > backPass) backPass = x; }));
     let openEnding = null, i = i0, guard = 0, leg = 0, turned = false;
+    /* the first visit played after a D.C. / D.S. / To Coda turned is an ARRIVAL: it is reached from the bar that holds the sign, not from the bar before it on the page */
+    let arriving = false;
     const passNow = () => {
       const s = startStack.length ? startStack[startStack.length - 1] : i0;
       return passAt[s] || 1;
@@ -233,7 +243,7 @@
       if (bar.endingNos && bar.endingNos.length) openEnding = bar.endingNos;
       const pass = leg ? backPass : passNow();
       const skip = !!(openEnding && openEnding.length && openEnding.indexOf(pass) < 0);
-      if (!skip) visits.push({ index: i, pass: pass, leg: leg });
+      if (!skip) { visits.push({ index: i, pass: pass, leg: leg, jumped: arriving }); arriving = false; }
       if (bar.endingEnd) openEnding = null;
       if (!skip && !leg && bar.repeatEnd) {
         const times = bar.repeatEnd > 0 ? bar.repeatEnd : 2;
@@ -253,12 +263,14 @@
         if (leg) {
           if (here.some(j => j.kind === 'fine')) break;
           const toCoda = here.find(j => j.kind === 'tocoda' && j.to !== null && j.to >= i0 && j.to <= i1);
-          if (toCoda) { i = toCoda.to; log.push({ kind: 'tocoda', from: visits.length - 1, to: i }); continue; }
+          if (toCoda) { i = toCoda.to; arriving = true; log.push({ kind: 'tocoda', from: visits.length - 1, to: i }); continue; }
         } else if (!turned) {
-          const goal = j => (j.kind === 'dacapo' && j.to === null ? i0 : j.to);
-          const back = here.find(j => (j.kind === 'dacapo' || j.kind === 'dalsegno') && goal(j) !== null && goal(j) >= i0 && goal(j) <= i1);
+          const goal = j => (j.kind === 'dacapo' && j.to === null ? 0 : j.to);
+          const whole = i0 === 0 && i1 === ms - 1;
+          const back = here.find(j => (j.kind === 'dacapo' || j.kind === 'dalsegno') && goal(j) !== null && goal(j) >= i0 && goal(j) <= i1 &&
+            !(i === i1 && goal(j) === i0 && !whole));
           if (back) {
-            turned = true; leg = 1; openEnding = null;
+            turned = true; leg = 1; openEnding = null; arriving = true;
             i = goal(back);
             log.push({ kind: back.kind, from: visits.length - 1, to: i });
             continue;
@@ -356,7 +368,8 @@
      to 3 decimals); the graph rule follows the tie spanner from head to head. Either way a tie that leads nowhere
      strikes its note, and `hold` is the chain's length at its first note. */
   function ties(g, items, compat) {
-    const hold = new Map(), cont = new Set();
+    /* `nextOf` and `prevOf` are the chain as it was walked: head -> the item the note is tied into, and head -> the item it is tied from (the visit-level rule below reads them) */
+    const hold = new Map(), cont = new Set(), nextOf = new Map(), prevOf = new Map();
     if (compat) {
       const at = new Map();
       items.forEach(n => { if (!n.rest && n.tieStop) at.set(n.midi + '@' + n.abs.toFixed(3), n); });
@@ -366,12 +379,14 @@
         for (let i = 0; i < 32 && cur.tieStart; i++) {
           const nx = at.get(n.midi + '@' + (cur.abs + cur.dur).toFixed(3));
           if (!nx || nx === cur) break;
-          q += nx.dur; cur = nx;
+          q += nx.dur;
+          nextOf.set(cur.head, nx); prevOf.set(nx.head, cur);
+          cur = nx;
           cont.add(nx.head);
         }
         hold.set(n.head, q);
       });
-      return { hold: hold, cont: cont };
+      return { hold: hold, cont: cont, link: nextOf, from: prevOf };
     }
     const next = new Map();
     g.parts.forEach(part => part.spanners.forEach(s => {
@@ -386,14 +401,46 @@
       for (let i = 0; i < 64; i++) {
         const nx = byHead.get(next.get(cur.head));
         if (!nx || nx === cur || !cont.has(nx.head)) break;
-        q += nx.dur; cur = nx;
+        q += nx.dur;
+        nextOf.set(cur.head, nx); prevOf.set(nx.head, cur);
+        cur = nx;
       }
       hold.set(n.head, q);
     });
-    return { hold: hold, cont: cont };
+    return { hold: hold, cont: cont, link: nextOf, from: prevOf };
   }
   function struck(plan, n) { return !n.rest && !(n.tieStop && plan.cont.has(n.head)); }
   function holdOf(plan, n) { const h = plan.hold.get(n.head); return Math.max(0.05, h != null ? h : n.dur || 0); }
+
+  /* TIE AT A JUMP (G11a-4, the rule G11a-2 found missing). A tie joins two notes the play order puts one after the other. After a D.S. or a To Coda the bar that is
+     reached is not the bar before it on the page: a note of its first bar that is tied FROM that bar before has nothing to continue, and the note before the sign has
+     nothing to continue into. The old player's rule for a tie that leads nowhere is "the note is struck" (kept in compat, E4), so the same is done here per visit:
+       - a note tied from a bar other than the one the way back came from is STRUCK at the arrival (the clock, the matcher and follow mode agree);
+       - a note that is tied into a bar the way back does not go to is held for its own length, plus the notes tied on that the play order really reaches, and no longer.
+     Only the arrival of a jump changes anything: a repeat's return is still the old player's (E4: kept). A tie inside one bar is never cut. */
+  function tieBrokenAtArrival(plan, k, n) {
+    const v = plan.visits[k];
+    if (!v || !v.jumped || n.mi !== v.index || !n.tieStop || !plan.cont.has(n.head)) return false;
+    const src = plan.tieFrom.get(n.head);
+    if (!src || src.mi === n.mi) return false;
+    const before = k > 0 ? plan.visits[k - 1] : null;
+    return !before || before.index !== src.mi;
+  }
+  /* the quarters a note struck in visit k sounds for: its chain as far as the play order carries it (legacy: the whole chain, plan.hold) */
+  function holdAt(plan, n, k) {
+    let q = n.dur || 0, cur = n, kk = k, cut = false;
+    for (let i = 0; i < 64; i++) {
+      const nx = plan.tieLink.get(cur.head);
+      if (!nx || nx === cur || !plan.cont.has(nx.head)) break;
+      if (nx.mi !== cur.mi) {
+        const nv = plan.visits[kk + 1];
+        if (nv && nv.jumped && nv.index !== nx.mi) { cut = true; break; }
+        if (nv) kk++;
+      }
+      q += nx.dur; cur = nx;
+    }
+    return cut || !plan.hold.has(n.head) ? Math.max(0.05, q) : holdOf(plan, n);
+  }
 
   /* ----------------------------------------------------------------- pedal */
   /* The pedal as the Score states it: one entry per start, change and stop of the part the app plays, a doubled end
@@ -472,10 +519,26 @@
   }
   function pedalCCs(written, visits) {
     const out = [];
+    let down = 0;                                    /* the damper as the played order has left it */
     visits.forEach(v => {
+      /* the arrival of a jump (G11a-4, F3): a damper that is down comes up, and goes down again where the written pedal is down at that place (a pedal change), so a pedal
+         pressed before the sign does not stay down through the way back and the strings of the bar before the sign stop. A repeat's return is not touched (the old player's:
+         the damper is where the written events left it). `type: 'jump'` marks these. A piece with no damper pedal gets nothing. */
+      if (v.jumped) {
+        let state = 0;
+        for (let i = 0; i < written.length; i++) {
+          if (written[i].q >= v.startQ - 1e-9) break;
+          if ((written[i].kind || 'damper') === 'damper') state = written[i].value > 0 ? written[i].value : 0;
+        }
+        if (down > 0) out.push({ q: v.soundQ, kind: 'damper', cc: 64, value: 0, type: 'jump' });
+        if (state > 0) out.push({ q: v.soundQ, kind: 'damper', cc: 64, value: state, type: 'jump' });
+        down = state;
+      }
       written.forEach(e => {
-        if (e.q >= v.startQ - 1e-9 && e.q < v.startQ + v.lenQ - 1e-9)
+        if (e.q >= v.startQ - 1e-9 && e.q < v.startQ + v.lenQ - 1e-9) {
           out.push({ q: v.soundQ + (e.q - v.startQ), kind: e.kind, cc: PEDAL_CC[e.kind] || 64, value: e.value, type: e.type });
+          if ((e.kind || 'damper') === 'damper') down = e.value > 0 ? e.value : 0;
+        }
       });
     });
     return out.sort((a, b) => a.q - b.q);
@@ -733,7 +796,7 @@
     const order = walk(L, marks, i0, i1, opts.jumps ? jumpsOf(g, L) : null, g.timeline.endings);
 
     const visits = order.visits.map(v => ({ index: v.index, id: g.timeline.measures[v.index].id, number: L.number[v.index], pass: v.pass, leg: v.leg,
-      startQ: L.startQ[v.index], lenQ: L.lenQ[v.index], soundQ: 0 }));
+      jumped: !!v.jumped, startQ: L.startQ[v.index], lenQ: L.lenQ[v.index], soundQ: 0 }));
     let soundLengthQ = 0;
     visits.forEach(v => { v.soundQ = soundLengthQ; soundLengthQ += v.lenQ; });
 
@@ -751,7 +814,7 @@
       graph: { id: g.id, rev: g.rev }, opts: opts,
       range: { from: g.timeline.measures[i0] ? g.timeline.measures[i0].id : null, to: g.timeline.measures[i1] ? g.timeline.measures[i1].id : null, i0: i0, i1: i1 },
       span: { a: L.n ? L.startQ[i0] : 0, b: L.n ? L.startQ[i1] + L.lenQ[i1] : 0 },
-      hold: tie.hold, cont: tie.cont, pedal: pedal, beatsWritten: beatsW, visits: visits, soundLengthQ: soundLengthQ,
+      hold: tie.hold, cont: tie.cont, tieLink: tie.link, tieFrom: tie.from, pedal: pedal, beatsWritten: beatsW, visits: visits, soundLengthQ: soundLengthQ,
       dyn: dyn, ccsWritten: ccsWritten, jumps: order.jumps, layout: L
     };
     plan.tempoMap = tempoMapOf(tempoEv, fallback, visits);
@@ -760,6 +823,9 @@
     /* the notes and rests of the range in Score order, for the follow gates (Score.allIn) */
     plan.written = L.n ? items.filter(n => n.abs >= plan.span.a - 1e-9 && n.abs < plan.span.b - 1e-9) : [];
     plan.strikes = strikesOf(plan, items, graces, ccsWritten);
+    /* how many of the strikes are grace notes: the matcher reads it so a plan with none (the usual one) costs it nothing */
+    plan.graceStrikes = 0;
+    if (opts.graces === 'play') plan.strikes.forEach(s => { if (s.grace) plan.graceStrikes++; });
     return plan;
   }
 
@@ -778,17 +844,19 @@
     const wantGraces = plan.opts.graces === 'play' && graces.length > 0;
     const groups = wantGraces ? graceGroups(graces) : null;
     const extended = new Set();                        /* strikes whose release a pedal or sostenuto moved */
+    /* a plan that follows no jump is the old player's, tie by tie; one that does reads its ties per visit (tieBrokenAtArrival, holdAt) */
+    const jumping = plan.visits.some(v => v.jumped);
     let previous = [];
-    plan.visits.forEach(v => {
+    plan.visits.forEach((v, vk) => {
       const from = v.startQ - 1e-9, to = v.startQ + v.lenQ - 1e-9;
       let lo = 0, hi = playable.length;
       while (lo < hi) { const mid = (lo + hi) >> 1; if (playable[mid].abs < from) lo = mid + 1; else hi = mid; }
       const here = [];
       for (let k = lo; k < playable.length && playable[k].abs < to; k++) {
         const n = playable[k];
-        if (!struck(plan, n)) continue;
+        if (!struck(plan, n) && !(jumping && v.jumped && tieBrokenAtArrival(plan, vk, n))) continue;
         const q = v.soundQ + (n.abs - v.startQ);
-        const h = holdOf(plan, n);
+        const h = jumping && plan.tieLink.has(n.head) ? holdAt(plan, n, vk) : holdOf(plan, n);
         let upWritten = n.abs + h;
         let moved = false;
         for (let i = 0; i < plan.pedal.length; i++) {
@@ -801,7 +869,7 @@
         const st = {
           midi: n.midi, vel: velocityOf(dyn, soft, n, n.abs), q: q, upQ: q + (upWritten - n.abs),
           hand: n.hand, m: n.m, abs: n.abs, ev: n.ev, head: n.head, visit: v, note: n, b: n.b, staff: n.staff,
-          arp: rolled.has(n.mi + '|' + n.b + '|' + (n.staff || 1))
+          arp: rolled.has(n.mi + '|' + n.b + '|' + (n.staff || 1)), heldQ: h
         };
         if (moved) extended.add(st);
         here.push(st);
@@ -810,6 +878,15 @@
       here.forEach(s => out.push(s));
       previous = here;
     });
+    /* the damper comes up at the arrival of a jump (F3): no string the pedal or the sostenuto holds rings on into the bar the way back turns to, whichever bar it was struck in */
+    if (jumping) {
+      const arrivals = plan.visits.filter(v => v.jumped).map(v => v.soundQ);
+      out.forEach(s => {
+        for (let i = 0; i < arrivals.length; i++) {
+          if (arrivals[i] > s.q + 1e-9) { if (s.upQ > arrivals[i]) s.upQ = Math.max(arrivals[i], s.q + 0.05); break; }
+        }
+      });
+    }
     return out.sort((a, b) => a.q - b.q || a.midi - b.midi);
   }
 
@@ -854,17 +931,20 @@
         }
         out.push({
           midi: n.midi, vel: velocityOf(dyn, soft, n, n.abs), q: q, upQ: upQ, hand: n.hand, m: n.m, abs: n.abs, ev: n.ev, head: n.head,
-          visit: v, note: n, b: n.b, staff: n.staff, arp: false,
+          visit: v, note: n, b: n.b, staff: n.staff, arp: false, heldQ: slot[k],
           grace: { order: n.grace.order, slash: n.grace.slash, of: mains.length ? mains[0].ev : null }
         });
       });
+      /* heldQ is what the falling notes draw: the note's own sounding length (no pedal), so a note a grace shortened is drawn shortened */
       if (appoggiatura) {
-        mains.forEach(s => { s.q = base + spent; if (s.upQ < s.q + 0.05) s.upQ = s.q + 0.05; });
+        mains.forEach(s => { s.q = base + spent; if (s.upQ < s.q + 0.05) s.upQ = s.q + 0.05; s.heldQ = Math.max(0.05, s.heldQ - spent); });
       } else {
         const cut = first;
         previous.concat(here).forEach(s => {
-          if (s.note.part === grp.part && s.note.voice === grp.voice && !extended.has(s) && s.q < cut - 1e-9 && s.upQ > cut + 1e-9 && s.upQ <= base + 1e-6)
+          if (s.note.part === grp.part && s.note.voice === grp.voice && !extended.has(s) && s.q < cut - 1e-9 && s.upQ > cut + 1e-9 && s.upQ <= base + 1e-6) {
             s.upQ = cut;
+            s.heldQ = Math.max(0.05, cut - s.q);
+          }
         });
       }
     });
@@ -891,7 +971,7 @@
       plan.visits.forEach((v, k) => {
         const last = runs[runs.length - 1];
         if (last && Math.abs(last.b - v.startQ) < 1e-9 && v.leg === last.leg) { last.b = v.startQ + v.lenQ; last.to = k; }
-        else runs.push({ a: v.startQ, b: v.startQ + v.lenQ, from: k, to: k, leg: v.leg });
+        else runs.push({ a: v.startQ, b: v.startQ + v.lenQ, from: k, to: k, leg: v.leg, jumped: !!v.jumped });
       });
     } else runs.push({ a: plan.span.a, b: plan.span.b });
     const gates = [];
@@ -906,6 +986,18 @@
         gates.push(gate);
       });
     });
+    /* the grace notes that sound at a gate's place (G11a-4, F2): a key pressed for one is forgiven by follow mode as the matcher forgives it - graces are heard, not judged */
+    if (plan.graceStrikes > 0) {
+      const at = new Map();
+      plan.strikes.forEach(s => {
+        if (!s.grace || !handOk(s.note, hands)) return;
+        const k = s.abs.toFixed(5);
+        let a = at.get(k);
+        if (!a) at.set(k, a = []);
+        if (a.indexOf(s.midi) < 0) a.push(s.midi);
+      });
+      gates.forEach(g => { const a = at.get(g.b.toFixed(5)); if (a) g.graces = a.slice(); });
+    }
     return gates;
   }
   function gatesOfRun(plan, L, hands, run, strikeTies) {
@@ -923,7 +1015,7 @@
       }
       if (n.midi == null) return;
       spans.push([t0, t1]);
-      if (strikeTies ? !struck(plan, n) : n.tieStop) return;
+      if (strikeTies ? !struck(plan, n) && !(run.jumped && tieBrokenAtArrival(plan, run.from, n)) : n.tieStop) return;
       const p = playAt[k] || (playAt[k] = { b: t0, m: n.m, notes: [], rest: false });
       p.notes.push({ midi: n.midi, hand: n.hand === 'l' ? 'l' : 'r', ev: n.ev, head: n.head });
     });

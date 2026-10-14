@@ -47,8 +47,8 @@
    "begin": 30000,
    "matcher": 58060,
    "gates": 15000,
-   "matcherFix": 150,
-   "rangesJump": 11,
+   "matcherFix": 146,
+   "rangesJump": 7,
    "rangesGrace": 140,
    "rangesRepeat": 2112,
    "rangesTie": 62,
@@ -58,7 +58,9 @@
      "files": 7,
      "visits": 152,
      "strikes": 1717,
-     "silentTies": 0
+     "silentTies": 0,
+     "tieStruck": 0,
+     "tieCut": 0
     },
     "GRACE": {
      "files": 16,
@@ -99,7 +101,9 @@
      "files": 1,
      "visits": 4,
      "strikes": 9,
-     "silentTies": 0
+     "silentTies": 0,
+     "tieStruck": 0,
+     "tieCut": 0
     },
     "GRACE": {
      "files": 1,
@@ -140,7 +144,9 @@
      "files": 0,
      "visits": 0,
      "strikes": 0,
-     "silentTies": 0
+     "silentTies": 0,
+     "tieStruck": 0,
+     "tieCut": 0
     },
     "GRACE": {
      "files": 0,
@@ -170,8 +176,8 @@
    "begin": 156,
    "matcher": 572,
    "gates": 78,
-   "matcherFix": 8,
-   "rangesJump": 7,
+   "matcherFix": 7,
+   "rangesJump": 6,
    "rangesGrace": 1,
    "rangesRepeat": 21,
    "rangesTie": 8,
@@ -181,7 +187,9 @@
      "files": 4,
      "visits": 12,
      "strikes": 12,
-     "silentTies": 0
+     "silentTies": 0,
+     "tieStruck": 0,
+     "tieCut": 0
     },
     "GRACE": {
      "files": 1,
@@ -201,28 +209,30 @@
    }
   },
   "parity-fixtures": {
-   "files": 12,
+   "files": 14,
    "refused": 0,
    "fallback": 0,
-   "ranges": 39,
-   "strikes": 1342,
-   "ids": 594,
-   "helpers": 12,
-   "begin": 234,
-   "matcher": 702,
-   "gates": 117,
-   "matcherFix": 9,
-   "rangesJump": 3,
+   "ranges": 46,
+   "strikes": 1375,
+   "ids": 617,
+   "helpers": 14,
+   "begin": 276,
+   "matcher": 824,
+   "gates": 138,
+   "matcherFix": 11,
+   "rangesJump": 5,
    "rangesGrace": 7,
    "rangesRepeat": 108,
    "rangesTie": 9,
    "oracleless": 0,
    "causes": {
     "JUMP": {
-     "files": 2,
-     "visits": 9,
-     "strikes": 43,
-     "silentTies": 1
+     "files": 3,
+     "visits": 11,
+     "strikes": 46,
+     "silentTies": 0,
+     "tieStruck": 1,
+     "tieCut": 1
     },
     "GRACE": {
      "files": 2,
@@ -253,8 +263,8 @@
   "begin": 1830,
   "matcher": 3440,
   "gates": 915,
-  "matcherFix": 9,
-  "rangesJump": 2,
+  "matcherFix": 8,
+  "rangesJump": 1,
   "rangesGrace": 7,
   "rangesRepeat": 93,
   "rangesTie": 0,
@@ -264,7 +274,9 @@
     "files": 1,
     "visits": 8,
     "strikes": 122,
-    "silentTies": 0
+    "silentTies": 0,
+    "tieStruck": 0,
+    "tieCut": 0
    },
    "GRACE": {
     "files": 1,
@@ -282,7 +294,7 @@
     "notes": 0
    }
   },
-  "digest": "689d13938206ab62"
+  "digest": "2d5be4a05be1c64a"
  },
  "spies": {
   "files": 12,
@@ -480,7 +492,8 @@
  "tests/practice/fixtures/parity/cue-part-hands.musicxml": {"fr":7},
  "tests/practice/fixtures/parity/dangling-ties.musicxml": {"fr":6,"ft":2},
  "tests/practice/fixtures/parity/dc-al-fine-early-fine.musicxml": {"jf":1,"jv":3,"js":12,"fr":9},
- "tests/practice/fixtures/parity/ds-al-coda-repeat-volta.musicxml": {"jf":1,"jv":6,"js":31,"jt":1,"ge":1,"gs":2,"gc":2,"fr":8},
+ "tests/practice/fixtures/parity/ds-al-coda-repeat-volta.musicxml": {"jf":1,"jv":6,"js":32,"jr":1,"jc":1,"ge":1,"gs":2,"gc":2,"fr":8},
+ "tests/practice/fixtures/parity/ds-pedal-over-sign.musicxml": {"jf":1,"jv":2,"js":2},
  "tests/practice/fixtures/parity/grace-before-chord.musicxml": {"ge":6,"gs":11,"gm":8,"gc":4,"fr":10},
  "tests/practice/fixtures/parity/meters-6-4-6-8-9-8.musicxml": {"fr":9},
  "tests/practice/fixtures/parity/nested-repeats-voltas.musicxml": {"fr":20},
