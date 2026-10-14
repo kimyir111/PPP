@@ -10,7 +10,9 @@
 'use strict';
 const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : d; };
-const [A, B] = args.filter((a, i) => !a.startsWith('--') && !['--locale', '--viewport'].includes(args[i - 1]));
+const [A, B] = args.filter((a, i) => !a.startsWith('--') && !['--locale', '--viewport', '--queryA', '--queryB'].includes(args[i - 1]));
+/* --queryA / --queryB: what follows the page's address on that side, e.g. ?split=off (G13-4e: the lazy page against the page with every script in its head, and either against main) */
+const QA = opt('--queryA', ''), QB = opt('--queryB', '');
 const LOCALE = opt('--locale', 'en-US');
 const [VW, VH] = String(opt('--viewport', '1440x900')).split('x').map(Number);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -21,14 +23,14 @@ function loadPuppeteer() {
 
 const SCREENS = [['home', null], ['practice', /^(Practice|연습|練習|练习)$/], ['settings', /^(Settings|설정|設定|设置)$/]];
 
-async function capture(browser, base) {
+async function capture(browser, base, query) {
   const ctx = await browser.createBrowserContext();
   const page = await ctx.newPage();
   await page.setViewport({ width: VW, height: VH });
   await page.evaluateOnNewDocument(l => { try { localStorage.setItem('ppp-guest', '1'); localStorage.setItem('ppp-locale', l); } catch (e) { /* */ } }, LOCALE);
   const errors = [];
   page.on('pageerror', e => errors.push(String(e.message).slice(0, 160)));
-  await page.goto(base + '/Piano%20Coach%20App.dc.html', { waitUntil: 'networkidle2', timeout: 90000 });
+  await page.goto(base + '/Piano%20Coach%20App.dc.html' + (query || ''), { waitUntil: 'networkidle2', timeout: 90000 });
   await page.waitForFunction(() => document.querySelectorAll('aside nav button').length >= 6, { timeout: 30000 });
   await page.evaluate(() => window.PPP_I18N && window.PPP_I18N.ready);
   await sleep(2500);                                    // the template re-fetch (when the page does it) has long arrived
@@ -60,9 +62,9 @@ function firstDiff(a, b) {
   const browser = await loadPuppeteer().launch({ headless: 'new', args: ['--no-sandbox'] });
   let bad = 0;
   try {
-    const a = await capture(browser, A);
-    const b = await capture(browser, B);
-    const a2 = args.includes('--twice') ? await capture(browser, A) : null;
+    const a = await capture(browser, A, QA);
+    const b = await capture(browser, B, QB);
+    const a2 = args.includes('--twice') ? await capture(browser, A, QA) : null;
     console.log(`page errors: A ${a.errors.length}, B ${b.errors.length}` + (a.errors.length || b.errors.length ? ' ' + JSON.stringify([a.errors, b.errors]) : ''));
     for (const [name] of SCREENS) {
       const x = norm(a.out[name]), y = norm(b.out[name]);

@@ -375,7 +375,15 @@ async function identityHashes(browser) {
     const viaRec = op.__rec.requests.some(u => /^\/rec\/index\.js/.test(u));
     ok('the option\'s 14 scripts were requested once each over the whole session (background load or first arrangement, never both; realize/ottava.js once more for v2\'s own loader, same address)', OPTION_SCRIPTS.every(f => names.filter(n => n === f).length === (f === '/realize/ottava.js' && viaRec ? 2 : 1)), names.join(' '));
     ok('and so was the reference data (G6a weights, method books), once each', names.filter(n => /method-books\.json$/.test(n)).length === 1 && names.filter(n => /g6a-v1\.json$/.test(n)).length === 1, names.filter(n => /json$/.test(n)).join(' '));
-    const others = op.__rec.requests.slice(before).filter(u => !OPTION_FILES.test(u) && /\.(js|json)(\?|$)/.test(u) && !/engrave\/|i18n|catalog\//.test(u) && !/^\/rec\//.test(u));   /* v2's own 17 files (G10a-5b) are the recording conversion's, not the arranger's */
+    /* G13-4e: the files of the page's lazy groups (the head's <noscript data-ppp-lazy> blocks: the ScoreGraph, the arranger, audio-score.js, the lessons, the backup) come in when the idle
+       prefetch or a caller brings them - before this marker or after it, with the prefetch on, off or slow - so what this check is about (the option asks for nothing else) is everything that is
+       NOT one of them. On a page with ?split=off the blocks are written back as scripts and there are none to list. */
+    const lazyPaths = await op.evaluate(() => {
+      const out = [];
+      document.querySelectorAll('noscript[data-ppp-lazy]').forEach(n => { const re = /src="([^"]+)"/g; let m; while ((m = re.exec(n.textContent))) { try { out.push(new URL(m[1], location.href).pathname); } catch (e) { /* none */ } } });
+      return out;
+    });
+    const others = op.__rec.requests.slice(before).filter(u => !OPTION_FILES.test(u) && /\.(js|json)(\?|$)/.test(u) && !/engrave\/|i18n|catalog\//.test(u) && !/^\/rec\//.test(u) && lazyPaths.indexOf(u.split('?')[0]) < 0);   /* v2's own 17 files (G10a-5b) are the recording conversion's, not the arranger's */
     ok('no other script or data request came with it (v2\'s own 17 files, which the Add screen asks for by default, are not the arranger\'s)', others.length === 0, others.join(' '));
     ok('and v2\'s files are asked for once each, by the Add screen (the default recording conversion)', viaRec && op.__rec.requests.filter(u => /^\/rec\//.test(u)).length === 17, String(op.__rec.requests.filter(u => /^\/rec\//.test(u)).length));
 

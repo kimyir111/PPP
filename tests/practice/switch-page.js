@@ -281,8 +281,9 @@
      transport has (visualTransportFrame follows the transport only when both hold the very same plan). */
   const late = {};
   async function lateStart(item) {
-    const app = PPP.app, S = app.state;
+    const app = PPP.app;
     const score = await loadScore(item);
+    const S = app.state;     /* taken after the wait: React replaces app.state on every setState (the page's own drawing of Home's thumbnail makes one), and a reference from before the wait would be stale */
     late.saved = {};
     ['score', 'tempo', 'loop', 'loopFrom', 'loopTo', 'beat', 'playing', 'hands', 'practiceMode', 'screen'].forEach(k => { late.saved[k] = S[k]; });
     late.tp = app._tp; late.score = score;
@@ -291,9 +292,11 @@
     return { graph: !!late.tl1.plan.graph, notes: late.tl1.notes.length, same: app.visualTimeline(S) === late.tl1 };
   }
   async function lateEnd() {
-    const app = PPP.app, S = app.state;
+    const app = PPP.app;
+    let S = app.state;
     try {
       const loaded = await PPP.loadPracticeModule();
+      S = app.state;   /* after the wait, see lateStart */
       const tl2 = app.visualTimeline(S);
       app.startTransport(S, Score.startQ(late.score, Score.first(late.score)));
       const out = { loaded: loaded, graph: !!tl2.plan.graph, rebuilt: tl2 !== late.tl1, sameAsTransport: app._tp.plan === tl2.plan, again: app.visualTimeline(S) === tl2, sameNotes: J(tl2.notes.map(n => [n.midi, n.startTime, n.endTime])) === J(late.tl1.notes.map(n => [n.midi, n.startTime, n.endTime])) };
@@ -311,8 +314,9 @@
   async function leak(item) {
     const out = [];
     const check = (name, ok, detail) => out.push({ name: name, ok: !!ok, detail: ok ? '' : String(detail || '') });
-    const app = PPP.app, S = app.state, PS = PPP.PianoScore;
+    const app = PPP.app, PS = PPP.PianoScore;
     const score = await loadScore(item);
+    const S = app.state;     /* taken after the wait: React replaces app.state on every setState (Home's thumbnail, drawn when the page's own groups are in, makes one), so a reference from before the wait can be stale */
     const first = Score.first(score), last = Score.last(score);
     const saved = {};
     ['score', 'tempo', 'loop', 'loopFrom', 'loopTo', 'beat', 'playing', 'hands', 'practiceMode', 'screen', 'metro', 'toggles', 'runHit', 'runTot'].forEach(k => { saved[k] = S[k]; });

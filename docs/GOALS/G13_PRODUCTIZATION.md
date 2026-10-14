@@ -319,7 +319,6 @@ All of this at $0 on the existing free tiers.
   CLS (cold, desktop viewport, same throttling, HTTP cache on, medians of 3, origin/main -> this PR): ko 0.138 -> 0.005 (phone viewport 0.007 -> 0.006), ja 0.006 -> 0.009, zh 0.005 -> 0.012, en 0.031 -> 0.023.
   TBT is NOT comparable between the two: the branch's first paint is 2.5 s earlier, so work that main does later (the engraver's first drawing, ~0.5 s at 4x) now falls inside the tool's observation window.
 
-
 **G13-3 as built (notices and the YouTube posture, PR "G13-3" #265; U9 decided by the user on 2026-10-13; reviewed, then amended).**
 - *Decision (U9):* keep YouTube transcription; **add a notice** - "use recordings you have the right to use; the score is for your own practice" - where a link is entered and in About; **do not allow posting
   a score made from a YouTube link to the public Shared Scores** (its link may still be sent, as today; private use is unchanged); default the PC worker to download on the PC (below: not a one-line default,
@@ -372,6 +371,117 @@ All of this at $0 on the existing free tiers.
 - *Tests:* `npm run test:notices` (in the gate, shard-h: the generator and its 24 planted defects, `youtube-share.test.js` on this `server.js`), `npm run test:notices-mutants-node` (13 planted defects of
   `server.js` / `static-allow.js`, shard-h), `node tools/notices/build.js --check` (a shard and the light job), `tests/notices-ui.test.js` + the 18 page mutants (job `notices-suite`: Korean, a real account,
   the page's own arranger). `tests/static-allow.test.js` names the notices file as the one served root document; the i18n gaps checker stays at 0.
+
+**G13-4e: code splitting - analysis (what Home needs before its first paint).** G13-4 ended with "the rest of the distance is code that is not needed to draw Home ... a code-splitting job". This is the evidence for that job; "G13-4e as built" below is what was done with it.
+
+*How it was measured.* `git archive` of origin/main `adb9f3f` (= live `f64d06b`) served locally with a small brotli stand-in for the CDN edge in front of `server.js` (it brotli-compresses an identity answer and passes a gzip one through), `tests/live/perf.js phone` (150 ms RTT, 1.6 Mbps, CPU 4x, 412x823), puppeteer's Chrome, HTTP/1.1 on loopback; the host was at 60-100% CPU from other programs, so every number is a median of 3 runs of the two arms interleaved, good for comparing the arms and not an absolute. CPU shares come from a Chrome trace and a CPU profile of the same load.
+
+*What the first paint waits for.* The head names 70 scripts: 1,628 KB raw, **518 KB gzip**. All of it is parser-blocking: `support.js` boots on DOMContentLoaded, after every head script has been fetched and run, and React renders Home after that. With the 306 KB page the phone must receive about 820 KB (4.1 s at 200 KB/s, the 1.6 Mbps of the profile) before DOMContentLoaded (4.8 s in the trace), then runs about 1.1 s of its own work (support.js boot 215 ms, the first React commit 909 ms, of which 561 ms is one layout) before the first paint at 5.9 s. Evaluating the 64 deferred files is NOT the cost: `EvaluateScript` of all of them is about 40 ms at 4x (their module bodies define functions; V8 compiles a function when it first runs). **The cost is their bytes: 443 KB gzip = 2.2 s on this profile.**
+
+*Call graph: script -> first consumer -> needed when* (consumers found twice: by `grep` over the page, `lessons.js`, `course.js` and the scripts' own headers, and dynamically, by putting an accessor on every one of these globals and recording the stack of each read while the page booted, drew Home and opened every screen of the sidebar; `tests/load-app/split-reads.js` keeps that tool).
+
+| Script(s) | gzip KB | First consumer in the page | Before the first paint? | Home? | Needed by |
+| --- | --- | --- | --- | --- | --- |
+| `i18n.js` | 4.1 | `tx()` at the app's module and class initialisers | **yes** | yes | everything; stays |
+| `vendor/react*`, `support.js` | 66.4 | the runtime boot | **yes** | yes | stays |
+| `course.js` | 3.6 | `PPP_COURSE.fresh()` in the initial state | **yes** | yes | stays |
+| `score-search.js` | 2.1 | `PPP.ScoreSearch: window.PPPScoreSearch` in the page's `window.PPP` literal | **yes** (a read at boot) | no | My Songs search; kept: 2 KB |
+| `library-backup.js` | 11.3 | `backupBoot()` (componentDidMount) - which only needs the note a restore leaves in `sessionStorage` - then Settings > My data | no | no | `backupMake`, `backupFileChosen`, `backupApply`, `wipeGo`, `backupVals` (Settings) |
+| `scoregraph/*` (29 files; `index.js` builds `PPPScoreGraph` from ALL of them) | 217.8 | `ScoreView.paint` -> `loadEngrave()` (after the commit, async) and every importer: `PPPScoreGraph.importFile`, `.musicxml.import`, `.legacy.toScore` (`importToGraph`, MusicXML text, MIDI, the review screen) | no | the thumbnail's drawing, after the paint | any drawing; Practice, My Songs, Course, imports |
+| `engrave/` head files (8: ledger ... index) | 38.1 | `ScoreView.paint` -> `loadEngrave`; `PPPEngrave.app.resolveSync/resolve/remember/forget` (import, practice 'graph' plan, difficulty, print) | no | as above | any drawing |
+| `audio-score.js` | 40.9 | `PPPAudioScore.toMusicXml` (a recording), `.fromMidi` (a MIDI file), the review screen's rewrite of rhythm/bars | no | no | Add sheet music (MIDI, recording), the review screen |
+| `playability/*` (5), `difficulty/*` (3) | 19.1 + 12.8 | only `PPP.fingering = 'inferred'` / `PPP.difficulty = 'g6'` (both default `'legacy'`), and as load-time dependencies of `realize` and `arrangement` | no | no | the arranger |
+| `songgraph/*` (8), `arrangement/*` (4), `realize/*` (4) | 18.0 + 15.2 + 40.1 | `realizeWithG8` ('g8' only), `arrangeSingleNote` (the default: after `loadSingleModules` -> `loadScoreModules()`) | no | no | Song Arranger, the review screen's easier version |
+| `lessons.js` | 28.4 | `PPP_LESSONS` in the Learn screens (`learnLessonObj`, `learnInput`, ...) | no | no | Piano Basics |
+
+*Findings that shape the build.*
+1. **Nothing in the deferred set is needed before the first paint.** The boot trace shows four reads of the page's lazily-wanted globals before Home is drawn: `PPPScoreSearch`, `PPP_I18N` and `PPP_COURSE` (all kept), and `PPPBackup` in `backupBoot()`, which only needs the note a restore leaves in the session (it now looks for the note first). Home's thumbnail goes through `ScoreView.paint -> loadEngrave()`, which is already asynchronous and already has a loader that waits for the modules (`loadScoreModules`, the recovery of a failed head script); until the drawing is there the view says "Engraving...". So **Home draws without any of the 443 KB**, and the thumbnail is the first consumer.
+2. **The score library cannot be split further without changing it.** `scoregraph/index.js` freezes `PPPScoreGraph` from every module (`pro-*`, `gaps`, `meter-grid`, the MusicXML and MIDI readers/writers: 218 KB), and the engraver's own files read `PPPScoreGraph` at load. A thumbnail needs a fraction of it; making `index.js` tolerant of missing modules would be a change to a library with 700 Node tests that the page's behaviour does not need. Left whole: one group.
+3. **Consumers are few and already gated.** Every importer and the arranger go through `loadScoreModules()` (App 5473, 5901, 5928, 5995, 9087, 12440), a function that exists to "retry the head's own list" - the awaiting loader needed here is that function, taught the new groups. The reads that are not gated (`PPPEngrave.app.*` in `engraveRemember`/`engraveForget`/`practiceStamp`/print, `window.PPPBackup` in Settings, `window.PPP_LESSONS` in render) run after a person has done something, never at boot.
+4. **The head scripts are not all independent**: `songgraph`, `realize`, `arrangement`, `playability` and `difficulty` read `PPPScoreGraphModules` (and each other) when they LOAD; `engrave/` reads `PPPScoreGraph` when it loads; `audio-score.js` reads it only when called. Groups keep the order of the head, and say what must have run first.
+5. **Not deferred, and why:** React, `support.js`, `i18n.js`, `course.js` (read at boot); `score-search.js` (a read at boot; 2 KB); the page itself (306 KB: its inline app code is compiled by the runtime from the document, one piece).
+6. **Server side nothing has to change but one line in the allowlist.** The lazily loaded groups can stay in the head's own tags (the served page rewrites every `<script src>` of the head to `?h=<hash>`, G13-4c), so they are immutable and gzip like the others. The existing lazy lists (`SINGLE_SCRIPTS`, `RECORDING_SCRIPTS`, ...) are asked for by `?v=N` and are `no-store` today (the edge compresses them); they are 185 KB and 70 KB raw and are used only when arranging or converting a recording: left as they are, said so in the as-built section.
+
+*Expected gain, from the arithmetic of the trace and checked against a first build:* 443 KB of 820 KB leave the path to DOMContentLoaded: about 2.2 s of 5.9 s. A first build moved FCP 5.85 -> 3.57 s (-39%), far over the "stop if < 10%" line of the task, so the build went on.
+
+**G13-4e as built (code splitting).** Each part is its own commit and reverts alone; with `PPP.split = 'off'` (or `?split=off`) the page is the one before G13-4e.
+- *`lazy-load.js`* (new, 1 file, ES5, no dependencies; Node tests drive it with a fake window). The head names 64 deferred files in six `<noscript data-ppp-lazy="group" data-after data-globals>` blocks (text, so a browser that runs
+  scripts requests nothing for them, preload scanner included; the served page rewrites their `?v=N` to `?h=<hash>` like any head script, G13-4c, so they are immutable and gzip): `backup` (library-backup.js), `score` (scoregraph/, 29 files),
+  `arranger` (playability, difficulty, songgraph, arrangement, realize: 24, after `score`), `audio` (audio-score.js, after `score`), `engrave` (the engraver's 8 head files, after `score`), `lessons` (lessons.js). The order of the
+  blocks in the head is the order the scripts always had; a one-line `PPP_LAZY.here()` follows each. *on* (the default): the block is registered and its globals become accessors. Nothing is asked for until the page has painted
+  something (the first contentful paint, then one task; a background tab: after 1 s; no paint timing: after a frame), then a group is asked for by `PPP_LAZY.ensure(names)` (all its files by `fetch`, run in the
+  written order, one file per task so no long task is made of them, dependencies first) or by the idle prefetch (`start()`, called by the app's first mount). The downloads go out in *waves*, whoever asks for them (the prefetch
+  or an `ensure`; a small scheduler, at most 32 in flight, the better group first): (0) `lessons` + `backup`, 39 KB, alone - what a tap in the first seconds reads - then (1) `score`, `engrave` and `engravePage` (the fifteen
+  drawing files, a group the page makes up at run time with `PPP_LAZY.define`: Home's thumbnail), then (2) `audio`, then (3) `arranger`. A file of a wave is asked for when the files of the wave before it are in (an answer
+  that has not begun after 2 s no longer holds the waves behind it), and the groups run in the same order as they arrive, so the thread is never shared between the drawing of the thumbnail and what comes after it. A read that cannot wait
+  (the safety net below) is not held behind a wave, and its download holds the waves behind it until it is in. *off*: the block is written back with `document.write` where it stands (parser-inserted, same order). Stand-in: an inline line after the script tag that makes every
+  block write itself back if lazy-load.js cannot be fetched. A browser with no fetch gets *off*.
+- *The choice* (the PPP.cdn / PPP.recording idiom): `?split=on|off` for this visit, the value remembered in `localStorage['ppp.split.v1']`, then the default (`on`, one constant in lazy-load.js); anything else, a storage that throws
+  included, is no choice. `PPP.split` reads what this load did; assigning remembers (any other value forgets). Test switch: `?splitStart=0` / `localStorage['ppp.splitStart']='0'` keeps the idle prefetch from starting.
+- *The page's use of it* (all behind `lazyOn()`; with `off` every line is what it was): `scoreModulesReady` reads through `PPP_LAZY.peek` (a readiness check never starts a download); `loadScoreModules` asks for the four groups (a
+  failed file is asked once more at once with `&retry=<stamp>`, the rule of the old recovery, so the scoregraph-recovery test is unchanged); `loadEngrave` asks for `score` + `engrave` + `engravePage` only (the fifteen files main asked for at once), so Home's thumbnail is not held behind
+  the arranger and audio-score.js; a file import (`importToGraph`) and a method-book piece (`openCoursePiece`) ask for the library and the engraver's source first (`needScoreGraph`; a MIDI file also for audio-score.js), which
+  `warmRecordingModules` on the Add screen had only made likely; `backupBoot` looks for the restore's note in the session before it asks for the module; the piano recordings wait for the prefetch (cap 7 s, with the CJK stylesheet) - also the ones a tap or a key wakes (`PianoSamples.loadAfterCode`: thirty downloads of 1.3 MB on the first tap would take the line from the
+  read that tap makes; a tap measured 4.4 s before this). The synthesized stand-in sounds until they are in, as it always did.
+- *Safety net.* A read of a deferred global that comes before its group is in does not see `undefined`: the accessor loads the group (and what it needs) synchronously, once (`XMLHttpRequest`, its downloads started in parallel
+  first so the one-by-one asks are answered from the cache they fill; 0.2-1.0 s on the phone profile for backup .. arranger), and the read is in `PPP_LAZY.status().syncLog`. Where the page needs it: two screens, by design - Piano Basics (lessons.js, 28 KB) and Settings (library-backup.js, 11 KB) open at once, as they always did, and
+  the read they make while drawing loads the file when the prefetch has not brought it yet (they are the first wave of the prefetch, alone on the line, so that this is only a tap in the first second after the first paint;
+  *measured* below: 0.4-0.9 s, not the "0.2-0.5 s" first written here, which was for a prefetch that had them third and fourth and had not been measured with the line in use) - a gate on the tap
+  would have made the screen open later than a test's fixed wait. The synchronous request is deprecated by Chrome (a DeprecationIssue "Synchronous XMLHttpRequest on the main thread" in DevTools' Issues, once, for a visit that taps in
+  that first second): it is the net under a caller that did not ask, not a path to build on - the callers that can ask do, and a test that sees one fails (`syncLoads`). Everywhere else the suites see 0 (`syncLoads` is asserted in `tests/load-app/split.test.js`; every suite listed in the PR was also run with the prefetch off). A refused synchronous load answers `undefined` and is not repeated for 5 s.
+- *Server*: `lazy-load.js` added to `static-allow.js`. Nothing else: the blocks are rewritten by the existing head rewrite.
+- *Not done, and why.* (1) `SINGLE_SCRIPTS` / `RECORDING_SCRIPTS` / `RECORDING_OPTIONAL_SCRIPTS` (rec/, candidates/, critics/, repair/, weights) stay `?v=N`, no-store, edge-compressed: they are used only when a person arranges
+  or converts a recording (185 KB raw), never on the path to Home, their loaders and their tests (`single-note-app` asserts their urls and request counts) are exact, and a manifest of ~60 hashes in every page (or a second
+  fetch) buys a repeat arranger about 50 KB. A follow-up if it is wanted. (2) `scoregraph/` is one group (see the analysis). (3) The engraver's first drawing (one task of about 425 ms at 4x, 140 ms of it V8 compiling the
+  engraver) and the first React commit (about 900 ms at 4x, 540 ms of it one layout) are the page's own work; they are what is left of "longest boot task" and TBT.
+- *Tests.* `tests/load/lazy-load.test.js` (41, Node: mode choice, off, registration, ensure order/sharing/failure/retry, safety net, paint gating, prefetch order, the waves and the bound on downloads in flight, non-enumerable globals); `tests/load-app/split.test.js` (20, browser: nothing deferred before
+  the first paint and no synchronous load; the page the same; off; PPP.split; Home's thumbnail with the group held; Practice, MusicXML and MIDI import, a method-book piece, the arranger, Piano Basics and Settings right after load with the
+  prefetch off or a group held 5 s; a tap that wakes the sound with the arranger held; a group that cannot be fetched is the app's own message and is asked again; the stand-in); `tests/load/content-hash.test.js` (the blocks are hashed); 40 mutants `L1-L13`, `L15-L29`, `S1-S4`, `S6-S8`, `S10-S14`
+  (`node tests/load/mutants.js`, all killed). `tests/single-note-app.test.js` counts the requests that are not the arranger's: the files of the lazy groups are not among them (they come when the prefetch or an ask brings them, before the test's marker or after it). `tests/engrave/tools/with-port.js` takes `PPP_SPLIT=on|off` and `PPP_SPLIT_START=0` and reports the synchronous loads of a suite. CI (slower runners than this PC, tests that act the moment the page is ready) found four things, each now a test or a mutant: a gate on the tap for Piano Basics (removed: the screen must open at once), a file import that relied on the Add screen's warm-up having brought audio-score.js (it asks, `needScoreGraph`), a guard that read the engraver before it looked at what the song was (`engravePersist`), and a namespace object that the group's first file makes and the rest fill, which a read between two files handed out half built (a read of any global of a group that is not all in completes it, L21). It also found one thing the split changes for a test, not for the app: `tests/practice/switch-page.js` probes took `app.state` before an `await` and mutated it after, and React replaces the state object on every `setState`, which Home's thumbnail (drawn later now) makes at an arbitrary moment; they take it after the wait.
+- *Measured* (this branch against a `git archive` of origin/main `adb9f3f` served in the same session, both behind the brotli stand-in, `tests/live/perf.js phone` through a local HTTP/1.1 server, the two arms interleaved; the host
+  was at 60-100% CPU from other programs, which inflates absolute numbers and spreads TBT and the longest task; medians):
+
+  | phone profile, cold | origin/main | this PR | budget (section 11) |
+  | --- | --- | --- | --- |
+  | first contentful paint, 5 runs (final code, interleaved) | 5,856 ms (5,828-5,872) | **3,548 ms** (3,528-3,584) (-39%) | <= 4,000: **met** (5 of 5) |
+  | app ready, same runs | 6,114 ms (6,056-6,143) | **3,763 ms** (3,727-3,796) (-38%) | <= 5,000: **met** (5 of 5) |
+  | the same on a busy host (60-100% CPU of other programs), FCP / ready | 6,200 / 6,495 ms | 3,864 (3,704-4,356) / 4,077 (max 4,620) ms | met in 4 of 5 / 5 of 5 |
+  | KB before ready | 1,008 | **547** | <= 1,200: met (it was already) |
+  | requests before ready | 93 | 18 | |
+  | total blocking time (after FCP; 5 runs: 324-358 vs 328-342) | 333 ms | 329 ms | <= 300: **not met**, not changed |
+  | longest long task | 784 ms | 774 ms | <= 500: **not met**, not changed |
+  | desktop, FCP / ready (3 runs) | 420 / 402 ms | **380 / 290 ms** | not worse: **met** |
+  | repeat visit, second visit: ready; KB other than piano samples | 1.8-2.2 s; 1 KB | 1.7-2.5 s; 1 KB | <= 3,000 ms: met; <= 450 KB: met apart from the samples (as in G13-4: the fixed 6 s settle ends a faster first visit earlier, so more samples are left for the second) |
+
+  *Home's engraved thumbnail is not earlier* (5 interleaved runs, phone profile, cold): over an HTTP/2 stand-in 6.93-6.95 s on main, 7.19-7.24 s here (+0.25 s); over HTTP/1.1 with six connections 7.02-7.12 s on main, 7.99-8.07 s here
+  (+0.95 s; production is HTTP/2 behind Cloudflare, measured with `http2.connect`, so the first is the one that applies). What moved is everything before it: the page is up 2.3 s earlier and the thumbnail is drawn where it was.
+  Why it cannot be earlier: the drawing needs 403 KB after the first paint (the library 214, the engraver's source 38, its fifteen drawing files 151) and a main that asked for everything before the paint has the line idle for
+  1.7 s of its own CPU-bound start (3.5 - 5.2 s) in which the thumbnail's files could have been coming; this build asks after the first paint, as it must for the first paint to be early. What was tried and what it gave (each 3-5
+  runs): all groups at once with eight in flight (thumbnail +0.35 s, lessons 1.4 s after the paint); sixteen / thirty-two in flight (thumbnail +0.05 / -0.05 s, lessons 2.2 / 2.7 s after the paint: a file waits
+  in a share of the line that is one in the number of downloads; sixty-four, with the first wave alone, was no better than thirty-two); the fifteen drawing files in the same wave as the engraver's own (as built: -0.3 s); lessons and backup first, alone (as built: +0.2 s on the thumbnail, lessons in
+  at 0.7 s after the paint); lessons and backup in the head as plain scripts (FCP +0.25 s, rejected, the first paint is the number the budget is about); a wave let go when the one before it has begun to answer, with the line
+  fair between the streams (thumbnail at parity, lessons 2.5 s after the paint, so a tap in that time waited behind fifty streams - 1.6 s; rejected). Pages (DOM) are identical to origin/main on Home, Practice and Settings
+  (`tests/load-app/dom-identity.js`, en-US desktop and ko-KR phone, `?split=on` and `?split=off`).
+  *What is left of the two budgets that are not met* is not code that can be deferred: the first React commit is one task of 800-940 ms at 4x of which about 540 ms is the page's first layout (on this Windows PC about half of it is
+  the font-fallback lookup of the three Noto families that are not installed: with the font stack replaced by Arial the same layout takes 215 ms - a property of this host and of G13-4b's font stack, not of the code), and the
+  engraver's first drawing, 425 ms at 4x (140 ms of it V8 compiling the engraver), which runs after the first paint in both builds, so TBT counts it in both, with the 78 ms idle task of the CJK-font probe (head, G13-4b).
+  *The first tap on Piano Basics or Settings* (review of this PR: a tap at "ready" took 1,161 ms / 600 ms against 169 / 140 ms on main, because the screen's render reads `PPP_LESSONS` / `PPPBackup`, which are 28 and 11 KB behind
+  the prefetch, as a synchronous request that waits in the line behind what is in flight). Measured with `tap.js` (phone-class line 1.6 Mbit/s, 150 ms, CPU x4, a desktop-size window, the tap N ms after the first contentful paint,
+  3 runs, time from the tap to the screen's own content; main: Piano Basics 0.15-0.17 s, Settings 0.28-0.32 s at any time):
+
+  | tap after the first paint | 0 ms | 300 ms | 600 ms | 1,000 ms |
+  | --- | --- | --- | --- | --- |
+  | Piano Basics, HTTP/2 stand-in | 0.86 s | 0.61-0.65 s | 0.14-0.63 s | 0.13-0.16 s (= main) |
+  | Settings, HTTP/2 stand-in | 0.76-0.78 s | 0.58-0.60 s | 0.27-0.30 s (= main) | 0.27-0.29 s (= main) |
+  | Piano Basics, HTTP/1.1 | 0.70-0.72 s | 0.39-0.40 s | 0.15-0.18 s (= main) | 0.13-0.15 s (= main) |
+  | Settings, HTTP/1.1 | 0.56-0.58 s | 0.27-0.30 s (= main) | = main | = main |
+
+  So: from one second after the first paint a tap costs what it costs on main; before that it waits for one request of the size of the file (a round trip, 0.15 s, and the file) - 0.4-0.9 s on this line, against
+  1.2 s measured in the review, and up to 4.4 s with the first build that put the two files first (before the two fixes below). Two causes were behind the long ones and are fixed: (1) the first tap wakes the sound (`PianoPlayer.wake`), which asked for the thirty recordings
+  (1.3 MB) at once and put them in the line in front of the read - they now wait for the code, like the idle path's (`loadAfterCode`, mutant S14); (2) the other 52 files of the thumbnail went out the moment the read
+  made its group urgent and took 50 shares of the line - an urgent download keeps holding the waves behind it (L23). The floor that is left is the request itself: the 0.3 s target of the review is met for Piano Basics from 0.6 s (HTTP/1.1) /
+  1 s (HTTP/2) after the first paint and for Settings from 0.3 s / 0.6 s, not before, unless lessons.js and library-backup.js are in the head (FCP +0.25 s) or fetched before the first paint, which competes with the bytes the first paint is waiting for on a line
+  that is shared fairly (as this stand-in's is; a priority-aware edge might not make it cost, and a `<link rel=prefetch>` for the two files is the next thing to measure there - not possible with the local stand-ins).
 
 ---
 
