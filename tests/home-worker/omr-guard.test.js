@@ -270,6 +270,19 @@ async function slowSenders() {
     clearInterval(drip); clearTimeout(giveUp);
     ok('a sender that sends a byte every 100 ms is cut by the TOTAL deadline (1.6 s here): 408 slow, not before 1.3 s', ob.status === 408 && ob.tResp >= 1300 && ob.tResp < 3000 && k < body.length, JSON.stringify({ s: ob.status, t: ob.tResp, sent: k, of: body.length }));
 
+    /* the loop was busy (the third review: another request blocked it for 11 s and a 100 KB upload that had fully arrived within 2 s got 408): a timer runs before the socket is read in
+       the same turn, so the deadline looks once more after the loop has read it. Here the whole body is written, then this process (the server's too) is busy for 1.2 s - three gaps. */
+    const late = JSON.stringify({ title: 'late', pages: L.omrPages(1, { w: 1020, bytes: 4000 }) });
+    const lb = rawSocket(S, '/api/jobs/omr', { user: 'u1', ip: ADDR.u1, declared: late.length, first: late.slice(0, 20) });
+    await sleep(60);
+    /* (the rest is written, and the loop is busy, in the check phase of one turn: the data is in the socket when the next turn runs its due timers, BEFORE it polls the socket - the case.
+       Written earlier, the poll of the same turn reads it and nothing is silent; busy in a timer callback, libuv keeps the time the turn started with and the timer is not yet due.) */
+    await new Promise(resolve => setImmediate(() => { lb.sock.write(late.slice(20)); const until = Date.now() + 1200; while (Date.now() < until) { /* busy */ } resolve(); }));
+    for (let i = 0; i < 40 && !lb.status; i++) await sleep(50);
+    const lateStatus = lb.status;
+    lb.sock.destroy();
+    ok('a body that had fully arrived while the loop was blocked for 1.2 s (the gap deadline is 0.4 s) is taken: 201, not 408 (silence is still cut at the gap: above)', lateStatus === 201, String(lateStatus));
+
     /* a sender that goes away */
     const c = rawSocket(S, '/api/jobs/omr', { user: 'u4', ip: ADDR.u4, declared: body.length, first: body.slice(0, 20) });
     await sleep(100);
@@ -542,8 +555,15 @@ async function stockRoutes() {
   heading('server.js: the same reader on its own routes (a real server with a 150 MB heap)');
   const dir = L.tmpDir('ppp-guard-stock-');
   const port = await freePort();
+  /* a fake local helper (what /helper/* is proxied to): it takes the whole body and says how many bytes it was */
+  const fake = require('http').createServer((rq, rs) => {
+    let n = 0;
+    rq.on('data', c => { n += c.length; });
+    rq.on('end', () => { rs.writeHead(200, { 'Content-Type': 'application/json' }); rs.end(JSON.stringify({ ok: true, bytes: n, path: rq.url })); });
+  });
+  await new Promise(r => fake.listen(0, '127.0.0.1', r));
   const env = Object.assign({}, process.env, { NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(port), PPP_DATA_DIR: dir, SESSION_SECRET: 'guard-stock',
-    PPP_BODY_IDLE_MS: '2500', PPP_MAX_CONNECTIONS: '60' });
+    PPP_BODY_IDLE_MS: '2500', PPP_FIRST_BYTE_MS: '3000', PPP_MAX_CONNECTIONS: '60', PPP_HELPER: '1', PPP_HELPER_URL: 'http://127.0.0.1:' + fake.address().port });
   delete env.DATABASE_URL;
   const child = spawn(process.execPath, ['--max-old-space-size=150', path.join(L.MODS, 'server.js')], { cwd: L.REPO, env: env, stdio: ['ignore', 'pipe', 'pipe'] });
   let logs = '', exited = null;
@@ -596,8 +616,52 @@ async function stockRoutes() {
     });
     await sleep(500);
     ok('120 idle sockets against a limit of 60: the server drops the ones past it at once (' + socks + ' closed by it within 2 s), and is fine after', socks >= 40 && (await health()) === 200, socks + ' ' + (await health()));
+    /* the places held by silent sockets are given back at the first-byte deadline (3 s here, 30 s in production): without it 1,010 silent connects held all 1,000 places until the headers timeout */
+    {
+      const silent = [];
+      for (let i = 0; i < 60; i++) { const s = net.connect(port, '127.0.0.1'); s.on('error', () => {}); silent.push(s); }
+      await sleep(400);
+      const during = await health();
+      await sleep(3400);
+      const freed = silent.filter(s => s.destroyed).length;
+      const after = await health();
+      ok('60 silent sockets hold all 60 places: /health is not answered while they are silent (' + during + '), and at the first-byte deadline they are closed by the server (' + freed + ' of 60) and /health answers 200', during !== 200 && freed >= 55 && after === 200, JSON.stringify({ during: during, freed: freed, after: after }));
+      silent.forEach(s => s.destroy());
+      await sleep(200);
+      /* a request that dribbles is not touched: its headers come in two parts with a gap longer than the first-byte deadline */
+      const dribble = await new Promise(resolve => {
+        const s = net.connect(port, '127.0.0.1');
+        let got = '';
+        s.on('error', () => {});
+        s.on('data', d => { got += d; });
+        s.on('close', () => resolve(got.slice(0, 15)));
+        s.write('GET /health HTTP/1.1\r\nHost: x\r\n');
+        setTimeout(() => s.write('Connection: close\r\n\r\n'), 4200);
+        setTimeout(() => s.destroy(), 9000);
+      });
+      ok('a request whose headers dribble in with a 4.2 s gap (the first-byte deadline is 3 s) is not touched: it is answered 200 (the deadline is off after the first byte)', /^HTTP\/1.1 200/.test(dribble), JSON.stringify(dribble));
+    }
+    /* proxied uploads (/helper/*) are piped, never read by readBody: neither its deadlines (a gap of 2.5 s here) nor a request timeout of 120 s may cut them. 3 bytes, 3.2 s apart: 6.4 s. */
+    {
+      const up = await new Promise(resolve => {
+        const s = net.connect(port, '127.0.0.1');
+        let got = '';
+        const t0 = Date.now();
+        s.on('error', () => {});
+        s.on('data', d => { got += d; });
+        s.on('close', () => resolve({ ms: Date.now() - t0, got: got }));
+        s.write('POST /helper/omr HTTP/1.1\r\nHost: x\r\nContent-Type: application/octet-stream\r\nContent-Length: 3\r\nConnection: close\r\n\r\n');
+        let n = 0;
+        const iv = setInterval(() => { if (n < 3) { s.write('A'); n++; } else clearInterval(iv); }, 3200);
+        setTimeout(() => { clearInterval(iv); s.destroy(); }, 20000);
+      });
+      ok('a recording trickled to /helper/omr for ' + Math.round(up.ms / 100) / 10 + ' s, with 3.2 s between bytes (the JSON routes\' gap deadline is 2.5 s here) is passed to the helper whole and answered 200 with its 3 bytes', /^HTTP\/1.1 200/.test(up.got) && /"bytes":3/.test(up.got) && up.ms > 6000, JSON.stringify({ ms: up.ms, got: up.got.slice(0, 120) }));
+      const m = /a request within (\d+) s/.exec(logs);
+      ok('and the request timeout the server was started with is 600 s (Node\'s own is 300; it was 120, which cut a slow upload of a recording at 137 s): the start line says "' + (m ? m[0] : 'nothing') + '"', !!m && +m[1] >= 600, (logs.match(/Sockets:[^\n]*/) || ['none'])[0]);
+    }
   } finally {
     try { child.kill(); } catch (e) { /* gone */ }
+    try { fake.close(); } catch (e) { /* gone */ }
     await sleep(300);
     L.rmDir(dir);
   }
