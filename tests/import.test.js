@@ -519,6 +519,9 @@ async function importFile(page, file, waitMs) {
       const cells = document.querySelectorAll('button[title^="Measure "]').length;
       const staves = document.querySelectorAll('.ppp-score svg').length;
       const notes = document.querySelectorAll('.ppp-note').length;
+      /* this lap is played without a keyboard, which since decision U4 (2026-10-13) records nothing by default; what is checked is that a recognised
+         score's practice reaches the saved history, so the legacy folding is asked for (the default is tests/learner-log.test.js section `demo`) */
+      window.PPP.demoRuns = 'count';
       /* loop one measure so a lap completes inside the test window */
       const c = document.querySelectorAll('button[title^="Measure "]');
       if (c.length) { c[0].click(); c[0].click(); }
