@@ -8159,7 +8159,7 @@ const Import = {
     return { ok: true, alive: !!w.alive, tag: typeof w.linkTag === 'string' && /^[0-9a-f]{6}$/.test(w.linkTag) ? w.linkTag : '' };
   },
   /* G12-5: the pages of a score are the person's own; they go to the PC named by the link this device holds. A device that did not make that link (it adopted it from an address, or the person
-     typed a code) is asked ONCE, at the first send, in so many words: which PC, and a way out. Resolves 'send', 'draft' or 'cancel'. With nobody to ask (no screen: ctl.canAsk is the import
+     typed a code) is asked ONCE, at the first send, in so many words: which PC (the mark that Settings shows for the person's own), whether it is theirs, and a way out. Resolves 'send', 'draft' or 'cancel'. With nobody to ask (no screen: ctl.canAsk is the import
      screen's) nothing is sent: 'draft'. */
   async pcAskSend(tag, onStage, ctl) {
     if (!ctl || ctl.canAsk !== true) return 'draft';
@@ -8204,6 +8204,8 @@ const Import = {
       if (c === 'bad-code') return tx('This device holds a PC link that the site does not recognise right now.');
       if (c === 'queue-full' || c === 'quota') return tx('Scores are already waiting for your PC.');
       if (c === 'too-many') return tx('Too many scores were sent just now.');
+      if (c === 'budget') return tx('The site is taking in as many scores as it may for now.');
+      if (c === 'share') return tx('This device or network has sent as many scores as the site takes in for now.');
       if (c === 'busy' || c === 'store' || (e && (e.status === 0 || e.status >= 500))) return tx('The site is busy right now.');
       return tx('The site could not take the pages of this score.');
     };
@@ -13320,8 +13322,8 @@ const PcLink = (() => {
     normalize: s => { let t = String(s == null ? '' : s); const i = t.indexOf('#pc='); if (i >= 0) { t = t.slice(i + 4); const a = t.indexOf('&'); if (a >= 0) t = t.slice(0, a); try { t = decodeURIComponent(t); } catch (e) { /* as it is */ } } return t.replace(/[\s-]+/g, '').toLowerCase(); },
     /* the code this browser has, or null */
     get() { try { const v = JSON.parse(localStorage.getItem(LS) || 'null'); return v && valid(v.code) ? v.code : null; } catch (e) { return null; } },
-    /* keep a code; true when it can be read back. o.trusted: this device made the link, or is the PC itself (the pairing link of worker.js --pair, &local=1), or the person has said once that
-       this PC may be sent the pages of their scores (G12-5: a link that was ADOPTED from an address - the zero-tap pairing - is not trusted with page images until asked) */
+    /* keep a code; true when it can be read back. o.trusted: this device made the link (makePcLink), or the person has said once that this PC may be sent the pages of their scores (trust()).
+       Never from an address: a link that was ADOPTED, typed or confirmed by a tap is not trusted with page images until asked. */
     set(code, o) {
       if (!valid(code)) return false;
       try { localStorage.setItem(LS, JSON.stringify(o && o.trusted === true ? { v: 1, code: code, trusted: true } : { v: 1, code: code })); } catch (e) { return false; }
@@ -16577,9 +16579,11 @@ class Component extends DCLogic {
   pairAccept(code, tag, W, local, prevCode) {
     const wasLocal = PcLocal.raw();
     const wasTrusted = PcLink.trusted();
-    /* G12-5: only the pairing link of the PC itself (&local=1, opened in the PC's own browser by worker.js --pair) is the person's own; any other link that arrives is a link of somebody's
-       PC until the person has said so once, at the first send of a score's page images (Import.recogniseOnPc) */
-    if (!PcLink.set(code, { trusted: !!(local && PcLocal.desktop()) })) return this.pairNote(tx('This browser cannot keep the connection (a private window, or blocked storage). Open the link in a normal window.'), true);
+    /* G12-5: NO link that arrives is trusted with page images - not by a zero-tap adoption, not by the Connect tap, and NOT by "&local=1" either: that is in the ADDRESS, so anybody who can
+       send a link can write it (the second review reproduced it in a fresh Chromium: an attacker's `#pc=<code>&local=1` made the next import upload its pages at once). "&local=1" keeps
+       its old, smaller meaning (this browser is on the PC that runs the worker: the pppworker:// start, below) and nothing more. Trust is set in two places only: by the page's own
+       "Create my PC link" (makePcLink), and by the person's "Send to that PC" at the question of Import.recogniseOnPc. */
+    if (!PcLink.set(code)) return this.pairNote(tx('This browser cannot keep the connection (a private window, or blocked storage). Open the link in a normal window.'), true);
     PcLink.setPrev(prevCode || null, wasTrusted);
     if (local && PcLocal.desktop()) PcLocal.set(true);
     clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};
@@ -16965,7 +16969,7 @@ class Component extends DCLogic {
       vectorpdf: () => tx('Reading notation directly from the vector PDF'),
       recognise: d => d.of > 1 ? tx('Reading the notation on {{n}} pages', { n: d.of }) : tx('Reading the notation'),
       /* G12-5: the person's own PC reads the pages (PC_OMR) */
-      pcask: d => tx('Send the pages of this score to the PC ending in {{tag}}?', { tag: d.tag }),
+      pcask: d => tx('Send the pictures of this score to the PC marked "{{tag}}"? Make sure it is your own computer.', { tag: d.tag }),
       pcsend: d => (d.of > 1 ? tx('Sending {{n}} pages to your PC', { n: d.of }) : tx('Sending the page to your PC')),
       pcwait: () => tx('Waiting for your PC to read the pages'),
       pcread: d => tx('Your PC is reading page {{page}} of {{of}}', { page: d.page, of: d.of }),
@@ -17007,7 +17011,7 @@ class Component extends DCLogic {
         };
         if (yt && detail.title && st.fileName !== detail.title) patch.fileName = detail.title;
         /* G12-5: while the PC reads the pages the person can give up waiting; the line under the summary says what to do when it is not on */
-        if (name === 'pcask') { patch.pcOmr = 'ask'; patch.importHints = [tx('The pages wait on the site only until that PC takes them, and are deleted after.')]; }
+        if (name === 'pcask') { patch.pcOmr = 'ask'; patch.importHints = [tx('Your own PC\'s mark is shown in Settings. If someone else gave you the link, choose "Use the draft instead". The pictures wait on the site only until that PC takes them, then they are deleted.')]; }
         else if (name === 'pcwait' || name === 'pcread' || name === 'pcsend') { patch.pcOmr = name === 'pcsend' ? 'send' : name === 'pcwait' ? 'wait' : 'read'; patch.importHints = detail.hint ? [detail.hint] : []; }
         else if (st.pcOmr) { patch.pcOmr = null; patch.importHints = []; }
         return patch;
@@ -21082,7 +21086,7 @@ class Component extends DCLogic {
             : tx('Add sheet music — MusicXML, a PDF or a photo — or a recording: MP3, MP4 or a YouTube link. PPP starts on it straight away.'),
       analyzeSummaryStyle: `margin-top:20px;padding:14px;border-radius:13px;font-size:12.5px;line-height:1.55;background:${failed ? 'var(--surface2)' : 'var(--bg)'};border:1px solid ${failed ? 'var(--bad)' : 'var(--line)'};color:${failed ? 'var(--ink)' : 'var(--ink2)'};`,
       showPcDraft: running && (S.pcOmr === 'ask' || S.pcOmr === 'wait' || S.pcOmr === 'read'), pcDraftLabel: tx('Use the draft instead'), usePcDraft: () => this.usePcDraft(),
-      showPcSend: running && S.pcOmr === 'ask', pcSendLabel: tx('Send the pages'), sendPcPages: () => this.sendPcPages(),
+      showPcSend: running && S.pcOmr === 'ask', pcSendLabel: tx('Send to that PC'), sendPcPages: () => this.sendPcPages(),
       analyzeCta: added ? (S.pendingSong ? tx('Check the result') : tx('See analysis'))
         : running ? tx('Cancel') : failed ? tx('Try again') : tx('Choose file'),
       analyzeOn: () => {

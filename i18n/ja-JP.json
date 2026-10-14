@@ -2362,11 +2362,13 @@
     "Your PC could not read this score: {{why}}": "PCはこの楽譜を読み取れませんでした: {{why}}",
     "Audiveris on your PC": "お使いのPCのAudiveris",
     "Your PC did not read this score ({{why}}), so this is the browser draft.": "PCがこの楽譜を読み取れなかったため（{{why}}）、ブラウザの下書きです。",
-    "Send the pages of this score to the PC ending in {{tag}}?": "この楽譜のページを、末尾が{{tag}}のPCに送りますか？",
-    "The pages wait on the site only until that PC takes them, and are deleted after.": "ページは、そのPCが受け取るまでの間だけサイトに置かれ、その後は削除されます。",
-    "Send the pages": "ページを送る",
     "That score is no longer waiting on the site. If you sent it from another tab, it is in My Songs.": "この楽譜はもうサイトで待機していません。別のタブから送った場合は「自分の曲」にあります。",
     "Choose the file again to read it once more": "もう一度ファイルを選んで読み取ってください",
-    "The notes of this score are no longer kept on the site.": "この楽譜の音符はもうサイトに保存されていません。"
+    "The notes of this score are no longer kept on the site.": "この楽譜の音符はもうサイトに保存されていません。",
+    "Send the pictures of this score to the PC marked \"{{tag}}\"? Make sure it is your own computer.": "この楽譜の画像を「{{tag}}」の表示があるPCに送りますか？ご自身のパソコンかどうか確認してください。",
+    "Your own PC's mark is shown in Settings. If someone else gave you the link, choose \"Use the draft instead\". The pictures wait on the site only until that PC takes them, then they are deleted.": "ご自身のPCの表示は設定で確認できます。他の人から受け取ったリンクの場合は「下書きで進める」を選んでください。画像は、そのPCが受け取るまでの間だけサイトに置かれ、その後は削除されます。",
+    "Send to that PC": "そのPCに送る",
+    "The site is taking in as many scores as it may for now.": "現在、サイトが受け付けられる楽譜の上限に達しています。",
+    "This device or network has sent as many scores as the site takes in for now.": "この端末またはネットワークから、現在送れる楽譜の上限に達しました。"
   }
 }
