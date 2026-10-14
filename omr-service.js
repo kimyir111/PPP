@@ -32,17 +32,13 @@ const http = require('http');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const zlib = require('zlib');
 const crypto = require('crypto');
 const { execFile, spawn } = require('child_process');
-/* G12-1: every movement of a page, not only the newest file. Production runs this file too (render.yaml), so omr/helper-output.js is optional: if it is missing or broken
-   the service starts and answers as it always did, and a page's `movements` is its one newest file (the `musicxml` field never depends on it). */
-let readMovements = null;
-try { readMovements = require('./omr/helper-output.js').readMovements; } catch (e) { readMovements = null; }
-function pageMovements(outDir, xml) {
-  if (typeof readMovements !== 'function') return [xml];
-  try { return readMovements(outDir, readMxlSync, xml); } catch (e) { return [xml]; }
-}
+/* G12-5: the call to Audiveris, the .mxl reader and every movement of a page (G12-1) are in omr/engine.js, which the home-PC worker (tools/home-worker/worker.js) runs
+   too, so the two cannot drift (docs/GOALS/G12_OMR.md section 24). Production runs this file too (render.yaml: it serves /arrange-score and the coach): if omr/engine.js is
+   missing or broken the service still starts and answers everything else, and /omr and /pdf-vector say the engine is missing. */
+let engine = null;
+try { engine = require('./omr/engine.js'); } catch (e) { engine = null; }
 
 /* ---- .env, for development ----
    The key belongs to the environment, not to the source tree, and never to the
@@ -111,16 +107,7 @@ const PORT = +argVal('--port', 8788);
 
 /* ---- locating Audiveris ---- */
 function findAudiveris() {
-  const explicit = argVal('--audiveris', process.env.PPP_AUDIVERIS);
-  const candidates = [
-    explicit,
-    path.join(__dirname, 'tools', 'audiveris', 'Audiveris', 'Audiveris.exe'),
-    path.join(__dirname, 'tools', 'audiveris', 'Audiveris', 'bin', 'Audiveris.bat'),
-    'C:\\Program Files\\Audiveris\\Audiveris.exe',
-    '/usr/bin/audiveris', '/usr/local/bin/audiveris'
-  ].filter(Boolean);
-  for (const c of candidates) { try { if (fs.existsSync(c)) return c; } catch (e) {} }
-  return null;
+  return engine ? engine.findAudiveris(argVal('--audiveris', process.env.PPP_AUDIVERIS), __dirname) : null;
 }
 const AUDIVERIS = findAudiveris();
 
@@ -140,95 +127,16 @@ function findPdfToMusic() {
 }
 const PDFTOMUSIC = findPdfToMusic();
 
-/* ---- minimal .mxl reader (a zip of one MusicXML file) ----
-   Read through the central directory rather than walking local headers: a
-   writer that streams entries leaves the sizes in the local header at zero and
-   puts the real ones in a trailing data descriptor. The central directory
-   always has them. */
+/* ---- the .mxl reader and the call to Audiveris: omr/engine.js ---- */
 function readMxlSync(file) {
-  const buf = fs.readFileSync(file);
-  const entries = {};
-
-  let eocd = -1;
-  for (let i = buf.length - 22; i >= 0 && i > buf.length - 66000; i--) {
-    if (buf.readUInt32LE(i) === 0x06054b50) { eocd = i; break; }
-  }
-  if (eocd < 0) throw new Error('not a zip archive');
-  const count = buf.readUInt16LE(eocd + 10);
-  let p = buf.readUInt32LE(eocd + 16);
-
-  for (let n = 0; n < count && p + 46 <= buf.length; n++) {
-    if (buf.readUInt32LE(p) !== 0x02014b50) break;
-    const method = buf.readUInt16LE(p + 10);
-    const compSize = buf.readUInt32LE(p + 20);
-    const nameLen = buf.readUInt16LE(p + 28);
-    const extraLen = buf.readUInt16LE(p + 30);
-    const commentLen = buf.readUInt16LE(p + 32);
-    const localOff = buf.readUInt32LE(p + 42);
-    const name = buf.toString('utf8', p + 46, p + 46 + nameLen);
-    /* the local header repeats the name and extra field, at its own lengths */
-    const lNameLen = buf.readUInt16LE(localOff + 26);
-    const lExtraLen = buf.readUInt16LE(localOff + 28);
-    entries[name] = { method, start: localOff + 30 + lNameLen + lExtraLen, compSize };
-    p += 46 + nameLen + extraLen + commentLen;
-  }
-  const read = key => {
-    const e = entries[key];
-    if (!e) return null;
-    const raw = buf.subarray(e.start, e.start + e.compSize);
-    if (e.method === 0) return raw.toString('utf8');
-    if (e.method === 8) return zlib.inflateRawSync(raw).toString('utf8');
-    throw new Error('unsupported compression in .mxl');
-  };
-  let target = null;
-  const container = read('META-INF/container.xml');
-  if (container) {
-    const m = /full-path\s*=\s*"([^"]+)"/.exec(container);
-    if (m) target = m[1];
-  }
-  if (!target || !entries[target])
-    target = Object.keys(entries).find(k => /\.(xml|musicxml)$/i.test(k) && k.indexOf('META-INF') !== 0);
-  if (!target) throw new Error('no MusicXML inside the .mxl');
-  return read(target);
+  if (!engine) throw new Error('omr/engine.js is not available');
+  return engine.readMxlSync(file);
 }
 
 /* ---- run Audiveris on one page image ---- */
 function recognisePage(imgPath, outDir) {
-  return new Promise(resolve => {
-    if (!AUDIVERIS) return resolve({ ok: false, error: 'Audiveris is not installed' });
-    const t0 = Date.now();
-    execFile(AUDIVERIS,
-      ['-batch', '-export', '-output', outDir, '--', imgPath],
-      { timeout: LIMITS.perPageTimeoutMs, maxBuffer: 8 * 1024 * 1024, windowsHide: true },
-      (err, stdout, stderr) => {
-        const log = String(stdout || '') + String(stderr || '');
-        let mxl = null;
-        try {
-          mxl = fs.readdirSync(outDir).filter(f => /\.mxl$/i.test(f))
-            .map(f => path.join(outDir, f))
-            .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)[0] || null;
-        } catch (e) {}
-        if (!mxl) {
-          /* Audiveris exits 0 even when it finds nothing worth exporting, so the
-             absence of an export is the real signal. */
-          const noStaff = /No staff|no system|Could not find|not a supported/i.test(log);
-          return resolve({
-            ok: false, ms: Date.now() - t0,
-            error: noStaff ? 'No musical notation was detected on this page.'
-              : (err && err.killed) ? 'Recognition timed out on this page.'
-                : 'Audiveris produced no MusicXML for this page.',
-            log: log.slice(-1500)
-          });
-        }
-        try {
-          const xml = readMxlSync(mxl);
-          /* `musicxml` is what it always was (the newest file); `movements` (G12-1) is every file of the page, in movement order */
-          resolve({ ok: true, ms: Date.now() - t0, musicxml: xml, movements: pageMovements(outDir, xml) });
-        } catch (e) {
-          resolve({ ok: false, ms: Date.now() - t0, error: 'The MusicXML Audiveris produced could not be read: ' + e.message });
-        }
-      });
-  });
+  if (!engine) return Promise.resolve({ ok: false, error: 'Audiveris is not installed' });
+  return engine.recognisePage(AUDIVERIS, imgPath, outDir, { timeoutMs: LIMITS.perPageTimeoutMs });
 }
 
 function convertVectorPdf(bytes) {

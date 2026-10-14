@@ -197,4 +197,66 @@ function notes(n, secs) {
 const goodResult = n => ({ notes: notes(n || 40, 60), duration: 61.5, engine: 'ensemble', model: 'TransKun V2 + Kong', device: 'cuda',
   ensemble: { models: ['transkun', 'piano-transcription'], primary: 'transkun', agreement: 0.83, accepted: n || 40, uncertain: 7 } });
 
-module.exports = { REPO, MODS, mod, ok, errors, sleep, heading, finish, req, CODES, readBody, send, jsonError, youtubeParser, countingStore, tmpDir, rmDir, startService, WATCH, notes, goodResult, crypto, http, fs, path, os };
+/* ---- G12-5: page images and scores for the 'omr' kind. The bytes are shaped like the files they say they are (a PNG's or JPEG's header, then padding): the site and the worker read
+   headers only, the engine is a stand-in in every test that is not the one real run. ---- */
+const CRC_TABLE = (() => { const t = new Int32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c; } return t; })();
+const crc32 = b => { let c = -1; for (const x of b) c = CRC_TABLE[(c ^ x) & 255] ^ (c >>> 8); return (c ^ -1) >>> 0; };
+function pngBytes(w, h, total) {
+  const sig = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const ihdr = Buffer.alloc(25);
+  ihdr.writeUInt32BE(13, 0); ihdr.write('IHDR', 4, 'latin1'); ihdr.writeUInt32BE(w, 8); ihdr.writeUInt32BE(h, 12); ihdr[16] = 8; ihdr[17] = 0; ihdr[18] = 0; ihdr[19] = 0; ihdr[20] = 0;
+  ihdr.writeUInt32BE(crc32(ihdr.subarray(4, 21)), 21);
+  const head = Buffer.concat([sig, ihdr]);
+  /* the padding is the data of one IDAT chunk (a run of one byte that depends on the size, so that two pages of a test are not the same bytes unless the test says so), then IEND: the
+     chunks run from the signature to the end like a real file's (the site walks them: home-omr.js pngExtraBytes). The total is honoured down to the 24 bytes IDAT and IEND need. */
+  const data = Buffer.alloc(Math.max(0, (total || head.length + 64) - head.length - 24), (w * 31 + h * 7) & 255);
+  return Buffer.concat([head, pngChunk('IDAT', data), pngChunk('IEND', Buffer.alloc(0))]);
+}
+/* one PNG chunk: length, type, data, CRC */
+function pngChunk(type, data) {
+  const len = Buffer.alloc(4); len.writeUInt32BE(data.length, 0);
+  const body = Buffer.concat([Buffer.from(type, 'latin1'), data]);
+  const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(body), 0);
+  return Buffer.concat([len, body, crc]);
+}
+function jpegBytes(w, h, total) {
+  const soi = Buffer.from([0xff, 0xd8]);
+  const app0 = Buffer.from([0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00]);
+  const sof = Buffer.alloc(19); sof[0] = 0xff; sof[1] = 0xc0; sof.writeUInt16BE(17, 2); sof[4] = 8; sof.writeUInt16BE(h, 5); sof.writeUInt16BE(w, 7); sof[9] = 3;
+  const sos = Buffer.from([0xff, 0xda, 0x00, 0x02]);
+  const head = Buffer.concat([soi, app0, sof, sos]);
+  return Buffer.concat([head, Buffer.alloc(Math.max(0, (total || head.length + 64) - head.length), 0x11), Buffer.from([0xff, 0xd9])]);
+}
+/* n page images as the browser sends them (base64), each with the given size and a different content; kind 'png' | 'jpeg' */
+function omrPages(n, o) {
+  o = o || {};
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const w = o.w || 1240, h = (o.h || 1754) - (o.vary === false ? 0 : i);
+    const b = (o.kind === 'jpeg' ? jpegBytes : pngBytes)(w, h, (o.bytes || 3000) + (o.vary === false ? 0 : i));
+    out.push(o.dataUrl ? 'data:image/' + (o.kind === 'jpeg' ? 'jpeg' : 'png') + ';base64,' + b.toString('base64') : b.toString('base64'));
+  }
+  return out;
+}
+/* the document Audiveris writes (with its standard document type declaration), n measures long, so that two documents of a test can differ */
+const MXL_DOCTYPE = '<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">';
+function scoreXml(n, o) {
+  o = o || {};
+  const bars = [];
+  for (let i = 1; i <= (n || 2); i++) bars.push('<measure number="' + i + '"><note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note></measure>');
+  return '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' + (o.doctype === false ? '' : (o.doctype || MXL_DOCTYPE) + '\n')
+    + '<score-partwise version="4.0"><part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list><part id="P1">' + bars.join('') + '</part></score-partwise>\n';
+}
+/* what a worker posts for a job of n pages: every page read, one movement each (page i has i + 1 measures), or the pages named in `failed` not read */
+function omrResult(n, o) {
+  o = o || {};
+  const pages = [];
+  for (let i = 0; i < n; i++) {
+    if ((o.failed || []).indexOf(i) >= 0) pages.push({ index: i, ok: false, ms: 900, error: 'No musical notation was detected on this page.' });
+    else pages.push({ index: i, ok: true, ms: 5000 + i, movements: [scoreXml(i + 1)].concat(o.two ? [scoreXml(1)] : []) });
+  }
+  return Object.assign({ engine: 'Audiveris', engineVersion: '5.11.0', ms: 5000 * n, pages: pages }, o.extra || {});
+}
+
+module.exports = { REPO, MODS, mod, ok, errors, sleep, heading, finish, req, CODES, readBody, send, jsonError, youtubeParser, countingStore, tmpDir, rmDir, startService, WATCH, notes, goodResult, crypto, http, fs, path, os,
+  pngBytes, pngChunk, jpegBytes, omrPages, scoreXml, omrResult, MXL_DOCTYPE };

@@ -14,5 +14,10 @@
   "activePollSeconds": 0,
 
   "audioBase": "",
-  "ytdlpPath": ""
+  "ytdlpPath": "",
+
+  "omr": true,
+  "audiverisPath": "",
+  "omrPageTimeoutSeconds": 600,
+  "omrHeapMb": 2048
 }

@@ -64,7 +64,7 @@ function hashOf(buf, binary) {
 }
 
 /* a small tree that server.js runs in: the server and its modules, a page that names a script and a catalog, and whatever `files` adds */
-const SERVER_FILES = ['server.js', 'static-allow.js', 'static-assets.js', 'share-guest.js', 'home-jobs.js', 'home-jobs-store.js', 'home-result.js', 'signup-limit.js', 'server-stats.js'];
+const SERVER_FILES = ['server.js', 'static-allow.js', 'static-assets.js', 'share-guest.js', 'home-jobs.js', 'home-jobs-store.js', 'home-result.js', 'home-omr.js', 'body-reader.js', 'signup-limit.js', 'server-stats.js'];
 function smallTree(files) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-tree-'));
   for (const f of SERVER_FILES) fs.copyFileSync(path.join(REPO, f), path.join(dir, f));

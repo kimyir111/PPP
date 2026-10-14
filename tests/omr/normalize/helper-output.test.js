@@ -48,10 +48,16 @@ test('readMovements: a page Audiveris did not split is its one file; an unreadab
 });
 
 test('the helper\'s answer: `musicxml` is untouched (the line that picks the newest file is the one it always was) and `movements` is new', () => {
-  const src = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'omr-service.js'), 'utf8').split('\r\n').join('\n');
-  assert.ok(src.includes("      .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)[0] || null;"), 'the newest-file pick');
-  assert.ok(src.includes("musicxml: xml, movements: pageMovements(outDir, xml)"));
-  assert.ok(src.includes("try { readMovements = require('./omr/helper-output.js').readMovements; } catch (e) { readMovements = null; }"), 'the require is optional');
+  /* G12-5: the call to Audiveris moved to omr/engine.js, which the home-PC worker runs too; the lines are the ones they were */
+  const root = path.join(__dirname, '..', '..', '..');
+  const eng = fs.readFileSync(path.join(root, 'omr', 'engine.js'), 'utf8').split('\r\n').join('\n');
+  const src = fs.readFileSync(path.join(root, 'omr-service.js'), 'utf8').split('\r\n').join('\n');
+  assert.ok(eng.includes("              .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)[0] || null;"), 'the newest-file pick');
+  assert.ok(eng.includes("musicxml: xml, movements: pageMovements(outDir, xml)"));
+  assert.ok(eng.includes("try { readMovements = require('./helper-output.js').readMovements; } catch (e) { readMovements = null; }"), 'the require is optional');
+  assert.ok(eng.includes("['-batch', '-export'].concat(o.extraArgs || [], ['-output', outDir, '--', imgPath])"), 'the command line: -batch -export -output <dir> -- <image>, and nothing else with no options');
+  assert.ok(src.includes("try { engine = require('./omr/engine.js'); } catch (e) { engine = null; }"), 'the engine module is an optional require of the service');
+  assert.ok(src.includes("engine.recognisePage(AUDIVERIS, imgPath, outDir, { timeoutMs: LIMITS.perPageTimeoutMs })"), 'the helper passes no option but its time-out');
   assert.ok(src.includes("musicxml: results.map(r => (r.ok ? r.musicxml : null)),"), 'the old field, as it was, with a comma now');
   assert.ok(src.includes("movements: results.map(r => (r.ok ? r.movements : null))"));
 });

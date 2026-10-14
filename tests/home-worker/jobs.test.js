@@ -912,13 +912,19 @@ async function main() {
     heading('no timer reads the queue or the database (an idle server has to stay idle)');
     {
       const strip = src => src.replace(/\/\*[\s\S]*?\*\//g, '').split('\n').map(l => l.replace(/(^|\s)\/\/.*$/, '')).join('\n');
-      const files = ['home-jobs.js', 'home-jobs-store.js', 'home-result.js'].map(f => [f, strip(L.fs.readFileSync(L.path.join(L.MODS, f), 'utf8'))]);
+      const files = ['home-jobs.js', 'home-jobs-store.js', 'home-result.js', 'body-reader.js'].map(f => [f, strip(L.fs.readFileSync(L.path.join(L.MODS, f), 'utf8'))]);
       const timers = files.map(([f, src]) => [f, (src.match(/\b(setInterval|setImmediate|setTimeout)\s*\(/g) || []), (src.match(/\.unref\s*\(/g) || []).length]);
-      ok('home-result.js and home-jobs-store.js start no timer at all, and home-jobs.js none but the long-poll\'s own wait', timers.every(([f, t]) => f === 'home-jobs.js' ? t.length === 1 && t[0].indexOf('setTimeout') === 0 : t.length === 0) && timers.every(t => t[2] === 0), JSON.stringify(timers));
+      /* (G12-5: a body being read has two deadlines - the whole of it, and the gap between two chunks, armed once and looked at when it fires - cleared when it ends; they exist only while a
+         request is being read (body-reader.js, which server.js and the queue both read bodies with), and read nothing) */
+      ok('home-result.js and home-jobs-store.js start no timer at all, home-jobs.js none but the long-poll\'s own wait, and body-reader.js only the deadlines of one body being read',
+        timers.every(([f, t]) => (f === 'home-jobs.js' ? t.length === 1 : f === 'body-reader.js' ? t.length === 4 : t.length === 0) && t.every(x => x.indexOf('setTimeout') === 0)) && timers.every(t => t[2] === 0), JSON.stringify(timers));
       const jobsSrc = files[0][1];
       const w = jobsSrc.indexOf('function waitForJob');
       const end = jobsSrc.indexOf('async function claim');
       ok('that one setTimeout is inside waitForJob (it resolves a promise; it reads nothing)', jobsSrc.indexOf('setTimeout(') > w && jobsSrc.indexOf('setTimeout(') < end && !/store\./.test(jobsSrc.slice(w, end)));
+      const rd = files[3][1];
+      ok('the four in body-reader.js are the whole-body deadline, the gap deadline, its re-arming and its one look 25 ms after a miss; both deadlines are cleared when the body ends, whichever way, and the reader never touches a store',
+        /clearTimeout\(total\); clearTimeout\(idle\);/.test(rd) && /total = setTimeout\(/.test(rd) && /idle = setTimeout\(onIdle/.test(rd) && !/store\./.test(rd));
     }
 
     heading('THE FREE-TIER RULE: an idle poll runs no SQL');
