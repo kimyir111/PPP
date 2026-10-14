@@ -33,6 +33,8 @@ recording lead sheet as generators and a new, verified measure-aligned splice.
 
 **G11b-1 is built** (2026-10-08): `PPP.learner = 'legacy' | 'typed'`, `practice/runlog.js` (typed evidence, the bounded run log in IndexedDB, the export), the Settings card and the rating row, and `PPP.demoRuns` (decision U4, off); the legacy aggregates are proved byte-identical against the page before the phase; the record, the budgets and the places that count Demo Input today are §19.
 
+**G11b-1c is built** (2026-10-14): decision U4 is decided YES (the user, 2026-10-13) and built: `PPP.demoRuns` is `'separate'` by default, under `PPP.learner` `'legacy'` and `'typed'` alike, so a run without a keyboard (Demo Input) moves the screen and writes no evidence (history, memory, section bars, coach and Loop counters, minutes, xp, weekly bars, the run log), the practice card says so in four languages, and `'count'` is the explicit opt-out; the legacy goldens are re-recorded from the page before G11b-1 with the Demo Input laps left out, and the old golden is what the opt-out must equal; the record is §19.1.
+
 ## 1. What was measured before designing (evidence)
 
 All numbers were measured for this document at `3567e27` in an independent server of this worktree
@@ -372,7 +374,7 @@ recording tier (the G10 synthetic covers) for the lead-sheet path.
 | Tempo ramp | "깨끗하게 2번 성공! 다음은 **80% 빠르기**로." / "조금 어려웠어요. **70%**로 한 번 더." | Suggests; automatic only with the toggle "빠르기 자동 조절" (U6) |
 | Hands separately | "왼손 정확도가 오른손보다 20% 낮아요. **왼손만** 3번 → **양손** 2번." | Existing hand filter |
 | Spaced review | "오늘 복습: 9–12마디 (3일 전에 연습)" | A due list on the home card |
-| No keyboard | "건반이 연결되지 않아 이번 연습은 기록되지 않아요. (데모 입력)" | Demo Input display only (U4) |
+| No keyboard | "건반이 연결되지 않아 이번 연습은 기록되지 않아요. (데모 입력)" | Demo Input display only (U4); built in G11b-1c: one line on the practice card, shown while such a run plays and after it, and a one-time hint |
 | Export | **연습 기록 내보내기** | JSON file download |
 | Teacher use, copy title | "학생용 · 17–20마디 쉬운 버전" | The teacher can print or share the copy with the existing share link |
 
@@ -716,7 +718,7 @@ code. Variant copies are ordinary arrangement copies and survive a rollback.
 | **U1** | How and where do you (and your students) practise: with a MIDI keyboard on a computer or Android, or on a phone/iPad without one? Who is G11 for first: your own practice, or students at home? | **Your own practice with a MIDI keyboard first; students later.** Without Web MIDI nothing can be measured (E9). | If students on iPads are the real users, G11b produces nothing for them; a microphone judge would be a new Goal |
 | **U2** | Play D.C./D.S./Fine/Coda and grace notes (drawn = played)? | **Yes for both; graces sound but are not judged** at first. | Laps of "Start to finish" get longer on 8 catalogue pieces; graces could sound unfamiliar on 17 |
 | **U3** | Follow mode: ask repeated bars as often as Play plays them, and exactly the notes Play strikes? | **Yes.** Follow and Play then mean the same piece. | A follow lap of a repeated passage takes twice as long (168 catalogue pieces) |
-| **U4** | Stop counting runs without a keyboard (Demo Input) as practice progress? | **Yes**: Demo Input still moves the screen, but writes no evidence. | Users who only press Play without a keyboard see "기록 없음" instead of rising bars |
+| **U4** | Stop counting runs without a keyboard (Demo Input) as practice progress? **DECIDED YES by the user, 2026-10-13; built in G11b-1c (§19.1).** | **Yes**: Demo Input still moves the screen, but writes no evidence. | Users who only press Play without a keyboard see "기록 없음" instead of rising bars |
 | **U5** | Practice data off the device: (a) never, the export file only; (b) opt-in upload for the Lead's analysis; (c) sync between your devices by a link code | **(a) now; (c) only if you practise on two devices.** | (b)/(c): about 2 sessions of work, a new table on the free database (about 0.5 MB per fully practised song), a privacy note |
 | **U6** | May the app change the tempo between laps by itself? | **Suggest by default; an automatic toggle, off.** | Too many taps if you want it automatic; surprise if it is automatic and you do not |
 | **U7** | An easier passage as a separate copy ("곡명 · 17–20마디 쉽게") or swapped in place inside the song? | **A copy first** (progress kept apart, the original untouched). | A cluttered "내 곡" list |
@@ -891,20 +893,18 @@ does not answer in 2.5 s, any other error: the FIRST one degrades the log for th
 skipped and counted (`stats.corrupt`); a damaged epoch record is repaired by the next run (numbering continues after the highest key kept). The page counts every lap and writes its history as under
 `legacy` in all of these (tested for each).
 
-**Decision U4 as a switch, OFF.** `PPP.demoRuns = 'count' (default) | 'separate'` (`ppp.demoRuns.v1`, `?demoRuns=`). Under `typed` + `separate`, a lap without a keyboard still moves the screen (laps,
-minutes, the section bars, the plan's task, the lap toast) but is not folded into `history.byMeasure`/`runs[]` and does not touch the memory record (a random recall can no longer move memory strength or
-"memorize" a section); the toast says so ("Demo input is not counted as practice progress."). It does nothing under `legacy`. Nothing flips on its own: the default is today's.
+**Decision U4 as a switch (built OFF here; decided and made the default by G11b-1c, §19.1).** `PPP.demoRuns = 'count' | 'separate'` (`ppp.demoRuns.v1`, `?demoRuns=`). Under `typed` + `separate`, a lap without a keyboard still moves the screen (laps, minutes, the section bars, the plan's task, the lap toast) but is not folded into `history.byMeasure`/`runs[]` and does not touch the memory record (a random recall can no longer move memory strength or "memorize" a section); the toast says so. It did nothing under `legacy`, and the default was `'count'`. *As built in G11b-1; §19.1 is what U4 then made of it: the default is `'separate'`, under `legacy` too, and the laps without a keyboard no longer move minutes, the section bars or the plan's task either.*
 
-**Where Demo Input counts today** (E9, re-read in `completeLap`): `Learning.record` (`history.byMeasure` and `runs[]`), the recall record (`recordRecall` -> `Memory.recordAttempt`: a random recall moves memory
+**Where Demo Input counted before U4 (G11b-1c, §19.1, stops every one of them)** (E9, re-read in `completeLap`): `Learning.record` (`history.byMeasure` and `runs[]`), the recall record (`recordRecall` -> `Memory.recordAttempt`: a random recall moves memory
 strength, and can mark a section memorized), the section accuracy bars (`secs[].acc` by a 0.35 EMA, `reps`), the coach task counter and `coachDone` accuracies (`advanceCoach`, from `lastAcc`), the Loop
 panel's step repetitions (`seqReps`), minutes, xp and the weekly bars. Not the method-book day tick (real results only). The sample song's own seeded history is 23 runs marked `simulated`.
 
-**Tests.** `tests/learner-log.test.js` (103 checks, 11 sections, in `tests/practice/run-suites.js` and so in the `practice-suites` job): the switch; byte identity (below); a measured, a Follow, a recall
+**Tests.** `tests/learner-log.test.js` (103 checks as built, 146 since G11b-1c, 11 sections, in `tests/practice/run-suites.js` and so in the `practice-suites` job): the switch; byte identity (below); a measured, a Follow, a recall
 and a Demo Input lap through the real UI with a fake keyboard; the cap of 300 on the real IndexedDB, 2 KB, epochs, ratings, the export through the Settings button; five failing-storage paths and a damaged log;
 what a run says (hands, tempo, range, hints, memory level, wrong and extra keys, no tempo for Follow); an unattended loop (idle); a lap during a delete; the budget at CPU 4x (best of two rounds, the rule is in the test); `demoRuns`; the card and the rating row in four languages. `tests/practice/runlog.test.js` (33) and `runlog-mutation.test.js` (21 mutants of the module + control) run in `npm run test:practice`;
-`tests/practice/learner-mutants.js` (33 rows: 24 of the page, 9 of the served module, each run against the sections that must notice; in the `practice-legacy` job next to `mutants.js`, on a pull request only
-when the probes themselves change) breaks "simulated counted as measured", "Follow/recall counted as measured", "the cap removed", "a legacy page writes to IndexedDB", "U4 decided for the user" and the rest.
-**Byte identity under `legacy`:** a scripted session of ten laps (measured x4, a recall with hints, Follow, Demo Input x4; seeded `Math.random`, the app's injectable clock, `Date.now` frozen from the first script on)
+`tests/practice/learner-mutants.js` (33 rows as built: 24 of the page, 9 of the served module; 49 since G11b-1c, 40 of the page; each run against the sections that must notice; in the `practice-legacy` job next to `mutants.js`, on a pull request only
+when the probes themselves change) breaks "simulated counted as measured", "Follow/recall counted as measured", "the cap removed", "a legacy page writes to IndexedDB", "Demo Input counted again" (U4 undone) and the rest.
+**Byte identity under `legacy`:** (as built in G11b-1; since G11b-1c the default page equals this golden only with `?demoRuns=count`, and equals `learner-legacy-separate.json` by default, §19.1) a scripted session of ten laps (measured x4, a recall with hints, Follow, Demo Input x4; seeded `Math.random`, the app's injectable clock, `Date.now` frozen from the first script on)
 is run on the page of `a070d70` (before this phase) and on this page; the SHA-256 and size of `ppp.state.v2`, `ppp.song.v1.demo`, `ppp.library.v1`, `history`, `memory`, `secs` and the run list are equal
 (`tests/practice/baselines/learner-legacy.json`, written from the old page by `node tests/practice/learner-record.js --rev a070d70`, twice, equal). Under `typed` the same session equals the golden once the `source` key of each run summary
 is taken out. The G11b-0 simulator runs the page's own `completeLap` in a vm: it now takes nine more declarations with it (`LEARNER_*`, `DEMO_RUNS_*`, `runSource`), so `legacy-gate.json` and `legacy-full.json` list them in `appCode.declarations` (nothing else in either file changed), and the 144 gate runs, recomputed against the new page, are identical.
@@ -916,6 +916,57 @@ finish within 1 ms of the last lap; the largest run is 1,674 bytes (`g` = 4), a 
 **Open questions for the Lead.** (1) "Reset practice progress" clears accuracy, memory and plan ticks but not the log; the log is the evidence for H-11, so it is kept - say if reset should clear it. (2) A song's log is kept as long as the song; there is
 no total cap across songs (300 x 2 KB = 0.6 MB per epoch, one epoch per music hash); a global cap or a "clear the log" button is a few lines. (3) The first ~100 ms of a page's life (the module is still loading) log nothing for a lap
 that ends then; `history.runs[].source` is still set. (4) Missed ids are Score note indexes, not graph event ids: G11a-3 now puts the event id on `expected[].evId` (graph leg only), so `R` can carry them when it is there, or the export can map them through the stored graph of the same hash. (5) An idle lap (a keyboard attached, nothing played) is kept out of the log but, as today, still folds into the legacy aggregates as a lap of accuracy 0 (`byMeasure`, section bars); `PPP.demoRuns='separate'` (U4) does not cover it, because a keyboard was attached. If you want an unattended loop to stop counting there too, it is one more condition on `demoApart`.
+
+### 19.1 G11b-1c: decision U4 built (2026-10-14; Sonnet; branch `g11b-1c-demo-separate`)
+
+**The decision.** The user answered U4 YES on 2026-10-13: *Demo Input still moves the screen (laps, highlighting, falling notes), but writes no evidence.* It is a deliberate change of the legacy path, and it holds
+under `PPP.learner` `'legacy'` and `'typed'` alike (it is not conditional on typed mode). A lap is "without a keyboard" exactly when it ended with NO MATCHER RESULT (`!result` in `completeLap`; §19, `runSource`): no MIDI
+keyboard connected, selected and switched on, whatever the person was doing (the on-screen piano is Demo Input by the app's own rule, so a lap played on the screen keys is one). Follow mode needs a keyboard, so a Follow lap is never one.
+
+**What a lap without a keyboard does now** (`completeLap`'s first branch; `PPP.demoRuns = 'separate'`, the default). It returns only `laps + 1`, the run counters reset, and `lastDemo: true`. It writes none of the places listed above:
+`Learning.record` (`history.byMeasure`, `runs[]`), the recall record (`recordRecall`, so a random recall cannot move memory strength or mark a section memorized), the section accuracy bars (`secs[].acc`, `reps`),
+the coach task counter and `coachDone` (`advanceCoach`), the Loop panel's step repetitions (`seqReps`, `seqStep`), minutes, xp, the weekly bars (`sessions`), the coach card's last accuracy and drift (`lastAcc`, `drift`),
+and the method-book day tick (which already refused it). Under `typed` the run log gets nothing either: `logRun` is called with `'simulated'`, which counts the lap on its epoch (`sim`) and logs no run, as before, so an export
+still says how much practice had no keyboard (U1). `runsThisSession` of the coach context is `laps`, which still counts the screen's laps: nothing reads it as evidence. An *idle* lap (a keyboard attached, nothing played) is not
+this and is unchanged (§19 open question 5).
+
+**What the person sees.** (1) The screen moves as before. (2) The PPP Coach card on the practice page shows one line, while such a run plays and after it, until a recorded run or a keyboard replaces it:
+"건반이 연결되지 않아 이번 연습은 기록되지 않아요. (데모 입력)" (also `en-US`, `ja-JP`, `zh-CN`; the wording of §8.3), and its accuracy and drift read "—" instead of a number that was never judged. (3) The first lap of a visit
+says what to do, in the toast (once for practice laps, and after every recall, which is a deliberate attempt that used to answer with its result): "기록되지 않았어요. MIDI 건반을 연결하고 MIDI 입력을 켜면 연습이 기록돼요." (4) The existing MIDI status line (the header button's title and the Settings row) says "연결 안 됨 — PPP가 연주를
+흉내 내고, 기록은 남기지 않아요" while no keyboard is attached. No new screen, no new key in storage. The lap toast of the old switch ("Demo input is not counted as practice progress.") is replaced by these.
+
+**A keyboard that goes live after Play** (review of #267). A lap ended with `live` as it was at the START of the lap, so Play with no keyboard and then a keyboard connected (or the MIDI permission resolving a moment
+after the page opened) was never judged until Stop and Play: every following lap had no run to be judged against, and with the line hidden nothing said so. The lap boundary now asks `liveMidi()` afresh: the lap in which the
+keyboard came is a Demo Input lap (not recorded), the next one is judged. Section `democonnect` of the learner-log tests plays exactly that on the page's clock.
+
+**When the card speaks.** The line shows (a) while a run without a keyboard plays, from the first lap on, and (b) after one, until a recorded run replaces it - also with a keyboard connected since, then as "직전 연습은 건반 없이
+해서 기록되지 않았어요" (the last run; the card holds no number of an older run next to it). A recorded lap clears the mark, so a recorded run is never called unrecorded afterwards. `lastRec` (a run was recorded on this song since
+it was opened or its progress reset) is what the Progress "Accuracy - last run" tile, the practice card's numbers, Home's "Last practiced" and the My Songs "just now" label read: after Demo Input only they show "—" and the
+usual placeholders instead of the seed of a fresh page (91%), 0%, or a "just now" for a run that was not recorded. The toast says where to click ("Demo Input" at the top), and on a browser without Web MIDI that it cannot record.
+
+**Saved data.** Not migrated, not touched: the history, memory and sections already saved stay as they are, whatever they contain (the 23 seeded runs of the sample and any runs a Demo Input lap added before U4).
+`ppp.demoRuns.v1` is read as before; anything that is no choice, a typo, or a storage that throws is `'separate'`. `'count'` stays as an explicit opt-out (`?demoRuns=count`, `PPP.demoRuns = 'count'`) for a person
+who wants it back and for the tests that check the legacy folding.
+
+**The sample's seeded history.** The sample song still ships its 23 seeded runs (`seedDemoHistory`), every one marked `simulated`, and its section bars: they stay (the sample is a demonstration of what the page shows
+for a practised song). They count for nothing new: no run of the log, none in the evidence a model reads (`evidence()` is the real runs only), and a lap without a keyboard on top of them adds nothing. The learner
+model (G11b-2) reads them as simulated by their flag (§9, "Simulated history").
+
+**The goldens.** `tests/practice/baselines/learner-legacy.json` is unchanged (re-recorded from `a070d70`, byte for byte the committed file): it is the session of ten laps as the page before G11b-1 counted it, and is now what
+`?demoRuns=count` must equal (under `legacy`, and under `typed` once the `source` keys are taken out). The new `learner-legacy-separate.json` is the same session recorded from the same page with the four Demo Input laps
+walked (state set, random hits drawn) but their lap-end patch not applied (`node tests/practice/learner-record.js --rev a070d70` writes both): history 52,461 -> 50,439 bytes, 33 -> 29 runs, minutes 28 -> 24, xp 1490 ->
+1390, weekly bar 28 -> 24, memory 926 -> 643 bytes, `secs` another digest, `laps` 10 -> 6 (the default's lap counter reads 10: the screen counts the four laps, and the test subtracts them). The default page equals it
+under `legacy`, and under `typed` once the `source` keys are taken out; under `typed` the log holds the six real runs and `sim.n` is 4. `legacy-gate.json` and `legacy-full.json` (practice-sim: the 144 gate runs and the
+full file are the committed ones, `appCode` lists no new declaration), `legacy.json` (quick set), `parity.json` (sample) and `switch.json` (sample) did not move: their laps have a keyboard (the simulator's `liveMidi()` is true) or are not laps;
+`perf.json` is timing and is read by its CI job.
+
+**Tests.** `tests/learner-log.test.js` has 146 checks (103 before): the switch for the new default, garbage and a throwing storage under both learner values; the two goldens above; section `demo` rewritten (a coach task, a
+passage of one's own and a recall through `completeLap`, then five and five real laps in Korean with the clock on a page with no keyboard, then the same laps with a fake keyboard, four languages for the line and the hint).
+`tests/practice/learner-mutants.js` rows A8-A10 are rewritten for the new rule and A25-A32 added (a recall counted, minutes and xp, a section bar, the coach task, the Loop panel, the card silent, the hint every lap, a
+number left on the card; A33-A40 after the review: the stale `live`, the three rules of when the card speaks, the mark never cleared, the Progress and Home readings, the hint without Web MIDI: 49 rows, 40 of the page). Section `democonnect` (9 checks) plays Play without a keyboard, a keyboard connected
+in the middle of the loop, and the unplugged keyboard afterwards. `tests/interactions.test.js` (section 6), `tests/memory.test.js` (a recall written to storage), `tests/learning.test.js` (practice written to storage and surviving a
+reload) and `tests/import.test.js` play without a keyboard to check the persistence of what a recorded run writes, so they ask for `PPP.demoRuns = 'count'` in the page, with the reason in a comment; the learning suite's
+checks also require the revision to MOVE (the sample's seed is already at 23), and it has a keyboard variant that proves the real path (a measured run, not simulated).
 
 ## Appendix A. Measurement commands (Lead's scratchpad)
 

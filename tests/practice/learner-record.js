@@ -1,4 +1,5 @@
-/* G11b-1: write the GOLDEN dump of the legacy aggregates (tests/practice/baselines/learner-legacy.json) from the page of a commit.
+/* G11b-1: write the GOLDEN dumps of the legacy aggregates (tests/practice/baselines/learner-legacy.json and, since G11b-1c / decision U4,
+   learner-legacy-separate.json: the same session with its four Demo Input laps walked but not applied) from the page of a commit.
 
      node tests/practice/learner-record.js [--rev a070d70] [--upstream http://127.0.0.1:9210]
 

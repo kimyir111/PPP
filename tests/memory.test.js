@@ -302,6 +302,9 @@ function harness() {
       const b = [...document.querySelectorAll('main button, aside button')].find(x => re.test((x.innerText || '').trim()));
       if (b) b.click(); return !!b;
     };
+    /* this recall is played without a keyboard, which since decision U4 (2026-10-13) records nothing by default; what is checked here is that a recorded
+       attempt is persisted and restored, so the legacy folding is asked for explicitly (the default is tests/learner-log.test.js section `demo`) */
+    PPP.demoRuns = 'count';
     /* one measure, so a recall lap completes in a couple of seconds */
     await window.__pppTest.practice('Loop a passage');
     const cells = document.querySelectorAll('button[title^="Measure "]');
