@@ -63,10 +63,16 @@ function readBody(req, o) {
     };
     const onError = e => settle(reject, err('ABORTED', e && e.message));
     const onClose = () => settle(reject, err('ABORTED'));
-    /* the gap deadline is armed once and looked at when it fires (no timer is touched per chunk: a flood of 1-byte chunks would make that the cost) */
+    /* the gap deadline is armed once and looked at when it fires (no timer is touched per chunk: a flood of 1-byte chunks would make that the cost). lastAt is when a chunk was HANDLED,
+       not when it arrived: a timer runs before the socket is read in the same turn of the loop, so when the loop was busy past the deadline (another request blocked it for seconds)
+       the sender's bytes are waiting in the socket, not missing. The first miss therefore looks once more, 25 ms later, after the loop has read the socket; only a second miss
+       (nothing came in that time either) is silence. Genuine silence is cut at the gap plus 25 ms. */
+    let rechecked = false;
     const onIdle = () => {
       const left = idleMs - (Date.now() - lastAt);
-      if (left > 5) idle = setTimeout(onIdle, left); else slow('idle');
+      if (left > 5) { rechecked = false; idle = setTimeout(onIdle, left); return; }
+      if (!rechecked) { rechecked = true; idle = setTimeout(onIdle, 25); return; }
+      slow('idle');
     };
     total = setTimeout(() => slow('total'), totalMs);
     idle = setTimeout(onIdle, idleMs);
@@ -75,7 +81,11 @@ function readBody(req, o) {
 }
 
 /* the structure a stock JSON body of `limit` bytes may have: no more containers than one per 16 bytes (a score or a progress record has an object every 30 bytes or so; `{},` is 3), and
-   no deeper than the nesting guestShare.inspect refuses anyway (64). Tokens are not bounded separately (a comma costs nothing beyond its element). */
+   no deeper than the nesting guestShare.inspect refuses anyway (64). Tokens are not bounded separately (a comma costs nothing beyond its element).
+
+   MEASURED (the third review): 329 real pieces shared 201; the densest legitimate share is 91.5 bytes per container (5.7x the bound). A share that carries the real scoregraph
+   attached is the only payload near it: 34-36 bytes per container, a 2.1x margin at 4 MB. WHOEVER CHANGES WHAT A SHARE CARRIES (G13-S2: graphs travelling with shares) MUST RE-CHECK THIS
+   NUMBER FIRST (docs/GOALS/G12_OMR.md section 24, "documented floors"): a share that is refused here is a 422 "not a score PPP can share" with nothing logged. */
 function stockShape(limit) {
   return { tokens: limit, containers: Math.max(256, Math.floor(limit / 16)), depth: 80 };
 }

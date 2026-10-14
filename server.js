@@ -1678,8 +1678,17 @@ function sweepGuestShares() {
    about 32 MB. The headers must arrive in 20 s, the whole request in 120 s (the body's own deadline is 60 s), and no more than PPP_MAX_CONNECTIONS (1000) sockets are open at once: past
    that a new one is dropped by Node, so a flood of sockets is an outage for its length, never an out-of-memory. An honest browser or Render's proxy holds a few dozen. */
 server.headersTimeout = 20 * 1000;
-server.requestTimeout = 120 * 1000;
+/* ... NOT shorter than what the helper's proxy allows (proxyHelper: 10 minutes; /helper/transcribe takes 400 MB, /helper/omr and /helper/pdf-vector 80 MB, piped, never read by readBody):
+   120 s cut a slow upload of a recording at 137 s (the third review). The JSON routes are protected by readBody's own 60 s / 10 s. */
+server.requestTimeout = 10 * 60 * 1000;
 server.maxConnections = Math.max(50, parseInt(process.env.PPP_MAX_CONNECTIONS, 10) || 1000);
+/* A socket that has not sent ONE byte in 30 s is closed: with maxConnections and no such deadline 1,010 silent connects held all the places for as long as the headers timeout allowed.
+   Once a byte has come the deadline is off (the headers have their own, and a request that dribbles with gaps is not touched). PPP_FIRST_BYTE_MS only lets a test see it pass in seconds. */
+const FIRST_BYTE_MS = parseInt(process.env.PPP_FIRST_BYTE_MS, 10) || 30 * 1000;
+server.on('connection', s => {
+  s.setTimeout(FIRST_BYTE_MS, () => s.destroy());
+  s.once('data', () => s.setTimeout(0));
+});
 
 store.ready().then(() => {
   seedSharedScores().catch(e => console.error('Seed library skipped:', e.message));
@@ -1688,6 +1697,7 @@ store.ready().then(() => {
   setInterval(sweepGuestShares, GUEST.SWEEP_MS).unref();
   server.listen(PORT, HOST, () => {
     console.log('PPP listening on http://' + HOST + ':' + PORT);
+    console.log('Sockets: first byte within ' + Math.round(FIRST_BYTE_MS / 1000) + ' s, headers within ' + Math.round(server.headersTimeout / 1000) + ' s, a request within ' + Math.round(server.requestTimeout / 1000) + ' s, at most ' + server.maxConnections + ' open');
     if (!jobsService.isDisabled()) console.log('Home-PC worker queue: an idle worker is told to wait ' + jobsService.config.idlePollS + ' s, a busy one ' + jobsService.config.activePollS + ' s (PPP_WORKER_IDLE_POLL_S, PPP_WORKER_ACTIVE_POLL_S)');
     console.log('Guest links: the client address is read from ' + (process.env.RENDER ? 'CF-Connecting-IP, then True-Client-IP, then ' : '')
       + 'X-Forwarded-For (' + (Math.max(1, parseInt(process.env.PPP_PROXY_HOPS, 10) || 1)) + ' from the right), then the socket');
