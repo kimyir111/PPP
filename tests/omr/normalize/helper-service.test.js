@@ -24,14 +24,13 @@ test.after(() => {
 
 const freePort = () => new Promise((resolve, reject) => { const s = net.createServer().listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); }); s.on('error', reject); });
 
-/* a folder with a copy of the service, with or without omr/helper-output.js */
-function installService(withModule) {
+/* a folder with a copy of the service, with or without omr/helper-output.js (G12-5: omr/engine.js is beside it, unless withEngine is false) */
+function installService(withModule, withEngine) {
   const dir = tmp();
   fs.copyFileSync(path.join(REPO, 'omr-service.js'), path.join(dir, 'omr-service.js'));
-  if (withModule) {
-    fs.mkdirSync(path.join(dir, 'omr'));
-    fs.copyFileSync(path.join(REPO, 'omr', 'helper-output.js'), path.join(dir, 'omr', 'helper-output.js'));
-  }
+  if (withModule || withEngine !== false) fs.mkdirSync(path.join(dir, 'omr'));
+  if (withEngine !== false) fs.copyFileSync(path.join(REPO, 'omr', 'engine.js'), path.join(dir, 'omr', 'engine.js'));
+  if (withModule) fs.copyFileSync(path.join(REPO, 'omr', 'helper-output.js'), path.join(dir, 'omr', 'helper-output.js'));
   return dir;
 }
 async function start(dir, extra) {
@@ -79,6 +78,22 @@ test('the service starts and answers /health when omr/helper-output.js is missin
   assert.equal(r.json.ok, true);
   assert.equal(r.json.service, 'ppp-local');
   assert.equal(s.child.exitCode, null, 'still running');
+});
+
+test('G12-5: the service starts and answers /health when omr/engine.js is missing or broken (the engine call lives there): only /omr says the engine is missing', async () => {
+  for (const broken of [false, true]) {
+    const dir = installService(true, false);
+    if (broken) { fs.mkdirSync(path.join(dir, 'omr'), { recursive: true }); fs.writeFileSync(path.join(dir, 'omr', 'engine.js'), 'module.exports = {{{ this is not javascript'); }
+    const s = await start(dir);
+    const h = await request(s.port, 'GET', '/health');
+    assert.equal(h.status, 200);
+    assert.equal(h.json.ok, true);
+    assert.equal(h.json.audiveris, false);
+    const r = await request(s.port, 'POST', '/omr', { pages: ['AAAA'] });
+    assert.equal(r.status, 503, JSON.stringify(r));
+    assert.equal(r.json.code, 'engine-missing');
+    assert.equal(s.child.exitCode, null, 'still running');
+  }
 });
 
 test('the service starts when omr/helper-output.js is there but broken (a syntax error)', async () => {

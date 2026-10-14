@@ -18,7 +18,12 @@
   const J = JSON.stringify;
   const round = x => Math.round(x * 1e4) / 1e4;
   /* PPP.practice is not there on a tree from before G11a-3 (the recorder of the baseline runs on one) */
-  const setMode = m => { if ('practice' in PPP) PPP.practice = m; };
+  /* G11a-4: the probes below hold the graph plan against the legacy plan, to the bit, so 'graph' here is the compat plan of G11a-3: the four fixes are off (PPP.practiceFix is not on a tree from
+     before G11a-4). What the fixes do is tests/practice/options.js. */
+  const setMode = m => {
+    if ('practice' in PPP) PPP.practice = m;
+    if (m === 'graph' && 'practiceFix' in PPP) PPP.practiceFix = 'off';
+  };
   const message = e => String(e && (e.message || e) || e).slice(0, 160);
 
   async function loadScore(item) {
