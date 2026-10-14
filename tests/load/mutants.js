@@ -123,6 +123,14 @@ const M = [
   ['L19', 'lazy-load.js', 'the first-paint entry (a blank paint) is taken for Home', ["if (es[i].name === 'first-contentful-paint') {", "if (es[i].name === 'first-paint' || es[i].name === 'first-contentful-paint') {"], SPLITN],
   ['L20', 'lazy-load.js', 'an engine that does not report paint timing is waited on for ten seconds', ["try { reports = !!win.PerformanceObserver && (win.PerformanceObserver.supportedEntryTypes || []).indexOf('paint') >= 0; } catch (e) { reports = false; }", "reports = true;"], SPLITN],
   ['L21', 'lazy-load.js', 'a namespace that the first file of a group made is handed out half built', ["if (!m.group.done) loadSync(m.group, name);", "if (m.value === undefined && !m.group.done) loadSync(m.group, name);"], SPLITN],
+  ['L22', 'lazy-load.js', 'a wave goes out without waiting for the wave before it', ["function held(w) {\n    var i;", "function held(w) {\n    var i; return false;"], SPLITN],
+  ['L23', 'lazy-load.js', 'a download that a blocked read has made urgent no longer holds the waves behind it (they go out beside it and take its share of the line)', ["      var k = active[i];\n      if (k.wave >= w) continue;", "      var k = active[i];\n      if (k.urgent || k.wave >= w) continue;"], SPLITN],
+  ['L24', 'lazy-load.js', 'an answer that never begins holds the waves behind it for ever', ["timer = win.setTimeout(function () { timer = null; answered(); }, ANSWER_WAIT);", "timer = null;"], SPLITN],
+  ['L25', 'lazy-load.js', 'a wave in overlap waits for the bodies as well', ["if (k.answered && OVERLAP[k.wave] && k.wave === w - 1) continue;", ""], SPLITN],
+  ['L26', 'lazy-load.js', 'the number of downloads in flight has no bound', ["while (inflight < MAX_PARALLEL && queue.length) {", "while (queue.length) {"], SPLITN],
+  ['L27', 'lazy-load.js', 'the accessors are enumerable (a copy of the window loads every group)', ["configurable: true, enumerable: false,", "configurable: true, enumerable: true,"], SPLITN],
+  ['L28', 'lazy-load.js', 'the downloads go out in the order they were asked for, not the order of the groups', ["if (best < 0 || j.prio < queue[best].prio) best = i;", "if (best < 0) best = i;"], SPLITN],
+  ['L29', 'lazy-load.js', 'a read that cannot wait is held behind the waves before the group it needs', ["h.urgent = true;   /* this thread is waiting: not held behind a wave */", ""], SPLITN],
   /* G13-4e: the page's use of it (a browser test: load-app/split.test.js) */
   ['S1', 'Piano Coach App.dc.html', 'a drawing waits for every group, the arranger and audio-score.js too', ["function loadEngrave() {\n  let wait = null;\n  if (lazyOn()) {", "function loadEngrave() {\n  let wait = null;\n  if (false) {"], SPLITB],
   ['S2', 'Piano Coach App.dc.html', 'the readiness check reads a global (it loads the library at the first commit)', ["lazyPeek('PPPScoreGraph') && lazyPeek('PPPAudioScore')", "window.PPPScoreGraph && lazyPeek('PPPAudioScore')"], SPLITB],
@@ -134,6 +142,8 @@ const M = [
   ['S10', 'Piano Coach App.dc.html', 'the head names the score library as a plain script again (it is fetched before the paint)', ["<noscript data-ppp-lazy=\"score\" data-globals=\"PPPScoreGraph PPPScoreGraphModules\">\n", "<script src=\"./scoregraph/rational.js?v=8\"></script><noscript data-ppp-lazy=\"score\" data-globals=\"PPPScoreGraph PPPScoreGraphModules\">\n"], SPLITB],
   ['S11', 'Piano Coach App.dc.html', 'a file import reads the library and audio-score.js without asking for them first', ["async function importToGraph(bytes, name, kind) {\n  await needScoreGraph(kind === 'midi');", "async function importToGraph(bytes, name, kind) {"], SPLITB],
   ['S12', 'Piano Coach App.dc.html', 'shelving the open song reads the engraver before it looks at what the song is (the demo has nothing to keep)', ["if (!score || score.id === 'demo' || !songId || songId === 'demo') return;\n    /* G13-4e: lazyPeek", "if (!window.PPPEngrave || !score || score.id === 'demo' || !songId || songId === 'demo') return;\n    /* G13-4e: lazyPeek"], SPLITB],
+  ['S13', 'Piano Coach App.dc.html', 'a method-book piece reads the library without asking for it first (it runs on the safety net)', [".then(xml => needScoreGraph().then(() => xml))\n      .then(xml => {\n        const score = scoreFromXml(xml, title);", ".then(xml => {\n        const score = scoreFromXml(xml, title);"], SPLITB],
+  ['S14', 'Piano Coach App.dc.html', 'a tap that wakes the sound asks for the thirty recordings at once, in front of the code', ["PianoSamples.loadAfterCode();\n    if (!ac) return;", "PianoSamples.load();\n    if (!ac) return;"], SPLITB],
 ];
 
 function run(m, dir) {

@@ -91,7 +91,8 @@ test('on (the default): no deferred file is asked for before the first paint; al
   const o = await open();
   try {
     assert.equal(await o.page.evaluate(() => window.PPP.split), 'on');
-    await o.page.waitForFunction(() => window.PPP_LAZY.status().groups.every(g => g.done), { timeout: 30000 });
+    /* the six groups of the head, and the fifteen drawing files Home's thumbnail makes up (engravePage) */
+    await o.page.waitForFunction(() => { const g = window.PPP_LAZY.status().groups; return g.length >= 7 && g.every(x => x.done); }, { timeout: 30000 });
     const fcp = await o.page.evaluate(() => { const e = performance.getEntriesByName('first-contentful-paint')[0]; return e ? performance.timeOrigin + e.startTime : null; });
     assert.ok(fcp, 'a first contentful paint');
     const lazyReqs = o.requests.filter(r => ANY_LAZY.test(r.url));
@@ -101,7 +102,7 @@ test('on (the default): no deferred file is asked for before the first paint; al
     assert.deepEqual(early.map(r => r.url), [], 'no deferred file before the first contentful paint');
     const s = await lazy(o.page);
     assert.equal(s.syncLoads, 0, 'nothing had to be loaded synchronously: ' + JSON.stringify(s.syncLog));
-    assert.deepEqual(s.groups, ['backup:done', 'score:done', 'arranger:done', 'audio:done', 'engrave:done', 'lessons:done']);
+    assert.deepEqual(s.groups, ['backup:done', 'score:done', 'arranger:done', 'audio:done', 'engrave:done', 'lessons:done', 'engravePage:done']);
     assert.equal(await o.page.evaluate(() => typeof Object.getOwnPropertyDescriptor(window, 'PPPScoreGraph').get), 'undefined', 'plain properties again once everything is in');
     noErrors(o);
   } finally { await o.close(); }
@@ -333,7 +334,37 @@ test('the piano recordings come after the deferred code (they wait for the prefe
   } finally { await o.close(); }
 });
 
+test('a tap that wakes the sound does not put the recordings in front of the code: with the arranger held 3 s they start only after it is in', async () => {
+  const o = await open({ hold: GROUP_URL.arranger, holdMs: 3000 });
+  try {
+    await o.page.waitForFunction(() => window.PPP && window.PPP.app && document.querySelectorAll('aside nav button').length >= 4 && performance.getEntriesByName('first-contentful-paint').length > 0, { timeout: 30000 });
+    await o.page.mouse.click(5, 5);          /* any tap or key wakes the sound (PianoPlayer.wake), which asks for the recordings at once - after the code, here */
+    await sleep(1200);
+    assert.equal(o.requests.filter(r => /\/audio\/piano\/[\w-]+\.mp3/.test(r.url)).length, 0, 'no recording is asked for while the arranger is still on its way');
+    await o.page.waitForFunction(() => window.PPP.PianoSamples.count() === 30, { timeout: 40000 });
+    const lastCode = Math.max(...o.requests.filter(r => groupsRe('arranger').test(r.url)).map(r => r.t));
+    const firstMp3 = Math.min(...o.requests.filter(r => /\/audio\/piano\/[\w-]+\.mp3/.test(r.url)).map(r => r.t));
+    assert.ok(firstMp3 >= lastCode + 2500, 'the recordings started ' + (firstMp3 - lastCode) + ' ms after the last file of the arranger was asked for (held 3000 ms)');
+    assert.equal((await lazy(o.page)).syncLoads, 0);
+  } finally { await o.close(); }
+});
+
 /* ================================================================ the safety net */
+test('a method-book piece opened right after load (prefetch off, the library and the engraver held 2 s): the song opens through the importers own ask; no synchronous load', async () => {
+  const o = await open({ prefetch: false, hold: groupsRe('score', 'engrave'), holdMs: 2000 });
+  try {
+    await o.page.waitForFunction(() => window.PPP && window.PPP.app && window.PPP.app.state, { timeout: 30000 });
+    await o.page.evaluate(() => window.PPP.app.loadCourse());
+    await o.page.waitForFunction(() => window.PPP.app.state.courseCat, { timeout: 20000 });
+    await o.page.evaluate(() => window.PPP.app.openCoursePiece('beyer', 1));
+    await o.page.waitForFunction(() => window.PPP.app.state.screen === 'player' && window.PPP.app.state.score && window.PPP.app.state.score.source && window.PPP.app.state.score.source.kind === 'course', { timeout: 40000 });
+    const s = await lazy(o.page);
+    assert.equal(s.syncLoads, 0, 'the piece asked for the library before it read it: ' + JSON.stringify(s.syncLog));
+    assert.ok(s.groups.includes('score:done'), s.groups.join(' '));
+    noErrors(o);
+  } finally { await o.close(); }
+});
+
 test('a read of a deferred global that comes before its group is answered, once, and shows in status().syncLoads', async () => {
   const o = await open({ prefetch: false });
   try {

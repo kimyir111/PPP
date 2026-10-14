@@ -3239,6 +3239,18 @@ const PianoSamples = {
     )).then(got => got.some(Boolean));
     return this.loading;
   },
+  /* G13-4e: a tap or a key that wakes the sound (wake) puts the 1.3 MB of recordings behind the page's own code while that is still coming in: thirty downloads in front of the
+     450 KB a person is waiting for (and of the read that a tap on Piano Basics makes) would hold up what the tap asked for. The synthesized stand-in sounds a note meanwhile, as it
+     does until any recording is in. Bounded: a prefetch that does not finish does not keep the piano silent. */
+  loadAfterCode() {
+    if (this.loading) return this.loading;
+    if (this.waitingForCode) return this.waitingForCode;
+    const L = typeof window !== 'undefined' ? window.PPP_LAZY : null;
+    let wait = false;
+    try { wait = !!(L && L.mode === 'on' && L.started && L.prefetched && L.prefetched.then && !L.have(['lessons', 'backup', 'score', 'engrave', 'audio', 'arranger'])); } catch (e) { wait = false; }
+    if (!wait) return this.load();
+    return (this.waitingForCode = Promise.race([L.prefetched, new Promise(r => setTimeout(r, 7000))]).then(() => { this.waitingForCode = null; return this.load(); }));
+  },
   count() { return this.list.filter(Boolean).length; },
   /* The nearest recording to a key and how far to pitch it — at most a
      semitone, or a neighbour's while that one is still loading. */
@@ -4047,7 +4059,7 @@ class PianoPlayer {
     }
     if (!ac) ac = this.context();
     this._wakeAt = (window.performance || Date).now();
-    PianoSamples.load();
+    PianoSamples.loadAfterCode();
     if (!ac) return;
     this.unlock(ac);
   }
@@ -12524,9 +12536,12 @@ let _engravePromise = null;
 function loadEngrave() {
   let wait = null;
   if (lazyOn()) {
-    /* G13-4e: a drawing needs the ScoreGraph and the engraver's own files, not the arranger or audio-score.js: asked for alone, so that Home's first drawing is not held
-       behind 150 KB it never uses (the rest comes in behind it, lazy-load.js start) */
-    if (!window.PPP_LAZY.have(['score', 'engrave'])) wait = window.PPP_LAZY.ensure(['score', 'engrave']);
+    /* G13-4e: a drawing needs the ScoreGraph, the engraver's own files and the fifteen files of the drawing code (ENGRAVE_FILES, which main asked for all at once), not the arranger or
+       audio-score.js: asked for alone, in ONE wave - the fifteen are a group of their own, made up here (their list is this page's), that runs after `engrave` - so that Home's first
+       drawing is not held behind 150 KB it never uses (the rest comes in behind it, lazy-load.js start) */
+    window.PPP_LAZY.define('engravePage', ENGRAVE_FILES.map(f => './engrave/' + f[0] + '.js?h=' + f[1]), { after: ['engrave'], globals: ['PPPEngravePage'] });
+    const need = ['score', 'engrave', 'engravePage'];
+    if (!window.PPP_LAZY.have(need)) wait = window.PPP_LAZY.ensure(need);
   } else if (_scoreModulesPromise || !scoreModulesReady()) wait = loadScoreModules();
   if (wait) return wait.then(ok => {
     if (!ok) throw importError('score-not-loaded', tx('The files needed to write the score could not be loaded. Try again in a moment.'));

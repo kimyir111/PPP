@@ -337,7 +337,7 @@ test('a namespace object that exists after the first file of a group is not hand
 
 /* ---------------------------------------------------------------- the idle prefetch */
 test('start(): after the frame, group by group in priority order; prefetched resolves when every group is in', async () => {
-  const p = page({ options: { priority: ['c', 'a', 'b'] } });
+  const p = page({ options: { waves: [['c'], ['a'], ['b']] } });
   p.L.start();
   assert.equal(p.log.fetches.length, 0, 'nothing is fetched by the call itself (it waits for the frame)');
   await p.L.prefetched;
@@ -362,7 +362,7 @@ test('start() twice starts once; ?splitStart=0 (a test switch) never starts', as
   assert.equal(r.log.fetches.length, 0, 'the same switch from localStorage, which a suite can set without touching the address');
 });
 test('a group asked for while the prefetch is on another is not made to wait for the queue', async () => {
-  const p = page({ options: { priority: ['a', 'b', 'c'] } });
+  const p = page({ options: { waves: [['a'], ['b'], ['c']] } });
   p.L.start();
   const asked = await p.L.ensure(['c']);
   assert.equal(asked, true);
@@ -431,4 +431,152 @@ test('an engine that accepts a PerformanceObserver but does not list paint among
   const t0 = Date.now();
   assert.equal(await p.L.ensure(['a']), true);
   assert.ok(Date.now() - t0 < 2000, 'waited ' + (Date.now() - t0) + ' ms');
+});
+
+/* ---------------------------------------------------------------- the order of the downloads */
+test('what ensure asked for before the prefetch started does not go out ahead of the first group of the prefetch: the downloads are ordered by group, not by caller', async () => {
+  const blocks = [
+    { name: 'lessons', files: ['c1.js'], globals: 'PPPC' },
+    { name: 'a', files: ['a1.js', 'a2.js', 'a3.js'], globals: 'PPPA PPPAFinal' },
+    { name: 'b', files: ['b1.js'], after: 'a', globals: 'PPPB' }
+  ];
+  const p = page({ perf: true, blocks, options: { waves: [['lessons', 'a', 'b']], maxParallel: 2 } });
+  const asked = p.L.ensure(['a']);          /* the page's own ask (Home's thumbnail), made first */
+  p.L.start();                              /* the prefetch, a moment later */
+  p.paint();
+  await asked;
+  await p.L.prefetched;
+  const names = p.log.fetches.map(u => u.replace(/\?.*/, '').replace(/^.*\//, ''));
+  assert.equal(names[0], 'c1.js', 'the first group of the order is the first download: ' + names.join(' '));
+});
+test('at most maxParallel downloads are in flight, and a file asked for later by a better group goes out before the waiting ones of a worse group', async () => {
+  const blocks = [
+    { name: 'x', files: ['a1.js', 'a2.js', 'a3.js'], globals: 'PPPA' },
+    { name: 'y', files: ['b1.js'], globals: 'PPPB' }
+  ];
+  let inflight = 0, peak = 0;
+  const p = page({ blocks, options: { waves: [['y'], ['x']], maxParallel: 1 }, noRegister: false });
+  const real = p.win.fetch;
+  p.win.fetch = url => { inflight++; peak = Math.max(peak, inflight); return real(url).then(r => { inflight--; return r; }, e => { inflight--; throw e; }); };
+  const px = p.L.ensure(['x']);
+  const py = p.L.ensure(['y']);
+  await Promise.all([px, py]);
+  assert.equal(peak, 1, 'never more than one in flight');
+  const names = p.log.fetches.map(u => u.replace(/\?.*/, '').replace(/^.*\//, ''));
+  assert.equal(names[0], 'b1.js', 'y is the better group: ' + names.join(' '));
+});
+
+/* ---------------------------------------------------------------- the waves */
+/* a fetch the test answers by hand: calls are recorded, each answer is released with release(name) (the headers) and text(name) (the body) */
+function handFetch(p) {
+  const held = {};
+  const order = [];
+  const real = p.win.fetch;
+  const nameOf = u => String(u).replace(/\?.*/, '').replace(/^.*\//, '');
+  p.win.fetch = url => {
+    const n = nameOf(url);
+    order.push(n);
+    const h = held[n] = { n, body: null };
+    h.answered = new Promise(r => { h.answer = r; });
+    return h.answered.then(() => ({ ok: true, status: 200, text: () => new Promise(r => { h.finish = () => real(url).then(x => x.text()).then(r); if (h.bodyNow) h.finish(); }) }));
+  };
+  return {
+    order, held,
+    answer: n => held[n].answer(),
+    finish: n => { const h = held[n]; if (h.finish) h.finish(); else h.bodyNow = true; },
+    both: n => { held[n].answer(); const h = held[n]; if (h.finish) h.finish(); else h.bodyNow = true; }
+  };
+}
+/* wait (up to 3 s) for what a timer-driven chain is about to do, then give anything it should NOT do a moment to show */
+async function until(fn) { for (let i = 0; i < 600 && !fn(); i++) await flush(5); await flush(40); }
+const waveBlocks = [
+  { name: 'x', files: ['a1.js'], globals: 'PPPA' },
+  { name: 'y', files: ['b1.js'], globals: 'PPPB' },
+  { name: 'z', files: ['c1.js'], globals: 'PPPC' }
+];
+test('a wave goes out when the wave before it is in, not before - whoever asked for it, and in whatever order the asks came', async () => {
+  const p = page({ blocks: waveBlocks, options: { waves: [['x'], ['y'], ['z']] } });
+  const h = handFetch(p);
+  const gz = p.L.ensure(['z']);
+  const gy = p.L.ensure(['y']);
+  const gx = p.L.ensure(['x']);
+  await until(() => h.order.length >= 1);
+  assert.deepEqual(h.order, ['a1.js'], 'only the first wave is on its way: ' + h.order.join(' '));
+  h.both('a1.js');
+  await until(() => h.order.length >= 2);
+  assert.deepEqual(h.order, ['a1.js', 'b1.js'], 'the second wave once the first is in: ' + h.order.join(' '));
+  h.both('b1.js');
+  await until(() => h.order.length >= 3);
+  assert.deepEqual(h.order, ['a1.js', 'b1.js', 'c1.js']);
+  h.both('c1.js');
+  assert.deepEqual(await Promise.all([gx, gy, gz]), [true, true, true]);
+});
+test('a wave in overlap goes out as soon as the files of the wave before it have begun to answer; the others wait for the bodies', async () => {
+  const p = page({ blocks: waveBlocks, options: { waves: [['x'], ['y'], ['z']], overlap: [true, false] } });
+  const h = handFetch(p);
+  const all = Promise.all([p.L.ensure(['x']), p.L.ensure(['y']), p.L.ensure(['z'])]);
+  await until(() => h.order.length >= 1);
+  assert.deepEqual(h.order, ['a1.js']);
+  h.answer('a1.js');                       /* the headers of x */
+  await until(() => h.order.length >= 2);
+  assert.deepEqual(h.order, ['a1.js', 'b1.js'], 'y is let go with x answering: ' + h.order.join(' '));
+  h.answer('b1.js');
+  await flush(60);
+  assert.deepEqual(h.order, ['a1.js', 'b1.js'], 'z is not (y is not in overlap): ' + h.order.join(' '));
+  h.finish('a1.js'); h.finish('b1.js');
+  await until(() => h.order.length >= 3);
+  assert.deepEqual(h.order, ['a1.js', 'b1.js', 'c1.js']);
+  h.both('c1.js');
+  assert.deepEqual(await all, [true, true, true]);
+});
+test('an answer that does not begin holds the waves behind it for a while, not for ever', async () => {
+  const p = page({ blocks: waveBlocks, options: { waves: [['x'], ['y']], overlap: [true], answerWait: 80 } });
+  const h = handFetch(p);
+  const gy = p.L.ensure(['y']);
+  const gx = p.L.ensure(['x']);
+  await until(() => h.order.length >= 1);
+  assert.deepEqual(h.order.slice(0, 1), ['a1.js']);
+  await until(() => h.order.length >= 2);
+  assert.deepEqual(h.order, ['a1.js', 'b1.js'], 'after the wait y goes out although x has said nothing');
+  h.both('a1.js'); h.both('b1.js');
+  assert.deepEqual(await Promise.all([gx, gy]), [true, true]);
+});
+test('a read that cannot wait is not held behind a wave: what it needs goes out at once, and the waves behind it still wait for it', async () => {
+  const p = page({ blocks: waveBlocks, options: { waves: [['x'], ['y'], ['z']] } });
+  const h = handFetch(p);
+  p.L.ensure(['x']); p.L.ensure(['z']);      /* y is not asked for by anyone: only the read below needs it */
+  await until(() => h.order.length >= 1);
+  assert.deepEqual(h.order, ['a1.js']);
+  const v = vm.runInContext('PPPB', p.win);       /* the page reads a global of y: synchronous load */
+  assert.ok(v && v.sawA === false, 'it was loaded, not undefined');
+  assert.equal(p.L.status().syncLoads, 1);
+  assert.ok(h.order.includes('b1.js'), 'y was asked for although x is not in: ' + h.order.join(' '));
+  assert.ok(!h.order.includes('c1.js'), 'z, a wave after y, still waits: ' + h.order.join(' '));
+});
+test('the globals of a group are not enumerable: copying or listing the window loads nothing', () => {
+  const p = page();
+  const copy = vm.runInContext('Object.assign({}, window)', p.win);
+  const keys = vm.runInContext('Object.keys(window)', p.win);
+  assert.equal(p.L.status().syncLoads, 0, 'a copy of the window is not a read of PPPA');
+  assert.ok(!keys.includes('PPPA') && !keys.includes('PPPB'));
+  assert.ok(!('PPPA' in copy) || copy.PPPA === undefined);
+  assert.equal(p.log.xhrs.length, 0);
+  assert.ok(vm.runInContext('PPPA', p.win).one === 1, 'a read by name still loads it');
+  assert.equal(p.L.status().syncLoads, 1);
+});
+test('a read of a group that is on its way does not let the waves behind it go: the thread waits for that group, not for them', async () => {
+  const p = page({ blocks: waveBlocks, options: { waves: [['x'], ['y']] } });
+  const h = handFetch(p);
+  const gx = p.L.ensure(['x']);
+  const gy = p.L.ensure(['y']);
+  await until(() => h.order.length >= 1);
+  const A = vm.runInContext('PPPA', p.win);           /* a synchronous load of x, whose download is still on its way */
+  assert.equal(A.one, 1);
+  await flush(60);
+  assert.deepEqual(h.order, ['a1.js'], 'y waits until the download of x is over: ' + h.order.join(' '));
+  h.both('a1.js');
+  await until(() => h.order.length >= 2);
+  assert.deepEqual(h.order, ['a1.js', 'b1.js']);
+  h.both('b1.js');
+  assert.deepEqual(await Promise.all([gx, gy]), [true, true]);
 });

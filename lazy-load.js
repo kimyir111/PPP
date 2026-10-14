@@ -33,8 +33,17 @@
   var doc = win.document;
   var KEY = 'ppp.split.v1';
   var DEFAULT = (options && options.defaultMode) || 'on';
-  /* what the page needs first, then what a person is likely to open next, then the rest */
-  var PRIORITY = (options && options.priority) || ['score', 'engrave', 'backup', 'lessons', 'audio', 'arranger'];
+  /* the order of the downloads (and of the prefetch). The first wave is the two small files a tap can ask for in the first seconds (lessons.js 28 KB, library-backup.js 11 KB: 39 KB, a
+     fifth of a second of a slow line): they go out alone, so that they are not one share in seventy of it. The second is what draws the thumbnail of Home (the library, the engraver's
+     source, its fifteen drawing files). A file of a wave goes out only when the files of the waves before it are in - or, for a wave in OVERLAP, have begun to answer: the next
+     request then crosses the line while the answer is still coming, and the line is not left empty for a round trip. What a read that cannot wait asks for is not held. */
+  var WAVES = (options && options.waves) || [['lessons', 'backup'], ['score', 'engrave', 'engravePage'], ['audio'], ['arranger']];
+  var OVERLAP = (options && options.overlap) || [false];
+  var PRIORITY = [].concat.apply([], WAVES);
+  /* downloads in flight at once: more than a line can use at the same time only cuts the line into thinner shares (and a file that is asked for waits for all of them) */
+  var MAX_PARALLEL = (options && options.maxParallel) || 32;
+  /* an answer that has not begun after this long no longer holds the waves behind it */
+  var ANSWER_WAIT = (options && options.answerWait) || 2000;
 
   function readMode() {
     var m = null;
@@ -93,7 +102,7 @@
     try {
       if (Object.prototype.hasOwnProperty.call(win, name)) m.value = win[name];   /* already there (a test, or the page): kept */
       Object.defineProperty(win, name, {
-        configurable: true, enumerable: true,
+        configurable: true, enumerable: false,   /* not enumerable: Object.assign({}, window) and for-in would read (and so load) every one */
         get: function () {
           /* not "while it is undefined": a namespace object (PPPEngraveModules, PPPScoreGraphModules) exists after the group's first file and is filled by the rest - a read between two files
              of a group that is on its way would otherwise see half of it. loadSync does nothing while a lazy file is running (its own reads), and nothing once the group is in. */
@@ -116,22 +125,87 @@
   /* one download of one file; callers share it through fetchGroup (a group's download is in g.fetching until it is in). A file that has failed once is asked for with
      &retry=<stamp>; one that has not is asked for by the page's own url - also by the synchronous path, so that it is answered from the cache the parallel download fills. */
   function urlOf(f) { return f.failures ? withRetry(f.url) : f.url; }
-  function fetchFile(f) {
-    if (f.done || f.text !== null) return Promise.resolve(true);
-    var p;
+  var queue = [], inflight = 0;
+  var active = [];
+  function prioOf(g) { var i = PRIORITY.indexOf(g.name); return i < 0 ? PRIORITY.length : i; }
+  function waveOf(g) {
+    for (var i = 0; i < WAVES.length; i++) if (WAVES[i].indexOf(g.name) >= 0) return i;
+    return WAVES.length;
+  }
+  /* does anything of a wave before w hold a file of wave w back? (a file that is queued, or is on its way and, unless its wave is in OVERLAP and the wave asking is the next,
+     has not come in) */
+  function held(w) {
+    var i;
+    for (i = 0; i < queue.length; i++) if (queue[i].wave < w) return true;
+    for (i = 0; i < active.length; i++) {
+      var k = active[i];
+      if (k.wave >= w) continue;
+      if (k.answered && OVERLAP[k.wave] && k.wave === w - 1) continue;
+      return true;
+    }
+    return false;
+  }
+  /* the next waiting file of the best group goes out when a slot is free (first come first served inside a group) */
+  var pumpScheduled = false;
+  /* in a microtask, so that what several callers enqueue in the same turn goes out in the order of the groups, not of the callers */
+  function schedulePump() {
+    if (pumpScheduled) return;
+    pumpScheduled = true;
+    Promise.resolve().then(function () { pumpScheduled = false; pump(); });
+  }
+  function pump() {
+    while (inflight < MAX_PARALLEL && queue.length) {
+      var best = -1, heldW = {};
+      for (var i = 0; i < queue.length; i++) {
+        var j = queue[i];
+        if (!j.urgent) {
+          if (heldW[j.wave] === undefined) heldW[j.wave] = held(j.wave);
+          if (heldW[j.wave]) continue;
+        }
+        if (best < 0 || j.prio < queue[best].prio) best = i;
+      }
+      if (best < 0) return;
+      begin(queue.splice(best, 1)[0]);
+    }
+  }
+  function begin(job) {
+    var f = job.f;
+    if (f.done || f.text !== null) { job.resolve(true); return; }      /* the synchronous path has had it meanwhile */
+    inflight++;
+    active.push(job);
+    var p, timer = null;
+    function answered() {
+      if (timer !== null) { win.clearTimeout(timer); timer = null; }
+      if (!job.answered) { job.answered = true; pump(); }
+    }
     try {
+      timer = win.setTimeout(function () { timer = null; answered(); }, ANSWER_WAIT);
       p = win.fetch(urlOf(f), { credentials: 'same-origin' }).then(function (r) {
+        answered();
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.text();
       });
     } catch (e) { p = Promise.reject(e); }
     /* a file the synchronous path has run meanwhile does not keep its text */
-    return p.then(function (t) { if (!f.done) f.text = t; return true; }, function () { f.failures++; return false; });
+    p.then(function (t) { if (!f.done) f.text = t; return true; }, function () { f.failures++; return false; })
+      .then(function (ok) {
+        if (timer !== null) { win.clearTimeout(timer); timer = null; }
+        var at = active.indexOf(job);
+        if (at >= 0) active.splice(at, 1);
+        inflight--; job.resolve(ok); pump();   /* (a slot freed, and a wave may be in: the next at once) */
+      });
+  }
+  function fetchFile(g, f) {
+    if (f.done || f.text !== null) return Promise.resolve(true);
+    return new Promise(function (resolve) {
+      queue.push({ f: f, g: g, prio: prioOf(g), wave: waveOf(g), urgent: !!g.urgent, answered: false, resolve: resolve });
+      schedulePump();
+    });
   }
   function fetchGroup(g) {
     if (g.done) return Promise.resolve(true);
     if (g.fetching) return g.fetching;
-    g.fetching = Promise.all(g.files.map(fetchFile)).then(function (rs) { g.fetching = null; return rs.every(Boolean); });
+    g.fetching = Promise.all(g.files.map(function (f) { return fetchFile(g, f); })).then(function (rs) { g.fetching = null; return rs.every(Boolean); });
     return g.fetching;
   }
   function xhrText(f) {
@@ -219,9 +293,20 @@
     var list = closure([g.name]);
     /* the downloads of the whole closure start at once (they are not on this thread): the files below, asked for one by one, are then answered from the cache they fill, and the
        wait is about one download and not one round trip for every file */
-    list.forEach(function (h) { if (!h.done) fetchGroup(h); });
+    list.forEach(function (h) {
+      if (h.done) return;
+      h.urgent = true;   /* this thread is waiting: not held behind a wave */
+      queue.forEach(function (job) { if (job.g === h) job.urgent = true; });
+      active.forEach(function (job) { if (job.g === h) job.urgent = true; });
+      fetchGroup(h);
+    });
+    pump();   /* now, not in the microtask: this thread is about to block */
     syncCount++;
-    if (syncLog.length < 40) syncLog.push({ group: g.name, global: why || null, stack: String(new Error().stack || '').split('\n').slice(2, 9).join('\n') });
+    var entry = null, t0 = Date.now();
+    if (syncLog.length < 40) { entry = { group: g.name, global: why || null, ms: 0, stack: String(new Error().stack || '').split('\n').slice(2, 9).join('\n') }; syncLog.push(entry); }
+    try { loadSyncRun(g, list); } finally { if (entry) entry.ms = Date.now() - t0; }
+  }
+  function loadSyncRun(g, list) {
     for (var i = 0; i < list.length; i++) {
       var h = list[i];
       if (h.done) continue;
@@ -284,6 +369,23 @@
     }
     return afterPaint().then(attempt).then(function (ok) { return ok ? true : attempt(); });
   }
+  /* a group the page makes up at run time (its list is in the page's own code, not in a head block): files = addresses, opts = { after: [names], globals: [names the group makes] }.
+     Its globals are checked when it has run but are plain properties, never accessors (a read of one that is not there yet is a question the page asks, not a load). false when
+     this load is 'off' (the page then loads what it always loaded, as it always did) or the name is taken. */
+  function define(name, urls, opts) {
+    if (mode !== 'on' || !name || byName[name] || !urls || !urls.length) return false;
+    opts = opts || {};
+    var files = [].map.call(urls, function (u) {
+      var url = u;
+      try { url = new win.URL(u, doc.baseURI || win.location.href).href; } catch (e) { /* as written */ }
+      return { src: u, url: url, text: null, done: false, failures: 0 };
+    });
+    var g = { name: name, files: files, after: [].concat(opts.after || []), globals: [].concat(opts.globals || []),
+      done: false, failed: false, fetching: null, running: null, syncFailedAt: 0 };
+    groups.push(g);
+    byName[name] = g;
+    return true;
+  }
   function have(names) {
     if (mode !== 'on') return true;
     return [].concat(names || []).every(function (n) { return !byName[n] || byName[n].done; });
@@ -293,17 +395,15 @@
   /* after the first frame: the rest of the page's code, in the order of PRIORITY, one group's downloads at a time (the bandwidth goes to the group a person is
      likely to need first), each group running as soon as it is in while the next one downloads */
   function drain() {
-    var order = PRIORITY.filter(function (n) { return byName[n]; }).concat(groups.map(function (g) { return g.name; }).filter(function (n) { return PRIORITY.indexOf(n) < 0; }));
-    var runs = [];
+    var named = {};
+    var all = [].concat.apply([], WAVES).filter(function (n) { named[n] = true; return byName[n]; })
+      .concat(groups.map(function (g) { return g.name; }).filter(function (n) { return !named[n]; }));
+    /* the downloads: all asked for now; the scheduler lets a wave go out when the one before it is in. The groups RUN one after another in the order of WAVES as they arrive - what
+       comes last is not made to compete, on the one thread, with the drawing of the thumbnail */
+    var fetching = Promise.all(all.map(function (n) { return fetchGroup(byName[n]); }));
     var p = Promise.resolve();
-    order.forEach(function (n) {
-      var g = byName[n];
-      p = p.then(function () {
-        if (g.done) return null;
-        return fetchGroup(g).then(function () { runs.push(runGroup(g)); });
-      });
-    });
-    return p.then(function () { return Promise.all(runs); });
+    all.forEach(function (n) { p = p.then(function () { return runGroup(byName[n]); }); });
+    return Promise.all([fetching, p]);
   }
   function start() {
     if (mode !== 'on' || started || !autoStart) return prefetched;
@@ -342,7 +442,8 @@
   return {
     version: 1,
     get mode() { return mode; },
-    here: here, ensure: ensure, have: have, peek: peek, start: start, afterPaint: afterPaint, remember: remember, status: status,
+    get started() { return started; },
+    here: here, define: define, ensure: ensure, have: have, peek: peek, start: start, afterPaint: afterPaint, remember: remember, status: status,
     get prefetched() { return prefetched; }
   };
 });
