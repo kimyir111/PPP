@@ -17,7 +17,7 @@ const PAGE = 'Piano Coach App.dc.html';
 const FILES = [PAGE, 'home-jobs.js', 'home-result.js', 'home-omr.js', 'home-jobs-store.js', 'server.js', 'share-guest.js', 'tools/home-worker/worker.js', 'review/h10/helper-heard.js', 'catalog/shared-seeds.json', 'omr/engine.js', 'omr/helper-output.js', 'i18n/ko-KR.json',
   /* what server.js requires at its top (G13-4/G13-5 added these: a copy of server.js without them does not start) */
   'static-allow.js', 'static-assets.js', 'signup-limit.js', 'server-stats.js'];
-const OMR_TESTS = ['omr-jobs.test.js', 'omr-limits.test.js', 'omr-flow.test.js', 'omr-worker.test.js'], OMR_PG = 'omr-jobs-pg.test.js', OMR_PAGE = 'omr-page.test.js';
+const OMR_TESTS = ['omr-jobs.test.js', 'omr-limits.test.js', 'omr-flow.test.js', 'omr-guard.test.js', 'omr-worker.test.js'], OMR_PG = 'omr-jobs-pg.test.js', OMR_PAGE = 'omr-page.test.js';
 const JOBS = 'jobs.test.js', WORKER = 'worker.test.js', PG = 'jobs-pg.test.js', LINKS = 'links.test.js', SERVER = 'server.test.js', PAIRW = 'pair.test.js', PAIRPAGE = 'pairing.test.js', PROTO = 'protocol.test.js', FINDABLE = 'findable.test.js';
 
 /* id, file, what the mutant breaks, [from, to] (strings, replaced once), the test that must fail */
@@ -28,7 +28,7 @@ const M = [
   ['A4', 'home-jobs.js', 'the token compare ignores the secret', ['const got = sha256(t.token);\n    const same = want.length === got.length && crypto.timingSafeEqual(want, got);', 'const got = sha256(t.token);\n    const same = want.length === got.length;'], JOBS],
   ['A5', 'home-jobs.js', 'every poll writes last-seen to the database (an idle poll hits the DB)', ['if (cold) await persistSeen(rec);\n\n    const canSong', 'await persistSeen(rec);\n\n    const canSong'], JOBS],
   ['A6', 'home-jobs.js', 'the queue is read from the database on every request, not once per boot', ['if (loaded) return false;', 'if (false) return false;'], JOBS],
-  ['A7', 'home-jobs.js', 'a posted result is not validated', ['const v = omr ? H.validateOmrResult(body, { pages: job.pages }) : R.validateResult(body);', 'const v = { ok: true, result: body, bytes: 1 };'], JOBS],
+  ['A7', 'home-jobs.js', 'a posted result is not validated', ['v = omr ? H.validateOmrResult(body, { pages: job.pages }) : R.validateResult(body);', 'v = { ok: true, result: body, bytes: 1 };'], JOBS],
   ['A8', 'home-jobs.js', 'the cross-site check is gone', ['function requireSameSite(req) {\n    if (!sameSite(req))', 'function requireSameSite(req) {\n    if (false)'], JOBS],
   ['A9', 'home-jobs.js', 'wrong secrets (tokens and codes) are never rate limited', ["if (!limiters.badTokens.take(ip)) return httpError(429,", "if (false) return httpError(429,"], JOBS],
   ['A10', 'home-jobs.js', 'the cap of 5 waiting jobs is gone', ['>= L.PENDING_PER_USER', '>= 999'], JOBS],
@@ -73,7 +73,7 @@ const M = [
   ['N4', 'home-jobs.js', 'the default idle wait is 20 minutes again', ['IDLE_POLL_DEFAULT_S: 3600,', 'IDLE_POLL_DEFAULT_S: 1200,'], JOBS],
   ['N5', 'tools/home-worker/worker.js', 'a redirect to another origin is followed', ['if (u.origin !== origin0) return fail(', 'if (false) return fail('], WORKER],
   ['N6', 'home-jobs.js', 'a valid token is refused while wrong tokens from its address are being counted', ['if (!t) throw badToken(req);', "if (!t || !limiters.badTokens.peek(deps.clientIp(req) || 'unknown')) throw badToken(req);"], JOBS],
-  ['N7', 'home-jobs.js', 'a refused body keeps its slot of the hourly enqueue budget', ['} catch (e) { release(); throw e; }\n    const t = now();\n    await sweep(t);', '} catch (e) { throw e; }\n    const t = now();\n    await sweep(t);'], JOBS],
+  ['N7', 'home-jobs.js', 'a refused body keeps its slot of the hourly enqueue budget', ["if (!kind) throw httpError(422, 'That conversion mode is not known.', 'bad-mode');\n      await ensureLoaded();\n    } catch (e) { release(); throw e; }", "if (!kind) throw httpError(422, 'That conversion mode is not known.', 'bad-mode');\n      await ensureLoaded();\n    } catch (e) { throw e; }"], JOBS],
   ['N8', 'home-jobs.js', 'the hourly enqueue limit is not per address', ['if (!limiters.enqueueIp.take(ip)) {', 'if (false) {'], JOBS],
   ['N9', 'home-jobs.js', 'a result that would pass the account\'s share is not given room (the oldest finished conversion is not cleared)', ['await evict(rec.ownerId, v.bytes, 0);', ''], JOBS],
   ['N10', 'home-jobs.js', 'a new job does not ask for room among the account\'s own rows and notes (no eviction at enqueue)', ['try { await evict(link.id, C.resultReserveBytes, 1, job); } catch (e) { giveUp(e); }', ''], JOBS],
@@ -259,7 +259,7 @@ const M = [
   ['R5b', PAGE, 'the flag is set on a phone too (the same link again: no desktop check)', ["if (p.local && PcLocal.desktop()) PcLocal.set(true);", "if (p.local) PcLocal.set(true);"], PAIRPAGE],
   ['R6', PAGE, 'a link that arrives after the page started is not marked live (it is taken like one in the address when the page opened)', ["{ code: c, local: local, live: started }", "{ code: c, local: local, live: false }"], PAIRPAGE],
   ['R7', PAGE, 'PPP_PAIR.take() does not give the pending link up (it can be taken again)', ["take: function () { var p = pending; pending = null; return p; }", "take: function () { return pending; }"], PAIRPAGE],
-  ['R8', PAGE, 'the replaced link is not kept (Disconnect cannot bring it back)', ["PcLink.setPrev(prevCode || null);", ""], PAIRPAGE],
+  ['R8', PAGE, 'the replaced link is not kept (Disconnect cannot bring it back)', ["PcLink.setPrev(prevCode || null, wasTrusted);", ""], PAIRPAGE],
   ['R9', PAGE, 'Disconnect does not put the "this is the PC" flag back', ["if (u) PcLocal.set(!!u.wasLocal);", ""], PAIRPAGE],
   ['R10', PAGE, 'in-app browsers get no hint', [".test((typeof navigator !== 'undefined' && navigator.userAgent) || '');", ".test('');"], PAIRPAGE],
   ['R11', PAGE, 'what follows an "&" is taken for part of the code (a link with &local=1 or &utm= is "incomplete")', ["var c = amp < 0 ? rest : rest.slice(0, amp);", "var c = rest;"], PAIRPAGE],

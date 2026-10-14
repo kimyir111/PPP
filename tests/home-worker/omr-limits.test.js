@@ -2,10 +2,11 @@
    it by one, and every refusal is shown to cost nothing (nothing stored, no hourly slot kept).
 
      - the uploads: pages, bytes of a page and a job, pixels, what is not an image, a body over the cap, a body that announces more than it may
-     - the queue: scores waiting per link (2), conversions and scores together (5), the same pages twice, a place given back by a cancel
+     - the queue: scores waiting per link (2: a newer score takes the place of the oldest one no PC has taken; one being read is never touched), conversions and scores together (5),
+       the same pages twice, a place given back by a cancel
      - an hour: 6 scores a link, 12 an address (links made from one address share it), the answer says when to come back
      - the images held: per link, per creating address, for the site; freed when a job is finished
-     - uploads at the same moment (2 in the whole site), an upload that is cut off
+     - uploads at the same moment (one per link, one per address, 3 in the whole site), an upload that is cut off
 
    Run: node tests/home-worker/omr-limits.test.js */
 'use strict';
@@ -68,23 +69,53 @@ async function uploadRules() {
 async function quotaRules() {
   heading('the queue: scores waiting');
   {
-    const S = await L.startService({ users: ['a', 'b', 'c'] });
+    const S = await L.startService({ users: ['a', 'b', 'c', 'd', 'e'] });
     try {
-      for (const u of ['a', 'b', 'c']) await ready(S, u);
+      for (const u of ['a', 'b', 'c', 'd', 'e']) await ready(S, u);
       const one = n => L.omrPages(1, { w: 1200 + n, bytes: 3000 });
+      const rowsOf = u => Array.from(S.svc._state.jobs.values()).filter(j => j.ownerId === S.linkId(u));
       ok('two scores may wait for one link', (await sendOmr(S, 'a', one(1))).status === 201 && (await sendOmr(S, 'a', one(2))).status === 201);
+      const first = rowsOf('a').slice().sort((x, y) => x.createdAt - y.createdAt)[0];
       const third = await sendOmr(S, 'a', one(3));
-      ok('the third is 429 queue-full, nothing stored for it', third.status === 429 && third.body.code === 'queue-full' && S.svc._state.jobs.size === 2 && pageFilesIn(S) === 2, third.status + ' ' + third.text);
-      ok('another link is not touched', (await sendOmr(S, 'b', one(4))).status === 201);
-      const dup = await sendOmr(S, 'b', one(4));
-      ok('the same pages asked for again while they wait are the same job (200, existing), not a second', dup.status === 200 && dup.body.existing === true && S.svc._state.jobs.size === 3 && pageFilesIn(S) === 3, dup.status + ' ' + dup.text.slice(0, 100));
+      ok('a third score is taken: it takes the place of the OLDEST one that no PC has taken (cancelled, its page files gone at once - a closed tab leaves one the page cannot list)',
+        third.status === 201 && first.status === 'cancelled' && rowsOf('a').filter(j => j.status === 'queued').length === 2 && pageFilesIn(S) === 2, third.status + ' ' + third.text.slice(0, 120) + ' files=' + pageFilesIn(S));
+      ok('(the job that was replaced says so)', /newer score/.test(first.error), first.error);
+      const again = await sendOmr(S, 'a', one(3));
+      ok('the same pages asked for again are the same job and replace nothing (200, existing)', again.status === 200 && again.body.existing === true && rowsOf('a').filter(j => j.status === 'queued').length === 2 && pageFilesIn(S) === 2);
+      /* a score being read is never touched: both are claimed, a newer one is 429 and stores nothing */
+      await claimOmr(S, S.token('a')); await claimOmr(S, S.token('a'));
+      const fourth = await sendOmr(S, 'a', one(4));
+      ok('with both scores being read by the PC a third is 429 queue-full, nothing stored for it, nothing of the two touched', fourth.status === 429 && fourth.body.code === 'queue-full'
+        && rowsOf('a').filter(j => j.status === 'claimed').length === 2 && pageFilesIn(S) === 2, fourth.status + ' ' + fourth.text);
+      ok('another link is not touched', (await sendOmr(S, 'b', one(5))).status === 201);
+      const dup = await sendOmr(S, 'b', one(5));
+      ok('the same pages asked for again while they wait are the same job (200, existing), not a second', dup.status === 200 && dup.body.existing === true && rowsOf('b').length === 1 && pageFilesIn(S) === 3, dup.status + ' ' + dup.text.slice(0, 100));
       const conv = await Promise.all([1, 2, 3].map(i => S.as('c').post('/api/jobs', { url: WATCH('c'.repeat(10) + i) })));
-      ok('conversions and scores together are at most five waiting: three conversions and two scores are fine, a sixth thing is 429', conv.every(r => r.status === 201)
-        && (await sendOmr(S, 'c', one(5))).status === 201 && (await sendOmr(S, 'c', one(6))).status === 201 && (await sendOmr(S, 'c', one(7))).status === 429);
-      const mine = Array.from(S.svc._state.jobs.values()).find(j => j.ownerId === S.linkId('a'));
+      ok('conversions and scores together are at most five waiting: three conversions and two scores are fine, a sixth CONVERSION is 429', conv.every(r => r.status === 201)
+        && (await sendOmr(S, 'c', one(6))).status === 201 && (await sendOmr(S, 'c', one(7))).status === 201 && (await S.as('c').post('/api/jobs', { url: WATCH('c'.repeat(10) + '4') })).status === 429);
+      const seventh = await sendOmr(S, 'c', one(8));
+      ok('a sixth thing that is a SCORE takes the place of the oldest waiting score (conversions are never cancelled for it)', seventh.status === 201 && rowsOf('c').filter(j => j.kind === 'omr' && j.status === 'queued').length === 2
+        && rowsOf('c').filter(j => j.kind !== 'omr' && j.status === 'queued').length === 3 && rowsOf('c').some(j => j.kind === 'omr' && j.status === 'cancelled'));
+      /* five conversions and no score: nothing a score could take the place of */
+      const five = await Promise.all([1, 2, 3, 4, 5].map(i => S.as('d').post('/api/jobs', { url: WATCH('d'.repeat(10) + i) })));
+      const filesBefore = pageFilesIn(S);
+      const noRoom = await sendOmr(S, 'd', one(9));
+      ok('five conversions waiting and no score to take the place of: a score is 429 queue-full, before a byte of it is read', five.every(r => r.status === 201) && noRoom.status === 429 && noRoom.body.code === 'queue-full' && pageFilesIn(S) === filesBefore);
+      /* one score is being read (the OLDEST) and one waits: a newer one takes the place of the one that waits, never of the one being read */
+      {
+        const e1 = await sendOmr(S, 'e', one(11));
+        await claimOmr(S, S.token('e'));
+        const e2 = await sendOmr(S, 'e', one(12));
+        const e3 = await sendOmr(S, 'e', one(13));
+        const byId = id => S.svc._state.jobs.get(id);
+        ok('one score being read and one waiting: a third takes the place of the one that WAITS - the one the PC is reading is not cancelled, not even though it is the older',
+          e1.status === 201 && e2.status === 201 && e3.status === 201 && byId(e1.body.job.id).status === 'claimed' && byId(e2.body.job.id).status === 'cancelled' && byId(e3.body.job.id).status === 'queued',
+          [e1, e2, e3].map(r => r.status).join() + ' ' + [e1, e2, e3].map(r => byId(r.body.job.id) && byId(r.body.job.id).status).join());
+      }
+      const mine = rowsOf('a').find(j => j.status === 'claimed');
       const files0 = pageFilesIn(S);
       const cx = await S.as('a').post('/api/jobs/' + mine.id + '/cancel', {});
-      ok('cancelling a waiting score deletes its page files at once and gives its place back', cx.status === 200 && cx.body.job.status === 'cancelled' && pageFilesIn(S) === files0 - 1 && (await sendOmr(S, 'a', one(8))).status === 201);
+      ok('cancelling a score deletes its page files at once and gives its place back', cx.status === 200 && cx.body.job.status === 'cancelled' && pageFilesIn(S) === files0 - 1 && (await sendOmr(S, 'a', one(10))).status === 201);
     } finally { await S.close(); }
   }
 
@@ -138,8 +169,9 @@ async function quotaRules() {
       for (const [n, ip] of [['p', '198.51.100.31'], ['q', '198.51.100.31'], ['r', '198.51.100.32'], ['s', '198.51.100.33'], ['t', '198.51.100.34']]) { await S.makeLink(n, { ip: ip }); await ready(S, n); }
       const kb = (n, k) => L.omrPages(1, { w: 900 + n, bytes: k * 1000, vary: false });
       ok('a link holds up to its share of images (here 20 KB): 12 KB, then 7 KB', (await sendOmr(S, 'p', kb(1, 12))).status === 201 && (await sendOmr(S, 'p', kb(2, 7))).status === 201);
+      await claimOmr(S, S.token('p')); await claimOmr(S, S.token('p'));       /* both are being read: a newer score cannot take the place of either */
       const over = await sendOmr(S, 'p', kb(3, 3));
-      ok('...and the next is refused (2 jobs waiting here, so queue-full first); free one place to see the bytes rule', over.status === 429, over.status + ' ' + over.text);
+      ok('...and the next is refused (2 jobs being read here, so queue-full first); free one place to see the bytes rule', over.status === 429, over.status + ' ' + over.text);
       const firstJob = Array.from(S.svc._state.jobs.values()).find(j => j.ownerId === S.linkId('p') && j.bytes < 8000);
       await S.as('p').post('/api/jobs/' + firstJob.id + '/cancel', {});     /* the 7 KB one goes: 12 KB held, one place free */
       const bytesOver = await sendOmr(S, 'p', kb(4, 9));
@@ -151,21 +183,22 @@ async function quotaRules() {
       const site = await sendOmr(S, 's', kb(8, 18));
       ok('the site\'s total is the last: 36 KB held, 18 KB more is over 50 KB: 503 busy', site.status === 503 && site.body.code === 'busy', site.status + ' ' + site.text);
       ok('and 14 KB fits (36 + 14 = 50)', (await sendOmr(S, 't', kb(9, 14))).status === 201);
-      const c = await claimOmr(S, S.token('p'));
-      await S.worker(S.token('p')).post('/api/worker/jobs/' + c.body.job.id + '/result', L.omrResult(1));
+      const reading = Array.from(S.svc._state.jobs.values()).find(j => j.ownerId === S.linkId('p') && j.status === 'claimed');
+      await S.worker(S.token('p')).post('/api/worker/jobs/' + reading.id + '/result', L.omrResult(1));
       ok('a job that is done holds none: the link may send 9 KB again (its other job holds 8 KB)', (await sendOmr(S, 'p', kb(10, 9))).status === 201);
     } finally { await S.close(); }
   }
 
   heading('uploads at the same moment, and an upload that is cut off');
   {
-    const S = await L.startService({ users: ['u1', 'u2', 'u3'] });
+    const S = await L.startService({ users: ['u1', 'u2', 'u3', 'u4'] });
     try {
-      for (const u of ['u1', 'u2', 'u3']) await ready(S, u);
+      for (const u of ['u1', 'u2', 'u3', 'u4']) await ready(S, u);
       const body = JSON.stringify({ title: 'slow', pages: L.omrPages(1, { w: 1000, bytes: 4000 }) });
-      const open = user => new Promise((resolve, reject) => {
+      /* each sender has an address of its own (X-Forwarded-For): the places are per link, per address and for the site */
+      const open = (user, ip) => new Promise((resolve, reject) => {
         const r = L.http.request({ host: '127.0.0.1', port: S.port, method: 'POST', path: '/api/jobs/omr', agent: false,
-          headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'X-PPP-PC': S.code(user) } }, res => {
+          headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'X-PPP-PC': S.code(user), 'X-Forwarded-For': ip || ('203.0.113.' + user.slice(1)) } }, res => {
           const ch = [];
           res.on('data', c => ch.push(c));
           res.on('end', () => { let b = null; try { b = JSON.parse(Buffer.concat(ch).toString('utf8')); } catch (e) { b = null; } r.__res({ status: res.statusCode, body: b }); });
@@ -176,18 +209,18 @@ async function quotaRules() {
         setTimeout(() => resolve(r), 120);
         void reject;
       });
-      const s1 = await open('u1'), s2 = await open('u2');
-      const third = await sendOmr(S, 'u3', L.omrPages(1, { w: 1100 }));
-      ok('two uploads in flight: a third is 503 busy with a Retry-After', third.status === 503 && third.body.code === 'busy' && Number(third.headers['retry-after']) > 0, third.status + ' ' + third.text);
-      s1.end(body.slice(50)); s2.end(body.slice(50));
-      const [d1, d2] = await Promise.all([s1.__done, s2.__done]);
-      ok('the two that were in flight finish and are queued', d1.status === 201 && d2.status === 201, JSON.stringify([d1.status, d2.status]));
-      ok('and, once they are done, the third gets in - the refusal cost it no hourly slot', (await sendOmr(S, 'u3', L.omrPages(1, { w: 1100 }))).status === 201);
+      const s1 = await open('u1'), s2 = await open('u2'), s3 = await open('u3');
+      const fourth = await sendOmr(S, 'u4', L.omrPages(1, { w: 1100 }), null, { ip: '203.0.113.4' });
+      ok('three uploads in flight (the ceiling of the site): a fourth, from its own link and address, is 503 busy with a Retry-After', fourth.status === 503 && fourth.body.code === 'busy' && Number(fourth.headers['retry-after']) > 0, fourth.status + ' ' + fourth.text);
+      s1.end(body.slice(50)); s2.end(body.slice(50)); s3.end(body.slice(50));
+      const [d1, d2, d3] = await Promise.all([s1.__done, s2.__done, s3.__done]);
+      ok('the three that were in flight finish and are queued', d1.status === 201 && d2.status === 201 && d3.status === 201, JSON.stringify([d1.status, d2.status, d3.status]));
+      ok('and, once they are done, the fourth gets in - the refusal cost it no hourly slot', (await sendOmr(S, 'u4', L.omrPages(1, { w: 1100 }), null, { ip: '203.0.113.4' })).status === 201);
       const s4 = await open('u1');
       s4.destroy();
       await sleep(250);
-      ok('an upload that is cut off in the middle stores nothing and gives its place back', S.svc._state.jobs.size === 3 && pageFilesIn(S) === 3);
-      const again = await Promise.all([(async () => { const c = await claimOmr(S, S.token('u1')); await S.worker(S.token('u1')).post('/api/worker/jobs/' + c.body.job.id + '/fail', { error: 'x' }); return (await sendOmr(S, 'u1', L.omrPages(1, { w: 1301 }))).status; })(), sendOmr(S, 'u2', L.omrPages(1, { w: 1300 })).then(r => r.status)]);
+      ok('an upload that is cut off in the middle stores nothing and gives its place back', S.svc._state.jobs.size === 4 && pageFilesIn(S) === 4);
+      const again = await Promise.all([(async () => { const c = await claimOmr(S, S.token('u1')); await S.worker(S.token('u1')).post('/api/worker/jobs/' + c.body.job.id + '/fail', { error: 'x' }); return (await sendOmr(S, 'u1', L.omrPages(1, { w: 1301 }), null, { ip: '203.0.113.1' })).status; })(), sendOmr(S, 'u2', L.omrPages(1, { w: 1300 }), null, { ip: '203.0.113.2' }).then(r => r.status)]);
       ok('(the places are free: two more go through)', again.every(s => s === 201), JSON.stringify(again));
     } finally { await S.close(); }
   }

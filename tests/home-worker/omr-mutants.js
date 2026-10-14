@@ -4,7 +4,7 @@
 'use strict';
 const PAGE = 'Piano Coach App.dc.html';
 const J = 'home-jobs.js', O = 'home-omr.js', S = 'home-jobs-store.js', W = 'tools/home-worker/worker.js', E = 'omr/engine.js';
-const T = 'omr-jobs.test.js', LIM = 'omr-limits.test.js', FLOW = 'omr-flow.test.js', WK = 'omr-worker.test.js', PG = 'omr-jobs-pg.test.js', PG_PAGE = 'omr-page.test.js';
+const T = 'omr-jobs.test.js', LIM = 'omr-limits.test.js', FLOW = 'omr-flow.test.js', GRD = 'omr-guard.test.js', WK = 'omr-worker.test.js', PG = 'omr-jobs-pg.test.js', PG_PAGE = 'omr-page.test.js';
 
 module.exports = [
   /* ---- the queue (home-jobs.js) ---- */
@@ -14,9 +14,10 @@ module.exports = [
   ['O4', J, 'a body that announces 40 MB is read (the announced size is not checked)', ["if (Number.isFinite(declared) && declared > L.OMR_BODY + 4 * 1048576) throw", "if (false) throw"], LIM],
   ['O5', J, 'scores asked for are not limited per link an hour', ["if (!limiters.omr.take(link.id)) throw", "if (false) throw"], LIM],
   ['O6', J, 'scores asked for are not limited per address an hour', ["if (!limiters.omrIp.take(ip)) {", "if (false) {"], LIM],
-  ['O7', J, 'any number of uploads are read at the same moment', ["if (omrUploads >= L.OMR_UPLOADS_AT_ONCE) {", "if (false) {"], LIM],
-  ['O8', J, 'any number of scores may wait for a link (both guards: before the body and in the atomic section)', [
-    ["if (omrPendingOf(link.id) >= L.OMR_PENDING_PER_LINK || mine0.filter(pending).length >= PENDING_CAP) {", "if (false) {"],
+  ['O7', J, 'any number of uploads are read at the same moment (the ceiling of the site)', ["if (s.site >= (cls === 'up' ? C.omrUploadsAtOnce : C.resultsAtOnce)) throw", "if (false) throw"], LIM],
+  ['O8', J, 'any number of scores may wait for a link (the three guards: before the body, the replacing of the oldest, and the atomic section)', [
+    ["const capped = omrPendingOf(link.id) >= L.OMR_PENDING_PER_LINK || mine0.filter(pending).length >= PENDING_CAP;", "const capped = false;"],
+    ["if (!same && (omrPendingOf(link.id) >= L.OMR_PENDING_PER_LINK || now0.filter(pending).length >= PENDING_CAP)) {", "if (false) {"],
     ["if (omrPendingOf(link.id) >= L.OMR_PENDING_PER_LINK || mine.filter(pending).length >= PENDING_CAP) {", "if (false) {"]], LIM],
   ['O9', J, 'the images a link holds are not bounded', ["if (omrImageBytes(j => j.ownerId === link.id) + checked.bytes > C.omrImageBytesPerLink) {", "if (false) {"], LIM],
   ['O10', J, 'the images the links of one address hold are not bounded', ["if (link.ipTag && omrImageBytes(addressOf(link.ipTag)) + checked.bytes > C.omrImageBytesPerAddress) {", "if (false) {"], LIM],
@@ -29,9 +30,9 @@ module.exports = [
   ['O15', J, 'the pages and the result of a score go to a token that does not hold its claim (both guards)', [
     ["if (job.kind === 'omr' && job.workerId && job.workerId !== rec.id) throw httpError(409, 'That job was taken by another worker.', 'not-yours', { status: job.status });", ""],
     ["if (job.workerId !== rec.id) throw httpError(409, 'That job was taken by another worker.', 'not-yours', { status: job.status });", ""]], FLOW],
-  ['O16', J, 'one page may be fetched any number of times in a claim', ["if (job.pageReads[idx] > L.OMR_PAGE_READS_PER_PAGE) throw", "if (false) throw"], FLOW],
+  ['O16', J, 'the pages of a job may be read any number of times', ["if (reads > Math.max(1, job.attempts) * (job.pages + L.OMR_PAGE_READS_SLACK)) throw", "if (false) throw"], FLOW],
   ['O17', J, 'a token may fetch any number of pages an hour', ["if (!limiters.pageReads.take(rec.id)) throw", "if (false) throw"], FLOW],
-  ['O18', J, 'the result of every job is checked as notes (the kind of the job is ignored)', ["const v = omr ? H.validateOmrResult(body, { pages: job.pages }) : R.validateResult(body);", "const v = R.validateResult(body);"], FLOW],
+  ['O18', J, 'the result of every job is checked as notes (the kind of the job is ignored)', ["v = omr ? H.validateOmrResult(body, { pages: job.pages }) : R.validateResult(body);", "v = R.validateResult(body);"], FLOW],
   ['O19', J, 'the images are kept after the result', ["await dropPages(job);          /* G12-5: the images have done their work */", ""], FLOW],
   ['O20', J, 'the images are kept after a failure for good', ["await dropPages(job);          /* G12-5: a job that failed for good holds no images */", ""], FLOW],
   ['O21', J, 'the images are kept after a cancel', ["await dropPages(job);          /* G12-5: a score that is cancelled holds no images (the PC that is reading it hears \"cancelled\" at its next heartbeat) */", ""], FLOW],
@@ -44,8 +45,8 @@ module.exports = [
   ['O28', J, 'a heartbeat does not say which page the PC is on', ["if (job.kind === 'omr' && Number.isInteger(body.page) && body.page >= 0 && body.page <= job.pages) job.progress.page = body.page;", ""], FLOW],
   ['O29', J, 'a claim of a score says neither its page count nor hides its url', ["if (job.kind === 'omr') { given.url = ''; given.pages = job.pages; }", ""], T],
   ['O30', J, 'the title of a score is not cleaned', ["title = R.cleanText(body.title, H.LIMITS.TITLE_MAX);", "title = String(body.title || '');"], T],
-  ['O31', J, 'a result body of a score may be any size', ["const body = await readJson(req, omr ? L.OMR_RESULT_BODY : L.RESULT_BODY, L.RESULT_DRAIN);", "const body = await readJson(req, 100 * 1024 * 1024, 200 * 1024 * 1024);"], FLOW],
-  ['O32', J, 'a score is queued without asking for the link (the first link is used)', ["let link = await requireLink(req);\n    if (!C.omrJobs) throw", "let link = Array.from(links.values())[0];\n    if (!C.omrJobs) throw"], T],
+  ['O31', J, 'a result body of a score may be any size', ["const body = await readJson(req, omr ? L.OMR_RESULT_BODY : L.RESULT_BODY, L.RESULT_DRAIN, omr ? SHAPES.omrResult : SHAPES.result);", "const body = await readJson(req, 100 * 1024 * 1024, 200 * 1024 * 1024, SHAPES.omrResult);"], FLOW],
+  ['O32', J, 'a score is queued without asking for the link (the first link is used)', ["const link = await requireLink(req);\n    if (!C.omrJobs) throw", "const link = Array.from(links.values())[0];\n    if (!C.omrJobs) throw"], T],
   ['O33', J, 'a score nobody can read (no images) is left waiting for ever', ["} else if (j.kind === 'omr' && j.status === 'queued' && !j.writing && !(j.pages > 0)) {", "} else if (false) {"], FLOW],
 
   /* ---- what goes up and comes back (home-omr.js) ---- */
@@ -73,17 +74,17 @@ module.exports = [
   /* ---- the worker ---- */
   ['V1', W, 'a claim says omr: true whether or not this PC can read a score', ["song: true, omr: omrAble() }", "song: true, omr: true }"], WK],
   ['V2', W, 'the pages the site hands over are not checked again', ["const info = Omr.checkImage(r.raw, i + 1);\n    if (!info.ok) throw new JobError('The site sent a page that is not a usable image: ' + info.error, false);", "const info = { ok: true, type: 'png' };"], WK],
-  ['V3', W, 'the engine is not asked to run at a lower priority', ["lowPriority: true, onChild: c => { ctl.child = c; }", "lowPriority: false, onChild: c => { ctl.child = c; }"], WK],
+  ['V3', W, 'the engine is not asked to run at a lower priority', ["lowPriority: true, env: Engine", "lowPriority: false, env: Engine"], WK],
   ['V4', W, 'the worker itself does not go to below-normal priority while it reads a score', ["const restorePriority = deps.noPriority ? () => {} : lowerPriority();", "const restorePriority = () => {};"], WK],
   ['V5', W, 'the engine is not given the step time-out', ["extraArgs: Engine ? Engine.STEP_TIMEOUT_ARGS.slice() : []", "extraArgs: []"], WK],
   ['V6', W, 'the page file is named from the title the site sent', ["const img = path.join(dir, 'page-' + (i + 1) + (got.type === 'png' ? '.png' : '.jpg'));", "const img = path.join(dir, String(job.title || 'x').replace(/[^A-Za-z0-9]/g, '') + (i + 1) + (got.type === 'png' ? '.png' : '.jpg'));"], WK],
   ['V7', W, 'the id of a job the site hands over is not checked before it is used in an address', ["const idOk = typeof job.id === 'string' && JOB_ID_RE.test(job.id);", "const idOk = typeof job.id === 'string';"], WK],
   ['V8', W, 'the page count of a job the site hands over is not checked', ["if (!idOk || !Number.isInteger(n) || n < 1 || n > Omr.LIMITS.PAGES_MAX_LARGE) {", "if (!idOk) {"], WK],
   ['V9', W, 'what the engine wrote is sent without the site\'s own rules being run here first', ["const v = Omr.validateOmrResult(body, { pages: n });\n      if (!v.ok) throw new JobError(", "const v = { ok: true, result: body, bytes: 1 };\n      if (!v.ok) throw new JobError("], WK],
-  ['V10', W, 'a cancel on the site does not stop the engine\'s process', ["lowPriority: true, onChild: c => { ctl.child = c; }", "lowPriority: true, onChild: c => { }"], WK],
+  ['V10', W, 'a cancel on the site does not stop the engine\'s process', ["undefined, onChild: c => { ctl.child = c; }", "undefined, onChild: c => { }"], WK],
   ['V11', W, 'the scratch folder of a score is left behind', ["if (cfg.keepScratch !== true) {", "if (false) {"], WK],
   ['V12', W, 'a PC without Audiveris runs a score it is handed', ["if (!omrAble()) {\n      log.warn('A score is waiting but this PC cannot read scores", "if (false) {\n      log.warn('A score is waiting but this PC cannot read scores"], WK],
-  ['V13', W, 'a token the site rejects is not fatal when a page is fetched', ["if (r.status === 401) throw Object.assign(new Error('token'), { fatalToken: true });\n    if (r.status === 404 || r.status === 409 || r.status === 410) throw new Cancelled(", "if (r.status === 404 || r.status === 409 || r.status === 410) throw new Cancelled("], WK],
+  ['V13', W, 'a token the site rejects is not fatal when a page is fetched', ["if (r.status === 401) throw Object.assign(new Error('token'), { fatalToken: true });\n    if (final(r)) throw", "if (final(r)) throw"], WK],
   ['V14', E, 'a .mxl that inflates to any size is expanded into memory', ["zlib.inflateRawSync(raw, { maxOutputLength: 64 * 1024 * 1024 })", "zlib.inflateRawSync(raw)"], WK],
 
   /* ---- the store on Postgres ---- */
@@ -94,6 +95,64 @@ module.exports = [
   ['Q5', S, 'Postgres: the foreign key of the images does not cascade', ["job_id TEXT NOT NULL REFERENCES ppp_transcribe_jobs (id) ON DELETE CASCADE,", "job_id TEXT NOT NULL REFERENCES ppp_transcribe_jobs (id),"], PG],
   ['Q6', S, 'Postgres: a finished score is purged on the conversions\' keeping time', ["(CASE WHEN kind = 'omr' THEN $3::timestamptz ELSE $1::timestamptz END)", "$1::timestamptz"], PG],
   ['Q7', S, 'Postgres: the boot read does not say how many images a job holds', [", (SELECT count(*)::int FROM ppp_omr_pages p WHERE p.job_id = j.id) AS pages FROM ppp_transcribe_jobs j;'", ", 0 AS pages FROM ppp_transcribe_jobs j;'"], PG],
+
+  /* ---- G12-5 security review: the shape of a body (home-omr.js jsonGuard, home-jobs.js readQueueBody) ---- */
+  ['X1', J, 'the shape of a body is not counted as it arrives (an unguarded JSON.parse of {} x millions)', ["if (guard && guard.push(c) === 'shape') { why = 'SHAPE'; chunks = []; return; }", ""], GRD],
+  ['X2', O, 'the scanner counts nothing: no token or container is ever over its bound', ["if (++tokens > maxTokens || ++containers > maxContainers || ++depth > maxDepth) return 'shape'; }", "++tokens; ++containers; ++depth; }"], GRD],
+  ['X3', O, 'the scanner counts what is INSIDE strings (a MusicXML text with commas is refused)', ["        if (inStr) {\n          if (esc) { esc = false; i++; continue; }", "        if (false) {\n          if (esc) { esc = false; i++; continue; }"], GRD],
+  ['X4', O, 'the scanner does not know an escaped quote (a string ends at a backslash-quote)', ["if (buf[i] === 0x5c) { esc = true; i++; continue; }", "if (buf[i] === 0x5c) { i++; continue; }"], GRD],
+  ['X5', J, 'a route that gives no shape is read with none (claim, heartbeat, fail, link, token, conversion)', ["shape: shape || SHAPES.small,", "shape: shape,"], GRD],
+  /* ---- the time of a body and its place ---- */
+  ['X6', J, 'a body that stops arriving is waited for (no gap deadline)', ["idle = setTimeout(() => settle(reject, err('SLOW', 'idle')), o.idleMs);", "idle = setTimeout(() => {}, o.idleMs);"], GRD],
+  ['X7', J, 'a body that trickles is waited for (no total deadline)', ["total = setTimeout(() => settle(reject, err('SLOW', 'total')), o.totalMs);", "total = setTimeout(() => {}, o.totalMs);"], GRD],
+  ['X8', J, 'one address may hold any number of places', ["if ((s.by.get(ka) | 0) > 0) throw httpError(503, 'Another score is being sent from this network right now. Try again in a moment.', 'busy', { retryAfter: 10 });", ""], GRD],
+  ['X9', J, 'one link may hold any number of places', ["if ((s.by.get(kl) | 0) > 0) throw httpError(429, cls === 'up' ?", "if (false) throw httpError(429, cls === 'up' ?"], GRD],
+  ['X10', J, 'a place is never given back', ["s.site--; s.by.delete(kl); s.by.delete(ka);", ""], GRD],
+  ['X11', J, 'a sender that goes away keeps its place until the deadline', ["req.on('data', onData); req.on('end', onEnd); req.on('error', onError); req.on('close', onClose);", "req.on('data', onData); req.on('end', onEnd);"], GRD],
+  ['X12', J, 'a body that announces far more than a route takes is read', ["if (Number.isFinite(declared) && declared > cap) throw httpError(413,", "if (false) throw httpError(413,"], GRD],
+  ['X13', J, 'a result is read with no place taken for it', ["const slot = takeBodySlot('res', rec.ownerId, addrKey(deps.clientIp(req) || 'unknown'));", "const slot = () => {};"], GRD],
+  /* ---- what the site reads for scores ---- */
+  ['X14', J, 'a claim starts the count of page reads again', ["job.claimedAt = t; job.beatAt = t; job.progress = { stage: 'claimed', pct: 0 }; job.notBefore = 0;\n", "job.claimedAt = t; job.beatAt = t; job.progress = { stage: 'claimed', pct: 0 }; job.notBefore = 0; job.pageReads = 0;\n"], GRD],
+  ['X15', J, 'a score has the attempts of a conversion (three)', ["const maxAttemptsOf = j => (j.kind === 'omr' ? L.OMR_MAX_ATTEMPTS : L.MAX_ATTEMPTS);", "const maxAttemptsOf = j => L.MAX_ATTEMPTS;"], FLOW],
+  ['X16', J, 'a page is handed out whatever the site\'s budget says', ["if (egressLeft(t0) <= 0) throw httpError(503,", "if (false) throw httpError(503,"], GRD],
+  ['X17', J, 'the pages handed out are not counted against the budget', ["egressAdd(now(), buf.length);", ""], GRD],
+  ['X18', J, 'the budget of the day is not applied (the hour\'s only)', ["const egressLeft = t => Math.min(egress.hour.left(t), egress.day.left(t));", "const egressLeft = t => egress.hour.left(t);"], GRD],
+  ['X19', J, 'a finished score is read out of the database without counting', ["egressAdd(tr, job.bytes || 0);", ""], GRD],
+  ['X20', J, 'a score the budget could not send once is taken', ["if (egressLeft(t) < checked.bytes || ingressLeft(t) < checked.bytes) { release(); throw httpError(503,", "if (false) { release(); throw httpError(503,"], GRD],
+  ['X21', J, 'a refused read of a page is counted against the job', ["const reads = (job.pageReads | 0) + 1;\n    if (reads >", "job.pageReads = (job.pageReads | 0) + 1;\n    const reads = job.pageReads;\n    if (reads >"], GRD],
+  /* ---- a newer score takes the place of the oldest one nobody has taken ---- */
+  ['X22', J, 'a newer score never takes the place of a waiting one (a closed tab holds its place for a day)', ["if (!same && (omrPendingOf(link.id) >= L.OMR_PENDING_PER_LINK || now0.filter(pending).length >= PENDING_CAP)) {", "if (false) {"], LIM],
+  ['X23', J, 'a newer score may cancel a score that a PC is reading', ["j.kind === 'omr' && j.status === 'queued' && !j.writing).sort((x, y)", "j.kind === 'omr' && pending(j) && !j.writing).sort((x, y)"], LIM],
+  ['X24', J, 'a link that is full is refused before the body even when a waiting score could be replaced', ["if (capped && !mine0.some(j => j.kind === 'omr' && j.status === 'queued' && !j.writing)) {", "if (capped) {"], LIM],
+  /* ---- the images: PNG chunks ---- */
+  ['X25', O, 'metadata of any size is accepted around a picture', ["if (extra > LIMITS.PNG_EXTRA_MAX) return bad(", "if (false) return bad("], T],
+  ['X26', O, 'a PNG that does not end in IEND (or points outside itself) is accepted', ["if (extra === null) return bad(at + ' is not a complete PNG image.', 'bad-image', 422);", ""], T],
+  /* ---- the worker ---- */
+  ['X27', W, 'the site\'s "not now" for a page is waited out by retrying it', ["{ binary: true, timeoutMs: 120000 }), ctl, log, final);", "{ binary: true, timeoutMs: 120000 }), ctl, log);"], WK],
+  ['X28', W, 'the engine\'s Java heap is not capped', ["env: Engine ? Engine.heapEnv(cfg.omrHeapMb) : undefined, onChild", "onChild"], WK],
+  ['X29', W, 'a PC whose Audiveris is a .bat says it can read scores', ["&& fs.existsSync(cfg.audiverisPath) && !Engine.unstartable(cfg.audiverisPath);", "&& fs.existsSync(cfg.audiverisPath);"], WK],
+  ['X30', E, 'a .bat is started (EINVAL on Node 18.20+) and its error is shown as it came', ["if (bat) return resolve({ ok: false, ms: 0, error: bat });", ""], WK],
+  ['X31', E, 'the cap on the Java heap is put after the person\'s own options (theirs no longer wins)', ["env.JAVA_TOOL_OPTIONS = ('-Xmx' + n + 'm ' + String(env.JAVA_TOOL_OPTIONS || '')).trim();", "env.JAVA_TOOL_OPTIONS = (String(env.JAVA_TOOL_OPTIONS || '') + ' -Xmx' + n + 'm').trim();"], WK],
+  /* ---- the migration and the rows nothing names ---- */
+  ['X32', S, 'Postgres: the migration does not put the foreign key back', ["IF NOT EXISTS (SELECT 1 FROM pg_constraint k WHERE k.conrelid = 'ppp_omr_pages'::regclass", "IF FALSE AND NOT EXISTS (SELECT 1 FROM pg_constraint k WHERE k.conrelid = 'ppp_omr_pages'::regclass"], PG],
+  ['X33', S, 'Postgres: the migration does not delete the page rows that no job names (and the key then cannot be made)', ["      DELETE FROM ppp_omr_pages p WHERE NOT EXISTS (SELECT 1 FROM ppp_transcribe_jobs j WHERE j.id = p.job_id);\n      ALTER TABLE", "      ALTER TABLE"], PG],
+  ['X34', S, 'Postgres: the purge does not take the page rows that no job names', ["\"WITH o AS (DELETE FROM ppp_omr_pages p WHERE NOT EXISTS (SELECT 1 FROM ppp_transcribe_jobs j WHERE j.id = p.job_id))\"\n        + \" DELETE FROM ppp_transcribe_jobs WHERE (status", "\"DELETE FROM ppp_transcribe_jobs WHERE (status"], PG],
+  ['X35', S, 'Postgres: the boot read does not count the page rows that no job names', ["orphanPages: orphan ? (orphan.n | 0) : 0", "orphanPages: 0"], PG],
+  ['X36', J, 'the boot read\'s finding of page rows that no job names is not acted on', ["if ((data.orphanPages | 0) > 0) orphanPagesDue = true;", ""], GRD],
+  ['X38', J, 'what the site accepts is not counted against its budget for what it writes', ["    ingressAdd(t, checked.bytes);          /* what is written for it counts at once (given back below when nothing is written) */\n", ""], GRD],
+  ['X39', J, 'a score that fails to be written keeps its bytes in the budget', ["jobs.delete(job.id); ingressAdd(t, -checked.bytes); release(); throw e; };", "jobs.delete(job.id); release(); throw e; };"], GRD],
+  ['X40', J, 'the budget for what the site writes is never looked at', ["if (egressLeft(t) < checked.bytes || ingressLeft(t) < checked.bytes) {", "if (egressLeft(t) < checked.bytes) {"], GRD],
+  ['X37', S, 'the file store: its purge leaves page files no job names', ["dropPages(orphanIds(d, pageCounts()));          /* (and the page files that no job names: the same turn) */", ""], GRD],
+
+  /* ---- the page: whose PC ---- */
+  ['G16', PAGE, 'the first send of a score\'s pages to a link this device did not make is not asked', ["if (!PcLink.trusted()) {\n      const answer = await Import.pcAskSend(", "if (false) {\n      const answer = await Import.pcAskSend("], PG_PAGE],
+  ['G17', PAGE, 'a link made on this device is not remembered as its own (it is asked about its own link)', ["PcLink.set(r.clientCode, { trusted: true });", "PcLink.set(r.clientCode);"], PG_PAGE],
+  ['G18', PAGE, 'every pairing link is trusted (the zero-tap adoption sends page images at once)', ["{ trusted: !!(local && PcLocal.desktop()) }", "{ trusted: true }"], PG_PAGE],
+  ['G19', PAGE, 'the answer "send" is not remembered: the person is asked at every score', ["      PcLink.trust();\n", ""], PG_PAGE],
+  ['G20', PAGE, 'a job gone from the site (404) is drafted as a second copy, as before', ["if (e.status === 404) throw importError('pc-gone',", "if (false) throw importError('pc-gone',"], PG_PAGE],
+  ['G21', PAGE, 'a job whose notes are gone (410) is waited for for ever', ["if (e.status === 410) throw fail(tx('The notes of this score are no longer kept on the site.'), e);", ""], PG_PAGE],
+  ['G22', PAGE, 'with nobody to ask the pages are sent anyway (the question waits for an answer that cannot come)', ["if (!ctl || ctl.canAsk !== true) return 'draft';", "if (!ctl) return 'draft';"], PG_PAGE],
+  ['G23', PAGE, 'the pairing a person undoes comes back as trusted whatever it was', ["PcLink.set(prev, { trusted: prevTrusted });", "PcLink.set(prev, { trusted: true });"], PG_PAGE],
 
   /* ---- the page ---- */
   ['G1', PAGE, 'the PC path runs under "legacy" (both of its gates)', [
@@ -111,6 +170,6 @@ module.exports = [
   ['G10', PAGE, 'the longest side of a re-encoded page is not cut to 3500 px', ["let scale = Math.min(1, PC_OMR.maxSide / Math.max(iw, ih, 1));", "let scale = 1;"], PG_PAGE],
   ['G11', PAGE, 'the "your PC is not on" hint never appears', ["if (!hinted && (!alive || waited >= PC_OMR.hintAfterMs)) hinted = true;", ""], PG_PAGE],
   ['G12', PAGE, 'the page the PC is reading is not shown', ["if (onStage && key !== lastKey) onStage('pcread',", "if (false) onStage('pcread',"], PG_PAGE],
-  ['G13', PAGE, 'the "Use the draft instead" button is never shown', ["showPcDraft: running && (S.pcOmr === 'wait' || S.pcOmr === 'read'),", "showPcDraft: false,"], PG_PAGE],
+  ['G13', PAGE, 'the "Use the draft instead" button is never shown', ["showPcDraft: running && (S.pcOmr === 'ask' || S.pcOmr === 'wait' || S.pcOmr === 'read'),", "showPcDraft: false,"], PG_PAGE],
   ['G14', PAGE, 'the line a PC failed with is not shown', ["if (cur.status === 'failed') throw fail(tx('Your PC could not read this score: {{why}}', { why: String(cur.error || '').slice(0, 160) }));", "if (cur.status === 'failed') throw fail(tx('Your PC could not read this score.'));"], PG_PAGE]
 ];

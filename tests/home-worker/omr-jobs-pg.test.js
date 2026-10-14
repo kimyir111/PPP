@@ -79,7 +79,14 @@ const mxl = n => L.scoreXml(n);
     const before = await snapshot();
     const m2 = await Store.migrate(pool, '');
     ok('a second migrate changes nothing (columns and constraints of every other table are identical)', m2.queue === true && JSON.stringify(await snapshot()) === JSON.stringify(before) && (await cols()).length > 0);
-    ok('the SQL of the schema has no DROP TABLE, no DELETE, no TRUNCATE and no ALTER of an existing column (additive)', !/DROP TABLE|DELETE\s+FROM|TRUNCATE|DROP COLUMN|ALTER COLUMN|RENAME/i.test(Store.SCHEMA_SQL));
+    {
+      const noDo = Store.SCHEMA_SQL.replace(/DO \$\$[\s\S]*?END \$\$;/, '');
+      const inDo = (/DO \$\$[\s\S]*?END \$\$;/.exec(Store.SCHEMA_SQL) || [''])[0];
+      ok('the SQL of the schema has no DROP TABLE, no DELETE, no TRUNCATE and no ALTER of an existing column (additive) - outside the one DO block', !/DROP TABLE|DELETE\s+FROM|TRUNCATE|DROP COLUMN|ALTER COLUMN|RENAME/i.test(noDo));
+      ok('and the DO block has exactly one DELETE (the page rows no job names, only when the foreign key is missing) and adds one constraint (that key, named as the table makes it)',
+        (inDo.match(/DELETE\s+FROM/gi) || []).length === 1 && /DELETE FROM ppp_omr_pages p WHERE NOT EXISTS \(SELECT 1 FROM ppp_transcribe_jobs j WHERE j\.id = p\.job_id\)/.test(inDo)
+        && (inDo.match(/ADD CONSTRAINT/g) || []).length === 1 && /ADD CONSTRAINT ppp_omr_pages_job_id_fkey FOREIGN KEY \(job_id\) REFERENCES ppp_transcribe_jobs \(id\) ON DELETE CASCADE/.test(inDo) && !/TRUNCATE|DROP TABLE/i.test(inDo));
+    }
 
     heading('the store: the job and its pages in one statement; the guards of every WHERE');
     const store = Store.pgJobStore((sql, p) => pool.query(sql, p));
@@ -227,6 +234,58 @@ const mxl = n => L.scoreXml(n);
         && (await one(`SELECT count(*)::int n FROM ppp_omr_pages WHERE job_id = $1`, [b.body.job.id]))[0].n === 2);
       const c = await req(srv.port, 'POST', '/api/worker/claim', { token: tok, body: { once: true, omr: true } });
       ok('and the PC claims the waiting one after the restart: its pages are fetched from the database', c.body.job && c.body.job.id === b.body.job.id && (await req(srv.port, 'GET', '/api/worker/jobs/' + b.body.job.id + '/pages/0', { token: tok })).status === 200);
+      await srv.close();
+      srv = null;
+    }
+
+    heading('a jobs table dropped by hand: the pages table survives without its key, and the next boot puts it back and removes what nothing names');
+    {
+      const fk = async () => (await one(`SELECT conname, pg_get_constraintdef(oid) AS d FROM pg_constraint WHERE conrelid = 'ppp_omr_pages'::regclass AND contype = 'f'`));
+      await q(`DROP TABLE ppp_transcribe_jobs CASCADE`);                 /* the doc's wrong way: CASCADE takes the key and leaves the pages table */
+      ok('(the pages table is still there, without any foreign key, with its rows)', (await fk()).length === 0 && (await one(`SELECT count(*)::int n FROM ppp_omr_pages`))[0].n >= 0);
+      await q(`INSERT INTO ppp_omr_pages (job_id, idx, bytes) VALUES ('ghost-job-001', 0, 'aa'::bytea), ('ghost-job-001', 1, 'bb'::bytea), ('ghost-job-002', 0, 'cc'::bytea)`);
+      const m = await Store.migrate(pool, '');
+      ok('migrate on it works (the jobs table is made again) and the queue is on', m && m.queue === true, JSON.stringify(m && m.error && m.error.message));
+      const k = await fk();
+      ok('the foreign key is back: ON DELETE CASCADE, named as the table would have named it', k.length === 1 && k[0].conname === 'ppp_omr_pages_job_id_fkey' && /FOREIGN KEY \(job_id\) REFERENCES ppp_transcribe_jobs\(id\) ON DELETE CASCADE/.test(k[0].d), JSON.stringify(k));
+      ok('and the page rows that no job named were deleted first (the key could not have been made over them)', (await one(`SELECT count(*)::int n FROM ppp_omr_pages WHERE job_id LIKE 'ghost-job-%'`))[0].n === 0);
+      /* the key missing again, with a real job among the orphans: the job's pages are kept, the others go */
+      await store.insertOmrJob(mkJob('job-keep-0001'), pagesOf(2));
+      await q(`ALTER TABLE ppp_omr_pages DROP CONSTRAINT ppp_omr_pages_job_id_fkey`);
+      await q(`INSERT INTO ppp_omr_pages (job_id, idx, bytes) VALUES ('ghost-job-003', 0, 'dd'::bytea)`);
+      await Store.migrate(pool, '');
+      ok('with a job among them only the orphan goes: the job keeps its two pages, the key is back', (await one(`SELECT count(*)::int n FROM ppp_omr_pages WHERE job_id = 'job-keep-0001'`))[0].n === 2
+        && (await one(`SELECT count(*)::int n FROM ppp_omr_pages WHERE job_id = 'ghost-job-003'`))[0].n === 0 && (await fk()).length === 1);
+      const stable = (await one(`SELECT count(*)::int n FROM ppp_omr_pages`))[0].n;
+      await Store.migrate(pool, '');
+      ok('and with the key there the DO block deletes nothing (a third migrate leaves every row)', (await one(`SELECT count(*)::int n FROM ppp_omr_pages`))[0].n === stable && stable === 2);
+
+      /* the service's own sweeper: the key is gone, rows nobody names are there; the boot read counts them and the first purge deletes them */
+      await q(`ALTER TABLE ppp_omr_pages DROP CONSTRAINT ppp_omr_pages_job_id_fkey`);
+      await q(`INSERT INTO ppp_omr_pages (job_id, idx, bytes) VALUES ('ghost-job-004', 0, 'ee'::bytea), ('ghost-job-004', 1, 'ff'::bytea)`);
+      const loaded = await store.loadAll();
+      ok('loadAll says how many page rows no job names (2) in the same single statement', loaded.orphanPages === 2, JSON.stringify(loaded.orphanPages));
+      statements = 0;
+      await counting.loadAll();
+      ok('(still one round trip for the whole boot read)', statements === 1, statements + '');
+      /* a purge is one statement and takes them too (the CTE of purge), whether or not a job row is purged by it */
+      statements = 0;
+      const purged = await counting.purge(0, 0, 0);
+      ok('a purge (one statement) that deletes no job removes the page rows no job names, and leaves the pages of a job', purged === 0 && statements === 1 && (await one(`SELECT count(*)::int n FROM ppp_omr_pages WHERE job_id = 'ghost-job-004'`))[0].n === 0
+        && (await one(`SELECT count(*)::int n FROM ppp_omr_pages WHERE job_id = 'job-keep-0001'`))[0].n === 2, purged + ' ' + statements);
+      await q(`INSERT INTO ppp_omr_pages (job_id, idx, bytes) VALUES ('ghost-job-004', 0, 'ee'::bytea), ('ghost-job-004', 1, 'ff'::bytea)`);
+      ok('deleteOrphanPages removes exactly those and not the pages of a job', (await store.deleteOrphanPages()) === 2 && (await one(`SELECT count(*)::int n FROM ppp_omr_pages`))[0].n === 2 && (await store.loadAll()).orphanPages === 0);
+      await q(`ALTER TABLE ppp_omr_pages ADD CONSTRAINT ppp_omr_pages_job_id_fkey FOREIGN KEY (job_id) REFERENCES ppp_transcribe_jobs (id) ON DELETE CASCADE`);
+      await q(`DELETE FROM ppp_transcribe_jobs`);
+      ok('(back to a clean database for the rest: the cascade took the job\'s pages)', (await one(`SELECT count(*)::int n FROM ppp_omr_pages`))[0].n === 0);
+
+      /* through the real server: the key dropped, orphans planted, a boot, a request */
+      await q(`ALTER TABLE ppp_omr_pages DROP CONSTRAINT ppp_omr_pages_job_id_fkey`);
+      await q(`INSERT INTO ppp_omr_pages (job_id, idx, bytes) VALUES ('ghost-job-005', 0, 'gg'::bytea)`);
+      srv = await startServer(DB_URL);       /* (its own migration puts the key back and deletes them: the same result by the other road) */
+      await req(srv.port, 'GET', '/api/jobs', { code: '0'.repeat(64) });
+      await sleep(300);
+      ok('server.js\'s own boot leaves no page row that no job names (its migration did it; and the key is there)', (await one(`SELECT count(*)::int n FROM ppp_omr_pages`))[0].n === 0 && (await fk()).length === 1);
       await srv.close();
       srv = null;
     }

@@ -80,6 +80,15 @@ async function queued(S, user, w, n, o) {
     ok('a setting that names a file that is not there is passed over (the search goes on)', load({ audiverisPath: path.join(root, 'nope.exe') }).audiverisPath === exe);
     ok('"omr": false leaves none: this PC does not take scores', load({ omr: false }).audiverisPath === '' && load({ omr: false }).omr === false);
     ok('the page time-out is 60 s to an hour, 600 s by default', load({}).omrPageTimeoutSeconds === 600 && load({ omrPageTimeoutSeconds: 5 }).omrPageTimeoutSeconds === 60 && load({ omrPageTimeoutSeconds: 99999 }).omrPageTimeoutSeconds === 3600);
+    ok('the engine\'s Java heap is capped: 2048 MB by default, 512 MB to 32 GB when set (a crafted image must not take the PC\'s memory)', load({}).omrHeapMb === 2048 && load({ omrHeapMb: 10 }).omrHeapMb === 512 && load({ omrHeapMb: 1e9 }).omrHeapMb === 32768 && load({ omrHeapMb: 1024 }).omrHeapMb === 1024);
+    /* a source build's Audiveris.bat is found only when there is nothing better, and Node cannot start it (EINVAL since Node 18.20/20.12) */
+    const bin = path.join(root, 'tools', 'audiveris', 'Audiveris', 'bin');
+    fs.mkdirSync(bin, { recursive: true });
+    fs.writeFileSync(path.join(bin, 'Audiveris.bat'), '');
+    ok('a program (.exe) is chosen over a .bat that is also there', load({}).audiverisPath === exe);
+    fs.unlinkSync(exe);
+    ok('with only the .bat it is found - and then said plainly to be no use (below, --check and the claim)', load({}).audiverisPath === path.join(bin, 'Audiveris.bat'), load({}).audiverisPath);
+    fs.writeFileSync(exe, '');
     fs.unlinkSync(exe);
     ok('and with the file gone the search finds the places omr-service.js looks (or nothing); never a path that does not exist', (a => a === '' || fs.existsSync(a))(load({}).audiverisPath));
     L.rmDir(root);
@@ -126,6 +135,32 @@ async function queued(S, user, w, n, o) {
       ok('the scratch folder is empty (the job\'s folder with the pages and the outputs was removed)', scratchLeft(cfg) === 0);
       ok('the log says what happened, page by page, and shows no image', lines().some(l => /Page 1 of 3: read in/.test(l)) && lines().some(l => /Done: the score is on the site/.test(l)) && !lines().some(l => /iVBOR|PNG/.test(l)));
       ok('the token is not in the log', !lines().some(l => l.indexOf(cfg.token) >= 0));
+      ok('the engine\'s Java heap is capped for it: JAVA_TOOL_OPTIONS starts with -Xmx2048m (the person\'s own options after it)', st.calls.every(c => c.o.env && /^-Xmx2048m(\s|$)/.test(c.o.env.JAVA_TOOL_OPTIONS)), JSON.stringify(st.calls[0].o.env && st.calls[0].o.env.JAVA_TOOL_OPTIONS));
+    } finally { await S.close(); }
+  }
+
+  heading('the site\'s own "not now" is not waited out: a budget refusal ends the claim at once');
+  {
+    const S = await L.startService({ users: ['u1', 'u2'], config: { omrEgressPerHour: 13000 } });
+    try {
+      const st = state0();
+      const reqs = [];
+      const spy = (cfg, method, p, o) => { reqs.push(method + ' ' + p); return W.request(cfg, method, p, o); };
+      const a = newWorker(S, 'u1', st, null, { request: spy });
+      const b = newWorker(S, 'u2', state0());
+      await a.w.poll(true); await b.w.poll(true);
+      const qa = await S.as('u1').post('/api/jobs/omr', { title: 'a', pages: L.omrPages(3, { w: 1000, bytes: 4000 }) });
+      const qb = await S.as('u2').post('/api/jobs/omr', { title: 'b', pages: L.omrPages(2, { w: 1001, bytes: 4000 }) });
+      ok('(both scores are taken: the budget has room for each once)', qa.status === 201 && qb.status === 201, qa.status + ' ' + qb.status);
+      const pb = await b.w.poll(true);
+      await b.w.processJob(pb.job);            /* the other link's PC reads its two pages: the budget is used up */
+      const pa = await a.w.poll(true);
+      reqs.length = 0;
+      const r = await a.w.processJob(pa.job);
+      const j = jobOf(S, qa.body.job.id);
+      ok('the site says 503 "budget" for a page: the worker does not wait it out (no second request for that page), gives the score up for good with the site\'s words, and the engine ran only for the pages it had',
+        r === false && j.status === 'failed' && /cannot hand out/.test(j.error) && reqs.filter(x => /\/pages\/2$/.test(x)).length === 1 && st.calls.length === 2, r + ' ' + j.status + ' ' + j.error + ' ' + reqs.join(' | ') + ' calls=' + st.calls.length);
+      ok('nothing is left on this PC, and the images are gone from the site', scratchLeft(a.cfg) === 0 && pageFilesIn(S) === 0);
     } finally { await S.close(); }
   }
 
@@ -308,6 +343,34 @@ async function queued(S, user, w, n, o) {
       const r = await w.processJob((await w.poll(true)).job);
       ok('cancelled while the last page was being read: stopped, no error line to the site, the job stays cancelled', jobOf(S, id).status === 'cancelled' && r !== undefined, r + ' ' + lines().slice(-2).join('|'));
     } finally { await S.close(); }
+  }
+
+  heading('an Audiveris.bat that Node cannot start, and the Java heap');
+  {
+    const E = L.mod('omr/engine.js');
+    const was = Object.getOwnPropertyDescriptor(process, 'platform');
+    const asWindows = fn => { Object.defineProperty(process, 'platform', { value: 'win32' }); return Promise.resolve().then(fn).finally(() => Object.defineProperty(process, 'platform', was)); };
+    ok('heapEnv puts -Xmx first and keeps the person\'s own options after it (the last -Xmx is the one used: theirs wins)', E.heapEnv(2048, { JAVA_TOOL_OPTIONS: '-Xmx4g -Dx=1', A: '1' }).JAVA_TOOL_OPTIONS === '-Xmx2048m -Xmx4g -Dx=1' && E.heapEnv(2048, {}).JAVA_TOOL_OPTIONS === '-Xmx2048m' && E.heapEnv(0, { A: '1' }).JAVA_TOOL_OPTIONS === undefined);
+    await asWindows(async () => {
+      ok('on Windows a .bat or .cmd is unstartable, with a sentence that says what to do; an .exe is not', /Audiveris\.exe/.test(E.unstartable('C:\\a\\Audiveris.bat')) && /Audiveris\.exe/.test(E.unstartable('x.CMD')) && E.unstartable('C:\\a\\Audiveris.exe') === '');
+      const r = await E.recognisePage('C:\\a\\Audiveris.bat', 'p.png', 'out');
+      ok('and the engine is not started: recognisePage says so (not "EINVAL"), engineVersion is null', r.ok === false && /\.bat/.test(r.error) && !/EINVAL$/.test(r.error) && (await E.engineVersion('C:\\a\\Audiveris.bat')) === null, JSON.stringify(r));
+      const S = await L.startService({ users: ['u1'] });
+      try {
+        const dir = L.tmpDir('ppp-bat-');
+        const bat = path.join(dir, 'Audiveris.bat');
+        fs.writeFileSync(bat, '@echo off\r\n');
+        const a = newWorker(S, 'u1', state0(), { audiverisPath: bat }); await a.w.poll(true);
+        ok('a worker whose Audiveris is that .bat says it cannot read scores (the site never queues one for it)', (await S.as('u1').get('/api/worker/status')).body.worker.omrMode === false);
+        const lines = [];
+        const cfg = cfgFor(S, S.token('u1'), { audiverisPath: bat });
+        const log = W.makeLog(cfg, s => lines.push(s), s => lines.push(s));
+        await W.checkSetup(cfg, log, { runTool: async (cmd, args) => (cmd === 'ffmpeg-stub' ? { code: 0, tail: 'ffmpeg stub' } : W.runTool(cmd, args, {})) });
+        ok('--check says it is a .bat and points at Audiveris.exe (a note, not a FIX)', lines.some(l => /note\s+Audiveris is set to a \.bat file/.test(l) && /Audiveris\.exe/.test(l)) && !lines.some(l => /FIX\s+.*Audiveris/.test(l)), lines.filter(l => /Audiveris/.test(l)).join(' | '));
+        L.rmDir(dir);
+      } finally { await S.close(); }
+    });
+    ok('(the platform is back)', process.platform === was.value);
   }
 
   heading('--check: the engine, said plainly');

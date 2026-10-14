@@ -914,11 +914,16 @@ async function main() {
       const strip = src => src.replace(/\/\*[\s\S]*?\*\//g, '').split('\n').map(l => l.replace(/(^|\s)\/\/.*$/, '')).join('\n');
       const files = ['home-jobs.js', 'home-jobs-store.js', 'home-result.js'].map(f => [f, strip(L.fs.readFileSync(L.path.join(L.MODS, f), 'utf8'))]);
       const timers = files.map(([f, src]) => [f, (src.match(/\b(setInterval|setImmediate|setTimeout)\s*\(/g) || []), (src.match(/\.unref\s*\(/g) || []).length]);
-      ok('home-result.js and home-jobs-store.js start no timer at all, and home-jobs.js none but the long-poll\'s own wait', timers.every(([f, t]) => f === 'home-jobs.js' ? t.length === 1 && t[0].indexOf('setTimeout') === 0 : t.length === 0) && timers.every(t => t[2] === 0), JSON.stringify(timers));
+      /* (G12-5: a body being read has two deadlines - the whole of it, and the gap between two chunks - cleared when it ends; they exist only while a request is being read, and read nothing) */
+      ok('home-result.js and home-jobs-store.js start no timer at all, and home-jobs.js none but the long-poll\'s own wait and the two deadlines of one body being read', timers.every(([f, t]) => f === 'home-jobs.js' ? t.length === 3 && t.every(x => x.indexOf('setTimeout') === 0) : t.length === 0) && timers.every(t => t[2] === 0), JSON.stringify(timers));
       const jobsSrc = files[0][1];
       const w = jobsSrc.indexOf('function waitForJob');
       const end = jobsSrc.indexOf('async function claim');
-      ok('that one setTimeout is inside waitForJob (it resolves a promise; it reads nothing)', jobsSrc.indexOf('setTimeout(') > w && jobsSrc.indexOf('setTimeout(') < end && !/store\./.test(jobsSrc.slice(w, end)));
+      const lastTimer = jobsSrc.lastIndexOf('setTimeout(');
+      ok('one setTimeout is inside waitForJob (it resolves a promise; it reads nothing)', lastTimer > w && lastTimer < end && !/store\./.test(jobsSrc.slice(w, end)));
+      const rq = jobsSrc.indexOf('function readQueueBody'), rqEnd = jobsSrc.indexOf('function byteWindow');
+      const inRq = jobsSrc.slice(rq, rqEnd);
+      ok('the other two are inside readQueueBody, which clears both when the body ends, whichever way, and never touches the store', rq > 0 && rqEnd > rq && (inRq.match(/setTimeout\(/g) || []).length === 2 && /clearTimeout\(total\); clearTimeout\(idle\);/.test(inRq) && !/store\./.test(inRq));
     }
 
     heading('THE FREE-TIER RULE: an idle poll runs no SQL');

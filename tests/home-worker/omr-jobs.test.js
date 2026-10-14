@@ -73,6 +73,19 @@ function homeOmrUnit() {
   refuse('6001 pixels wide is 422 image-size', [b64(L.pngBytes(6001, 800, 500))], null, 422, 'image-size');
   refuse('5000 x 5000 (25 megapixels) is 422 image-size', [b64(L.pngBytes(5000, 5000, 500))], null, 422, 'image-size');
   refuse('199 pixels high is 422 image-size', [b64(L.pngBytes(900, 199, 500))], null, 422, 'image-size');
+  /* a PNG is its picture: the chunks around it are where a bomb hides (a compressed profile or text chunk that a decoder inflates to gigabytes) */
+  {
+    const at = (b, chunk) => Buffer.concat([b.subarray(0, 33), chunk, b.subarray(33)]);        /* after IHDR */
+    const base = L.pngBytes(1240, 1754, 3000);
+    ok('a PNG made of IHDR, IDAT and IEND has no bytes besides the picture', H.pngExtraBytes(base) === 0);
+    ok('a few hundred bytes of metadata are fine (a tEXt line, a pHYs, a small profile): accepted', c([b64(at(base, Buffer.concat([L.pngChunk('tEXt', Buffer.from('Software\0Canvas')), L.pngChunk('pHYs', Buffer.alloc(9)), L.pngChunk('iCCP', Buffer.alloc(3144, 1))])))]).ok);
+    refuse('an iCCP/zTXt chunk of 20 KB is 422 bad-image (a bomb is a few KB that inflates to GB: the room for it is cut)', [b64(at(base, L.pngChunk('zTXt', Buffer.alloc(20000, 7))))], null, 422, 'bad-image');
+    refuse('metadata in many small chunks adds up: 40 chunks of 500 bytes are 422 bad-image', [b64(at(base, Buffer.concat(Array.from({ length: 40 }, () => L.pngChunk('tEXt', Buffer.alloc(500, 65))))))], null, 422, 'bad-image');
+    refuse('bytes after IEND (a file inside a file) are counted too: 30 KB is 422 bad-image', [b64(Buffer.concat([base, Buffer.alloc(30000, 9)]))], null, 422, 'bad-image');
+    refuse('a PNG with no IEND (cut, or its length points outside it) is 422 bad-image', [b64(base.subarray(0, base.length - 12))], null, 422, 'bad-image');
+    refuse('a chunk whose length is larger than the file is 422 bad-image', [b64((() => { const b = Buffer.from(base); b.writeUInt32BE(0x7fffffff, 33); return b; })())], null, 422, 'bad-image');
+    ok('the same rule is the worker\'s (home-omr.js is the one file): checkImage refuses the 20 KB chunk with the same code', H.checkImage(at(base, L.pngChunk('zTXt', Buffer.alloc(20000, 7))), 1).code === 'bad-image');
+  }
   ok('A4 at 300 DPI (2480 x 3508, 8.7 megapixels) and a 3000 x 4000 phone photo are accepted', c([b64(L.pngBytes(2480, 3508, 3000)), b64(L.jpegBytes(3000, 4000, 3000))]).ok);
   const fp = H.fingerprint(c([b64(png)]).pages), fp2 = H.fingerprint(c([b64(L.pngBytes(1240, 1753, 3000))]).pages);
   ok('the fingerprint of pages is stable and differs with the content', fp === H.fingerprint(c([b64(png)]).pages) && fp !== fp2 && /^omr:[0-9a-f]{24}$/.test(fp));

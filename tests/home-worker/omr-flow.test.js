@@ -33,7 +33,7 @@ async function lifeOfAJob() {
     ok('queuing it is ONE store call (the job and its pages in one statement)', afterQueue.insertOmrJob === 1 && !afterQueue.insertJob && pageFilesIn(S) === 3, JSON.stringify(afterQueue));
     ok('the files are the three pages; jobs.json holds no image (nothing of it in the job file)', (() => { const t = L.fs.readFileSync(L.path.join(S.dir, 'jobs.json'), 'utf8'); return t.indexOf('iVBOR') < 0 && t.indexOf('base64') < 0 && t.length < 4000; })());
     const c = await claimOmr(S, tok);
-    ok('claimed: attempt 1 of 3, 3 pages', c.body.job.id === id && c.body.job.attempt === 1 && c.body.job.maxAttempts === 3 && c.body.job.pages === 3 && c.body.nextPollSeconds === 15, JSON.stringify(c.body));
+    ok('claimed: attempt 1 of 2 (a score is read once, and once more when the PC lost it), 3 pages', c.body.job.id === id && c.body.job.attempt === 1 && c.body.job.maxAttempts === 2 && c.body.job.pages === 3 && c.body.nextPollSeconds === 15, JSON.stringify(c.body));
     ok('the page sees it "claimed", with its progress', (await view(S, 'u1', id)).body.job.status === 'claimed' && (await view(S, 'u1', id)).body.job.progress.stage === 'claimed');
     ok('a worker that fetches the pages gets all three, as uploaded (the first is the first, ...)', await (async () => {
       for (let i = 0; i < 3; i++) { const r = await page(S, tok, id, i); if (r.status !== 200 || r.headers['content-type'] !== 'image/png') return false; }
@@ -74,7 +74,7 @@ async function endsWithoutAResult() {
     await ready(S, 'u1');
     const tok = S.token('u1');
     {
-      /* a retry keeps the images; the third attempt is the last */
+      /* a retry keeps the images; the second attempt is the last (a score has two: a PC that lost the first, and no more) */
       const q = await sendOmr(S, 'u1', L.omrPages(2, { w: 900 }));
       const id = q.body.job.id;
       await claimOmr(S, tok);
@@ -84,13 +84,9 @@ async function endsWithoutAResult() {
       S.advance(3 * 60 * 1000);
       const c2 = await claimOmr(S, tok);
       ok('after the wait it is handed out again: attempt 2', c2.body.job && c2.body.job.id === id && c2.body.job.attempt === 2);
-      ok('and the pages are fetched again (the per-job counter starts again with the claim)', (await page(S, tok, id, 0)).status === 200);
-      await fail(S, tok, id, { error: 'again', retry: true });
-      S.advance(7 * 60 * 1000);
-      const c3 = await claimOmr(S, tok);
-      ok('attempt 3', c3.body.job && c3.body.job.attempt === 3);
+      ok('and the pages are fetched again (the retry has its own share of the job\'s reads)', (await page(S, tok, id, 0)).status === 200);
       const f3 = await fail(S, tok, id, { error: 'No page could be read.', retry: true });
-      ok('a retry asked for after the third attempt is a failure: failed for good, the images deleted', f3.status === 200 && f3.body.requeued !== true && jobOf(S, id).status === 'failed' && pageFilesIn(S) === 0 && jobOf(S, id).error === 'No page could be read.', JSON.stringify(f3.body));
+      ok('a retry asked for on the second (last) attempt is a failure: failed for good, the images deleted', f3.status === 200 && f3.body.requeued !== true && jobOf(S, id).status === 'failed' && pageFilesIn(S) === 0 && jobOf(S, id).error === 'No page could be read.', JSON.stringify(f3.body));
       ok('the page sees the reason', (await view(S, 'u1', id)).body.job.error === 'No page could be read.' && (await view(S, 'u1', id)).body.job.status === 'failed');
     }
     {
@@ -113,9 +109,7 @@ async function endsWithoutAResult() {
       ok('a PC that was not heard of for 30 minutes gives the job back (the images are still there)', jobOf(S, id).status === 'queued' && pageFilesIn(S) === 1 && jobOf(S, id).attempts === 1);
       S.advance(5 * 60 * 1000);
       await claimOmr(S, tok); S.advance(31 * 60 * 1000); await S.as('u1').get('/api/jobs');
-      S.advance(10 * 60 * 1000);
-      await claimOmr(S, tok); S.advance(31 * 60 * 1000); await S.as('u1').get('/api/jobs');
-      ok('after the third lease that ran out it is failed, and the images go with it', jobOf(S, id).status === 'failed' && /did not finish/.test(jobOf(S, id).error) && pageFilesIn(S) === 0, jobOf(S, id).status + ' ' + pageFilesIn(S));
+      ok('after the second lease that ran out it is failed, and the images go with it', jobOf(S, id).status === 'failed' && /did not finish/.test(jobOf(S, id).error) && pageFilesIn(S) === 0, jobOf(S, id).status + ' ' + pageFilesIn(S));
       await S.as('u1').del('/api/jobs/' + id);
     }
     {
@@ -271,14 +265,13 @@ async function scopeOfAWorker() {
     const tb = await result(S, tok, id, tooBig);
     ok('5.8 MB of notation is 422 too-large (a result is 4 MB at the most)', tb.status === 422 && tb.body.code === 'too-large' || tb.status === 413, tb.status + ' ' + tb.text.slice(0, 100));
 
-    /* the pages of a job go to the token that claimed it, a few times each */
-    ok('a page is fetched 3 times at most per claim: the 4th read of one page is 429 (the other page is still there)', await (async () => {
+    /* the pages of a job go to the token that claimed it, and are read over the JOB'S LIFETIME: pages + 2 per claim, so 4 for these two pages on the first claim (omr-guard.test.js: the rest) */
+    ok('a job of 2 pages is read 4 times on its first claim (2 + a download that was cut twice): the 5th read, of either page, is 429', await (async () => {
       const st = [];
-      for (let i = 0; i < 3; i++) st.push((await page(S, tok, id, 0)).status);
-      st.push((await page(S, tok, id, 0)).status);
-      return st.join() === '200,200,200,429';
+      for (let i = 0; i < 4; i++) st.push((await page(S, tok, id, 0)).status);
+      st.push((await page(S, tok, id, 0)).status, (await page(S, tok, id, 1)).status);
+      return st.join() === '200,200,200,200,429,429';
     })());
-    ok('(the other page is still fetchable, and the counter is per page)', (await page(S, tok, id, 1)).status === 200 && jobOf(S, id).pageReads[0] === 4 && jobOf(S, id).pageReads[1] === 1, JSON.stringify(jobOf(S, id).pageReads));
   } finally { await S.close(); }
 
   {
@@ -286,14 +279,14 @@ async function scopeOfAWorker() {
     try {
       await ready(S, 'u1');
       const tok = S.token('u1');
-      const q = await sendOmr(S, 'u1', L.omrPages(2, { w: 710 }));
+      const q = await sendOmr(S, 'u1', L.omrPages(4, { w: 710 }));
       await claimOmr(S, tok);
       const id = q.body.job.id;
       const st = [];
-      for (let i = 0; i < 6; i++) st.push((await page(S, tok, id, i % 2)).status);
-      ok('a token may fetch only so many pages an hour (4 here): then 429 whatever the job', st.join() === '200,200,200,200,429,429', st.join());
+      for (let i = 0; i < 6; i++) st.push((await page(S, tok, id, i % 4)).status);
+      ok('a token may fetch only so many pages an hour (4 here): then 429 whatever the job (a refused read is not counted against the job)', st.join() === '200,200,200,200,429,429' && jobOf(S, id).pageReads === 4, st.join() + ' ' + jobOf(S, id).pageReads);
       S.advance(3600 * 1000 + 1000);
-      ok('an hour later the budget of the token is back: it may fetch again', (await page(S, tok, id, 0)).status === 200);
+      ok('an hour later the budget of the token is back: it may fetch again (a job of 4 pages has 6 reads on its first claim)', (await page(S, tok, id, 0)).status === 200);
     } finally { await S.close(); }
   }
   {

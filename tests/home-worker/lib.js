@@ -207,9 +207,17 @@ function pngBytes(w, h, total) {
   ihdr.writeUInt32BE(13, 0); ihdr.write('IHDR', 4, 'latin1'); ihdr.writeUInt32BE(w, 8); ihdr.writeUInt32BE(h, 12); ihdr[16] = 8; ihdr[17] = 0; ihdr[18] = 0; ihdr[19] = 0; ihdr[20] = 0;
   ihdr.writeUInt32BE(crc32(ihdr.subarray(4, 21)), 21);
   const head = Buffer.concat([sig, ihdr]);
-  const pad = Math.max(0, (total || head.length + 64) - head.length);
-  /* the padding is a single IDAT-ish run of one pseudo-random byte stream (so that two pages of a test are not the same bytes unless the test says so) */
-  return Buffer.concat([head, Buffer.alloc(pad, (w * 31 + h * 7) & 255)]);
+  /* the padding is the data of one IDAT chunk (a run of one byte that depends on the size, so that two pages of a test are not the same bytes unless the test says so), then IEND: the
+     chunks run from the signature to the end like a real file's (the site walks them: home-omr.js pngExtraBytes). The total is honoured down to the 24 bytes IDAT and IEND need. */
+  const data = Buffer.alloc(Math.max(0, (total || head.length + 64) - head.length - 24), (w * 31 + h * 7) & 255);
+  return Buffer.concat([head, pngChunk('IDAT', data), pngChunk('IEND', Buffer.alloc(0))]);
+}
+/* one PNG chunk: length, type, data, CRC */
+function pngChunk(type, data) {
+  const len = Buffer.alloc(4); len.writeUInt32BE(data.length, 0);
+  const body = Buffer.concat([Buffer.from(type, 'latin1'), data]);
+  const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(body), 0);
+  return Buffer.concat([len, body, crc]);
 }
 function jpegBytes(w, h, total) {
   const soi = Buffer.from([0xff, 0xd8]);
@@ -251,4 +259,4 @@ function omrResult(n, o) {
 }
 
 module.exports = { REPO, MODS, mod, ok, errors, sleep, heading, finish, req, CODES, readBody, send, jsonError, youtubeParser, countingStore, tmpDir, rmDir, startService, WATCH, notes, goodResult, crypto, http, fs, path, os,
-  pngBytes, jpegBytes, omrPages, scoreXml, omrResult, MXL_DOCTYPE };
+  pngBytes, pngChunk, jpegBytes, omrPages, scoreXml, omrResult, MXL_DOCTYPE };
