@@ -255,6 +255,12 @@ function harness() {
       const b = [...document.querySelectorAll('main button, aside button')].find(x => re.test((x.innerText || '').trim()));
       if (b) b.click();
     };
+    /* this practice is played without a keyboard, which since decision U4 (2026-10-13) records nothing by default (the sample's own seeded history is already at
+       revision 23, so a bare "rev > 0" would pass whatever happened): what is checked is that a RECORDED run is written and survives a reload, so the legacy folding is
+       asked for explicitly and the revision must move; the real path, with a keyboard, is the next block (the default is tests/learner-log.test.js section `demo`) */
+    PPP.demoRuns = 'count';
+    const rev0 = PPP.app.state.history.rev;
+    const att0 = (PPP.app.state.history.byMeasure['21'] || {}).attempts || 0;
     await window.__pppTest.practice('Loop a passage');
     const cells = document.querySelectorAll('button[title^="Measure "]');
     cells[20].click(); cells[20].click();       /* loop one weak bar */
@@ -265,10 +271,10 @@ function harness() {
     await new Promise(r => setTimeout(r, 600));
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem('ppp.state.v2')); } catch (e) {}
-    return { rev: saved && saved.history ? saved.history.rev : null, m21: saved && saved.history ? saved.history.byMeasure['21'] : null };
+    return { rev: saved && saved.history ? saved.history.rev : null, m21: saved && saved.history ? saved.history.byMeasure['21'] : null, rev0: rev0, att0: att0 };
   });
-  ok('practice is written to storage', before.rev > 0 && !!before.m21,
-    'rev ' + before.rev + ', measure 21 has ' + (before.m21 ? before.m21.attempts : 0) + ' attempts');
+  ok('practice is written to storage', before.rev > before.rev0 && !!before.m21 && before.m21.attempts > before.att0,
+    'rev ' + before.rev0 + ' -> ' + before.rev + ', measure 21 has ' + (before.m21 ? before.m21.attempts : 0) + ' attempts (was ' + before.att0 + ')');
 
   await page.reload({ waitUntil: 'networkidle2' });
   await page.waitForFunction(() => window.PPP && window.PPP.Learning, { timeout: 25000 });
@@ -280,8 +286,69 @@ function harness() {
       attempts: saved && saved.history && saved.history.byMeasure['21'] ? saved.history.byMeasure['21'].attempts : 0 };
   });
   ok('what PPP learned survives the reload',
-    after.rev === before.rev && after.attempts === (before.m21 ? before.m21.attempts : -1),
+    after.rev === before.rev && after.rev > before.rev0 && after.attempts === (before.m21 ? before.m21.attempts : -1),
     'rev ' + after.rev + ', ' + after.attempts + ' attempts');
+
+  /* ---------- the real path: a (fake) keyboard, a real clock lap, a recorded run ---------- */
+  console.log('\n-- with a keyboard: the same passage is recorded as a measured run --');
+  const kb = await browser.newPage();
+  await preparePage(kb);
+  await kb.setViewport({ width: 1500, height: 1000 });
+  kb.on('pageerror', e => errors.push('[pageerror] ' + e.message));
+  await kb.evaluateOnNewDocument(() => {
+    const listeners = [];
+    const input = {
+      id: 'fake-1', name: 'Test Piano', manufacturer: 'PPP', state: 'connected', type: 'input',
+      addEventListener: (t, fn) => { if (t === 'midimessage') listeners.push(fn); },
+      removeEventListener: (t, fn) => { const i = listeners.indexOf(fn); if (i > -1) listeners.splice(i, 1); },
+      set onmidimessage(fn) { if (fn) listeners.push(fn); },
+      get onmidimessage() { return listeners[0] || null; }
+    };
+    navigator.requestMIDIAccess = () => Promise.resolve({ inputs: new Map([['fake-1', input]]), outputs: new Map(), addEventListener: () => {}, onstatechange: null });
+    const send = (status, midi, vel) => { const d = new Uint8Array([status, midi, vel]); listeners.slice().forEach(fn => fn({ data: d, receivedTime: performance.now() })); };
+    window.__press = m => send(0x90, m, 80);
+    window.__release = m => send(0x80, m, 0);
+  });
+  await kb.goto(URL, { waitUntil: 'networkidle2', timeout: 45000 });
+  await kb.waitForFunction(() => window.PPP && window.PPP.app && window.PPP.Learning, { timeout: 25000 });
+  await sleep(800);
+  const real = await kb.evaluate(async () => {
+    const A = PPP.app, sl = ms => new Promise(r => setTimeout(r, ms));
+    await window.__pppTest.practice('Loop a passage');
+    await A.connectMidi();
+    await sl(600);
+    const live = A.liveMidi();
+    const rev0 = A.state.history.rev, att0 = (A.state.history.byMeasure['21'] || {}).attempts || 0, runs0 = A.state.history.runs.length;
+    const cells = document.querySelectorAll('button[title^="Measure "]');
+    cells[20].click(); cells[20].click();
+    await sl(300);
+    A.setState({ toggles: Object.assign({}, A.state.toggles, { follow: false }), practiceMode: 'practice' });
+    A.togglePlay();
+    const pressed = new WeakSet();
+    const t0 = performance.now();
+    while (A.state.history.runs.length < runs0 + 1 && performance.now() - t0 < 30000) {
+      await sl(100);
+      const now = performance.now();
+      ((A._perf && A._perf.expected) || []).forEach((x, i) => {      /* the notes of every lap, as they come due */
+        if (pressed.has(x) || i % 6 === 5) return;
+        const due = x.tMs - now;
+        if (due < 400 && due > -60) { pressed.add(x); setTimeout(() => { window.__press(x.midi); setTimeout(() => window.__release(x.midi), 50); }, Math.max(0, due)); }
+      });
+    }
+    if (A.state.playing) A.togglePlay();
+    await sl(900);
+    A.saveNow();
+    await sl(500);
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem('ppp.state.v2')); } catch (e) { /* none */ }
+    const h = saved && saved.history;
+    const last = h && h.runs[h.runs.length - 1];
+    return { live: live, rev0: rev0, rev: h ? h.rev : null, att0: att0, att: h && h.byMeasure['21'] ? h.byMeasure['21'].attempts : 0, runs0: runs0, runs: h ? h.runs.length : 0,
+      simulated: last ? last.simulated : null, matched: last && last.counts ? last.counts.matched : 0 };
+  });
+  ok('a measured run with a (fake) keyboard is written to storage: the revision moves, measure 21 gains attempts, and the run is not a simulated one',
+    real.live && real.rev > real.rev0 && real.att > real.att0 && real.runs === real.runs0 + 1 && real.simulated === false && real.matched > 0, JSON.stringify(real));
+  await kb.close();
 
   console.log('\n────────────────────────────────────────');
   if (errors.length) {
