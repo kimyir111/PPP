@@ -1697,7 +1697,6 @@ store.ready().then(() => {
   setInterval(sweepGuestShares, GUEST.SWEEP_MS).unref();
   server.listen(PORT, HOST, () => {
     console.log('PPP listening on http://' + HOST + ':' + PORT);
-    console.log('Sockets: first byte within ' + Math.round(FIRST_BYTE_MS / 1000) + ' s, headers within ' + Math.round(server.headersTimeout / 1000) + ' s, a request within ' + Math.round(server.requestTimeout / 1000) + ' s, at most ' + server.maxConnections + ' open');
     if (!jobsService.isDisabled()) console.log('Home-PC worker queue: an idle worker is told to wait ' + jobsService.config.idlePollS + ' s, a busy one ' + jobsService.config.activePollS + ' s (PPP_WORKER_IDLE_POLL_S, PPP_WORKER_ACTIVE_POLL_S)');
     console.log('Guest links: the client address is read from ' + (process.env.RENDER ? 'CF-Connecting-IP, then True-Client-IP, then ' : '')
       + 'X-Forwarded-For (' + (Math.max(1, parseInt(process.env.PPP_PROXY_HOPS, 10) || 1)) + ' from the right), then the socket');

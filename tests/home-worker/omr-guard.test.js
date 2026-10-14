@@ -656,8 +656,11 @@ async function stockRoutes() {
         setTimeout(() => { clearInterval(iv); s.destroy(); }, 20000);
       });
       ok('a recording trickled to /helper/omr for ' + Math.round(up.ms / 100) / 10 + ' s, with 3.2 s between bytes (the JSON routes\' gap deadline is 2.5 s here) is passed to the helper whole and answered 200 with its 3 bytes', /^HTTP\/1.1 200/.test(up.got) && /"bytes":3/.test(up.got) && up.ms > 6000, JSON.stringify({ ms: up.ms, got: up.got.slice(0, 120) }));
-      const m = /a request within (\d+) s/.exec(logs);
-      ok('and the request timeout the server was started with is 600 s (Node\'s own is 300; it was 120, which cut a slow upload of a recording at 137 s): the start line says "' + (m ? m[0] : 'nothing') + '"', !!m && +m[1] >= 600, (logs.match(/Sockets:[^\n]*/) || ['none'])[0]);
+      /* (read from the source the server was started from: a boot line would be one more line in logs that the monitoring test keeps to the ones of today) */
+      const src = fs.readFileSync(path.join(L.MODS, 'server.js'), 'utf8');
+      const m = /server\.requestTimeout = ([0-9 *]+);/.exec(src);
+      const ms = m ? m[1].split('*').reduce((a, x) => a * (parseInt(x, 10) || 1), 1) : 0;
+      ok('and the request timeout server.js sets is ' + ms / 1000 + ' s - at least the proxy\'s own 10 minutes (Node\'s own is 300; it was 120, which cut a slow upload of a recording at 137 s)', ms >= 600000, m ? m[0] : 'not found');
     }
   } finally {
     try { child.kill(); } catch (e) { /* gone */ }
