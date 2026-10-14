@@ -2357,6 +2357,12 @@
     "Your PC could not read this score.": "PCはこの楽譜を読み取れませんでした。",
     "Your PC could not read this score: {{why}}": "PCはこの楽譜を読み取れませんでした: {{why}}",
     "Audiveris on your PC": "お使いのPCのAudiveris",
-    "Your PC did not read this score ({{why}}), so this is the browser draft.": "PCがこの楽譜を読み取れなかったため（{{why}}）、ブラウザの下書きです。"
+    "Your PC did not read this score ({{why}}), so this is the browser draft.": "PCがこの楽譜を読み取れなかったため（{{why}}）、ブラウザの下書きです。",
+    "Send the pages of this score to the PC ending in {{tag}}?": "この楽譜のページを、末尾が{{tag}}のPCに送りますか？",
+    "The pages wait on the site only until that PC takes them, and are deleted after.": "ページは、そのPCが受け取るまでの間だけサイトに置かれ、その後は削除されます。",
+    "Send the pages": "ページを送る",
+    "That score is no longer waiting on the site. If you sent it from another tab, it is in My Songs.": "この楽譜はもうサイトで待機していません。別のタブから送った場合は「自分の曲」にあります。",
+    "Choose the file again to read it once more": "もう一度ファイルを選んで読み取ってください",
+    "The notes of this score are no longer kept on the site.": "この楽譜の音符はもうサイトに保存されていません。"
   }
 }

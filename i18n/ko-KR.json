@@ -2357,6 +2357,12 @@
     "Your PC could not read this score.": "내 PC가 이 악보를 읽지 못했어요.",
     "Your PC could not read this score: {{why}}": "내 PC가 이 악보를 읽지 못했어요: {{why}}",
     "Audiveris on your PC": "내 PC의 Audiveris",
-    "Your PC did not read this score ({{why}}), so this is the browser draft.": "내 PC가 이 악보를 읽지 못해서({{why}}) 브라우저 초안으로 만들었어요."
+    "Your PC did not read this score ({{why}}), so this is the browser draft.": "내 PC가 이 악보를 읽지 못해서({{why}}) 브라우저 초안으로 만들었어요.",
+    "Send the pages of this score to the PC ending in {{tag}}?": "이 악보의 페이지를 끝이 {{tag}}인 PC로 보낼까요?",
+    "The pages wait on the site only until that PC takes them, and are deleted after.": "페이지는 그 PC가 가져갈 때까지만 사이트에 머물고, 그 뒤에는 지워져요.",
+    "Send the pages": "페이지 보내기",
+    "That score is no longer waiting on the site. If you sent it from another tab, it is in My Songs.": "이 악보는 더 이상 사이트에서 기다리고 있지 않아요. 다른 탭에서 보냈다면 내 곡에 있어요.",
+    "Choose the file again to read it once more": "파일을 다시 골라서 한 번 더 읽어 보세요",
+    "The notes of this score are no longer kept on the site.": "이 악보의 음표는 더 이상 사이트에 남아 있지 않아요."
   }
 }

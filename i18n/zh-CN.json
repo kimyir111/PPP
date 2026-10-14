@@ -2357,6 +2357,12 @@
     "Your PC could not read this score.": "你的电脑没能读取这份乐谱。",
     "Your PC could not read this score: {{why}}": "你的电脑没能读取这份乐谱：{{why}}",
     "Audiveris on your PC": "你电脑上的 Audiveris",
-    "Your PC did not read this score ({{why}}), so this is the browser draft.": "你的电脑没能读取这份乐谱（{{why}}），所以这是浏览器草稿。"
+    "Your PC did not read this score ({{why}}), so this is the browser draft.": "你的电脑没能读取这份乐谱（{{why}}），所以这是浏览器草稿。",
+    "Send the pages of this score to the PC ending in {{tag}}?": "要把这份乐谱的页面发送到尾号为 {{tag}} 的电脑吗？",
+    "The pages wait on the site only until that PC takes them, and are deleted after.": "页面只会在网站上保留到那台电脑取走为止，之后就会被删除。",
+    "Send the pages": "发送页面",
+    "That score is no longer waiting on the site. If you sent it from another tab, it is in My Songs.": "这份乐谱已不在网站上等待。如果是从另一个标签页发送的，它已在“我的曲子”里。",
+    "Choose the file again to read it once more": "请重新选择文件再读取一次",
+    "The notes of this score are no longer kept on the site.": "这份乐谱的音符已不再保存在网站上。"
   }
 }

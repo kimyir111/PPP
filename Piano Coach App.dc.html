@@ -1242,6 +1242,9 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
                 </sc-for>
               </div>
             </sc-if>
+            <sc-if value="{{ showPcSend }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ sendPcPages }}" data-pc-omr-send style="width: 100%; margin-top: 16px; padding: 11px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;">{{ pcSendLabel }}</button>
+            </sc-if>
             <sc-if value="{{ showPcDraft }}" hint-placeholder-val="{{ false }}">
               <button onClick="{{ usePcDraft }}" data-pc-omr-draft style="width: 100%; margin-top: 16px; padding: 10px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">{{ pcDraftLabel }}</button>
             </sc-if>
@@ -8148,7 +8151,21 @@ const Import = {
     if (!w || !w.hasToken || !w.everSeen) return { ok: false, why: tx('Your PC has not connected yet.') };
     if (w.omrMode === 'off') return { ok: false, why: tx('Reading scores on your PC is switched off on this site.') };
     if (w.omrMode === false) return { ok: false, why: tx('The PPP worker on your PC cannot read scores yet: update it.') };
-    return { ok: true, alive: !!w.alive };
+    return { ok: true, alive: !!w.alive, tag: typeof w.linkTag === 'string' && /^[0-9a-f]{6}$/.test(w.linkTag) ? w.linkTag : '' };
+  },
+  /* G12-5: the pages of a score are the person's own; they go to the PC named by the link this device holds. A device that did not make that link (it adopted it from an address, or the person
+     typed a code) is asked ONCE, at the first send, in so many words: which PC, and a way out. Resolves 'send', 'draft' or 'cancel'. With nobody to ask (no screen: ctl.canAsk is the import
+     screen's) nothing is sent: 'draft'. */
+  async pcAskSend(tag, onStage, ctl) {
+    if (!ctl || ctl.canAsk !== true) return 'draft';
+    if (ctl.cancelled) return 'cancel';
+    if (ctl.pcDraft) return 'draft';
+    if (onStage) onStage('pcask', { tag: tag || '------' });
+    return new Promise(resolve => {
+      const done = a => { ctl.pcAnswer = null; ctl.pcWake = null; resolve(a); };
+      ctl.pcAnswer = a => done(a === 'send' ? 'send' : 'draft');
+      ctl.pcWake = () => done(ctl.cancelled ? 'cancel' : ctl.pcDraft ? 'draft' : 'cancel');
+    });
   },
   /* one page as the base64 the site takes: the page's own PNG when it fits, else the same picture as a JPEG, smaller until it does */
   async pcPageData(p, maxBytes) {
@@ -8187,6 +8204,13 @@ const Import = {
     };
     const st = await Import.pcOmrStatus();
     if (!st.ok) { if (st.why) throw fail(st.why); return null; }
+    /* a link this device did not make is not trusted with the person's page images until they say so, once: nothing is encoded or sent before the answer */
+    if (!PcLink.trusted()) {
+      const answer = await Import.pcAskSend(st.tag, onStage, ctl);
+      if (answer === 'cancel') return null;
+      if (answer !== 'send') throw fail(tx('You chose the draft.'));
+      PcLink.trust();
+    }
     const n = pages.length;
     if (onStage) onStage('pcsend', { of: n });
     const per = Math.floor(Math.min(PC_OMR.pageBytes, PC_OMR.jobBytes / n) * 0.97);
@@ -8214,7 +8238,11 @@ const Import = {
       if (ctl.pcDraft) { await cancelJob(); throw fail(tx('You chose the draft.')); }
       let cur = null, r;
       try { r = await pcOmrApi('/api/jobs/' + encodeURIComponent(id)); cur = r.job; } catch (e) {
-        if (e.status === 404) throw fail(tx('Your PC did not take this score in time.'), e);
+        /* 404: the job is not on the site any more - another tab that waited for the same pages took the score and removed it, or it ran out. Nothing is read twice: the person is told to look
+           in My Songs (a draft made here as well would be a second, worse copy of a score that may already be saved) */
+        if (e.status === 404) throw importError('pc-gone', tx('That score is no longer waiting on the site. If you sent it from another tab, it is in My Songs.'), [tx('Choose the file again to read it once more')]);
+        /* 410: it is done but its notes are no longer kept: waiting would be for ever */
+        if (e.status === 410) throw fail(tx('The notes of this score are no longer kept on the site.'), e);
         if (e.status === 401 || e.off) throw fail(reasonOf(e), e);
         cur = null;                                           /* a look that did not get through: the next one will */
       }
@@ -9597,7 +9625,7 @@ const Import = {
           xml = await Import.omrXml(got);
         } else if (ctl && ctl.cancelled) throw importError('cancelled', tx('Cancelled.'));
       } catch (e) {
-        if (e && e.code === 'cancelled') throw e;
+        if (e && (e.code === 'cancelled' || e.code === 'pc-gone')) throw e;
         pcTried = { why: (e && e.pcWhy) || tx('Your PC could not read this score.') };
         omr = null; xml = null;
         source.viaPc = false; source.pages = null; source.engine = null;
@@ -13287,8 +13315,16 @@ const PcLink = (() => {
     normalize: s => { let t = String(s == null ? '' : s); const i = t.indexOf('#pc='); if (i >= 0) { t = t.slice(i + 4); const a = t.indexOf('&'); if (a >= 0) t = t.slice(0, a); try { t = decodeURIComponent(t); } catch (e) { /* as it is */ } } return t.replace(/[\s-]+/g, '').toLowerCase(); },
     /* the code this browser has, or null */
     get() { try { const v = JSON.parse(localStorage.getItem(LS) || 'null'); return v && valid(v.code) ? v.code : null; } catch (e) { return null; } },
-    /* keep a code; true when it can be read back */
-    set(code) { if (!valid(code)) return false; try { localStorage.setItem(LS, JSON.stringify({ v: 1, code: code })); } catch (e) { return false; } return this.get() === code; },
+    /* keep a code; true when it can be read back. o.trusted: this device made the link, or is the PC itself (the pairing link of worker.js --pair, &local=1), or the person has said once that
+       this PC may be sent the pages of their scores (G12-5: a link that was ADOPTED from an address - the zero-tap pairing - is not trusted with page images until asked) */
+    set(code, o) {
+      if (!valid(code)) return false;
+      try { localStorage.setItem(LS, JSON.stringify(o && o.trusted === true ? { v: 1, code: code, trusted: true } : { v: 1, code: code })); } catch (e) { return false; }
+      return this.get() === code;
+    },
+    /* has this device made the link it holds, or been told once that it is the person's own? (a record from before this field is not: it is asked once) */
+    trusted() { try { const v = JSON.parse(localStorage.getItem(LS) || 'null'); return !!(v && valid(v.code) && v.trusted === true); } catch (e) { return false; } },
+    trust() { const c = this.get(); return c ? this.set(c, { trusted: true }) : false; },
     clear() { try { localStorage.removeItem(LS); } catch (e) { /* nothing to remove */ } },
     /* can this browser keep a link? */
     supported() {
@@ -13300,7 +13336,14 @@ const PcLink = (() => {
     /* G10b-4: the link this device had before a pairing link replaced it, kept (one step back) so that "Disconnect" in the banner can put it back; cleared once the person has used the new link, removed
        it or forgotten it, and by Disconnect itself */
     prev() { try { const v = JSON.parse(localStorage.getItem('ppp.pclink.prev.v1') || 'null'); return v && valid(v.code) ? v.code : null; } catch (e) { return null; } },
-    setPrev(code) { try { if (code && valid(code)) localStorage.setItem('ppp.pclink.prev.v1', JSON.stringify({ v: 1, code: code })); else localStorage.removeItem('ppp.pclink.prev.v1'); } catch (e) { return false; } return true; },
+    prevTrusted() { try { const v = JSON.parse(localStorage.getItem('ppp.pclink.prev.v1') || 'null'); return !!(v && valid(v.code) && v.trusted === true); } catch (e) { return false; } },
+    setPrev(code, trusted) {
+      try {
+        if (code && valid(code)) localStorage.setItem('ppp.pclink.prev.v1', JSON.stringify(trusted === true ? { v: 1, code: code, trusted: true } : { v: 1, code: code }));
+        else localStorage.removeItem('ppp.pclink.prev.v1');
+      } catch (e) { return false; }
+      return true;
+    },
     clearPrev() { try { localStorage.removeItem('ppp.pclink.prev.v1'); } catch (e) { /* nothing to remove */ } }
   };
 })();
@@ -16380,7 +16423,7 @@ class Component extends DCLogic {
     this.setState({ homeBusy: true, homeError: '', homeGone: false });
     try {
       const r = await this.homeApi('/api/pc-links', { method: 'POST', body: {}, code: null });
-      const stored = PcLink.set(r.clientCode);
+      const stored = PcLink.set(r.clientCode, { trusted: true });         /* made on this device: it is the person's own */
       PcLink.clearPrev();
       this.setState({ homeBusy: false, homeNew: { token: r.workerToken, code: r.clientCode, rotated: false, notStored: !stored }, homeCopied: '', homeCodeShown: false, homeArm: null });
       this.homeRefresh();
@@ -16513,8 +16556,11 @@ class Component extends DCLogic {
   /* the pairing is accepted (at once, or by the tap): keep the code, put the replaced link one step back, apply &local=1, say what happened */
   pairAccept(code, tag, W, local, prevCode) {
     const wasLocal = PcLocal.raw();
-    if (!PcLink.set(code)) return this.pairNote(tx('This browser cannot keep the connection (a private window, or blocked storage). Open the link in a normal window.'), true);
-    PcLink.setPrev(prevCode || null);
+    const wasTrusted = PcLink.trusted();
+    /* G12-5: only the pairing link of the PC itself (&local=1, opened in the PC's own browser by worker.js --pair) is the person's own; any other link that arrives is a link of somebody's
+       PC until the person has said so once, at the first send of a score's page images (Import.recogniseOnPc) */
+    if (!PcLink.set(code, { trusted: !!(local && PcLocal.desktop()) })) return this.pairNote(tx('This browser cannot keep the connection (a private window, or blocked storage). Open the link in a normal window.'), true);
+    PcLink.setPrev(prevCode || null, wasTrusted);
     if (local && PcLocal.desktop()) PcLocal.set(true);
     clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};
     this.homeClearUnrec();
@@ -16525,8 +16571,8 @@ class Component extends DCLogic {
   /* Disconnect: the link this device had before comes back (or, if it had none, it has none again), and so does the "this is the PC" switch */
   pairUndo() {
     const n = this.state.pairNote, u = n && n.undo;
-    const prev = PcLink.prev();
-    if (prev) PcLink.set(prev); else PcLink.clear();
+    const prev = PcLink.prev(), prevTrusted = PcLink.prevTrusted();
+    if (prev) PcLink.set(prev, { trusted: prevTrusted }); else PcLink.clear();
     PcLink.clearPrev();
     if (u) PcLocal.set(!!u.wasLocal);
     clearTimeout(this._pairTimer); clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};
@@ -16799,6 +16845,11 @@ class Component extends DCLogic {
     ctl.pcDraft = true;
     if (typeof ctl.pcWake === 'function') ctl.pcWake();
   }
+  /* G12-5: "Send the pages" at the question of a device that did not make its PC link: this PC may be sent the pages of this score (and, once said, of the next ones) */
+  sendPcPages() {
+    const ctl = this._importCtl;
+    if (ctl && typeof ctl.pcAnswer === 'function') ctl.pcAnswer('send');
+  }
   dropRecording() {
     if (this._recording && this._recording.url) { try { URL.revokeObjectURL(this._recording.url); } catch (e) {} }
     this._recording = null;
@@ -16879,7 +16930,7 @@ class Component extends DCLogic {
     const file = this._file, yt = this._yt;
     const mode = this._transcriptionMode || this.state.transcriptionMode || 'auto';
     const recording = !!yt || !!(file && Import.isRecording(Import.kindOf(file)));
-    const ctl = this._importCtl = { cancelled: false };
+    const ctl = this._importCtl = { cancelled: false, canAsk: true };      /* canAsk: this screen shows the question "send the pages to that PC?" (pcask) */
     this.setState({
       analysis: 'running', analysisStep: 0, analysisPct: 0, parseError: null,
       /* left empty: the first real stage callback fills it, so nothing is
@@ -16894,6 +16945,7 @@ class Component extends DCLogic {
       vectorpdf: () => tx('Reading notation directly from the vector PDF'),
       recognise: d => d.of > 1 ? tx('Reading the notation on {{n}} pages', { n: d.of }) : tx('Reading the notation'),
       /* G12-5: the person's own PC reads the pages (PC_OMR) */
+      pcask: d => tx('Send the pages of this score to the PC ending in {{tag}}?', { tag: d.tag }),
       pcsend: d => (d.of > 1 ? tx('Sending {{n}} pages to your PC', { n: d.of }) : tx('Sending the page to your PC')),
       pcwait: () => tx('Waiting for your PC to read the pages'),
       pcread: d => tx('Your PC is reading page {{page}} of {{of}}', { page: d.page, of: d.of }),
@@ -16914,7 +16966,7 @@ class Component extends DCLogic {
     /* where each stage sits on the bar; a stage that reports progress fills its span */
     const SPAN = recording
       ? { validate: [2, 2], search: [3, 4], upload: [3, 6], download: [3, 20], decode: [20, 26], catalog: [26, 30], transcribe: [26, 84], beats: [84, 88], quantize: [88, 92], notate: [92, 92], parse: [95, 95], check: [98, 98] }
-      : { validate: [5, 5], rasterise: [25, 25], vectorpdf: [25, 55], recognise: [55, 55], pcsend: [30, 30], pcwait: [30, 30], pcread: [30, 65], merge: [70, 70], parse: [85, 85], check: [95, 95], reread: [70, 85] };
+      : { validate: [5, 5], rasterise: [25, 25], vectorpdf: [25, 55], recognise: [55, 55], pcask: [30, 30], pcsend: [30, 30], pcwait: [30, 30], pcread: [30, 65], merge: [70, 70], parse: [85, 85], check: [95, 95], reread: [70, 85] };
     const onStage = (name, detail) => {
       if (ctl.cancelled) return;
       detail = detail || {};
@@ -16935,7 +16987,8 @@ class Component extends DCLogic {
         };
         if (yt && detail.title && st.fileName !== detail.title) patch.fileName = detail.title;
         /* G12-5: while the PC reads the pages the person can give up waiting; the line under the summary says what to do when it is not on */
-        if (name === 'pcwait' || name === 'pcread' || name === 'pcsend') { patch.pcOmr = name === 'pcsend' ? 'send' : name === 'pcwait' ? 'wait' : 'read'; patch.importHints = detail.hint ? [detail.hint] : []; }
+        if (name === 'pcask') { patch.pcOmr = 'ask'; patch.importHints = [tx('The pages wait on the site only until that PC takes them, and are deleted after.')]; }
+        else if (name === 'pcwait' || name === 'pcread' || name === 'pcsend') { patch.pcOmr = name === 'pcsend' ? 'send' : name === 'pcwait' ? 'wait' : 'read'; patch.importHints = detail.hint ? [detail.hint] : []; }
         else if (st.pcOmr) { patch.pcOmr = null; patch.importHints = []; }
         return patch;
       });
@@ -21002,7 +21055,8 @@ class Component extends DCLogic {
             : tx('Reading {{file}}…', { file: S.fileName }))
             : tx('Add sheet music — MusicXML, a PDF or a photo — or a recording: MP3, MP4 or a YouTube link. PPP starts on it straight away.'),
       analyzeSummaryStyle: `margin-top:20px;padding:14px;border-radius:13px;font-size:12.5px;line-height:1.55;background:${failed ? 'var(--surface2)' : 'var(--bg)'};border:1px solid ${failed ? 'var(--bad)' : 'var(--line)'};color:${failed ? 'var(--ink)' : 'var(--ink2)'};`,
-      showPcDraft: running && (S.pcOmr === 'wait' || S.pcOmr === 'read'), pcDraftLabel: tx('Use the draft instead'), usePcDraft: () => this.usePcDraft(),
+      showPcDraft: running && (S.pcOmr === 'ask' || S.pcOmr === 'wait' || S.pcOmr === 'read'), pcDraftLabel: tx('Use the draft instead'), usePcDraft: () => this.usePcDraft(),
+      showPcSend: running && S.pcOmr === 'ask', pcSendLabel: tx('Send the pages'), sendPcPages: () => this.sendPcPages(),
       analyzeCta: added ? (S.pendingSong ? tx('Check the result') : tx('See analysis'))
         : running ? tx('Cancel') : failed ? tx('Try again') : tx('Choose file'),
       analyzeOn: () => {
