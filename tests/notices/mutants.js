@@ -77,7 +77,7 @@ const M = [
   ['P6', 'Piano Coach App.dc.html', 'an arrangement is not followed to the song it was made from',
     ["return parent ? this.youtubeDerivedOf(parent, seen) : false;", "return false;"], UI],
   ['P7', 'Piano Coach App.dc.html', 'the page does not say in the payload that the song is a YouTube one',
-    ["      youtubeDerived: ytDerived ? true : undefined\n", "      youtubeDerived: undefined\n"], UI],
+    ["      youtubeDerived: ytDerived ? true : undefined,\n", "      youtubeDerived: undefined,\n"], UI],
   ['P8', 'Piano Coach App.dc.html', 'the copy that is sent carries no mark',
     ["if (this.youtubeDerivedOf(songId)) out.source = Object.assign({}, out.source, { youtubeDerived: true });", ""], UI],
   ['P9', 'Piano Coach App.dc.html', 'a copy somebody adds loses the mark',
