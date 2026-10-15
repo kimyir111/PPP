@@ -137,6 +137,7 @@
         case 'would-cut': return tx('A note would be cut off. Shorten or remove it first.');
         case 'last-bar': return tx('The only measure cannot be deleted.');
         case 'meter-differs': return tx('The two measures have different time signatures, so they cannot be joined.');
+        case 'barline': return tx('A repeat sign stands between the two measures, so they cannot be joined.');
         case 'same-staff': return tx('The note is already on that staff.');
         case 'out-of-range': return tx('That note would be outside the piano.');
         case 'occupied': return tx('There is no free place for a note there.');

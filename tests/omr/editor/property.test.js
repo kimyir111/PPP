@@ -63,7 +63,7 @@ const FIXTURES = [
 ];
 
 /* ------------------------------------------------------------------------------------------------ a random command */
-const CODES = new Set(['no-target', 'in-tuplet', 'no-room', 'too-short', 'unprintable', 'would-cut', 'last-bar', 'meter-differs', 'same-staff', 'out-of-range', 'occupied', 'invalid']);
+const CODES = new Set(['no-target', 'in-tuplet', 'no-room', 'too-short', 'unprintable', 'would-cut', 'last-bar', 'meter-differs', 'barline', 'same-staff', 'out-of-range', 'occupied', 'invalid']);
 function pick(rnd, list) { return list.length ? list[Math.floor(rnd() * list.length)] : null; }
 function randomCommand(g, rnd) {
   const ms = g.timeline.measures;

@@ -16,6 +16,7 @@
      would-cut     the new time signature would cut a note off
      last-bar      the only bar of the score
      meter-differs the two bars have different time signatures
+     barline       a repeat sign stands between the two bars
      same-staff    the note is already on that staff
      out-of-range  a pitch outside a piano
      occupied      a note is already there (add) / no free voice on that staff (move)
@@ -1062,6 +1063,8 @@
       const meterA = meterAtIndex(d, i), meterB = tl.meters.find(x => x.m === b.id);
       if (meterB && meterA && !(sameJson(meterB.beats, meterA.beats) && meterB.beatType === meterA.beatType)) fail('meter-differs', 'different time signatures');
       if (meterB && !meterA) fail('meter-differs', 'different time signatures');
+      /* a repeat sign between the two would end up inside the bar: not joined silently */
+      if ((a.barline && a.barline.right && a.barline.right.repeat) || (b.barline && b.barline.left && b.barline.left.repeat)) fail('barline', 'a repeat sign stands between the bars');
       const before = snapshot(d, [a.id, b.id]);
       const da = R.parse(a.dur), db = R.parse(b.dur);
       const shift = x => R.format(R.add(R.parse(x), da));

@@ -360,6 +360,14 @@ test('join: two bars become one; different time signatures do not', () => {
   throwsCode(() => OPS.mergeBars(sw.graph, { measure: sw.graph.timeline.measures[0].id }), 'meter-differs');
 });
 
+test('join: a repeat sign between the two bars is not lost silently', () => {
+  const xml = L.xmlOf([{ rh: [q('C5'), q('D5'), q('E5'), q('F5')], lh: [w('C3')] }, { rh: [q('C5'), q('D5'), q('E5'), q('F5')], lh: [w('C3')] }])
+    .replace('</measure>', '<barline location="right"><bar-style>light-heavy</bar-style><repeat direction="backward"/></barline></measure>');
+  const r = SG.musicxml.import(xml, { scoreId: 'rep', sourceName: 'r.xml' });
+  assert.ok(r.ok, r.message);
+  throwsCode(() => OPS.mergeBars(r.graph, { measure: r.graph.timeline.measures[0].id }), 'barline');
+});
+
 /* --------------------------------------------------------------------------------------------- staves and parts */
 const twoParts = () => {
   const mk = (id, clef, oct) => '<part id="' + id + '"><measure number="1"><attributes><divisions>4</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>' + clef[0]

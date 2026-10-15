@@ -2499,6 +2499,7 @@
     "Next to check": "次の確認",
     "Changed by you": "自分で直した小節",
     "1 measure to check": "確認する小節 1個",
-    "On the page": "元の楽譜では"
+    "On the page": "元の楽譜では",
+    "A repeat sign stands between the two measures, so they cannot be joined.": "2つの小節の間に反復記号があるので、つなげられません。"
   }
 }
