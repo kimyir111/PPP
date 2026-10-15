@@ -383,7 +383,8 @@ test('the page: rec/leadsheet.js is in no up-front list, not in RECORDING_SCRIPT
   /* G10d: the plan the review screen hands on is the person's plan, with the melody layer named only for a song-mode result (heard.song, or a saved song's source.songLayers) */
   assert.match(html, /function withSongLayers\(plan, source, heard\) \{ return isSongHeard\(heard\) \|\| \(source && source\.songLayers\) \? Object\.assign\(\{\}, plan, \{ melodyTrack: SONG_TRACKS\.melody \}\) : plan; \}/);
   assert.match(html, /const sn = await arrangeSingleNoteWithLeadsheet\(built\.graph, withSongLayers\(plan, S\.importSource, heard\), S\.score\.title, isLeadsheetSong\(S\.importSource\)\)/, 'the review screen\'s Apply arrangement');
-  assert.equal((html.match(/arrangeSingleNoteWithLeadsheet\(/g) || []).length, 3, 'its definition and the two screens');
+  assert.equal((html.match(/arrangeSingleNoteWithLeadsheet\(/g) || []).length, 4, 'its definition, the two screens and (G11c-1) the easier passage\'s variantArranged');
+  assert.match(html, /arrangeSingleNoteWithLeadsheet\(graph, withSongLayers\(\{ level: level, style: 'balanced', source: 'local' \}, importSource\), title, isLeadsheetSong\(importSource\)\)/, 'G11c-1: "Make this passage easier" goes through the same entry, with the same recording test as the Song Arranger');
   /* the copies carry the mark and the words */
   assert.equal((html.match(/leadsheetMark\(sn\)\) \};/g) || []).length, 2, 'both copies\' source.arrangement');
   assert.match(html, /leadCopy \? tx\('PPP one-note-per-hand arrangement \(lead sheet\)'\)/, 'the Song Arranger\'s composer line');

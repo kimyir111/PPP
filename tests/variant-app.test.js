@@ -337,6 +337,13 @@ async function flowSection(browser) {
   /* back to the original, on the same bars */
   const backLabel = await p.page.evaluate(() => { const b = document.querySelector('[data-variant-back]'); return b ? b.innerText.trim() : null; });
   ok('the way back says "Practice this passage as written"', backLabel === 'Practice this passage as written', String(backLabel));
+  /* with the switch off a copy that is there still has its way back, and no button to make another */
+  await p.page.evaluate(() => { PPP.variant = 'off'; PPP.app.setState({}); });
+  await sleep(300);
+  const offOnCopy = await p.page.evaluate(() => ({ back: !!document.querySelector('[data-variant-back]'), open: !!document.querySelector('[data-variant-open]') }));
+  ok('with the switch off a copy still has its way back, and no button to make another', offOnCopy.back && !offOnCopy.open, JSON.stringify(offOnCopy));
+  await p.page.evaluate(() => { PPP.variant = 'on'; PPP.app.setState({}); });
+  await sleep(300);
   await click(p.page, '[data-variant-back]');
   await sleep(1500);
   const orig = await p.page.evaluate(() => { const S = PPP.app.state; return { id: S.songId, title: S.score.title, loop: [S.loopFrom, S.loopTo], loopOn: S.loop, screen: S.screen, hands: S.hands, runs: S.history.runs.length, bars: Object.keys(S.history.byMeasure).length }; });
