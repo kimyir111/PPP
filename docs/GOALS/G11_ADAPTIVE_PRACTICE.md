@@ -812,10 +812,10 @@ a 20-bar hymn 3.1 s, the 1,776-note piece **55 s**, which is why a piece of more
 synchronous call, 8-10 ms on a hymn but 110-180 ms at 1x and **390 ms (+ 220 ms for the Score) at CPU 4x** on the largest pieces (1,500+ notes): a block over the 50 ms line, over the 300 ms line only there. Slicing
 it (or a worker) is the next step if the user's phone shows it; the arranger runs in slices as it always did.
 
-**Tests.** `tests/variant-app.test.js` (the 13th browser suite of `tests/practice/run-suites.js`, `npm run test:variant-app`; 105 checks, about 10 minutes; ko/ja/zh checked in the page): sections `switch`, `flow`
+**Tests.** `tests/variant-app.test.js` (the 13th browser suite of `tests/practice/run-suites.js`, `npm run test:variant-app`; 107 checks, 7-8 minutes in CI on each player; ko/ja/zh checked in the page): sections `switch`, `flow`
 (the teacher's flow end to end with a fake keyboard: the original practised first, the copy practised, back), `determ`, `refusal` (one piece for each reason, the alternatives applied), `levels`, `sharing`
 (YouTube, backup), `i18n`, `budget` (CPU 4x, scaled by the machine's calibration like `learner-log`), `offline` (no `/api/`, no helper, no model; every file once), `busy`. `tests/practice/variant-mutants.js` (21 rows, the
-`practice-variant-mutants` job, three shards): the splice asked for one bar too many or too few, the original written over by the copy, the copy swapped in place, a refusal ignored, the YouTube mark not copied, the
+`practice-variant-mutants` job, three shards; each row is killed locally, and V3, aimed first at the slot, was an equivalent mutant: putting the open original away writes it back): the splice asked for one bar too many or too few, the original written over by the copy, the copy swapped in place, a refusal ignored, the YouTube mark not copied, the
 default on, the button shown while off, the progress shared, the way back and the copy opening on other bars, the hand ignored, no "already there", no alternatives, a wrong tempo, an id from the clock, no busy
 state, the levels, a false "the tune stays". `tests/practice-variant/variant-file-version.test.js` pins the bytes of `practice/variant.js` to `VARIANT_FILE_V` (as `plan-version.test.js` does for plan.js). `static-allow`
 serves `practice/variant.js` (and only it of the module's tests/tools).

@@ -29,7 +29,7 @@ const WITH_PORT = path.join(ROOT, 'tests', 'engrave', 'tools', 'with-port.js');
 
 /* name, file, minutes before the runner gives up on it, and `min`: about three quarters of the checks the suite printed when the list was
    written (2026-10-08: follow 32, falling-notes 26, memory 36, learning 34, playback-scheduler 9, coach 48, midi 74, interactions 52,
-   lessons 130, course 49, alignment 11 = 501; learner-log, 103, was added by G11b-1 and has 146 since decision U4 was built and reviewed, G11b-1c; variant-app, 105, by G11c-1). A suite that prints far fewer has stopped testing (a skipped block, a changed output),
+   lessons 130, course 49, alignment 11 = 501; learner-log, 103, was added by G11b-1 and has 146 since decision U4 was built and reviewed, G11b-1c; variant-app, 107, by G11c-1). A suite that prints far fewer has stopped testing (a skipped block, a changed output),
    so the runner fails it. Raise `min` when a suite grows.
    `noPlans`: a suite that never asks the player for a plan (the coach's plans, the lessons' own rhythm matcher, the course, the alignment of a score to its notes), so that running it on
    `--practice graph` builds no graph plan. Every other suite must build at least one there, or the run says the switch was not engaged (G11a-3). */

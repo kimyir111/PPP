@@ -558,8 +558,12 @@ async function sharingSection(browser) {
   await makeEasier(q.page, {});
   await click(q.page, '[data-variant-accept]');
   await sleep(2000);
-  const n = await q.page.evaluate(() => ({ flag: PPP.app.state.importSource.youtubeDerived, derived: PPP.app.youtubeDerivedOf(PPP.app.state.songId) }));
+  const n = await q.page.evaluate(() => {
+    const A = PPP.app, id = A.state.songId, sh = A.shareScoreOf(id);
+    return { flag: A.state.importSource.youtubeDerived, derived: A.youtubeDerivedOf(id), shared: sh && { id: sh.id, kind: sh.source && sh.source.kind, mark: sh.source && sh.source.youtubeDerived, notes: sh.notes.length, bars: sh.measures.length, own: id } };
+  });
   ok('an ordinary song\'s copy has no YouTube mark', n.flag === undefined && n.derived === false, JSON.stringify(n));
+  ok('and it is shared as any song is: its notes, as a score of its own (a link, or a post)', !!n.shared && n.shared.id === 'shared:' + n.shared.own && n.shared.kind === 'shared' && n.shared.mark === undefined && n.shared.notes > 100 && n.shared.bars === 20, JSON.stringify(n.shared));
   await q.close();
 }
 
