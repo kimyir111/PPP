@@ -45,7 +45,8 @@
 # three things: practice-suites runs the twelve suites twice, once on the explicit legacy player and once on the page's own default, 'graph' since G11a-5 (a matrix of two checks);
 # practice-switch is the switch's own test (tests/practice/switch.js: the default and what is no choice, the module a deferred group asked for once and never read early, the scheduler's queue of the 12
 # pieces equal to the one recorded on main before the switch, the matcher, the falling notes and follow mode equal, the fallbacks counted, the corpus swept, the build time);
-# practice-switch-mutants breaks one line of the switch at a time and the test must go red (in three shards). A manual run can be
+# practice-switch-mutants breaks one line of the switch at a time and the test must go red (in three shards). G11b-2 adds practice-learner (Node only, no install): the learner
+# model and the practice policy against the app's own Coach.validate on 10^4 random states, and the policy's rows on the practice simulator's gate set. A manual run can be
 # narrowed to them with `-f only=practice` (the heavy nightly jobs below are then skipped; the gate still runs), and `-f perf_record=true`
 # makes practice-perf measure a new baseline for this kind of machine and upload it instead of checking.
 name: bench
@@ -953,6 +954,30 @@ jobs:
         with: { node-version: '24' }
       - run: npm ci
       - run: node tests/practice/options-mutants.js --shard ${{ matrix.part }}/2
+
+  # practice-learner (G11b-2, docs/GOALS/G11 section 20): the learner model and the practice policy (practice/learner.js, practice/policy.js), Node only (no npm ci, no browser):
+  # tests/practice/policy-validate.js puts 10^4 random states (the model, the policy's own state, the page's memory picture, pieces with pickups, gaps and rest bars; a fifth in the
+  # app's own page methods) through the app's OWN Coach.validate (cut out of the app file): every plan must come back with no issue, every task must name bars, hands, tempos and
+  # modes the piece and the app have (about 20-40 s); tests/practice-sim/policy-eval.js --set gate --check runs the policy, its negative controls and the legacy arms with the model
+  # watching on k = 0 of the simulator's eight pieces and compares every row with tests/practice-sim/baselines/policy-gate.json (determinism, Windows = Linux), in two slices
+  # (--part K/2: half the rows each, and both rebuild the whole document from the committed rows; the unsliced check took 3.6 minutes on a runner's four threads). The unit and
+  # mutation tests of both modules (46 mutants) are in npm run test:practice, a step of the gate. On a pull request when practice-plan says run; every night and on a manual run.
+  practice-learner:
+    needs: practice-plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.run == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - if: ${{ matrix.part == 1 }}
+        run: node tests/practice/policy-validate.js
+      - run: node tests/practice-sim/policy-eval.js --set gate --check --part ${{ matrix.part }}/2 --workers 4
 
   # backup-suite (G13-6): the browser suite of Settings > My data (tests/backup-ui.test.js: back up, restore, refuse, delete everything, on fresh profiles, in
   # Korean, with mutants of library-backup.js served to the page). Like the practice suites it needs puppeteer (npm ci), serves this tree on a free port itself

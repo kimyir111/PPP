@@ -35,7 +35,19 @@
      brier              the legacy model's predicted next-run accuracy of a measure (Learning.measureView recentAcc,
                         before the lap) against the measure's measured accuracy in the lap (result.byMeasure), squared
                         error, over every measure-attempt with history; brierOracle: the same with the simulator's own
-                        expected accuracy under the lap's conditions (the floor the run-to-run noise allows) */
+                        expected accuracy under the lap's conditions (the floor the run-to-run noise allows)
+
+   G11b-2 adds two opt-in hooks (opts of simulate; without them a run is what it was, byte for byte - the committed legacy
+   baselines are recomputed by their own check):
+     opts.driver    an arm that is not one of ARMS (the G11b-2 policy and its negative controls, tests/practice-sim/drivers.js):
+                    driver.step({app, E, now, day, first}) sets the page the way a person following its advice would and
+                    answers whether the task changed (a change costs taskChangeMs, as a tap on a task or the card does for the
+                    legacy arms); driver.afterLap(lap) reads the finished lap. It never sees the learner (only the oracle does).
+     opts.observer  a model that watches without deciding (the G11b-2 learner model next to a legacy arm): before each lap
+                    observer.predictor(now, cond) gives its predicted accuracy per measure index, after it observer.afterLap(lap)
+                    reads the lap's evidence. The driver is its own observer.
+                    Their predictions are scored on the SAME measure-attempts as recentAcc (brierModel), on every attempt
+                    (brierModelAll) and on practice-mode attempts only (brierP, brierModelP). */
 'use strict';
 const path = require('path');
 const SIM = require(path.join(__dirname, '..', '..', 'practice', 'sim.js'));
@@ -80,9 +92,12 @@ function lapMeasureMs(plan, scale, idx, PianoScore) {
   return out;
 }
 
-async function simulate(env, piece, type, k, arm) {
+async function simulate(env, piece, type, k, arm, opts) {
   const { E, newApp, drainTimers } = env;
-  if (ARMS.indexOf(arm) < 0) throw new Error('runner: unknown arm ' + arm);
+  const driver = (opts && opts.driver) || null;
+  const observer = driver || (opts && opts.observer) || null;
+  if (ARMS.indexOf(arm) < 0 && !driver) throw new Error('runner: unknown arm ' + arm);
+  if (driver && ARMS.indexOf(arm) >= 0) throw new Error('runner: a driver needs an arm name of its own, not ' + arm);
   const seed = SIM.hashSeed(piece.id + '|' + type + '|' + k);
   const L = SIM.makeLearner(type, piece, seed, CFG.t0);
   const g = SIM.rng(SIM.hashSeed(seed + '|play'));
@@ -100,12 +115,15 @@ async function simulate(env, piece, type, k, arm) {
   const settle = async () => { while (app._pendingPlan) { const p = app._pendingPlan; app._pendingPlan = null; await p; } };
   app.adoptScore(score);
   await Promise.all(drainTimers());       /* adoptScore's first plan (setTimeout 0) */
+  if (driver && driver.init) await driver.init({ app, E, env, score, scoreTempo: score.tempo || 84, idx, driverSeed: SIM.hashSeed(seed + '|driver'), piece: { id: piece.id, split: piece.split } });
+  else if (observer && observer.init) await observer.init({ app, E, env, score, scoreTempo: score.tempo || 84, idx, driverSeed: SIM.hashSeed(seed + '|driver'), piece: { id: piece.id, split: piece.split } });
 
   const m = {
     laps: 0, minutes: 0, minutesToMastery: null, lapsToMastery: null,
     hands: { both: 0, left: 0, right: 0 }, memoryLaps: 0, tempoRatioSum: 0,
     weakMs: 0, masteredMs: 0, totalMusicMs: 0, flips: 0, flipLaps: 0, sessions: 0,
-    brier: [], brierOracle: [], taskChanges: 0, longestStreak: 0
+    brier: [], brierOracle: [], taskChanges: 0, longestStreak: 0,
+    paired: [], modelAll: [], weakMsPre: 0, musicMsPre: 0
   };
   const isMastered = acc => acc != null && acc >= CFG.masteryAcc;
   const target = () => {
@@ -117,12 +135,16 @@ async function simulate(env, piece, type, k, arm) {
   for (let day = 0; day < CFG.practiceDays; day++) {
     now = CFG.t0 + day * SIM.DAY;
     SIM.advance(L, now);
-    /* a new visit to the page: it asks for today's plan on load (componentDidMount) */
-    app.requestPlan();
-    await settle();
+    /* a new visit to the page: it asks for today's plan on load (componentDidMount); a driver's page plans by its own policy */
+    if (!driver) {
+      app.requestPlan();
+      await settle();
+    }
     let elapsed = 0, prevTarget = null, lapsToday = 0, streak = 0, prevRange = null;
-    const start = () => {
-      if (arm === 'oracle') {
+    const start = (first) => {
+      if (driver) {
+        if (!driver.step({ app, E, now, day, first: !!first })) return;
+      } else if (arm === 'oracle') {
         const t1 = SIM.truth(L, 1);
         let wi = -1;
         t1.forEach((a, i) => { if (a != null && (wi < 0 || a < t1[wi])) wi = i; });
@@ -141,7 +163,7 @@ async function simulate(env, piece, type, k, arm) {
       else app.applyRecommendation(app.recommendation());
       now += CFG.taskChangeMs; elapsed += CFG.taskChangeMs; m.minutes += CFG.taskChangeMs / SIM.MIN; m.taskChanges++;
     };
-    start();
+    start(true);
     m.sessions++;
     while (elapsed < CFG.sessionMinutes * SIM.MIN && lapsToday < CFG.maxLapsPerSession) {
       const S = app.state;
@@ -166,6 +188,9 @@ async function simulate(env, piece, type, k, arm) {
         const v = E.Learning.measureView(st);
         preds.push([mm.number, v.recentAcc]);
       });
+      /* G11b-2: the observer's prediction of every measure of the lap (the same conditions the lap will have) */
+      const lapAt = now;
+      const modelPred = observer && observer.predictor ? observer.predictor(now, { ratio: ratio, hands: S.hands, memory: memory, hide: hide, from: from, to: to }) : null;
       const truth1 = SIM.truth(L, 1);
       const order = truth1.map((a, i) => [a, i]).filter(x => x[0] != null).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
       const weakSet = new Set(order.slice(0, Math.max(1, Math.ceil(order.length / 4))).map(x => x[1]));
@@ -186,6 +211,7 @@ async function simulate(env, piece, type, k, arm) {
       app.maybeReplan();                  /* componentDidUpdate */
       await settle();
       SIM.practise(L, play.reps, ctx, day);
+      if (observer && observer.afterLap) observer.afterLap({ app, E, env, S, result, perf, live, at: lapAt, memory: memory });
       if (env.trace) env.trace({ day, from, to, hands: S.hands, pct: Math.round(ratio * 100), mode: S.practiceMode, hide, acc: Math.round(result.accuracy * 100), kind: S.coachPlan && S.coachPlan.tasks[S.coachTask] ? S.coachTask : null, truth: SIM.truth(L, 1).map(a => a == null ? null : Math.round(a * 100)) });
 
       /* metrics of the lap */
@@ -195,6 +221,7 @@ async function simulate(env, piece, type, k, arm) {
         if (!b || !b.total) return;
         const obs = b.matched / b.total;
         m.brier.push([pred, obs]);
+        if (modelPred) { const mp = modelPred(idx[num]); if (mp != null) m.paired.push([pred, mp, obs, memory ? 1 : 0]); }
         /* the oracle: the simulator's expected share of this measure's notes in this lap (the hands in play) */
         const i = idx[num];
         let nr = 0, nl = 0;
@@ -202,9 +229,18 @@ async function simulate(env, piece, type, k, arm) {
         const exp = (nr * SIM.pHit(L, i, 'r', ctx) + nl * SIM.pHit(L, i, 'l', ctx)) / Math.max(1, nr + nl);
         m.brierOracle.push([exp, obs]);
       });
+      if (modelPred) {
+        Object.keys(byM).forEach(key => {
+          const b = byM[key];
+          if (!b || !b.total) return;
+          const mp = modelPred(idx[+key]);
+          if (mp != null) m.modelAll.push([mp, b.matched / b.total, memory ? 1 : 0]);
+        });
+      }
       lapMeasureMs(plan, scale, idx, E.PianoScore).forEach((ms, i) => {
         m.totalMusicMs += ms;
         if (weakSet.has(i)) m.weakMs += ms;
+        if (m.minutesToMastery == null) { m.musicMsPre += ms; if (weakSet.has(i)) m.weakMsPre += ms; }
         if (isMastered(truthM[i])) m.masteredMs += ms;
       });
       m.laps++; lapsToday++;
@@ -229,7 +265,8 @@ async function simulate(env, piece, type, k, arm) {
          repetitions instead of the drill steps) send the person back to the card */
       const S2 = app.state;
       const taskMoved = S2.coachPlan !== before.plan || S2.coachTask !== before.task || S2.coachDone.length !== before.done;
-      if (arm === 'oracle') start();
+      if (driver) start(false);
+      else if (arm === 'oracle') start();
       else if (arm === 'coach') {
         if (taskMoved || !app.coachOwnsLoop(S2)) start();
       } else if (S2.practiceMode === 'memory' || S2.seqStep >= app.seq().length || (taskMoved && S2.coachDone.length !== before.done)) start();
@@ -255,9 +292,19 @@ async function simulate(env, piece, type, k, arm) {
     retainedShare30: retM.filter(isMastered).length / retM.length,
     weakQuartileShare: m.totalMusicMs ? m.weakMs / m.totalMusicMs : null,
     masteredTimeShare: m.totalMusicMs ? m.masteredMs / m.totalMusicMs : null,
+    weakQuartileSharePre: m.musicMsPre ? m.weakMsPre / m.musicMsPre : null,   /* G11b-2: the same share, until mastery was reached */
     longestStreak: m.longestStreak,
     flipsPerSession: m.flips / m.sessions, flipsPerLap: m.flipLaps ? m.flips / m.flipLaps : 0,
     brier: SIM.brier(m.brier), brierOracle: SIM.brier(m.brierOracle), brierN: m.brier.length,
+    /* G11b-2 (only with an observer or a driver): the legacy prediction and the model's on the same attempts, all, and practice-mode only */
+    brierPaired: m.paired.length ? {
+      n: m.paired.length, legacy: SIM.brier(m.paired.map(x => [x[0], x[2]])), model: SIM.brier(m.paired.map(x => [x[1], x[2]])),
+      nP: m.paired.filter(x => !x[3]).length,
+      legacyP: SIM.brier(m.paired.filter(x => !x[3]).map(x => [x[0], x[2]])), modelP: SIM.brier(m.paired.filter(x => !x[3]).map(x => [x[1], x[2]]))
+    } : null,
+    brierModelAll: m.modelAll.length ? { n: m.modelAll.length, model: SIM.brier(m.modelAll.map(x => [x[0], x[1]])),
+      nP: m.modelAll.filter(x => !x[2]).length, modelP: SIM.brier(m.modelAll.filter(x => !x[2]).map(x => [x[0], x[1]])) } : null,
+    driver: driver && driver.report ? driver.report() : (observer && observer.report ? observer.report() : null),
     handsShare: { left: m.hands.left / m.laps, right: m.hands.right / m.laps },
     memoryLapShare: m.memoryLaps / m.laps, meanTempoRatio: m.tempoRatioSum / m.laps,
     memorizedSections: memorized, sections: score.sections.length,

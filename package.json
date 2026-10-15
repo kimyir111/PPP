@@ -35,6 +35,7 @@
     "test:rec": "node --test \"tests/rec/**/*.test.js\"",
     "test:practice-variant": "node --test \"tests/practice-variant/**/*.test.js\"",
     "test:practice-sim": "node --test \"tests/practice-sim/**/*.test.js\"",
+    "test:practice-learner": "node tests/practice/policy-validate.js && node tests/practice-sim/policy-eval.js --set gate --check --part 1/2 && node tests/practice-sim/policy-eval.js --set gate --check --part 2/2",
     "test:home-worker": "node tests/home-worker/jobs.test.js && node tests/home-worker/links.test.js && node tests/home-worker/server.test.js && node tests/home-worker/worker.test.js && node tests/home-worker/pair.test.js && node tests/home-worker/protocol.test.js && node tests/home-worker/omr-jobs.test.js && node tests/home-worker/omr-limits.test.js && node tests/home-worker/omr-flow.test.js && node tests/home-worker/omr-abuse.test.js && node tests/home-worker/omr-guard.test.js && node tests/home-worker/omr-worker.test.js && node tests/home-worker/jobs-pg.test.js && node tests/home-worker/omr-jobs-pg.test.js && node tests/home-worker/worker-real.test.js",
     "test:home-worker-page": "node tests/home-worker/page.test.js && node tests/home-worker/pairing.test.js && node tests/home-worker/findable.test.js && node tests/home-worker/omr-page.test.js",
     "test:home-worker-mutants": "node tests/home-worker/mutants.js",
