@@ -48,6 +48,9 @@ const RULES = [
      Only these two: the rest of scoregraph/tools/ (ledger-stats.js) is a corpus tool */
   /^omr\/flags\.js$/,
   /^scoregraph\/tools\/notation-check\.js$/,
+  /* G13-S1: the sync page (PPP.sync 'on'): the rules, the engine, the QR drawing and the section of Settings. Only these four files of sync/: the server's sync.js and sync-store.js are
+     at the root and are not on the list */
+  /^sync\/(?:merge|client|qr|ui)\.js$/,
   /* the one training table the arranger's real bands need (loadArrangerReference) - the only file of a tools/ folder the page asks for */
   /^difficulty\/tools\/dataset\/method-books\.json$/,
   /* the four language files */
