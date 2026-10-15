@@ -188,8 +188,8 @@ class PracticeJobs(unittest.TestCase):
         self.assertTrue(m, f"{job} has no needs")
         return [x.strip() for x in m.group(1).strip("[]").split(",")]
 
-    def test_the_eleven_jobs_are_there_and_none_is_a_gate_job(self):
-        self.assertEqual(sorted(self.practice), ["practice-legacy", "practice-options", "practice-options-mutants", "practice-parity", "practice-parity-mutants", "practice-perf",
+    def test_the_twelve_jobs_are_there_and_none_is_a_gate_job(self):
+        self.assertEqual(sorted(self.practice), ["practice-learner", "practice-legacy", "practice-options", "practice-options-mutants", "practice-parity", "practice-parity-mutants", "practice-perf",
                                                  "practice-plan", "practice-suites", "practice-switch", "practice-switch-mutants", "practice-variant-mutants"])
         for name in self.practice:
             self.assertFalse(GATE_JOB.match(name), name)
@@ -208,7 +208,7 @@ class PracticeJobs(unittest.TestCase):
 
     def test_the_jobs_wait_for_the_plan_and_run_on_a_pull_request_only_when_it_says_so(self):
         for name in ("practice-suites", "practice-legacy", "practice-perf", "practice-parity", "practice-parity-mutants", "practice-switch", "practice-switch-mutants",
-                     "practice-options", "practice-options-mutants", "practice-variant-mutants"):
+                     "practice-options", "practice-options-mutants", "practice-learner", "practice-variant-mutants"):
             body = self.jobs[name]
             self.assertEqual(self.needs_of(name), ["practice-plan"], name)
             m = re.search(r"^    if: (.*)$", body, re.M)
@@ -291,6 +291,15 @@ class PracticeJobs(unittest.TestCase):
                      self.jobs["practice-switch"], self.jobs["practice-switch-mutants"], self.jobs["practice-options"], self.jobs["practice-options-mutants"],
                      self.jobs["practice-variant-mutants"]):
             self.assertIn("actions/setup-node@v4", body)
+
+    def test_the_learner_job_is_node_only_and_runs_both_checks(self):
+        body = self.jobs["practice-learner"]
+        got = commands_of(body)
+        self.assertEqual(got, ["node tests/practice/policy-validate.js", "node tests/practice-sim/policy-eval.js --set gate --check --part ${{ matrix.part }}/2 --workers 4"])
+        self.assertIn("part: [1, 2]", body)
+        self.assertIn("- if: ${{ matrix.part == 1 }}\n        run: node tests/practice/policy-validate.js", body)
+        self.assertIn("actions/setup-node@v4", body)
+        self.assertNotIn("npm ci", got)
 
     def test_the_perf_job_can_record_and_otherwise_checks(self):
         body = self.jobs["practice-perf"]
