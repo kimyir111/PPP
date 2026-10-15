@@ -23,7 +23,7 @@ _spec = importlib.util.spec_from_file_location("practice_plan", os.path.join(uti
 practice_plan = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(practice_plan)
 
-SUITES = ("follow", "falling-notes", "memory", "learning", "playback-scheduler", "coach", "midi", "interactions", "lessons", "course", "alignment", "learner-log")
+SUITES = ("follow", "falling-notes", "memory", "learning", "playback-scheduler", "coach", "midi", "interactions", "lessons", "course", "alignment", "learner-log", "variant-app")
 
 
 def run_main(argv):
@@ -40,10 +40,10 @@ class PathClasses(unittest.TestCase):
                   "tests/boot.js", "tests/serve-free.js", "tests/engrave/tools/with-port.js", "package.json", "package-lock.json"):
             self.assertTrue(self.cls(p)[0], p)
 
-    def test_all_twelve_suites_are_named(self):
+    def test_all_thirteen_suites_are_named(self):
         for name in SUITES:
             self.assertTrue(self.cls(f"tests/{name}.test.js")[0], name)
-        self.assertEqual(len(practice_plan.SUITE_FILES), 12)
+        self.assertEqual(len(practice_plan.SUITE_FILES), 13)
 
     def test_the_probes_and_the_workflow_also_run_the_mutation_check(self):
         for p in ("tests/practice/perf.js", "tests/practice/baselines/legacy.json", "tests/practice/baselines/perf.json", "tests/practice/plan.py",
@@ -188,9 +188,9 @@ class PracticeJobs(unittest.TestCase):
         self.assertTrue(m, f"{job} has no needs")
         return [x.strip() for x in m.group(1).strip("[]").split(",")]
 
-    def test_the_eleven_jobs_are_there_and_none_is_a_gate_job(self):
+    def test_the_twelve_jobs_are_there_and_none_is_a_gate_job(self):
         self.assertEqual(sorted(self.practice), ["practice-learner", "practice-legacy", "practice-options", "practice-options-mutants", "practice-parity", "practice-parity-mutants", "practice-perf",
-                                                 "practice-plan", "practice-suites", "practice-switch", "practice-switch-mutants"])
+                                                 "practice-plan", "practice-suites", "practice-switch", "practice-switch-mutants", "practice-variant-mutants"])
         for name in self.practice:
             self.assertFalse(GATE_JOB.match(name), name)
             self.assertNotIn(name, self.needs_of("gate"))
@@ -208,7 +208,7 @@ class PracticeJobs(unittest.TestCase):
 
     def test_the_jobs_wait_for_the_plan_and_run_on_a_pull_request_only_when_it_says_so(self):
         for name in ("practice-suites", "practice-legacy", "practice-perf", "practice-parity", "practice-parity-mutants", "practice-switch", "practice-switch-mutants",
-                     "practice-options", "practice-options-mutants", "practice-learner"):
+                     "practice-options", "practice-options-mutants", "practice-learner", "practice-variant-mutants"):
             body = self.jobs[name]
             self.assertEqual(self.needs_of(name), ["practice-plan"], name)
             m = re.search(r"^    if: (.*)$", body, re.M)
@@ -218,7 +218,7 @@ class PracticeJobs(unittest.TestCase):
             self.assertIn("github.event_name == 'schedule'", cond, name)
             self.assertIn("github.event_name == 'workflow_dispatch'", cond, name)
             # the mutants of the parity check run on a pull request only for the probes (like the recorder's mutation check), the rest whenever the plan says run
-            want = "harness" if name in ("practice-parity-mutants", "practice-switch-mutants", "practice-options-mutants") else "run"
+            want = "harness" if name in ("practice-parity-mutants", "practice-switch-mutants", "practice-options-mutants", "practice-variant-mutants") else "run"
             self.assertIn("github.event_name == 'pull_request' && needs.practice-plan.outputs.%s == 'true'" % want, cond, name)
             self.assertNotIn("'push'", cond, name)
 
@@ -262,6 +262,15 @@ class PracticeJobs(unittest.TestCase):
         self.assertEqual(practice_plan.path_class("practice/runlog.js"), (True, False))
         self.assertEqual(practice_plan.path_class("tests/learner-log.test.js"), (True, False))
 
+    def test_the_page_mutants_of_the_easier_passage_are_a_job_of_their_own(self):
+        body = self.jobs["practice-variant-mutants"]
+        self.assertIn("part: [1, 2, 3]", body)
+        self.assertIn("- run: node tests/practice/variant-mutants.js --shard ${{ matrix.part }}/3", body)
+        self.assertEqual(practice_plan.path_class("tests/practice/variant-mutants.js"), (True, True))
+        self.assertEqual(practice_plan.path_class("tests/variant-app.test.js"), (True, False))
+        self.assertEqual(practice_plan.path_class("practice/variant.js"), (True, False))
+        self.assertEqual(practice_plan.path_class("tests/practice-variant/variant-app-bench.js"), (False, False))
+
     def test_each_job_installs_before_it_runs_and_they_run_the_probes(self):
         want = {"practice-suites": ["npm ci", "node tests/practice/run-suites.js --practice ${{ matrix.practice }} --shard ${{ matrix.part }}/2 --log-dir tests/practice/out/suites-${{ matrix.practice }}-${{ matrix.part }}"],
                 "practice-switch": ["npm ci", "node tests/practice/switch.js --sample 5", "node tests/practice/switch.js"],
@@ -269,6 +278,7 @@ class PracticeJobs(unittest.TestCase):
                 "practice-options": ["npm ci", "node tests/practice/options.js --sample 5", "node tests/practice/options.js"],
                 "practice-options-mutants": ["npm ci", "node tests/practice/options-mutants.js --shard ${{ matrix.part }}/2"],
                 "practice-legacy": ["npm ci", "node tests/practice/record.js check", "node tests/practice/mutants.js"],
+                "practice-variant-mutants": ["npm ci", "node tests/practice/variant-mutants.js --shard ${{ matrix.part }}/3"],
                 "practice-perf": ["npm ci", "node tests/practice/perf-selftest.js", "node tests/practice/perf.js check", "node tests/practice/perf.js record --attempts 5"],
                 "practice-parity": ["npm ci", "node tests/practice/parity.js check --sample 5", "node tests/practice/parity.js check"],
                 "practice-parity-mutants": ["npm ci", "node tests/practice/parity-mutants.js --core --shard ${{ matrix.part }}/4", "node tests/practice/parity-mutants.js --shard ${{ matrix.part }}/4"]}
@@ -278,7 +288,8 @@ class PracticeJobs(unittest.TestCase):
                 self.assertIn(c, got, name)
             self.assertEqual(got[0], "npm ci", name)
         for body in (self.jobs["practice-suites"], self.jobs["practice-legacy"], self.jobs["practice-perf"], self.jobs["practice-parity"], self.jobs["practice-parity-mutants"],
-                     self.jobs["practice-switch"], self.jobs["practice-switch-mutants"], self.jobs["practice-options"], self.jobs["practice-options-mutants"]):
+                     self.jobs["practice-switch"], self.jobs["practice-switch-mutants"], self.jobs["practice-options"], self.jobs["practice-options-mutants"],
+                     self.jobs["practice-variant-mutants"]):
             self.assertIn("actions/setup-node@v4", body)
 
     def test_the_learner_job_is_node_only_and_runs_both_checks(self):

@@ -1694,6 +1694,104 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
                       </sc-for>
                     </div>
                   </div>
+                  <!-- G11c-1: an easier copy of the bars picked above (PPP.variant 'on'), and the way back to the original from such a copy. -->
+                  <sc-if value="{{ showVariantRow }}" hint-placeholder-val="{{ false }}">
+                    <div data-variant-row style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                      <sc-if value="{{ showVariantOpen }}" hint-placeholder-val="{{ false }}">
+                        <button type="button" onClick="{{ variantOpen }}" data-variant-open aria-pressed="{{ variantOpenPressed }}" title="{{ variantOpenHint }}" style="{{ variantBtnStyle }}">{{ variantOpenLabel }}</button>
+                      </sc-if>
+                      <sc-if value="{{ showVariantBack }}" hint-placeholder-val="{{ false }}">
+                        <button type="button" onClick="{{ variantBack }}" data-variant-back title="{{ variantBackHint }}" style="{{ variantBtnStyle }}">{{ variantBackLabel }}</button>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ showVariantPanel }}" hint-placeholder-val="{{ false }}">
+                    <div data-variant-panel data-phase="{{ variantPhase }}" role="group" aria-label="{{ variantTitle }}" style="display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg);">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <span data-variant-title style="font-size: 13.5px; font-weight: 600;">{{ variantTitle }}</span>
+                        <button type="button" onClick="{{ variantClose }}" data-variant-close aria-label="{{ variantCloseLabel }}" title="{{ variantCloseLabel }}" style="margin-left: auto; width: 26px; height: 26px; border-radius: 8px; border: 0; background: transparent; color: var(--ink2); font-size: 16px; line-height: 1; cursor: pointer;">×</button>
+                      </div>
+                      <sc-if value="{{ variantChoosing }}" hint-placeholder-val="{{ false }}">
+                        <div data-variant-choose style="display: flex; flex-direction: column; gap: 10px;">
+                          <sc-if value="{{ variantHasLevels }}" hint-placeholder-val="{{ false }}">
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                              <span style="font-size: 12px; color: var(--ink3);">{{ variantLevelLabel }}</span>
+                              <span role="radiogroup" aria-label="{{ variantLevelLabel }}" style="display: flex; gap: 4px; padding: 3px; border-radius: 12px; background: var(--surface2); flex-wrap: wrap;">
+                                <sc-for list="{{ variantLevelTabs }}" as="vl" hint-placeholder-count="2">
+                                  <button type="button" role="radio" aria-checked="{{ vl.selected }}" data-variant-level="{{ vl.id }}" onClick="{{ vl.on }}" style="{{ vl.style }}">{{ vl.label }}</button>
+                                </sc-for>
+                              </span>
+                            </div>
+                          </sc-if>
+                          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span style="font-size: 12px; color: var(--ink3);">{{ variantHandsLabel }}</span>
+                            <span role="radiogroup" aria-label="{{ variantHandsLabel }}" style="display: flex; gap: 4px; padding: 3px; border-radius: 12px; background: var(--surface2);">
+                              <sc-for list="{{ variantHandTabs }}" as="vh" hint-placeholder-count="3">
+                                <button type="button" role="radio" aria-checked="{{ vh.selected }}" data-variant-hand="{{ vh.id }}" onClick="{{ vh.on }}" style="{{ vh.style }}">{{ vh.label }}</button>
+                              </sc-for>
+                            </span>
+                          </div>
+                          <div>
+                            <button type="button" onClick="{{ variantMake }}" data-variant-make style="{{ variantPrimaryStyle }}">{{ variantMakeLabel }}</button>
+                          </div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ variantBusy }}" hint-placeholder-val="{{ false }}">
+                        <div data-variant-busy role="status" aria-live="polite" style="font-size: 12.5px; color: var(--ink2);">{{ variantBusyText }}</div>
+                      </sc-if>
+                      <sc-if value="{{ variantPreview }}" hint-placeholder-val="{{ false }}">
+                        <div data-variant-preview style="display: flex; flex-direction: column; gap: 10px;">
+                          <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <span style="font-size: 11.5px; font-weight: 600; color: var(--ink3);">{{ variantBeforeLabel }}</span>
+                            <div data-variant-before class="ppp-staffwrap" style="overflow-x: auto; padding: 6px 4px; border-radius: 10px; background: var(--paper);">{{ variantBeforeStaff }}</div>
+                          </div>
+                          <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <span style="font-size: 11.5px; font-weight: 600; color: var(--accent);">{{ variantAfterLabel }}</span>
+                            <div data-variant-after class="ppp-staffwrap" style="overflow-x: auto; padding: 6px 4px; border-radius: 10px; background: var(--paper);">{{ variantAfterStaff }}</div>
+                          </div>
+                          <sc-if value="{{ variantHasMore }}" hint-placeholder-val="{{ false }}">
+                            <span style="font-size: 11.5px; color: var(--ink3);">{{ variantMore }}</span>
+                          </sc-if>
+                          <ul data-variant-lines style="margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.55; color: var(--ink2);">
+                            <sc-for list="{{ variantLines }}" as="vn" hint-placeholder-count="3">
+                              <li>{{ vn.text }}</li>
+                            </sc-for>
+                          </ul>
+                          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button type="button" onClick="{{ variantAccept }}" data-variant-accept style="{{ variantPrimaryStyle }}">{{ variantAcceptLabel }}</button>
+                            <button type="button" onClick="{{ variantClose }}" data-variant-cancel style="{{ variantBtnStyle }}">{{ variantCancelLabel }}</button>
+                          </div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ variantRefused }}" hint-placeholder-val="{{ false }}">
+                        <div data-variant-refusal data-reason="{{ variantRefusalReason }}" style="display: flex; flex-direction: column; gap: 10px;">
+                          <div role="status" aria-live="polite" style="font-size: 13px; line-height: 1.5;">{{ variantRefusalText }}</div>
+                          <sc-if value="{{ variantHasAlts }}" hint-placeholder-val="{{ false }}">
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                              <span style="font-size: 12px; color: var(--ink3);">{{ variantAltLabel }}</span>
+                              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <sc-for list="{{ variantAlts }}" as="va" hint-placeholder-count="3">
+                                  <button type="button" onClick="{{ va.on }}" data-variant-alt="{{ va.id }}" style="{{ variantBtnStyle }}">{{ va.label }}</button>
+                                </sc-for>
+                              </div>
+                            </div>
+                          </sc-if>
+                          <div>
+                            <button type="button" onClick="{{ variantClose }}" data-variant-cancel style="{{ variantBtnStyle }}">{{ variantCloseLabel }}</button>
+                          </div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ variantExists }}" hint-placeholder-val="{{ false }}">
+                        <div data-variant-exists style="display: flex; flex-direction: column; gap: 10px;">
+                          <div role="status" aria-live="polite" style="font-size: 13px; line-height: 1.5;">{{ variantExistsText }}</div>
+                          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button type="button" onClick="{{ variantExistsOpen }}" data-variant-exists-open style="{{ variantPrimaryStyle }}">{{ variantExistsOpenLabel }}</button>
+                            <button type="button" onClick="{{ variantClose }}" data-variant-cancel style="{{ variantBtnStyle }}">{{ variantCancelLabel }}</button>
+                          </div>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
                 </div>
               </sc-if>
               <sc-if value="{{ showPracticeKeyboard }}" hint-placeholder-val="{{ true }}">
@@ -2668,7 +2766,7 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
                       <div style="font-size: 12px; color: var(--ink3); margin-top: 2px;">{{ r.sub }}</div>
                     </div>
                     <div style="margin-left: auto; flex: none;">
-                      <button onClick="{{ r.on }}" style="{{ r.trackStyle }}">
+                      <button onClick="{{ r.on }}" data-setting="{{ r.key }}" style="{{ r.trackStyle }}">
                         <span style="{{ r.knobStyle }}"></span>
                       </button>
                     </div>
@@ -6132,6 +6230,93 @@ function setRecordingArrangeMode(v) {
   RECORDING_ARRANGE_MODE = c || RECORDING_ARRANGE_DEFAULT;
   try { if (c) localStorage.setItem(RECORDING_ARRANGE_KEY, c); else localStorage.removeItem(RECORDING_ARRANGE_KEY); } catch (e) { /* not remembered */ }
   return RECORDING_ARRANGE_MODE;
+}
+/* ============================ G11c-1: an easier passage as a separate copy (PPP.variant) ============================
+   docs/GOALS/G11_ADAPTIVE_PRACTICE.md section 8, decision U7 (a COPY first, never swapped in place). PPP.variant = 'off' (default) | 'on'. The semantics are PPP.recording's: a choice is one of those
+   two strings, anything else is no choice and no choice is the default; layers, the first that holds a choice wins: ?variant= in the address (this visit only, never stored), the device's remembered choice
+   (localStorage VARIANT_KEY, Settings > Labs), the default. 'off' is the page as it was: no button, no request for practice/variant.js, nothing of this block runs.
+   'on' adds "Make this passage easier" to the Loop panel: the bars picked there are arranged one level down (the Song Arranger's own arranger, the whole piece, cached), the arrangement's bars are
+   spliced into the piece (practice/variant.js, G11c-0: verified, judged by G6, refused when it is not easier), the person sees the before and after and the honest refusals with their alternatives
+   (70 % tempo, the harder hand alone, a shorter loop), and on accept the result is a NEW song in My Songs ("<title> · 17-20 bars easier"): its progress is its own, the original is never touched,
+   and the copy is deterministic (the same request is the same song id and the same music hash, so asking again opens the copy that is there). source.variantOf names the original, so a later
+   phase can link the two; a variant of a YouTube-derived song stays derived (source.youtubeDerived). No account, no server, no LLM: every step runs in the browser. */
+const VARIANT_KEY = 'ppp.variant.v1';
+const VARIANT_DEFAULT = 'off';
+function variantChoice(v) { return v === 'on' || v === 'off' ? v : null; }
+let VARIANT_MODE = (() => {
+  let m = VARIANT_DEFAULT;
+  try { m = variantChoice(localStorage.getItem(VARIANT_KEY)) || m; } catch (e) { /* no storage: the default */ }
+  try { const u = variantChoice(new URLSearchParams(location.search).get('variant')); if (u) m = u; } catch (e) { /* no address to read */ }
+  return m;
+})();
+/* a choice is remembered; a value that is no choice puts the default back and forgets the remembered one */
+function setVariantMode(v) {
+  const c = variantChoice(v);
+  VARIANT_MODE = c || VARIANT_DEFAULT;
+  try { if (c) localStorage.setItem(VARIANT_KEY, c); else localStorage.removeItem(VARIANT_KEY); } catch (e) { /* not remembered */ }
+  return VARIANT_MODE;
+}
+const VARIANT_SCRIPT = 'practice/variant.js';
+const VARIANT_FILE_V = 1; /* the ?v= of practice/variant.js: bump it when the file changes (tests/practice-variant/variant-app.test.js pins its bytes) */
+const VARIANT_TEMPO = 70; /* the alternative's tempo in percent: practice/variant.js TEMPO_PERCENT, the lesson's usual first step */
+let _variantPromise = null;
+/* practice/variant.js, with the modules it reads (the score library, the arranger groups: playability and difficulty; the notation checker, which is the OMR flags' too), asked for by the first press of
+   the button (or its panel opening) and never by a page that has the switch off. Resolves true when window.PPPPracticeVariant is there; never rejects; a failed download is asked for again next time. */
+function loadVariantModule() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return Promise.resolve(false);
+  if (window.PPPPracticeVariant) return Promise.resolve(true);
+  if (_variantPromise) return _variantPromise;
+  const add = src => new Promise(resolve => {
+    try {
+      const el = document.createElement('script');
+      el.src = src;
+      el.onload = () => resolve(true);
+      el.onerror = () => resolve(false);
+      document.head.appendChild(el);
+    } catch (e) { resolve(false); }
+  });
+  _variantPromise = (async () => {
+    if (!(await loadScoreModules())) return false;
+    if (!(window.PPPScoreGraphModules && window.PPPScoreGraphModules.notationCheck) && !(await add('./scoregraph/tools/notation-check.js?v=1'))) return false;
+    return (await add('./' + VARIANT_SCRIPT + '?v=' + VARIANT_FILE_V)) && !!window.PPPPracticeVariant;
+  })().catch(() => false).then(ok => { _variantPromise = null; return ok; });
+  return _variantPromise;
+}
+/* The level one step below the piece's own G6 stage (the benchmark's rule, tests/practice-variant/variant-bench.js stageLevel: beginner for stages 1-2, intermediate for 3 and up), or the lowest
+   one when the person asked for the easiest. */
+function variantLevelOf(graph, weights, choice) {
+  if (choice === 'easiest') return 'beginner';
+  let stage = 2;
+  try {
+    const a = window.PPPDifficulty && weights ? window.PPPDifficulty.assess(graph, weights) : null;
+    if (a && a.level && +a.level.stage > 0) stage = +a.level.stage;
+  } catch (e) { /* a graph G6 cannot read: the middle stage */ }
+  return stage >= 3 ? 'intermediate' : 'beginner';
+}
+/* The copy's song id: a function of the request alone (the original's id and music hash, the bars as indexes, the level asked for), so the same request is the same song. 'song-v' + 14 hex of
+   FNV-1a 64 over the request text (the id grammar of a song is the backup's: letters, digits, _ . : -, 80 at most). */
+function variantIdOf(parentId, hash, from, to, levelChoice) {
+  const Z = window.PPPScoreGraphModules && window.PPPScoreGraphModules.serialize;
+  const text = ['ppp.g11c1', parentId, hash, from, to, levelChoice === 'easiest' ? 'easiest' : 'one'].join('|');
+  return 'song-v' + (Z && Z.fnv1a64 ? Z.fnv1a64(Z.utf8(text)) : String(text.length)).slice(0, 14);
+}
+/* what a passage holds, for the preview: its notes per hand, the most notes one hand strikes at once, and `top` (the highest note at every attack, by the attack's place in thousandths of a quarter:
+   the tune, which the arrangers keep verbatim - a copy keeps it when every attack the original had still has the same highest note) */
+function variantBarsStats(score, i0, i1) {
+  const ms = score.measures, a = ms[i0].startQ, b = ms[i1].startQ + ms[i1].lenQ;
+  const out = { notes: 0, r: 0, l: 0, maxR: 0, maxL: 0, top: {} };
+  const at = { r: new Map(), l: new Map() }, top = new Map();
+  (score.notes || []).forEach(n => {
+    if (n.rest || n.midi == null || n.abs < a - 1e-6 || n.abs >= b - 1e-6) return;
+    const h = n.hand === 'l' ? 'l' : 'r', k = Math.round(n.abs * 1000);
+    out.notes++; out[h]++;
+    at[h].set(k, (at[h].get(k) || 0) + 1);
+    top.set(k, Math.max(top.has(k) ? top.get(k) : -1, n.midi));
+  });
+  at.r.forEach(c => { if (c > out.maxR) out.maxR = c; });
+  at.l.forEach(c => { if (c > out.maxL) out.maxL = c; });
+  top.forEach((midi, k) => { out.top[k] = midi; });
+  return out;
 }
 /* ============================ G11b-1: typed practice evidence and the run log (PPP.learner) ============================
    docs/GOALS/G11_ADAPTIVE_PRACTICE.md G11-D4, G11-D5, G11-D6, sections 7.5 and 9, phase row G11b-1. PPP.learner = 'legacy' (default) | 'typed'. The semantics are PPP.recording's: a choice is one of those two strings,
@@ -12004,6 +12189,11 @@ window.PPP = {
   set demoRuns(v) { setDemoRunsMode(v); },
   get runLog() { const A = window.PPP && window.PPP.app; return { log: LEARNER_MODE === 'typed' && window.PPPRunLog ? window.PPPRunLog.pageLog(window) : null, laps: A && A._runLogLaps ? A._runLogLaps.slice() : [] }; },
   loadRunLogModule,
+  /* G11c-1 (G11 section 8, decision U7): 'off' (default: the page as it was) | 'on' (the Loop panel's "Make this passage easier": an easier COPY of the bars picked there, as a new song). Any other value is no choice: the
+     default comes back and the remembered choice is forgotten (PPP.recording's rule). A choice is remembered on this device (Settings > Labs); ?variant= in the address is for that visit only. */
+  get variant() { return VARIANT_MODE; },
+  set variant(v) { setVariantMode(v); },
+  loadVariantModule, variantIdOf, variantBarsStats,
   /* G12-1 (G12-D10): 'legacy' (default: the import as it was) | 'v2' (omr/normalize.js keeps what the engine read). Any other value is no choice: the default comes back and the remembered choice is forgotten. Remembered on this device; ?omr= is for that visit only. */
   get omr() { return OMR_MODE; },
   set omr(v) { setOmrMode(v); },
@@ -14135,6 +14325,7 @@ class Component extends DCLogic {
       arrangementLevel: 'intermediate', arrangementStyle: 'balanced',
       arrangementBusy: false, arrangementStatus: '',
       songArrange: null,
+      variantUi: null,   /* G11c-1: the "easier passage" panel of the Loop panel (PPP.variant 'on'); never saved */
       transcriptionMode: 'auto',
       coachPlan: null, coachSource: 'PPP', coachAi: false, coachBusy: false,
       coachIssues: [], coachNote: '', coachTask: 0, coachReps: 0, coachDone: [],
@@ -19094,6 +19285,319 @@ class Component extends DCLogic {
     }
     await this.saveSongArrangement(plan, provider);
   }
+  /* ============================ G11c-1: an easier passage as a separate copy (PPP.variant 'on') ============================
+     The switch, the loader and the pure helpers are with PPP.variant above. The state is `variantUi` (small, never saved: the phase, the choices, the numbers of the preview and the refusal);
+     the heavy parts of a draft (the spliced graph and its Score) stay on this._variantDraft. */
+  /* the bars of the Loop panel, as indexes (G11-D4: the key is the index; numbers repeat and skip) and as the numbers the person sees */
+  variantRange(S) {
+    S = S || this.state;
+    const sc = S.score;
+    const a = sc && Score.measure(sc, S.loopFrom), b = sc && Score.measure(sc, S.loopTo);
+    if (!a || !b) return null;
+    const lo = Math.min(a.index, b.index), hi = Math.max(a.index, b.index);
+    return { from: lo, to: hi, fromNo: sc.measures[lo].number, toNo: sc.measures[hi].number };
+  }
+  variantTitleOf(title, fromNo, toNo) {
+    return fromNo === toNo ? tx('{{title}} · measure {{n}} easier', { title: title, n: fromNo })
+      : tx('{{title}} · measures {{from}}-{{to}} easier', { title: title, from: fromNo, to: toNo });
+  }
+  patchVariantUi(patch) {
+    this.setState(st => st.variantUi ? { variantUi: Object.assign({}, st.variantUi, patch) } : null);
+  }
+  openVariantPanel() {
+    if (VARIANT_MODE !== 'on') return;
+    const r = this.variantRange();
+    if (!r) return;
+    const S = this.state, parentId = S.songId || 'demo', score = S.score;
+    this._variantDraft = null;
+    const seq = this._variantSeq = (this._variantSeq || 0) + 1;
+    this.setState({ variantUi: { songId: parentId, phase: 'choose', level: 'one', hands: 'both', fromNo: r.fromNo, toNo: r.toNo, stage: 0 } });
+    /* the files come while the person chooses; the piece's own stage says whether "as easy as possible" is a different choice from "one step easier" */
+    this.warmSingleModules();
+    loadVariantModule().then(async ok => {
+      if (!ok || seq !== this._variantSeq || !window.PPPEngrave) return;
+      const src = await window.PPPEngrave.app.resolve(score, { key: parentId });
+      const reference = await loadArrangerReference();
+      if (!src || !src.graph || !reference || seq !== this._variantSeq) return;
+      const a = window.PPPDifficulty && window.PPPDifficulty.assess(src.graph, reference.weights);
+      this.patchVariantUi({ stage: a && a.level && +a.level.stage > 0 ? +a.level.stage : 2 });
+      /* the person chose to look at this: the arranger starts on the default level now (its own sliced run, the page stays free), so the press that follows finds it done or half done */
+      this.variantArranged(parentId, window.PPPEngrave.scoreHash(score), src.graph, variantLevelOf(src.graph, reference.weights, 'one'), this.state.importSource || null, score.title);
+    }).catch(() => { /* the choice stays "one step easier" */ });
+  }
+  /* The arranger's answer for this piece at this level, once: the run the panel started ahead of the press and the press itself share it (a run in flight is not started twice; the arranger caches a finished one). */
+  variantArranged(parentId, hash, graph, level, importSource, title) {
+    const key = [parentId, hash, level].join('|');
+    const memo = this._variantArr = this._variantArr || new Map();
+    if (memo.has(key)) return memo.get(key);
+    const p = arrangeSingleNoteWithLeadsheet(graph, withSongLayers({ level: level, style: 'balanced', source: 'local' }, importSource), title, isLeadsheetSong(importSource))
+      .then(r => { if (!r || !r.ok) memo.delete(key); return r; }, e => { memo.delete(key); return { ok: false, reason: 'SINGLE_CRASH', message: e && e.message }; });
+    memo.set(key, p);
+    while (memo.size > 3) memo.delete(memo.keys().next().value);
+    return p;
+  }
+  closeVariantPanel() {
+    this._variantSeq = (this._variantSeq || 0) + 1;   /* a run that is still going is let go of: its answer is not shown */
+    this._variantDraft = null;
+    this.setState({ variantUi: null });
+  }
+  /* "Make easier version": the bars of the loop are arranged one level down (the Song Arranger's arranger on the whole piece: cached by the piece and the level), spliced into the piece by practice/variant.js
+     (verified and judged: a refusal is a reason, never a half result), and the person is shown the before and the after. Nothing is saved here. Never throws. */
+  async makeVariant() {
+    const S0 = this.state, ui = S0.variantUi;
+    if (!ui || ui.phase === 'busy' || VARIANT_MODE !== 'on') return;
+    const r = this.variantRange();
+    if (!r) return;
+    const seq = this._variantSeq = (this._variantSeq || 0) + 1;
+    /* a run is let go of when the panel was closed or asked again, and when its song has been put away while it worked (its panel goes with it: it must not be there when the person comes back) */
+    const live = () => {
+      if (seq !== this._variantSeq || !this.state.variantUi) return false;
+      if ((this.state.songId || 'demo') !== (S0.songId || 'demo')) { this._variantSeq++; this._variantDraft = null; this.setState({ variantUi: null }); return false; }
+      return true;
+    };
+    const patch = p => { if (live()) this.patchVariantUi(p); };
+    const refuse = (reason, extra) => patch({ phase: 'refused', refusal: Object.assign({ reason: reason }, extra || {}) });
+    const parentId = S0.songId || 'demo', score = S0.score, importSource = S0.importSource || null;
+    this._variantDraft = null;
+    patch({ phase: 'busy', fromNo: r.fromNo, toNo: r.toNo, refusal: null, stats: null, long: (score.notes || []).length > 600 });
+    try {
+      if (!(await loadVariantModule())) return refuse('NOT_LOADED');
+      if (!live()) return;
+      const V = window.PPPPracticeVariant, E = window.PPPEngrave;
+      if (!V || !E) return refuse('NOT_LOADED');
+      const hash = E.scoreHash(score);
+      const levelChoice = ui.level === 'easiest' && ui.stage >= 3 ? 'easiest' : 'one';
+      const id = variantIdOf(parentId, hash, r.from, r.to, levelChoice);
+      if (this.libraryRead().songs.some(s => s.id === id)) return patch({ phase: 'exists', copyId: id });
+      const src = await E.app.resolve(score, { key: parentId });
+      const graph = src && src.graph;
+      if (!graph || !graph.timeline || graph.timeline.measures.length !== score.measures.length) return refuse('NO_GRAPH');
+      const reference = await loadArrangerReference();
+      if (!reference) return refuse('NOT_LOADED');
+      if (!live()) return;
+      const level = variantLevelOf(graph, reference.weights, levelChoice);
+      /* the arranger of the Song Arranger, with its own routes: a recording is arranged from its lead sheet first, a printed piece is reduced */
+      const sn = await this.variantArranged(parentId, hash, graph, level, importSource, score.title);
+      if (!live()) return;
+      if (!sn || !sn.ok) return refuse('NO_VARIANT', { why: sn && sn.reason });
+      await singleTick();
+      if (!live()) return;
+      const t0 = Date.now();
+      const res = V.splice(graph, sn.graph, {
+        from: r.from, to: r.to, direction: 'easier', weights: reference.weights, songId: parentId, level: level,
+        profile: sn.report && sn.report.request && sn.report.request.handProfile ? sn.report.request.handProfile : 'large'
+      });
+      const tSplice = Date.now() - t0;
+      if (!res.ok) return refuse(res.reason, { hands: res.alternative ? res.alternative.hands : 'both', why: res.detail });
+      await singleTick();
+      if (!live()) return;
+      const t1 = Date.now();
+      const title = this.variantTitleOf(score.title, r.fromNo, r.toNo);
+      const after = graphToReviewScore(res.graph, title);
+      after.title = title;
+      if (after.measures.length !== score.measures.length) return refuse('NO_GRAPH');
+      engraveRemember(after, res.graph, 'g11c1-variant');
+      const f = res.final;
+      const b0 = variantBarsStats(score, f.from, f.to), a0 = variantBarsStats(after, f.from, f.to);
+      this._variantDraft = { id: id, parentId: parentId, hash: hash, level: level, levelChoice: levelChoice, from: r.from, to: r.to, fromNo: r.fromNo, toNo: r.toNo,
+        final: f, widened: res.widened, after: after, graph: res.graph, title: title, judge: res.judge, parentTitle: score.title, parentComposer: score.composer || '' };
+      patch({
+        phase: 'preview', copyId: id, level: ui.level,
+        stats: { before: b0, after: a0, tuneKept: Object.keys(b0.top).every(k => a0.top[k] === b0.top[k]), fromNo: score.measures[f.from].number, toNo: score.measures[f.to].number, widened: res.widened.left + res.widened.right },
+        ms: tSplice + (Date.now() - t1), parts: { splice: tSplice, score: Date.now() - t1 }   /* the work itself, the pauses between the steps not counted */
+      });
+    } catch (e) {
+      refuse('FAILED', { why: e && e.message });
+    }
+  }
+  /* "Practice this version": the copy is written as a new song (the Song Arranger's way: its own slot, its own card, its own progress), opened on the same bars. The original is not written to except by
+     the ordinary "open another song" (its progress and place are kept, as for any song). */
+  acceptVariant() {
+    const S = this.state, ui = S.variantUi, d = this._variantDraft;
+    if (!ui || ui.phase !== 'preview' || !d || d.parentId !== (S.songId || 'demo') || !d.after) return;
+    const lib = this.libraryRead();
+    if (!lib.songs.some(s => s.id === d.id)) {
+      const arranged = d.after;
+      const source = {
+        arrangement: { engine: 'ppp.g11c1-variant', level: d.level, style: 'balanced', source: 'local', direction: 'easier' },
+        kind: 'arrangement', parentSongId: d.parentId, parentTitle: d.parentTitle,
+        provider: 'PPP easier passage', createdAt: Clock.now(),
+        /* what the copy is a copy of: the original, its music at the time (the same hash, so a changed original is not mistaken for it), the bars asked for as indexes and as numbers, and the bars
+           really changed (the splice widens a seam a hand cannot cross) */
+        variantOf: { songId: d.parentId, hash: d.hash, from: d.from, to: d.to, fromNumber: d.fromNo, toNumber: d.toNo, applied: { from: d.final.from, to: d.final.to }, level: d.level }
+      };
+      /* G13-3 (U9): the copy of a YouTube-derived song is for its owner's practice too */
+      if (this.youtubeDerivedOf(d.parentId)) source.youtubeDerived = true;
+      arranged.source = source;
+      const buildTag = typeof window !== 'undefined' && window.PPP_BUILD ? tx('build {{build}}', { build: window.PPP_BUILD }) : '';
+      arranged.composer = [d.parentComposer, tx('PPP easier passage'), buildTag].filter(Boolean).join(' · ');
+      const slot = {
+        score: packScore(arranged), secs: seedSecs(arranged), history: Learning.empty(), memory: Memory.empty(),
+        loopFrom: Score.snap(arranged, d.fromNo), loopTo: Score.snap(arranged, d.toNo), tempo: S.tempo || arranged.tempo,
+        memLevel: 0, blindRuns: 0, mastered: false,
+        fileName: d.title, fileMeta: tx('Easier passage from My Songs'), importSource: source, importReport: null
+      };
+      try { localStorage.setItem(SONG_KEY + d.id, JSON.stringify(slot)); }
+      catch (e) { this.storageFull(); return; }
+      lib.songs.unshift({
+        id: d.id, title: arranged.title, composer: arranged.composer, kind: 'arrangement',
+        addedAt: Clock.now(), lastAt: null, prog: 0, mem: 0, measures: Score.count(arranged),
+        arrangedFrom: d.parentId, arrangement: source.arrangement, variantOf: { songId: d.parentId, from: d.from, to: d.to }
+      });
+      if (!this.libraryWrite(lib)) {
+        try { localStorage.removeItem(SONG_KEY + d.id); } catch (e) { /* nothing was kept */ }
+        this.storageFull();
+        return;
+      }
+      if (this._thumbs) delete this._thumbs[d.id];
+      engravePersist(d.id, arranged);   /* the graph the copy was made from is kept beside it (once, when the page is idle) */
+      this.say(tx('Saved {{title}} as a new song. The original was not changed.', { title: arranged.title }));
+    }
+    this.openVariantCopy(d.id, ui.hands, d.fromNo, d.toNo);
+  }
+  /* open a copy on its bars, with the hand the person chose; the same call serves "Open it" for a copy that already exists */
+  openVariantCopy(id, hands, fromNo, toNo) {
+    this._variantSeq = (this._variantSeq || 0) + 1;
+    this._variantDraft = null;
+    this.setState({ variantUi: null });
+    this.openSong(id, { stay: true, quiet: true });
+    this.setState(st => {
+      const sc = st.score, a = Score.snap(sc, fromNo), b = Math.max(a, Score.snap(sc, toNo));
+      return { screen: 'player', loop: true, practiceMode: 'practice', loopFrom: a, loopTo: b, beat: Score.startQ(sc, a), hands: hands === 'right' || hands === 'left' ? hands : 'both',
+        seqStep: 0, seqReps: 0, anchor: null, runHit: 0, runTot: 0, wrongNotes: [], playing: false, sidebarOpen: false };
+    });
+  }
+  /* "Practice this passage as written": the original song, on the same bars (by index: the copy has the original's bars one for one) */
+  openVariantOriginal() {
+    const S = this.state, v = S.importSource && S.importSource.variantOf;
+    if (!v || !v.songId) return;
+    if (v.songId !== 'demo' && !this.libraryRead().songs.some(s => s.id === v.songId)) { this.say(tx('The original song is no longer in My Songs.')); return; }
+    this._variantSeq = (this._variantSeq || 0) + 1;
+    this.setState({ variantUi: null });
+    this.openSong(v.songId, { stay: true, quiet: true });
+    this.setState(st => {
+      const sc = st.score, n = sc.measures.length;
+      const i0 = clamp(Math.round(+v.from) || 0, 0, n - 1), i1 = clamp(Math.round(+v.to) || 0, i0, n - 1);
+      const a = sc.measures[i0].number;
+      return { screen: 'player', loop: true, practiceMode: 'practice', loopFrom: a, loopTo: sc.measures[i1].number, beat: Score.startQ(sc, a), hands: 'both',
+        seqStep: 0, seqReps: 0, anchor: null, runHit: 0, runTot: 0, wrongNotes: [], playing: false, sidebarOpen: false };
+    });
+  }
+  /* a one-tap alternative of a refusal: a slower tempo (a percentage of the score's own), one hand alone, or a shorter loop */
+  applyVariantAlternative(a) {
+    const sc = this.state.score;
+    const patch = { variantUi: null };
+    if (a.tempoPct) patch.tempo = clamp(Math.round((sc.tempo || 84) * a.tempoPct / 100), 30, 200);
+    if (a.hands) patch.hands = a.hands;
+    this._variantSeq = (this._variantSeq || 0) + 1;
+    this.setState(patch);
+    if (a.fromNo != null) this.setLoop(a.fromNo, a.toNo);
+    this.say(a.label);
+  }
+  /* the render values of the Loop panel's "easier passage" row and panel; all strings are made here, in the language of now */
+  variantVals(S, tab, sc) {
+    const on = VARIANT_MODE === 'on';
+    const copyOf = S.importSource && S.importSource.variantOf && S.importSource.variantOf.songId ? S.importSource.variantOf : null;
+    const v = S.variantUi, here = !!v && sc === 'player' && v.songId === (S.songId || 'demo');
+    const draft = here ? this._variantDraft : null;
+    const flat = 'padding:8px 13px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;';
+    const pill = on => this.pill(on) + 'font-size:12.5px;padding:7px 12px;';
+    const passage = here ? (v.fromNo === v.toNo ? tx('Measure {{n}}', { n: v.fromNo }) : tx('Measures {{from}}–{{to}}', { from: v.fromNo, to: v.toNo })) : '';
+    const out = {
+      showVariantRow: tab === 'loop' && (on || !!copyOf),
+      showVariantOpen: tab === 'loop' && on,
+      showVariantBack: tab === 'loop' && !!copyOf,
+      variantBtnStyle: flat,
+      variantOpenLabel: tx('Make this passage easier'),
+      variantOpenHint: tx('Makes a separate, easier copy of these bars. The original stays as it is.'),
+      variantOpenPressed: here ? 'true' : 'false',
+      variantOpen: () => (here ? this.closeVariantPanel() : this.openVariantPanel()),
+      variantBackLabel: tx('Practice this passage as written'),
+      variantBackHint: tx('Opens the original song on these bars.'),
+      variantBack: () => this.openVariantOriginal(),
+      showVariantPanel: tab === 'loop' && on && here,
+      variantPhase: here ? v.phase : '',
+      variantTitle: here ? (v.fromNo === v.toNo ? tx('Make measure {{n}} easier', { n: v.fromNo }) : tx('Make measures {{from}}–{{to}} easier', { from: v.fromNo, to: v.toNo })) : '',
+      variantCloseLabel: tx('Close'),
+      variantClose: () => this.closeVariantPanel(),
+      variantChoosing: here && v.phase === 'choose',
+      variantBusy: here && v.phase === 'busy',
+      variantPreview: here && v.phase === 'preview' && !!draft,
+      variantRefused: here && v.phase === 'refused',
+      variantExists: here && v.phase === 'exists',
+      variantHasLevels: here && v.stage >= 3,
+      variantLevelLabel: tx('How much easier'),
+      variantLevelTabs: [['one', tx('One step easier')], ['easiest', tx('As easy as possible')]].map(([id, label]) => ({
+        label: label, id: id, selected: here && v.level === id ? 'true' : 'false', style: pill(here && v.level === id), on: () => this.patchVariantUi({ level: id })
+      })),
+      variantHandsLabel: tx('Hand to practice'),
+      variantHandTabs: [[tx('Both Hands'), 'both'], [tx('Right'), 'right'], [tx('Left'), 'left']].map(([label, id]) => ({
+        label: label, id: id, selected: here && v.hands === id ? 'true' : 'false', style: pill(here && v.hands === id), on: () => this.patchVariantUi({ hands: id })
+      })),
+      variantMakeLabel: tx('Make an easier version'),
+      variantMake: () => this.makeVariant(),
+      variantPrimaryStyle: 'padding:9px 16px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;',
+      variantBusyText: here && v.long ? tx('Making an easier version of a long piece… this can take up to a minute. You can close this and keep practicing.') : tx('Making an easier version… this can take a few seconds.'),
+      variantCancelLabel: tx('Cancel'),
+      variantExistsText: tx('You already made this easier version.'),
+      variantExistsOpenLabel: tx('Open it'),
+      variantExistsOpen: () => this.openVariantCopy(v.copyId, v.hands, v.fromNo, v.toNo),
+      variantPassage: passage
+    };
+    if (here && v.phase === 'preview' && draft) {
+      const st = v.stats, b = st.before, a = st.after;
+      const lines = [];
+      lines.push(tx('Notes in these bars: {{before}} → {{after}}', { before: b.notes, after: a.notes }));
+      if (b.r !== a.r) lines.push(tx('Right hand: {{before}} → {{after}} notes', { before: b.r, after: a.r }));
+      if (b.l !== a.l) lines.push(tx('Left hand: {{before}} → {{after}} notes', { before: b.l, after: a.l }));
+      if (b.maxL > 1 && a.maxL === 1) lines.push(tx('The left hand plays one note at a time.'));
+      if (b.maxR > 1 && a.maxR === 1) lines.push(tx('The right hand plays one note at a time.'));
+      if (st.tuneKept) lines.push(tx('The tune stays as written.'));
+      if (st.widened > 0) lines.push(tx('Measures {{from}}–{{to}} were changed so that the hands connect smoothly.', { from: st.fromNo, to: st.toNo }));
+      const f = draft.final, n = f.to - f.from + 1, show = Math.min(4, n);
+      const pv = score => this.sv({ score: score, staves: score.staves, startM: score.measures[f.from].number, count: show, mW: 190, numbers: true, guidance: false, fluid: true, grand: score.staves > 1 });
+      Object.assign(out, {
+        variantLines: lines.map(t => ({ text: t })),
+        variantBeforeLabel: tx('Original'), variantAfterLabel: tx('Easier version'),
+        variantBeforeStaff: pv(S.score), variantAfterStaff: pv(draft.after),
+        variantMore: n > show ? tx('Showing the first {{n}} measures.', { n: show }) : '',
+        variantHasMore: n > show,
+        variantAcceptLabel: tx('Practice this version'),
+        variantAccept: () => this.acceptVariant()
+      });
+    }
+    if (here && v.phase === 'refused' && v.refusal) {
+      const rf = v.refusal, pct = VARIANT_TEMPO;
+      const tempoOf = h => (h === 'left' ? tx('Left hand at {{pct}}% tempo', { pct: pct }) : h === 'right' ? tx('Right hand at {{pct}}% tempo', { pct: pct }) : tx('Both hands at {{pct}}% tempo', { pct: pct }));
+      const reason = rf.reason;
+      const text = reason === 'VARIANT_IDENTICAL' ? tx('This passage is already easy enough. Try it at {{pct}}% tempo?', { pct: pct })
+        : reason === 'VARIANT_NOT_EASIER' ? tx('PPP could not make this passage any easier.')
+          : reason === 'NO_VARIANT' || reason === 'NO_GRAPH' ? tx('PPP could not make an easier version of this piece.')
+            : reason === 'VARIANT_STAVES' ? tx('This piece is written on one staff, so PPP cannot make an easier version of just a passage.')
+            : reason === 'NOT_LOADED' || reason === 'FAILED' ? tx('The easier version could not be made. Check your connection and try again.')
+              : tx('An easier version of this passage would not fit with the rest of the piece.');
+      const alts = [];
+      if (reason !== 'NOT_LOADED' && reason !== 'FAILED') {
+        const hand = rf.hands === 'LH' ? 'left' : rf.hands === 'RH' ? 'right' : null;
+        alts.push({ id: 'tempo', label: tempoOf('both'), on: () => this.applyVariantAlternative({ tempoPct: pct, hands: 'both', label: tempoOf('both') }) });
+        if (hand) alts.push({ id: 'hand', label: tempoOf(hand), on: () => this.applyVariantAlternative({ tempoPct: pct, hands: hand, label: tempoOf(hand) }) });
+        const r = this.variantRange();
+        if (r && r.to > r.from) {
+          const half = Math.max(r.from, r.from + Math.ceil((r.to - r.from + 1) / 2) - 1), sc2 = S.score;
+          const a = sc2.measures[r.from].number, b = sc2.measures[half].number;
+          const label2 = a === b ? tx('Loop only measure {{n}}', { n: a }) : tx('Loop only measures {{from}}–{{to}}', { from: a, to: b });
+          alts.push({ id: 'short', label: label2, on: () => this.applyVariantAlternative({ fromNo: a, toNo: b, label: label2 }) });
+        }
+      }
+      Object.assign(out, {
+        variantRefusalText: text, variantRefusalReason: reason,
+        variantHasAlts: alts.length > 0, variantAltLabel: tx('Instead you could try:'),
+        variantAlts: alts.map(x => ({ id: x.id, label: x.label, on: x.on }))
+      });
+    }
+    return out;
+  }
+
   /* Removing asks twice; the sample cannot be removed. */
   askRemoveSong(id) {
     if (this.state.armedRemove === id) return this.removeSong(id);
@@ -21372,20 +21876,25 @@ class Component extends DCLogic {
       { title: 'Account', sub: 'Notifications and appearance', rows: [
         { key: 'notify', label: 'Daily practice reminder', sub: 'One nudge, 7:30pm' },
         { key: 'theme', label: 'Dark mode', sub: 'Easier at the piano in the evening' },
-        { key: 'paper', label: 'Keep the score on paper', sub: 'Off, the notation follows the dark theme instead' }] }
+        { key: 'paper', label: 'Keep the score on paper', sub: 'Off, the notation follows the dark theme instead' }] },
+      /* G11c-1: the switch of PPP.variant, for the person who wants to try it (?variant=on does the same for one visit) */
+      { title: 'Labs', sub: 'Features still being tried out', rows: [
+        { key: 'variant', label: 'Make a passage easier', sub: 'Adds "Make this passage easier" to Loop a passage: a separate, easier copy of the bars you picked.' }] }
     ].map(g => ({
       title: tx(g.title), sub: tx(g.sub),
       rows: g.rows.map(r => {
-        const on = r.key === 'theme' ? S.theme === 'dark'
+        const on = r.key === 'variant' ? VARIANT_MODE === 'on'
+          : r.key === 'theme' ? S.theme === 'dark'
           : r.key === 'guidance' ? S.guidance
             : r.key === 'midi' ? this.liveMidi()
               : r.key === 'midiOut' ? this.midiOutLive()
               : !!S.toggles[r.key];
         return {
-          label: tx(r.label), sub: (r.key === 'midi' || r.key === 'midiOut') ? r.sub : tx(r.sub),
+          key: r.key, label: tx(r.label), sub: (r.key === 'midi' || r.key === 'midiOut') ? r.sub : tx(r.sub),
           trackStyle: `width:42px;height:24px;border-radius:999px;border:0;cursor:pointer;padding:3px;display:flex;justify-content:${on ? 'flex-end' : 'flex-start'};background:${on ? 'var(--accent)' : 'var(--surface2)'};transition:background .2s ease;`,
           knobStyle: 'width:18px;height:18px;border-radius:999px;background:#fff;display:block;box-shadow:0 1px 3px rgba(0,0,0,.25);',
-          on: r.key === 'theme' ? () => this.setState(st => ({ theme: st.theme === 'dark' ? 'light' : 'dark' }))
+          on: r.key === 'variant' ? () => { setVariantMode(VARIANT_MODE === 'on' ? 'off' : 'on'); this.setState({ variantUi: null }); }
+            : r.key === 'theme' ? () => this.setState(st => ({ theme: st.theme === 'dark' ? 'light' : 'dark' }))
             : r.key === 'guidance' ? () => this.setState(st => ({ guidance: !st.guidance }))
               : r.key === 'midi' ? () => this.toggleMidi()
                 : r.key === 'midiOut' ? () => { if (this.midiOutLive()) this.disconnectMidiOut(); else this.connectMidiOut(); }
@@ -22593,7 +23102,7 @@ class Component extends DCLogic {
       stateTabs: ['Loading', 'Error', 'Offline'].map(label => ({ label: tx(label), style: this.pill(S.stateTab === label), on: () => this.setState({ stateTab: label }) })),
       stateLoading: S.stateTab === 'Loading', stateError: S.stateTab === 'Error', stateOffline: S.stateTab === 'Offline',
       skeletons: [1, 2, 3]
-    }, sc === 'shared' ? this.sharedVals() : null, sc === 'learn' ? this.learnVals() : null, sc === 'course' ? this.courseVals() : null, sc === 'settings' ? this.backupVals() : null, this.tabVals(), this.shareDialogVals());
+    }, sc === 'shared' ? this.sharedVals() : null, sc === 'learn' ? this.learnVals() : null, sc === 'course' ? this.courseVals() : null, sc === 'settings' ? this.backupVals() : null, this.tabVals(), this.shareDialogVals(), this.variantVals(S, tab, sc));
   }
 
   /* ============================ piano basics ============================

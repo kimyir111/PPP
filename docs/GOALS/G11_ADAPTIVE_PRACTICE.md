@@ -25,6 +25,8 @@ recording lead sheet as generators and a new, verified measure-aligned splice.
 
 **G11c-0 is built** (2026-10-08): `practice/variant.js` and its benchmark; the record, with the table of what the splice accepts and refuses on the 325 pieces and the covers, is §10.2.
 
+**G11c-1 is built** (2026-10-16): "이 구간 쉽게 만들기 / 원래대로" in the Loop panel behind `PPP.variant` (`'off'` default; `?variant=on`, Settings > Labs): an easier passage as a separate copy (U7), the preview, the refusals with their one-tap alternatives, `source.variantOf`, the way back; through the page 50.9 % of 3,250 catalogue requests make an easier version, the rest are refused with a reason; the record, the numbers and the limits are §10.7.
+
 **G11a-2 is built** (2026-10-08): the event-parity harness `tests/practice/parity.js` (+ `parity-core.js`, `parity-mutants.js`, 12 new fixtures); compat mode equals the legacy player on all 418 files and every fix difference is booked to its cause; the record, the counts per cause against the expectations of the design and the five (and twenty) mutants are §10.3.
 
 **G11a-3 is built** (2026-10-08): `PPP.practice` (`'legacy'` default | `'graph'`) and `practicePlan()` at the nine call sites; the graph plan runs in compat mode, so `'graph'` is the legacy player to the bit (scheduler queue, matcher, falling notes, follow gates), counted fallbacks 0 on the 325 catalogue files and 93 fixtures; all eleven practice suites pass on both players; the record, the call sites and the numbers are §10.4.
@@ -425,7 +427,7 @@ light one (review-depth rule).
 | **G11b-4** | **H-11** (§10.1) + the go/no-go | user ~1 week | – | user | b3 (+a3 optional) | §10.1 | stay on legacy |
 | **G11b-5** | Default flip of `PPP.learner` | yes (default) | – | 0.5 | b4, user's word | live check | default back |
 | **G11c-0** | `practice/variant.js` splice + benchmark (§8.2) | no (Node) | Sonnet | 2 | – | verification failures 0; refusals reported by reason; identical rate measured (expected high, E14) | revert |
-| **G11c-1** | "이 구간 쉽게 만들기 / 원래대로" in the Loop panel, copy creation, refusals with alternatives, `PPP.variant` | **yes** | Sonnet | 2 + review | c0, U7 | the teacher's flow reproduced in a production-like page (open a piece → loop 17-20 → easier → copy opens on those bars → practise → back); no main-thread block > 50 ms beyond the arranger's existing sliced run | `PPP.variant='off'` |
+| **G11c-1** | "이 구간 쉽게 만들기 / 원래대로" in the Loop panel, copy creation, refusals with alternatives, `PPP.variant` | **yes** | Sonnet | 2 + review | c0, U7 (decided: a copy, 2026-10-16) | the teacher's flow reproduced in a production-like page (open a piece → loop 17-20 → easier → copy opens on those bars → practise → back); no main-thread block > 50 ms beyond the arranger's existing sliced run | `PPP.variant='off'` |
 | **G11c-2** | The policy's stuck suggestion (§7.3 item 6) offers the variant | yes | Sonnet | 1 + review | b3, c1 | suggestion only after the stuck rule; never automatic | switch |
 | **G11-S** (optional) | Login-free sync of the run log (§7.5) | **yes + server** | Sonnet | 2 + review | b1, U5 | merge by run id, rate limits, deletion | endpoint off |
 
@@ -755,6 +757,75 @@ flicked past (F3, fixed: item 5, W48); a first run of a D.C. piece without its j
 user to decide if it ever matters: the first run in the window lacks grace notes silently (F2: a grace cannot be told from the Score, the legacy Score drops it), and Follow's gate list changes once (F4).
 
 **Rollback** (§13): the default back to `'legacy'` is the constant; legacy is kept with its tests for one release.
+
+### 10.7 G11c-1 record (2026-10-16, Sonnet; branch `g11c-1-variant`)
+
+"이 구간 쉽게 만들기 / 원래대로": an easier passage as a **separate copy** (U7, the Lead's recommendation applied under the user's blanket go-ahead), behind `PPP.variant`.
+
+**The switch.** `PPP.variant = 'off'` (default) | `'on'`, PPP.recording's idiom: `?variant=on` for a visit, the remembered `ppp.variant.v1`, Settings > Labs ("구간 쉽게 만들기", the one row of a new "Labs" group), a value that is no
+choice is `'off'`. `'off'` is the page as it was: no button, no row, no request for `practice/variant.js` or the notation checker, `openVariantPanel`/`makeVariant` do nothing (`tests/variant-app.test.js`, section `switch`).
+The way back from a copy ("이 구간 원래대로 연습하기") is shown on a copy whatever the switch says (a dead end otherwise).
+
+**The flow** (`Piano Coach App.dc.html`, block "G11c-1" at `PPP.variant`, the methods before `askRemoveSong`, the row and panel under the section chips of the Loop panel):
+
+1. Loop panel, tab "구간 반복": the button under the bar strip opens a panel on the bars of the loop. It asks for the files at once (`loadVariantModule()`: the score and arranger groups, the notation checker the OMR flags use,
+   `practice/variant.js?v=VARIANT_FILE_V`; none of it is in the head) and works out the piece's G6 stage. A piece of stage 3 or more offers "한 단계 쉽게" / "가장 쉽게" (one step below the stage, as the G11c-0 benchmark
+   chose, or beginner); a piece of stage 1-2 has one level. The hand is the hand **practised on the copy** (양손/오른손/왼손): `splice` has no per-hand request, so "easier for the left hand only" is not offered.
+2. "쉬운 버전 만들기": the busy state; the arranger of the Song Arranger (`arrangeSingleNoteWithLeadsheet`: a recording from its lead sheet, a printed piece by the reduction, the same retries) arranges the **whole**
+   piece one level down (cached; started when the panel opened, so the press often finds it done: `variantArranged` shares a run in flight), `practice/variant.js` splices the bars, the result is made a Score
+   (`graphToReviewScore`). Nothing is written.
+3. The preview: the bars before and after, drawn by the page's own renderer (the first 4 bars when the passage is longer), the notes before and after, per hand where they differ, "one note at a time" where a hand now plays
+   single notes, "멜로디는 그대로예요" only when every attack of the original keeps its highest note (`tuneKept`: half of the accepted windows on the catalogue say it, the rest changed a melody note: the sentence is
+   not made when it is not so), and the bars the splice widened for a seam a hand cannot cross.
+4. "이 버전으로 연습하기": a new song in My Songs, `"<곡명> · 3-6마디 쉽게"` (ko/ja/zh/en), its own slot, history and memory, `source = {kind: 'arrangement', parentSongId, arrangement: {engine: 'ppp.g11c1-variant', level,
+   direction}, variantOf: {songId, hash, from, to, fromNumber, toNumber, applied: {from, to}, level}, youtubeDerived?}`, composer line "<작곡가> · PPP 쉬운 구간 · build <sha>"; the graph the copy was made from is
+   persisted beside it (`engravePersist`). It opens on the practice page, looping the bars asked for, with the hand chosen. `kind: 'arrangement'` is what keeps it out of the recording-only controls and in the
+   backup, sync and sharing paths of any copy; `youtubeDerived` is copied from the original (`youtubeDerivedOf`), so the mark survives the original's removal.
+5. "이 구간 원래대로 연습하기" opens `variantOf.songId` on `variantOf.from..to` (indexes: the copy has the original's bars one for one).
+
+**Determinism.** The copy's id is `'song-v' + fnv1a64('ppp.g11c1|parentId|music hash|from|to|level choice')[0:14]` (`PPP.variantIdOf`): the same request is the same song. Asking again for the same bars says "이미 만들어 둔 쉬운
+버전이 있어요" and opens that copy (`phase: 'exists'`: no second arranger run, no second card); other bars, another level or another original are another id. The music hash of the copy is a function of the splice, which is
+deterministic: two fresh browser contexts give the same hash and the same notes. (The id depends on the original's own song id, which is a clock-and-random name on each device: the same piece added on two devices is two
+originals.)
+
+**Refusals are the other half of the feature.** Every `VARIANT_*` reason has an English sentence in the four catalogs (the module's Korean `message` is not shown): identical -> "이미 충분히 쉬워요. 70% 빠르기로 연습해
+볼까요?"; not easier; no variant (the arranger refused the piece: `NO_VARIANT`); one staff (`VARIANT_STAVES`: the arrangement has two); anything else "앞뒤와 자연스럽게 이어지지 않아요". The one-tap alternatives are the
+module's: both hands at 70 % of the score's tempo, the harder hand alone at 70 % (when one hand carries the passage), and "the first half of the loop". Nothing is saved on a refusal.
+
+**What the page says on the catalogue** (`tests/practice-variant/variant-app-bench.js`: the 325 pieces, 10 seeded 4-bar windows each, 3,250 requests, each through `PPP.app.makeVariant` in a real page, CPU 1x, four pages at once):
+
+| tier | pieces | windows | easier version | identical | not easier | no variant (arranger refused) | other |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| hymns | 100 | 1,000 | **835 (83.5 %)** | 0 | 125 (12.5 %) | 40 (4.0 %) | 0 |
+| method books | 222 | 2,220 | 798 (35.9 %) | **860 (38.7 %)** | 439 (19.8 %) | 100 (4.5 %) | 23 (1.0 %: one staff 20, seam 2, notation 1) |
+| other pieces | 3 | 30 | 20 (66.7 %) | 10 (33.3 %) | 0 | 0 | 0 |
+| **all** | 325 | 3,250 | **1,653 (50.9 %)** | 870 (26.8 %) | 564 (17.4 %) | 140 (4.3 %) | 23 (0.7 %) |
+
+It is the G11c-0 table (52.2 % / 25.5 % / 17.3 % / 4.4 %) again, through the page: the page's glue adds no refusal of its own, and 0 requests ended in an error. A person who asks on a method-book piece is refused
+more often than not (58 %), which is why the refusal and its three one-tap alternatives are drawn as carefully as the preview. In 807 of the 1,653 accepted windows the tune was not all kept (the sentence is
+withheld there).
+
+**Time.** The work the page does itself (splice, Score, preview; the pauses between the steps not counted): median 11 ms, p95 47 ms, max 182 ms at CPU 1x over the 1,653 accepted windows; at CPU 4x, 16 bars of a
+20-bar hymn 175 ms (limit 300 ms), another passage of the same piece (the arranger's answer cached) 51-61 ms and 264-281 ms from the press to the preview. The arranger is the Song Arranger's own sliced run on the whole
+piece: it is the wait. Press to preview with the arranger run included, CPU 1x, median 38 ms (a cached run; the panel starts the arranger when it opens), p95 606 ms, max 10.7 s (the 1,776-note Sonatina 020); CPU 4x, cold:
+a 20-bar hymn 3.1 s, the 1,776-note piece **55 s**, which is why a piece of more than 600 notes says "up to a minute" and the panel can be closed (the run is let go of, its result cached). **Limit:** `splice` is one
+synchronous call, 8-10 ms on a hymn but 110-180 ms at 1x and **390 ms (+ 220 ms for the Score) at CPU 4x** on the largest pieces (1,500+ notes): a block over the 50 ms line, over the 300 ms line only there. Slicing
+it (or a worker) is the next step if the user's phone shows it; the arranger runs in slices as it always did.
+
+**Tests.** `tests/variant-app.test.js` (the 13th browser suite of `tests/practice/run-suites.js`, `npm run test:variant-app`; 107 checks, 7-8 minutes in CI on each player; ko/ja/zh checked in the page): sections `switch`, `flow`
+(the teacher's flow end to end with a fake keyboard: the original practised first, the copy practised, back), `determ`, `refusal` (one piece for each reason, the alternatives applied), `levels`, `sharing`
+(YouTube, backup), `i18n`, `budget` (CPU 4x, scaled by the machine's calibration like `learner-log`), `offline` (no `/api/`, no helper, no model; every file once), `busy`. `tests/practice/variant-mutants.js` (21 rows, the
+`practice-variant-mutants` job, three shards; each row is killed locally, and V3, aimed first at the slot, was an equivalent mutant: putting the open original away writes it back): the splice asked for one bar too many or too few, the original written over by the copy, the copy swapped in place, a refusal ignored, the YouTube mark not copied, the
+default on, the button shown while off, the progress shared, the way back and the copy opening on other bars, the hand ignored, no "already there", no alternatives, a wrong tempo, an id from the clock, no busy
+state, the levels, a false "the tune stays". `tests/practice-variant/variant-file-version.test.js` pins the bytes of `practice/variant.js` to `VARIANT_FILE_V` (as `plan-version.test.js` does for plan.js). `static-allow`
+serves `practice/variant.js` (and only it of the module's tests/tools).
+
+**Not done / limits.** (1) No per-hand simplification (the hand choice is the hand practised). (2) The arranger works on the whole piece: a passage of a long piece pays for all of it the first time (cached per piece
+and level, six pieces). (3) `splice` is not sliced (above). (4) A recording is arranged by the same routes as the Song Arranger (lead sheet, then the reduction); this suite exercises printed pieces (G11c-0 measured the
+covers in Node). (5) The copy's id depends on the original's local song id, so two devices that each added the same piece make two copies. (6) `PPP.variant` stays `'off'` until the user's H-11 / own check; the
+flip is a later phase. (7) A copy of a copy is allowed (its bars are one for one with the original's, `variantOf` points at the copy it was made from).
+
+**Rollback.** `PPP.variant = 'off'` (the constant `VARIANT_DEFAULT`); copies already made stay in My Songs as ordinary arrangements.
 
 ## 11. Performance budgets
 
