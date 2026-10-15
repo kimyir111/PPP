@@ -44,6 +44,8 @@ const RULES = [
   /^(?:rec|difficulty)\/weights\/[\w.-]+\.json$/,
   /* G12-1, G12-2: the OMR normaliser and the PdfLayer findings as graph edits, fetched by the page when PPP.omr = 'v2' needs them. Only these two files of omr/: omr/helper-output.js is the local helper's (Node only) */
   /^omr\/(?:normalize|apply)\.js$/,
+  /* G12-4: the bar editor of a 'v2' import: the graph ops, the session, the sheet (fetched when a review of a page opens or a bar of it is tapped; nothing else of omr/) */
+  /^omr\/(?:edit-ops|editor|editor-ui)\.js$/,
   /* G12-3: which bars of a 'v2' import are suspect (omr/flags.js), and the one tool file it reads (the notation checker, scoregraph/tools/notation-check.js: classes 5-8 are signals).
      Only these two: the rest of scoregraph/tools/ (ledger-stats.js) is a corpus tool */
   /^omr\/flags\.js$/,

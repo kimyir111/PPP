@@ -3051,6 +3051,9 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
             <sc-if value="{{ hasReviewAdvice }}" hint-placeholder-val="{{ true }}">
               <p style="margin: 10px 0 0; font-size: 14px; color: var(--warn); font-weight: 500;">{{ reviewAdvice }}</p>
             </sc-if>
+            <sc-if value="{{ showOmrDraft }}" hint-placeholder-val="{{ false }}">
+              <p data-omr-draft style="margin: 10px 0 0; font-size: 14px; color: var(--warn); font-weight: 600;">{{ omrDraftText }}</p>
+            </sc-if>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 1px; margin-top: 22px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--line);">
               <sc-for list="{{ reviewStats }}" as="rs" hint-placeholder-count="6">
                 <div data-review-stat="{{ rs.k }}" style="background: var(--bg); padding: 14px;">
@@ -3176,6 +3179,9 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
             </sc-if>
             <div style="display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap;">
               <button onClick="{{ acceptOn }}" style="padding: 12px 20px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;" style-hover="filter: brightness(1.08);">Accept and practise</button>
+              <sc-if value="{{ showOmrEdit }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ omrEditOn }}" data-omr-edit style="padding: 12px 20px; min-height: 44px; border-radius: 11px; border: 1px solid var(--accent); background: var(--bg); color: var(--accent); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">{{ omrEditLabel }}</button>
+              </sc-if>
               <button onClick="{{ retryOn }}" style="padding: 12px 20px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 14px; cursor: pointer;" style-hover="border-color: var(--ink3);">Try again</button>
               <button onClick="{{ replaceOn }}" style="padding: 12px 20px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 14px; cursor: pointer;" style-hover="border-color: var(--ink3);">{{ replaceLabel }}</button>
             </div>
@@ -6283,6 +6289,34 @@ function loadOmrFlags() {
   })().then(m => { if (!m) _omrFlagsPromise = null; return m; });
   return _omrFlagsPromise;
 }
+/* G12-4 (docs/GOALS/G12_OMR.md section 9): the bar editor of a 'v2' import - omr/edit-ops.js (the graph ops), omr/editor.js (the session: undo, redo, the checks) and omr/editor-ui.js (the
+   sheet) - with omr/flags.js and the notation checker it re-checks the bars with. Fetched when a review of a page opens (warmOmrEditor, in idle time) or a bar is tapped; never by a page
+   that does not import a scan or a photo, and never under PPP.omr = 'legacy'. Resolves true when all of it is in, null when something could not be fetched (the next ask tries again). */
+let _omrEditorPromise = null;
+/* what the sheet engraves one bar with: the engraver's own plan, layout and SVG functions (PPPEngraveModules, which engravePage fills; PPPEngrave.layout is null in a page that loaded the library first) */
+function omrEngraveApi() {
+  const M = window.PPPEngraveModules || {};
+  return M.plan && M.layout && M.svg ? { plan: M.plan.plan, layout: M.layout, svg: M.svg.svg } : null;
+}
+function loadOmrEditor() {
+  if (window.PPPOmrEditorUI && window.PPPOmrEditor && window.PPPOmrFlags) return Promise.resolve(true);
+  if (_omrEditorPromise) return _omrEditorPromise;
+  const add = src => new Promise(resolve => {
+    const el = document.createElement('script');
+    el.src = src;
+    el.async = false;
+    el.onload = () => resolve(true);
+    el.onerror = () => resolve(false);
+    document.head.appendChild(el);
+  });
+  _omrEditorPromise = (async () => {
+    await needScoreGraph();
+    if (!(await loadOmrFlags())) return null;
+    for (const f of ['edit-ops', 'editor', 'editor-ui']) if (!(await add('./omr/' + f + '.js?v=1'))) return null;
+    return window.PPPOmrEditorUI && window.PPPOmrEditor ? true : null;
+  })().then(ok => { if (!ok) _omrEditorPromise = null; return ok; }, () => { _omrEditorPromise = null; return null; });
+  return _omrEditorPromise;
+}
 /* ============================ G12-5: the PC path of a v2 import (docs/GOALS/G12_OMR.md section 24) ============================
    Under PPP.omr = 'v2', on a device that holds a PC link (the same link as the YouTube conversion: PcLink, X-PPP-PC), a PDF or a photo that no local helper reads is sent to the PERSON'S OWN PC: the
    pages go up to the site (POST /api/jobs/omr), wait there until the PC's worker asks for them, Audiveris reads them there, and the MusicXML of each page comes back through the same queue
@@ -8673,7 +8707,7 @@ const Import = {
       if (!systems) {
         try { layer = PdfLayer.fromCanvas(canvas, pdfVp.width, pdfVp.height) || layer; } catch (e) {}
       }
-      pages.push({ dataUrl: canvas.toDataURL('image/png'), width: canvas.width, height: canvas.height, layer: layer });
+      pages.push({ dataUrl: canvas.toDataURL('image/png'), width: canvas.width, height: canvas.height, layer: layer, pdfW: pdfVp.width, pdfH: pdfVp.height });
     }
     return pages;
   },
@@ -8694,7 +8728,7 @@ const Import = {
           ctx.drawImage(img, 0, 0);
           let layer = null;
           try { layer = PdfLayer.fromCanvas(c, c.width, c.height); } catch (e) {}
-          resolve([{ dataUrl: c.toDataURL('image/png'), width: c.width, height: c.height, layer: layer }]);
+          resolve([{ dataUrl: c.toDataURL('image/png'), width: c.width, height: c.height, layer: layer, pdfW: c.width, pdfH: c.height }]);
         };
         img.onerror = () => reject(importError('bad-image', tx('That image could not be opened.')));
         img.src = fr.result;
@@ -8958,6 +8992,22 @@ const Import = {
       if (res.bars.length !== measures.length) { report.flagsFailed = 'bars-differ'; return; }
       FL.mergeIntoReport(report, res, { numbers: measures.map(m => m.number), notes: (score.notes || []).filter(n => !n.rest).length, partial: FL.hasChecker ? null : 'no-notation-checker' }, tx);
     } catch (e) { report.flagsFailed = 'threw: ' + String(e && (e.code || e.message) || e).slice(0, 160); }
+  },
+
+  /* G12-4: where the bars of a page are on its picture (pixels of p.dataUrl), from the page's own lines: per system, top to bottom, {top, bottom, bars: [[x0, x1], ...]}; null when the page has
+     no layer. The sheet of the bar editor crops the page with it when the bars read and the bars found are as many (omrCrop). */
+  pageBars(p) {
+    if (!p || !p.layer || !(p.pdfW > 0) || !(p.pdfH > 0) || !(p.width > 0)) return null;
+    const lay = PdfLayer.layout(p.layer, 2);
+    const kx = p.width / p.pdfW, ky = p.height / p.pdfH;
+    return lay.systems.filter(s => s.staves.length && s.bars.length).map(s => {
+      const t = s.staves[0], b = s.staves[s.staves.length - 1];
+      const pad = 3 * (t.gap || 6);
+      return {
+        top: Math.max(0, (p.pdfH - (t.top + pad)) * ky), bottom: Math.min(p.height, (p.pdfH - (b.bottom - pad)) * ky),
+        bars: s.bars.map(x => [Math.max(0, x.x0 * kx), Math.min(p.width, x.x1 * kx)])
+      };
+    });
   },
 
   /* ---- stitch per-page MusicXML into one document ----
@@ -10396,6 +10446,7 @@ const Import = {
       } catch (e) { /* the first pass stands as it is */ }
     }
 
+    if (OMR_MODE === 'v2') pages.forEach(p => { try { p.bars = Import.pageBars(p); } catch (e) { p.bars = null; } });   /* G12-4: where each bar is on the picture, for the editor's crop (the layer itself is let go below) */
     if (kind === 'pdf') pages.forEach(p => { delete p.layer; });
 
     if (source.engine === 'pdf') {
@@ -14376,6 +14427,12 @@ class Component extends DCLogic {
       /* what others have shared changes while you are away from it */
       if (this.state.screen === 'shared') this.loadShared(!!this.state.sharedList);
       if (this.state.screen === 'review') this.warmSingleModules();
+      if (this.state.screen !== 'review' && this._omrEd) {                              /* G12-4: the bar editor belongs to the review: the sheet goes, and its steps (a graph each) are let go */
+        this.closeOmrEditor();
+        if (this._omrSaveT) { clearTimeout(this._omrSaveT); this._omrSaveT = null; this.saveNow(); }
+        this._omrEd = null;
+      }
+      if (this.state.screen === 'review' && this.omrEditable(this.state)) this.warmOmrEditor();
       /* the review screen of a PDF or a MusicXML import has no use for v2 (G10a-5b: v2 is the default, so only a recording's review asks for its files) */
       if (this.state.screen === 'upload' || (this.state.screen === 'review' && isRecordingSong(this.state.importSource))) this.warmRecordingModules();
     }
@@ -15644,6 +15701,150 @@ class Component extends DCLogic {
     const rest = ordered.length - out.length;
     if (rest > 0) out.push({ measure: null, kind: 'more', message: tx('{{n}} more measures are marked on the strip above.', { n: rest }) });
     return out;
+  }
+  /* ---- G12-4: the bar editor of a recognised page (docs/GOALS/G12_OMR.md section 9; PPP.omr = 'v2' only) ----
+     The sheet (omr/editor-ui.js) is plain DOM and the session (omr/editor.js) changes the score's GRAPH only, by validated ops (omr/edit-ops.js); this page does three things for it: it gives it the
+     graph the review is on (the one the import made and remembered), makes the Score again from the graph after every step (toScore: what is drawn, played and judged is the graph's, never the
+     other way round) and saves it with the song, and checks the bars again (the validator on the new Score, omr/flags.js on the graph). Nothing here runs under 'legacy'. */
+  omrEditable(S) {
+    S = S || this.state;
+    if (OMR_MODE !== 'v2' || S.screen !== 'review' || this._recording || !S.score) return false;
+    const c = this._omrOk;
+    if (c && c.score === S.score) return c.v;
+    let v = false;
+    try {
+      const E = lazyPeek('PPPEngrave');
+      const r = E && E.app ? E.app.resolveSync(S.score) : null;
+      /* a page (a PDF or a photo) read by an engine has the mark of that in its graph; a draft the browser made of one has the graph of its Score (live, or projected from it): both are for the editor */
+      const page = !!(S.importSource && (S.importSource.kind === 'pdf' || S.importSource.kind === 'image'));
+      v = !!(r && r.graph && r.via !== 'none' && (page || (r.graph.ext && r.graph.ext['ppp.omr'])));
+    } catch (e) { v = false; }
+    this._omrOk = { score: S.score, v: v };
+    return v;
+  }
+  /* the modules, fetched while the person reads the review (idle time), so that the first tap opens the sheet at once */
+  warmOmrEditor() {
+    if (OMR_MODE !== 'v2' || this._omrWarm) return;
+    this._omrWarm = true;
+    const go = () => { loadOmrEditor().then(ok => { if (!ok) this._omrWarm = false; }); this.omrEngrave().catch(() => {}); };
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: 3000 }); else setTimeout(go, 800);
+  }
+  /* the engraver's layout core for the sheet (the one place the editor asks for it) */
+  omrEngrave() { return loadEngrave(); }
+  async openOmrEditor(number) {
+    const S = this.state;
+    const held = this._omrEd;
+    /* a tap on the strip that cannot open the sheet still moves the strip */
+    const follow = () => { if (this.state.reviewFrom !== number) this.setState({ reviewFrom: number }); };
+    if (held && held.ui && !held.ui.closed && held.scoreId === S.score.id) { held.ui.go(number); return; }
+    const ok = await loadOmrEditor();
+    if (!ok) { this.say(tx('The measure editor could not be loaded. Try again in a moment.')); follow(); return; }
+    try { await this.omrEngrave(); } catch (e) { this.say(tx('The measure editor could not be loaded. Try again in a moment.')); follow(); return; }
+    const sc = this.state.score;
+    let src = null;
+    try { src = await window.PPPEngrave.app.resolve(sc, { key: this.state.songId }); } catch (e) { src = null; }
+    const fromPage = !!(this.state.importSource && (this.state.importSource.kind === 'pdf' || this.state.importSource.kind === 'image'));
+    if (!src || !src.graph || src.via === 'none' || !(fromPage || (src.graph.ext && src.graph.ext['ppp.omr']))) {
+      this.say(tx('This score was not read from a page, so its measures cannot be edited here.'));
+      follow();
+      return;
+    }
+    /* one session for this score and this visit: a second tap on a strip, or the sheet closed and opened again, goes on from the steps already made (the Score may have been replaced by
+       the editor's own step, never by anything else while a session of the same score id is held) */
+    let rec = this._omrEd && this._omrEd.scoreId === sc.id && this._omrEd.session.graph === src.graph ? this._omrEd : null;
+    if (!rec) {
+      const session = window.PPPOmrEditor.create(src.graph, { normalize: this.state.importReport && this.state.importReport.normalize });
+      rec = { scoreId: sc.id, session: session, ui: null, playWas: null };
+      this._omrEd = rec;
+    }
+    const self = this;
+    /* the strip follows the sheet, after the sheet is drawn */
+    if (this.state.reviewFrom !== number) setTimeout(() => { if (self.state.reviewFrom !== number) self.setState({ reviewFrom: number }); }, 0);
+    rec.ui = window.PPPOmrEditorUI.open({
+      document: document, window: window, session: rec.session, measure: number,
+      host: {
+        tx: tx, engrave: omrEngraveApi(), flags: window.PPPOmrFlags,
+        hint: this.state.importReport && this.state.importReport.suspectMeasures ? { suspect: this.state.importReport.suspectMeasures, codes: this.state.importReport.flagCodes || {} } : null,
+        onChange: info => self.omrEditorChange(info),
+        onBar: n => { if (self.state.reviewFrom !== n) self.setState({ reviewFrom: n }); },
+        onClose: () => self.omrEditorClosed(),
+        say: m => self.say(m),
+        crop: (index, count) => self.omrCrop(index, count),
+        play: n => self.omrPlayBar(n)
+      }
+    });
+  }
+  closeOmrEditor() {
+    const rec = this._omrEd;
+    if (rec && rec.ui && !rec.ui.closed) rec.ui.close();
+  }
+  omrEditorClosed() {
+    const rec = this._omrEd;
+    if (rec && rec.playWas) {
+      const w = rec.playWas;
+      rec.playWas = null;
+      if (this.state.playing) this.stopTransport();
+      this.setState({ loop: w.loop, loopFrom: w.loopFrom, loopTo: w.loopTo, playing: false });
+    }
+  }
+  /* "Play this measure": a loop of that one bar for as long as the sheet is open */
+  /* the crop of the page for the bar that was the index-th of the import (null unless the bars found on the pages are as many as the import's: the mapping is by order, and a count that
+     differs says that it cannot be trusted - the page image then stays whole) */
+  omrCrop(index, count) {
+    const pages = this.reviewPages();
+    const all = [];
+    pages.forEach((p, pi) => (p.bars || []).forEach(s => s.bars.forEach(b => all.push({ page: pi, top: s.top, bottom: s.bottom, x0: b[0], x1: b[1] }))));
+    const c = all.length && all.length === count ? all[index] : null;
+    if (!c || !(c.x1 - c.x0 > 4) || !(c.bottom - c.top > 4)) return null;
+    const p = pages[c.page];
+    return { url: p.dataUrl, pageW: p.width, pageH: p.height, x: c.x0, y: c.top, w: c.x1 - c.x0, h: c.bottom - c.top, page: c.page + 1 };
+  }
+  omrPlayBar(n) {
+    const S = this.state, rec = this._omrEd;
+    if (!rec) return;
+    if (!rec.playWas) rec.playWas = { loop: S.loop, loopFrom: S.loopFrom, loopTo: S.loopTo };
+    if (S.playing) { this.stopTransport(); this.setState({ playing: false }); }
+    this.setState({ loop: true, loopFrom: n, loopTo: n, beat: Score.startQ(S.score, n) }, () => this.togglePlay());
+  }
+  /* a step of the session (an edit, an undo, a redo, "discard my changes"): the Score again from the graph, the song saved, the bars checked again */
+  omrEditorChange(info) {
+    const rec = this._omrEd;
+    if (!rec || !info || !info.graph) return;
+    /* a step that a newer one has already followed (two taps in one frame): the newer one's call is on its way, and a Score of this graph beside the checks of that one would be a mixture */
+    if (info.graph !== rec.session.graph) return;
+    const S = this.state, old = S.score;
+    let fresh;
+    try {
+      fresh = Score.finalize(PPPScoreGraph.legacy.toScore(info.graph, { name: old.title, id: old.id, tempo: old.tempo }));
+    } catch (e) {
+      this.say(tx('That change could not be shown. It was undone.'));
+      try { rec.session.undo(); } catch (x) { /* the session's */ }
+      return;
+    }
+    Object.keys(old).forEach(k => { if (fresh[k] === undefined && k.charAt(0) !== '_' && k !== 'sections') fresh[k] = old[k]; });
+    fresh.title = old.title; fresh.composer = old.composer; fresh.source = old.source;
+    engraveRemember(fresh, info.graph, 'omr-edit');
+    const pages = this.reviewPages().length || 1;
+    let report = S.importReport;
+    try {
+      report = rec.session.report(fresh, { FL: window.PPPOmrFlags, tx: tx, old: S.importReport, validate: sc => Import.validate(sc, { pageCount: pages }) });
+    } catch (e) { report = S.importReport; }
+    this._model = null; this._seq = null; this._rangeCache = null; this._kbRange = Score.keyRange(fresh);
+    this._omrOk = { score: fresh, v: true };
+    if (this.state.playing) this.stopTransport();      /* the player was started on the Score that is being replaced */
+    const first = fresh.sections && fresh.sections[0] ? fresh.sections[0] : { from: Score.first(fresh), to: Score.first(fresh) };
+    const keepLoop = !!(this._omrEd && this._omrEd.playWas);
+    this.setState({
+      score: fresh, importReport: report, secs: seedSecs(fresh),
+      loopFrom: keepLoop ? this.state.loopFrom : first.from, loopTo: keepLoop ? this.state.loopTo : first.to,
+      beat: Score.startQ(fresh, first.from), playing: false,
+      reviewFrom: Score.measure(fresh, this.state.reviewFrom) ? this.state.reviewFrom : Score.first(fresh)
+    }, () => {
+      this.syncLibraryMeasures(fresh);
+      /* the song is written a moment after the last step (a person taps several in a row; a whole score is written each time), and at once on "Accept and practise" */
+      clearTimeout(this._omrSaveT);
+      this._omrSaveT = setTimeout(() => { if (!this._dead) this.saveNow(); }, 900);
+    });
   }
   /* G10a-4: v2's scripts and weights (about 250 KB, 17 requests), fetched ahead of the first conversion when a screen that converts a recording opens. A no-op while the classic method is set. */
   warmRecordingModules() {
@@ -21134,6 +21335,7 @@ class Component extends DCLogic {
     const steps = this.seq();
     const m0 = score.measures[0];
     const sounding = score.notes.filter(n => !n.rest);
+    const omrEdit = this.omrEditable(S);   /* G12-4: the bar editor is offered on the review of a page read under PPP.omr = 'v2' */
 
     const passage = tx('Measures {{from}}–{{to}}', { from: S.loopFrom, to: S.loopTo });
     const titles = {
@@ -21933,6 +22135,12 @@ class Component extends DCLogic {
         ];
       })(),
       acceptOn: () => this.acceptRecognition(),
+      /* G12-4: the bar editor and the photo's "draft" label (U6); neither exists under PPP.omr = 'legacy' */
+      showOmrEdit: omrEdit,
+      omrEditLabel: tx('Fix measures'),
+      omrEditOn: () => this.openOmrEditor((S.importReport && S.importReport.suspectMeasures && S.importReport.suspectMeasures[0]) || S.reviewFrom),
+      showOmrDraft: OMR_MODE === 'v2' && S.screen === 'review' && !this._recording && !!S.importSource && S.importSource.kind === 'image',
+      omrDraftText: tx('This is a draft from a photo: check the red measures against the page.'),
       retryOn: () => this.retryRecognition(),
       replaceOn: () => this.replaceSource(),
       replaceLabel: S.importSource && S.importSource.kind === 'youtube' ? tx('Try another link') : tx('Replace the file'),
@@ -21970,15 +22178,16 @@ class Component extends DCLogic {
         const why = (S.importReport && S.importReport.uncertainWhy && S.importReport.uncertainWhy[mm.number]) || null;
         const shown = mm.number >= S.reviewFrom && mm.number <= Score.step(score, S.reviewFrom, 3);
         const flagCodes = (S.importReport && S.importReport.flagCodes && S.importReport.flagCodes[mm.number]) || null;   /* G12-3: the codes omr/flags.js gave this bar (v2 imports); the sentences are made now, in the language of now */
+        const changed = ((S.importReport && S.importReport.editedMeasures) || []).indexOf(mm.number) > -1;           /* G12-4: a bar the person changed in the editor */
         const flagText = flagCodes && S.screen === 'review' ? this.flagSentences(flagCodes) : [];   /* only a screen that shows them asks for the module */
         const reasons = (why ? [why.indexOf('grid') > -1 ? tx('PPP was not sure of the beat') : '', why.indexOf('hands') > -1 ? tx('PPP was not sure which hand plays some notes') : ''].filter(Boolean) : [])
           .concat(flagText).join(' · ');
         return {
-          title: tx(suspect ? 'Measure {{n}} · needs checking' : 'Measure {{n}}', { n: mm.number }) + (reasons ? ' · ' + reasons : ''),
+          title: tx(suspect ? 'Measure {{n}} · needs checking' : 'Measure {{n}}', { n: mm.number }) + (reasons ? ' · ' + reasons : '') + (changed ? ' · ' + tx('Changed by you') : ''),
           style: 'flex:1;min-width:3px;height:22px;padding:0;border-radius:4px;cursor:pointer;border:1px solid '
             + (shown ? 'var(--accent)' : 'transparent') + ';background:' + (suspect ? 'var(--bad)' : why ? 'var(--warn)' : 'var(--accent-2)')
-            + ';opacity:' + (shown ? 1 : suspect ? 0.85 : why ? 0.8 : 0.4) + ';',
-          on: () => this.setState({ reviewFrom: mm.number })
+            + ';opacity:' + (shown ? 1 : suspect ? 0.85 : why ? 0.8 : 0.4) + ';' + (changed ? 'border-bottom:4px solid var(--ink);' : ''),
+          on: () => { if (omrEdit) this.openOmrEditor(mm.number); else this.setState({ reviewFrom: mm.number }); }
         };
       }),
       reviewIssues: this.reviewIssueLines(S, score).map(i => ({

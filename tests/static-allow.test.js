@@ -76,7 +76,7 @@ function expectedServed(rel) {
     if (parts.length === 3 && parts[1] === 'weights') return ext === '.json' && (top === 'rec' || top === 'difficulty');
     return rel === 'difficulty/tools/dataset/method-books.json';
   }
-  if (top === 'omr') return rel === 'omr/normalize.js' || rel === 'omr/apply.js' || rel === 'omr/flags.js';           /* G12-1..3: the page's lazy normaliser, findings and flags modules; omr/helper-output.js is the local helper's */
+  if (top === 'omr') return rel === 'omr/normalize.js' || rel === 'omr/apply.js' || rel === 'omr/flags.js' || rel === 'omr/edit-ops.js' || rel === 'omr/editor.js' || rel === 'omr/editor-ui.js';           /* G12-1..4: the page's lazy normaliser, findings, flags and bar-editor modules; omr/helper-output.js is the local helper's */
   if (top === 'i18n') return parts.length === 2 && ext === '.json';
   if (top === 'audio') return parts.length === 3 && parts[1] === 'piano' && ext === '.mp3';
   if (top === 'assets') return ext === '.png';
@@ -101,7 +101,7 @@ test('isServed: the examples that matter', () => {
     'difficulty/tools/dataset/method-books.json', 'i18n/ko-KR.json', 'audio/piano/A0.mp3', 'assets/hands/hand-right-black.png',
     'catalog/index.json', 'catalog/method/index.json', 'catalog/hymns/index.json', 'catalog/hymns/all-creatures.musicxml', 'catalog/method/beyer/001.mxl',
     'samples/prelude-fragment.musicxml', 'vendor/vexflow-4.2.3.js', 'vendor/LICENSE-vexflow.txt', 'vendor/react-18.3.1/react.production.min.js',
-    'vendor/react-18.3.1/LICENSE-react.txt', 'THIRD_PARTY_NOTICES.md', 'omr/normalize.js', 'omr/apply.js', 'omr/flags.js', 'scoregraph/tools/notation-check.js', 'practice/plan.js', 'practice/runlog.js',
+    'vendor/react-18.3.1/LICENSE-react.txt', 'THIRD_PARTY_NOTICES.md', 'omr/normalize.js', 'omr/apply.js', 'omr/flags.js', 'omr/edit-ops.js', 'omr/editor.js', 'omr/editor-ui.js', 'scoregraph/tools/notation-check.js', 'practice/plan.js', 'practice/runlog.js',
     'vendor/fonts/figtree-v9-latin.woff2', 'vendor/fonts/instrument-serif-v5-italic-latin-ext.woff2', 'vendor/fonts/noto-music-v21-music.woff2', 'vendor/fonts/LICENSE-figtree-OFL.txt',
     /* G13-8: the optional libraries, their licences, and Basic Pitch's model with its one weights file */
     'vendor/pdfjs-3.11.174/pdf.min.js', 'vendor/pdfjs-3.11.174/pdf.worker.min.js', 'vendor/pdfjs-3.11.174/LICENSE.txt', 'vendor/tfjs-2.8.6/tf.min.js',

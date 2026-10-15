@@ -1,0 +1,164 @@
+'use strict';
+/* omr/editor.js (G12-4): the session of the correction screen - the steps, what each bar says about itself, the report made again, a bar drawn on its own. */
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('fs');
+const path = require('path');
+const L = require('./lib.js');
+const { SG, q, h, w, e8, rq, rh, rw, N } = L;
+const ED = require(path.join(L.REPO, 'omr', 'editor.js'));
+const FL = require(path.join(L.REPO, 'omr', 'flags.js'));
+const E = require(path.join(L.REPO, 'engrave', 'index.js'));
+const R = SG.rational;
+
+const staffs = g => g.parts[0].staves.map(s => s.id);
+const ok = v => ({ confidence: 1, level: 'good', issues: [], suspectMeasures: [], summary: null, advice: null, measures: v.measures.length, notes: v.notes.length, staves: v.staves });
+
+test('apply: a refusal is named and makes no step; a change makes one; the same again makes none', () => {
+  const g = L.plain(2);
+  const s = ED.create(g);
+  const head = L.notesOf(g, 0)[0].heads[0];
+  const bad = s.apply({ op: 'value', event: L.notesOf(g, 0)[0].id, change: 'double' });
+  assert.equal(bad.ok, false);
+  assert.equal(bad.code, 'no-room');
+  assert.equal(s.steps.undo, 0);
+  const a = s.apply({ op: 'accidental', head: head, acc: 'sharp' });
+  assert.equal(a.ok && a.changed, true);
+  assert.equal(s.steps.undo, 1);
+  const same = s.apply({ op: 'accidental', head: head, acc: 'sharp' });
+  assert.equal(same.ok, true);
+  assert.equal(same.changed, false);
+  assert.equal(s.steps.undo, 1, 'no new step for no change');
+  assert.equal(s.apply({ op: 'nonsense' }).ok, false);
+});
+test('undo and redo walk the steps; the focus of a step says where it was', () => {
+  const g = L.plain(3);
+  const s = ED.create(g);
+  const m = g.timeline.measures;
+  s.apply({ op: 'step', head: L.notesOf(g, 0)[0].heads[0], by: 1 });
+  s.apply({ op: 'insert', after: m[1].id });
+  const r = s.apply({ op: 'reviewed', measure: m[2].id });
+  assert.equal(r.focus.measure, m[2].id);
+  const u = s.undo();
+  assert.equal(u.ok, true);
+  assert.equal(u.focus.measure, m[2].id, 'the undone step says where it was');
+  assert.equal(s.steps.undo, 2);
+  assert.equal(s.steps.redo, 1);
+  s.undo(); s.undo();
+  assert.equal(s.canUndo, false);
+  assert.equal(s.undo().ok, false);
+  assert.equal(s.graph, g);
+});
+test('bars: the fill of each staff, the marks, the edited bars', () => {
+  const g = L.graphOf([{ rh: [q('C5'), q('D5'), q('E5')], lh: [w('C3')] }, { rh: [q('C5'), q('D5'), q('E5'), q('F5')], lh: [w('C3')] }, { rh: [w('C5')], lh: [w('C3')] }]);
+  const s = ED.create(g);
+  let bars = s.bars({ flags: FL });
+  assert.equal(bars.length, 3);
+  assert.deepEqual(bars[0].fill.map(f => f.ok), [false, true]);
+  assert.equal(bars[0].fill[0].have, '3/4');
+  assert.equal(bars[0].suspect, true);
+  assert.ok(bars[0].strong.indexOf('fill-short') >= 0);
+  assert.equal(bars[0].edited, false);
+  /* fix it: a rest for the missing beat makes the bar full, and the bar is marked edited */
+  const rest = s.apply({ op: 'add', measure: g.timeline.measures[0].id, staff: staffs(g)[0], at: '3/4', pitch: { step: 'F', oct: 5 }, value: 'quarter' });
+  assert.equal(rest.ok, true, rest.message);
+  bars = s.bars({ flags: FL });
+  assert.equal(bars[0].fill[0].ok, true);
+  assert.equal(bars[0].edited, true);
+  assert.equal(bars[1].edited, false);
+});
+test('a bar marked right is not suspect, and its neighbours are not suspect for it', () => {
+  const g = L.graphOf([{ rh: [q('C5'), q('D5'), q('E5'), q('F5')], lh: [w('C3')] }, { rh: [q('C5'), q('D5'), q('E5')], lh: [w('C3')] }, { rh: [q('C5'), q('D5'), q('E5'), q('F5')], lh: [w('C3')] }, { rh: [w('C5')], lh: [w('C3')] }]);
+  const s = ED.create(g);
+  let bars = s.bars({ flags: FL });
+  assert.equal(bars[1].suspect, true);
+  s.apply({ op: 'reviewed', measure: g.timeline.measures[1].id });
+  bars = s.bars({ flags: FL });
+  assert.equal(bars[1].suspect, false);
+  assert.equal(bars[1].reviewed, true);
+  assert.equal(bars.some(b => b.suspect), false, 'nothing is left');
+  s.undo();
+  assert.equal(s.bars({ flags: FL })[1].suspect, true);
+});
+test('a bar a person changed is judged by what is in it, not by what the normaliser did to it', () => {
+  const g = L.plain(3);
+  const s = ED.create(g, { normalize: { flags: { 2: ['parts-fragmented'] } } });
+  let bars = s.bars({ flags: FL });
+  assert.equal(bars[1].suspect, true, 'the normaliser said the parts of this bar could not be joined');
+  assert.ok(bars[1].strong.indexOf('fragmented') >= 0);
+  s.apply({ op: 'step', head: L.notesOf(g, 1)[0].heads[0], by: 1 });
+  bars = s.bars({ flags: FL });
+  assert.equal(bars[1].suspect, false, 'a bar that was looked at and changed is read as it stands');
+  assert.equal(bars[1].edited, true);
+  assert.equal(bars[0].suspect || bars[2].suspect, false);
+  s.undo();
+  assert.equal(s.bars({ flags: FL })[1].suspect, true, 'undone, the doubt is back');
+});
+test('report: the validator and the flags again, reviewed bars out, the draft cap stays', () => {
+  const g = L.graphOf([{ rh: [q('C5'), q('D5'), q('E5')], lh: [w('C3')] }, { rh: [q('C5'), q('D5'), q('E5'), q('F5')], lh: [w('C3')] }]);
+  const s = ED.create(g);
+  const sc = () => SG.legacy.toScore(s.graph, { name: 'x' });
+  const old = { summary: 'was', advice: 'was', normalize: { n: 1 }, graph: { skipped: [] }, issues: [{ measure: null, kind: 'browser-fallback', message: 'draft' }], flagCodes: { 1: ['fill-short'] } };
+  const validate = score => ({ confidence: 1, level: 'good', issues: [], suspectMeasures: [], summary: 'v', advice: null, measures: score.measures.length, notes: 7, staves: 2 });
+  const r = s.report(sc(), { FL: FL, old: old, validate: validate });
+  assert.ok(r.suspectMeasures.indexOf(1) >= 0);
+  assert.deepEqual(r.flagCodes[1].slice(0, 1), ['fill-short']);
+  assert.ok(r.confidence <= 0.45 && r.level === 'poor', 'a browser draft stays a draft');
+  assert.ok(r.issues.some(i => i.kind === 'browser-fallback'));
+  assert.deepEqual(r.normalize, { n: 1 }, 'what the import said is kept');
+  s.apply({ op: 'reviewed', measure: g.timeline.measures[0].id });
+  const r2 = s.report(sc(), { FL: FL, old: r, validate: validate });
+  assert.deepEqual(r2.suspectMeasures, []);
+  assert.equal(r2.flagCodes, undefined, 'no stale codes');
+  assert.equal(r2.edited, true);
+});
+test('windowGraph: every bar of a score can be drawn alone, with its clef, key and time signature', () => {
+  ['all-creatures', 'all-glory-laud'].forEach(n => {
+    const r = SG.musicxml.import(fs.readFileSync(path.join(L.REPO, 'catalog', 'hymns', n + '.musicxml'), 'utf8'), { scoreId: 'x', sourceName: n });
+    assert.ok(r.ok);
+    const g = r.graph;
+    g.timeline.measures.forEach((m, i) => {
+      const win = ED.windowGraph(g, m.id);
+      assert.ok(win, n + ' bar ' + (i + 1));
+      assert.ok(SG.validate(win).ok);
+      assert.equal(win.timeline.measures.length, 1);
+      assert.ok(win.timeline.meters.length >= 1);
+      assert.ok(win.parts.every(p => p.clefs.length >= p.staves.length), 'a clef on each staff');
+      const plan = E.plan(win, { marks: true, chords: true });
+      const eng = E.layout.createEngraver(plan).layout(E.layout.normalizeConfig({ breakpoint: 'phone', width: 60, barsPerSystem: 1, window: null }));
+      const svg = E.svg(eng, plan, { unit: 10, px: 10, inline: true });
+      const ids = new Set(Array.from(svg.matchAll(/data-ev="([^"]+)"/g)).map(x => x[1]));
+      const own = new Set(g.parts.reduce((a, p) => a.concat(p.events.filter(e => e.m === m.id && !e.grace).map(e => e.id)), []));
+      ids.forEach(id => assert.ok(own.has(id), 'the drawing names an event of this bar: ' + id));
+      own.forEach(id => assert.ok(ids.has(id), 'every event of the bar is drawn: ' + id));
+    });
+  });
+});
+test('describe and staffAt: what the toolbar asks', () => {
+  const g = L.graphOf([{ rh: [q('C5'), rq(), h('E5')], lh: [w('C3')] }, { rh: [w('C5')], lh: [w('C3')] }], { fifths: 1 });
+  const c = L.notesOf(g, 0).find(e => e.pitches[0] === 'C5');
+  const d = ED.describe(g, c.id);
+  assert.deepEqual(d.canValue, { halve: true, double: true, dot: true });
+  assert.equal(d.heads[0].name, 'C5');
+  assert.equal(d.staffIndex, 0);
+  const last = L.notesOf(g, 0).find(e => e.pitches[0] === 'E5');
+  assert.deepEqual(ED.describe(g, last.id).canValue, { halve: true, double: false, dot: false });
+  const rest = L.barOf(g, 0).find(e => e.kind === 'rest');
+  const rd = ED.describe(g, rest.id);
+  assert.equal(rd.canNote, true);
+  assert.equal(rd.canRest, false);
+  const st = ED.staffAt(g, g.timeline.measures[0].id, staffs(g)[0]);
+  assert.equal(st.clefSign, 'G');
+  assert.equal(st.topDpos, 5 * 7 + 3, 'F5 is the top line of the treble staff');
+  assert.equal(ED.staffAt(g, g.timeline.measures[0].id, staffs(g)[1]).topDpos, 3 * 7 + 5, 'A3 is the top line of the bass staff');
+});
+test('the session does not keep the graph the visit began with alive past its limit, and never changes it', () => {
+  const g = L.plain(1);
+  const text = SG.serialize(g);
+  const s = ED.create(g, { limit: 2 });
+  const head = L.notesOf(g, 0)[0].heads[0];
+  for (let i = 0; i < 5; i++) s.apply({ op: 'step', head: head, by: i % 2 ? -1 : 1 });
+  assert.equal(s.steps.undo, 2);
+  assert.equal(SG.serialize(g), text);
+  assert.equal(s.base, g);
+});
