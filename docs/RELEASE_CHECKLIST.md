@@ -76,6 +76,14 @@ Every deploy gets a row in `docs/RELEASES.md`.
    production, not on a fixture. A fix verified only on other data has been declared done before the real cause was found.
    Do it with the live page, as the user does (production runs without the local helper services a local test may have).
 
+10b. **A change of guests posting to Shared Scores** (G13 no login anywhere; docs/GOALS/G13_PRODUCTIZATION.md section 21). The address every guest limit and the address tag count by comes
+    from Render's own edge header (`CF-Connecting-IP`, then `True-Client-IP`), a path that was never exercised on the real edge. Right after the deploy, before telling the user:
+    (a) `render logs` has the one line `Guest links: the first request named its client from cf-connecting-ip` (anything else - `x-forwarded-for`, `socket` - means every visitor is
+    one address: set `PPP_GUEST_POSTS=0` on the service and restart, then fix the derivation); (b) with the user's word, `DATABASE_URL=<neon> node tools/shares-admin/list.js --allow-remote`
+    after one post from the phone on mobile data and one from the PC: the two rows must carry two different address tags (one tag for both = the address collapsed: switch off as in (a));
+    (c) `SESSION_SECRET` is set on the service (the log says so loudly when it is not, and guest posting is then off by itself). `PPP_GUEST_POSTS` is the owner's switch: `0` refuses every
+    new guest post and nothing else (links, accounts and what is posted are untouched); unset or any other value is ON, which is the default the user asked for.
+
 ## 4. After the deploy
 
 11. **Tell the user, in Korean**, in one or two lines: what changed, that it is live, and the rollback command with the commit

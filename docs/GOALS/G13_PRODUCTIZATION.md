@@ -973,28 +973,39 @@ do not end. That is the whole list.
   caps counted by the store inside the same turn as the write; `PPP_GUEST_POSTS=0` (the owner's switch). The YouTube guard (G13-3) holds for a guest on POST and PATCH (403 `youtube-not-public`).
 - **Postgres:** one additive nullable column, `ppp_shares.addr_tag` (and a partial index). The code before this boots on it; rolling back is deploying the previous commit.
 - **Tool:** `tools/shares-admin/list.js` (read-only; below).
+- **After the independent review of PR 275 (defa995):** the preview is rebuilt on the way in and on the way out (21.6a); every guest limit counts the /48; a post put back the same day is one post; text is
+  cleaned of controls and bidi characters; a guest's name can never pass for the site (and the card says "(guest)"); "Delete everything" says what happens to posts and offers to take them down first;
+  a backup carries no guest mark; guests are never told to sign in; guest posting is off by itself on Render with no `SESSION_SECRET`.
 
 ### 21.3 Guest posting: the limits (all in `share-guest.js` `GUEST`; `tests/guest-post.test.js` holds each)
 
 | Limit | Value | Counted | On refusal |
 | --- | --- | --- | --- |
-| Size of one post (body) / its preview | 1 MB / 24 KB | per request | 413 (a preview over 24 KB is dropped, not refused) |
+| Size of one post (body) / its preview | 1 MB (about 4,000 notes: the largest catalogue piece is 470 KB, a 2,400-note transcription 600 KB) / 24 KB; at most 4 bars and 400 notes of preview | per request | 413 (a preview over 24 KB once rebuilt is dropped, not refused) |
 | Rows (links and posts) one browser keeps | 20 | database | 429 |
 | **Posts one browser holds at once** | **10** | database (listed rows of its key) | 429 `too-many-posts` "Take one down first." |
 | **Posts one address holds at once** | **20** | database (listed rows with its address tag) | 429 `too-many-posts` |
 | **Posts the site holds** | **300**, and **24 MB** of them | database | **503 `busy`** "Shared Scores has no room for more posts from guests right now." Never evicts: an honest visitor is refused, nobody's post is deleted to make room. |
 | **Posts a browser may make in a day** | **5** | memory (24 h sliding window, per key) | 429 `too-many-posts` "Try again tomorrow." |
-| **Posts an address may make in a day** | **10** | memory (per address: an IPv6 address counts as its /48) | 429 |
-| **Posts the site takes in a day** | **60** | memory | 503 `busy` |
-| Creates per address / for the site, per hour (links and posts; unchanged) | 30 / 200 | memory | 429 |
-| Requests that fail validation, per address, per hour (unchanged) | 60 | memory | 429 |
+| **Posts an address may make in a day** | **10** | memory, **by the /48 of an IPv6 address** (a new /64 is the same place; an IPv4-mapped address is its IPv4) | 429 |
+| **Posts the site takes in a day** | **150** (a flood needs two days to fill the 300 held, which is the time the owner has to see it and use the switch) | memory | 503 `busy` |
+| Creates per address / for the site, per hour (links and posts; unchanged) | 30 / 200, **by the /48** | memory | 429 |
+| Requests that fail validation, per address, per hour (unchanged) | 60, **by the /48** | memory | 429 |
 | All guest rows (links and posts) / bytes (unchanged) | 1,000 / 50 MB | database | 503 `guest-full` |
 | How long it lasts | link 30 days, **post 90 days**; sending it again renews it; putting a link into the list renews it to 90; taking down keeps the end date | row `expires_at` | an ended row is in no list and its link is 404 at once; swept at start and every 6 h |
-| The name | optional, at most 24 characters, control and bidi-override characters dropped; a name that starts with "PPP" or looks like an address or a contact becomes "Guest" | per request | (replaced, not refused) |
+| The name | optional, at most 24 characters, control and bidi-override characters dropped, more than two combining marks in a row cut; a name that CONTAINS the site's name or the name of a moderator, owner or staff (folded: fullwidth, accents, Cyrillic and Greek look-alikes, spaces and dots; English, Korean, Chinese, Japanese) or looks like an address or a contact becomes "Guest". The card always writes "(guest)" after a guest's name. | per request | (replaced, not refused) |
+| Titles, composers, kinds, a score's own title | control, bidi-override and zero-width characters become spaces (a right-to-left override reorders the text around it) | per request, and again on the way out | (cleaned, not refused) |
+| The preview of a share (drawn by every viewer's engraver) | rebuilt from what a preview is: 4 bars, 400 notes, staves and staff 1 to 4, voices 1 to 8, dots 0 to 4, every number finite and within +-1000, times and keys in range, text cleaned and short, objects bounded; the same on the way out for rows stored before | per request, and on every list and link | a thing that is not a preview at all: 422; anything else is neutralised |
 | Genre | not the guest's to set (a post is under "All" and in the search) | n/a | n/a |
 
-**What costs a place of the day:** a `POST` whose resulting row is listed (new, or re-sent with `listed` true or left out of a post that is listed) and a `PATCH listed:true` that changes the row. Taking down, a link,
-and every read are free. A refusal gives its places back (inside the store's turn), so asking while the list is full does not use the day up.
+**The 1 MB cap stays 1 MB (the review asked whether to raise it to 2).** What a piece costs: the packed Score is about 245 KB per 1,000 notes (E5), so 1 MB is about 4,000 notes; the biggest piece of the
+catalogue (1,916 notes) is 470 KB, a 2,400-note transcription 600 KB. A long Romantic piece of 5,000 notes is over it and is told "Share a part of it" (an account's 4 MB takes it). Doubling it would let ONE
+key hold 40 MB (20 rows) of the 50 MB all guest rows may hold, so two keys could shut every guest out of linking for 30 days: the cap is what keeps that attack at 20 MB a key and at the hourly 30 creates a /48.
+
+**What costs a place of the day:** a request that makes a row BECOME listed: a `POST` with `listed:true` for a song that is not posted, and a `PATCH listed:true` of a row that is not. Sending a post that stands again
+(`listed` true or left out: it is the same post, and a link re-sent while its post stands must not be refused by the day or by the owner's switch), taking down, a link and every read are free, and a post
+put back the day it was listed (its end date still more than 89 days away) is the same post and takes no new place; it is still held to the caps on what is held. A post that is DELETED keeps its place of the day:
+refunding it would make post-and-delete a way round the day (the hourly limits would be the only bound). A refusal gives its places back (inside the store's turn), so asking while the list is full does not use the day up.
 
 **Capability.** The guest key is a random 64-hex string kept in this browser, sent only in the `X-PPP-Guest` header (never in a URL or a body: a key in a URL is nothing). The server keeps only
 `g_` + the first 24 hex of its sha256 and compares two such names as equal-length buffers with `crypto.timingSafeEqual`. A wrong key, no key, a key one character off and another guest's key
@@ -1004,13 +1015,14 @@ all get the same 403 with the same body, and an account without the key cannot c
 
 | Capability | Bound |
 | --- | --- |
-| **Spam / junk posts** | 5 a day per browser, 10 a day per address, 60 a day for the site; 10 held per browser, 20 per address, 300 in all. A new key costs nothing, so the address and the site numbers are what bind; a sustained attack from one address makes 10 posts a day. Every post ends in 90 days. The owner sees growth with `tools/shares-admin/list.js`; `PPP_GUEST_POSTS=0` stops new guest posts at once (links, accounts and what is posted are untouched). Removing one post is a manual delete by id (below). |
+| **Spam / junk posts** | 5 a day per browser, 10 a day per address (/48), 150 a day for the site; 10 held per browser, 20 per address, 300 in all. A new key costs nothing, so the address and the site numbers are what bind; a sustained attack from one /48 makes 10 posts a day (an attacker with many networks is bound by the site's 150 a day and the 300 held). Every post ends in 90 days. The owner sees growth with `tools/shares-admin/list.js`; `PPP_GUEST_POSTS=0` stops new guest posts at once (links, accounts and what is posted are untouched). Removing one post is a manual delete by id (below). |
 | **Offensive titles, names, composers** | typed by anonymous people and shown to everybody: clipped (title 120, composer 160, name 24) and cleaned of control characters, **not filtered**. There is no report button and no in-app moderator. This is the standing risk (21.6). |
-| **Impersonation** | a name that starts with "PPP" or looks like an address or a contact is replaced by "Guest"; the seed library's owner is an account the page marks differently (no `guest` mark). A guest can still call itself "Pat" - a label, not an identity. |
+| **Impersonation** | a name that contains the site's name or a moderator's, owner's or staff's (folded as in 21.3) or looks like an address or a contact is replaced by "Guest", and the card writes "(guest)" after whatever name is left (the word is the page's, from `card.guest`, not the guest's). The seed library's owner is an account (no `guest` mark). A guest can still call itself "Pat" - a label, not an identity. The list of words is short and by hand: a new disguise gets through until it is added; "(guest)" is what holds. |
+| **A post that freezes the page of everybody who opens the list** | the preview is a mini score the engraver draws; `staves: 1e6` or a note on `staff: 1e6` hung the screen for more than 190 s, from ONE anonymous request (and from an account's: it was already so). Closed at three places: the server rebuilds the preview on the way in and again on the way out (so a row stored before is handed out safe), the page rebuilds what it draws (`thumbSafe`), and a score added from a link has its staves and staff bounded (`scoreSafe`). 21.6a has the measurement. |
 | **Copyright** | the YouTube guard (G13-3: a score made from a YouTube link is not posted; a policy guard, not a security boundary - the server only knows what the page says) and the plain notice that is always in the dialog ("Share only music you have the right to share") plus the About notice (E8). Posts end in 90 days. A takedown request is a manual delete by id. |
 | **Storage** | 300 posts and 24 MB of posts, inside the 50 MB / 1,000 rows of all guest rows: at most 50 MB of the 0.5 GB Neon Free, however long nobody looks. Full = 503 `busy`, never an eviction. A flood of posts cannot take the room of guest links beyond the 24 MB. |
 | **Stealing control of a post** | needs the 64-hex key (256 bits); not guessable; compared in constant time; header only. A person who clears their browser data loses control of their posts (they end by themselves in 90 days) - said in the dialog. |
-| **Privacy** | no email, no account, no IP address stored. The address is kept only as 16 hex of a keyed hash (HMAC of its /48 with the site secret) on a post that is **listed**: it is cleared when the post is taken down and goes with the row at its end date. The typed name is free text the person chose to show. |
+| **Privacy** | no email, no account, no IP address stored. The address is kept only as 16 hex of a keyed hash (HMAC of its /48 with the site secret) on a post that is **listed**: it is cleared when the post is taken down and goes with the row at its end date. With no `SESSION_SECRET` on Render the key would be the public development one: guest posting is then off by itself and the log says so. The typed name is free text the person chose to show. |
 | **Search engines** | a guest row's link page is `noindex`, as a guest link always was; the public list is inside the app. |
 | **Races** | the caps are counted and the row written in one turn (the file store) or one transaction under the guest advisory lock (Postgres); 20 posts at once with 5 places left make exactly 5. |
 | **A restart** | the day windows are in memory and start again; the caps on what is held are counted from the table and do not. A restart gives an attacker a fresh day, once per restart. |
@@ -1025,7 +1037,9 @@ Manual removal (the owner, only with the user's word; **never run by a script he
 | --- | --- |
 | `tests/guest-post.test.js` (file store) | the pure rules; posting; the lists; ownership isolation (same 403 bytes); the YouTube guard; names; each limit above (browser day, address day, site day, held per browser, per address, site, bytes); refusal evicts nobody and gives the day's places back; the races; end dates; an account unchanged; the admin tool prints no content; the owner's switch |
 | `tests/guest-post-pg.test.js` (Postgres twin) | the additive migration on the table production has; the same on Postgres, with the caps under concurrency (20 at once, 10 puts into the list at once) |
-| `tests/guest-post.mutants.js` | one mutant per limit and rule (31 on the file store, 3 on Postgres): each is killed |
+| `tests/guest-post.mutants.js` | one mutant per limit and rule (60 on the file store, the page and the tool, 3 on Postgres): each is killed; a second pass (`GUEST_POST_NO_CONSTANTS=1`) finds each number by what it does |
+| `tests/shared-poison-ui.test.js` | a browser with a time budget: rows stored with poison, the same poison arriving at the page itself, and a link whose score is poisoned - the page must answer (a hung page is a failure, the browser is killed) |
+| `tests/share-preview-fuzz.js` | the engraver's entry fed random previews (1,000 through the page's path, 150 as sent), each with a 2 s budget; not in the gate (about 4 minutes) |
 | `tests/no-login-ui.test.js` | a fresh profile, Korean/phone and English/PC: no card, no button, every screen opens, no console error, no failed API request; a shared link's first load; the features as a guest; an existing session |
 | `tests/auth-ui.test.js`, `tests/i18n-and-auth.test.js`, `tests/signup-limit-ui.test.js` | the optional form: opened from Settings, sign up/in/out, "Not now", in every language |
 | `tests/share.test.js` | the dialog as a guest: post, name, take down, "Shared by me", another person sees it, the server's new refusals read right in ko/ja/zh/en |
@@ -1037,7 +1051,28 @@ Manual removal (the owner, only with the user's word; **never run by a script he
 - **The day windows are in memory** and one process serves the site; two instances would each hold their own (the held caps are counted by the database and are exact).
 - **Not tested here:** the live site (nothing was queried or deployed), a real phone, Render's edge headers for the address (the tests set `X-Forwarded-For` and the `RENDER` header path as the existing guest tests do),
   Neon (the Postgres twin ran on postgres:17 in a throwaway container), and the search-engine behaviour of the link pages.
-- **A guest who loses the key** cannot take a post down before it ends (90 days); the owner can by id.
+- **A guest who loses the key** cannot take a post down before it ends (90 days); the owner can by id. "Delete everything on this device" says so and offers "Take my posts down first"; a backup carries no guest mark,
+  so a restore on another device never shows a post it cannot manage.
+- **The address behind the limits comes from Render's edge header** (`CF-Connecting-IP`, then `True-Client-IP`). That path is tested with the headers set by hand, never on the real edge. If it collapses
+  (every visitor one address) the daily and hourly limits would hit honest people at once: the checklist (RELEASE_CHECKLIST 10b) has the log line to read and the two-network comparison of address tags
+  right after the deploy, and `PPP_GUEST_POSTS=0` is the switch. The default is ON, as the user asked.
+
+### 21.6a The preview that froze Shared Scores (the review of PR 275)
+
+- **Reproduced:** a guest POST with `preview.staves = 1e6` hung the Shared Scores screen for more than 190 s; `notes[].staff = 1e6` or `staves = "1000000"` kept the list from rendering for more than 20 s.
+  The preview is a mini score the page's ScoreView (the engraver) draws, not an SVG; a `try/catch` cannot stop an endless loop. It was already possible for an account; it became one anonymous request.
+- **Measured here** (`node tests/share-preview-fuzz.js`, headless Chrome, 2 s budget each, DevTools `Runtime.terminateExecution` for a case that does not answer): of the values that could make a drawing
+  long - staves, a note's staff, voice, dots, time.beats, time.beatType, lenQ, dur, b, measure number, midi, key.fifths, tempo, a tuplet ratio, 5,000 notes, 9 bars - **only staves and staff hang**
+  the engraver as sent (the others are bounded by it: they drew within 2 s); in 150 random wrong previews as sent, 2 hung (both with a staff of 1e6) and 5 threw (a TypeError the page's own try/catch
+  turns into "no thumbnail"). Through the page's path as it is now, **1,000 random wrong previews: 0 hang, 0 throw**.
+- **What was done:** (1) `share-guest.js normalizePreview` rebuilds a preview on write (POST: accounts too) and on read (every list row and every link), (2) the page's `thumbSafe` does the same before anything is
+  drawn (the first bars of a link's own score too), (3) `cleanScore`/`scoreSafe` bound the staves and staff numbers of a whole score (1 to 8) when it is stored and when it is added from a link. An honest
+  preview comes back unchanged (the previews of the sample scores, among them a 3-staff vocal part; `tests/fixtures/guest-previews.json`); the page's copy and the server's give the same answer for 1,500 random
+  wrong previews (`tests/guest-post.test.js` extracts the page's function between its markers and compares).
+- **A deliberate difference from the review's suggestion:** staves and staff are bounded to 1 to 4 for a preview (not 1 to 2): a vocal part over a piano is three staves, and clamping it to two would draw a
+  wrong score on the card.
+- **Not covered by this:** whatever else the engraver does slowly with a large honest score is not a preview problem; and a score that is posted whole (up to 1 MB) is opened by whoever adds it, which is
+  their own choice (the staves and staff are bounded there too).
 
 ### 21.7 Decision for the user
 

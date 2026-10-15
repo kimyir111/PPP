@@ -41,7 +41,7 @@
     "test:server-hygiene": "node tests/static-allow.test.js && node tests/signup-and-shares.test.js && node tests/signup-and-shares-pg.test.js",
     "test:guest-post": "node tests/guest-post.test.js && node tests/guest-post-pg.test.js",
     "test:guest-post-mutants": "node tests/guest-post.mutants.js",
-    "test:no-login-ui": "node tests/no-login-ui.test.js",
+    "test:no-login-ui": "node tests/no-login-ui.test.js && node tests/shared-poison-ui.test.js",
     "test:signup-ui": "node tests/signup-limit-ui.test.js",
     "test:backup": "node --test \"tests/backup/**/*.test.js\"",
     "test:backup-ui": "node tests/backup-ui.test.js",

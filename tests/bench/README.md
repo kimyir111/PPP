@@ -170,7 +170,7 @@ G13-3 added four steps and one job. `node tools/notices/build.js --check` is a s
 
 G13 "no login anywhere" added one step and one job. `node tests/guest-post.test.js` (a guest posts to Shared Scores with the key of the browser: ownership isolation, the YouTube guard, every limit, the races, the
 read-only admin look; Node only, the file store; about 40 s) is a step of `shard-h`, not in `light`; its Postgres twin (`tests/guest-post-pg.test.js`) skips without `PPP_TEST_PG_URL`. The browser half
-(`tests/no-login-ui.test.js`: a fresh profile sees no sign-in card on any screen) and the planted defects (`tests/guest-post.mutants.js`, 31 on the file store) are the job `no-login-suite`, a check of its own like
+(`tests/no-login-ui.test.js`: a fresh profile sees no sign-in card on any screen; `tests/shared-poison-ui.test.js`: one poisoned post does not freeze the list) and the planted defects (`tests/guest-post.mutants.js`, 60 of the file store, the page and the tool) are the job `no-login-suite`, a check of its own like
 `notices-suite`, not one the gate waits for. They were read, not traced: they open `server.js`, `share-guest.js`, `home-jobs*.js`, `tools/shares-admin/list.js`, the page and `samples/prelude-fragment.musicxml`, and nothing
 under the paths above.
 

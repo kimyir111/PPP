@@ -28,8 +28,15 @@ OMR(Audiveris)은 로컬 전용입니다. 온라인에서는 MusicXML 가져오�
 
 `SESSION_SECRET`은 Render가 생성합니다. 무료 웹 서비스는 15분 동안 요청이 없으면 잠들 수 있습니다.
 
-## 3. 첫 로그인
+## 3. 첫 방문
 
-`ppp-web` URL을 열고 **Create account**로 가입하거나 **Continue as guest**로 바로 연습합니다. 로그인하면 진행 상황이 계정에 저장됩니다.
+`ppp-web` URL을 열면 로그인 없이 바로 연습할 수 있습니다. 로그인은 선택입니다(설정 > 계정). 로그인하면 진행 상황이 계정에도 저장됩니다.
+
+로그인하지 않은 방문자도 악보를 공유 악보에 올릴 수 있습니다. 한도와 끄는 방법:
+
+- 환경 변수 `PPP_GUEST_POSTS=0`: 새 게스트 게시를 모두 거절합니다(링크 공유, 계정, 이미 올라간 악보는 그대로). 비우거나 다른 값이면 켜져 있습니다.
+- `SESSION_SECRET`이 없으면 게스트 게시는 스스로 꺼지고 로그에 크게 남습니다(Blueprint가 생성하므로 보통 있습니다).
+- 배포 직후 확인: `render logs`에 `Guest links: the first request named its client from cf-connecting-ip` 한 줄이 있어야 합니다(`docs/RELEASE_CHECKLIST.md` 10b).
+- 올라온 목록 확인(읽기 전용): `node tools/shares-admin/list.js` (`docs/GOALS/G13_PRODUCTIZATION.md` 21).
 
 언어는 헤더의 국기 버튼으로 고릅니다. 지원: 한국어, 日本語, English, 简体中文.

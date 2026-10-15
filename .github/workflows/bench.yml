@@ -998,6 +998,7 @@ jobs:
         with: { node-version: '24' }
       - run: npm ci                                        # puppeteer (and its Chrome)
       - run: node tests/no-login-ui.test.js
+      - run: node tests/shared-poison-ui.test.js            # one poisoned post must not freeze the list (a hung page fails, with a time budget)
       - run: node tests/guest-post.mutants.js
 
   nightly:
