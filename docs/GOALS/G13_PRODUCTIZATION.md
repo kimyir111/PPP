@@ -508,6 +508,29 @@ All of this at $0 on the existing free tiers.
 - *A bug found on the way, fixed here:* the two TensorFlow.js versions share two page globals (`window._tfengine`, `window._tfGlobals`) and the tensors find their engine through them at every use, so the second to load reused the first's
   WebGL backend and kernels and failed on its first shader ("Failed to compile fragment shader"). **Basic Pitch never worked after an Onsets and Frames attempt in the same page** (the "fallback" of the code), on the CDN path as
   well (measured on `?cdn=1` with the real CDN). Each library is now loaded with those globals set aside and the one about to run is put in place (`pppOwnTf`, `pppUseTf`); both orders work (tests).
+- *After the independent review of the PR (supply chain, concurrency):*
+  - **One TensorFlow.js section at a time.** The swap of the two engine globals (`pppOwnTf` / `pppUseTf`) had no mutual exclusion: a load while the other library ran, or two runs at once (reachable: `cancelImport` is
+    cooperative, so a cancelled import goes on in the background while a new one starts), swapped the globals under each other and gave silently WRONG notes (Basic Pitch 20 against 10 notes, Onsets and Frames 86
+    against 8) with `ok: true`, or died with "reading 'backend'" and stayed wrong. Now every section that touches TensorFlow.js - load, model start, run, dispose - of both libraries runs inside `pppTfLock`
+    (a promise-chain mutex, released in `finally`, in the order asked). A request that waits sees its own cancel (100 ms poll) and gives up after 3 minutes (`busy`); a section looks at its cancel flag between
+    its steps (before a chunk of Onsets and Frames, between two batches of Basic Pitch; a cancelled Onsets and Frames import does not fall to Basic Pitch), so a cancelled import lets the next one in at its next step.
+    The restore of the previous globals after a load was redundant (every use puts its own in place) and is gone. Tests: `tests/load-app/tf-lock.test.js` - the real Basic Pitch and a stand-in for `transcription.js`
+    that works with the real TensorFlow.js 2.8.6, sequential runs in both orders as the reference, then both loads together, both runs together, 300 ms and 1.5 s apart in both orders: every result is the reference's, note
+    for note; cancel of a holder, of a waiter, of Basic Pitch mid-run; mutants T1-T8 in `tests/load/mutants.js` (no lock, a load outside it, no cancel check, a give-up that releases at once, ...).
+  - **`model-offline` is only a failed download.** Any `initialize()` failure was reported as "needs an internet connection". Now the checkpoint's `weights_manifest.json` is asked for after a failure: unreachable or
+    not 2xx is `model-offline`; a checkpoint that answers and a model that still does not start is `model-failed` ("The piano model could not be started in this browser. Reload the page and try again."), and
+    `fallbackReason` follows.
+  - **A PDF reader without its worker is not a reader.** The worker's address is asked for (HEAD) before the library is handed out; a missing vendored worker is taken from the CDN too (counted), a worker that is nowhere
+    says "Could not reach the PDF reader" instead of "That PDF could not be opened - it may be corrupt", and a failure is not cached in `_pdfjs`.
+  - **SRI on the CDN copies.** The CDN `<script>` of pdf.js, TensorFlow.js 2.8.6 and `transcription.js` has `integrity` (the sha384 of the published file, which is the vendored one) and `crossorigin`; the worker (started by
+    pdf.js) and the `import()` of the esm.sh / jsDelivr `+esm` builds cannot have one, and `PPP_LIBS` and the README say so.
+  - **`PPP.libFallbacks`** (read-only): `{ pdfjs, 'tfjs-2.8.6', 'magenta-music', 'basic-pitch': n }`, the times PPP's own copy could not be fetched; `{}` on a healthy site and under `PPP.cdn`. The browser suites assert it, and
+    `tests/live/smoke.js` reads a PDF with the live site's own pdf.js and checks it is `{}`. It is not in the G13-7b counters payload: that has not landed (#274).
+  - **What the files have compiled in.** Besides the five libraries, the vendored files carry: core-js 3.32.2 (both pdf.js files, MIT), core-js 3.6.5 + seedrandom 2.4.3 + regenerator-runtime (TensorFlow.js 2.8.6, MIT),
+    seedrandom 3.0.5 (MIT) + long 4.0.0 (Apache-2.0) (TensorFlow.js 3.21.0), and in `transcription.js` protobufjs 6.x (BSD-3-Clause), buffer (MIT), ieee754 (BSD-3-Clause), base64-js, fft.js, ndarray-resample and the
+    packages it uses (MIT). Each is a row of an "Embedded" table in `vendor/README.md` (name, version, licence, copyright, where from, how it is known to be there), the texts are in `vendor/LICENSE-embedded.txt`,
+    `THIRD_PARTY_NOTICES.md` lists them, and `build.js --check` fails for an embedded package without its text; `tests/engrave/vendor-optional.test.js` lists the notices each file carries and fails when one appears or goes.
+    Versions the bundles do not state (protobufjs, buffer, ieee754, base64-js, fft.js, ndarray-resample, regenerator-runtime) are given as the range the package asked for and say so.
 - *Measured (2026-10-15, headless Chrome with SwiftShader, a local server, this branch):* with every other host refused a generated vector PDF is read and notated (pdf.js and its worker from `vendor/`, 2 requests, immutable), the
   Onsets and Frames code starts and ends in the clear "needs internet" message (the one request that goes out is for the checkpoint), Basic Pitch hears a four-note recording with no network at all and gives the same four notes,
   and a whole import with the checkpoint refused ends in Basic Pitch with `fallbackReason: 'model-offline'`; 0 requests to jsDelivr, unpkg, esm.sh or cdnjs on every one of those paths.
