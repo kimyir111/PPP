@@ -190,6 +190,12 @@
 <script src="./engrave/index.js?v=4"></script>
 </noscript>
 <script>PPP_LAZY.here()</script>
+<!-- G11a-5 (docs/GOALS/G11_ADAPTIVE_PRACTICE.md section 10.6): the practice plan made from the ScoreGraph is the default player (PPP.practice 'graph'). Its one file is a group like the others: after the first
+     paint, in the wave after the drawing's, immutable by its hash. Keep ?v= equal to PRACTICE_FILE_V below (tests/practice/plan-version.test.js). -->
+<noscript data-ppp-lazy="practice" data-after="score" data-globals="PPPPractice">
+<script src="./practice/plan.js?v=3"></script>
+</noscript>
+<script>PPP_LAZY.here()</script>
 <script src="./score-search.js"></script>
 <script>
 /* G13-1 (G13-D3): React is served from vendor/react-18.3.1/ (tests/engrave/vendor-react.test.js pins its bytes to the SRI in support.js). PPP.cdn: ?cdn=1 (this visit) or localStorage 'ppp.cdn' = '1' puts the unpkg copies back; ?cdn=0 is vendored for this visit; any other value is no choice, and no choice is the default (vendored). */
@@ -3647,9 +3653,9 @@ const PianoScore = {
 };
 
 /* ============================ G11a-3: practice on the graph (PPP.practice) ============================
-   docs/GOALS/G11_ADAPTIVE_PRACTICE.md sections 5 (G11-D1, G11-D11) and 6.3. PPP.practice = 'legacy' (default) | 'graph'; a value that is neither is no choice, and no choice is the default.
-   'legacy' is the player the app has always had: practicePlan() below IS PianoScore.of (the same call, the same cache, the same object), the page asks for nothing of practice/ and
-   nothing else changes. 'graph' makes the plan from the ScoreGraph the renderer already resolves for the song (practice/plan.js, loaded only then, the first time it is asked for) and
+   docs/GOALS/G11_ADAPTIVE_PRACTICE.md sections 5 (G11-D1, G11-D11) and 6.3. PPP.practice = 'graph' (default since G11a-5) | 'legacy'; a value that is neither is no choice, and no choice is the default.
+   'legacy' is the player the app had until G11a-5, kept one release as the way back (?practice=legacy, a remembered 'legacy', or PRACTICE_DEFAULT): practicePlan() below IS PianoScore.of (the same call,
+   the same cache, the same object) and nothing of practice/ is used. 'graph' makes the plan from the ScoreGraph the renderer already resolves for the song (practice/plan.js, a deferred group of the head) and
    hands the player, the matcher, the falling notes and follow mode the SAME shape of plan PianoScore.build makes, with the graph's ids on it (ev, head on a strike, id on a visit).
    G11a-3 ran the plan in compat mode (every fix option off: the play order, the notes, the pedal, the beats are the legacy player's to the last bit, proved event by event by
    tests/practice/parity.js). G11a-4 turns the four fixes ON under 'graph' (the user's decisions U2 and U3, 2026-10-13): D.C. / D.S. / Fine / To Coda are played (once, as an engraver reads them),
@@ -3658,9 +3664,12 @@ const PianoScore = {
    it is read only under 'graph', and 'legacy' is untouched. The tie at a jump is the plan's rule (docs/GOALS/G11 section 10.5).
    A song whose graph does not state its music (the source is not resolved yet, its link is not ok, or the module is not here yet) keeps the legacy plan, and the fallback is counted
    (PPP.practiceStats.practiceFallback: total, by reason, by song); nothing throws and playback is never held up.
+   G11a-5 (section 10.6): the default is 'graph'. TD31: the first plan of a Score with no live graph (a song read back from its slot, the sample) would have to project the Score into a graph on the
+   spot (340-400 ms at CPU 4x for the 1,900-note pieces, in the frame that opens the song), so such a Score is resolved in idle time when the song is opened (practiceWarm: the engraver's own
+   resolve, the plan of the loop range and of the whole piece) and a plan that is asked for before that is the legacy plan, counted as NOT_READY, until it is.
    The choice is remembered on this device (localStorage 'ppp.practice.v1'); ?practice=graph or ?practice=legacy in the address is for that visit only. */
 const PRACTICE_KEY = 'ppp.practice.v1';
-const PRACTICE_DEFAULT = 'legacy';
+const PRACTICE_DEFAULT = 'graph';
 const PRACTICE_PLAN_SCRIPT = 'practice/plan.js';
 const PRACTICE_FILE_V = 3; /* the ?v= of practice/plan.js: bump it when the file changes */
 function practiceChoice(v) { return v === 'legacy' || v === 'graph' ? v : null; }
@@ -3705,7 +3714,7 @@ function setPracticeFix(v) {
   return practiceFixText(PRACTICE_FIX);
 }
 /* what 'graph' did: plans made from a graph (and how many followed a D.C./D.S./To Coda, and how many hold grace notes), and the plans that stayed legacy, by reason and by song (the id of the Score, like PPP.engraveStats.bySong) */
-const PRACTICE_STATS = { graph: 0, jumps: 0, graces: 0, practiceFallback: { total: 0, reasons: {}, bySong: {} } };
+const PRACTICE_STATS = { graph: 0, jumps: 0, graces: 0, practiceFallback: { total: 0, reasons: {}, bySong: {} }, warm: { started: 0, done: 0, failed: 0, ms: 0 } };
 function practiceCountFallback(score, reason) {
   const f = PRACTICE_STATS.practiceFallback;
   f.total++;
@@ -3715,17 +3724,32 @@ function practiceCountFallback(score, reason) {
   s.total++;
   s.reasons[reason] = (s.reasons[reason] || 0) + 1;
 }
+/* G11a-5: PPPPractice is a deferred global of the head (data-ppp-lazy="practice"): a plain read of window.PPPPractice before its group is in loads it SYNCHRONOUSLY (lazy-load.js's safety net),
+   on the thread that plays. Every read of it, and of PPPEngrave, goes through PPP_LAZY.peek, which never loads (the page's own lazyPeek, not yet declared at this point of the file). */
+function practicePeek(name) {
+  try {
+    if (typeof window === 'undefined') return null;
+    const L = window.PPP_LAZY;
+    return (L && typeof L.peek === 'function' ? L.peek(name) : window[name]) || null;
+  } catch (e) { return null; }
+}
+function practiceMod() { const r = practicePeek('PPPPractice'); return (r && r.plan) || null; }
 function practiceModuleReady() {
-  const P = typeof window !== 'undefined' && window.PPPPractice && window.PPPPractice.plan;
+  const P = practiceMod();
   return !!(P && typeof P.build === 'function' && typeof P.followGates === 'function');
 }
 let _practicePromise = null, _practiceFailedAt = 0;
-/* practice/plan.js, once; resolves true when PPPPractice.plan is on the page, false when it could not be had (asked for again, at most every 20 s, by the next plan). Never rejects. */
+/* practice/plan.js, once; resolves true when PPPPractice.plan is on the page, false when it could not be had (asked for again, at most every 20 s, by the next plan). Never rejects.
+   With the split on it is the group 'practice' of the head (PPP_LAZY.ensure: after the first paint, in the prefetch's own order, shared with a download in flight); with the split off the head
+   has already written its script (nothing to do), and a page that has no such group (or no lazy-load.js) adds the script by hand, as G11a-3 did. */
 function loadPracticeModule() {
   if (practiceModuleReady()) return Promise.resolve(true);
   if (_practicePromise) return _practicePromise;
+  let L = null;
+  try { L = window.PPP_LAZY && window.PPP_LAZY.mode === 'on' && typeof window.PPP_LAZY.ensure === 'function' && window.PPP_LAZY.status().groups.some(g => g.name === 'practice') ? window.PPP_LAZY : null; } catch (e) { L = null; }
   _practicePromise = new Promise(resolve => {
     const done = () => { _practicePromise = null; const ok = practiceModuleReady(); if (!ok) _practiceFailedAt = Date.now(); resolve(ok); };
+    if (L) { try { L.ensure(['practice']).then(done, done); } catch (e) { done(); } return; }
     try {
       const el = document.createElement('script');
       el.src = './' + PRACTICE_PLAN_SCRIPT + '?v=' + PRACTICE_FILE_V;
@@ -3740,12 +3764,14 @@ function loadPracticeModule() {
 /* something that could turn a fallback into a graph plan has happened since: the module arrived, or the engraver resolved another Score (the source of a song is resolved without a
    wait only after the renderer, or an import, has made it) */
 function practiceStamp() {
-  let n = 0;
+  let n = 0, e = 'n';
   try {
-    const st = window.PPPEngrave && window.PPPEngrave.app.stats;
+    const E = practicePeek('PPPEngrave');
+    const st = E && E.app.stats;
+    if (E) e = 'e';
     if (st) n = (st.remembered || 0) + (st.resolved.live || 0) + (st.resolved.store || 0) + (st.resolved.projected || 0) + (st.resolved.none || 0);
-  } catch (e) { /* no engraver */ }
-  return (practiceModuleReady() ? 'm' : 'x') + n;
+  } catch (err) { /* no engraver */ }
+  return (practiceModuleReady() ? 'm' : 'x') + e + n;
 }
 /* Score note of every graph head: the link of the source says which graph event and head each Score note is (engrave/source.js identity) */
 const PRACTICE_HEADS = new WeakMap();
@@ -3768,11 +3794,12 @@ function practiceGraphBuild(score, a, b, src0) {
     if (!_practicePromise && Date.now() - _practiceFailedAt > 20000) loadPracticeModule();
     return { reason: 'NOT_LOADED' };
   }
-  if (typeof window === 'undefined' || !window.PPPEngrave) return { reason: 'NO_ENGRAVER' };
+  const Eng = practicePeek('PPPEngrave');
+  if (!Eng) return { reason: 'NO_ENGRAVER' };
   const ms = score.measures || [];
   if (!ms.length || !score.notes) return { reason: 'EMPTY' };
   let src = src0;
-  if (!src) { try { src = window.PPPEngrave.app.resolveSync(score); } catch (e) { return { reason: 'RESOLVE_ERROR' }; } }
+  if (!src) { try { src = Eng.app.resolveSync(score); } catch (e) { return { reason: 'RESOLVE_ERROR' }; } }
   if (!src || !src.graph) return { reason: 'NO_GRAPH' };
   if (!src.link || !src.link.ok) return { reason: 'LINK_FAILED' };
   const tl = src.graph.timeline && src.graph.timeline.measures;
@@ -3783,7 +3810,7 @@ function practiceGraphBuild(score, a, b, src0) {
   let plan;
   try {
     const i0 = (Score.measure(score, a) || ms[0]).index, i1 = (Score.measure(score, b) || ms[ms.length - 1]).index;
-    plan = window.PPPPractice.plan.build(src.graph, { range: { from: i0, to: i1 }, defaultQpm: qpm, legacyCompat: true,
+    plan = practiceMod().build(src.graph, { range: { from: i0, to: i1 }, defaultQpm: qpm, legacyCompat: true,
       jumps: PRACTICE_FIX.indexOf('jumps') >= 0 ? 'once' : false, graces: PRACTICE_FIX.indexOf('graces') >= 0 ? 'play' : false });
     const strikes = plan.strikes;
     for (let i = 0; i < strikes.length; i++) {
@@ -3810,15 +3837,105 @@ const PRACTICE_CACHE = typeof WeakMap === 'function' ? new WeakMap() : null;
 /* One plan per (Score, range), like PianoScore.of: a graph plan is kept for good; a fallback whose reason can change (the module is not here, the engraver has no graph or no good link for the Score yet) is kept until
    something that could change it has happened (practiceStamp), and then decided again, at most five times; the others (the graph and the Score disagree about the measures, a plan that cannot be built) for good. */
 const PRACTICE_RETRY = { NOT_LOADED: 1, NO_ENGRAVER: 1, RESOLVE_ERROR: 1, NO_GRAPH: 1, LINK_FAILED: 1 };
+/* G11a-5 / TD31. Is the source of this Score (the graph that states its music, and the link of its notes to the graph's heads) already at hand, or would asking for it have to work it
+   out here and now? It is at hand when it was resolved before (practiceWarm, or an earlier plan: bag.src); when warming it failed (the plan then does it as G11a-3 did: a plan is better
+   late than legacy); when the engraver holds the producer's own graph for this very Score object (an import, a recording, an arrangement: the renderer, the save and the first Play are
+   all right after it); and when the Score is small, PRACTICE_SYNC_NOTES notes or fewer (the work is 0.12 ms a note at CPU 4x: 60 ms for 500 notes, measured cold). A large Score read back
+   from its slot has no producer's graph: its source is a projection of the Score (fromScore, agree, link: 230-245 ms at CPU 4x for the 1,900-note pieces after the page has settled,
+   340-400 ms in the frame that opens the song) and that is not worked out on the thread that plays. */
+const PRACTICE_SYNC_NOTES = 500;
+function practiceSourceAtHand(score, bag) {
+  if (!PRACTICE_CACHE) return true;
+  if (bag && (bag.src || bag.warmFailedAt)) return true;
+  if (score.notes && score.notes.length <= PRACTICE_SYNC_NOTES) return true;
+  try { const Eng = practicePeek('PPPEngrave'); return !!(Eng && Eng.app.hasLive(score)); } catch (e) { return true; }
+}
+function practiceIdle(fn) {
+  try { if (typeof requestIdleCallback === 'function') return requestIdleCallback(fn, { timeout: 1000 }); } catch (e) { /* a timer */ }
+  return setTimeout(fn, 30);
+}
+/* practice/plan.js and the engraver's source are in the page (asked for, after the first paint, when they are not: the prefetch brings them anyway) */
+function practiceNeedModules() {
+  let eng = Promise.resolve(true);
+  try {
+    const L = window.PPP_LAZY;
+    if (L && L.mode === 'on' && typeof L.ensure === 'function' && !practicePeek('PPPEngrave')) eng = L.ensure(['engrave']).then(ok => ok, () => false);
+  } catch (e) { /* the renderer asks for it */ }
+  return Promise.all([loadPracticeModule(), eng]).then(() => practiceModuleReady() && !!practicePeek('PPPEngrave'), () => false);
+}
+/* TD31: resolve the source of a Score, and build the plans of its range and of the whole piece, in idle time (the engraver's own resolve: the kept graph of the song, else the projection; each
+   step in its own idle callback, so that no task is longer than the step). Resolves true when the Score's source is cached (bag.src), false when it could not be had. Never rejects; one run per
+   Score (a failed one is asked for again after 20 s). A plan that was handed out meanwhile was the legacy one (NOT_READY): the page is drawn again when this is done. */
+function practiceWarm(score) {
+  if (!PRACTICE_CACHE || !score || typeof score !== 'object') return Promise.resolve(false);
+  let bag = PRACTICE_CACHE.get(score);
+  if (!bag) { bag = {}; PRACTICE_CACHE.set(score, bag); }
+  if (bag.src) return Promise.resolve(true);
+  if (bag.warming) return bag.warming;
+  if (bag.warmFailedAt && Date.now() - bag.warmFailedAt < 20000) return Promise.resolve(false);
+  const W = PRACTICE_STATS.warm;
+  const t0 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+  W.started++;
+  const fail = () => { bag.warming = null; bag.warmFailedAt = Date.now(); W.failed++; return false; };
+  bag.warming = practiceNeedModules().then(ok => ok ? new Promise(resolve => {
+    const step2 = () => {
+      try {
+        const A = window.PPP && window.PPP.app, S = A && A.state;
+        practiceGraphPlan(score, Score.first(score), Score.last(score));
+        if (S && S.score === score && typeof A.range === 'function') { const rg = A.range(S); practiceGraphPlan(score, rg[0], rg[1]); }
+        W.done++;
+        W.ms = Math.round(((typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()) - t0) * 10) / 10;
+        bag.warming = null;
+        resolve(true);
+        if (bag.served && A && !A._dead && S && S.score === score && typeof A.forceUpdate === 'function') { bag.served = false; A.forceUpdate(); }
+      } catch (e) { resolve(fail()); }
+    };
+    practiceIdle(() => {
+      try {
+        const Eng = practicePeek('PPPEngrave');
+        const A = window.PPP && window.PPP.app, S = A && A.state;
+        const key = S && S.score === score && S.songId && S.songId !== 'demo' ? S.songId : null;
+        const got = key ? Eng.app.resolve(score, { key: key }) : Eng.app.resolveSync(score);
+        Promise.resolve(got).then(r => {
+          if (!r) { resolve(fail()); return; }
+          bag.src = r;
+          practiceIdle(step2);
+        }, () => resolve(fail()));
+      } catch (e) { resolve(fail()); }
+    });
+  }) : fail(), () => fail());
+  return bag.warming;
+}
+/* the graph plan of a range for a reader that must not wait (the keyboard hint, asked at every render): the plan when the Score's source is resolved already or the Score is small (a few
+   milliseconds), else null and the warm-up is asked. Stricter than practicePlan: not even a Score the engraver holds the graph of is resolved at a render (a big import is a quarter of a
+   second at CPU 4x). */
+function practicePlanWarm(score, from, to) {
+  if (PRACTICE_MODE !== 'graph' || !score || !PRACTICE_CACHE) return null;
+  const bag = PRACTICE_CACHE.get(score);
+  if ((!bag || !bag.src) && !(score.notes && score.notes.length <= PRACTICE_SYNC_NOTES)) { practiceWarm(score); return null; }
+  const p = practiceGraphPlan(score, from, to);
+  return p && p.graph ? p : null;
+}
+function practiceRetryable(hit, bag) {
+  if (hit.reason === 'NOT_READY') return !!(bag && (bag.src || bag.warmFailedAt));
+  return hit.tries < 5 && !!PRACTICE_RETRY[hit.reason] && hit.stamp !== practiceStamp();
+}
 function practiceGraphPlan(score, from, to) {
   if (!score) return PianoScore.of(score, from, to);
   const a = from == null ? Score.first(score) : from;
   const b = to == null ? Score.last(score) : to;
   const key = a + ':' + b + ':' + PRACTICE_FIX.join(',');
   let bag = PRACTICE_CACHE && PRACTICE_CACHE.get(score);
+  if (!bag && PRACTICE_CACHE) { bag = {}; PRACTICE_CACHE.set(score, bag); }
   const hit = bag && bag[key];
-  if (hit && (hit.graph || !(hit.tries < 5 && PRACTICE_RETRY[hit.reason] && hit.stamp !== practiceStamp()))) return hit.plan;
-  const r = practiceGraphBuild(score, a, b, bag && bag.src);
+  if (hit && (hit.graph || !practiceRetryable(hit, bag))) return hit.plan;
+  const src0 = bag && bag.src;
+  let r;
+  if (!src0 && practiceModuleReady() && practicePeek('PPPEngrave') && !practiceSourceAtHand(score, bag)) {
+    practiceWarm(score);
+    if (bag) bag.served = true;
+    r = { reason: 'NOT_READY' };
+  } else r = practiceGraphBuild(score, a, b, src0);
   const tries = hit && !hit.graph ? hit.tries + 1 : 1;
   let entry;
   if (r.plan) {
@@ -11431,8 +11548,10 @@ window.PPP = {
      practicePlan is the one function the practice code asks for a plan; practiceStats counts what 'graph' did (plans from the graph, and the plans that stayed legacy by reason and by song); loadPracticeModule resolves true once practice/plan.js is on the page. */
   get practice() { return PRACTICE_MODE; },
   set practice(v) { setPracticeMode(v); },
-  practicePlan, loadPracticeModule, practiceGraphBuild,
+  practicePlan, loadPracticeModule, practiceGraphBuild, practiceWarm,
   get practiceStats() { return PRACTICE_STATS; },
+  /* G11a-5: what no choice means (one constant, PRACTICE_DEFAULT); read-only, for the smoke check and the tests */
+  get practiceDefault() { return PRACTICE_DEFAULT; },
   /* G11a-4: which of the four fixes 'graph' applies: 'on' (default) | 'off' | a list, 'jumps,graces,repeats,ties' or part of it. Any other value is no choice: the default comes back and the
      remembered choice is forgotten. Remembered on this device; ?practiceFix= in the address is for that visit only. Read only while PPP.practice is 'graph'. */
   get practiceFix() { return practiceFixText(PRACTICE_FIX); },
@@ -11487,8 +11606,8 @@ window.PPP = {
   ScoreSearch: (typeof window !== 'undefined' ? window.PPPScoreSearch : null),
   Coach, COACH, Fingering, HandArt, tx: tx
 };
-/* G11a-3: a page that starts on PPP.practice 'graph' asks for practice/plan.js now (a page on 'legacy' never does) */
-if (PRACTICE_MODE === 'graph') loadPracticeModule();
+/* G11a-5: practice/plan.js is a deferred group of the head: the prefetch brings it after the first paint (lazy-load.js, the wave of audio-score.js), the first plan that finds it missing asks for it
+   (loadPracticeModule), and warmPractice (componentDidUpdate) asks for it, the engraver and the source of the open song when the practice screen is shown. Nothing is asked for at boot. */
 /* ============================================================================
    WHAT A PDF SAYS IN ITS OWN WORDS
 
@@ -13810,6 +13929,7 @@ class Component extends DCLogic {
     this.persist();
     this.maybeReplan();
     if (LEARNER_MODE === 'typed') this.warmRunLog(this.state.score);   /* G11b-1: the Score's music hash and note ids are worked out in idle time, not at the end of a lap */
+    if (PRACTICE_MODE === 'graph') this.warmPractice(this.state);       /* G11a-5 (TD31): the source of the open song is worked out in idle time, not on the first Play */
     this.followKeyboard();
     this.followStaff();
     this.watchShared();
@@ -15196,7 +15316,7 @@ class Component extends DCLogic {
     if (viaGraph) {
       this._gatesKey = key;
       /* G11a-4: FOLLOW_REPEAT (a repeated bar is asked each time the clock plays it) and FOLLOW_TIE (exactly the notes the clock strikes); both off, the gates are today's */
-      this._gates = window.PPPPractice.plan.followGates(gp, S.hands, { repeats: PRACTICE_FIX.indexOf('repeats') >= 0, ties: PRACTICE_FIX.indexOf('ties') >= 0 });
+      this._gates = practiceMod().followGates(gp, S.hands, { repeats: PRACTICE_FIX.indexOf('repeats') >= 0, ties: PRACTICE_FIX.indexOf('ties') >= 0 });
       return this._gates;
     }
     const playAt = {}, restAt = {}, spans = [];
@@ -16015,6 +16135,15 @@ class Component extends DCLogic {
     });
     const h = info.hash();
     return { songId: S.songId || 'demo', hash: h.hash, hashV: h.hashV, info: info, meta: { measures: info.measures, scoreTempo: info.scoreTempo, title: info.title } };
+  }
+  /* ============================ G11a-5: the source of the open song, in idle time (TD31) ============================ */
+  /* Once per Score object, when a screen that plays it is shown: the module, the engraver, the Score's graph (the kept one, or its projection) and the plan of the loop and of the whole piece, so
+     that the first Play finds them (practiceWarm). A Play before that plays the legacy plan, counted as NOT_READY; the page is drawn again when the source is in. */
+  warmPractice(S) {
+    const sc = S.score;
+    if (!sc || this._practiceWarmed === sc || (S.screen !== 'player' && S.screen !== 'score')) return;
+    this._practiceWarmed = sc;
+    practiceWarm(sc);
   }
   warmRunLog(score) {
     if (LEARNER_MODE !== 'typed' || !window.PPPRunLog || !score || this._warmedScore === score) return;
@@ -19688,7 +19817,11 @@ class Component extends DCLogic {
     const c = this._visualTimeline;
     /* G11a-3: the plan is part of the key: a timeline built on the legacy plan while practice/plan.js was still on its way is not the one the transport (which has the graph plan by now) is on,
        and visualTransportFrame would fall back to the 40 ms beat for want of the same plan */
-    const plan = S.score.measures && S.score.measures.length ? practicePlan(S.score, from, to) : null;
+    /* G11a-5: a run keeps its plan. While a transport of this very range, tempo and hands runs, the timeline is drawn on ITS plan: a Score whose source was worked out meanwhile (practiceWarm) has a graph
+       plan by now, and the transport, which began on the legacy one, would no longer be on the plan the notes are drawn from (visualTransportFrame: the 40 ms beat, a choppy fall until Stop) */
+    const tpx = this._tp;
+    const own = PRACTICE_MODE === 'graph' && S.playing && tpx && tpx.plan && tpx.key === this.transportKey(S) ? tpx.plan : null;
+    const plan = own || (S.score.measures && S.score.measures.length ? practicePlan(S.score, from, to) : null);
     if (c && c.score === S.score && c.from === from && c.to === to && c.tempo === tempo && c.plan === plan) return c.timeline;
     const timeline = scoreToVisualTimeline(S.score, { from: from, to: to, tempo: tempo, plan: plan });
     this._visualTimeline = { score: S.score, from: from, to: to, tempo: tempo, plan: plan, timeline: timeline };
@@ -20288,7 +20421,11 @@ class Component extends DCLogic {
   carriedFn() {
     if (PRACTICE_MODE !== 'graph' || PRACTICE_FIX.indexOf('ties') < 0 || !practiceModuleReady()) return n => n.tieStop;
     const [from, to] = this.range(this.state);
-    const cont = practicePlan(this.state.score, from, to).cont;
+    /* G11a-5 / TD31: asked at every render, so never a plan that has to be made on the spot (the source of a song read back from its slot is worked out in idle time, practiceWarm): until it is
+       there the hint is today's rule, every tied-to note */
+    const gp = practicePlanWarm(this.state.score, from, to);
+    if (!gp) return n => n.tieStop;
+    const cont = gp.cont;
     return n => n.tieStop && cont.has(n);
   }
   litNotes() {
