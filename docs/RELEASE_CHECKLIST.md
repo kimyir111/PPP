@@ -65,16 +65,20 @@ Every deploy gets a row in `docs/RELEASES.md`.
    site misses most of them by design). The JSON report also lists every request of the cold load with its status and cache header
    (`results.<mode>[].ownRequestList`), which is the oracle for "every page request still succeeds" after a change to the static server.
    Runs differ by up to about 15% for bytes and times and more for single long tasks: judge a change by the median of two runs.
-8. **A change to user-visible text**: `node tests/live/i18n-walk.js ko-KR` (and `ja-JP`, `zh-CN`) must show no `NEW` string;
+8. **A change of the practice player** (the default of `PPP.practice`, `practice/plan.js`, how the page asks for a plan; G11a-5): `node tests/live/smoke.js --sha <sha>` says `PPP.practice` is the
+   graph plan by default and that the practice screen of a fresh profile plans the sample from its graph with no fallback and no synchronous load; then `node tests/live/practice-check.js`
+   (read-only: a fake MIDI keyboard on the live site, Burgmüller 25 no. 6, once on the default and once on `?practice=legacy`, the way back): the plan follows the D.C., the matcher matches what
+   was due, Follow moves past the onsets played. The way back for a visitor is `?practice=legacy` for one visit, `PPP.practice = 'legacy'` for a device, and `PRACTICE_DEFAULT` in the page for everyone.
+9. **A change to user-visible text**: `node tests/live/i18n-walk.js ko-KR` (and `ja-JP`, `zh-CN`) must show no `NEW` string;
    the static check `node tests/i18n/gaps.js --check` is already part of the gate and fails on a new string with no translation.
    The coach hints ("Left hand at 75% tempo") are built in code and show in some page loads only: run the walk twice before believing a `NEW`.
-9. **A change of the user's own flow** (recording to score, the PC link, import, share): reproduce the user's exact path and data on
+10. **A change of the user's own flow** (recording to score, the PC link, import, share): reproduce the user's exact path and data on
    production, not on a fixture. A fix verified only on other data has been declared done before the real cause was found.
    Do it with the live page, as the user does (production runs without the local helper services a local test may have).
 
 ## 4. After the deploy
 
-10. **Tell the user, in Korean**, in one or two lines: what changed, that it is live, and the rollback command with the commit
+11. **Tell the user, in Korean**, in one or two lines: what changed, that it is live, and the rollback command with the commit
     (for example "방금 올린 것: 악보 보기. 문제가 생기면 `<이전 sha>`로 되돌립니다").
 
 ## Watching the live site (G13-7a)

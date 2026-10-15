@@ -29,7 +29,9 @@ recording lead sheet as generators and a new, verified measure-aligned splice.
 
 **G11a-3 is built** (2026-10-08): `PPP.practice` (`'legacy'` default | `'graph'`) and `practicePlan()` at the nine call sites; the graph plan runs in compat mode, so `'graph'` is the legacy player to the bit (scheduler queue, matcher, falling notes, follow gates), counted fallbacks 0 on the 325 catalogue files and 93 fixtures; all eleven practice suites pass on both players; the record, the call sites and the numbers are §10.4.
 
-**G11a-4 is built** (2026-10-14): under `PPP.practice = 'graph'` the four fixes are ON (U2: D.C./D.S./Fine/To Coda played, graces sound and are not judged; U3: follow mode asks a repeated bar as often as Play plays it and exactly the notes Play strikes); `PPP.practiceFix` ('on' | 'off' | a list) takes any of them away; the default of `PPP.practice` stays `'legacy'`; the rule for a tie at a jump, the options test (136 checks), the mutants and the numbers are §10.5, the user's listening check is `tests/practice/listen-check.md`.
+**G11a-4 is built** (2026-10-14): under `PPP.practice = 'graph'` the four fixes are ON (U2: D.C./D.S./Fine/To Coda played, graces sound and are not judged; U3: follow mode asks a repeated bar as often as Play plays it and exactly the notes Play strikes); `PPP.practiceFix` ('on' | 'off' | a list) takes any of them away; the default of `PPP.practice` stayed `'legacy'` until G11a-5; the rule for a tie at a jump, the options test (136 checks), the mutants and the numbers are §10.5, the user's listening check is `tests/practice/listen-check.md`.
+
+**G11a-5 is built** (2026-10-15): the default of `PPP.practice` is `'graph'` (the four fixes on); `'legacy'` is kept for one release as the way back; `practice/plan.js` is a deferred group of the head; TD31 is decided (the source of a large song read back from its slot is worked out in idle time, not in the frame that opens it or on the Play tap; a plan asked for before that is the legacy plan, counted `NOT_READY`); the record, the numbers and the tests are §10.6.
 
 **G11b-1 is built** (2026-10-08): `PPP.learner = 'legacy' | 'typed'`, `practice/runlog.js` (typed evidence, the bounded run log in IndexedDB, the export), the Settings card and the rating row, and `PPP.demoRuns` (decision U4, off); the legacy aggregates are proved byte-identical against the page before the phase; the record, the budgets and the places that count Demo Input today are §19.
 
@@ -670,6 +672,76 @@ what the music it makes costs.
 
 **The user's listening check** is `tests/practice/listen-check.md` (Korean, 3 catalogue pieces: Burgmüller 25 No. 6 D.C. al Fine, No. 3 grace notes, No. 21 repeats with endings and the tie that leads nowhere in follow mode; the hand-written D.S. al Coda as an option).
 
+### 10.6 G11a-5 record (2026-10-15, Sonnet; branch `g11a-5-flip`)
+
+**What flipped.** `PRACTICE_DEFAULT = 'graph'` (one constant). A visitor's page now plans, plays, judges and lights a piece from the ScoreGraph with the four fixes of §10.5 on (the user's decisions of 2026-10-13, U2 and U3;
+his listening check of 2026-10-15, Burgmüller 25 no. 6 D.C. al Fine and no. 3 graces, both "맞아요"; "몰라 일단 해"). Nothing else changed its default: `PPP.practiceFix` is still `'on'`, `PPP.learner` is still `'legacy'`.
+`'legacy'` stays one release as the instant way back: `?practice=legacy` (one visit), `PPP.practice = 'legacy'` (remembered on that device, `ppp.practice.v1`), or the constant. Any value that is no choice is now `'graph'`
+(a stored garbage value, `?practice=garbage`, a `localStorage` that throws). `PPP.practiceDefault` (read-only) says what the constant is; the smoke check reads it.
+
+**The module is a group of the head, not a script the page adds.** `practice/plan.js` is `<noscript data-ppp-lazy="practice" data-after="score" data-globals="PPPPractice">` in the head (G13-4e), so the served page names it by
+its content hash (immutable, gzip: 18 KB once, 0 bytes on a repeat visit) and `lazy-load.js` brings it after the first paint in the wave of `audio-score.js` (`WAVES`: `[lessons, backup] [score, engrave, engravePage]
+[practice, audio] [arranger]`); nothing is asked for at boot (G11a-3 asked in the app script, before the first paint). Every read of `PPPPractice` and `PPPEngrave` by the practice code goes through `PPP_LAZY.peek`
+(`practicePeek`): a plain read of a deferred global before its group is in loads it SYNCHRONOUSLY, on the thread that plays (the safety net of G13-4e), which was harmless while `'graph'` was opt-in. `loadPracticeModule()` is
+`PPP_LAZY.ensure(['practice'])`, sharing the prefetch's download; with the split off the head has written the script already, and a page with no such group adds the tag by hand as before. `practiceStamp` now also
+says whether the engraver is in (a `NO_ENGRAVER` fallback is decided again when it arrives). `lazy-load.js` is a "run the practice suites" file of `tests/practice/plan.py`, and `tests/load/mutants.js` copies `practice/`.
+The shipped order is checked by `tests/load-app/split.test.js` (20 tests: nothing before the first paint, no synchronous load, the practice screen with the engraver held 5 s and the prefetch off) and the content-hash test.
+
+**TD31 decided: the first plan of a large Score is not made on the thread that plays or in the frame that opens the song.**
+
+| CPU 4x, cold page, 3 runs each (median [range]) | before: main, `?practice=graph` | after: this branch, default | legacy, explicit |
+| --- | --- | --- | --- |
+| frame that opens Sonatina 020 (1,916 notes) | 733 ms [672-749] | 252 ms [241-282] | 278 ms [252-309] |
+| ...Sonatina 016 (1,658 notes) | 592 ms [541-610] | 213 ms [196-217] | 226 ms [219-228] |
+| ...Czerny 299 no. 9 (1,656 notes) | 560 ms [522-562] | 229 ms [186-250] | 226 ms [198-250] |
+| the first plan inside that frame | 394 / 372 / 352 ms | none (the source is cached in idle time; the first plan then builds in 13 / 26 / 14 ms) | none (the legacy plan is built at the Play tap) |
+| longest task of the frame | 716 / 575 / 542 ms | 232 / 195 / 213 ms | 259 / 208 / 208 ms |
+| Play tap (togglePlay, without the 48 ms of `wake()`) | 12 / 8 / 10 ms | 8 / 6 / 10 ms | 18 / 16 / 16 ms |
+| warm-up, request to done | - | 1.4-1.5 s (0.34-0.37 s at 1x) | - |
+
+The first plan of a Score with no live graph, asked for when the page has settled (so the fixed cost of the cold page is not in it), by size: 22-45 notes 8-13 ms, 223 notes 38 ms, 273 notes 27-35 ms, 1,065 notes 106-113 ms,
+1,103 notes 136-140 ms, 1,656 notes 210-231 ms, 1,916 notes 232-245 ms (0.12 ms a note); a Score that has a live graph (an import) costs 230-265 ms at the 1,916 notes too, because the engraver checks it
+(`agree`, `link`) before it hands the graph out. The sample (640 notes, no live graph) cost 7 ms where the renderer had resolved it first (about 75 ms at the same rate when it has not).
+
+*Where it was paid.* Not at the Play tap: **in the frame that opens the song**. The keyboard hint (`carriedFn`, asked at every render for the tie rule of §10.5) asked for a plan, and a Score read back from its slot has no
+producer's graph, so `resolveSync` projected it (`fromScore`, `agree`, `link`) inside the render: 350-400 ms at CPU 4x for the 1,600-1,900-note pieces, against the 230 ms of the review and the "8-9 ms" of §10.4 (a warm page,
+a live graph). The legacy player paid its 70-100 ms at the Play tap, where the audio context wakes as well. The decision was therefore not "accept": 350-400 ms in one frame is three times the 100 ms line the roadmap set.
+
+*What is done.* (1) The keyboard hint no longer asks for a plan that has to be made: `practicePlanWarm` gives the plan when the Score's source is resolved already or the Score is small, otherwise today's rule (every tied-to
+note) and a request to warm. (2) `practiceWarm(score)` (`PPP.practiceWarm`, awaitable) works the source out in idle time: the module and the engraver, then the engraver's own `resolve` (the kept graph of the song from its
+store, else the projection) in one idle callback, then the plans of the loop range and of the whole piece in the next; so no task is longer than one step. `warmPractice` (componentDidUpdate) asks for it for the Score on a
+screen that plays, and the render's own hint asks too (the sample is warmed at boot, on Home). 1.4-1.5 s at 4x is mostly the wait for the sheet's drawing, the main thread's biggest task there (0.9 s, G4 B5); the
+engraver's resolve of the same Score is shared with the renderer's. (3) A plan asked for before it is ready is **the legacy plan, counted `NOT_READY`** (one per range, like every fallback; `PPP.practiceStats.practiceFallback`);
+the decision is made again as soon as the source is there (`practiceRetryable`), the page is drawn again when something was handed the legacy plan, and a transport that began on it keeps drawing its notes on it
+(`visualTimeline`), so the falling notes never run on another plan than the player; a run keeps its plan, as in §10.4. (4) Not everything waits: a Score of 500 notes or fewer (`PRACTICE_SYNC_NOTES`: 60 ms at 4x, cold)
+and a Score the engraver holds the producer's graph of (an import, a recording, an arrangement; and every Score the tests make with `scoreFromXml`) are planned at once; a warm-up that failed falls back to the old
+synchronous resolve (a plan late is better than a legacy plan for good). `PPP.practiceStats.served` counts what `practicePlan` handed out that was a graph plan (what the suites assert on; `graph` is what was made,
+the warm-up's builds included), and `.warm` is `{started, done, failed, ms}`.
+
+*What a person can see.* Tap Play on a large song that was saved and is opened again within about 0.3 s (1x) to 1.5 s (4x), before the sheet is drawn, and that one run plays the legacy plan: a D.C. piece plays without
+the jump that time, the next run has it. A large piece that was just imported (a live graph) is planned at once, and costs 230-265 ms at CPU 4x on that first Play if the warm-up has not finished.
+Nothing else differs from the page of §10.5 with `PPP.practice = 'graph'`.
+
+**Tests.** `tests/practice/run-suites.js` defaults to `--practice graph` = the page's own default, nothing set; it is red when a page was not on `'graph'`. `--practice legacy` sets the remembered choice and is red when a page
+was not on `'legacy'` or was handed a graph plan. CI keeps its two checks `practice-suites (legacy|graph, 1|2)`. Both legs: the twelve suites, **648 checks, green, unedited** (the graph leg: 2 `NOT_READY` and 3
+`LINK_FAILED`, all on Scores the suites build by hand). `with-port.js` takes `PPP_PRACTICE=legacy` too and always prints the practice line. `tests/practice/switch.js` was rewritten for the new default (what is no choice, the
+module a group asked for once and never read early, the explicit legacy page, the setter, the held-back prefetch; 175 checks) and has a new section `warm` (the first plan of a large Score is the legacy plan, counted once,
+nothing resolved on the spot; after `practiceWarm` the graph plan; a small Score and a live one at once; the hint at render makes no plan and resolves nothing; a transport on the legacy plan keeps its falling notes):
+`switch-mutants.js` re-anchored or rewrote W1, W9-W12, W18, W19, W28, W29, W38 and has W39-W45 new (45 rows, all killed). The recorder, the parity harness and the matcher mutants open their pages with the explicit legacy
+choice (`tests/practice/lib.js`: `openApp(url, {practice, settle})`; the parity harness waits for the page's own copy of the module before it adds its own: both would write `PPPPractice.plan`); the practice
+simulator pins `PRACTICE_MODE = 'legacy'` in its vm (its baselines changed in the key `appCode` only: nine declaration names; 144 rows identical). `options.js` 136 checks and its 27 mutants, the parity harness (0
+UNEXPLAINED), the recorder, the perf probe (within its baseline on the default page) and the 172 + 15 Node tests of `practice/` and `practice-sim/` are unchanged and green. `tests/live/smoke.js` has three
+checks (`PPP.practice` is `'graph'` by default; the practice screen of a fresh profile plans the sample from its graph with no fallback; no synchronous load: a build from before the flip has no `PPP.practiceDefault`
+and passes as "not in this build"), and `tests/live/practice-check.js` is the follow/midi run against a live site (a fake keyboard, Burgmüller no. 6, the default and `?practice=legacy`: the D.C. is the difference: 32
+visits against 24; 45 of 45 due notes matched; 8 onsets followed; 14 checks, read-only; the release checklist item 8).
+
+**Findings.** (a) The "graph plans N" the suites print counted what the warm-up built too, so a mutant of `practicePlan` that returned the legacy plan survived (W38): it counts `served` now. (b) Reading
+`window.PPPPractice` or `window.PPPEngrave` from the practice code, harmless while `'graph'` was opt-in, would have loaded two groups synchronously on the thread that plays the first time a visitor pressed Play before
+the prefetch had finished: `practicePeek`. (c) The default of the explicit-legacy tests moved: seven drivers had meant "legacy" by saying nothing. (d) A synchronous resolve for a large LIVE Score on the first Play is
+still possible (rare: a tap within the first 0.3 s of an import; 230-265 ms at 4x); not moved, because a legacy plan there would make every freshly imported piece play without its D.C. on its first run.
+
+**Rollback** (§13): the default back to `'legacy'` is the constant; legacy is kept with its tests for one release.
+
 ## 11. Performance budgets
 
 Measured today (E5-E7) → budget, for a 1,800-note piece, 1× / 4× CPU:
@@ -708,6 +780,10 @@ Measured today (E5-E7) → budget, for a 1,800-note piece, 1× / 4× CPU:
 (the off-path identity of every app phase is proven by the scheduler spies and the legacy aggregates). New
 modules (`practice/*`) are not loaded while their switch is off. Logs in IndexedDB are ignored by the legacy
 code. Variant copies are ordinary arrangement copies and survive a rollback.
+
+Since G11a-5 (2026-10-15) the default of `PPP.practice` is `'graph'`; the way back is, in the order of how much it undoes: `?practice=legacy` (one visit), `PPP.practice = 'legacy'` in the
+console or a remembered `ppp.practice.v1` = `legacy` (one device), `PRACTICE_DEFAULT = 'legacy'` (every visitor: one constant, one release). `'legacy'` is kept for one release after the flip,
+with its tests (§10.6).
 
 ## 14. Decisions (F)
 
