@@ -38,6 +38,7 @@ function makeCopy() {
 }
 
 const SPLITN = 'lazy-load.test.js', SPLITB = 'load-app/split.test.js';
+const TFLOCK = 'load-app/tf-lock.test.js';
 const LAZY = 'i18n-lazy.test.js', HASH = 'content-hash.test.js', FONTS = 'fonts.test.js', SAMPLES = 'load-app/samples.test.js', TEMPLATE = 'load-app/template.test.js', CJK = 'load-app/cjk-fonts.test.js', CJKD = 'cjk-detect.test.js', CNT = 'counters.test.js', CNTAPP = 'load-app/counters.test.js';
 
 /* id, file, what the mutant breaks, [from, to] or a list of them (each replaced once), the test that must fail */
@@ -128,7 +129,7 @@ const M = [
   ['C7', 'static-assets.js', 'one entity tag for both encodings', ["const etag = '\"' + e.hash + (gz ? '-gz' : '') + '\"';", "const etag = '\"' + e.hash + '\"';"], HASH],
   ['C8', 'static-assets.js', 'an answer says gzip but sends the plain bytes', ["if (gz) { body = await gzipOnce(e, buf); headers['Content-Encoding'] = 'gzip'; }", "if (gz) { headers['Content-Encoding'] = 'gzip'; }"], HASH],
   ['C9', 'static-assets.js', 'the hash of a file is kept for ever (a changed file keeps its old hash)', ["if (c && c.mtimeMs === st.mtimeMs && c.size === st.size) return c;\n  const e = { mtimeMs: st.mtimeMs, size: st.size, hash: hashBytes(", "if (c) return c;\n  const e = { mtimeMs: st.mtimeMs, size: st.size, hash: hashBytes("], HASH],
-  ['C10', 'static-assets.js', 'mp3 and pictures become hashable', ["const HASHABLE = new Set(['.js', '.json', '.css', '.woff2', '.woff']);", "const HASHABLE = new Set(['.js', '.json', '.css', '.woff2', '.woff', '.mp3', '.png']);"], HASH],
+  ['C10', 'static-assets.js', 'mp3 and pictures become hashable', ["const HASHABLE = new Set(['.js', '.json', '.css', '.woff2', '.woff', '.bin']);", "const HASHABLE = new Set(['.js', '.json', '.css', '.woff2', '.woff', '.bin', '.mp3', '.png']);"], HASH],
   ['C12', 'server.js', 'the served list is not asked (a server file is handed out)', ["if (!staticAllow.isServed(rel)) { noteNotServed(abs, rel); return jsonError(res, 404, 'Not found'); }", "if (false) { noteNotServed(abs, rel); return jsonError(res, 404, 'Not found'); }"], HASH],
   ['C13', 'static-assets.js', 'a file the server does not serve gets a hash in the page (a probe)', ["if (!HASHABLE.has(path.extname(r).toLowerCase()) || !allow.isServed(r)) return null;", "if (!HASHABLE.has(path.extname(r).toLowerCase())) return null;"], HASH],
   ['C14', 'static-assets.js', 'a Range request gets a slice of the (gzip) body', ["let body = buf;\n  if (gz)", "let body = buf;\n  if (req.headers.range) return { status: 206, headers: Object.assign(headers, { 'Content-Range': 'bytes 0-9/' + buf.length }), body: buf.slice(0, 10) };\n  if (gz)"], HASH],
@@ -168,6 +169,16 @@ const M = [
   ['L27', 'lazy-load.js', 'the accessors are enumerable (a copy of the window loads every group)', ["configurable: true, enumerable: false,", "configurable: true, enumerable: true,"], SPLITN],
   ['L28', 'lazy-load.js', 'the downloads go out in the order they were asked for, not the order of the groups', ["if (best < 0 || j.prio < queue[best].prio) best = i;", "if (best < 0) best = i;"], SPLITN],
   ['L29', 'lazy-load.js', 'a read that cannot wait is held behind the waves before the group it needs', ["h.urgent = true;   /* this thread is waiting: not held behind a wave */", ""], SPLITN],
+  /* G13-8 (the review of PR #277): one TensorFlow.js section at a time (the page's pppTfLock; a browser test: load-app/tf-lock.test.js) */
+  ['T1', 'Piano Coach App.dc.html', 'the lock lets every TensorFlow.js section run at once', ["function pppTfLock(fn, ctl) {\n  const prev = PPP_TF_LOCK.tail;", "function pppTfLock(fn, ctl) {\n  if (fn) return Promise.resolve().then(fn);\n  const prev = PPP_TF_LOCK.tail;"], TFLOCK],
+  ['T2', 'Piano Coach App.dc.html', 'a load on its own (loadAmt, loadPianoAmt) runs outside the lock', [["loadAmt(ctl) { return pppTfLock(() => Import.amtLoad(), ctl); },", "loadAmt(ctl) { return Import.amtLoad(); },"], ["loadPianoAmt(ctl) { return pppTfLock(() => Import.pianoAmtLoad(), ctl); },", "loadPianoAmt(ctl) { return Import.pianoAmtLoad(); },"]], TFLOCK],
+  ['T3', 'Piano Coach App.dc.html', 'the Onsets and Frames run does not look at the cancel flag between chunks', ["        if (stopped()) throw importError('cancelled', tx('Cancelled.'));\n        if (onPct) onPct(Math.round((ci / Math.max(1, starts.length)) * 90));", "        if (onPct) onPct(Math.round((ci / Math.max(1, starts.length)) * 90));"], TFLOCK],
+  ['T4', 'Piano Coach App.dc.html', 'a request that gave up lets the one behind it overtake the section ahead', ["}, e => { prev.then(release); throw e; });", "}, e => { release(); throw e; });"], TFLOCK],
+  ['T5', 'Piano Coach App.dc.html', 'a request that is waiting for the lock does not see its cancel', ["if (ctl) poll = setInterval(() => { if (ctl.cancelled) end(() => reject(cancelled())); }, 100);", ""], TFLOCK],
+  ['T6', 'Piano Coach App.dc.html', 'a Basic Pitch run does not put its engine in place', ["    pppUseTf('v3');\n    await amt.pitch.evaluateModel", "    await amt.pitch.evaluateModel"], TFLOCK],
+  ['T7', 'Piano Coach App.dc.html', 'the Onsets and Frames model is made on whichever engine the page has', ["      pppUseTf('v2');\n      const model = new window.transcription.OnsetsAndFrames(CHECKPOINT);", "      const model = new window.transcription.OnsetsAndFrames(CHECKPOINT);"], TFLOCK],
+  ['T9', 'Piano Coach App.dc.html', 'an Onsets and Frames run does not put its engine in place (its model was made by a load of its own, and another library has run since)', ["    pppUseTf('v2');       /* the model may have been made by a load of its own, and another library may have run since */\n", ""], TFLOCK],
+  ['T8', 'Piano Coach App.dc.html', 'a Basic Pitch run does not look at the cancel flag between two batches', ["      if (stopped()) throw importError('cancelled', tx('Cancelled.'));\n      if (onPct) onPct(p);", "      if (onPct) onPct(p);"], TFLOCK],
   /* G13-4e: the page's use of it (a browser test: load-app/split.test.js) */
   ['S1', 'Piano Coach App.dc.html', 'a drawing waits for every group, the arranger and audio-score.js too', ["function loadEngrave() {\n  let wait = null;\n  if (lazyOn()) {", "function loadEngrave() {\n  let wait = null;\n  if (false) {"], SPLITB],
   ['S2', 'Piano Coach App.dc.html', 'the readiness check reads a global (it loads the library at the first commit)', ["lazyPeek('PPPScoreGraph') && lazyPeek('PPPAudioScore')", "window.PPPScoreGraph && lazyPeek('PPPAudioScore')"], SPLITB],

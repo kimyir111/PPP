@@ -584,6 +584,68 @@ All of this at $0 on the existing free tiers.
 
 ---
 
+**G13-8 as built (the optional libraries are PPP's own; PR "G13-8").** Each part reverts alone; `PPP.cdn` (`?cdn=1`, or `localStorage['ppp.cdn'] = '1'`: the switch React already has) puts the CDN addresses back.
+- *What is vendored* (`vendor/README.md` has a section for each: where it came from, size, sha256, the npm tarball's integrity, the licence; the Apache-2.0 texts travel with them; none of the five packages has a NOTICE file):
+  pdf.js 3.11.174 (`pdf.min.js` 377,116 B, `pdf.worker.min.js` 1,133,660 B, the "legacy" build the page used), TensorFlow.js 2.8.6 (`tf.min.js` 1,167,497 B), Magenta.js 1.23.1 (`transcription.js` 218,041 B), TensorFlow.js
+  3.21.0 (`tf.fesm.min.js` 1,069,735 B) and Basic Pitch 1.0.1 (`esm/index.js`, `inference.js`, `toMidi.js`, 18 KB; `model/model.json` 174,537 B and its one weights file 742,392 B). **4.8 MB raw added to the repository** (about 1.5 MB
+  on the wire, gzip, and only for the person who uses the feature). Every file is byte for byte the published one: the six that jsDelivr served (the four code files and the two model files) were also compared with what the page loaded
+  on 2026-10-15; the licence texts of TensorFlow.js and Magenta.js are not in the tarballs and are the repositories' `LICENSE` files at the version's tag (Magenta's has had one commit, 2018).
+- *Identity:* `tests/engrave/vendor-optional.test.js` (in `test:engrave`, so in the gate) checks every file's sha256 and size against the README, that the README names every file and no other, the licence texts, that the
+  page's `?h=` values are the files' own and that the CDN address that remains is the same package and version; with `PPP_VENDOR_ONLINE=1` (or `node tools/notices/verify-tarballs.js`) it downloads each tarball from the registry,
+  checks its sha512 against the recorded `dist.integrity` and that each file is the one in it.
+- *Spike (U-K4): Basic Pitch needs no bundler, so it is vendored too.* Its published `esm/` build is three plain ES modules that import `@tensorflow/tfjs` and `@tonejs/midi` by bare name and each other without ".js". A page-level
+  **import map** (added once, by the page, the first time the path is used: it makes no request) maps `@tensorflow/tfjs` to the 3.21.0 flat ES module, and `./inference` and `./toMidi` to the files with their extension. The one part
+  that is not a published file: **`@tonejs/midi`** (its npm build is a UMD bundle, not an ES module) is a one-line stand-in that throws if used - Basic Pitch imports it only for `generateFileData`, which PPP never calls. A browser
+  without import maps (Safari before 16.4, Chrome before 89, Firefox before 108) or a file that cannot be fetched falls to esm.sh as before (nothing is worse than it was). **tfjs 3.21.0 is the package's `dist/tf.fesm.min.js`,
+  not the UMD `tf.min.js` the plan named**: an ES module cannot import a UMD file, and a second UMD `tf` would overwrite the 2.8.6 one in `window.tf`. U-K4 is answered: yes, as files; the model weights of Basic Pitch (742 KB) are
+  vendored too, so that fallback needs no network at all.
+- *The page* (`PPP_LIBS`, `pppWantsCdn`, in the import module's part of `Piano Coach App.dc.html`; the head is untouched): each library is asked for by its content hash (`?h=`, 10 URLs, immutable, gzip) when its feature is used and
+  never at boot; the weights file has its own hash (`weightUrlConverter`, `.bin` is now in `HASHABLE`); a vendored file that cannot be fetched is asked for once at its CDN address. `PPP.cdn` = the CDN addresses only.
+- *What stays at another site (U8):* the Onsets and Frames **checkpoint** (about 60 MB, `storage.googleapis.com`) and the Google fonts of Korean, Japanese and Chinese (G13-4b). The page says so where a recording is chosen ("Reading a
+  recording in this browser needs an internet connection (the piano model is about 60 MB)", four languages) and, when the download fails, with "The piano model could not be downloaded. Reading a recording in this browser needs an
+  internet connection ..." (code `model-offline`) instead of a bare "Failed to fetch"; the import then goes on with Basic Pitch, which works offline, and the review screen says the piano model did not run.
+- *A bug found on the way, fixed here:* the two TensorFlow.js versions share two page globals (`window._tfengine`, `window._tfGlobals`) and the tensors find their engine through them at every use, so the second to load reused the first's
+  WebGL backend and kernels and failed on its first shader ("Failed to compile fragment shader"). **Basic Pitch never worked after an Onsets and Frames attempt in the same page** (the "fallback" of the code), on the CDN path as
+  well (measured on `?cdn=1` with the real CDN). Each library is now loaded with those globals set aside and the one about to run is put in place (`pppOwnTf`, `pppUseTf`); both orders work (tests).
+- *After the independent review of the PR (supply chain, concurrency):*
+  - **One TensorFlow.js section at a time.** The swap of the two engine globals (`pppOwnTf` / `pppUseTf`) had no mutual exclusion: a load while the other library ran, or two runs at once (reachable: `cancelImport` is
+    cooperative, so a cancelled import goes on in the background while a new one starts), swapped the globals under each other and gave silently WRONG notes (Basic Pitch 20 against 10 notes, Onsets and Frames 86
+    against 8) with `ok: true`, or died with "reading 'backend'" and stayed wrong. Now every section that touches TensorFlow.js - load, model start, run, dispose - of both libraries runs inside `pppTfLock`
+    (a promise-chain mutex, released in `finally`, in the order asked). A request that waits sees its own cancel (100 ms poll) and gives up after 3 minutes (`busy`); a section looks at its cancel flag between
+    its steps (before a chunk of Onsets and Frames, between two batches of Basic Pitch; a cancelled Onsets and Frames import does not fall to Basic Pitch), so a cancelled import lets the next one in at its next step.
+    The restore of the previous globals after a load was redundant (every use puts its own in place) and is gone. Tests: `tests/load-app/tf-lock.test.js` - the real Basic Pitch and a stand-in for `transcription.js`
+    that works with the real TensorFlow.js 2.8.6, sequential runs in both orders as the reference, then both loads together, both runs together, 300 ms and 1.5 s apart in both orders: every result is the reference's, note
+    for note; cancel of a holder, of a waiter, of Basic Pitch mid-run; mutants T1-T8 in `tests/load/mutants.js` (no lock, a load outside it, no cancel check, a give-up that releases at once, ...).
+  - **`model-offline` is only a failed download.** Any `initialize()` failure was reported as "needs an internet connection". Now the checkpoint's `weights_manifest.json` is asked for after a failure: unreachable or
+    not 2xx is `model-offline`; a checkpoint that answers and a model that still does not start is `model-failed` ("The piano model could not be started in this browser. Reload the page and try again."), and
+    `fallbackReason` follows.
+  - **A PDF reader without its worker is not a reader.** The worker's address is asked for (HEAD) before the library is handed out; a missing vendored worker is taken from the CDN too (counted), a worker that is nowhere
+    says "Could not reach the PDF reader" instead of "That PDF could not be opened - it may be corrupt", and a failure is not cached in `_pdfjs`.
+  - **SRI on the CDN copies.** The CDN `<script>` of pdf.js, TensorFlow.js 2.8.6 and `transcription.js` has `integrity` (the sha384 of the published file, which is the vendored one) and `crossorigin`; the worker (started by
+    pdf.js) and the `import()` of the esm.sh / jsDelivr `+esm` builds cannot have one, and `PPP_LIBS` and the README say so.
+  - **`PPP.libFallbacks`** (read-only): `{ pdfjs, 'tfjs-2.8.6', 'magenta-music', 'basic-pitch': n }`, the times PPP's own copy could not be fetched; `{}` on a healthy site and under `PPP.cdn`. The browser suites assert it, and
+    `tests/live/smoke.js` reads a PDF with the live site's own pdf.js and checks it is `{}`. It is also one more key of the G13-7b anonymous counters (`lib`: the same four names, `other` for another, capped like
+    every count; the hourly `stats:` line carries `client.libFallbacks` when any arrived), so a quietly failing vendored file is seen on the server without waiting for a complaint.
+  - **What the files have compiled in.** Besides the five libraries, the vendored files carry: core-js 3.32.2 (both pdf.js files, MIT), core-js 3.6.5 + seedrandom 2.4.3 + regenerator-runtime (TensorFlow.js 2.8.6, MIT),
+    seedrandom 3.0.5 (MIT) + long 4.0.0 (Apache-2.0) (TensorFlow.js 3.21.0), and in `transcription.js` protobufjs 6.x (BSD-3-Clause), buffer (MIT), ieee754 (BSD-3-Clause), base64-js, fft.js, ndarray-resample and the
+    packages it uses (MIT). Each is a row of an "Embedded" table in `vendor/README.md` (name, version, licence, copyright, where from, how it is known to be there), the texts are in `vendor/LICENSE-embedded.txt`,
+    `THIRD_PARTY_NOTICES.md` lists them, and `build.js --check` fails for an embedded package without its text; `tests/engrave/vendor-optional.test.js` lists the notices each file carries and fails when one appears or goes.
+    Versions the bundles do not state (protobufjs, buffer, ieee754, base64-js, fft.js, ndarray-resample, regenerator-runtime) are given as the range the package asked for and say so.
+- *Measured (2026-10-15, headless Chrome with SwiftShader, a local server, this branch):* with every other host refused a generated vector PDF is read and notated (pdf.js and its worker from `vendor/`, 2 requests, immutable), the
+  Onsets and Frames code starts and ends in the clear "needs internet" message (the one request that goes out is for the checkpoint), Basic Pitch hears a four-note recording with no network at all and gives the same four notes,
+  and a whole import with the checkpoint refused ends in Basic Pitch with `fallbackReason: 'model-offline'`; 0 requests to jsDelivr, unpkg, esm.sh or cdnjs on every one of those paths.
+  **Identical notes:** (1) a generated recording through both paths (`PPP_REAL_CDN=1`, the real CDN and the real Google checkpoint): Basic Pitch 5 notes and Onsets and Frames 4 notes, equal in pitch, onset, offset and velocity;
+  (2) two of the G10 browser-model fixtures (`tests/bench/replay-of/`: `catalog/fur-elise` 18 notes, `hymns/take-my-life` 116 notes), re-rendered with `of_prepare.py` and read by the page on the vendored path and on `?cdn=1`: the two
+  paths gave **bit-identical** note lists (same sha1 of the JSON) on this machine; against the notes stored in the fixtures on 2026-10-02 the counts, pitches, onsets and offsets are equal and 2 and 11 velocities differ by 1 -
+  the CDN path on this machine differs from the stored fixture in exactly the same notes, so that is the machine (software GL), not the vendoring. Not compared: the other 18 fixtures (each is 1-2 minutes of software GL).
+- *Notices:* `tools/notices/build.js` reads the five sections (title, "Used for", the copyright as the files carry it); the four CDN rows of `notices.json` became "way back" names, so a vendored library that the page also names at a
+  CDN needs no row of its own; `THIRD_PARTY_NOTICES.md` says which libraries come from another site now (Babel standalone, never requested; the Noto Sans of Korean/Japanese/Chinese; the checkpoint). The mutant that planted a
+  `pdfjs-3.11.174` folder with no row uses another name now (the folder is real).
+- *Smoke and perf:* `tests/live/smoke.js` checks that each vendored file named in the page is served by hash and immutable (the loader falls back to the CDN silently, so a missing file would otherwise go unseen);
+  `tests/live/perf.js offline3p` counts requests to every code CDN, not unpkg alone.
+- *Tests:* `tests/load-app/vendor-optional.test.js` (browser, own server, in the `test:load-app` job: 9 cases; a tenth with `PPP_REAL_CDN=1` needs the network), `tests/static-allow.test.js` (the one `.bin`, the maps and binaries that are not
+  served), `tests/load/mutants.js` C10 follows `HASHABLE`.
+
 ## 5. Architecture after G13
 
 ```
@@ -621,7 +683,7 @@ Sonnet sessions, review not included.
 | 7 | **G13-6 Backup and delete** | Settings > "Back up my songs" (one `.ppp-library.json.gz`: library, slots, state; graphs optional) and "Restore from a backup" (merge rules of section 7.5, never deletes); "Delete everything on this device" (library, slots, state, ppp-engrave, ppp-media, guest key, PC link; asks twice). | app | 1 | round trip: 30 songs out and in on a fresh profile, identical slots byte for byte; a restore never removes a local song; the deletion leaves 0 `ppp*` keys and 0 PPP IndexedDB databases | revert |
 | 8 | **G13-7a Monitoring and release** | `.github/workflows/live-smoke.yml` (daily 06:00 KST + manual; read-only `smoke.js`; opens an issue on failure); `tools/release/release.js` (G13-D12); server in-memory counters (requests, 5xx, store errors, by route class) in one hourly log line. | CI, tools, server.js (counters only) | 1 | a planted 5xx shows in the hourly line; the release script refuses a commit whose gate is not green (tested against the GitHub API with a red commit) | revert; disable the workflow |
 | 9 | **MX-3a / MX-3b** | Delete `buildXml` + `legacyWriter` (Node + 4 tests); delete `LEGACY_IMPORT` and its 3 branches. | audio-score.js; app | 0.5 + 0.5 | `ab` identical on every suite; browser suites green | revert |
-| 10 | **G13-8 Vendor the optional libraries** | pdf.js + worker; tfjs 2.8.6 + `transcription.js`; tfjs 3.21.0 `dist/tf.min.js` + basic-pitch (spike first: a single-file ESM or UMD build is needed; if basic-pitch has none without a bundler, keep that one path on jsDelivr and say so: U-K4). Model weights per U8. | app, vendor | 1-2 | PDF import and browser transcription work with jsDelivr/esm.sh blocked (weights excepted per U8); identical notes on the G10 browser-model fixtures | `?cdn=1` |
+| 10 | **G13-8 Vendor the optional libraries** *(built; U-K4 answered: see "G13-8 as built")* | pdf.js + worker; tfjs 2.8.6 + `transcription.js`; tfjs 3.21.0 `dist/tf.min.js` + basic-pitch (spike first: a single-file ESM or UMD build is needed; if basic-pitch has none without a bundler, keep that one path on jsDelivr and say so: U-K4). Model weights per U8. | app, vendor | 1-2 | PDF import and browser transcription work with jsDelivr/esm.sh blocked (weights excepted per U8); identical notes on the G10 browser-model fixtures | `?cdn=1` |
 
 **The first no-regret items, startable today without the user:** G13-0, G13-1, G13-2, G13-4 (a, c, d; b only for
 the Latin fonts), G13-5, G13-6, G13-7a and MX-3a/3b. G13-3 can start with everything except the demo name (U6)
@@ -986,7 +1048,7 @@ inside Track A; review depth per phase (G13-D17); re-sourcing the quarantined fi
 | U-K1 | Neon Free's exact allowance (compute hours, storage, egress) for the `ppp` project, and the storage used today: no SQL was run for this design, so the 10-15 MB estimate comes from the 2026-10-01 backup's JSON sizes | The Lead reads the Neon console (read-only) before G13-S0 merges |
 | U-K2 | Render Free bandwidth (published as 100 GB/month) and the duckscope services' current share of the 750 hours | Render dashboard, read-only |
 | U-K3 | Whether the dc-runtime's template re-fetch is needed for correct rendering | The G13-4c spike |
-| U-K4 | Whether basic-pitch 1.0.1 and tfjs 3.21 can be vendored as single files with no bundler | The G13-8 spike; fallback: keep that one path on jsDelivr |
+| U-K4 | Whether basic-pitch 1.0.1 and tfjs 3.21 can be vendored as single files with no bundler | **Answered by the G13-8 spike: yes, as files** (an import map and a stand-in for `@tonejs/midi`, which PPP never calls; tfjs 3.21.0 as the flat ES module); nothing stays on jsDelivr by exception. Fallback kept: esm.sh when a browser has no import maps |
 | U-K5 | The CPU cost of `scoregraph.validate` for a 2,400-note graph on Render's free CPU share | Measured in G13-S0; if over ~100 ms, validation stays client-side and the server checks shape and bounds only |
 | U-K6 | Whether practice history entries have a stable key for the union merge | Read in G13-S1; add an id at write time if not |
 | U-K7 | Real phones and tablets (iPad Safari memory limits, a low-end Android) | Emulation only so far; H-13 on the user's own devices; one real low-end phone run if available |

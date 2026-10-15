@@ -102,11 +102,18 @@ test('isServed: the examples that matter', () => {
     'catalog/index.json', 'catalog/method/index.json', 'catalog/hymns/index.json', 'catalog/hymns/all-creatures.musicxml', 'catalog/method/beyer/001.mxl',
     'samples/prelude-fragment.musicxml', 'vendor/vexflow-4.2.3.js', 'vendor/LICENSE-vexflow.txt', 'vendor/react-18.3.1/react.production.min.js',
     'vendor/react-18.3.1/LICENSE-react.txt', 'THIRD_PARTY_NOTICES.md', 'omr/normalize.js', 'omr/apply.js', 'omr/flags.js', 'scoregraph/tools/notation-check.js', 'practice/plan.js', 'practice/runlog.js',
-    'vendor/fonts/figtree-v9-latin.woff2', 'vendor/fonts/instrument-serif-v5-italic-latin-ext.woff2', 'vendor/fonts/noto-music-v21-music.woff2', 'vendor/fonts/LICENSE-figtree-OFL.txt'].forEach(rel => assert.equal(allow.isServed(rel), true, rel));
+    'vendor/fonts/figtree-v9-latin.woff2', 'vendor/fonts/instrument-serif-v5-italic-latin-ext.woff2', 'vendor/fonts/noto-music-v21-music.woff2', 'vendor/fonts/LICENSE-figtree-OFL.txt',
+    /* G13-8: the optional libraries, their licences, and Basic Pitch's model with its one weights file */
+    'vendor/pdfjs-3.11.174/pdf.min.js', 'vendor/pdfjs-3.11.174/pdf.worker.min.js', 'vendor/pdfjs-3.11.174/LICENSE.txt', 'vendor/tfjs-2.8.6/tf.min.js',
+    'vendor/magenta-music-1.23.1/transcription.js', 'vendor/tfjs-3.21.0/tf.fesm.min.js', 'vendor/basic-pitch-1.0.1/esm/toMidi.js',
+    'vendor/basic-pitch-1.0.1/model/model.json', 'vendor/basic-pitch-1.0.1/model/group1-shard1of1.bin'].forEach(rel => assert.equal(allow.isServed(rel), true, rel));
   ['server.js', 'render.yaml', 'package.json', 'package-lock.json', 'Dockerfile', 'README.md', 'index.html', 'static-allow.js', 'static-assets.js', 'home-jobs.js', 'home-omr.js', 'body-reader.js', 'home-result.js', 'share-guest.js', 'server-stats.js', 'client-stats.js', 'omr-service.js', 'omr/engine.js',
     'arrange_score.py', 'transcribe.py', 'omr/helper-output.js', 'omr/normalize.js.map', 'omr/README.md', DOCS + '/PPP_MASTER_ROADMAP.md', WORKER_DIR + '/worker.js', 'tests/boot.js', 'tools/anything', 'rec/tools/train.js', 'rec/tools/key-eval.js', 'scoregraph/README.md',
     'scoregraph/tools/ledger-stats.js', 'omr/flags.js.map', 'difficulty/tools/train.js', 'audio/piano/README.md', 'catalog/shared-seeds.json', 'catalog/build-shared-seeds.js',
-    'catalog/hymns/build.js', 'catalog/method/books.json', 'catalog/method/build.py', 'catalog/method/src/beyer/001.abc', 'vendor/README.md', 'vendor/.gitattributes', 'vendor/fonts/../../server.js', 'vendor/fonts/figtree-v9-latin.woff2::$DATA', 'vendor/fonts/.hidden.woff2', 'vendor/fonts/Figtree-v9-latin.WOFF2.exe',
+    'catalog/hymns/build.js', 'catalog/method/books.json', 'catalog/method/build.py', 'catalog/method/src/beyer/001.abc', 'vendor/README.md', 'vendor/.gitattributes',
+    /* a source map and a binary outside the one model folder are not the page's */
+    'vendor/pdfjs-3.11.174/pdf.min.js.map', 'vendor/basic-pitch-1.0.1/esm/index.js.map', 'vendor/x.bin', 'vendor/fonts/x.bin', 'vendor/basic-pitch-1.0.1/esm/x.bin', 'vendor/basic-pitch-1.0.1/model/../x.bin',
+    'vendor/basic-pitch-1.0.1/model/a/b.bin', 'vendor/fonts/../../server.js', 'vendor/fonts/figtree-v9-latin.woff2::$DATA', 'vendor/fonts/.hidden.woff2', 'vendor/fonts/Figtree-v9-latin.WOFF2.exe',
     '.env', '.git/config', '.github/workflows/bench.yml', 'data/store.json', 'node_modules/pg/package.json', 'review/build.js', 'Server.js', 'SUPPORT.JS', 'scoregraph/INDEX.JS',
     'scoregraph/../server.js', 'vendor/../server.js', 'vendor/./vexflow-4.2.3.js', 'vendor/react-18.3.1/../../server.js', '../server.js', '/server.js', 'scoregraph\\index.js', '', 'scoregraph/', 'scoregraph', 'scoregraph//index.js', 'support.js\0', 'support.js.',
     'support.js::$DATA', 'practice/sim.js', 'practice/variant.js', 'practice/plan.js.map', 'practice/../server.js', 'practice/tools/anything.js', 'Practice/plan.js'].forEach(rel => assert.equal(allow.isServed(rel), false, JSON.stringify(rel)));

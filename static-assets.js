@@ -18,8 +18,9 @@ const crypto = require('crypto');
 const zlib = require('zlib');
 const allow = require('./static-allow');
 
-/* the types whose URL may carry a hash. .html is never one (the page is the thing that names the hashes); .mp3 and pictures keep their own cache headers */
-const HASHABLE = new Set(['.js', '.json', '.css', '.woff2', '.woff']);
+/* the types whose URL may carry a hash. .html is never one (the page is the thing that names the hashes); .mp3 and pictures keep their own cache headers. .bin (G13-8) is a vendored
+   library's weights file (Basic Pitch's model: the page names its hash, tests/engrave/vendor-optional.test.js keeps it right); its hash is of the bytes, as for a font */
+const HASHABLE = new Set(['.js', '.json', '.css', '.woff2', '.woff', '.bin']);
 const TEXT = new Set(['.js', '.json', '.css']);
 const IMMUTABLE = 'public, max-age=31536000, immutable';
 const MIN_GZIP = 256;
