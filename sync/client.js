@@ -1075,6 +1075,8 @@
       } catch (e) { /* no library to count */ }
       let pending = 0, bad = 0;
       Object.keys(s.keys).forEach(k => { const r = s.keys[k]; if (!r) return; if (r.bad) bad++; else if (r.d) pending++; });
+      /* a device that is still reading a library counts the library's songs, not only the ones it has so far (the library's own count, less the state item) */
+      if (s.lib && isNum(s.lib.items)) total = Math.max(total, s.lib.items - (s.keys.state && s.keys.state.rev ? 1 : 0));
       const t = now();
       const used = s.writes.filter(x => t - x < HOUR).length;
       const room = Math.max(0, WRITES_PER_HOUR - WRITE_MARGIN - used);

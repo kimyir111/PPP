@@ -68,9 +68,11 @@ const N = Number(process.env.PPP_SYNC_BIG) || 500;
     const tB = Date.now();
     await B.click('[data-sync-join-yes]');
     const reads = [];
+    let reads0Text = '';
     for (let r = 0; r < 5; r++) {
       await BL.waitFor(async () => { const c = await B.cards(); const s = await B.status(); return (c.length >= N || (s && s.error === 'busy')) ? true : null; }, 60000);
       reads.push({ songs: (await B.cards()).length, ms: Date.now() - tB, error: (await B.status() || {}).error });
+      if (r === 0) { await B.settings(); reads0Text = await B.text('[data-sync-status]'); }
       if (reads[reads.length - 1].songs >= N) break;
       await B.page.evaluate(ms => { window.__skew += ms; }, HOUR + 1000);
       H.advance(HOUR + 1000);
@@ -78,6 +80,7 @@ const N = Number(process.env.PPP_SYNC_BIG) || 500;
     }
     console.log('    second device: ' + reads.map(r => r.songs + ' songs after ' + (r.ms / 1000).toFixed(1) + ' s').join(', '));
     ok('the second device reads 300 songs an hour: ' + N + ' songs in two hours', reads[reads.length - 1].songs === N && reads.length <= 3, JSON.stringify(reads));
+    ok('the first read says how many songs of the library it has (and how long the rest takes), not just "busy"', reads[0].songs >= 290 && reads[0].error === 'busy' && /^\d+곡 중 \d+곡/.test(reads0Text || ''), reads0Text);
     ok('no page error', pageErrors.length === 0, pageErrors.slice(0, 2).join(' | '));
   } finally {
     try { await browser.close(); } catch (e) { /* gone */ }

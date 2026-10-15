@@ -2475,7 +2475,7 @@
     "Your {{n}} songs on this device will be added to it. The same song becomes one song and your practice is merged. Nothing on this device is removed or replaced.": "本设备上的 {{n}} 首曲目会被加入曲库。相同的曲目会合并为一首，练习记录也会合并。本设备上的内容不会被删除或替换。",
     "The songs of this library will come to this device. Nothing on this device is removed or replaced.": "曲库中的曲目会同步到本设备。本设备上的内容不会被删除或替换。",
     "This device is connected to another library now. It will leave that one; the songs here stay.": "本设备目前连接着另一个曲库。它将退出那个曲库，本设备上的曲目保持不变。",
-    "Only people who have the code can do this. Use the code or link of your own library.": "只有知道此码的人才能这样做。请使用您自己曲库的码或链接。",
+    "Join only a library that you made yourself or that someone you trust gave you: everyone who has its code can see and change the songs in it.": "请只加入您自己创建的曲库，或可信的人给您的曲库。任何持有其码的人都可以查看并修改其中的曲目。",
     "Join and add my songs": "加入并添加我的曲目",
     "Join": "加入",
     "Join, but keep my songs only on this device": "加入，但我的曲目只留在本设备上",

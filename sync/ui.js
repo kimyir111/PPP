@@ -234,6 +234,11 @@
       if (st.error === 'storage') return { kind: 'bad', text: errorText('storage') };
       if (st.error === 'full') return { kind: 'bad', text: errorText('full') };
       if (st.error === 'offline') return { kind: 'info', text: tx('There is no connection. Your songs wait here and are sent when you are online.') };
+      if (st.error === 'busy' && st.songs.left > 0) {
+        /* the library lets a device read and write a limited number an hour: that is not "busy", it is the hour's room, and it says how long */
+        const h2 = Math.max(1, Math.ceil(Math.max(st.songs.etaMs, 1) / HOUR));
+        return { kind: 'info', text: tx('{{done}} of {{total}} songs are synced. The rest takes about {{n}} hours: PPP sends a limited number each hour. You can keep practising.', { done: st.songs.done, total: st.songs.total, n: h2 }) };
+      }
       if (st.error === 'busy') return { kind: 'info', text: tx('The server is busy. It will try again in a few minutes.') };
       if (st.phase === 'syncing') {
         if (st.pullTotal > 0) return { kind: 'info', text: tx('Syncing… {{done}} of {{total}} songs received', { done: Math.min(st.pulled, st.pullTotal), total: st.pullTotal }) };
@@ -394,7 +399,7 @@
         ? tx('Your {{n}} songs on this device will be added to it. The same song becomes one song and your practice is merged. Nothing on this device is removed or replaced.', { n: j.n })
         : tx('The songs of this library will come to this device. Nothing on this device is removed or replaced.')]));
       if (j.hasLib) wrap.appendChild(h('div', { 'data-sync-join-switch': '', style: TEXT + 'color:var(--bad);' }, [tx('This device is connected to another library now. It will leave that one; the songs here stay.')]));
-      wrap.appendChild(h('div', { style: NOTE }, [tx('Only people who have the code can do this. Use the code or link of your own library.')]));
+      wrap.appendChild(h('div', { style: NOTE }, [tx('Join only a library that you made yourself or that someone you trust gave you: everyone who has its code can see and change the songs in it.')]));
       wrap.appendChild(h('div', { style: ROW }, [
         h('button', { type: 'button', 'data-sync-join-yes': '', style: PRIM, onClick: () => joinWith(j.code, true) }, [j.n > 0 ? tx('Join and add my songs') : tx('Join')]),
         j.n > 0 ? h('button', { type: 'button', 'data-sync-join-only': '', style: SEC, onClick: () => joinWith(j.code, false) }, [tx('Join, but keep my songs only on this device')]) : null,

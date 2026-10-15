@@ -2475,7 +2475,7 @@
     "Your {{n}} songs on this device will be added to it. The same song becomes one song and your practice is merged. Nothing on this device is removed or replaced.": "이 기기의 곡 {{n}}곡이 라이브러리에 추가돼요. 같은 곡은 하나로 합쳐지고 연습 기록도 합쳐져요. 이 기기의 내용은 지워지거나 바뀌지 않아요.",
     "The songs of this library will come to this device. Nothing on this device is removed or replaced.": "라이브러리의 곡이 이 기기로 와요. 이 기기의 내용은 지워지거나 바뀌지 않아요.",
     "This device is connected to another library now. It will leave that one; the songs here stay.": "이 기기는 지금 다른 라이브러리와 연결돼 있어요. 그 라이브러리에서는 빠지고, 이 기기의 곡은 그대로 남아요.",
-    "Only people who have the code can do this. Use the code or link of your own library.": "코드를 아는 사람만 할 수 있어요. 내 라이브러리의 코드나 링크를 사용하세요.",
+    "Join only a library that you made yourself or that someone you trust gave you: everyone who has its code can see and change the songs in it.": "직접 만든 라이브러리이거나 믿을 수 있는 사람이 준 라이브러리에만 참여하세요. 코드를 가진 사람은 누구나 그 안의 곡을 보고 바꿀 수 있어요.",
     "Join and add my songs": "참여하고 내 곡 추가",
     "Join": "참여",
     "Join, but keep my songs only on this device": "참여하되 내 곡은 이 기기에만 두기",

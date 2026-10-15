@@ -2475,7 +2475,7 @@
     "Your {{n}} songs on this device will be added to it. The same song becomes one song and your practice is merged. Nothing on this device is removed or replaced.": "この端末の{{n}}曲がライブラリに追加されます。同じ曲は1曲にまとめられ、練習記録も統合されます。この端末の内容が削除されたり置き換えられたりすることはありません。",
     "The songs of this library will come to this device. Nothing on this device is removed or replaced.": "ライブラリの曲がこの端末に届きます。この端末の内容が削除されたり置き換えられたりすることはありません。",
     "This device is connected to another library now. It will leave that one; the songs here stay.": "この端末は現在、別のライブラリに接続されています。そのライブラリからは外れますが、この端末の曲は残ります。",
-    "Only people who have the code can do this. Use the code or link of your own library.": "コードを知っている人だけが行えます。ご自身のライブラリのコードまたはリンクを使ってください。",
+    "Join only a library that you made yourself or that someone you trust gave you: everyone who has its code can see and change the songs in it.": "ご自身で作ったライブラリ、または信頼できる人から受け取ったライブラリにのみ参加してください。コードを持つ人は誰でも、その中の曲を見たり変更したりできます。",
     "Join and add my songs": "参加して自分の曲を追加",
     "Join": "参加",
     "Join, but keep my songs only on this device": "参加するが、自分の曲はこの端末だけに置く",
