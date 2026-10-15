@@ -40,6 +40,8 @@ const RULES = [
   /^practice\/plan\.js$/,
   /* G11b-1: the practice run log, fetched only while PPP.learner is 'typed' (the other files of practice/ are Node-only and stay private) */
   /^practice\/runlog\.js$/,
+  /* G11b-3: the learner model and the practice policy, fetched only while PPP.learner is 'adaptive' (which implies the typed log) */
+  /^practice\/(?:learner|policy)\.js$/,
   /* the trained weights the stages read (rec/weights/*.json, difficulty/weights/g6a-v1.json) */
   /^(?:rec|difficulty)\/weights\/[\w.-]+\.json$/,
   /* G12-1, G12-2: the OMR normaliser and the PdfLayer findings as graph edits, fetched by the page when PPP.omr = 'v2' needs them. Only these two files of omr/: omr/helper-output.js is the local helper's (Node only) */

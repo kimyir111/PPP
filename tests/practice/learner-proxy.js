@@ -43,7 +43,8 @@ function fileProxy(upstream, opts) {
     const mine = edits.map((e, i) => [e, i]).filter(([e]) => e.file === path);
     const swap = Object.prototype.hasOwnProperty.call(replace, path);
     const up = http.request({ host: u.hostname, port: u.port, path: req.url, method: req.method, headers: headers }, ur => {
-      if (!mine.length && !swap) { res.writeHead(ur.statusCode, ur.headers); ur.pipe(res); return; }
+      /* only a 200 carries the file: a revalidation (304, a reload of the page) has no body, and counting it would overwrite the count of the real answer with 0 (G11b-3: adpersist reloads the page) */
+      if ((!mine.length && !swap) || ur.statusCode !== 200) { res.writeHead(ur.statusCode, ur.headers); ur.pipe(res); return; }
       const chunks = [];
       ur.on('data', c => chunks.push(c));
       ur.on('end', () => {

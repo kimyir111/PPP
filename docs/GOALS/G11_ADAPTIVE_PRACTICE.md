@@ -39,6 +39,8 @@ recording lead sheet as generators and a new, verified measure-aligned splice.
 
 **G11b-2 is built** (2026-10-15, Node only, no app change): `practice/learner.js` (the learner model v1 from typed evidence: skill and tempo with uncertainty, forgetting, timing, review boxes) and `practice/policy.js` (what to play next, in the Coach plan schema, every plan through `Coach.validate`); tuned on the simulator's tuning set only and reported once on its hold-out set: time to mastery −68.9 % against the legacy app at equal minutes (worst type −50.5 %), retention +36 %, 0.04 passage changes per lap, a lower Brier than `recentAcc` for every type, 10⁴ random states through `Coach.validate` with no issue - the acceptance bar is met; a no-advice run-through does better still on these synthetic learners (−75.9 %), which says more about the simulator than about practice. The record, the tuning, the limits and the notes for G11b-3 are §20.
 
+**G11b-3 is built** (2026-10-16, Sonnet, branch `g11b-3-adaptive`): `PPP.learner` has a third word, `'adaptive'` (default stays `'legacy'`; the flip waits for H-11): under it the recommendation card, the Loop panel's sequence and what the deterministic coach is told are the policy's, every task through `Coach.validate`; the tempo is a suggestion with one tap (an automatic switch exists and is off), the LLM coach stays off, practice data stays on the device; Settings has a Labs card to turn it on; `'legacy'` and `'typed'` are what they were (the recorder digests, the learner goldens and the simulator's baselines are unchanged). The record, the costs and the limits are §21.
+
 ## 1. What was measured before designing (evidence)
 
 All numbers were measured for this document at `3567e27` in an independent server of this worktree
@@ -1252,6 +1254,74 @@ the piece is the Score's measures (number, `lenQ`, the notes each hand strikes i
 them only with the automatic toggle. (4) `Coach.context` should gain the model's per-passage `cleanTempo`, review due list and hand gaps as percentages (§7.6) if the coach card is to quote
 them; the policy's own reasons quote no figure. (5) The legacy Loop-panel drill steps must step aside on a passage the policy set (the simulator's arm switches them off). (6) `stuck` is
 the input of G11c-2.
+
+## 21. G11b-3: the policy in the app (2026-10-16; Sonnet; branch `g11b-3-adaptive`)
+
+**What was built.** `PPP.learner = 'legacy' | 'typed' | 'adaptive'` (the same layers as before: the address `?learner=adaptive` for a visit, the remembered choice `ppp.learner.v1`, the default `'legacy'`; any other word is no
+choice). `'adaptive'` implies the typed log: `LEARNER_MODE`, which the whole evidence path asks, stays `'legacy' | 'typed'` and is `'typed'` under `'adaptive'`; `LEARNER_CHOICE` is the third word. Under it, and only under it,
+`practice/learner.js` then `practice/policy.js` are fetched by script element (like `runlog.js`; `static-allow.js` serves exactly these two more files of `practice/`), the model of the open song is rebuilt from its run log
+and the policy decides after every lap. The page code is one block of methods `adaptive*` in the component (`this._ad` is set only under `'adaptive'`; the methods the practice simulator cuts out of the page only ask `this._ad`,
+so the simulator's declaration list and its baselines are unchanged), one block of top-level helpers after `forgetRunLog`, small hunks at the seams (below) and two template blocks.
+
+**What the person sees under `'adaptive'`** (Korean first; the four languages are in the catalogs, 23 new strings):
+1. *The card* (Home's "오늘 할 것", Analysis' "Up next", the practice card's goal line: they all read `recommendation()`): the policy's task as `Coach.validate` returned it - bars, hands, tempo step, review, memory work - with a
+   one-sentence reason without a figure that names the bars and, when it is one hand, the hand: "10–24마디가 아직 흔들려요.", "왼손 1–12마디가 아직 흔들려요.", "PPP가 아직 1–24마디를 듣지 못했어요. 한 번 쭉 쳐 보세요."
+   (a piece nobody has measured: the policy's first reading, §20 rule 1b, which on a long piece is the whole piece), "…: 이 빠르기에서는 깨끗해요. 한 단계 빠르게 해 봐요.", a due review, memory work where the gate allows it.
+   The line under the title is the app's own wording of the task ("양손, 원래 빠르기", "왼손 70% 빠르기").
+2. *The Loop panel's sequence* for the passage in the loop: the policy's plan for it in `Learning.practiceSequence`'s shape `[{label, hands, tempoPct, reps}]` (the passage the policy works on keeps the ladder it was made
+   with; a passage a person picked gets the plan the model makes for it, once per session; the step labels are strings the page already has). The legacy steps come back, counted, when there is no model.
+3. *The deterministic coach*: `Coach.context` gains `adaptive: {summary, plan}` (the model's summary as measured percentages - runs read, the focus, the weakest passages with their predicted accuracy, `cleanTempoPercent`, the
+   two hands' accuracy, the reviews due - and the policy's plan, through `validate`), `Coach.numbersIn` whitelists the summary's percentages, `Coach.deterministicPlan` answers with the plan and `Coach.plan` validates it
+   again; the session's list on the practice page is made from it ("planned by PPP"). Nothing of it goes to a service (U8): under `'adaptive'` `coachProvider()` is the local one and `service.generate` strips `adaptive`.
+4. *The tempo (U6)*: a tempo step of the policy on the passage in the loop (or the Loop panel's next step) is a **suggestion**: a row on the practice card ("PPP가 다음엔 70% 빠르기를 권해요. [빠르기 바꾸기] [×]"), one tap
+   sets it. The switch "한 번 칠 때마다 빠르기를 알아서 바꿔요" (same card, `ppp.adaptiveTempo.v1` = `'on'`) is **off** by default and remembered; only while it is on is the step applied at the lap boundary (`patch.tempo`).
+5. *Settings > Labs / 실험 기능*: a card with one row per feature (`labsRows` in `adaptiveVals()`; the G11c-1 variants add theirs there): "맞춤 연습 추천", a switch whose note says which state it is in. Turning it on is
+   `PPP.learner = 'adaptive'` at once (modules, model, cards); turning it off puts back what it was (`'typed'`) or no choice (the default, the remembered word forgotten).
+
+**The seams** (each a few lines, all guarded by `this._ad` or by `LEARNER_CHOICE`): `recommendation()` (the policy's card, else the legacy one), `seq()`, `coachContext(plain)` (`plain` = the context a card is CHECKED against: the
+legacy recommendation in it, no summary; so there is no recursion), `coachProvider()`, `completeLap` (the policy's patch is merged; the Loop panel's next step applies its tempo only while the switch is on), `logRun` (the same entry
+that goes to the log is folded into the model before the background write), `componentDidUpdate` (the model of a new song or Score is asked for in idle time), `bootI18n` (the sentences made by `tx()` are thrown away: G13-2's
+rule), `Coach.numbersIn / deterministicPlan / fingerprint / shouldReplan / service.generate` (additive, `undefined` unless adaptive), `setLearnerMode`, `forgetRunLog` (a song removed takes its policy state), `PPP.learner`,
+`PPP.adaptive` (a report for tests and the console).
+
+**Evidence and epochs (G11-D4).** What reaches the model is the entry `logRun` builds, so a Demo Input lap (no matcher result), an idle lap and anything `practice/learner.js` refuses never move it (U4: counted, not learned from);
+Follow and recall laps move only what §20 says. The model is rebuilt from the epoch's run log when a song opens (at most 300 runs, folded in slices of 40 so that no task is long) and updated per lap; the policy's own state
+(`decide(...).state`, a small JSON: focus, session, stuck) is kept in localStorage `ppp.adaptive.v1` under `songId|musicHash` (at most 24 songs), written 0.6 s after a decision and read back when the epoch is built. A rewrite, an
+edit or a re-import is a new music hash and starts again (the old state is kept); the copy G11c-1 makes is its own song id. Entries that arrive while the model is being built are queued and deduplicated by run id against
+what the log gave.
+
+**Guards and fallbacks (G11-D8), all counted** (`PPP.adaptive.fallbacks`, `.repaired`, `.errors`): the card's task goes through `PPPPolicy.checked(plan, ctx, Coach.validate)` and is shown only as it returns; a rejection falls back to
+the legacy recommendation (`rec-rejected`), the plan to the coach's own plan (`plan-rejected`); no model yet (`no-model`), a module that cannot be had (`modules`), a log that cannot be read (`log-read`: the model then starts empty
+and learns this session), an error in a method (`rec-error`, `steps-error`, `block-error`, `lap`, `load`): the page is the legacy page for that call, never blank, and no message is shown.
+
+**Off-path evidence (`'legacy'`, `'typed'`).** (1) `tests/practice/record.js check`: every digest of the 394 files equals the baseline. (2) `tests/learner-log.test.js` section `identity`: the scripted ten-lap session under `'legacy'`
+(and `?demoRuns=count`, and `'typed'` with the `source` keys taken out) equals the committed goldens `learner-legacy.json` and `learner-legacy-separate.json` byte for byte; the goldens are not touched. (3) Section `adswitch`:
+under `'legacy'` and `'typed'` neither `learner.js` nor `policy.js` is requested, `PPP.adaptive` is `null`, no `ppp.adaptive*` key exists after six laps, the practice card has no adaptive row and no word of it. (4) The simulator's
+extracted methods are the page's (`tests/practice-sim/legacy.test.js`): `appCode.declarations` of `legacy-gate.json`, `legacy-full.json` and `policy-gate.json` are unchanged and the 144 gate rows still equal the committed
+ones. (5) `npm run test:practice` units and `policy-validate.js` (10^4 random states through the page's own `Coach.validate`: no issue) unchanged. What does differ on a `'legacy'` page: Settings has a Labs card (off).
+
+**Tests.** `tests/practice/adaptive-sections.js`, run from `tests/learner-log.test.js` (235 checks now, 89 of them new; `LL_ONLY=adswitch,adcard,...`): `adswitch` (11: the third word, the address, the remembered choice, garbage, the
+setter, the Labs row, no state under legacy/typed), `adcard` (15: a weak left hand, a clean piece, the card is the policy's and validated, the same laps give the same advice in a fresh page, the coach's plan is the policy's,
+no model summary goes to a service), `adseq` (6), `adtempo` (14: U6, on the policy's passage and on a passage a person picked, the switch off and on), `adlocale` (6: Korean and back), `addemo` (4: U4), `adfallback` (5: a `validate` that rejects, a policy module that does not load), `adpersist` (5: a reload,
+a new music hash, a variant copy), `adbudget` (7), `adui` (13: four languages). The laps are the practice simulator's synthetic learners (`practice/sim.js`) through the page's own `PerformanceEngine` and `completeLap`, on a 24-bar
+piece of known shape written by the test; the `weak-left` learner with a hard left hand in bars 9-12 is the scenario the card is asked about. Mutants (`tests/practice/learner-mutants.js`, rows B1-B20; the mutation proxy now counts only a 200, because a reload of the page is answered by a 304 whose empty body overwrote the count of the real answer): policy bypass of the card,
+the steps and the coach, a lap that does not update the model, no decision after a lap, Demo Input counted by the model, `validate` bypassed for the card and for the plan, stale text after a language change, the tempo
+applied without the switch (the card's and the Loop panel's), the switch on by default or not remembered, the modules asked for by a legacy page, the music hash ignored, the summary sent to a service, the LLM as the provider, a state never read back, a
+model not rebuilt. `run-suites.js`: `learner-log` `min` 109 -> 170, `limit` 12 -> 25 minutes.
+
+**Costs** (headless Chrome, CPU 4x, a 64-bar piece, 4 simulated sessions of 10 minutes, 45 laps; this machine measured 95-147 ms on the suite's reference workload against 92): a decision of the policy median 0.5-0.7 ms, p90 1.4 ms,
+max 4-10 ms (the first call of a page compiles the code); the model's update of a lap median 0.3 ms, p90 0.5-1.2 ms; the page's own context, asked for once per decision (a memory decision, a validated card) 0.4-9 ms; the
+whole `completeLap` (legacy work + log entry + model + decision) median 3.4-3.5 ms, p90 7-11 ms; no step of the policy above 16 ms. Load: the fold of 300 runs in slices of 40 (0.01-0.03 ms an entry), the piece
+(`PianoScore.of`, cached) and the music hash (worked out in idle time by `warmRunLog`). Memory: the model lives in memory (about 50 KB for 160 bars) and is not stored; the policy's state is under 2 KB per song, 24 songs at
+most; 400 run ids and 200 timings are kept.
+
+**Limits.** (1) The model is validated only on synthetic learners (§20); H-11 is the real test and the default flip waits for it. (2) A song practised under `'legacy'` before has no run log: its legacy aggregates are not a
+prior (they carry no per-note counts and are partly `simulated`), so the first adaptive card is the policy's first reading of the stretch nobody has measured, which on a long piece is a long lap. (3) The policy picks passages
+of up to 16 bars by value per second (§20's tuning): a teacher's 4-bar unit is not what the card says; the Loop panel's steps work on whatever passage is in the loop. (4) The Loop panel's steps count laps as they always did; the policy's own ladder (accuracy-aware) shows as the card and the tempo suggestion, so on the passage the policy works on the steps' laps do not move
+the tempo (the ladder does), and on a passage a person picked the next step's tempo is offered, or applied while the switch is on. (5) The policy's hands step ("both hands now") is on the card; only the Loop panel's steps change the
+hands by themselves, as before. (6) "Reset practice progress" clears neither the run log nor the policy state (§19 question 1 stands). (7) The first decision of a page is made when the model is built (idle time + the
+log's read), not at the first lap: for a moment a person sees the legacy card. (8) The coach list's repetitions are the legacy counters, and the list is made again when the policy changes passage, hand or tempo step (at
+the next draw), which restarts its progress bar. (9) `cleanTempoPercent` is `null` until the model has evidence it can be 80 % sure of (§20 limit 7). (10) The Labs list has one row; G11c-1 adds its own (`labsRows`).
 
 ## Appendix A. Measurement commands (Lead's scratchpad)
 
