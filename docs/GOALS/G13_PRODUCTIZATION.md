@@ -486,6 +486,105 @@ All of this at $0 on the existing free tiers.
   1 s (HTTP/2) after the first paint and for Settings from 0.3 s / 0.6 s, not before, unless lessons.js and library-backup.js are in the head (FCP +0.25 s) or fetched before the first paint, which competes with the bytes the first paint is waiting for on a line
   that is shared fairly (as this stand-in's is; a priority-aware edge might not make it cost, and a `<link rel=prefetch>` for the two files is the next thing to measure there - not possible with the local stand-ins).
 
+**G13-4b2 and G13-7b as built (PR "G13-4b2 + G13-7b"; U7 and U5 decided by the user's blanket go-ahead of 2026-10-15, as recommended).** Two parts, each its own commits, each reverts alone.
+
+*G13-4b2: Korean, Japanese and Chinese text in the device's own fonts (U7).*
+- *The stack.* `--ppp-cjk` (a custom property of `:root` in the head's style block) is the list the page's font stacks use after Figtree: the body rule, the sign-in and app shells and the three SVG stacks of `lessons.js` are now
+  `Figtree, var(--ppp-cjk), system-ui, sans-serif` (the Noto family names are gone from them). It is chosen by `<html lang>` (`:root:lang(ja)`, `:root:lang(zh)`; i18n.js sets it): Korean first for ko and en (Malgun Gothic,
+  Apple SD Gothic Neo, Noto Sans CJK KR), Japanese first for ja (Hiragino Sans, Hiragino Kaku Gothic ProN, Yu Gothic UI, Meiryo UI, Meiryo, Noto Sans CJK JP), Chinese first for zh (PingFang SC, Microsoft YaHei UI, Microsoft
+  YaHei, Noto Sans CJK SC, Hiragino Sans GB); the two other languages' fonts follow, so a Japanese title in a Korean page is drawn; Noto Sans KR/JP/SC - installed, or the web face - is **last**: it is reached only for a character
+  no earlier family has. Family names, not `local()`: the names are looked up lazily, for a character no earlier family has, and a missing one costs one failed lookup, once. A page of a Japanese user used to get Korean
+  glyph shapes for the kanji (Noto Sans KR came first for every language); it now gets its own. *Weights:* Malgun Gothic has Regular and Bold only (500 draws as 400, 600 as 700); Noto Sans had four.
+  **The Windows Korean look changed:** the same text in Malgun Gothic is 5-11% wider than in Noto Sans KR at the same size (measured with canvas on this PC, five UI strings: 1.048-1.106), so a line wraps a little
+  earlier. Review of #274 asked for it to be recorded; it is U7's stated risk ("Malgun Gothic"). With it, `:root:lang(ko) body { word-break: keep-all; overflow-wrap: anywhere; }`: Korean breaks at spaces, so
+  the lone syllables a narrow screen left on a line ("반복해 / 요.", "구 / 간을", "도우 / 미") are gone - measured on Home, My Songs, Practice and Settings at 360, 412 and 1440 px: lone-syllable lines 11 -> 0 and no overflow, no
+  clipped text (`anywhere`, not `break-word`, because it lowers the min-content width: no flex or grid item grows past the screen). Not done: the "→" that wraps alone on Home at 360 px (not Hangul).
+- *What is asked of Google, and when.* The head script (`PPP_CJK_SETTLED` is still there: it resolves at once when nothing is wanted, else shortly after the first stylesheet) decides per script (ko, ja, zh) whether the
+  device can draw a sample (`한글가나`, `あア日本`, `汉字简体`): in a canvas at `32px sans-serif` - i.e. whatever the system falls back to, so no list of names has to be right - each character must **measure**
+  (width and the box of its ink, `actualBoundingBox*`) otherwise than U+D7FC, a code point no font has, which every browser draws as the same "no glyph" box. *The width alone is not enough:* on this Windows PC the
+  box of a missing character is itself 32 px wide at 32 px, exactly a kana's width (found when the first build asked for Japanese and Chinese on a PC that has Yu Gothic and Microsoft YaHei). A script the device cannot
+  draw gets its own stylesheet (one family a request, 4 weights, `display=swap`, ~110 KB of CSS instead of 331 KB), after `load` and an idle moment: the page's own language first, alone; the others 1 s after it has
+  settled, and not on a data saver (`navigator.connection.saveData`); a language change in Settings (a `MutationObserver` on `<html lang>`) asks for that script then if it was not asked for. No canvas, or any doubt
+  (a character that measures as the box), means "has none": the web font is asked for, as it always was. Nothing here shadows an installed font any more (the web face is only added where there is none).
+  In a page whose language has no script of its own (English) nothing is waited for: `PPP_CJK_SETTLED` is resolved at once, so the piano recordings (G13-4d) do not wait for a stylesheet that is only for a title in another
+  language (`tests/load-app/samples.test.js` drives a Korean page for that reason).
+- *No connection hint.* The helmet's two `preconnect` and one `dns-prefetch` to Google Fonts (G13-4b) made every device open two connections to that site at boot. They are now `<meta name="application-name">`,
+  `<meta name="referrer">` (the header's own value) and `<link rel="license" href="./THIRD_PARTY_NOTICES.md">`: three elements that fetch nothing and contact no one, so the template keeps its element count and no
+  `data-dc-tpl` stamp of the DOM moves (`tests/load/fonts.test.js`). `THIRD_PARTY_NOTICES.md` says the Noto Sans families are fetched "only on a device that has no font of its own for that script".
+- *Measured* (this branch against a `git archive` of origin/main `610d97e` = live `fab0ba3` + docs, served in the same session, both behind a brotli stand-in for the edge (quality 5), `tests/live/perf.js`'s phone
+  profile - 150 ms RTT, 1.6 Mbps, CPU x4, 412x823 - and a 1440x900 desktop window, real Google Fonts over the real network, the two arms interleaved, medians; this PC was shared and busy, so absolute numbers
+  are inflated and the FCP differences below are inside the noise - what is exact are the bytes and the requests; CLS is summed over the load and 9 s after the app is ready, input-free shifts only):
+
+  | phone profile, ko-KR unless said (5 runs each, interleaved) | arm | first contentful paint | app ready | CLS | requests to Google Fonts / KB | KB before ready |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | **this PC as it is** (Windows 11, Malgun Gothic; Noto Sans KR happens to be installed, so main asks for JP and SC only) | origin/main | 4,148 ms | 4,433 ms | 0.0060 | 2 / 244 | 480 |
+  | | this branch | 4,136 ms | 4,514 ms | 0.0064 | **0 / 0** | 484 |
+  | the same, ja-JP (3 runs) | origin/main | 3,940 ms | 4,297 ms | 0.0073 | 5 / 296 | 480 |
+  | | this branch | 4,080 ms | 4,377 ms | 0.0092 | **0 / 0** | 483 |
+  | the same, 1440x900 desktop, no throttling | origin/main | 380 ms | 439 ms | 0.0016 | 2 / 244 | 604 |
+  | | this branch | 348 ms | 432 ms | 0.0009 | **0 / 0** | 594 |
+  | **no CJK font at all** (emulated: canvas answers that no font draws CJK; the branch's copy has every system family of `--ppp-cjk` renamed to one that is absent, so its text can only use the web face) | origin/main | 4,040 ms | 4,229 ms | 0.0153 | 30 / 511 | 480 |
+  | | this branch | 3,976 ms | 4,143 ms | 0.0155 | 32 / 512 | 484 |
+
+  *Reading it.* On every device that has a CJK font - Windows, macOS, iOS, Android, ChromeOS, a Linux with any CJK font - the page makes **no request to Google at all** (2-5 requests and 244-296 KB before, plus the
+  connection hints): the text is in the device's font from the first paint, so there is no swap and no stylesheet or font file to wait for. First paint, ready and CLS are the same within the run-to-run spread
+  of a busy PC (the 0.0092 / 0.0073 of the ja-JP row is 3 runs; CLS of Home is 0.006 either way). A Windows PC *without* Noto Sans installed is the common case this is for, and it could not be reproduced on
+  this PC (shadowing an installed family by a face that cannot load does not hide it: Chrome falls back to the installed font of that name; the harsher try, with `local()` faces, made main 0.9 s slower to first
+  paint, which is that emulation's own lookup cost and is not reported as a gain): what is known is that main's probe then says "not installed" and asks for all three families and the slices its text uses -
+  30 requests, 511 KB in the runs above (also in two other emulated runs) - and swaps the text from the system's font to them, where the branch asks for nothing.
+  *What did not change:* a device with no CJK font at all gets the same Noto Sans as before - the same bytes (511 / 512 KB, the slices dominate), one stylesheet a family (the page's language first, ~110 KB of
+  CSS instead of 331 KB, the other two a second later: two requests more, as measured), so there is no saving in bytes - only that the stylesheet of the page's language is a third of the size and comes first.
+
+- *The probe's own cost* (the idle task after load; it replaces the named-family probe of G13-4b, which asked canvas about three families that a device mostly does not have): in an empty page on this PC, three
+  scripts, five fresh pages each, 57-59 ms before and 38-43 ms now (most of it the system's one-time font-fallback set-up, which the page has paid at its first Korean text by then: a second probe is 0.7 ms).
+- *Tests.* `tests/load/cjk-detect.test.js` (12, Node: the script run in a vm against a model of a device whose box is as wide as a glyph - all three, none, one script, saveData, no canvas, a language change,
+  the order of the requests), `tests/load-app/cjk-fonts.test.js` (9, browser: the same decision in the real page on models, and this machine's own fonts: a Windows or macOS PC asks for nothing and the Korean
+  text is in Malgun Gothic / Apple SD Gothic Neo), `tests/load/fonts.test.js` (the stack, the shells, no hint to Google, the helmet's element count); mutants `B4 B5 B8-B12` and `F1-F9` (`node tests/load/mutants.js`).
+
+*G13-7b: anonymous counters (U5; G13-D11's "browser counters").*
+- *What the page counts* (the inline head script `PPP_COUNTS`, in the head and not in a lazy group: a release that breaks the boot never loads a lazy group, and that is the visit that most needs counting; 6.2 KB raw with its comments, the fonts script 4.3 KB (it was 2.8 KB): +3.1 KB brotli on the 340 KB page, 340,255 -> 343,338 bytes measured through the brotli stand-in): per visit, in the page's memory - uncaught errors by CLASS (`type` TypeError, `reference`, `range`, `syntax`, `load` = a `<script>` or `<link>` of THIS site that did not load, `thirdparty` = one of another site's (Google Fonts blocked, a CDN down, a blocker at work: expected noise, kept apart so `load` means what the
+  release checklist says), `other`; never the message, stack
+  or address; an error from a browser extension is not the page's), unhandled rejections, the engraver's fallbacks by code (`PPPEngravePage.stats.fallbacks`, read through `PPP_LAZY.peek` so reading never loads a group),
+  the practice plan's fallbacks by reason (`PPP.practiceStats.practiceFallback.reasons`), lazy groups with `failed` (`PPP_LAZY.status()`), the first contentful paint and the app's first mount (`PPP_COUNTS.ready()`, one line in
+  `componentDidMount`) in buckets `<2 s`, `<4 s`, `<8 s`, `>=8 s`, `none` (not reached when the page was left), the language (ko ja zh en) and mobile or desktop. Each count is capped at 20 a page.
+- *What is sent, when.* One `fetch('/api/stats', { method: 'POST', body, keepalive: true, credentials: 'omit', cache: 'no-store' })` (`navigator.sendBeacon` where `keepalive` is missing) when the page is hidden or closed
+  (`visibilitychange` to hidden, `pagehide`); again at a later hide only if something new happened (the deltas), **at most 5 a page load**. A visit with nothing to say sends its timing and nothing else. A code
+  the server has no name for (an engraver or practice reason added later) is summed into `other` here, so a body never passes 1 KB (a 413) whatever the engraver says.
+  **It is never the request that wakes a sleeping server** (review of #274; G13-D11 rejected an uptime ping for exactly this: ppp-web is on Render's free 750-hour pool and a request wakes it for 15 more
+  minutes). Practice is client-side, so a quiet 15-minute session leaves the instance asleep and the closing tab would have started it. The page therefore tracks the last time THIS origin answered it over the
+  network - `PerformanceObserver` (`resource`, buffered) and the navigation entry, same-origin and `transferSize > 0` (an HTTP-cache hit is not a contact), clocked with `performance.timeOrigin`, so a laptop
+  that slept counts the sleep - and sends only when that was less than 10 minutes ago. Otherwise the body (the very bytes it would have sent, nothing else) is kept in `localStorage['ppp.counts.pending.v1']`:
+  an array of `{t, b}`, at most 3, none older than 7 days, none from the future, none over 1,000 characters (anything else is ignored when read); and 4 s after the NEXT visit's app is ready - its own load has
+  just proved the server awake - they are posted (3 at most, then removed). Turning the counters off removes them at once; a person who turned them off, or Do Not Track, finds them dropped, not sent. No
+  timing API, or a page the cache served and the network did not answer, is taken to be cold: kept, never sent. The body, at the worst (every class and code
+  at its cap) 474 bytes (tested under 1 KB), is fixed keys: `{"v":1,"b":"<build>","loc":"ko","mob":0,"pv":1,"fcp":1,"rdy":2,"err":{"type":1},"rej":1,"eng":{"PLAN_THREW":1},"prc":{"NOT_READY":3},"lz":1}`. `b` is the build
+  stamp the server put in the page (`window.PPP_BUILD`): a page of another build than the server's is counted as `stale` and the string is never kept. No cookie, no header, no identifier, no address, no title.
+- *Off.* Settings > About & licences has the sentence (ko/ja/zh/en via `tx()`) and one switch, `data-counts-toggle` (`aria-pressed`; the label is the same in both states, the line under it says what is so):
+  `localStorage['ppp.counts.v1'] = '0'` is off, no key is on (the default, U5); `navigator.doNotTrack === '1'` (or `'yes'`), `window.doNotTrack`, `msDoNotTrack` and `navigator.globalPrivacyControl === true` are off too and the
+  switch says so; a storage that cannot be written keeps the choice for the visit. When off nothing is sent, however much happened. **"Delete everything on this device" (G13-6) keeps this key** while it is `'0'` (review of #274: the wipe turned the counters
+  back on): `library-backup.js` `wipe` leaves it, does not count it as `left`, and reports it as `report.kept`; the delete note says so in four languages; the waiting counts
+  (`ppp.counts.pending.v1`) go with everything else. "0 ppp* keys left" of G13-6 is now "0 ppp* keys left but a person's opt-out". Not claimed: what the host (Render, Cloudflare) keeps in its own request logs - the About sentence speaks of the counts.
+- *The server* (`client-stats.js`, new; `server-stats.js` + one route in `server.js`). `POST /api/stats` is read after `/health` and before everything else: another site's `Origin` (or the string `null`) is 403; one address
+  may send `PPP_STATS_BEACONS` (default **300**: a classroom or a campus behind one address; each beacon only adds capped numbers) in ten minutes, then 429 `Retry-After: 600` (the address is a keyed hash made new at every start, `homeJobs.addrKey`: an IPv6 address is its /48, held ten minutes in a map of at most
+  5,000 keys; the machine itself - the socket, loopback, no proxy header - is not limited); the body is read by `body-reader.js` (1 KB, 8 KB drained, its structure bounded as it arrives: 160 tokens, 8 containers, depth 3)
+  and refused 400/413; `sanitize` takes only the whitelisted keys of the right kind (an unknown key is dropped, an unknown error class or code is `other`, a count that is not a whole number is dropped, a bigger one is 50,
+  `v` must be 1, prototype keys do nothing); the answer is `204`, `Cache-Control: no-store`, no body, **no `Set-Cookie`**. Nothing is stored; no database; GET/PUT of the route stay 404 (no route serves the numbers). The server sees the connection's address while it answers and, for the limit,
+  holds a keyed hash of it in memory for ten minutes; nothing else keeps it (the About sentence says "has to see your connection's address for a moment, but it stores nothing").
+  **Its own route class** `api-stats` (review of #274: a bad body, another site's Origin or a limit are by design and come from browsers): its 4xx and 429 are in `by["api-stats"]` and NOT in the totals `4xx`
+  and `tooMany` that the release checklist reads as alarms; its 5xx (a bug of ours) and store errors still are.
+- *The hourly line* (G13-7a's `stats:` line, unchanged in everything it had) gains one key, `client`, only when a beacon arrived in the window - numbers only, fixed keys, ~60 numbers of memory:
+  `stats: {"v":1,"windowS":3600,...,"by":{...},"client":{"beacons":41,"visits":38,"stale":0,"mobile":22,"desktop":16,"withErrors":2,"locale":{"ko":30,"ja":1,"zh":0,"en":7},"fcp":{"lt2":25,"lt4":9,"lt8":3,"ge8":1,"none":0},"ready":{"lt2":20,"lt4":13,"lt8":3,"ge8":1,"none":1},"errors":{"type":3,"reference":0,"range":0,"syntax":0,"load":1,"other":2},"rejections":1,"lazyFailed":0,"engrave":{"PLAN_THREW":2},"practice":{"NOT_READY":14}}}`
+  (that example is made up; the shape is the code's). Read it with `render logs -r srv-dalt5s6k1f9s739cuetg --limit 500 -o text --confirm | grep stats:`. A window with only beacons prints a line too.
+  What to look at after a deploy: `errors` (not `thirdparty`) and `load` against `visits`, `engrave`/`practice` codes other than `NOT_READY`, `lazyFailed`, `ready.none` and `ge8`, `stale` (pages that did not reload after the deploy).
+  A visit may be counted by a later page's beacon (the kept ones), up to a week late.
+- *Tests.* `tests/load/counters.test.js` (32, Node: the head script in a vm against a fake window and a fake clock - classes, once, at most 5, buckets, opt-out, DNT/GPC, storage that throws, peek, 1 KB for any code,
+  nothing throws, and the cost rule: a session quiet for 25 minutes keeps instead of sending, any same-origin network answer in the last 10 minutes lets it send, a cache hit or another site does not, the kept
+  counts go with the next visit, expire, are bounded, follow the person's choice); `tests/load-app/counters.test.js` (12, browser: a thrown error counted once with none of its text, a rejection, off in storage,
+  Do Not Track and its note, the switch (on, off, on) in English and Korean, no cookie, the server's line end to end, a 20-minute session kept and sent by the next visit, `load` against `thirdparty`, 5 a page,
+  the wipe keeps the opt-out and says so); `tests/client-stats.test.js` (in `npm run test:monitoring`: the whitelist, caps and bad bodies on fake data; the real server.js: 204 and no cookie,
+  400/413/403/404/429, stale, the line, the route's own class, 300 an address); `tests/backup/library-backup.test.js` P9 (the wipe keeps the opt-out); mutants `K1-K26`, `B14 B15` (`node tests/load/mutants.js`),
+  18 new in `node tests/release/mutants.js` and 4 in `tests/backup/mutants.js` (all caught). `client-stats.js` is not served (`static-allow` has no rule for it; `tests/static-allow.test.js` lists it).
+
 ---
 
 ## 5. Architecture after G13
@@ -501,7 +600,7 @@ All of this at $0 on the existing free tiers.
                                                  '- hidden:     one batched push (keepalive)                                       ppp_sync_libs
  pairing: #lib=<code> fragment (like #pc=)          code hash only, X-PPP-Lib header, same-origin, failures-only limiter
  shares: + optional graph (G13-S2)          -> /api/shares (unchanged limits)                                          ppp_shares
- counters (U5): POST /api/telemetry (counts) -> in-memory, one log line/hour, 0 SQL
+ counters (U5): POST /api/stats (counts, G13-7b) -> in-memory, one log line/hour, 0 SQL
  release: tools/release/release.js -> render deploys create -> tests/live/smoke.js --sha (G13-D12)
 ```
 
@@ -713,10 +812,10 @@ wait for their owners.
 | 2 | G13-1 vendor React | no | Sonnet | 1 (+ review) |
 | 3 | G13-2 i18n completeness | no (the user glances at ko in H-13) | Sonnet | 1 |
 | 4 | MX-3a + MX-3b | no | Sonnet | 1 |
-| 5 | G13-4 load performance (CJK part after U7) | U7 for CJK only | Sonnet | 2 (+ review) |
+| 5 | G13-4 load performance (CJK part: G13-4b2, built after U7) | U7 for CJK only (decided 2026-10-15) | Sonnet | 2 (+ review) |
 | 6 | G13-5 server hygiene + Shared Scores | no | Sonnet | 1-2 (+ review) |
 | 7 | G13-6 backup / delete on device | no | Sonnet | 1 (+ review) |
-| 8 | G13-7a monitoring + release script (7b browser counters after U5) | U5 for 7b | Sonnet | 1 (+0.5) |
+| 8 | G13-7a monitoring + release script (7b browser counters: G13-7b, built after U5) | U5 for 7b (decided 2026-10-15) | Sonnet | 1 (+0.5) |
 | 9 | G13-3 notices + About (demo name U6, YouTube sentence U9) | U6, U9 | Sonnet | 1 |
 | 10 | S8 steps 3-5 | no | Sonnet | 2.5 |
 | 11 | G13-S0 sync server | U1, U2, U3 (before S1 ships; S0 can merge dark) | Sonnet | 2 (+ full + security review) |
@@ -815,9 +914,9 @@ fixed and **only that step** is re-run (memory: review only when fixed).
 | **U2** | How long the server keeps a library nobody syncs | **180 days from the last sync of any device**, shown as "kept until <date>". The device's own copy and the backup file stay. | Too short: someone back after 7 months finds the server copy gone (their device still has it). Forever: the free database slowly fills with abandoned libraries. |
 | **U3** | Stay inside the free tiers (sync cap 128 MB of 0.5 GB) and decide on paying only at 80% | **Yes, $0 now.** The server warns at 80% and the Lead reports it. | If growth is sudden, new libraries are refused for a while (existing ones keep working) until the user decides on a paid Neon plan. |
 | **U4** | Stop showing the login card to every new visitor; sign-in moves to Settings and is still needed for posting to Shared Scores | **Yes.** 5 accounts and 0 progress rows say the card buys nothing. **DECIDED 2026-10-15, and further than asked: the card is gone, sign-in is one optional row in Settings, and posting to Shared Scores needs no account either (the guest key owns the post): section 21.** | Fewer accounts. Guest posts are anonymous text: moderation is manual (21.6). |
-| **U5** | Anonymous counters sent by browsers (errors, engraver fallbacks, load time; no ids, aggregated in memory, one log line an hour), disclosed in About | **Yes.** Without them a broken release is only seen when someone complains. | A privacy complaint, low risk with no identifiers. Without them: blind to field failures. |
+| **U5** | **DECIDED 2026-10-15 as recommended** (the user's blanket go-ahead; built in G13-7b, see "G13-4b2 and G13-7b as built"). Anonymous counters sent by browsers (errors, engraver fallbacks, load time; no ids, aggregated in memory, one log line an hour), disclosed in About, with an opt-out switch there (default on) | **Yes.** Without them a broken release is only seen when someone complains. | A privacy complaint, low risk with no identifiers. Without them: blind to field failures. |
 | **U6** | Rename the demo "Interstellar Theme - Hans Zimmer" (its notes are a generated pattern) | **Yes**, to an original title, e.g. "PPP Practice Theme". **DECIDED 2026-10-15 (yes) and BUILT: "PPP Practice Theme", composer "PPP", id `demo` (section 21).** | Keeping it: a film-title / composer-name complaint, and a misattribution in every first impression. Renaming: none. |
-| **U7** | Korean/Japanese/Chinese text in the device's own fonts (fast, works offline) or Google's Noto Sans as now (331 KB render-blocking CSS) | **System fonts first; Noto loaded non-blocking** where online, so the look settles to today's. | A slightly different font for a moment, or on Windows (Malgun Gothic). |
+| **U7** | **DECIDED 2026-10-15 as recommended** (built in G13-4b2, see "G13-4b2 and G13-7b as built": Noto Sans is asked for only on a device that has no font of its own for the script). Korean/Japanese/Chinese text in the device's own fonts (fast, works offline) or Google's Noto Sans as now (331 KB render-blocking CSS) | **System fonts first; Noto loaded non-blocking** where online, so the look settles to today's. | A slightly different font for a moment, or on Windows (Malgun Gothic). |
 | **U8** | The in-browser transcription model (60 MB, Google's storage) | **Keep it at Google**, vendor the code, say "needs internet" on that button. The PC worker is the strong path anyway. | If Google moves the checkpoint, the browser model breaks until we host it (the PC path still works). |
 | **U9** | **DECIDED 2026-10-13 as recommended** (built in G13-3; the PC-worker default is recorded, not changed: see "G13-3 as built"). YouTube transcription posture (facts in E8) | **Keep the feature; add a notice** ("use recordings you have the right to use; the score is for your own practice"); **do not allow posting YouTube-derived scores to the public Shared Scores** (links stay); default the PC worker to download on the PC; ask a lawyer before any commercial launch. | Without it: takedown requests, the server's IP blocked by YouTube (today's fallback is a third-party site), a complaint about a posted arrangement. With it: a little friction for posting covers. |
 | **U10** | D-6 business: accounts, pricing, payments | **None in G13.** Revisit after H-13 with real usage. | Earlier monetisation forces accounts, payments compliance and support work. |

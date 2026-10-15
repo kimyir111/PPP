@@ -2395,6 +2395,12 @@
     "Take my posts down first": "先に投稿を下げる",
     "Taking your posts down…": "投稿を下げています…",
     "Some posts could not be taken down. Try again.": "下げられなかった投稿があります。もう一度お試しください。",
-    "Your posts were taken down.": "投稿を下げました。"
+    "Your posts were taken down.": "投稿を下げました。",
+    "Send anonymous counts": "匿名の数字を送る",
+    "On. Press to stop sending.": "オンです。押すと送信を止めます。",
+    "Off. Nothing is sent. Press to turn it on.": "オフです。何も送りません。押すとオンにします。",
+    "Your browser's Do Not Track or Global Privacy Control setting is on, so nothing is sent.": "ブラウザーの「トラッキング拒否」または Global Privacy Control の設定がオンのため、何も送りません。",
+    "To see when a page breaks or loads slowly, PPP sends a few anonymous counts (errors, load times) when you leave the page. They have no name, address or ID, and no songs. The server has to see your connection's address for a moment, but it stores nothing: it only adds the counts up.": "ページが壊れたり遅く開いたりしたことが分かるように、ページを離れるときにエラーの数や読み込み時間などの匿名の数字を少し送ります。名前、アドレス、ID、曲は含まれません。サーバーは接続元のアドレスをごく短時間見ますが、何も保存せず、数字を足し合わせるだけです。",
+    "If you turned off anonymous counts, that choice stays.": "匿名の数字を送らない設定にしていた場合、その設定は残ります。"
   }
 }

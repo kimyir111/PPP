@@ -1,13 +1,15 @@
 'use strict';
 /* G13-4b: the Latin fonts are served by PPP, and the page no longer waits for another site's stylesheet (docs/GOALS/G13_PRODUCTIZATION.md G13-4, U7).
+   G13-4b2 (U7): Korean, Japanese and Chinese text is drawn in the device's own fonts first; Google's Noto Sans is added only for a script the device cannot draw.
 
    Node only. Checks, from the files and from a running server.js:
      1. vendor/fonts holds exactly the files vendor/README.md lists, with the sizes and sha256 it states, each a real woff2 and each used by a @font-face of the page;
      2. the @font-face rules in the head of the page are Google Fonts' own for these families (same weights, styles, unicode-ranges, display: swap: GOOGLE_FACES / the
         two ranges below are the face table Google published on 2026-10-08), so what is drawn does not change - 650 and 800 still resolve to 700;
      3. every family has its SIL OFL licence beside the files, with the copyright line the README quotes;
-     4. nothing in the page's head or template is a stylesheet from another site (the first paint cannot wait for one); the Korean/Japanese/Chinese stylesheet is added by a
-        script after load, for the CJK families only, and the body's font stack is unchanged;
+     4. nothing in the page's head or template is a stylesheet from another site (the first paint cannot wait for one) and no connection hint to its hosts is sent; the Korean/
+        Japanese/Chinese text is drawn in the device's own fonts first (--ppp-cjk, the stack the page's font-family rules use after Figtree), and the Noto Sans stylesheets
+        are added by a script after load, one family a request, only for a script the device cannot draw (tests/load/cjk-detect.test.js runs that decision);
      5. the server hands each font out under its hash, immutable, and does not gzip a woff2. */
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -101,24 +103,54 @@ test('every family has its OFL licence beside the files, and the README quotes i
   }
 });
 
-test('the first paint waits for no other site: no stylesheet link to another host in the page, and the CJK sheet comes from a script after load', () => {
+test('the first paint waits for no other site: no stylesheet link to another host in the page, no hint to Google Fonts, and the CJK sheets come from a script after load', () => {
   const links = [...PAGE.matchAll(/<link\b[^>]*>/g)].map(m => m[0]);
   for (const l of links) assert.ok(!/rel=["']stylesheet["']/i.test(l) || !/href=["']https?:/i.test(l), 'no render-blocking stylesheet from another site: ' + l.slice(0, 100));
-  assert.ok(!links.some(l => /fonts\.googleapis\.com|fonts\.gstatic\.com/.test(l) && !/rel="(preconnect|dns-prefetch)"/.test(l)), 'the only links left to Google Fonts are connection hints (nothing is fetched by them)');
-  /* the script that adds Google's Noto Sans */
-  const m = /\(function \(\) \{\s*var CJK = '([^']+)';[\s\S]*?\}\)\(\);/.exec(head);
-  assert.ok(m, 'the head has the script that adds the CJK stylesheet');
-  const url = new URL(m[1]);
-  assert.equal(url.origin + url.pathname, 'https://fonts.googleapis.com/css2');
-  const fam = url.searchParams.getAll('family').map(f => f.split(':')[0]);
+  assert.ok(!links.some(l => /fonts\.googleapis\.com|fonts\.gstatic\.com/.test(l)), 'no link at all to Google Fonts in the page: not even a connection hint (a device with fonts of its own never talks to that site)');
+  /* the script that adds Google's Noto Sans: a family a request */
+  const m = /var URLS = \{([\s\S]*?)\};[\s\S]*?\}\)\(\);/.exec(head);
+  assert.ok(m, 'the head has the script that adds the CJK stylesheets');
+  const urls = [...m[1].matchAll(/(\w+): '([^']+)'/g)].map(x => [x[1], new URL(x[2])]);
+  assert.deepEqual(urls.map(x => x[0]), ['ko', 'ja', 'zh']);
+  const fam = [];
+  for (const [, url] of urls) {
+    assert.equal(url.origin + url.pathname, 'https://fonts.googleapis.com/css2');
+    const f = url.searchParams.getAll('family');
+    assert.equal(f.length, 1, 'one family in a request');
+    assert.equal(f[0].split(':')[1], 'wght@400;500;600;700', 'the weights the page has always asked for');
+    assert.equal(url.searchParams.get('display'), 'swap');
+    fam.push(f[0].split(':')[0]);
+  }
   assert.deepEqual(fam, ['Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC'], 'only the CJK families; the Latin ones are ours');
-  for (const f of url.searchParams.getAll('family')) assert.equal(f.split(':')[1], 'wght@400;500;600;700', 'the weights the page has always asked for');
-  assert.equal(url.searchParams.get('display'), 'swap');
   assert.match(m[0], /addEventListener\('load'/, 'after the page has loaded');
   assert.match(m[0], /requestIdleCallback/, 'and the browser is idle');
   assert.ok(!/document\.write/.test(m[0]));
-  /* the font stack of the body is unchanged: Figtree, then the CJK families, then the system's */
-  assert.match(PAGE, /body \{ background: #f7f5f2; font-family: Figtree, "Noto Sans KR", "Noto Sans JP", "Noto Sans SC", system-ui, sans-serif;/);
+});
+
+test('the font stack is Figtree, then --ppp-cjk (the device\'s own CJK fonts, the language in use first, Noto Sans last), then the system\'s; the shells and the lessons\' SVG use the same', () => {
+  assert.match(PAGE, /body \{ background: #f7f5f2; font-family: Figtree, var\(--ppp-cjk\), system-ui, sans-serif;/);
+  const css = head.slice(0, head.indexOf('</style>', head.indexOf('--ppp-cjk')));
+  const stack = sel => {
+    const i = css.indexOf(sel + ' { --ppp-cjk: ');
+    assert.ok(i >= 0, sel);
+    const rest = css.slice(i + (sel + ' { --ppp-cjk: ').length);
+    return rest.slice(0, rest.indexOf(';')).split(',').map(s => s.trim().replace(/"/g, ''));
+  };
+  const ko = stack(':root'), ja = stack(':root:lang(ja)'), zh = stack(':root:lang(zh)');
+  assert.deepEqual([ko[0], ja[0], zh[0]], ['Malgun Gothic', 'Hiragino Sans', 'PingFang SC'], 'each language\'s own script first');
+  for (const s of [ko, ja, zh]) {
+    assert.deepEqual(s.slice(-3).sort(), ['Noto Sans JP', 'Noto Sans KR', 'Noto Sans SC'], 'Noto Sans (installed, or the web face) is last: reached only where nothing of the device\'s own draws the character');
+    assert.equal(new Set(s).size, s.length, 'no family twice');
+    for (const f of ['Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans CJK KR', 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', 'Noto Sans CJK JP', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC']) assert.ok(s.includes(f), f);
+  }
+  /* Korean breaks at spaces (no lone syllable on a line), and a word longer than its box still breaks without raising the min-content width; Japanese and Chinese are left to break anywhere */
+  assert.match(css, /:root:lang\(ko\) body \{ word-break: keep-all; overflow-wrap: anywhere; \}/);
+  assert.ok(!/:root:lang\((ja|zh)\) body/.test(css));
+  assert.equal([...PAGE.matchAll(/font-family: Figtree, var\(--ppp-cjk\), system-ui, sans-serif;/g)].length, 3, 'the body rule and the two shells');
+  assert.ok(!/'Noto Sans (KR|JP|SC)'/.test(PAGE.slice(PAGE.indexOf('<helmet>'))), 'no family named in the template any more');
+  const lessons = fs.readFileSync(path.join(REPO, 'lessons.js'), 'utf8');
+  assert.equal([...lessons.matchAll(/"Figtree, var\(--ppp-cjk\), system-ui, sans-serif"/g)].length, 3);
+  assert.ok(!/Noto Sans (KR|JP|SC)/.test(lessons));
 });
 
 test('the server hands out each font by its hash: immutable, a woff2 is not gzipped again, and the licence files come with them', async () => {
@@ -142,14 +174,13 @@ test('the server hands out each font by its hash: immutable, a woff2 is not gzip
   } finally { srv.close(); }
 });
 
-test('the template keeps as many elements as it had: the three Google links of its <helmet> are two preconnects and a dns-prefetch, so no data-dc-tpl stamp of the DOM moves', () => {
+test('the template keeps as many elements as it had: the three Google links of its <helmet> became three that fetch nothing and contact no one, so no data-dc-tpl stamp of the DOM moves', () => {
   const helmet = PAGE.slice(PAGE.indexOf('<helmet>'), PAGE.indexOf('</helmet>'));
-  const links = [...helmet.matchAll(/<link\b[^>]*>/g)].map(m => m[0]);
-  const kinds = links.map(l => (/rel="([^"]+)"/.exec(l) || [])[1]);
-  /* the icon, then the three that stood where Google's two preconnects and its stylesheet were */
-  assert.deepEqual(kinds, ['icon', 'preconnect', 'preconnect', 'dns-prefetch']);
-  for (const l of links.slice(1)) assert.match(l, /href="https:\/\/fonts\.(googleapis|gstatic)\.com"/, 'hints for the host the CJK stylesheet comes from; nothing is fetched by them');
-  assert.ok(!links.some(l => /rel="(stylesheet|preload)"/.test(l)), 'nothing in the helmet asks for a file: the fonts are fetched when text needs them');
+  const els = [...helmet.matchAll(/<(link|meta|title|style)\b[^>]*>/g)].map(m => m[0]);
+  /* the title, the icon, then the three that stood where Google's two preconnects and its dns-prefetch were (G13-4b): now a name, a referrer policy (the header's own) and a licence relation */
+  const kind = l => /^<(\w+)/.exec(l)[1] + ':' + ((/(?:rel|name)="([^"]+)"/.exec(l) || [])[1] || '');
+  assert.deepEqual(els.map(kind), ['title:', 'link:icon', 'meta:application-name', 'meta:referrer', 'link:license', 'style:']);
+  assert.ok(!els.some(l => /fonts\.(googleapis|gstatic)\.com|rel="(stylesheet|preload|preconnect|dns-prefetch|prefetch)"/.test(l)), 'nothing in the helmet asks for a file or opens a connection: the fonts are fetched when text needs them');
   /* the page's own preload/stylesheet links: none (a preload in the body is found by the browser's scanner at once and would take 72 KB from the scripts) */
-  assert.deepEqual([...PAGE.matchAll(/<link\b[^>]*rel="(?:preload|stylesheet)"[^>]*>/g)].map(m => m[0]), []);
+  assert.deepEqual([...PAGE.matchAll(/<link\b[^>]*rel="(?:preload|stylesheet|preconnect|dns-prefetch)"[^>]*>/g)].map(m => m[0]), []);
 });

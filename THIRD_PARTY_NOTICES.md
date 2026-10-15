@@ -69,7 +69,7 @@ Until they are vendored (G13-8) these are fetched by your browser from the host 
 - TensorFlow.js (`@tensorflow/tfjs`) - Versions: 2.8.6, 3.21.0; Licence: Apache-2.0; Used for: the in-browser recording transcription (version 2.8.6 with Magenta.js) and the Basic Pitch path (version 3.21.0); loaded only when a recording is converted in the browser
 - pdf.js (`pdfjs-dist`) - Versions: 3.11.174; Licence: Apache-2.0; Used for: reading a PDF or a photo of a score (the import screen); loaded only when one is added
 
-Fonts from Google Fonts for Korean, Japanese and Chinese text: Noto Sans JP, Noto Sans KR, Noto Sans SC. Licence: SIL Open Font License 1.1 (OFL-1.1), fetched from fonts.googleapis.com after the page has loaded.
+Fonts from Google Fonts for Korean, Japanese and Chinese text: Noto Sans JP, Noto Sans KR, Noto Sans SC. Licence: SIL Open Font License 1.1 (OFL-1.1), fetched from fonts.googleapis.com only on a device that has no font of its own for that script, after the page has loaded. Everywhere else the text is drawn in the fonts of your device.
 
 - Onsets and Frames checkpoint (Magenta model weights) - storage.googleapis.com: the in-browser recording transcription; about 60 MB, fetched only when a recording is converted in the browser. Licence: see the checkpoint's own terms (this repository does not restate them).
 

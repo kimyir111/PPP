@@ -31,6 +31,7 @@ const ok = (name, cond, detail) => {
 };
 const heading = t => console.log('\n-- ' + t + ' --');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const J = JSON.stringify;
 const later = fn => new Promise((resolve, reject) => setImmediate(() => { Promise.resolve().then(fn).then(resolve, reject); }));   /* a fresh async context */
 
 /* a request/response pair as http gives them to a listener */
@@ -57,7 +58,8 @@ async function unitPart() {
     '/api/shares': 'api-shares', '/api/shares?mine=1': 'api-shares', '/api/shares/abc123': 'api-shares',
     '/api/jobs': 'api-jobs', '/api/jobs/42': 'api-jobs', '/api/worker/claim': 'api-jobs', '/api/pc-links': 'api-jobs', '/api/pc-links/me/worker-token': 'api-jobs',
     '/api/youtube-title?url=x': 'other', '/api/audio': 'other', '/api': 'other', '/helper/health': 'other', '/helper': 'other',
-    '/api/sharesx': 'other', '/api/jobsx': 'other', '/api/authx': 'other'
+    '/api/sharesx': 'other', '/api/jobsx': 'other', '/api/authx': 'other',
+    '/api/stats': 'api-stats', '/api/stats?x=1': 'api-stats', '/api/statsx': 'other', '/api/stats/x': 'other'
   };
   const wrong = Object.keys(table).filter(u => classify(u) !== table[u]).map(u => u + ' -> ' + classify(u) + ' (wanted ' + table[u] + ')');
   ok('every address falls in the class the table gives it', wrong.length === 0, wrong.join('; '));
@@ -96,6 +98,18 @@ async function unitPart() {
     stats.track(null, null);
     stats.track({}, {});
     ok('a request object that is not one does not throw (counting never touches a request)', true);
+  }
+
+  heading('the beacon route is its own class and its refusals are not alarms');
+  {
+    const { stats } = rig();
+    [['/api/stats', 204], ['/api/stats', 400], ['/api/stats', 413], ['/api/stats', 403], ['/api/stats', 429], ['/api/stats', 429], ['/api/stats', 404], ['/api/shares', 404], ['/api/stats', 500]].forEach(([u, s]) => {
+      const p = pair(u); stats.track(p.req, p.res); p.res.answer(s);
+    });
+    const d = parse(stats.flush());
+    ok('every request of the route is in its own class: 8 requests, 6 refusals, 2 of them 429, 1 answer 500', d.by['api-stats'].requests === 8 && d.by['api-stats']['4xx'] === 6 && d.by['api-stats'].tooMany === 2 && d.by['api-stats']['5xx'] === 1, J(d.by['api-stats']));
+    ok('its refusals are NOT in the totals 4xx and tooMany (only the one 404 of /api/shares is)', d['4xx'] === 1 && d.tooMany === 0, J([d['4xx'], d.tooMany]));
+    ok('its 5xx is: that is a bug of ours, and the request total has them all', d['5xx'] === 1 && d.requests === 9, J([d['5xx'], d.requests]));
   }
 
   heading('store errors: counted for the request they happened in');
@@ -161,7 +175,7 @@ async function unitPart() {
     const d = parse(line);
     const keys = o => Object.keys(o).sort().join();
     ok('the keys are fixed: v, windowS, upS, requests, 4xx, tooMany, 5xx, storeErrors, idlePoolErrors, by', keys(d) === '4xx,5xx,by,idlePoolErrors,requests,storeErrors,tooMany,upS,v,windowS', keys(d));
-    ok('by has the six classes and each has five counts', keys(d.by) === 'api-auth,api-jobs,api-shares,health,other,static' && Object.values(d.by).every(v => keys(v) === '4xx,5xx,requests,storeErrors,tooMany'));
+    ok('by has the seven classes and each has five counts', keys(d.by) === 'api-auth,api-jobs,api-shares,api-stats,health,other,static' && Object.values(d.by).every(v => keys(v) === '4xx,5xx,requests,storeErrors,tooMany'));
     const strings = []; (function walk(x) { if (x && typeof x === 'object') Object.values(x).forEach(walk); else if (typeof x === 'string') strings.push(x); })(d);
     ok('there is no string value in it at all, and no number is fractional or negative', strings.length === 0 && !/\d\.\d|-\d/.test(line));
     ok('no address, id, token, cookie, email or path of the requests is in it', !/203\.0\.113|198\.51\.100|SHAREID|SECRET|SESSIONCOOKIE|WORKERTOKEN|job-9f|example\.com|someone|aaaa|bbbb|\/api/.test(line), line);

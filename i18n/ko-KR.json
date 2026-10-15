@@ -2395,6 +2395,12 @@
     "Take my posts down first": "내 게시물부터 내리기",
     "Taking your posts down…": "게시물을 내리는 중…",
     "Some posts could not be taken down. Try again.": "일부 게시물을 내리지 못했어요. 다시 시도해 주세요.",
-    "Your posts were taken down.": "게시물을 내렸어요."
+    "Your posts were taken down.": "게시물을 내렸어요.",
+    "Send anonymous counts": "익명 숫자 보내기",
+    "On. Press to stop sending.": "켜져 있어요. 누르면 보내지 않아요.",
+    "Off. Nothing is sent. Press to turn it on.": "꺼져 있어요. 아무것도 보내지 않아요. 누르면 켜요.",
+    "Your browser's Do Not Track or Global Privacy Control setting is on, so nothing is sent.": "브라우저의 \"추적 안 함\" 또는 Global Privacy Control 설정이 켜져 있어서 아무것도 보내지 않아요.",
+    "To see when a page breaks or loads slowly, PPP sends a few anonymous counts (errors, load times) when you leave the page. They have no name, address or ID, and no songs. The server has to see your connection's address for a moment, but it stores nothing: it only adds the counts up.": "페이지가 고장 나거나 느리게 열리는 때를 알 수 있도록, 페이지를 떠날 때 오류 수와 로딩 시간 같은 익명의 숫자 몇 개를 보내요. 이름, 주소, 식별 번호, 곡은 들어 있지 않아요. 서버는 접속 주소를 잠깐 볼 수밖에 없지만 아무것도 저장하지 않고, 숫자를 더하기만 해요.",
+    "If you turned off anonymous counts, that choice stays.": "익명 숫자 보내기를 꺼 두었다면 그 설정은 그대로 남아요."
   }
 }

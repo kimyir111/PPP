@@ -31,9 +31,10 @@ async function open(opts) {
   const ctx = await browser.createBrowserContext();
   const page = await ctx.newPage();
   await page.setViewport({ width: 1100, height: 800 });
-  /* a device with none of the Noto families (this PC may have some: the head script then leaves them out of the request) */
+  /* a device that can draw no CJK text (canvas says so: every character measures alike), in a Korean page: the head script then asks Google for Noto Sans KR after load, and the recordings wait for it
+     (G13-4b2: in an English page nothing waits - a title in another language is not worth holding 1.3 MB of sound for - so this test is about the Korean one) */
   await page.evaluateOnNewDocument(() => {
-    try { localStorage.setItem('ppp-guest', '1'); localStorage.setItem('ppp-locale', 'en-US'); } catch (e) { /* */ }
+    try { localStorage.setItem('ppp-guest', '1'); localStorage.setItem('ppp-locale', 'ko-KR'); } catch (e) { /* */ }
     CanvasRenderingContext2D.prototype.measureText = function (t) { return { width: (/serif$/.test(this.font) && !/sans-serif$/.test(this.font) ? 8 : 6) * String(t).length }; };
   });
   const log = { mp3: [], google: null, googleDone: null, load: null };

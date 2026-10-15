@@ -2395,6 +2395,12 @@
     "Take my posts down first": "先撤下我的发布",
     "Taking your posts down…": "正在撤下发布…",
     "Some posts could not be taken down. Try again.": "有些发布未能撤下。请重试。",
-    "Your posts were taken down.": "已撤下发布。"
+    "Your posts were taken down.": "已撤下发布。",
+    "Send anonymous counts": "发送匿名数字",
+    "On. Press to stop sending.": "已开启。点按后不再发送。",
+    "Off. Nothing is sent. Press to turn it on.": "已关闭，不会发送任何内容。点按可开启。",
+    "Your browser's Do Not Track or Global Privacy Control setting is on, so nothing is sent.": "浏览器的“请勿跟踪”或 Global Privacy Control 设置已开启，因此不会发送任何内容。",
+    "To see when a page breaks or loads slowly, PPP sends a few anonymous counts (errors, load times) when you leave the page. They have no name, address or ID, and no songs. The server has to see your connection's address for a moment, but it stores nothing: it only adds the counts up.": "为了了解页面何时出错或加载缓慢，离开页面时 PPP 会发送少量匿名数字（错误次数、加载时间）。其中不含姓名、地址、标识符，也不含乐曲。服务器不得不在一瞬间看到连接的地址，但不会保存任何内容，只做累加。",
+    "If you turned off anonymous counts, that choice stays.": "如果你关闭了发送匿名数字，这个选择会保留。"
   }
 }
