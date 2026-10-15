@@ -37,6 +37,8 @@ recording lead sheet as generators and a new, verified measure-aligned splice.
 
 **G11b-1c is built** (2026-10-14): decision U4 is decided YES (the user, 2026-10-13) and built: `PPP.demoRuns` is `'separate'` by default, under `PPP.learner` `'legacy'` and `'typed'` alike, so a run without a keyboard (Demo Input) moves the screen and writes no evidence (history, memory, section bars, coach and Loop counters, minutes, xp, weekly bars, the run log), the practice card says so in four languages, and `'count'` is the explicit opt-out; the legacy goldens are re-recorded from the page before G11b-1 with the Demo Input laps left out, and the old golden is what the opt-out must equal; the record is §19.1.
 
+**G11b-2 is built** (2026-10-15, Node only, no app change): `practice/learner.js` (the learner model v1 from typed evidence: skill and tempo with uncertainty, forgetting, timing, review boxes) and `practice/policy.js` (what to play next, in the Coach plan schema, every plan through `Coach.validate`); tuned on the simulator's tuning set only and reported once on its hold-out set: time to mastery −68.9 % against the legacy app at equal minutes (worst type −50.5 %), retention +36 %, 0.04 passage changes per lap, a lower Brier than `recentAcc` for every type, 10⁴ random states through `Coach.validate` with no issue - the acceptance bar is met; a no-advice run-through does better still on these synthetic learners (−75.9 %), which says more about the simulator than about practice. The record, the tuning, the limits and the notes for G11b-3 are §20.
+
 ## 1. What was measured before designing (evidence)
 
 All numbers were measured for this document at `3567e27` in an independent server of this worktree
@@ -1055,6 +1057,201 @@ number left on the card; A33-A40 after the review: the stale `live`, the three r
 in the middle of the loop, and the unplugged keyboard afterwards. `tests/interactions.test.js` (section 6), `tests/memory.test.js` (a recall written to storage), `tests/learning.test.js` (practice written to storage and surviving a
 reload) and `tests/import.test.js` play without a keyboard to check the persistence of what a recorded run writes, so they ask for `PPP.demoRuns = 'count'` in the page, with the reason in a comment; the learning suite's
 checks also require the revision to MOVE (the sample's seed is already at 23), and it has a keyboard variant that proves the real path (a measured run, not simulated).
+
+## 20. G11b-2: the learner model v1 and the practice policy (2026-10-15; implementer on Opus; Node only; branch `g11b-2-learner`)
+
+**What was built.** `practice/learner.js` (UMD, global `PPPLearner`) and `practice/policy.js` (UMD, global `PPPPolicy`): pure, deterministic (no clock, no `Math.random`, no DOM),
+Node + browser. **No change to the app file, `server.js`, `practice/runlog.js`, `practice/sim.js` or any committed baseline; no switch, no default.** The integration (the recommendation
+card, the Loop panel sequence and `Coach.context` under `PPP.learner = 'adaptive'`) is G11b-3. For the measurement: `tests/practice-sim/runner.js` gained two opt-in hooks (a *driver*
+for an arm that is not the legacy app, an *observer* that predicts without deciding; without them a run is what it was, and `legacy-gate.json` recomputes identical),
+`tests/practice-sim/drivers.js` (the policy arm, two negative controls, the observer), `tests/practice-sim/policy-eval.js` (the comparison and the split guard),
+`tests/practice-sim/policy-tune.js` (the local tuning tool, tuning set only), and three reports in `tests/practice-sim/baselines/`: `policy-gate.json` (rows, checked in CI),
+`policy-tune.json` and `policy-holdout.json` (aggregates).
+
+**The model (§7.2 as built).**
+- *Evidence* is the run log entry of `practice/runlog.js` and nothing else (G11-D5): `measured` moves the skill, the timing and the review boxes; `follow` moves only a "notes known" count
+  (no tempo, no timing); `memory` moves only a per-measure recall estimate (hidden notes would read as missed ones); `simulated` is refused and counted. The simulator builds every entry
+  with the page's own code path (`rowsFromEngine`, `wrongsFromResult`, `buildEntry`, the page's `runSource`), so the model reads what G11b-3's page will hand it.
+- *Skill*, per measure index and hand: a Gaussian belief over two numbers, `a` (log-odds of a note landing at the score tempo, both hands, rested) and `t` (how much slowing down helps,
+  never below 0): `P(hit) = σ(a + t·(1 − ρ^1.5) + 0.5·[one hand alone])`. A lap of k matched notes out of e is a binomial observation, folded in by a Laplace step on the 2×2 posterior,
+  each note counted as half a note (the notes of a lap are not independent); after each run the belief widens a little (0.01) and expects a little gain (0.05·(1 − p)).
+- *Forgetting*: the learned part of `a` (above its first estimate) halves in 4 days; a measure practised again on a new day (a gap of 8 h or more) forgets 1.3 times more slowly, up to
+  30 days; the belief widens by 0.04 a day without practice.
+- *A bar nobody has played* starts from the piece's pooled **first readings** in that hand (what practice made of the other bars says nothing about this one; found by tracing: the first
+  version pooled the trained values, and an unplayed bar looked better every time another one improved), shrunk to accuracy 0.75 with the weight of two bars, wide.
+- *Derived*: the predicted accuracy under any tempo and hands, its credibility, P(mastered) (accuracy ≥ 0.9 at 0.95× tempo, hands together), `cleanTempo` (the fastest 5 % step clean with
+  80 % credibility), the legacy state names (new, weak, learning, improving, stable, and memory-ready / memorized / due from the page's memory record), the Leitner box (1, 2, 4, 7, 14
+  days: a clean run at ≥ 0.9× tempo with both hands promotes a due bar, a run under 0.75 takes it out), signed and absolute timing per bar and the device offset (a hint, never applied).
+
+Where it differs from §7.2, and why: (1) not a Beta per measure but a logistic belief with a tempo slope: a Beta cannot say what a clean lap at 60 % means at 100 %, and the policy needs
+exactly that; (2) the tempo curve is that slope, not an isotonic fit per passage (an isotonic curve needs many runs at many tempi of one passage; the slope borrows from the prior);
+(3) G6 hotspots are not used as a prior (`PPP.difficulty` is off by default, and the first reading replaces any prior within one lap; `create` takes per-measure priors if G11b-3 wants
+them); (4) no fatigue term and no learner-specific forgetting rate (both would mirror the simulator's own formulas; see the limits).
+
+**The policy (§7.3 as built).** `decide(model, now, state, {current, ctx, opts})` after every lap → `{task, changed, suggestion, kind, state, stuck}`; `plan(...)` → a Coach plan (up to
+four tasks: the task of the decision, what the same passage most likely asks next, the next passage); `checked(plan, ctx, Coach.validate)` → the plan only as `Coach.validate` returns it
+(G11-D8). In order: (1) a new session (an hour without a lap) starts with **one lap of the bars whose review box is due**; (1b) a piece with half or more of its notes never measured is
+**read through once** (the legacy "play it once so PPP can find your weak spots"); (2) a **due memory review** behind the app's gate unless a measured bar is below 0.6 (the legacy rule);
+(3) the **weakest passage by value per second**: every window of up to 16 bars scored by its notes' expected shortfall below 0.9 at the score tempo, `E[max(0, 0.9 − accuracy)]` under the
+model's uncertainty, divided by the seconds of a lap + 4 s between laps (+ 6 s when the task changes); (4) the **tempo ladder**: start at the fastest 5 % step where the predicted accuracy
+is ≥ 0.5 (never below 40 %), +10 after two laps ≥ 0.85, −10 after two laps ≤ 0.5, never above 100 %; a step is a **suggestion** (U6: `autoTempo` off); (5) **hands separately** when the
+model's hand gap in the passage is ≥ 0.15 and the weaker hand is under 0.7: the weaker hand alone for two laps, then both at the same tempo; (6) **stability**: a passage is kept at least
+three laps (the change cost of (3) is the only other margin); (7) nothing weak: **memory work** where `Coach.context`'s `memoryEligibleSections` allows it (re-checked every lap: a gate
+that closes again drops the task), otherwise a run-through; (8) **stuck**: the same passage chosen in three sessions with no fall of its shortfall at ≤ 60 % is flagged (`stuck`), never acted on
+(G11c-2). A task names bars of the piece (a contiguous run of indexes, written as its measure numbers), a hand that has notes there, a ladder tempo and the app's modes; its reason has
+no figure (`Coach.numbersIn` would have to know it).
+
+Where it differs from §7.3, and why: (1) the ladder starts where about half the notes land, not at `cleanTempo`: on the tuning set a start at 70 % predicted accuracy already cost 3 points of
+time to mastery (beginners 30 %); (2) the reading (1b) is new; (3) a passage is up to 16 bars chosen by value per second, not the legacy 2-4-bar weak range; (4) hands separately needs one
+measured run, not two (it fires on 0.0-0.4 % of laps either way, below); (5) stability is a dwell of three laps with no extra margin (an extra 30 % margin cost 1 point on 480 learners and
+lowered the passage changes from 0.04 to 0.02 per lap).
+
+**How it was measured.** The G11b-0 simulator, unchanged: the same synthetic learners (six types), the same eight pieces, 20-minute sessions on days 0-22, retention on day 30, every lap
+judged by the app's own `PerformanceEngine` and folded by the app's own `completeLap` (cut out of the app file). Arms, all at **equal practice minutes** (every arm but `none` fills the same
+20 minutes a day; a lap costs its music + 4 s, a change of task 6 s, as for the legacy arms):
+`policy` (this phase: after every lap `decide`; a new task is planned, passed through the app's `Coach.validate` and the **validated** first task is set on the page with
+`applyRecommendation`, the card's own button; the legacy Loop-panel drill steps are off in this arm, since G11b-3 makes the policy feed that panel; a suggested tempo step is taken, as the
+simulated person always does what the app says); `coach` and `card` (the legacy app, re-run on the same learners with the model watching: the comparison is paired, and their rows equal
+the committed `legacy-gate.json` rows, test); and three negative controls: `random` (a random window of 1-8 bars, hand and tempo 50-100 % for 1-5 laps), `through` (the whole piece at
+the score tempo, both hands, every lap: no advice at all) and `none` (no practice). The legacy figure of each type is the **better** of `coach` and `card` (the lower minutes, the higher
+retention: the stricter comparison). **Brier**: before each lap the model predicts each measure's share of matched notes under the lap's own conditions, scored against the lap, on the
+SAME measure-attempts `recentAcc` predicts (those with legacy history), on the policy's laps and, separately, on the legacy arms' own laps.
+**The split** (fixed by G11b-0 before any run): tuning = the four `tune` pieces × seeds k < 100; hold-out = the four `holdout` pieces × seeds k ≥ 100. `policy-eval.js` refuses a
+hold-out piece or seed in the tuning set (`assertTuning`, three mutants), `policy-tune.js` can only build tuning jobs, and the hold-out report records the hash of the numbers and of the
+two modules' source and refuses a second report with others (`holdoutRefusal`, two mutants). The hold-out set was run once, after `learner.js` and `policy.js` were committed (`d373cd4`, `93d5d1b`).
+
+**Tuning (tuning set only; mean change of capped minutes against the better legacy arm per type, 96 learners (4 seeds) unless it says 480 (20 seeds)).**
+
+| What was tried | Result | Kept |
+| --- | --- | --- |
+| Learner, open loop (the model watching coach, card, random, through; Brier on recentAcc's attempts, 3 seeds): the first defaults (`qRun` 0.03, `learn` 0) | 0.01131 vs recentAcc 0.01223 | – |
+| `learn` 0.05-0.2, `qRun` 0.005-0.08, `omega` 0.25-2, half-life 2-8 days, `gamma` 1/1.5, priors, pool weight, consolidation | best region 0.01056-0.01059 at `learn` 0.1, `qRun` 0.01; everything else within ±1 % | `qRun` 0.01; **`learn` 0.05** (0.01076): 0.1 is the synthetic learners' own learning rate, and it made the model optimistic about a passage that does not improve (in a test case of a passage that loses 80-85 % of its notes at the score tempo in seven runs, and is clean at half the tempo, it predicted 50 % at the score tempo) |
+| Policy v0: target 0.95, passages ≤ 8 bars, 30 % switch margin | −53.7 % | – |
+| passages ≤ 16 / ≤ 32 bars; target 0.92 / 0.90 | −56.6 / −59.6 %; −65.3 / −67.1 % (≤ 32) | target **0.90** (= the legacy "strong") |
+| rank bars by P(below the target) instead of the expected shortfall | −53.6 % (480: −56.0 %) | shortfall |
+| a bar nobody has played pooled from the trained bars (the first version) → from first readings; the first reading of the piece | ≤ 16 bars: −64.2 % → −67.6 % | both (a bug fix and §7.3's "find the weak spots") |
+| no switch margin (the change cost is the margin) | −68.0 % (flips 0.04 per lap) | **0** |
+| the ladder's thresholds (start 0.3-0.7, up 0.7-0.85, down 0.3-0.5), hands separately (gap 0.12-0.30, one or two runs) | within ±1 point, except a start at 0.7: −65.4 % (beginners +30 %) | start 0.5, up 0.85, down 0.5, gap 0.15 after one run |
+| assumed costs of a lap / a change 8/10 s, 15/20 s, 30/10 s instead of the person's 4/6 s (≤ 32 bars, before the pool fix) | −69.8 %, −72.7 %, −72.8 % | **4/6** (the larger costs turn the policy into a run-through recommender by inflating a number that is a fact of the person; see below) |
+| confirmation, 480 learners: the defaults; ≤ 8 / ≤ 32 bars; target 0.88 / 0.92; 30 % margin; down at 0.3; no re-check at session start | −67.4 %; −63.3 / −69.3 %; −68.5 / −65.5 %; −66.4 %; −67.6 %; −67.4 % | the defaults: a flat region; 16 bars is the design's cap for one passage |
+| information only, 480 learners: the ladder started at the clean tempo (§7.3's words: start 0.9); passages ≤ 4 bars (the legacy unit); no hands separately and no step down | −47.9 % (slow −22 %, beginners +87 %); −56.2 %; −67.9 % | – |
+
+**Results.** Per learner type: the policy, with the better legacy arm in brackets. Minutes to mastery are capped at the minutes practised (a learner who never gets there counts
+with all of them: every legacy learner of every type, so the legacy figure is the 462-463 minutes of the 23 days); "mastered" and "kept" are shares of bars at ≥ 0.9 at 0.95× tempo on
+day 22 and on day 30; "accuracy day 30" is the mean true accuracy at the score tempo after the 7-day break; Brier: the model / `recentAcc` on the same measure-attempts.
+
+*Tuning set* (the four `tune` pieces × seeds 0-99: 400 learners per type and arm; `tests/practice-sim/baselines/policy-tune.json`):
+
+| type | minutes to mastery | change | reached | mastered day 22 | accuracy day 30 | kept day 30 | passage changes / lap | Brier, policy's laps | Brier, legacy arms' laps |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| even | 93.9 (462.4) | **−79.7 %** | 100 % (0 %) | 1.000 (0.287) | 0.968 (0.753) | 1.000 (0.285) | 0.037 | 0.0056 / 0.0067 | 0.0058 / 0.0080 |
+| weak-left | 109.5 (462.5) | **−76.3 %** | 100 % (0 %) | 1.000 (0.307) | 0.964 (0.681) | 1.000 (0.289) | 0.037 | 0.0061 / 0.0074 | 0.0077 / 0.0106 |
+| rushing | 93.0 (462.3) | **−79.9 %** | 100 % (0 %) | 1.000 (0.298) | 0.968 (0.756) | 1.000 (0.297) | 0.035 | 0.0056 / 0.0068 | 0.0056 / 0.0078 |
+| slow | 253.8 (462.7) | **−45.2 %** | 98 % (0 %) | 0.999 (0.301) | 0.936 (0.751) | 0.991 (0.294) | 0.018 | 0.0090 / 0.0111 | 0.0082 / 0.0110 |
+| forgetter | 187.0 (462.5) | **−59.6 %** | 98 % (0 %) | 0.998 (0.241) | 0.885 (0.724) | 0.464 (0.127) | 0.023 | 0.0080 / 0.0098 | 0.0077 / 0.0106 |
+| beginner | 173.5 (462.7) | **−62.5 %** | 100 % (0 %) | 1.000 (0.285) | 0.949 (0.533) | 0.999 (0.264) | 0.031 | 0.0082 / 0.0100 | 0.0091 / 0.0134 |
+
+*Hold-out set*, reported once (the four `holdout` pieces × seeds 100-199: 400 learners per type and arm; `tests/practice-sim/baselines/policy-holdout.json`):
+
+| type | minutes to mastery | change | reached | mastered day 22 | accuracy day 30 | kept day 30 | passage changes / lap | Brier, policy's laps | Brier, legacy arms' laps |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| even | 87.9 (462.6) | **−81.0 %** | 100 % (0 %) | 1.000 (0.349) | 0.970 (0.764) | 1.000 (0.344) | 0.040 | 0.0065 / 0.0078 | 0.0054 / 0.0071 |
+| weak-left | 107.7 (462.5) | **−76.7 %** | 100 % (0 %) | 1.000 (0.321) | 0.964 (0.673) | 1.000 (0.315) | 0.039 | 0.0073 / 0.0090 | 0.0075 / 0.0101 |
+| rushing | 86.3 (462.6) | **−81.3 %** | 100 % (0 %) | 1.000 (0.350) | 0.970 (0.767) | 1.000 (0.346) | 0.039 | 0.0065 / 0.0079 | 0.0054 / 0.0071 |
+| slow | 229.1 (462.6) | **−50.5 %** | 99 % (0 %) | 1.000 (0.317) | 0.937 (0.744) | 0.995 (0.313) | 0.016 | 0.0105 / 0.0129 | 0.0084 / 0.0110 |
+| forgetter | 190.2 (462.8) | **−58.9 %** | 99 % (0 %) | 0.999 (0.318) | 0.878 (0.720) | 0.450 (0.183) | 0.019 | 0.0094 / 0.0115 | 0.0077 / 0.0102 |
+| beginner | 161.6 (462.5) | **−65.1 %** | 100 % (0 %) | 1.000 (0.313) | 0.951 (0.546) | 1.000 (0.309) | 0.030 | 0.0095 / 0.0117 | 0.0084 / 0.0117 |
+
+*Every arm* (mean over the six types of the change of capped minutes, the worst type; mean change of the accuracy on day 30, the worst type; passage changes per lap, the worst type):
+
+| arm | tuning: minutes | retention | hold-out: minutes | retention | changes / lap |
+| --- | --- | --- | --- | --- | --- |
+| **policy** | **−67.2 %** (worst slow −45.2 %) | **+37.2 %** (worst forgetter +22.2 %) | **−68.9 %** (worst slow −50.5 %) | **+36.4 %** (worst forgetter +22.0 %) | ≤ 0.040 |
+| through (no advice: the whole piece at tempo) | −76.0 % (slow −58.5 %) | +37.6 % | −75.9 % (slow −60.3 %) | +36.7 % | 0 |
+| random | +0.4 % (never masters; mastered day 22 0.09-0.77) | +22.2 % | +0.1 % | +20.3 % | 0.33 |
+| none (no practice) | −0.5 % (never masters; capped at its 460 minutes, the others at the 462-463 they played) | −16.9 % (beginner −39 %) | −0.6 % | −21.3 % | 0 |
+
+**Acceptance (the G11b-2 row).**
+
+| Criterion | Tuning set | Hold-out set | Met |
+| --- | --- | --- | --- |
+| time to mastery −20 % or better on average (capped minutes, against the better legacy arm of each type) | −67.2 % | −68.9 % | **yes** |
+| no learner type worse by > 5 % | worst type slow −45.2 % | worst type slow −50.5 % | **yes** |
+| retention not worse | every type better (accuracy day 30 +22 % to +78 %; bars kept day 30 ≥ legacy for every type) | +22 % to +74 %; kept ≥ legacy for every type | **yes** |
+| flips ≤ 1 per 3 laps | ≤ 0.037 per lap | ≤ 0.040 per lap | **yes** |
+| Brier ≤ legacy `recentAcc` Brier | lower for every type, on the policy's laps and on the legacy arms' own laps (same attempts) | the same | **yes** |
+| every plan passes `Coach.validate` (10⁴ random states) | 10,000 random states, 32,369 tasks, 0 issues (`policy-validate.js`); in the simulator 151,829 plans, 0 rejected, 0 repaired | 152,089 plans, 0 rejected, 0 repaired | **yes** |
+
+**What beat legacy, what did not.**
+1. *Every number of the acceptance row beat the legacy app on both sets* (above). The mechanism is the one G11b-0 found: the legacy app never drills a bar at 60-75 % and loops on
+   passages already learned; the policy measures the piece once, works where the expected shortfall per second is largest, re-checks and moves on.
+2. *A run-through with no advice at all beat the policy* (`through`: tuning −76.0 %, hold-out −75.9 %; the policy −67.2 % and −68.9 %). This is a property of the synthetic
+   learners, not a finding about practice: their gain per repetition is `η(1 − P)`, whatever else is in the lap, so playing a bar that is nearly learned costs only its seconds, a
+   whole-piece lap spreads the 4 s between laps over every bar, and every bar is touched every day (each new day slows its forgetting). The policy CAN be tuned into that (assumed lap
+   costs of 15-20 s instead of the person's 4-6 s: −73.0 % on 480 tuning learners); it was not, because that would rest the advice on one assumption of the simulator that H-11 has not
+   checked and that piano teaching contradicts (isolate the passage that fails). What the simulator can and cannot say is in G11-D9: it shows the mechanics (the policy converges, does not
+   loop, moves on, is stable, is not worse than legacy for any type); it cannot rank pedagogies.
+3. *Time on the truly weakest quarter* (§7.4's metric) is about 22 % before mastery (legacy 1-7 %, `through` 23-26 %, the G11b-0 oracle 58 %). The policy works through a passage until
+   its value falls; the metric rewards changing passage every lap (the oracle's 1.0 flips per lap). Not a target of the acceptance; reported.
+4. *The tempo ladder and hands separately barely fire on these learners*: one hand alone on 0.0-0.4 % of laps, mean tempo 0.98-1.0 of the score tempo. Turning both off would make the
+   policy slightly faster here (−67.9 % against −67.4 %; beginners 160 against 173 minutes), because the simulated learner gains most at the score tempo with both hands (a one-hand lap
+   trains one hand at a share κ < 1). They are kept for people, at that cost, and H-11 will show whether anyone takes them.
+5. *Forgetters* keep little after the 7-day break in every arm (bars kept on day 30: policy 0.46 tuning / 0.45 hold-out, `through` 0.53 / 0.50, legacy 0.13 / 0.18); their mean accuracy on day 30 is
+   still the type's worst-improved (+22 %). Spacing within the 23 days (the review boxes) cannot cover a week with no practice.
+6. *Brier*: the model's prediction beats `recentAcc` for every type on the same attempts, on the policy's laps and on the legacy arms' own laps (where the legacy prediction was
+   built for them). The model knows the lap's tempo and hands; `recentAcc` does not.
+7. *Stability*: 0.02-0.04 changes of passage per lap (the bar: 0.33); the longest stay on one passage within a session is 59-96 laps (hold-out 45-53) against the legacy 107-151 (85-106), and
+   most of it is after mastery (memory work and run-throughs on one range).
+
+**Limits.** (1) The learners are synthetic (G11-D9): every gain above is a consequence of `practice/sim.js`'s assumed formulas; real learners are unknown until H-11, whose gate (4) is
+the model's Brier on real runs. (2) The simulated person follows every suggestion at once (U6's suggestion costs a tap, here the 6 s of a task change) and never ignores the card; in
+the page they may. (3) Memory work is the legacy gate and the legacy level ladder, untouched; the simulator scores technique only, so memory work neither helps nor costs here. (4) The
+model has no fatigue term (the simulated learner tires after 10 minutes; a "minutes into the session" term would mirror the simulator's own formula), no learner-specific forgetting rate
+and a fixed hand-alone bonus; `learn` is half of what the tuning set preferred, on purpose. (5) Eight pieces of 12-33 bars, one recording arrangement; nothing about 160-bar pieces except
+the cost. (6) A piece whose measure numbers go down inside a window is planned only where they go up (the loop is set by numbers); repeated numbers resolve to their first bar, as
+`practice/runlog.js` keys them. (7) `cleanTempo` is conservative after few runs (a credibility of 80 % needs evidence); it is not used by the policy. (8) The device offset is computed
+from per-measure means, not per note.
+
+**Costs** (a 160-bar piece, 300 logged laps; median / p95 / max in ms; headless Chrome with CPU throttling through CDP, whose clock in a page that is not cross-origin isolated ticks
+in 0.1 ms, so batched means are given too; the laptop was shared and busy):
+
+| | Node, 1× | Chrome, 1× | Chrome, 4× | budget (§11) |
+| --- | --- | --- | --- | --- |
+| `decide` after a lap | 0.19 / 0.39 / 0.70 | 0.1 / 0.2 / 0.4-0.6 (mean 0.12-0.14) | 0.4 / 0.8 / 1.3-1.5 (mean 0.55) | ≤ 2 ms at 4×: **met** |
+| `plan` (only when the task changes) | 0.20 / 0.37 | 0.1 / 0.2 | 0.4 / 0.9 | – |
+| `update`, a lap of 16 bars | 0.007 / 0.03 | mean 0.01 | mean 0.04 (p95 0.2) | ≤ 5 ms at 4×: **met** |
+| `update`, a whole 160-bar lap | 0.16 | 0.1 / 0.2 | 0.4-0.5 / 0.9-1.0 | **met** |
+
+The simulator: the tuning report (14,400 runs) 36 minutes and the hold-out report 51 minutes on 8 threads; the gate rows (288 runs) 54 s on 8 threads, 105 s on 3 (CI: 4).
+
+**Tests and CI.**
+- `tests/practice/learner.test.js` (14), `tests/practice/policy.test.js` (12): every rule above on small pieces with entries made by `practice/runlog.js`'s builder; the app's own
+  `Coach.validate` (from the app file) as the door; part of `npm run test:practice` (the gate, shard-o).
+- `tests/practice/learner-policy-mutation.test.js`: **46 mutants** (19 of the learner, 20 of the policy, 5 of the tuning and hold-out guard, 2 of the simulator's policy arm), each a copy compiled in
+  memory with one rule broken; the real files pass every probe (the control), every mutant fails its own: no forgetting (three ways), uncertainty ignored (three: the policy's reading of the model, the shortfall, P(mastered)), a
+  `Coach.validate` bypass (and a validated plan not used, and a rejected plan played), a hold-out piece, a hold-out seed or every piece let into tuning, a second hold-out report, Demo
+  Input / Follow / recall taken as playing evidence, no dwell, memory work outside the gate, the ladder past 100 % or under 40 %, the stronger hand alone, no re-check, no reading, a
+  state written into, a passage chosen without its seconds, and the rest. Part of `npm run test:practice`.
+- `tests/practice/policy-validate.js`: **10^4 random states** (2,000 in the app's own page methods with a random legacy history and memory and the page's `coachContext()`; 8,000 on
+  made-up pieces of 1-160 bars numbered from 1, from 0 or with gaps, with rest bars and one-hand bars, random gates, sections and due reviews, random laps, random policy options on a
+  fifth): every plan and every decision's task through the app's `Coach.validate` came back **ok with no issue and unchanged** (32,369 tasks; 278 memory tasks, 1,079 one-hand
+  tasks); every task names bars of the piece, a hand that plays there, a ladder tempo, the app's modes and no figure; the same input gives the same decision. 17.6 s on the laptop.
+- `tests/practice-sim/policy.test.js` (4): the model watching a legacy arm leaves its row equal to `legacy-gate.json`; the policy arm is deterministic and equals `policy-gate.json`; a
+  driver is handed the page and a seed of its own, never the learner; the split and the once-only hold-out guard. Part of `npm run test:practice-sim` (the gate, shard-m).
+  The legacy baselines: `node tests/practice-sim/baseline.js --check` identical (144 runs).
+- CI: **`practice-learner`**, a Node-only practice job (no `npm ci`), waits for `practice-plan` like the others and is not a gate job (`tests/bench/unit/test_practice_plan.py` knows
+  the eleventh job): `node tests/practice/policy-validate.js` and `node tests/practice-sim/policy-eval.js --set gate --check --part K/2 --workers 4` (288 rows: the policy, the three
+  controls and the two legacy arms with the model watching, k = 0 on the eight pieces, row for row against `policy-gate.json`, in two slices that each rebuild the whole document from
+  the committed rows). On the first CI run (PR 278) the unsliced check reproduced all 288 rows on Linux in 214 s (4 threads), the 10^4 states took 28 s; the slices keep each check
+  under about 3 minutes. `npm run test:practice-learner` runs the same locally.
+
+**For G11b-3.** (1) Build the model per epoch from the run log (`PPPLearner.fold(piece, evidence)`, about 0.01-0.03 ms an entry) when a song opens, update it with each logged run;
+the piece is the Score's measures (number, `lenQ`, the notes each hand strikes in one written pass, as `tests/practice-sim/drivers.js` `pieceOf` counts them). (2) Keep the policy's state
+(`decide(...).state`, a small JSON) per song and epoch next to the run log. (3) Call `decide` after each lap with `current` = what the page is set to and `ctx` = a function that returns
+`coachContext()` (asked only near memory decisions), and pass every plan through `PPPPolicy.checked(plan, ctx, Coach.validate)`; show `suggestion` steps as a suggestion (U6) and act on
+them only with the automatic toggle. (4) `Coach.context` should gain the model's per-passage `cleanTempo`, review due list and hand gaps as percentages (§7.6) if the coach card is to quote
+them; the policy's own reasons quote no figure. (5) The legacy Loop-panel drill steps must step aside on a passage the policy set (the simulator's arm switches them off). (6) `stuck` is
+the input of G11c-2.
 
 ## Appendix A. Measurement commands (Lead's scratchpad)
 
