@@ -15,6 +15,9 @@ CC BY attribution that the app does not show; and the built-in demo is labelled 
 name. These are fixable now, in small phases that each ship alone, without the user. The parts that need the
 user (sync semantics, keeping times, the YouTube posture, the business items) are separated into section 14.
 
+**2026-10-15, the user: everything must work without logging in, and the login card is not to be shown at all.** Built as G13-NL (branch `g13-nologin`; section 21): no sign-in card, button or line
+for a visitor; "Sign in (optional)" is one row in Settings; a guest posts to Shared Scores, sees, takes down and deletes their own posts with the key of their browser; U4 and U6 are decided and built.
+
 **The user's constraints that shape this design.** Cost stays $0 (Render free, shared 750 hours with the
 duckscope services; Neon Free). Nothing on the site may force a login (G10b-2, 2026-10-07): sync works with
 **capability codes** like the PC link, not with accounts. Replies and review pages for the user are Korean.
@@ -151,7 +154,7 @@ The model: the English text is the key. `tx()` is called 1,130 times, with 811 d
   comes from Render).
 - **No signup limiter** (TD26), with 5 accounts.
 - **A login card is the first thing a new visitor sees.** It is not forced ("일단 둘러보기" dismisses it), but it
-  is the opposite of the user's no-login direction.
+  is the opposite of the user's no-login direction. *(Removed 2026-10-15: section 21.)*
 
 ### E8. Licences and notices (facts, not legal advice)
 
@@ -322,8 +325,8 @@ All of this at $0 on the existing free tiers.
 **G13-3 as built (notices and the YouTube posture, PR "G13-3" #265; U9 decided by the user on 2026-10-13; reviewed, then amended).**
 - *Decision (U9):* keep YouTube transcription; **add a notice** - "use recordings you have the right to use; the score is for your own practice" - where a link is entered and in About; **do not allow posting
   a score made from a YouTube link to the public Shared Scores** (its link may still be sent, as today; private use is unchanged); default the PC worker to download on the PC (below: not a one-line default,
-  so recorded, not changed). **U6 is still open:** the demo keeps its title "Interstellar Theme - Hans Zimmer - arr. solo piano". The served notices say (true) that its notes are a generated pattern; the note for
-  whoever decides (`TODO(U6)`: rename in `buildDemoScore`, id stays `demo`, then replace that paragraph) is kept in `tools/notices/notices.json` (`demo.todo`) and is **not** written into the served file.
+  so recorded, not changed). **U6 was open here and is built in section 21 (2026-10-15):** the demo is "PPP Practice Theme" by PPP, its id stays `demo`, and the `TODO(U6)` note is gone from
+  `tools/notices/notices.json`. (When this section was written the demo still carried the title "Interstellar Theme - Hans Zimmer - arr. solo piano"; the served notices said, truly, that its notes are a generated pattern.)
 - *`THIRD_PARTY_NOTICES.md`* (root, served at `/THIRD_PARTY_NOTICES.md` as `text/plain` so a link shows it instead of downloading it; lists, not pipe tables, so it reads as plain text) is **generated** by
   `node tools/notices/build.js` (Node only; `--check` is the CI and light-job form; `--root DIR` reads another tree). It gathers, and states no fact the repository does not hold: every `## section` of
   `vendor/README.md` (VexFlow 4.2.3 MIT with its five music fonts - Bravura, Petaluma, Leland OFL-1.1, Gonville unrestricted, Custom MIT -, React and ReactDOM 18.3.1 MIT, the four Latin font families OFL-1.1:
@@ -516,7 +519,7 @@ Sonnet sessions, review not included.
 | 1 | **G13-0 Release tooling** | Commit the measurement scripts as tools: `tests/live/perf.js` (cold/repeat/offline-3p/phone-profile, budgets of section 11, JSON report), `tests/live/i18n-walk.js`, `tests/i18n/gaps.js` (the static checker, with a committed baseline of today's 54 gaps so only NEW gaps fail), `tests/live/smoke.js` unchanged. Add `docs/RELEASE_CHECKLIST.md` (section 12) and `docs/RELEASES.md` (one row per deploy; back-filled from the roadmap). The i18n checker joins the `light` job. | docs + tests only | 1 | the checker fails on a planted new untranslated `tx()` (mutation) and passes on main; `perf.js` reproduces E2/E3 within ±15% on two runs | revert |
 | 2 | **G13-1 Vendor React** | `vendor/react-18.3.1/` (React + ReactDOM UMD, MIT LICENSE); two `<script>` tags before `support.js`; the `PPP.cdn` switch (G13-D3). A test checks that the sha384 of the files equals `REACT_SRI` / `REACT_DOM_SRI` in `support.js`. | app head (8 lines), vendor | 1 | **offline-3p: Home renders, the demo opens and plays, 0 page errors, 0 requests to unpkg** (today: blank); the DOM of Home, Practice and Settings is identical with `?cdn=1` and without; all browser suites green on the worktree's port; phone FCP not worse | `?cdn=1`; revert |
 | 3 | **G13-2 i18n completeness** | Translate the 54 static gaps plus the live-walk gaps (view tabs, coach quote, MIDI labels, concatenated coach hints rewritten as whole sentences) in ko/ja/zh; fix the 2 parity gaps; set the checker's baseline to 0. The user glances at the Korean in H-13. | app strings, i18n JSON | 1 | static gaps 54 → **0** in all three; parity 2 → 0; live walk: proper nouns only on the 11 screens | revert |
-| 4 | **G13-3 Notices** *(built; U9 decided and in, U6 pending: see "G13-3 as built")* | `THIRD_PARTY_NOTICES.md` (generated by a small script from `vendor/README.md`, `audio/piano/README.md`, `catalog/*/README`, and the CDN list until vendored); Settings > "About & licences" (4 languages) with the CC BY line for Salamander, the OFL fonts, MIT/Apache code, catalogue sources; the YouTube rights notice text decided in U9; the demo renamed as decided in U6 (its id stays `demo`, so saved sessions line up). | app (a Settings section), docs | 1 | every row of E8 appears; the CC BY attribution is reachable in ≤ 2 taps; a test fails if a `vendor/` folder has no row | revert |
+| 4 | **G13-3 Notices** *(built; U9 decided and in; U6 built in section 21: see "G13-3 as built")* | `THIRD_PARTY_NOTICES.md` (generated by a small script from `vendor/README.md`, `audio/piano/README.md`, `catalog/*/README`, and the CDN list until vendored); Settings > "About & licences" (4 languages) with the CC BY line for Salamander, the OFL fonts, MIT/Apache code, catalogue sources; the YouTube rights notice text decided in U9; the demo renamed as decided in U6 (its id stays `demo`, so saved sessions line up). | app (a Settings section), docs | 1 | every row of E8 appears; the CC BY attribution is reachable in ≤ 2 taps; a test fails if a `vendor/` folder has no row | revert |
 | 5 | **G13-4 Load performance** | (a) fetch only the active locale's catalog (others on switch); (b) Latin fonts self-hosted (Figtree, Instrument Serif, JetBrains Mono, Noto Music: OFL woff2 of the used weights) and CJK per U7 (non-blocking); (c) content-hash caching of every script and catalog (G13-D4), plus a measured spike on the template re-fetch (`support.js:159`): if the DOM-parsed template draws identically on every screen and suite, set `window.__resources = {}` to drop the second 329 KB; otherwise keep it and record why; (d) piano samples start after first paint (the synth stand-in already covers a note before they arrive). Each sub-item is its own commit in one PR, or split if review asks. | server.js (static), app head, i18n.js | 2 | phone cold: **FCP ≤ 4.0 s** (8.8), **ready ≤ 5.0 s** (9.3), **transferred before ready ≤ 1.2 MB** (2.99 MB); repeat visit **≤ 450 KB** (~2,000-2,300) and **ready ≤ 3.0 s** (7.0); desktop not worse; byte-identical DOM on Home/Practice/Settings | each sub-switch; revert |
 | 6 | **G13-5 Server hygiene + Shared Scores** | Served-path allowlist and headers (G13-D16); signup limiter; `GET /api/shares` paginated (`limit`/`cursor`, 24 per page) and the Shared screen drawing previews as they scroll into view. | server.js, app | 1-2 | `/server.js`, `/docs/*`, `/render.yaml`, `/package.json` → 404; **the 121 own requests of a cold load all still 200** (from `perf.js`'s list) and every browser suite green; Shared screen **DOM ≤ 3,000 nodes** (14,636), **heap ≤ 60 MB** (89) on the phone profile | revert |
 | 7 | **G13-6 Backup and delete** | Settings > "Back up my songs" (one `.ppp-library.json.gz`: library, slots, state; graphs optional) and "Restore from a backup" (merge rules of section 7.5, never deletes); "Delete everything on this device" (library, slots, state, ppp-engrave, ppp-media, guest key, PC link; asks twice). | app | 1 | round trip: 30 songs out and in on a fresh profile, identical slots byte for byte; a restore never removes a local song; the deletion leaves 0 `ppp*` keys and 0 PPP IndexedDB databases | revert |
@@ -811,9 +814,9 @@ fixed and **only that step** is re-run (memory: review only when fixed).
 | **U1** | Sync without accounts, by a secret code / QR link that the person keeps (section 7) | **Yes.** It follows the no-login decision and reuses a security model already reviewed twice. | A lost code cannot be recovered (no email). Accounts could be added later as an additive "attach a library to my account". |
 | **U2** | How long the server keeps a library nobody syncs | **180 days from the last sync of any device**, shown as "kept until <date>". The device's own copy and the backup file stay. | Too short: someone back after 7 months finds the server copy gone (their device still has it). Forever: the free database slowly fills with abandoned libraries. |
 | **U3** | Stay inside the free tiers (sync cap 128 MB of 0.5 GB) and decide on paying only at 80% | **Yes, $0 now.** The server warns at 80% and the Lead reports it. | If growth is sudden, new libraries are refused for a while (existing ones keep working) until the user decides on a paid Neon plan. |
-| **U4** | Stop showing the login card to every new visitor; sign-in moves to Settings and is still needed for posting to Shared Scores | **Yes.** 5 accounts and 0 progress rows say the card buys nothing. | Fewer accounts, so fewer listed shares. |
+| **U4** | Stop showing the login card to every new visitor; sign-in moves to Settings and is still needed for posting to Shared Scores | **Yes.** 5 accounts and 0 progress rows say the card buys nothing. **DECIDED 2026-10-15, and further than asked: the card is gone, sign-in is one optional row in Settings, and posting to Shared Scores needs no account either (the guest key owns the post): section 21.** | Fewer accounts. Guest posts are anonymous text: moderation is manual (21.6). |
 | **U5** | Anonymous counters sent by browsers (errors, engraver fallbacks, load time; no ids, aggregated in memory, one log line an hour), disclosed in About | **Yes.** Without them a broken release is only seen when someone complains. | A privacy complaint, low risk with no identifiers. Without them: blind to field failures. |
-| **U6** | Rename the demo "Interstellar Theme - Hans Zimmer" (its notes are a generated pattern) | **Yes**, to an original title, e.g. "PPP Practice Theme". **STILL UNDECIDED (2026-10-13): nothing renames it; `TODO(U6)` is in THIRD_PARTY_NOTICES.md and tools/notices/notices.json.** | Keeping it: a film-title / composer-name complaint, and a misattribution in every first impression. Renaming: none. |
+| **U6** | Rename the demo "Interstellar Theme - Hans Zimmer" (its notes are a generated pattern) | **Yes**, to an original title, e.g. "PPP Practice Theme". **DECIDED 2026-10-15 (yes) and BUILT: "PPP Practice Theme", composer "PPP", id `demo` (section 21).** | Keeping it: a film-title / composer-name complaint, and a misattribution in every first impression. Renaming: none. |
 | **U7** | Korean/Japanese/Chinese text in the device's own fonts (fast, works offline) or Google's Noto Sans as now (331 KB render-blocking CSS) | **System fonts first; Noto loaded non-blocking** where online, so the look settles to today's. | A slightly different font for a moment, or on Windows (Malgun Gothic). |
 | **U8** | The in-browser transcription model (60 MB, Google's storage) | **Keep it at Google**, vendor the code, say "needs internet" on that button. The PC worker is the strong path anyway. | If Google moves the checkpoint, the browser model breaks until we host it (the PC path still works). |
 | **U9** | **DECIDED 2026-10-13 as recommended** (built in G13-3; the PC-worker default is recorded, not changed: see "G13-3 as built"). YouTube transcription posture (facts in E8) | **Keep the feature; add a notice** ("use recordings you have the right to use; the score is for your own practice"); **do not allow posting YouTube-derived scores to the public Shared Scores** (links stay); default the PC worker to download on the PC; ask a lawyer before any commercial launch. | Without it: takedown requests, the server's IP blocked by YouTube (today's fallback is a third-party site), a complaint about a posted arrangement. With it: a little friction for posting covers. |
@@ -924,6 +927,123 @@ About 17-20 Sonnet sessions before H-13. User decisions U1-U11; the Lead recomme
 180-day keeping time, $0, no login card, anonymous counters, renaming the demo, system CJK fonts, keeping the
 browser model at Google, a YouTube notice with no public posting of YouTube-derived scores, and no business
 items in G13.
+
+---
+
+## 21. No login anywhere (G13-NL, 2026-10-15)
+
+**The rule (the user, 2026-10-15, verbatim intent):** everything must work by default without logging in, and the login card is not to be shown at all. (The earlier standing rule: no forced login.)
+**Decided:** U4 = yes (the card is gone for every visitor); sign-in is one quiet, optional row in Settings, for people who already have an account or want their progress kept in one; **nothing is behind it**;
+U6 = yes (the demo is "PPP Practice Theme" by PPP). Built in the worktree `D:/PPP-g13nl` (branch `g13-nologin`), on `origin/main` 610d97e = live fab0ba3 plus docs.
+
+### 21.1 Audit: every use of an account, and what it needs
+
+Read from `server.js` (every route that reads `currentUser`) and from the page (every `state.user`, `/api/auth`, `/api/progress`, "sign in" string and the `guest` flag of the old gate).
+
+| # | Feature | Worked with no account before? | What it needs | What was done |
+| --- | --- | --- | --- | --- |
+| 1 | The sign-in card on the first load (full-screen gate, `isAuthGate = !guest && !user`) | it was shown to every new visitor ("Continue as guest" dismissed it; the flag `ppp-guest` was remembered) | nothing | **removed.** The page has no gate state at the start; `authOpen` is false until Settings opens the form. A shared link, a pairing link and a fresh profile all open straight onto the app. |
+| 2 | "Sign in" button and "Sign in to sync progress across devices." in the header | shown to every visitor | nothing | **removed** (the chip of a visitor goes to Settings; a signed-in person's chip signs out, as before) |
+| 3 | Sign up / sign in / sign out (`/api/auth/*`) | by choice | an email + password | **kept as is**, opened from Settings > Account ("Sign in (optional)") and closed by "Not now". A person with a session stays signed in at load and sees their name in the header and in Settings. |
+| 4 | Progress sync (`PUT/GET /api/progress`) | a guest never sent anything (the page calls it only after `auth/me` returned a user); the route answers 401 to an anonymous request | an account, by design (0 rows in production) | **unchanged, and checked**: a guest's progress, songs, library and settings stay in `localStorage`/IndexedDB; no `/api/progress` request, so no 401 and no retry (tests/no-login-ui.test.js watches the requests). |
+| 5 | Backup file, restore, "delete everything on this device" | yes (local) | nothing | unchanged (a signed-in person's restore also puts the merged state to the account) |
+| 6 | Course (method books) progress, practice history, memory, loops, tempo | yes (local) | nothing | unchanged |
+| 7 | Import (MusicXML, PDF, photo, MIDI, recording), practice, falling notes, coach | yes | nothing (the local helper only for the helper-backed paths) | unchanged |
+| 8 | Shared Scores: browse, search, genre, open, add to My Songs, open a link | yes | nothing | unchanged |
+| 9 | Send a link (an UNLISTED copy, 30 days) | yes (guest key since the guest-link work) | the guest key of this browser | unchanged |
+| 10 | **Post to the public Shared Scores** | **no**: the dialog said "Posting to Shared Scores needs an account" and the server forced `listed=false` for a guest | an account | **built:** a guest posts with the key of their browser (21.3). The name is optional ("Guest" in the person's language), a note says what a guest post is. |
+| 11 | **Take a post down / put it back** (`PATCH listed`) | **no**: a guest key could only DELETE | an account | **built:** the guest key may PATCH `listed` on its own rows (taking down is free; putting back is a post again) |
+| 12 | **"Shared by me"** (`GET /api/shares?mine=1`, the "Shared by me" chip) | **no**: 401 and "Sign in to see the scores you have shared" | an account | **built:** the account's rows plus the rows of the guest key (a person who signs in later still sees what their browser posted); with neither, the page shows the empty list without a request |
+| 13 | **Delete a share** (stop sharing) | yes for a guest key (DELETE) | the guest key | unchanged |
+| 14 | A share that is an account's (up to 4 MB, 200, any genre) | n/a | the account | unchanged |
+| 15 | PC link (home-PC worker), YouTube conversion on the PC, score reading on the PC (OMR queue) | yes (G10b-2: capability codes, no account) | the code of the link | unchanged. **One request removed:** a device with no link used to ask `GET /api/worker/status` once from Settings, without a code, to learn whether the site has the queue; the site answers that 401 on purpose and a browser logs a 4xx as a console ERROR on the visitor's page. The page now asks nothing; a site without the queue is learned from the first "Make a PC link" (it fails once with the reason and the card goes: `makePcLink` sets `homeOff`). |
+| 16 | YouTube audio / title (`/api/youtube-audio`, `/api/youtube-title`) | yes | nothing | unchanged |
+| 17 | The anonymous 401s that suites tolerate (`/api/jobs`, `/api/worker/status` without a code) | n/a | n/a | server unchanged (the smoke asserts them); the page no longer produces them for an anonymous visitor on any screen (#15) |
+| 18 | The built-in sample's name "Interstellar Theme - Hans Zimmer" | n/a | n/a | **U6 built:** title "PPP Practice Theme" (ko "PPP 연습곡", ja "PPP練習曲", zh "PPP练习曲"), composer "PPP"; the id stays `demo` so saved sessions line up; `THIRD_PARTY_NOTICES`, `tools/notices/notices.json` (the `TODO(U6)` is gone), README and the tests that asserted the old title are updated |
+
+What a signed-in person gets that a guest does not (so it is a benefit, never a gate): progress kept in the account across devices (#4), up to 4 MB and 200 shares and a genre on a post (#14), posts that
+do not end. That is the whole list.
+
+### 21.2 What was changed
+
+- **Page** (`Piano Coach App.dc.html`): no gate; `authOpen`/`openAuth`/`closeAuth`; Settings > Account row (`data-account-settings`: "Sign in (optional)" with a Sign in button, or "Signed in as <name>" with Sign out);
+  the share dialog posts for a guest (an optional name, kept in `localStorage` `ppp-guest-name`, one note: only this browser can take the post down, it ends after 90 days unless posted again, clearing this
+  browser's data loses the control); "Shared by me" for a key; `Shared by a guest` for a guest who gave no name; the PC-queue probe removed; the demo title.
+- **Server** (`server.js`, `share-guest.js`): guest rows may be listed; `PATCH` by the guest key; `mine` for a key; expired guest rows are in no list; an address tag on listed guest rows; the daily windows; the
+  caps counted by the store inside the same turn as the write; `PPP_GUEST_POSTS=0` (the owner's switch). The YouTube guard (G13-3) holds for a guest on POST and PATCH (403 `youtube-not-public`).
+- **Postgres:** one additive nullable column, `ppp_shares.addr_tag` (and a partial index). The code before this boots on it; rolling back is deploying the previous commit.
+- **Tool:** `tools/shares-admin/list.js` (read-only; below).
+
+### 21.3 Guest posting: the limits (all in `share-guest.js` `GUEST`; `tests/guest-post.test.js` holds each)
+
+| Limit | Value | Counted | On refusal |
+| --- | --- | --- | --- |
+| Size of one post (body) / its preview | 1 MB / 24 KB | per request | 413 (a preview over 24 KB is dropped, not refused) |
+| Rows (links and posts) one browser keeps | 20 | database | 429 |
+| **Posts one browser holds at once** | **10** | database (listed rows of its key) | 429 `too-many-posts` "Take one down first." |
+| **Posts one address holds at once** | **20** | database (listed rows with its address tag) | 429 `too-many-posts` |
+| **Posts the site holds** | **300**, and **24 MB** of them | database | **503 `busy`** "Shared Scores has no room for more posts from guests right now." Never evicts: an honest visitor is refused, nobody's post is deleted to make room. |
+| **Posts a browser may make in a day** | **5** | memory (24 h sliding window, per key) | 429 `too-many-posts` "Try again tomorrow." |
+| **Posts an address may make in a day** | **10** | memory (per address: an IPv6 address counts as its /48) | 429 |
+| **Posts the site takes in a day** | **60** | memory | 503 `busy` |
+| Creates per address / for the site, per hour (links and posts; unchanged) | 30 / 200 | memory | 429 |
+| Requests that fail validation, per address, per hour (unchanged) | 60 | memory | 429 |
+| All guest rows (links and posts) / bytes (unchanged) | 1,000 / 50 MB | database | 503 `guest-full` |
+| How long it lasts | link 30 days, **post 90 days**; sending it again renews it; putting a link into the list renews it to 90; taking down keeps the end date | row `expires_at` | an ended row is in no list and its link is 404 at once; swept at start and every 6 h |
+| The name | optional, at most 24 characters, control and bidi-override characters dropped; a name that starts with "PPP" or looks like an address or a contact becomes "Guest" | per request | (replaced, not refused) |
+| Genre | not the guest's to set (a post is under "All" and in the search) | n/a | n/a |
+
+**What costs a place of the day:** a `POST` whose resulting row is listed (new, or re-sent with `listed` true or left out of a post that is listed) and a `PATCH listed:true` that changes the row. Taking down, a link,
+and every read are free. A refusal gives its places back (inside the store's turn), so asking while the list is full does not use the day up.
+
+**Capability.** The guest key is a random 64-hex string kept in this browser, sent only in the `X-PPP-Guest` header (never in a URL or a body: a key in a URL is nothing). The server keeps only
+`g_` + the first 24 hex of its sha256 and compares two such names as equal-length buffers with `crypto.timingSafeEqual`. A wrong key, no key, a key one character off and another guest's key
+all get the same 403 with the same body, and an account without the key cannot change a guest's post either. The key never comes back in an answer.
+
+### 21.4 Abuse analysis (what a stranger with no account can do to the public list)
+
+| Capability | Bound |
+| --- | --- |
+| **Spam / junk posts** | 5 a day per browser, 10 a day per address, 60 a day for the site; 10 held per browser, 20 per address, 300 in all. A new key costs nothing, so the address and the site numbers are what bind; a sustained attack from one address makes 10 posts a day. Every post ends in 90 days. The owner sees growth with `tools/shares-admin/list.js`; `PPP_GUEST_POSTS=0` stops new guest posts at once (links, accounts and what is posted are untouched). Removing one post is a manual delete by id (below). |
+| **Offensive titles, names, composers** | typed by anonymous people and shown to everybody: clipped (title 120, composer 160, name 24) and cleaned of control characters, **not filtered**. There is no report button and no in-app moderator. This is the standing risk (21.6). |
+| **Impersonation** | a name that starts with "PPP" or looks like an address or a contact is replaced by "Guest"; the seed library's owner is an account the page marks differently (no `guest` mark). A guest can still call itself "Pat" - a label, not an identity. |
+| **Copyright** | the YouTube guard (G13-3: a score made from a YouTube link is not posted; a policy guard, not a security boundary - the server only knows what the page says) and the plain notice that is always in the dialog ("Share only music you have the right to share") plus the About notice (E8). Posts end in 90 days. A takedown request is a manual delete by id. |
+| **Storage** | 300 posts and 24 MB of posts, inside the 50 MB / 1,000 rows of all guest rows: at most 50 MB of the 0.5 GB Neon Free, however long nobody looks. Full = 503 `busy`, never an eviction. A flood of posts cannot take the room of guest links beyond the 24 MB. |
+| **Stealing control of a post** | needs the 64-hex key (256 bits); not guessable; compared in constant time; header only. A person who clears their browser data loses control of their posts (they end by themselves in 90 days) - said in the dialog. |
+| **Privacy** | no email, no account, no IP address stored. The address is kept only as 16 hex of a keyed hash (HMAC of its /48 with the site secret) on a post that is **listed**: it is cleared when the post is taken down and goes with the row at its end date. The typed name is free text the person chose to show. |
+| **Search engines** | a guest row's link page is `noindex`, as a guest link always was; the public list is inside the app. |
+| **Races** | the caps are counted and the row written in one turn (the file store) or one transaction under the guest advisory lock (Postgres); 20 posts at once with 5 places left make exactly 5. |
+| **A restart** | the day windows are in memory and start again; the caps on what is held are counted from the table and do not. A restart gives an attacker a fresh day, once per restart. |
+| **Making the server work** | unchanged: body limits, bounded inflate, JSON depth/NUL checks (`inspect`), failed requests charged, a refusal reads no more than the drain limit. |
+
+Manual removal (the owner, only with the user's word; **never run by a script here**): `DELETE FROM ppp_shares WHERE id = '<id>' AND owner_id LIKE 'g\_%';` (the file store: remove the row from
+`data/shares.json`). Growth: `DATABASE_URL=... node tools/shares-admin/list.js --allow-remote` or `--data-dir <dir>` (read-only: tags, dates, sizes; no title, name or score).
+
+### 21.5 Tests
+
+| File | What it holds |
+| --- | --- |
+| `tests/guest-post.test.js` (file store) | the pure rules; posting; the lists; ownership isolation (same 403 bytes); the YouTube guard; names; each limit above (browser day, address day, site day, held per browser, per address, site, bytes); refusal evicts nobody and gives the day's places back; the races; end dates; an account unchanged; the admin tool prints no content; the owner's switch |
+| `tests/guest-post-pg.test.js` (Postgres twin) | the additive migration on the table production has; the same on Postgres, with the caps under concurrency (20 at once, 10 puts into the list at once) |
+| `tests/guest-post.mutants.js` | one mutant per limit and rule (31 on the file store, 3 on Postgres): each is killed |
+| `tests/no-login-ui.test.js` | a fresh profile, Korean/phone and English/PC: no card, no button, every screen opens, no console error, no failed API request; a shared link's first load; the features as a guest; an existing session |
+| `tests/auth-ui.test.js`, `tests/i18n-and-auth.test.js`, `tests/signup-limit-ui.test.js` | the optional form: opened from Settings, sign up/in/out, "Not now", in every language |
+| `tests/share.test.js` | the dialog as a guest: post, name, take down, "Shared by me", another person sees it, the server's new refusals read right in ko/ja/zh/en |
+
+### 21.6 Risks and what was not tested
+
+- **Moderation is manual.** No report button, no filter, no in-app takedown. Anonymous text is public. The mitigations are the small numbers, the 90-day end, the read-only look and the switch. A report link
+  (a mailto, or a "Report" that only marks a row for the owner) is a later decision (**U12**, below).
+- **The day windows are in memory** and one process serves the site; two instances would each hold their own (the held caps are counted by the database and are exact).
+- **Not tested here:** the live site (nothing was queried or deployed), a real phone, Render's edge headers for the address (the tests set `X-Forwarded-For` and the `RENDER` header path as the existing guest tests do),
+  Neon (the Postgres twin ran on postgres:17 in a throwaway container), and the search-engine behaviour of the link pages.
+- **A guest who loses the key** cannot take a post down before it ends (90 days); the owner can by id.
+
+### 21.7 Decision for the user
+
+| ID | Decision | Recommendation |
+| --- | --- | --- |
+| **U12** | A way for a visitor to report a post (a mailto link in the dialog and on the card, or a flag stored for the owner). Nothing is built. | A flag stored for the owner (no email needed), after the first week of real use; the switch and the 90-day end cover the interval. |
 
 ---
 

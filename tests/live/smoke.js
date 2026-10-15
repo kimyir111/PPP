@@ -12,7 +12,7 @@
      /health ok; the page carries the expected build; a fresh profile loads with no page error and no failed request, with no /rec/ request at
      first paint; the app globals (PPP.recording, PPP.recordingArrange, PPP.practice) have the intended defaults; the code the head defers (G13-4e)
      came in, with no synchronous load, and Home's thumbnail is drawn; the practice screen of a fresh profile plans the sample from its graph and
-     counts no fallback (G11a-5); anonymous routes answer as designed
+     counts no fallback (G11a-5); no sign-in card or button for a visitor, and Settings adds no console error or failed API request (G13 no login); anonymous routes answer as designed
      (auth/me, shares, the PC queue routes 401, no CORS headers); optionally the pairing link and the logs.
    It does NOT run the real transcription (6 minutes): that is for a change of the pipeline, by hand (docs/GOALS/G10 section 25). */
 'use strict';
@@ -83,6 +83,9 @@ async function main() {
     p.on('console', msg => { if (msg.type() === 'error' && !/\/helper\/|:8788|ERR_CONNECTION_REFUSED|status of 503/.test(msg.text())) errors.push(msg.text().slice(0, 140)); });
     p.on('response', r => { if (r.status() >= 400 && !/\/helper\/|:8788/.test(r.url()) && !/\/api\/(jobs|worker\/status)\b/.test(r.url())) failed.push(r.status() + ' ' + r.url().slice(0, 100)); });
     p.on('request', r => { if (r.url().includes('/rec/')) recReqs.push(r.url()); });
+    /* every 4xx/5xx of the site's own API, the tolerated ones too (for the Settings check below) */
+    const apiFailed = [];
+    p.on('response', r => { if (r.status() >= 400 && /\/api\//.test(r.url()) && !/\/helper\/|:8788/.test(r.url())) apiFailed.push(r.status() + ' ' + r.url().replace(/^https?:\/\/[^/]+/, '').slice(0, 80)); });
     await p.goto(SITE + '/', { waitUntil: 'networkidle2', timeout: 90000 });
     await new Promise(r => setTimeout(r, 1500));
     check('a fresh profile loads with no page or console error', errors.length === 0, errors.slice(0, 3).join(' | '));
@@ -122,6 +125,24 @@ async function main() {
     });
     check('the practice screen plans the sample from its graph, and no fallback is counted (G11a-5)', pp === null || (!pp.err && pp.graphPlan && pp.graph >= 1 && pp.fallbacks === 0 && pp.screen === 'player'), pp === null ? 'not in this build' : pp.err || ('screen ' + pp.screen + ', ' + pp.notes + ' notes, graph plans ' + pp.graph + ', fallbacks ' + pp.fallbacks + ' ' + pp.reasons + ', warm ' + pp.warm));
     check('the practice code read no deferred global early (still 0 synchronous loads)', pp === null || pp.err || pp.sync === 0, pp === null ? 'not in this build' : String(pp.sync));
+    /* G13 no login: no sign-in card or button for a visitor, and Settings (it used to ask GET /api/worker/status without a code - a 401, which a browser logs as a console error) adds nothing. A build
+       from before has no PPP.app.openAuth: not a failure. */
+    const e0 = errors.length, f0 = apiFailed.length;
+    const nl = await p.evaluate(async () => {
+      const A = window.PPP && window.PPP.app;
+      if (!A || typeof A.openAuth !== 'function') return null;
+      const sign = () => [...document.querySelectorAll('header button, main button')].filter(b => /^(sign in|log in|로그인|ログイン|登录)$/i.test((b.innerText || '').trim())).length;
+      const out = { cardHome: !!document.querySelector('[data-auth]'), btnHome: sign() };
+      A.go('settings')();
+      await new Promise(r => setTimeout(r, 1500));
+      out.cardSettings = !!document.querySelector('[data-auth]');
+      out.row = !!document.querySelector('[data-account-settings]');
+      return out;
+    });
+    check('a fresh profile is shown no sign-in card and no Sign in button, on Home or in Settings (and Settings has the optional row)',
+      nl === null || (!nl.cardHome && nl.btnHome === 0 && !nl.cardSettings && nl.row), nl === null ? 'not in this build' : JSON.stringify(nl));
+    check('Settings of a fresh profile adds no console error and no failed API request (no probe of /api/worker/status)',
+      nl === null || (errors.length === e0 && apiFailed.length === f0), nl === null ? 'not in this build' : errors.slice(e0).concat(apiFailed.slice(f0)).join(' | '));
     await ctx.close();
 
     // 4. the pairing link (read-only: the status route)

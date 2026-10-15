@@ -308,6 +308,7 @@ jobs:
       - run: python tests/bench/run.py run --suite replay-public   # exits with the replay verdict
       - run: npm run test:home-worker                              # G10b-1: the home-PC queue, its worker and server.js with it (Node only, ~40 s; the Postgres part skips without PPP_TEST_PG_URL)
       - run: npm run test:backup                                   # G13-6: Settings > My data, its module alone (library-backup.js against a fake storage and a fake IndexedDB): six safety properties and 15 mutants that each break one of them (Node only)
+      - run: node tests/guest-post.test.js                         # G13 no login: a guest posts to Shared Scores with the key of the browser: ownership, the YouTube guard, every limit (a day, held at once, the site, the bytes), no eviction, the races, the read-only look (Node only, file store; its Postgres twin skips without PPP_TEST_PG_URL; ~40 s)
       - run: npm run test:server-hygiene                           # G13-5: the served-path allowlist (a lazy module the page loads must be on it), the security headers, the signup limit, the paged Shared Scores list (Node only; the Postgres part skips without PPP_TEST_PG_URL)
       - run: npm run test:load                                     # G13-4: load performance, Node only: the catalog of the language in use is the only one fetched (i18n.js), content-hash URLs (immutable only for the right hash), the self-hosted fonts
       - run: npm run test:notices                                  # G13-3: THIRD_PARTY_NOTICES.md: every file of vendor/ and every library the page loads has a row (and every host, pinned package, model and runtime dependency), the CC BY attribution is there, 24 planted defects of the sources; and the YouTube rule of Shared Scores on this server.js (Node only)
@@ -981,6 +982,23 @@ jobs:
       - run: npm ci                                        # puppeteer (and its Chrome)
       - run: node tests/notices-ui.test.js
       - run: node tests/notices/mutants.js P1 P2 P3 P4 P5 P6 P7 P8 P9 P10 P11 P12 P13 P14 P15 P16 P17 P18
+
+  # no-login-suite (G13 "no login anywhere"): the browser suite of a FRESH profile (tests/no-login-ui.test.js: no sign-in card, button or line on any screen in Korean on a phone and in English on a PC, a shared
+  # link's first load, no console error and no failed request of the site's API, the features as a guest, an existing session) and the planted defects of guest posting (tests/guest-post.mutants.js: one
+  # per limit and rule, each must make tests/guest-post.test.js fail; about 30 runs of ~40 s). Like notices-suite: needs puppeteer (npm ci), serves this tree on a free port itself, and is a check of
+  # its own, NOT a job the gate waits for; its Node-only half (tests/guest-post.test.js) is a step of shard-h.
+  no-login-suite:
+    needs: plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || needs.plan.outputs.mode == 'full') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci                                        # puppeteer (and its Chrome)
+      - run: node tests/no-login-ui.test.js
+      - run: node tests/guest-post.mutants.js
 
   nightly:
     if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.event.inputs.only != 'practice'
