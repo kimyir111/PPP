@@ -64,10 +64,12 @@ const RULES = [
   /^catalog\/[\w.-]+\.musicxml$/,
   /^catalog\/hymns\/[\w.-]+\.musicxml$/,
   /^catalog\/method\/[\w-]+\/[\w.-]+\.mxl$/,
-  /* third-party libraries and fonts kept in the repository (VexFlow, React, the Latin fonts of G13-4b; pdf.js: G13-8) with the licence that must travel
-     with each. Not the README */
+  /* third-party libraries and fonts kept in the repository (VexFlow, React, the Latin fonts of G13-4b; pdf.js, TensorFlow.js, Magenta.js and Basic Pitch: G13-8) with the licence that must
+     travel with each. Not the README */
   /^vendor\/(?:[\w.-]+\/)*[\w.-]+\.(?:js|mjs|css|json|woff2?|txt)$/,
-  /^vendor\/(?:[\w.-]+\/)*(?:LICENSE|NOTICE)(?:[-.][\w.-]+)?$/
+  /^vendor\/(?:[\w.-]+\/)*(?:LICENSE|NOTICE)(?:[-.][\w.-]+)?$/,
+  /* G13-8: the one binary a vendored library has, Basic Pitch's model weights (vendor/basic-pitch-1.0.1/model/group1-shard1of1.bin, 742 KB), which model.json names */
+  /^vendor\/[\w.-]+\/model\/[\w.-]+\.bin$/
 ];
 
 /* Is this file (path from the root, "/" between parts) one the static server may hand out? */

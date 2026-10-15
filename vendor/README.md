@@ -106,3 +106,112 @@ Licences (SIL Open Font License 1.1), each the family's own `OFL.txt` from githu
 The page asks for each file as `./vendor/fonts/<file>?h=<12 hex of the sha256 of its bytes>` (server.js rewrites the `?v=1` of the source,
 `static-assets.js`), which the server answers `immutable` (no gzip: a woff2 is compressed already). `tests/load/fonts.test.js` checks the table above against
 the files, the licences against the families, and the `@font-face` rules of the page against Google's published faces.
+
+## pdfjs-3.11.174/
+
+pdf.js 3.11.174 (npm `pdfjs-dist`), the "legacy" production build of the library and of its worker, served by PPP so that reading a PDF or a photo of a score does not depend on jsDelivr
+(docs/GOALS/G13_PRODUCTIZATION.md G13-8). They are the two files the page loaded from `cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/` before. The page asks for them, once, when a PDF or a
+photo is added (`loadPdfJs`), as `./vendor/pdfjs-3.11.174/<file>?h=<12 hex of the sha256>` (server.js answers a matching `?h=` `immutable`, gzip); it sets the worker's address to the second file.
+
+| File | From | Size | sha256 | In the tarball |
+| --- | --- | --- | --- | --- |
+| `pdfjs-3.11.174/pdf.min.js` | `https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js` (npm `pdfjs-dist@3.11.174`) | 377,116 bytes | `978fd1b2d134a98e98966186a97777bebf87d8e770dadab1ece3687e21a5aa6c` | `package/legacy/build/pdf.min.js` |
+| `pdfjs-3.11.174/pdf.worker.min.js` | `https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js` (npm `pdfjs-dist@3.11.174`) | 1,133,660 bytes | `38cde5311957b86bc3669f93e7d2566de333a90055ed6635bef60d9bf00e96f2` | `package/legacy/build/pdf.worker.min.js` |
+
+Tarball: `https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-3.11.174.tgz`, integrity `sha512-TdTZPf1trZ8/UFu5Cx/GXB7GZM30LT+wWUNfsi6Bq8ePLnb+woNKtDymI2mxZYBpMbonNFqKmiz684DIfnd8dA==` (the registry's `dist.integrity`). Each file above is byte for byte the file of that name in the tarball, and the bytes jsDelivr served on 2026-10-15 are the same (`tools/notices/verify-tarballs.js` re-checks both from the registry; `tests/engrave/vendor-optional.test.js` checks the sha256 above, every run).
+
+Used for: reading a PDF or a photo of a score (the import screen); loaded only when one is added.
+
+Licence: Apache-2.0, `pdfjs-3.11.174/LICENSE.txt` (the package's own `LICENSE`, byte for byte). The package has no NOTICE file.
+
+Copyright: Copyright 2023 Mozilla Foundation (the notice in the header of both files).
+
+The way back is `PPP.cdn` (the last section of this file). The cMaps and standard fonts of `pdfjs-dist` are not here: the page never asked for them.
+
+## tfjs-2.8.6/
+
+TensorFlow.js 2.8.6 (npm `@tensorflow/tfjs`), the UMD browser build (`dist/tf.min.js`), the runtime the Onsets and Frames model of Magenta.js needs. The page asks for it, once, when a recording is read in
+the browser (`loadPianoAmt`), as `./vendor/tfjs-2.8.6/tf.min.js?h=<12 hex of the sha256>`, then for `transcription.js` of the next section. It makes the global `tf`.
+
+| File | From | Size | sha256 | In the tarball |
+| --- | --- | --- | --- | --- |
+| `tfjs-2.8.6/tf.min.js` | `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.8.6/dist/tf.min.js` (npm `@tensorflow/tfjs@2.8.6`) | 1,167,497 bytes | `0082fff8188ab64a65fd02a936d3f97bdf388a11ae2ba0b9a58ae7d48fa85b14` | `package/dist/tf.min.js` |
+
+Tarball: `https://registry.npmjs.org/@tensorflow/tfjs/-/tfjs-2.8.6.tgz`, integrity `sha512-/Hk3YCAreNicuQJsAIG32UGHaQj8UwX8y8ZrKVb/CrXOhrRyZmxGSZt9KMVe8MDoydenuGhZCqJUIaWdIKIA5g==` (the registry's `dist.integrity`). The file is byte for byte the one in the tarball and the one jsDelivr served on 2026-10-15.
+
+Used for: the in-browser recording transcription (Onsets and Frames, with Magenta.js); loaded only when a recording is converted in the browser.
+
+Licence: Apache-2.0, `tfjs-2.8.6/LICENSE.txt` (the `LICENSE` of github.com/tensorflow/tfjs at the tag `tfjs-v2.8.6`, byte for byte: the npm tarball carries no licence file). The package has no NOTICE file.
+
+Copyright: Copyright 2021 Google LLC (the notice in the file's header).
+
+## magenta-music-1.23.1/
+
+Magenta.js 1.23.1 (npm `@magenta/music`), `es6/transcription.js`: the Onsets and Frames piano transcription model's code, a UMD bundle that takes the global `tf` (the file of the previous section). The
+page asks for it right after `tf.min.js`, as `./vendor/magenta-music-1.23.1/transcription.js?h=<12 hex of the sha256>`; it makes the global `transcription`. The **model weights are not here**: the checkpoint
+(about 60 MB) is still fetched from `storage.googleapis.com/magentadata/js/checkpoints/transcription/onsets_frames_uni` when a recording is read in the browser (G13 U8: it needs internet, and the page says so;
+the PC worker is the strong path).
+
+| File | From | Size | sha256 | In the tarball |
+| --- | --- | --- | --- | --- |
+| `magenta-music-1.23.1/transcription.js` | `https://cdn.jsdelivr.net/npm/@magenta/music@1.23.1/es6/transcription.js` (npm `@magenta/music@1.23.1`) | 218,041 bytes | `7284bdbf628aa7e58bd8509a6de80886bf0f1564a58775ec413034229c6c0733` | `package/es6/transcription.js` |
+
+Tarball: `https://registry.npmjs.org/@magenta/music/-/music-1.23.1.tgz`, integrity `sha512-MKIf5nU5fJg/j0y+zCeuQuhA5D4TD0hWv+crOpNQLq7TRJ5GQnlz4WuShYzSw/gXj2ncWuYGr6ftP9DvqSsQkA==` (the registry's `dist.integrity`). The file is byte for byte the one in the tarball and the one jsDelivr served on 2026-10-15.
+
+Used for: the in-browser recording transcription (Onsets and Frames); loaded only when a recording is converted in the browser.
+
+Licence: Apache-2.0, `magenta-music-1.23.1/LICENSE.txt` (the `LICENSE` of github.com/magenta/magenta-js, byte for byte: the npm tarball carries no licence file, and that file has had one commit, of 2018-03-27). The package has no NOTICE file.
+
+Copyright: Copyright 2018 The Magenta Team. All rights reserved. (the first line of that LICENSE; the bundle has no header of its own).
+
+## tfjs-3.21.0/
+
+TensorFlow.js 3.21.0 (npm `@tensorflow/tfjs`), `dist/tf.fesm.min.js`: the package's flat ES module build, with no imports (the converter, the layers, the data API and the CPU and WebGL backends are inside it).
+The page used to ask esm.sh to build this package; the Basic Pitch path (the next section) now imports this file, through an import map, as `./vendor/tfjs-3.21.0/tf.fesm.min.js?h=<12 hex of the sha256>`.
+The UMD build of the same package (`dist/tf.min.js`) is not used: it would put a second `tf` over the 2.8.6 one the Onsets and Frames path keeps in `window.tf`, and an ES module cannot import a UMD file.
+
+| File | From | Size | sha256 | In the tarball |
+| --- | --- | --- | --- | --- |
+| `tfjs-3.21.0/tf.fesm.min.js` | npm `@tensorflow/tfjs@3.21.0`, `dist/tf.fesm.min.js` | 1,069,735 bytes | `2b719ce53b3de9798b23836074de66ac38edadf61066e4d04d7929d100a2a03a` | `package/dist/tf.fesm.min.js` |
+
+Tarball: `https://registry.npmjs.org/@tensorflow/tfjs/-/tfjs-3.21.0.tgz`, integrity `sha512-khcARd3/872llL/oF4ouR40qlT71mylU66PGT8kHP/GJ5YKj44sv8lDRjU7lOVlJK7jsJFWEsNVHI3eMc/GWNQ==` (the registry's `dist.integrity`). The file is byte for byte the one in the tarball.
+
+Used for: the Basic Pitch note-detection path of the in-browser recording transcription; loaded only when a recording is converted in the browser as a full song (arrangement mode) or when the Onsets and Frames model could not run.
+
+Licence: Apache-2.0, `tfjs-3.21.0/LICENSE.txt` (the `LICENSE` of github.com/tensorflow/tfjs at the tag `tfjs-v3.21.0`, byte for byte: the npm tarball carries no licence file). The package has no NOTICE file.
+
+Copyright: Copyright 2022 Google LLC (the notice in the file's header).
+
+## basic-pitch-1.0.1/
+
+Basic Pitch 1.0.1 (npm `@spotify/basic-pitch`), the package's ES module build (`esm/`) and its model (`model/`: the TensorFlow.js graph model and its one weights file, 742 KB): the note-detection fallback of
+the in-browser recording transcription. The three modules import `@tensorflow/tfjs` and `@tonejs/midi` by bare name and each other without ".js", so the page gives the browser an import map the first time
+this path is used (`loadAmt`): `@tensorflow/tfjs` is the file of the previous section, `./inference` and `./toMidi` are the files here, and **`@tonejs/midi` is a one-line stand-in that throws if it is ever
+used** - `toMidi.js` imports it for `generateFileData` (writing a MIDI file), which PPP never calls, and its own build is not an ES module. The stand-in is in the page (a `data:` address in the map), not in
+this folder: nothing here is changed. Without import maps (Safari before 16.4, Chrome before 89, Firefox before 108) or when a file cannot be fetched, the page falls back to esm.sh as before.
+
+| File | From | Size | sha256 | In the tarball |
+| --- | --- | --- | --- | --- |
+| `basic-pitch-1.0.1/esm/index.js` | npm `@spotify/basic-pitch@1.0.1`, `esm/index.js` | 167 bytes | `c49399b9859489f9968c7257cd83dfa2f4954260b21184f793f05b87a055aa7b` | `package/esm/index.js` |
+| `basic-pitch-1.0.1/esm/inference.js` | npm `@spotify/basic-pitch@1.0.1`, `esm/inference.js` | 5,013 bytes | `d0bceb71ee6d35aa50575dea0b09bf9ef324353f1dc862ddc30450bdcfa65d6a` | `package/esm/inference.js` |
+| `basic-pitch-1.0.1/esm/toMidi.js` | npm `@spotify/basic-pitch@1.0.1`, `esm/toMidi.js` | 13,252 bytes | `c6492ceae181d24fb254a152d0853f2a60f27e78547db96258026ddcd81ef618` | `package/esm/toMidi.js` |
+| `basic-pitch-1.0.1/model/model.json` | `https://cdn.jsdelivr.net/npm/@spotify/basic-pitch@1.0.1/model/model.json` (npm `@spotify/basic-pitch@1.0.1`) | 174,537 bytes | `1ed1aaee3409ec1dc098c8b01f430c0911f6fe9412e7af8086750f9e8f302f68` | `package/model/model.json` |
+| `basic-pitch-1.0.1/model/group1-shard1of1.bin` | `https://cdn.jsdelivr.net/npm/@spotify/basic-pitch@1.0.1/model/group1-shard1of1.bin` (npm `@spotify/basic-pitch@1.0.1`) | 742,392 bytes | `b142a95737a52e1e412d5f92e73d8bb80dfe8d04941acc0702f11f4524fb377c` | `package/model/group1-shard1of1.bin` |
+
+Tarball: `https://registry.npmjs.org/@spotify/basic-pitch/-/basic-pitch-1.0.1.tgz`, integrity `sha512-SAxiFi9ZnyhGdhWEOS9YVhdunZiKzI3I5zOccZzDzQRr4s00Ii9lphqlPMMfby3iYa7TSupB2g8yuu1kJ6gL+Q==` (the registry's `dist.integrity`). Each file above is byte for byte the file in the tarball; the two model files are also the bytes jsDelivr served on 2026-10-15. The source maps (`index.js.map`) are not here.
+
+Used for: the note-detection fallback of the in-browser recording transcription (the model is part of this folder: this path needs no internet); loaded only when a recording is converted in the browser as a full song (arrangement mode) or when the Onsets and Frames model could not run.
+
+Licence: Apache-2.0, `basic-pitch-1.0.1/LICENSE.txt` (the package's own `LICENSE`, byte for byte). The package has no NOTICE file.
+
+Copyright: Copyright 2022 Spotify AB (the notice in the package's `src/*.ts`; the compiled `esm/` files carry none).
+
+### Optional libraries: the way back (`PPP.cdn`, G13-D3)
+
+The five sections above (pdf.js, TensorFlow.js 2.8.6, Magenta.js, TensorFlow.js 3.21.0, Basic Pitch) are loaded on demand, never from the head. They share the switch of React: `?cdn=1` in the
+address (this visit), or `localStorage['ppp.cdn'] = '1'` (this device), puts the jsDelivr / esm.sh addresses the page used before G13-8 back; `?cdn=0` is "vendored" for one visit; any other value is no
+choice, and no choice is the default: vendored. In the default, a vendored file that cannot be fetched is asked for once more at its CDN address. The switch is removed one release after G13-8 has been
+live (G13-D3).
+
+What still comes from another site: the Onsets and Frames checkpoint (about 60 MB, `storage.googleapis.com`, G13 U8) and the Google fonts of the Korean, Japanese and Chinese text (G13-4b). To change a
+version: replace the folder, the `?h=` values and the CDN address in `PPP_LIBS` of the app and the rows above; the tests say which of them is out of step.
