@@ -168,13 +168,21 @@ test('posting a stored YouTube-derived share afterwards (PATCH listed:true) is r
   } finally { await srv.close(); rm(dir); }
 });
 
-test('a guest link of a YouTube-derived score is made as before (unlisted, 30 days), and opens', async () => {
+test('a guest link of a YouTube-derived score is made as before (unlisted, 30 days), and opens; asking to POST it publicly is refused as for an account (G13 no login)', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-ytshare-'));
   const srv = await boot(dir);
   try {
-    const r = await req(srv.port, 'POST', '/api/shares', { guest: GUEST_KEY, body: share({ youtubeDerived: true, listed: true, score: score({ kind: 'youtube', youtubeId: 'dQw4w9WgXcQ', youtubeDerived: true }) }) });
+    const refused = await req(srv.port, 'POST', '/api/shares', { guest: GUEST_KEY, body: share({ youtubeDerived: true, listed: true, score: score({ kind: 'youtube', youtubeId: 'dQw4w9WgXcQ', youtubeDerived: true }) }) });
+    assert.equal(refused.status, 403, JSON.stringify(refused.body));
+    assert.equal(refused.body.code, 'youtube-not-public');
+    const markOnly = await req(srv.port, 'POST', '/api/shares', { guest: GUEST_KEY, body: share({ listed: true, score: score({ kind: 'shared', youtubeDerived: true }) }) });
+    assert.equal(markOnly.status, 403, 'the mark inside the score is read for a guest too');
+    const r = await req(srv.port, 'POST', '/api/shares', { guest: GUEST_KEY, body: share({ youtubeDerived: true, score: score({ kind: 'youtube', youtubeId: 'dQw4w9WgXcQ', youtubeDerived: true }) }) });
     assert.equal(r.status, 201, JSON.stringify(r.body));
-    assert.equal(r.body.listed, false, 'a guest link is never listed');
+    assert.equal(r.body.listed, false, 'a link is not listed');
+    const patch = await req(srv.port, 'PATCH', '/api/shares/' + r.body.id, { guest: GUEST_KEY, body: { listed: true } });
+    assert.equal(patch.status, 403, 'putting a YouTube-derived link into the list afterwards is refused too');
+    assert.equal(patch.body.code, 'youtube-not-public');
     assert.ok(r.body.expiresAt, 'and it has its end date');
     assert.equal((await req(srv.port, 'GET', '/api/shares/' + r.body.id)).status, 200);
     const pub = await req(srv.port, 'GET', '/api/shares');

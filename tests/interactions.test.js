@@ -497,13 +497,13 @@ const screenTitle = page => page.evaluate(() => {
   await page.evaluate(() => {
     const i = document.querySelector('input[type=search]');
     const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-    setter.call(i, 'zimmer');
+    setter.call(i, 'ppp');
     i.dispatchEvent(new Event('change', { bubbles: true }));
   });
   await sleep(250);
   const cardCount = await page.evaluate(() => document.querySelectorAll('[data-song]').length);
-  const cardHit = await page.evaluate(() => /Interstellar Theme/.test(document.body.innerText));
-  step('song search filter', cardHit ? 'matched Interstellar Theme (' + cardCount + ' card)' : 'NO match');
+  const cardHit = await page.evaluate(() => /PPP Practice Theme/.test(document.body.innerText));
+  step('song search filter', cardHit ? 'matched PPP Practice Theme (' + cardCount + ' card)' : 'NO match');
   if (!cardHit) errors.push('song search by composer did not find the sample');
   await page.evaluate(() => {
     const i = document.querySelector('input[type=search]');

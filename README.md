@@ -1074,9 +1074,9 @@ toggles are live, including a progress reset.
 
 ## Mock data
 
-The built-in demo, Interstellar Theme, is generated rather than parsed: 64 bars of 4/4 in A
-minor, eight sections seeded to match the original design (21–28 weak at 62%, 57–64 not
-started). It is built through the same `Score` model as an imported file, so nothing
+The built-in demo, PPP Practice Theme (composer: PPP), is generated rather than parsed: 64
+bars of 4/4 in A minor, eight sections seeded to match the original design (21–28 weak at 62%,
+57–64 not started). It is built through the same `Score` model as an imported file, so nothing
 special-cases "no upload yet". It is the first song in My Songs, and the only one until you add
 your own.
 

@@ -7,6 +7,8 @@ tests/.shots/
 !/tools/release/
 # the generator of THIRD_PARTY_NOTICES.md and its data (G13-3) are source too
 !/tools/notices/
+# the owner's read-only look at the guest posts of Shared Scores (G13 no login) is source too; it prints tags and sizes, never a title, a name or a key
+!/tools/shares-admin/
 # the operator's tools for the song libraries (G13-S0): list and delete, never part of the site
 !/tools/sync-admin/
 # ... but nothing secret is ever source there (a PC code, a token, a local setting)

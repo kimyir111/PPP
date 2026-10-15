@@ -214,15 +214,15 @@ async function main() {
     console.log('\n── creating a guest link ──');
     const A = secretOf();
     const none = await post(P, null, { songKey: 's1', title: 'T', score: smallScore() }, nextIp());
-    ok('no guest key and no session: 401, as before', none.status === 401 && /Sign in to share/.test(none.body.error), none.status + '');
+    ok('no guest key and no session: 401, as before', none.status === 401 && /sharing key/.test(none.body.error) && !/sign in/i.test(none.body.error), none.status + '');
     const shortKey = await post(P, 'tooshort', { songKey: 's1', title: 'T', score: smallScore() }, nextIp());
     ok('a key that is not a key is the same 401', shortKey.status === 401, shortKey.status + '');
 
     const ipA = nextIp();
-    const c = await post(P, A, { songKey: 'song-1', title: 'Moonlight', composer: 'Beethoven', genre: 'Classical', listed: true, kind: 'musicxml', score: smallScore('Moonlight') }, ipA);
+    const c = await post(P, A, { songKey: 'song-1', title: 'Moonlight', composer: 'Beethoven', genre: 'Classical', kind: 'musicxml', score: smallScore('Moonlight') }, ipA);
     ok('a guest create is 201', c.status === 201, c.status + ' ' + JSON.stringify(c.body).slice(0, 120));
     const id = c.body && c.body.id;
-    ok('it comes back unlisted whatever the body said (listed:true, genre ignored)', c.body.listed === false && c.body.genre === '', JSON.stringify({ l: c.body.listed, g: c.body.genre }));
+    ok('it comes back unlisted when listing was not asked for (and the genre is ignored)', c.body.listed === false && c.body.genre === '', JSON.stringify({ l: c.body.listed, g: c.body.genre }));
     ok('named Guest, mine, with a link and an end date 30 days out',
       c.body.owner === 'Guest' && c.body.mine === true && c.body.url === '/?share=' + id
       && Math.abs(Date.parse(c.body.expiresAt) - (Date.now() + 30 * 86400000)) < 120000, c.body.expiresAt);
@@ -235,17 +235,22 @@ async function main() {
       mineRows.length === 1 && mineRows[0].ownerId === gid && mineRows[0].listed === false && mineRows[0].ownerName === 'Guest' && !!mineRows[0].expiresAt, mineRows[0] && mineRows[0].ownerId);
     ok('the secret is nowhere in the data directory', !fs.readdirSync(srv.dir).some(f => fs.readFileSync(path.join(srv.dir, f), 'utf8').indexOf(A) > -1));
 
-    console.log('\n── never in the directory; no listing, no listing rights ──');
+    console.log('\n── a link is not in the directory; posting is a deliberate act (G13 no login: tests/guest-post.test.js has the limits) ──');
     const everyone = await req(P, 'GET', '/api/shares');
     ok('it is not in Shared Scores', everyone.status === 200 && !everyone.body.shares.some(s => s.id === id));
     const everyoneSearch = await req(P, 'GET', '/api/shares?q=Moonlight', { guest: A });
     ok('not even for a search, not even for its own guest key', !everyoneSearch.body.shares.some(s => s.id === id));
     const mine = await req(P, 'GET', '/api/shares?mine=1', { guest: A });
-    ok('a guest cannot list "mine" (that stays an account feature)', mine.status === 401, mine.status + '');
+    ok('"mine" with the guest key lists the browser\'s own links (and it is marked mine and guest)', mine.status === 200 && mine.body.shares.length === 1 && mine.body.shares[0].id === id && mine.body.shares[0].mine === true && mine.body.shares[0].guest === true, mine.status + '');
+    const mineNone = await req(P, 'GET', '/api/shares?mine=1');
+    ok('"mine" with neither a key nor a session is still 401', mineNone.status === 401, mineNone.status + '');
+    const patchOther = await req(P, 'PATCH', '/api/shares/' + id, { guest: secretOf(), body: { listed: true } });
+    ok('another guest key cannot post it: PATCH is 403', patchOther.status === 403, patchOther.status + '');
     const patch = await req(P, 'PATCH', '/api/shares/' + id, { guest: A, body: { listed: true } });
-    ok('a guest cannot post it: PATCH is 403', patch.status === 403, patch.status + '');
+    ok('the key that made it can post it: PATCH 200, listed, and now in Shared Scores', patch.status === 200 && patch.body.listed === true && (await req(P, 'GET', '/api/shares')).body.shares.some(s => s.id === id), patch.status + '');
+    const back = await req(P, 'PATCH', '/api/shares/' + id, { guest: A, body: { listed: false } });
     const still = await req(P, 'GET', '/api/shares');
-    ok('and it is still not listed', !still.body.shares.some(s => s.id === id));
+    ok('and take it down again: 200, and it is not listed', back.status === 200 && back.body.listed === false && !still.body.shares.some(s => s.id === id), back.status + '');
 
     console.log('\n── opening a link, with no key and no account ──');
     const g = await req(P, 'GET', '/api/shares/' + id);
@@ -263,8 +268,9 @@ async function main() {
     const again = await post(P, A, { songKey: 'song-1', title: 'Moonlight (edited)', score: smallScore('Moonlight (edited)') }, ipA);
     ok('the same song key updates the same row: 200, same id, same link', again.status === 200 && again.body.id === id, again.status + ' ' + (again.body && again.body.id));
     const after = readRows(srv.dir).filter(r => r.ownerId === before.ownerId);
-    ok('one row, new title, still unlisted, created time kept, end date moved forward',
-      after.length === 1 && after[0].title === 'Moonlight (edited)' && after[0].listed === false && after[0].createdAt === before.createdAt && after[0].expiresAt > before.expiresAt,
+    ok('one row, new title, still unlisted, created time kept, end date 30 days out again (a link renews to a link\'s 30 days)',
+      after.length === 1 && after[0].title === 'Moonlight (edited)' && after[0].listed === false && after[0].createdAt === before.createdAt
+      && Math.abs(Date.parse(after[0].expiresAt) - (Date.now() + 30 * 86400000)) < 120000 && !after[0].addrTag,
       after.length + ' row(s)');
     const other = await post(P, secretOf(), { songKey: 'song-1', title: 'Same key, another guest', score: smallScore() }, nextIp());
     ok('another guest using the same song key gets a row of their own', other.status === 201 && other.body.id !== id, other.status + '');
@@ -280,17 +286,19 @@ async function main() {
     ok('title and composer are clipped (120, 160) as for an account', long.status === 201 && long.body.title.length === 120 && long.body.composer.length === 160, long.body && long.body.title.length + '/' + long.body.composer.length);
     const bigBody = n => JSON.stringify({ songKey: 'big', title: 'Big', score: smallScore('Big', { pad: 'x'.repeat(n) }) });
     const big = await req(P, 'POST', '/api/shares', { guest: A, ip: ipA, tolerateReset: true, body: bigBody(1024 * 1024 + 10) });
-    ok('a guest body over 1 MB is refused with a real 413 JSON answer (not a reset)', big.status === 413 && /too large/.test(big.body.error) && /guest/.test(big.body.error), big.status + ' ' + big.text.slice(0, 80));
+    ok('a guest body over 1 MB is refused with a real 413 JSON answer (not a reset)', big.status === 413 && /too large/.test(big.body.error) && /1 MB/.test(big.body.error) && !/sign in/i.test(big.body.error), big.status + ' ' + big.text.slice(0, 80));
     const huge = await req(P, 'POST', '/api/shares', { guest: A, ip: ipA, tolerateReset: true, body: bigBody(20 * 1024 * 1024) });
     ok('one far over the limit is refused too (413, or the connection is cut)', huge.status === 413 || huge.status === 'reset', String(huge.status));
     const nearly = await post(P, A, { songKey: 'nearly', title: 'Nearly 1 MB', score: smallScore('Nearly', { pad: 'x'.repeat(900 * 1024) }) }, ipA);
     ok('900 KB of score is fine for a guest', nearly.status === 201, nearly.status + '');
     const withPreview = await post(P, A, { songKey: 'pv', title: 'With a preview', score: smallScore('P'), preview: smallScore('P') }, ipA);
     const pvRow = readRows(srv.dir).find(r => r.id === withPreview.body.id);
-    ok('a small preview is kept, and counted in the row\'s bytes', withPreview.status === 201 && !!pvRow.preview && pvRow.bytes === G.rowBytes(smallScore('P'), smallScore('P')), pvRow && String(pvRow.bytes));
-    const bigPreview = await post(P, A, { songKey: 'pv2', title: 'Big preview', score: smallScore('P'), preview: smallScore('P', { pad: 'x'.repeat(30 * 1024) }) }, ipA);
+    /* G13 no login: a preview is REBUILT from what a preview is (share-guest.js normalizePreview), so what is kept and counted is the rebuilt one */
+    ok('a small preview is kept (rebuilt), and counted in the row\'s bytes', withPreview.status === 201 && !!pvRow.preview && pvRow.preview.measures.length === 2 && pvRow.bytes === G.rowBytes(pvRow.score, pvRow.preview), pvRow && String(pvRow.bytes));
+    const fatNotes = Array.from({ length: 400 }, (_, i) => ({ m: 1, b: i % 4, dur: 1, staff: 1, voice: 1, midi: 60, p: 'C5', acc: null, hand: 'r', rest: false, chord: false, tieStart: false, tieStop: false, slurStart: false, slurStop: false, type: 'quarter', dots: 0 }));
+    const bigPreview = await post(P, A, { songKey: 'pv2', title: 'Big preview', score: smallScore('P'), preview: smallScore('P', { notes: fatNotes }) }, ipA);
     const pvRow2 = readRows(srv.dir).find(r => r.id === bigPreview.body.id);
-    ok('a preview over 24 KB is dropped, and not counted', bigPreview.status === 201 && pvRow2.preview === null && pvRow2.bytes === G.rowBytes(smallScore('P'), null), pvRow2 && String(pvRow2.bytes));
+    ok('a preview over 24 KB (once rebuilt) is dropped, and not counted', bigPreview.status === 201 && pvRow2.preview === null && pvRow2.bytes === G.rowBytes(pvRow2.score, null), pvRow2 && String(pvRow2.bytes));
     const nullMeasure = await post(P, A, { songKey: 'nm', title: 'T', score: { measures: [null], notes: [] } }, ipA);
     const nullNote = await post(P, A, { songKey: 'nn', title: 'T', score: { measures: [{}], notes: [null] } }, ipA);
     ok('measures:[null] and notes:[null] are 422, not stored', nullMeasure.status === 422 && nullNote.status === 422 && !readRows(srv.dir).some(r => r.songKey === 'nm' || r.songKey === 'nn'), nullMeasure.status + '/' + nullNote.status);
@@ -329,7 +337,7 @@ async function main() {
     }
     ok('20 links are fine', created === 20, created + ' ' + (last && last.status));
     const over = await post(P, B, { songKey: 'cap-20', title: 'Cap 20', score: smallScore() }, '198.51.100.99');
-    ok('the 21st is 429 (one browser keeps 20)', over.status === 429 && /guest links/i.test(over.body.error), over.status + '');
+    ok('the 21st is 429 (one browser keeps 20)', over.status === 429 && /as many links/i.test(over.body.error) && !/sign in/i.test(over.body.error), over.status + '');
     const upd = await post(P, B, { songKey: 'cap-3', title: 'Cap 3 again', score: smallScore() }, '198.51.100.98');
     ok('but sharing one of the 20 again still works', upd.status === 200, upd.status + '');
     const freed = await req(P, 'DELETE', '/api/shares/' + upd.body.id, { guest: B });
@@ -464,7 +472,8 @@ async function main() {
     const shrink = await growBig(0, 1);
     ok('a re-send that shrinks is always welcome', shrink.status === 200, shrink.status + '');
     const withPrev = await post(P, E, { songKey: 'tiny-0', title: 'Tiny 0', score: smallScore('Tiny', { pad: 'x'.repeat(100 * 1024) }), preview: smallScore('P', { pad: 'y'.repeat(20 * 1024) }) }, nextIp());
-    ok('a re-send with a preview counts the preview in its growth', withPrev.status === 200 && readRows(srv.dir).find(r => r.id === tiny[0]).bytes === G.rowBytes(smallScore('Tiny', { pad: 'x'.repeat(100 * 1024) }), smallScore('P', { pad: 'y'.repeat(20 * 1024) })));
+    const prevRow = readRows(srv.dir).find(r => r.id === tiny[0]);
+    ok('a re-send with a preview counts the preview in its growth', withPrev.status === 200 && !!prevRow.preview && prevRow.bytes === G.rowBytes(prevRow.score, prevRow.preview));
     writeRows(srv.dir, rowsBase);
     const smallOk = await post(P, secretOf(), { songKey: 'bytes-ok', title: 'Small', score: smallScore() }, nextIp());
     ok('with the filler gone, a new link fits again', smallOk.status === 201, smallOk.status + '');
@@ -535,8 +544,8 @@ async function main() {
     const meta = await req(P, 'GET', '/?share=' + up.body.id);
     ok('an account\'s link page has its Open Graph card, with no noindex', /og:title/.test(meta.text) && !/noindex/.test(meta.text));
     const all = readRows(srv.dir);
-    ok('in the file: every guest row is unlisted with an end date, and no account row has one',
-      all.filter(r => G.isGuestOwner(r.ownerId)).every(r => r.listed === false && !!r.expiresAt && r.ownerName === 'Guest')
+    ok('in the file: every guest row has an end date and a name, and no account row has an end date',
+      all.filter(r => G.isGuestOwner(r.ownerId)).every(r => !!r.expiresAt && r.ownerName === 'Guest' && (r.listed ? !!r.addrTag : !r.addrTag))
       && all.filter(r => !G.isGuestOwner(r.ownerId)).every(r => !r.expiresAt));
   } finally {
     await srv.close();

@@ -64,6 +64,11 @@ const MSG_SITE = 'PPP is making a lot of accounts just now. Try again in a littl
       if (o.intercept) { await page.setRequestInterception(true); page.on('request', r => { if (!o.intercept(r)) r.continue(); }); }
       if (o.before) await o.before(page);
       await page.goto(srv.url, { waitUntil: 'networkidle2', timeout: 60000 });
+      /* there is no sign-in card at the start (G13 no login): the form is opened from Settings > Account, as a person who wants an account does */
+      await page.waitForFunction(() => !!(window.PPP && window.PPP.app), { timeout: 20000 });
+      await page.evaluate(() => window.PPP.app.go('settings')());
+      await page.waitForSelector('[data-account-action]', { timeout: 20000 });
+      await page.evaluate(() => document.querySelector('[data-account-action]').click());
       await page.waitForSelector('[data-auth] form', { timeout: 20000 });
       const email = 'ui-' + Date.now() + '-' + Math.floor(Math.random() * 1e6) + '@example.com';
       if (o.login) {

@@ -37,16 +37,21 @@ const ok = (name, cond, detail) => {
     const nav = [...document.querySelectorAll('aside nav button')].map(b => (b.innerText || '').trim().split('\n')[0].trim());
     const addBtn = document.querySelector('aside > button');
     const add = addBtn ? (addBtn.innerText || '').replace(/^\+\s*/, '').trim() : '';
+    /* the chip of a visitor goes to Settings, where "Sign in (optional)" opens the form (there is no card at the start); its way out is "Not now" */
     const guestBtn = [...document.querySelectorAll('header button, [data-app] button')].find(b => {
       const t = (b.innerText || '').trim();
       return t.indexOf(I.tx('Guest')) > -1 || t === I.tx('Guest');
     });
+    const noCardAtStart = !document.querySelector('[data-auth]');
     if (guestBtn) guestBtn.click();
     await new Promise(r => setTimeout(r, 400));
-    const guestCta = [...document.querySelectorAll('[data-auth] button, button')].map(b => (b.innerText || '').trim())
-      .find(t => t === I.tx('Continue as guest') || t === 'Continue as guest') || '';
-    const stayGuest = [...document.querySelectorAll('[data-auth] button, button')].find(b => (b.innerText || '').trim() === I.tx('Continue as guest'));
-    if (stayGuest) stayGuest.click();
+    const acct = document.querySelector('[data-account-action]');
+    const acctLabel = acct ? (acct.innerText || '').trim() : '';
+    if (acct) acct.click();
+    await new Promise(r => setTimeout(r, 400));
+    const closeBtn = document.querySelector('[data-auth] [data-auth-close]');
+    const guestCta = closeBtn ? (closeBtn.innerText || '').trim() : '';
+    if (closeBtn) closeBtn.click();
     await new Promise(r => setTimeout(r, 200));
     return {
       locale: I.getLocale(),
@@ -54,9 +59,12 @@ const ok = (name, cond, detail) => {
       home: nav[0],
       add: add,
       guest: guestCta,
+      noCardAtStart: noCardAtStart,
+      acct: acctLabel,
+      wantAcct: want('Sign in'),
       wantHome: want('Home'),
       wantAdd: want('Add Sheet Music'),
-      wantGuest: want('Continue as guest')
+      wantGuest: want('Not now')
     };
   }, loc);
 
@@ -66,7 +74,8 @@ const ok = (name, cond, detail) => {
     ok(loc + ' html lang follows', r.lang === loc, r.lang);
     ok(loc + ' Home matches catalog, not English', r.home === r.wantHome && r.home !== 'Home', r.home + ' vs ' + r.wantHome);
     ok(loc + ' Add Sheet Music matches catalog, not English', r.add === r.wantAdd && r.add !== 'Add Sheet Music', r.add + ' vs ' + r.wantAdd);
-    ok(loc + ' Continue as guest matches catalog, not English', r.guest === r.wantGuest && r.guest !== 'Continue as guest', r.guest + ' vs ' + r.wantGuest);
+    ok(loc + ' the form of Settings > Account is in the language: Sign in, Not now', r.acct === r.wantAcct && r.acct !== 'Sign in' && r.guest === r.wantGuest && r.guest !== 'Not now', r.acct + ' / ' + r.guest + ' vs ' + r.wantAcct + ' / ' + r.wantGuest);
+    ok(loc + ' no sign-in card at the start', r.noCardAtStart === true);
   }
 
   const interpolated = loc => page.evaluate(async (loc) => {
