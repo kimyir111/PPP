@@ -713,21 +713,30 @@ store, else the projection) in one idle callback, then the plans of the loop ran
 screen that plays, and the render's own hint asks too (the sample is warmed at boot, on Home). 1.4-1.5 s at 4x is mostly the wait for the sheet's drawing, the main thread's biggest task there (0.9 s, G4 B5); the
 engraver's resolve of the same Score is shared with the renderer's. (3) A plan asked for before it is ready is **the legacy plan, counted `NOT_READY`** (one per range, like every fallback; `PPP.practiceStats.practiceFallback`);
 the decision is made again as soon as the source is there (`practiceRetryable`), the page is drawn again when something was handed the legacy plan, and a transport that began on it keeps drawing its notes on it
-(`visualTimeline`), so the falling notes never run on another plan than the player; a run keeps its plan, as in §10.4. (4) Not everything waits: a Score of 500 notes or fewer (`PRACTICE_SYNC_NOTES`: 60 ms at 4x, cold)
-and a Score the engraver holds the producer's graph of (an import, a recording, an arrangement; and every Score the tests make with `scoreFromXml`) are planned at once; a warm-up that failed falls back to the old
-synchronous resolve (a plan late is better than a legacy plan for good). `PPP.practiceStats.served` counts what `practicePlan` handed out that was a graph plan (what the suites assert on; `graph` is what was made,
-the warm-up's builds included), and `.warm` is `{started, done, failed, ms}`.
+(`visualTimeline`), so the falling notes never run on another plan than the player; a run keeps its plan, as in §10.4. (4) Not everything waits: a Score of 500 notes or fewer (`PRACTICE_SYNC_NOTES`: 60 ms at 4x, cold),
+a Score the engraver holds the producer's graph of (an import, a recording, an arrangement; and every Score the tests make with `scoreFromXml`), and **a Score that carries a D.C., D.S., Fine or To Coda mark**
+(`practiceJumpMarked`: the marks survive the slot; of the 325 catalogue pieces 8 have a jump and the same 8 have a mark, 0 either way) are planned at once, so that a piece with a jump never plays its first run
+without it; for those three pieces over 500 notes (Sonatina 012, 015, 017) the resolve on the spot costs 109-117 ms at 4x, less than the legacy player's own first plan at the Play tap (129-149 ms). A warm-up that failed
+falls back to the old synchronous resolve (a plan late is better than a legacy plan for good). `PPP.practiceStats.served` counts what `practicePlan` handed out that was a graph plan (what the suites assert on; `graph`
+is what was made, the warm-up's builds included), `.syncResolved` the graph plans of Scores of more than 500 notes whose source was worked out on the spot (the marked ones and the live ones), and `.warm` is
+`{started, done, failed, cancelled, ms}`. (5) A warm-up for a song that was open when it was asked for and is not any more is **not made** (it is asked for again when the song is open again): three big songs opened
+250 ms apart used to start three resolves, 110-230 ms a task at 4x for cards flicked past. (6) **A run keeps its plan across a change of the transport's key**: a tempo, hands or screen change under a running
+transport re-plans it for its scale only when the Score and the range are the same (`advance`, `tp.score/from/to`); before, a graph plan that arrived under a run the matcher had begun on the legacy one put the
+transport on 90 visits / 1,340 strikes and 15 graces while the matcher expected 65 visits / 964 notes (Sonatina 017): 28 % of the strikes had no expected note, a red flash and up to 0.25 of accuracy (`extraPenalty`).
 
-*What a person can see.* Tap Play on a large song that was saved and is opened again within about 0.3 s (1x) to 1.5 s (4x), before the sheet is drawn, and that one run plays the legacy plan: a D.C. piece plays without
-the jump that time, the next run has it. A large piece that was just imported (a live graph) is planned at once, and costs 230-265 ms at CPU 4x on that first Play if the warm-up has not finished.
-Nothing else differs from the page of §10.5 with `PPP.practice = 'graph'`.
+*What a person can see.* Tap Play on a large song that was saved and is opened again within the window of the warm-up, before the sheet is drawn, and that one run plays the legacy plan: **without its grace notes**
+(they sound, are drawn and are not judged, so nothing is marked wrong; the next run has them). A piece with a D.C., D.S., Fine or To Coda has its jump in that first run too (the marks, above). The window is the
+request-to-done time of the warm-up: Sonatina 017 0.24 s at 1x, 0.6 s at 4x; Sonatina 020 about 1.3 s at 4x. Of the 55 catalogue pieces of more than 500 notes 3 have a D.C. (all marked: no first run without its jump) and
+12 have grace notes. A large piece that was just imported (a live graph) is planned at once, and costs 230-265 ms at CPU 4x on that first Play if the warm-up has not finished. **Follow's gate list changes once at
+the flip**: before the source is there Follow asks the legacy gates, then the graph's (Sonatina 017: 530 gates, then 720: the repeats the fixes ask, the first 530 identical): benign, and a session that has not
+reached the change sees nothing. Nothing else differs from the page of §10.5 with `PPP.practice = 'graph'`.
 
 **Tests.** `tests/practice/run-suites.js` defaults to `--practice graph` = the page's own default, nothing set; it is red when a page was not on `'graph'`. `--practice legacy` sets the remembered choice and is red when a page
 was not on `'legacy'` or was handed a graph plan. CI keeps its two checks `practice-suites (legacy|graph, 1|2)`. Both legs: the twelve suites, **648 checks, green, unedited** (the graph leg: 2 `NOT_READY` and 3
 `LINK_FAILED`, all on Scores the suites build by hand). `with-port.js` takes `PPP_PRACTICE=legacy` too and always prints the practice line. `tests/practice/switch.js` was rewritten for the new default (what is no choice, the
-module a group asked for once and never read early, the explicit legacy page, the setter, the held-back prefetch; 175 checks) and has a new section `warm` (the first plan of a large Score is the legacy plan, counted once,
-nothing resolved on the spot; after `practiceWarm` the graph plan; a small Score and a live one at once; the hint at render makes no plan and resolves nothing; a transport on the legacy plan keeps its falling notes):
-`switch-mutants.js` re-anchored or rewrote W1, W9-W12, W18, W19, W28, W29, W38 and has W39-W45 new (45 rows, all killed). The recorder, the parity harness and the matcher mutants open their pages with the explicit legacy
+module a group asked for once and never read early, the explicit legacy page, the setter, the held-back prefetch; 178 checks) and has a new section `warm` (the first plan of a large Score is the legacy plan, counted once,
+nothing resolved on the spot; after `practiceWarm` the graph plan; a small Score and a live one at once; the hint at render makes no plan and resolves nothing; a transport on the legacy plan keeps its falling notes; a saved D.C. piece planned on the spot with its jump; a run that keeps its plan when the tempo or the hands change; a warm-up that is not made for a song no longer open):
+`switch-mutants.js` re-anchored or rewrote W1, W9-W12, W18, W19, W28, W29, W38 and has W39-W48 new (48 rows, all killed). The recorder, the parity harness and the matcher mutants open their pages with the explicit legacy
 choice (`tests/practice/lib.js`: `openApp(url, {practice, settle})`; the parity harness waits for the page's own copy of the module before it adds its own: both would write `PPPPractice.plan`); the practice
 simulator pins `PRACTICE_MODE = 'legacy'` in its vm (its baselines changed in the key `appCode` only: nine declaration names; 144 rows identical). `options.js` 136 checks and its 27 mutants, the parity harness (0
 UNEXPLAINED), the recorder, the perf probe (within its baseline on the default page) and the 172 + 15 Node tests of `practice/` and `practice-sim/` are unchanged and green. `tests/live/smoke.js` has three
@@ -739,6 +748,9 @@ visits against 24; 45 of 45 due notes matched; 8 onsets followed; 14 checks, rea
 `window.PPPPractice` or `window.PPPEngrave` from the practice code, harmless while `'graph'` was opt-in, would have loaded two groups synchronously on the thread that plays the first time a visitor pressed Play before
 the prefetch had finished: `practicePeek`. (c) The default of the explicit-legacy tests moved: seven drivers had meant "legacy" by saying nothing. (d) A synchronous resolve for a large LIVE Score on the first Play is
 still possible (rare: a tap within the first 0.3 s of an import; 230-265 ms at 4x); not moved, because a legacy plan there would make every freshly imported piece play without its D.C. on its first run.
+(e) The review of #272 found, and this record carries: a transport re-planned onto the graph plan under a matcher that stayed on the legacy one (F1, fixed: item 6 above, W46); a warm-up made for songs that were
+flicked past (F3, fixed: item 5, W48); a first run of a D.C. piece without its jump (item B, fixed by the marks: item 4, W47; an await in `togglePlay` was rejected: it would hold the tap). Left as measured, for the
+user to decide if it ever matters: the first run in the window lacks grace notes silently (F2: a grace cannot be told from the Score, the legacy Score drops it), and Follow's gate list changes once (F4).
 
 **Rollback** (§13): the default back to `'legacy'` is the constant; legacy is kept with its tests for one release.
 
