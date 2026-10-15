@@ -8,6 +8,8 @@
      static      the page and every file it loads (anything that is not /api, /helper or /health)
      api-auth    /api/auth/...           api-shares   /api/shares...        health   /health and /api/health
      api-jobs    /api/jobs..., /api/worker..., /api/pc-links... (the home-PC queue)
+     api-stats   /api/stats (G13-7b: the page's anonymous counters). Its refusals - a bad body, another site's Origin, a limit - are by design and come from browsers, so its 4xx and 429 are
+                 counted in its own class only and NOT in the totals `4xx` and `tooMany` (the release checklist reads those as alarms); its 5xx (our own bug) and store errors still are
      other       every other /api route, /helper, and a request whose address cannot be read
    No address, no id, no path, no header, no user data is kept or printed - only the numbers. Nothing is served over HTTP.
    A GAUGE (addGauge) is a function that reports one more block of numbers in the line, under its own name, and gives its feature a class of its own: sync.js (G13-S0, only with
@@ -29,11 +31,17 @@
    is told apart by the caller (storeError('idle')) and counted only in `idlePoolErrors`.
 
    server.js: `server.prependListener('request', serverStats.track)`, `serverStats.storeError(kind)` in logStoreError, and 'idle' passed from the pool's error handler.
-   tests/server-stats.test.js plants a 5xx and a store error and reads them in the line. */
+   tests/server-stats.test.js plants a 5xx and a store error and reads them in the line.
+
+   G13-7b (U5): the anonymous counters the page's browsers send (POST /api/stats; client-stats.js says what they are and what is kept) are added up here in the same window and printed in the
+   same line as one more key, `client`, when at least one arrived: `serverStats.clientBeacon(doc, stale)` with a document client-stats.js has sanitized. Without one the line is what it was. */
 'use strict';
 const { AsyncLocalStorage } = require('async_hooks');
+const clientStats = require('./client-stats');
 
-const CLASSES = ['static', 'api-auth', 'api-shares', 'api-jobs', 'health', 'other'];
+const CLASSES = ['static', 'api-auth', 'api-shares', 'api-jobs', 'api-stats', 'health', 'other'];
+/* what a class does NOT add to the totals of the line (see api-stats above) */
+const QUIET = { 'api-stats': { '4xx': true, tooMany: true } };
 const HOUR_MS = 60 * 60 * 1000;
 
 /* the route class of a request line (the part of req.url before ? and #), read the way server.js reads it: new URL(req.url, base).pathname */
@@ -45,6 +53,7 @@ function classify(rawUrl) {
   if (p === '/api/auth' || p.startsWith('/api/auth/')) return 'api-auth';
   if (p === '/api/shares' || p.startsWith('/api/shares/')) return 'api-shares';
   if (/^\/api\/(jobs|worker|pc-links)(\/|$)/.test(p)) return 'api-jobs';
+  if (p === '/api/stats') return 'api-stats';
   if (/^\/api\/(libs|sync)(\/|$)/.test(p)) return 'api-sync';
   if (p === '/api' || p.startsWith('/api/')) return 'other';
   return 'static';
@@ -62,7 +71,7 @@ function createStats(opts) {
   let windowAt = bootAt;
   let timer = null;
   let termHooked = false;
-  /* the classes of THIS instance: the six, and api-sync once a feature that has a gauge of that name is switched on */
+  /* the classes of THIS instance: the module's (static ... other), and api-sync once a feature that has a gauge of that name is switched on */
   const classes = CLASSES.slice();
   const gauges = {};
   let c = fresh();
@@ -70,16 +79,16 @@ function createStats(opts) {
   const classify = rawUrl => { const k = classifyRoute(rawUrl); return c.by[k] ? k : 'other'; };
 
   function fresh() {
-    const o = { idlePoolErrors: 0, by: {} };
+    const o = { idlePoolErrors: 0, by: {}, client: clientStats.fresh() };
     classes.forEach(k => { o.by[k] = { requests: 0, '4xx': 0, tooMany: 0, '5xx': 0, storeErrors: 0 }; });
     return o;
   }
-  function total(key) { return classes.reduce((n, k) => n + c.by[k][key], 0); }
+  function total(key) { return classes.reduce((n, k) => n + (QUIET[k] && QUIET[k][key] ? 0 : c.by[k][key]), 0); }
 
   /* the line for the counters now (null when nothing was counted), and the counters start again */
   function flush(final) {
     const requests = total('requests'), fivexx = total('5xx'), storeErrors = total('storeErrors');
-    if (!requests && !fivexx && !storeErrors && !c.idlePoolErrors) { windowAt = now(); return null; }
+    if (!requests && !fivexx && !storeErrors && !c.idlePoolErrors && !c.client.beacons) { windowAt = now(); return null; }
     const t = now();
     const doc = {
       v: 1,
@@ -88,6 +97,7 @@ function createStats(opts) {
       requests: requests, '4xx': total('4xx'), tooMany: total('tooMany'), '5xx': fivexx, storeErrors: storeErrors, idlePoolErrors: c.idlePoolErrors,
       by: c.by
     };
+    if (c.client.beacons) doc.client = clientStats.snapshot(c.client);
     if (final) doc.final = true;
     const warnings = [];
     Object.keys(gauges).forEach(name => {
@@ -153,6 +163,11 @@ function createStats(opts) {
     } catch (e) { /* none */ }
   }
 
+  /* a beacon from a page (already sanitized by client-stats.js): added to the window's totals. Never throws. */
+  function clientBeacon(doc, stale) {
+    try { clientStats.add(c.client, doc, !!stale); arm(); } catch (e) { /* none */ }
+  }
+
   /* a block of numbers more in the line (see the header); the name is a fixed word of the code, never data. The sync gauge also brings its route class. */
   function addGauge(name, fn) {
     if (!/^[a-z]{1,12}$/.test(String(name)) || typeof fn !== 'function') return;
@@ -163,7 +178,7 @@ function createStats(opts) {
     }
   }
 
-  return { track: track, storeError: storeError, flush: flush, classify: classify, addGauge: addGauge, CLASSES: CLASSES };
+  return { track: track, storeError: storeError, clientBeacon: clientBeacon, flush: flush, classify: classify, addGauge: addGauge, CLASSES: CLASSES };
 }
 
 /* the instance server.js uses; PPP_STATS_INTERVAL_MS is only for the test that starts the real server (default: an hour) */

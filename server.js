@@ -574,6 +574,18 @@ const signupAttempts = guestShare.slidingWindow(SIGNUP.ATTEMPTS, SIGNUP.ATTEMPT_
 const signupSerial = signupLimit.serial();
 const signupKey = crypto.createHmac('sha256', SECRET).update('ppp-signup-address').digest();
 const signupTagOf = ip => crypto.createHmac('sha256', signupKey).update(homeJobs.addrKey(ip)).digest('hex').slice(0, 16);
+/* G13-7b (U5): POST /api/stats takes the anonymous counters of a page (client-stats.js: what is accepted, what is kept - totals in memory, one `stats:` line an hour). One browser sends one a visit, so
+   an address (a keyed hash made new at every start, held ten minutes: the same trick as the signup tag, with a key that is not the session secret) may send STATS_PER_WINDOW in STATS_WINDOW_MS
+   (a classroom or a campus behind one address is a few hundred visits; more are not counted, and answered 429, which the page never looks at; each beacon only adds capped numbers, so the limit protects
+   nothing but the log's tidiness). The machine itself (the socket, loopback) is not limited: a developer's
+   server, and the browser suites that close many pages. */
+const clientStats = require('./client-stats');
+const STATS_PER_WINDOW = parseInt(process.env.PPP_STATS_BEACONS, 10) || 300;
+const STATS_WINDOW_MS = 10 * 60 * 1000;
+const statsBeacons = guestShare.slidingWindow(STATS_PER_WINDOW, STATS_WINDOW_MS, undefined, 5000);
+const statsKey = crypto.randomBytes(32);
+const statsTagOf = ip => crypto.createHmac('sha256', statsKey).update(homeJobs.addrKey(ip)).digest('hex').slice(0, 16);
+const STATS_SHAPE = Object.freeze({ tokens: 160, containers: 8, depth: 3 });
 
 /* A store failure is one line in the log, and at most a few lines a minute, not a stack per request: a request that
    makes the store fail can be sent over and over. */
@@ -1187,6 +1199,31 @@ async function handleApi(req, res, url) {
   if (p === '/health' || p === '/api/health') {
     send(res, 200, { ok: true, service: 'ppp' });
     return;
+  }
+
+  /* G13-7b (U5): the page's anonymous counters (a beacon: its answer is never read). A POST from this site only (an Origin that is another site's is refused), at most STATS_PER_WINDOW from one address
+     in ten minutes, a body of at most 1 KB whose structure is bounded as it arrives; client-stats.js takes the whitelisted keys and the numbers capped, serverStats adds them up. No cookie is read or
+     set, nothing is stored, and the answer is 204 with no body (or an error that says nothing about the counters). */
+  if (method === 'POST' && p === '/api/stats') {
+    const quiet = { 'Cache-Control': 'no-store' };
+    const origin = req.headers.origin;
+    if (origin) {
+      let same = false;
+      try { same = new URL(String(origin)).host.toLowerCase() === String(req.headers.host || '').toLowerCase(); } catch (e) { same = false; }
+      if (!same) return send(res, 403, { error: 'Not allowed.' }, quiet);
+    }
+    const who = guestShare.clientAddress(req);
+    const local = who.source === 'socket' && signupLimit.LOOPBACK.test(who.ip);
+    if (!local && !statsBeacons.take(statsTagOf(who.ip))) {
+      return send(res, 429, { error: 'Too many.', code: 'too-many' }, { 'Cache-Control': 'no-store', 'Retry-After': String(STATS_WINDOW_MS / 1000) });
+    }
+    let parsed;
+    try { parsed = JSON.parse((await readBody(req, clientStats.MAX_BODY, 8 * 1024, STATS_SHAPE)).toString('utf8') || 'null'); }
+    catch (e) { return send(res, e && e.code === 'TOO_LARGE' ? 413 : 400, { error: e && e.code === 'TOO_LARGE' ? 'Too large.' : 'Invalid body.' }, quiet); }
+    const r = clientStats.sanitize(parsed);
+    if (!r.ok) return send(res, 400, { error: 'Invalid body.' }, quiet);
+    serverStats.clientBeacon(r.doc, !!(BUILD_ID && r.doc.b && r.doc.b.slice(0, BUILD_ID.length) !== BUILD_ID));
+    return send(res, 204, '', quiet);
   }
 
   if (method === 'GET' && p === '/api/youtube-title') {

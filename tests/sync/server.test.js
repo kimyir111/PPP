@@ -52,7 +52,7 @@ const statsLines = out => out.split(/\r?\n/).filter(l => /^stats: \{/.test(l)).m
       ok('no data file of the feature is made, and the log says nothing of it', !fs.existsSync(path.join(dir, 'sync.json')) && !/Song sync/i.test(s.log()));
       await sleep(1700);
       const lines = statsLines(s.log());
-      ok('the stats line has no `sync` block and no `api-sync` class: it is the line of a server without the feature', lines.length >= 1 && lines.every(d => !('sync' in d) && !('api-sync' in d.by) && Object.keys(d.by).join() === 'static,api-auth,api-shares,api-jobs,health,other'), s.log().slice(-300));
+      ok('the stats line has no `sync` block and no `api-sync` class: it is the line of a server without the feature', lines.length >= 1 && lines.every(d => !('sync' in d) && !('api-sync' in d.by) && Object.keys(d.by).join() === 'static,api-auth,api-shares,api-jobs,api-stats,health,other'), s.log().slice(-300));
     } finally { await s.close(); L.rmDir(dir); }
   }
 
