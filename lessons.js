@@ -1016,7 +1016,7 @@
     });
     /* names and marks never take the tap from the key under them */
     return h('svg', { viewBox: '0 0 ' + W + ' ' + HT, width: '100%', 'data-learn-keyboard': 1,
-      style: { display: 'block', height: 'auto', margin: '0 auto', maxWidth: whites.length * 56 + 'px', minWidth: Math.min(W, whites.length * 30) + 'px', userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation', fontFamily: "Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif" } },
+      style: { display: 'block', height: 'auto', margin: '0 auto', maxWidth: whites.length * 56 + 'px', minWidth: Math.min(W, whites.length * 30) + 'px', userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation', fontFamily: "Figtree, var(--ppp-cjk), system-ui, sans-serif" } },
       o.hands ? o.hands.defs : null,
       h('g', { key: 'keys' }, els),
       /* a hand over the keys (drawn by the page, as on the practice screen);
@@ -1169,7 +1169,7 @@
       els.push(h('line', { key: 'end2', x1: W - 5, x2: W - 5, y1: top, y2: bottom, stroke: ink, strokeWidth: 3 }));
     } else els.push(h('line', { key: 'end', x1: W - 4, x2: W - 4, y1: top, y2: bottom, stroke: lineC, strokeWidth: 1 }));
     return h('svg', { viewBox: '0 0 ' + W + ' ' + H, width: W * (big ? 1.9 : 1.7), 'data-learn-staff': clef, 'data-key': fifths,
-      style: { display: 'block', maxWidth: '100%', height: 'auto', margin: '0 auto', fontFamily: "Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif" } }, els);
+      style: { display: 'block', maxWidth: '100%', height: 'auto', margin: '0 auto', fontFamily: "Figtree, var(--ppp-cjk), system-ui, sans-serif" } }, els);
   }
 
   /* Keep beginner music readable on a tablet: a system is at most four
@@ -1296,7 +1296,7 @@
     els.push(hand(40, true, t('Left hand')));
     els.push(hand(210, false, t('Right hand')));
     return h('svg', { viewBox: '0 0 330 172', width: 330, 'data-learn-hands': 1,
-      style: { display: 'block', maxWidth: '100%', height: 'auto', margin: '0 auto', fontFamily: "Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif" } }, els);
+      style: { display: 'block', maxWidth: '100%', height: 'auto', margin: '0 auto', fontFamily: "Figtree, var(--ppp-cjk), system-ui, sans-serif" } }, els);
   }
 
   /* Every string the course shows, for the translation check. */

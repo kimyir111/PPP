@@ -2369,6 +2369,12 @@
     "Your own PC's mark is shown in Settings. If someone else gave you the link, choose \"Use the draft instead\". The pictures wait on the site only until that PC takes them, then they are deleted.": "你自己电脑的标记可以在“设置”中查看。如果这个链接是别人给你的，请选择“改用草稿”。图片只会在网站上保留到那台电脑取走为止，之后就会被删除。",
     "Send to that PC": "发送到那台电脑",
     "The site is taking in as many scores as it may for now.": "网站目前接收乐谱的数量已达上限。",
-    "This device or network has sent as many scores as the site takes in for now.": "这台设备或这个网络目前能发送的乐谱数量已达上限。"
+    "This device or network has sent as many scores as the site takes in for now.": "这台设备或这个网络目前能发送的乐谱数量已达上限。",
+    "Send anonymous counts": "发送匿名数字",
+    "On. Press to stop sending.": "已开启。点按后不再发送。",
+    "Off. Nothing is sent. Press to turn it on.": "已关闭，不会发送任何内容。点按可开启。",
+    "Your browser's Do Not Track or Global Privacy Control setting is on, so nothing is sent.": "浏览器的“请勿跟踪”或 Global Privacy Control 设置已开启，因此不会发送任何内容。",
+    "To see when a page breaks or loads slowly, PPP sends a few anonymous counts (errors, load times) when you leave the page. They have no name, address or ID, and no songs. The server has to see your connection's address for a moment, but it stores nothing: it only adds the counts up.": "为了了解页面何时出错或加载缓慢，离开页面时 PPP 会发送少量匿名数字（错误次数、加载时间）。其中不含姓名、地址、标识符，也不含乐曲。服务器不得不在一瞬间看到连接的地址，但不会保存任何内容，只做累加。",
+    "If you turned off anonymous counts, that choice stays.": "如果你关闭了发送匿名数字，这个选择会保留。"
   }
 }
