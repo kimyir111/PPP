@@ -36,13 +36,13 @@
 # THE PRACTICE JOBS (G11a-0, docs/GOALS/G11_ADAPTIVE_PRACTICE.md section 5 G11-D12) are NOT part of the gate: practice-plan, practice-suites,
 # practice-legacy, practice-perf, practice-parity and practice-parity-mutants are checks of their own, so the gate's jobs, steps and verdict are as they were
 # (test_ci_plan.py reads only plan, light, shard-* and merge-*). On a pull request practice-plan (tests/practice/plan.py, the base's copy, like the gate's) decides whether
-# the change touches the app's page, practice/ or the practice tests; if so the three jobs run: the twelve practice and playback browser suites
+# the change touches the app's page, practice/ or the practice tests; if so the three jobs run: the thirteen practice and playback browser suites
 # on a free port (tests/practice/run-suites.js), the legacy recorder's baseline (what the legacy player, matcher and follow gates do with every
 # catalogue piece) and the mutation check that proves the baseline notices a broken matcher, and the perf probe (matcher, plan building, press
 # to paint, long tasks) against its committed baseline. The same three jobs run every night and on a manual run. G11a-2 adds two more: practice-parity (the
 # event-parity harness tests/practice/parity.js: practice/plan.js against the legacy player, every difference booked to its cause; the whole corpus in about a minute, a
 # sample of it on a pull request) and practice-parity-mutants (the planted defects of practice/plan.js the check must notice, in four shards). G11a-3 (the PPP.practice switch) adds
-# three things: practice-suites runs the twelve suites twice, once on the explicit legacy player and once on the page's own default, 'graph' since G11a-5 (a matrix of two checks);
+# three things: practice-suites runs the thirteen suites twice, once on the explicit legacy player and once on the page's own default, 'graph' since G11a-5 (a matrix of two checks);
 # practice-switch is the switch's own test (tests/practice/switch.js: the default and what is no choice, the module a deferred group asked for once and never read early, the scheduler's queue of the 12
 # pieces equal to the one recorded on main before the switch, the matcher, the falling notes and follow mode equal, the fallbacks counted, the corpus swept, the build time);
 # practice-switch-mutants breaks one line of the switch at a time and the test must go red (in three shards). A manual run can be
@@ -738,8 +738,8 @@ jobs:
           fi
           grep -E '^(run|harness)=' "$GITHUB_OUTPUT"
 
-  # practice-suites: the twelve practice and playback browser suites (follow, falling-notes, memory, learning, playback-scheduler, coach, midi,
-  # interactions, lessons, course, alignment, learner-log (G11b-1: PPP.learner and the run log): about 600 checks) on a port the runner is given, with NODE_ENV=production and
+  # practice-suites: the thirteen practice and playback browser suites (follow, falling-notes, memory, learning, playback-scheduler, coach, midi,
+  # interactions, lessons, course, alignment, learner-log (G11b-1: PPP.learner and the run log), variant-app (G11c-1: Make this passage easier): about 750 checks) on a port the runner is given, with NODE_ENV=production and
   # tests/engrave/tools/with-port.js (G11-D12). They had never run in CI before; a suite is green only if it exits 0, fails no check and prints
   # about as many checks as it did when the list was written (a suite that stopped testing is not a pass). About 4 minutes of suites. G11a-3: twice, as a matrix. Since G11a-5 the page's
   # own default is 'graph' (the plan made from the ScoreGraph, the four fixes on): the 'graph' check runs the suites on what a visitor gets (nothing is set; run-suites.js is red when
@@ -915,6 +915,27 @@ jobs:
         with: { node-version: '24' }
       - run: npm ci
       - run: node tests/practice/switch-mutants.js --shard ${{ matrix.part }}/3
+
+  # practice-variant-mutants (G11c-1): does the suite of "Make this passage easier" (tests/variant-app.test.js, a suite of practice-suites too) notice a page that got worse?
+  # tests/practice/variant-mutants.js breaks lines of the served page at a time (the splice asked for one bar too many or too few, the original written over by its copy, the copy
+  # swapped in place of the original, a refusal ignored, the YouTube mark not copied, the default on, the button shown while it is off, the progress shared, the way back to the wrong
+  # bars, the same request a new song every time, ...) and the sections the row names must go red; 21 rows of 1-3 minutes (three shards). On a pull request only when the probes
+  # themselves changed (practice-plan's `harness`), every night otherwise. The rules of practice/variant.js itself are broken by tests/practice-variant/variant-mutation.test.js (the gate).
+  practice-variant-mutants:
+    needs: practice-plan
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.harness == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24' }
+      - run: npm ci
+      - run: node tests/practice/variant-mutants.js --shard ${{ matrix.part }}/3
 
   # practice-options (G11a-4): the four fixes under 'graph' in a real page on a free port (tests/practice/options.js, docs/GOALS/G11 section 10.5): PPP.practiceFix; D.C./D.S./Fine/To Coda
   # played (the 7 open catalogue pieces and the hand-written D.S. al Coda), grace notes that sound and are never asked, follow mode that asks a repeated bar each time and asks what Play
