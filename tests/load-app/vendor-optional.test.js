@@ -50,12 +50,14 @@ const NPM_HOST = /^https?:\/\/(cdn\.jsdelivr\.net|unpkg\.com|esm\.sh|cdnjs\.clou
 
 /* opts.cdn: undefined (every other host refused, except React's two unpkg files, which only a ?cdn=1 page asks for, answered with the vendored bytes: the page cannot start without them)
    | 'stand-in' (the four jsDelivr files are answered with the vendored bytes too) | 'real' (everything goes to the network); opts.query; opts.stored: a value for localStorage
-   ppp.cdn; opts.failVendored: [path fragments] answered 404 */
+   ppp.cdn; opts.failVendored: [path fragments] answered 404 (st.failVendored: the same list, which a test may change while the page is open);
+   opts.manifest: what the Onsets and Frames checkpoint's weights_manifest.json answers - 'ok' (200 with {}) or '404' - instead of being refused with the rest of Google;
+   opts.tamper: the CDN stand-ins answer with the published bytes and something added (what SRI must refuse) */
 async function open(opts) {
   opts = opts || {};
   const ctx = await browser.createBrowserContext();
   const page = await ctx.newPage();
-  const st = { asked: [], refused: [], answered: [], statuses: new Map(), headers: new Map(), pageErrors: [], ctx, page };
+  const st = { asked: [], refused: [], answered: [], statuses: new Map(), headers: new Map(), pageErrors: [], failVendored: (opts.failVendored || []).slice(), ctx, page };
   await page.setViewport({ width: 1100, height: 800 });
   await page.evaluateOnNewDocument(stored => {
     try { localStorage.setItem('ppp-guest', '1'); localStorage.setItem('ppp-locale', 'en-US'); if (stored) localStorage.setItem('ppp.cdn', stored); } catch (e) { /* */ }
@@ -66,15 +68,22 @@ async function open(opts) {
     const u = r.url();
     st.asked.push(u);
     if (u.startsWith(site) || /^(data|blob):/.test(u)) {
-      if ((opts.failVendored || []).some(f => u.indexOf(f) >= 0)) { st.refused.push(u); return r.respond({ status: 404, body: 'not here' }).catch(() => {}); }
+      if (st.failVendored.some(f => u.indexOf(f) >= 0)) { st.refused.push(u); return r.respond({ status: 404, body: 'not here' }).catch(() => {}); }
       return r.continue().catch(() => {});
     }
     if (opts.cdn === 'real') return r.continue().catch(() => {});
+    if (opts.manifest && /^https:\/\/storage\.googleapis\.com\/magentadata\/js\/checkpoints\/transcription\/onsets_frames_uni\/weights_manifest\.json/.test(u)) {
+      st.answered.push(u);
+      return r.respond(opts.manifest === 'ok' ? { status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: '{}' }
+        : { status: 404, contentType: 'text/plain', headers: { 'Access-Control-Allow-Origin': '*' }, body: 'no' }).catch(() => {});
+    }
     const bare = u.split('?')[0];
     const stand = STAND_IN[bare] || REACT_STAND_IN[bare];
     if (opts.cdn !== 'refuse' && opts.cdn !== 'real' && stand && (opts.cdn === 'stand-in' || REACT_STAND_IN[bare])) {
       st.answered.push(u);
-      return r.respond({ status: 200, contentType: 'text/javascript; charset=utf-8', headers: { 'Access-Control-Allow-Origin': '*' }, body: fs.readFileSync(path.join(REPO, stand)) }).catch(() => {});
+      let body = fs.readFileSync(path.join(REPO, stand));
+      if (opts.tamper && STAND_IN[bare]) body = Buffer.concat([body, Buffer.from('\n/* not the published file */\n')]);
+      return r.respond({ status: 200, contentType: 'text/javascript; charset=utf-8', headers: { 'Access-Control-Allow-Origin': '*' }, body: body }).catch(() => {});
     }
     st.refused.push(u);
     return r.abort('blockedbyclient').catch(() => {});
@@ -90,7 +99,9 @@ async function open(opts) {
 }
 const close = st => st.ctx.close().catch(() => {});
 const npmAsked = st => st.asked.filter(u => NPM_HOST.test(u));
-const vendorAsked = (st, frag) => st.asked.filter(u => u.indexOf('/vendor/' + (frag || '')) >= 0);
+/* the vendored urls asked for, each once (the page probes the worker's address with a HEAD before the worker itself asks for it) */
+const vendorAsked = (st, frag) => Array.from(new Set(st.asked.filter(u => u.indexOf('/vendor/' + (frag || '')) >= 0)));
+const fallbacks = st => st.page.evaluate(() => PPP.libFallbacks);
 
 /* ---- a one-page vector PDF (the one tests/pdf-layer.test.js writes: staves, notes in the music font, chord names, a title), as base64 ---- */
 function makePdf() {
@@ -185,6 +196,7 @@ test('PDF import with every other site refused: pdf.js and its worker are PPP\'s
       assert.match(st.headers.get(u)['cache-control'], /immutable/, u + ' is immutable');
     });
     assert.ok(/\/vendor\/pdfjs-3\.11\.174\/pdf\.worker\.min\.js\?h=[0-9a-f]{12}$/.test(r.worker), 'the worker is the vendored file: ' + r.worker);
+    assert.deepEqual(await fallbacks(st), {}, 'no library had to be taken from its CDN address');
     assert.deepEqual(st.pageErrors, [], 'no page error');
   } finally { await close(st); }
 });
@@ -214,6 +226,7 @@ test('Basic Pitch works with no network: its code, TensorFlow.js 3.21.0 and its 
     assert.equal(r.ok, true, JSON.stringify(r));
     assert.equal(r.engine, 'basic-pitch');
     assert.deepEqual(pitchesOf(r.notes), [60, 64, 67, 72], 'the four notes of the recording, in order');
+    assert.deepEqual(await fallbacks(st), {}, 'no library had to be taken from its CDN address');
     assert.deepEqual(npmAsked(st), [], 'no request to jsDelivr, unpkg, esm.sh or cdnjs');
     const lib = vendorAsked(st).filter(u => /tfjs-3\.21\.0|basic-pitch/.test(u));
     assert.equal(lib.length, 6, 'tf.fesm.min.js, three modules, model.json, the weights: ' + lib.join(', '));
@@ -255,6 +268,9 @@ test('the way back: ?cdn=1 asks the CDN addresses and no vendored file (PDF, Ons
     assert.equal(r.ok, true, JSON.stringify(r));
     assert.equal(r.engine, 'pdf');
     assert.equal(r.worker, JSD + 'pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js', 'the worker is the CDN one');
+    const tags = await st.page.evaluate(() => [...document.head.querySelectorAll('script[src^="https://cdn.jsdelivr.net/"]')].map(e => ({ src: e.src, integrity: e.integrity, cors: e.crossOrigin })));
+    assert.ok(tags.length >= 1 && tags.every(t => /^sha384-/.test(t.integrity) && t.cors === 'anonymous'), 'every CDN script carries its integrity and crossorigin: ' + JSON.stringify(tags));
+    assert.deepEqual(await fallbacks(st), {}, 'a CDN chosen by PPP.cdn is not a fallback');
     const o = await callAmt(st.page, 'pianoAmtNotes');
     assert.equal(o.code, 'model-offline', 'the checkpoint is still refused: ' + JSON.stringify(o));
     const asked = st.asked.filter(u => /^https:\/\/cdn\.jsdelivr\.net\//.test(u));
@@ -312,6 +328,7 @@ test('a vendored file that cannot be fetched falls back to its CDN copy once (pd
     const o = await callAmt(st.page, 'pianoAmtNotes');
     assert.equal(o.code, 'model-offline', 'the code loaded (from the CDN copy) and the weights are what failed: ' + JSON.stringify(o));
     assert.ok(st.answered.includes(JSD + '@tensorflow/tfjs@2.8.6/dist/tf.min.js'));
+    assert.deepEqual(await fallbacks(st), { pdfjs: 1, 'tfjs-2.8.6': 1 }, 'each fallback is counted, once');
   } finally { await close(st); }
 });
 
@@ -322,7 +339,75 @@ test('a vendored Basic Pitch file that cannot be fetched ends in the CDN way (es
     assert.equal(r.ok, false);
     assert.equal(r.code, 'amt-offline');
     assert.ok(st.asked.some(u => u === 'https://esm.sh/@spotify/basic-pitch@1.0.1'), 'esm.sh was tried after the vendored path failed');
+    assert.deepEqual(await fallbacks(st), { 'basic-pitch': 1 }, 'counted');
   } finally { await close(st); }
+});
+
+test('a vendored pdf worker that cannot be fetched: the worker is taken from the CDN once, and the fallback is counted', async () => {
+  const st = await open({ cdn: 'stand-in', failVendored: ['/vendor/pdfjs-3.11.174/pdf.worker.min.js'] });
+  try {
+    const r = await importPdf(st.page, makePdf());
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.equal(r.engine, 'pdf');
+    assert.equal(r.worker, JSD + 'pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js', 'the CDN worker');
+    assert.ok(vendorAsked(st, 'pdfjs-3.11.174/').some(u => /pdf\.min\.js/.test(u)), 'the library itself was PPP\'s');
+    assert.deepEqual(await fallbacks(st), { pdfjs: 1 }, 'counted, once');
+  } finally { await close(st); }
+});
+
+test('a pdf worker that is nowhere: "could not reach the PDF reader", not "could not be opened"; a failure is not remembered', async () => {
+  const st = await open({ failVendored: ['/vendor/pdfjs-3.11.174/pdf.worker.min.js'] });
+  try {
+    const bad = await importPdf(st.page, makePdf());
+    assert.equal(bad.ok, false);
+    assert.match(bad.error, /Could not reach the PDF reader/);
+    assert.doesNotMatch(bad.error, /could not be opened|corrupt|password/i, 'the file is not blamed');
+    st.failVendored.length = 0;                        /* the site comes back */
+    const good = await importPdf(st.page, makePdf());
+    assert.equal(good.ok, true, 'the second try is a real one, not the first one\'s answer again: ' + JSON.stringify(good));
+    assert.equal(good.engine, 'pdf');
+  } finally { await close(st); }
+});
+
+test('SRI: a CDN that answers with other bytes than the published file is refused by the browser', async () => {
+  const st = await open({ query: '?cdn=1', cdn: 'stand-in', tamper: true });
+  try {
+    const r = await importPdf(st.page, makePdf());
+    assert.equal(r.ok, false, 'pdf.js with an extra comment is not run');
+    assert.match(r.error, /Could not reach the PDF reader/);
+    assert.equal(await st.page.evaluate(() => typeof window.pdfjsLib), 'undefined');
+    const o = await callAmt(st.page, 'pianoAmtNotes');
+    assert.equal(o.ok, false);
+    assert.match(o.error, /Could not load the piano transcription model|did not initialise/, 'TensorFlow.js 2.8.6 from a CDN that does not match is not run either: ' + o.error);
+    assert.equal(await st.page.evaluate(() => typeof window.tf), 'undefined');
+  } finally { await close(st); }
+});
+
+test('the Onsets and Frames checkpoint: only a download that fails is "needs internet"; a checkpoint that answers and a model that does not start is its own error', async () => {
+  const a = await open({ manifest: 'ok' });
+  try {
+    const r = await callAmt(a.page, 'pianoAmtNotes');
+    assert.equal(r.ok, false);
+    assert.equal(r.code, 'model-failed', JSON.stringify(r));
+    assert.match(r.error, /could not be started/);
+    assert.doesNotMatch(r.error, /internet/i, 'not blamed on the connection');
+  } finally { await close(a); }
+  const b = await open({ manifest: '404' });
+  try {
+    const r = await callAmt(b.page, 'pianoAmtNotes');
+    assert.equal(r.code, 'model-offline', 'an HTTP failure of the checkpoint is a failed download: ' + JSON.stringify(r));
+    assert.match(r.error, /needs an internet connection/);
+  } finally { await close(b); }
+  /* and with the engine clash gone, a whole import whose model did not start still ends in Basic Pitch, with that reason */
+  const c = await open({ manifest: 'ok' });
+  try {
+    const r = await c.page.evaluate(async data => {
+      const bin = atob(data); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+      const got = await PPP.Import.transcribeHere({ file: new File([u], 'four-notes.wav', { type: 'audio/wav' }) }, () => {}, { cancelled: false });
+      return { engine: got.heard.engine, reason: got.heard.fallbackReason, from: got.heard.fallbackFrom };
+    }, WAV);
+    assert.deepEqual(r, { engine: 'basic-pitch', reason: 'model-failed', from: 'onsets-and-frames' });
+  } finally { await close(c); }
 });
 
 test('PPP_REAL_CDN=1: the CDN path and the vendored path hear the same notes, note for note (Basic Pitch; the Onsets and Frames model too)', { skip: !REAL, timeout: 900000 }, async () => {

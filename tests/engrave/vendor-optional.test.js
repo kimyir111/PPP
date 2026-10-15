@@ -148,10 +148,77 @@ test('they are loaded on demand: the head of the page names none of the five, an
   const uses = (page.match(/pppWantsCdn\(\)/g) || []).length;
   assert.ok(uses >= 3, 'the PDF, Onsets and Frames and Basic Pitch loaders ask pppWantsCdn(): ' + uses);
   /* a worker whose address comes from the vendored file must resolve against the page */
-  assert.match(page, /workerSrc = new URL\(src\.worker, document\.baseURI\)\.href/);
+  assert.ok(/let worker = src\.worker;\s*try \{ worker = new URL\(src\.worker, document\.baseURI\)\.href; \}/.test(page) && /GlobalWorkerOptions\.workerSrc = worker;/.test(page), 'the worker address is made absolute against the page and probed first');
   /* the weights are still Google's (U8), and a failed download says so */
   assert.match(page, /storage\.googleapis\.com\/magentadata\/js\/checkpoints\/transcription\/onsets_frames_uni/);
   assert.match(page, /tx\('The piano model could not be downloaded\. Reading a recording in this browser needs an internet connection/);
+});
+
+/* ---- SRI of the CDN copies ---- */
+test('the CDN copy of each plain script is loaded with the sha384 of the published file (= the vendored file), and crossorigin', () => {
+  const sri = rel => 'sha384-' + crypto.createHash('sha384').update(read(rel)).digest('base64');
+  const want = [
+    ["sri: '", 'vendor/pdfjs-3.11.174/pdf.min.js'],
+    ["cdnSri: '", 'vendor/tfjs-2.8.6/tf.min.js'],
+    ["cdnSri: '", 'vendor/magenta-music-1.23.1/transcription.js']
+  ];
+  const found = Array.from(libsText.matchAll(/(?:sri|cdnSri): '(sha384-[A-Za-z0-9+/]+=*)'/g)).map(m => m[1]);
+  assert.equal(found.length, 3, 'three CDN scripts carry an SRI in PPP_LIBS');
+  want.forEach(([, rel]) => assert.ok(found.includes(sri(rel)), rel + ': its sha384 is one of them (the CDN copy is the published file)'));
+  /* the script elements get integrity and crossOrigin when they have one; the worker and import() cannot, and the page says so */
+  assert.match(page, /if \(src\.sri\) \{ s\.integrity = src\.sri; s\.crossOrigin = 'anonymous'; \}/, 'pdf.js: integrity + crossOrigin on the CDN script');
+  assert.match(page, /if \(sri\) \{ s\.integrity = sri; s\.crossOrigin = 'anonymous'; \}/, 'TensorFlow.js 2.8.6 and transcription.js: the same');
+  assert.match(libsText, /SRI cannot be put on those/, 'PPP_LIBS says what SRI cannot cover');
+});
+
+/* ---- what is compiled into the vendored files ---- */
+/* The notices an author's bundler left in a file (Copyright with a year, a (c)/(C) line, a licence marker), and the packages whose licence the file's own text names. Each must be in the README's "Embedded" table
+   and its text in vendor/LICENSE-embedded.txt: a new version of a library that brings another package fails here, not unseen. */
+const NOTICE_RX = [/Copyright (?:\(c\) )?(?:19|20)\d\d[A-Za-z0-9 .,()<>@:\/_-]{0,50}/g, /\u00a9 (?:19|20)\d\d(?:-(?:19|20)\d\d)? [A-Za-z]+(?: [A-Za-z]+)?/g, /@license +[A-Za-z0-9-]+/g, /(?:BSD-3-Clause|MIT|ISC|BSD-2-Clause) License\. [A-Za-z]+ [A-Za-z]+/g];
+const noticesOf = rel => {
+  const t = read(rel).toString('utf8');
+  const out = new Set();
+  NOTICE_RX.forEach(rx => { (t.match(rx) || []).forEach(m => out.add(m.replace(/\s+/g, ' ').trim())); });
+  return Array.from(out).sort();
+};
+const EXPECT = {
+  'vendor/pdfjs-3.11.174/pdf.min.js': ['Copyright 2023 Mozilla Foundation', '\u00a9 2014-2023 Denis Pushkarev'],
+  'vendor/pdfjs-3.11.174/pdf.worker.min.js': ['Copyright 2023 Mozilla Foundation', '\u00a9 2014-2023 Denis Pushkarev'],
+  'vendor/tfjs-2.8.6/tf.min.js': ['Copyright 2021 Google LLC. All Rights Reserved.', '\u00a9 2020 Denis Pushkarev'],
+  'vendor/tfjs-3.21.0/tf.fesm.min.js': ['Copyright 2022 Google LLC. All Rights Reserved.'],
+  'vendor/magenta-music-1.23.1/transcription.js': ['@license MIT', 'BSD-3-Clause License. Feross Aboukhadijeh']
+};
+test('the notices the vendored files carry are the ones the README lists as embedded, and every embedded package has its licence text', () => {
+  Object.keys(EXPECT).forEach(rel => {
+    assert.deepEqual(noticesOf(rel), EXPECT[rel].slice().sort(), rel + ': a notice appeared or went (a new package compiled in?): list it under "Embedded" in vendor/README.md, its text in vendor/LICENSE-embedded.txt, then this list');
+  });
+  /* what each file's own text names, by the package's marker */
+  const file = rel => read(rel).toString('utf8');
+  const MARK = [
+    ['vendor/pdfjs-3.11.174/pdf.min.js', /version:"3\.32\.2",mode:[^,]+,copyright:"\u00a9 2014-2023 Denis Pushkarev \(zloirock\.ru\)"/, 'core-js', '3.32.2'],
+    ['vendor/pdfjs-3.11.174/pdf.worker.min.js', /version:"3\.32\.2",mode:[^,]+,copyright:"\u00a9 2014-2023 Denis Pushkarev \(zloirock\.ru\)"/, 'core-js', '3.32.2'],
+    ['vendor/tfjs-2.8.6/tf.min.js', /version:"3\.6\.5",mode:"global",copyright:"\u00a9 2020 Denis Pushkarev \(zloirock\.ru\)"/, 'core-js', '3.6.5'],
+    ['vendor/tfjs-2.8.6/tf.min.js', /xorshift7=[\s\S]*seedrandom=/, 'seedrandom', '2.4.3'],
+    ['vendor/tfjs-3.21.0/tf.fesm.min.js', /xorshift7=[\s\S]*seedrandom=/, 'seedrandom', '3.0.5'],
+    ['vendor/magenta-music-1.23.1/transcription.js', /@author +Feross Aboukhadijeh/, 'buffer', '4.x or 6.x'],
+    ['vendor/magenta-music-1.23.1/transcription.js', /ieee754\. BSD-3-Clause License\. Feross Aboukhadijeh/, 'ieee754', '1.x'],
+    ['vendor/magenta-music-1.23.1/transcription.js', /Invalid string\. Length must be a multiple of 4/, 'base64-js', '1.x'],
+    ['vendor/magenta-music-1.23.1/transcription.js', /FFT size must be a power of two/, 'fft.js', '4.0.x'],
+    ['vendor/magenta-music-1.23.1/transcription.js', /ndarray-resample: input and output arrays should have the same dimensions/, 'ndarray-resample', '1.0.x'],
+    ['vendor/magenta-music-1.23.1/transcription.js', /illegal buffer/, 'protobufjs', '6.x']
+  ];
+  const embeddedText = read('vendor/LICENSE-embedded.txt').toString('utf8');
+  MARK.forEach(([rel, rx, name, version]) => {
+    assert.match(file(rel), rx, rel + ' still holds ' + name);
+    const folder = rel.split('/')[1];
+    const sec = section(folder).body;
+    assert.ok(new RegExp('\| ' + name.replace(/[.]/g, '\.') + '[^|]*\| ' + version.replace(/[.]/g, '\.')).test(sec), folder + ': the README lists ' + name + ' ' + version + ' as embedded');
+    assert.ok(embeddedText.indexOf('\n' + name) >= 0, 'vendor/LICENSE-embedded.txt has the text of ' + name);
+  });
+  /* long is in the 3.21.0 build (its Long class), and Apache-2.0 */
+  assert.match(file('vendor/tfjs-3.21.0/tf.fesm.min.js'), /\.fromBits\(|fromBytesLE|\bLong\b/);
+  assert.match(section('tfjs-3.21.0').body, /\| long \| 4\.0\.0 \| Apache-2\.0 \|/);
+  assert.match(embeddedText, /\nlong 4\.0\.0 - Apache-2\.0/);
 });
 
 test('online (PPP_VENDOR_ONLINE=1): each file is byte for byte the one in its npm tarball', { skip: !process.env.PPP_VENDOR_ONLINE }, async () => {

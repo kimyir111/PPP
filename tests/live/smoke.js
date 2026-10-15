@@ -15,7 +15,7 @@
      counts no fallback (G11a-5); anonymous routes answer as designed
      (auth/me, shares, the PC queue routes 401, no CORS headers); the optional libraries the page names under vendor/ (pdf.js, TensorFlow.js,
      Magenta.js, Basic Pitch: G13-8) are each served by hash and immutable - the page falls back to the CDN when one is missing, so a miss
-     would otherwise go unseen; optionally the pairing link and the logs.
+     would otherwise go unseen; a one-page PDF made in the page is rasterised with them and PPP.libFallbacks is empty afterwards; optionally the pairing link and the logs.
    It does NOT run the real transcription (6 minutes): that is for a change of the pipeline, by hand (docs/GOALS/G10 section 25). */
 'use strict';
 const fs = require('fs');
@@ -136,6 +136,25 @@ async function main() {
     });
     check('the practice screen plans the sample from its graph, and no fallback is counted (G11a-5)', pp === null || (!pp.err && pp.graphPlan && pp.graph >= 1 && pp.fallbacks === 0 && pp.screen === 'player'), pp === null ? 'not in this build' : pp.err || ('screen ' + pp.screen + ', ' + pp.notes + ' notes, graph plans ' + pp.graph + ', fallbacks ' + pp.fallbacks + ' ' + pp.reasons + ', warm ' + pp.warm));
     check('the practice code read no deferred global early (still 0 synchronous loads)', pp === null || pp.err || pp.sync === 0, pp === null ? 'not in this build' : String(pp.sync));
+    /* G13-8: a one-page PDF (made here, nothing is uploaded: the page reads it in the browser) is rasterised with PPP's own pdf.js and worker; and the optional libraries have not had to be taken from their
+       CDN address - the page falls back silently, so PPP.libFallbacks is what shows a vendored file that is not being served */
+    const pdf = await p.evaluate(async () => {
+      if (!window.PPP || !window.PPP.libFallbacks || !window.PPP.Import || !window.PPP.Import.rasterisePdf) return null;
+      const objs = ['<< /Type /Catalog /Pages 2 0 R >>', '<< /Type /Pages /Kids [3 0 R] /Count 1 >>', '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R >>'];
+      const stream = '0.5 w 20 100 m 180 100 l S';
+      objs.push('<< /Length ' + stream.length + ' >>\nstream\n' + stream + '\nendstream');
+      let out = '%PDF-1.4\n';
+      const offs = [];
+      objs.forEach((o, i) => { offs.push(out.length); out += (i + 1) + ' 0 obj\n' + o + '\nendobj\n'; });
+      const x = out.length;
+      out += 'xref\n0 ' + (objs.length + 1) + '\n0000000000 65535 f \n' + offs.map(o => String(o).padStart(10, '0') + ' 00000 n \n').join('') + 'trailer\n<< /Size ' + (objs.length + 1) + ' /Root 1 0 R >>\nstartxref\n' + x + '\n%%EOF\n';
+      try {
+        const pages = await window.PPP.Import.rasterisePdf(new File([out], 'smoke.pdf', { type: 'application/pdf' }), null, 72);
+        return { pages: pages.length, png: pages.length > 0 && /^data:image\/png/.test(pages[0].dataUrl), fallbacks: JSON.stringify(window.PPP.libFallbacks), err: null };
+      } catch (e) { return { pages: 0, png: false, fallbacks: JSON.stringify(window.PPP.libFallbacks), err: String(e && e.message || e).slice(0, 120) }; }
+    });
+    check('a PDF is read in a fresh profile with PPP\'s own pdf.js and worker (G13-8)', pdf === null || (pdf.pages === 1 && pdf.png), pdf === null ? 'not in this build' : pdf.err || (pdf.pages + ' page'));
+    check('no optional library was taken from its CDN address (PPP.libFallbacks is empty)', pdf === null || pdf.fallbacks === '{}', pdf === null ? 'not in this build' : pdf.fallbacks);
     await ctx.close();
 
     // 4. the pairing link (read-only: the status route)
