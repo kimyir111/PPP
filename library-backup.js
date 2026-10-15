@@ -39,15 +39,15 @@
   'use strict';
 
   const FORMAT = 'ppp-library', VERSION = 1;
-  const KEY = { LIBRARY: 'ppp.library.v1', SONG: 'ppp.song.v1.', STATE: 'ppp.state.v2', PC: 'ppp.pclink.v1', PC_PREV: 'ppp.pclink.prev.v1', GUEST: 'ppp-guest-key' };
+  const KEY = { LIBRARY: 'ppp.library.v1', SONG: 'ppp.song.v1.', STATE: 'ppp.state.v2', PC: 'ppp.pclink.v1', PC_PREV: 'ppp.pclink.prev.v1', GUEST: 'ppp-guest-key', SYNC: 'ppp.syncstate.v1' };
   const FLASH_KEY = 'ppp-backup-flash';
   /* what a file may be (bounds checked before anything is read as a backup): localStorage itself holds a few MB, so a real file is far below these */
   const LIMITS = Object.freeze({ file: 24 * 1024 * 1024, json: 48 * 1024 * 1024, songs: 2000, slot: 8 * 1024 * 1024, depth: 64, nodes: 12000000, title: 400 });
   /* the progress that belongs to no one song */
   const STATE_FIELDS = Object.freeze(['minutes', 'xp', 'streak', 'sessions', 'skillMs', 'learnDone', 'learnLesson', 'learnStep', 'course']);
   const SLOT_PROGRESS = Object.freeze(['secs', 'history', 'memory', 'memLevel', 'blindRuns', 'mastered']);
-  /* every database this page makes (a browser without indexedDB.databases() can only delete by name): the graphs cache, the song videos, and (PPP.learner 'typed', G11b-1) the practice log */
-  const KNOWN_DBS = ['ppp-engrave', 'ppp-media', 'ppp-runlog'];
+  /* every database this page makes (a browser without indexedDB.databases() can only delete by name): the graphs cache, the song videos, (PPP.learner 'typed', G11b-1) the practice log and (PPP.sync 'on', G13-S1) Recently deleted */
+  const KNOWN_DBS = ['ppp-engrave', 'ppp-media', 'ppp-runlog', 'ppp-sync'];
   const RUN_KEEP = 40;
 
   const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
@@ -119,6 +119,9 @@
     [KEY.PC, KEY.PC_PREV].forEach(k => { const v = parse(getItem(storage, k) || 'null'); if (isObj(v) && typeof v.code === 'string' && v.code.length >= 16) out.push(v.code); });
     const g = getItem(storage, KEY.GUEST);
     if (typeof g === 'string' && g.length >= 16) out.push(g);
+    /* G13-S1: the code of the song library this device syncs with (anyone who has it can see and change the songs) */
+    const sy = parse(getItem(storage, KEY.SYNC) || 'null');
+    if (isObj(sy) && typeof sy.code === 'string' && sy.code.length >= 16) out.push(sy.code);
     return out;
   }
 

@@ -33,6 +33,38 @@
   window.addEventListener('hashchange', look);
 })();
 </script>
+<script>
+/* G13-S1: the sync link. https://<this site>/?sync=on#lib=<the 64 hex characters of a library's code> is what another device shows (Settings > Sync between devices, beta). Like #pc= above, the
+   code is taken off the address bar before the page has made a single request (a fragment is never sent to a server), kept in this closure until the page asks for it once (PPP_LIBPAIR.take),
+   and never written anywhere by this script. It does this ONLY while the switch is on - ?sync=on in this address, or the remembered 'ppp.sync.v1' = 'on'; with it off (the default) the
+   address is left exactly as it is and the page behaves as it always did. live: the link arrived after the page started (a hashchange); the page asks the person either way. */
+(function () {
+  var pending = null, listener = null, started = false;
+  function on() {
+    var q = null;
+    try { q = new URLSearchParams(location.search).get('sync'); } catch (e) { return false; }
+    if (q === 'on') return true;
+    if (q === 'off') return false;
+    try { return localStorage.getItem('ppp.sync.v1') === 'on'; } catch (e) { return false; }
+  }
+  function look() {
+    var h = '';
+    try { h = String(location.hash || ''); } catch (e) { return; }
+    if (h.slice(0, 5) !== '#lib=' || !on()) return;
+    var rest = h.slice(5), amp = rest.indexOf('&');
+    var c = amp < 0 ? rest : rest.slice(0, amp);
+    try { c = decodeURIComponent(c); } catch (e) { /* as it is */ }
+    c = c.replace(/[s-]+/g, '').toLowerCase();
+    try { history.replaceState(history.state, '', location.href.replace(/#.*$/, '')); } catch (e) { /* the address stays as it is; the joining goes on */ }
+    pending = /^[0-9a-f]{64}$/.test(c) ? { code: c, live: started } : { bad: true, live: started };
+    if (listener) listener();
+  }
+  window.PPP_LIBPAIR = { has: function () { return !!pending; }, take: function () { var p = pending; pending = null; return p; }, listen: function (fn) { listener = fn; } };
+  look();
+  started = true;
+  window.addEventListener('hashchange', look);
+})();
+</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231b1a18'/%3E%3Crect x='9' y='13' width='4' height='11' rx='2' fill='%23fffefc'/%3E%3Crect x='14' y='7' width='4' height='17' rx='2' fill='%237c5cd6'/%3E%3Crect x='19' y='16' width='4' height='8' rx='2' fill='%23fffefc'/%3E%3C/svg%3E">
 <style>
 /* G13-4b: the Latin fonts (Figtree, Instrument Serif, JetBrains Mono) and the music font are served by PPP itself - vendor/fonts, the files Google Fonts serves, SIL OFL, the licences beside them, README.md there -
@@ -12029,6 +12061,52 @@ window.PPP = {
   ScoreSearch: (typeof window !== 'undefined' ? window.PPPScoreSearch : null),
   Coach, COACH, Fingering, HandArt, tx: tx
 };
+/* ============================ G13-S1: PPP.sync (docs/GOALS/G13_PRODUCTIZATION.md section 7, "G13-S1 as built") ============================
+   PPP.sync = 'off' (default) | 'on'. The semantics are PPP.recording's: a choice is one of those two strings, anything else (a typo, null, a storage that throws) is no choice and no choice is
+   the default; layers, the first that holds a choice wins: ?sync= in the address (this visit only), the device's remembered choice (localStorage SYNC_KEY), the default.
+   'off' is the page as it was, byte for byte: no script of sync/ is asked for, no request of the feature is made, no entry is shown in Settings, a #lib= in the address is left alone.
+   'on' adds ONE section to Settings ("Sync between devices (beta)", filled in by sync/ui.js, loaded when the page is idle) and, once a person turns syncing on or joins a library there,
+   the engine of sync/client.js (songs and progress follow them between their devices by a secret code; no account). Turning syncing on or joining remembers 'on' on this device. */
+const SYNC_KEY = 'ppp.sync.v1';
+const SYNC_DEFAULT = 'off';
+const SYNC_FILES = ['./sync/merge.js?v=1', './sync/client.js?v=1', './sync/ui.js?v=1'];
+function syncChoice(v) { return v === 'on' || v === 'off' ? v : null; }
+let SYNC_MODE = (() => {
+  let m = SYNC_DEFAULT;
+  try { m = syncChoice(localStorage.getItem(SYNC_KEY)) || m; } catch (e) { /* no storage: the default */ }
+  try { const u = syncChoice(new URLSearchParams(location.search).get('sync')); if (u) m = u; } catch (e) { /* no address to read */ }
+  return m;
+})();
+/* a choice is remembered; a value that is no choice puts the default back and forgets the remembered one */
+function setSyncMode(v) {
+  const c = syncChoice(v);
+  SYNC_MODE = c || SYNC_DEFAULT;
+  try { if (c) localStorage.setItem(SYNC_KEY, c); else localStorage.removeItem(SYNC_KEY); } catch (e) { /* not remembered */ }
+  return SYNC_MODE;
+}
+Object.defineProperty(window.PPP, 'sync', { enumerable: true, configurable: true, get() { return SYNC_MODE; }, set(v) { setSyncMode(v); } });
+/* sync/merge.js, client.js and ui.js (after library-backup.js), asked for only while the switch is on; resolves window.PPPSync, or null; a failed download is asked for again next time */
+let _syncPromise = null;
+function loadSyncModules() {
+  if (window.PPPSync) return Promise.resolve(window.PPPSync);
+  if (_syncPromise) return _syncPromise;
+  const add = src => new Promise(resolve => {
+    const el = document.createElement('script');
+    el.src = src; el.async = false;
+    el.onload = () => resolve(true); el.onerror = () => resolve(false);
+    document.head.appendChild(el);
+  });
+  _syncPromise = (async () => {
+    if (lazyOn()) {
+      window.PPP_LAZY.define('sync', SYNC_FILES, { after: ['backup'], globals: ['PPPSync'] });
+      const ok = await window.PPP_LAZY.ensure(['sync']);
+      return ok && window.PPPSync ? window.PPPSync : null;
+    }
+    for (const src of SYNC_FILES) { if (!(await add(src))) return null; }
+    return window.PPPSync || null;
+  })().catch(() => null).then(m => { if (!m) _syncPromise = null; return m; });
+  return _syncPromise;
+}
 /* G11a-5: practice/plan.js is a deferred group of the head: the prefetch brings it after the first paint (lazy-load.js, the wave of audio-score.js), the first plan that finds it missing asks for it
    (loadPracticeModule), and warmPractice (componentDidUpdate) asks for it, the engraver and the source of the open song when the practice screen is shown. Nothing is asked for at boot. */
 /* ============================================================================
@@ -14340,6 +14418,12 @@ class Component extends DCLogic {
     if (this._viaShare) this.landShared(this._viaShare);
     /* G10b-3: a pairing link (#pc=...) opened this page (the fragment is already off the address bar), or is opened later in this tab */
     if (window.PPP_PAIR) { window.PPP_PAIR.listen(() => this.pairFromLink()); if (window.PPP_PAIR.has()) this.pairFromLink(); }
+    /* G13-S1 (PPP.sync 'on' only): the section of Settings is filled in by sync/ui.js once its files are in, and a sync link (#lib=...) opened this page, or is opened later in this tab */
+    if (SYNC_MODE === 'on') {
+      if (window.PPP_LIBPAIR) window.PPP_LIBPAIR.listen(() => this.syncPairFromLink());
+      this.syncBoot();
+      if (window.PPP_LIBPAIR && window.PPP_LIBPAIR.has()) this.syncPairFromLink();
+    }
     /* Is an AI coach reachable? PPP plans the session either way — but not
        before the translations are in, since the plan's wording is written once
        and then kept. */
@@ -14370,6 +14454,7 @@ class Component extends DCLogic {
       /* G10b-1; G10b-5: a device with no link also asks (once per page) whether the site has the queue at all on the Add screen - the button that explains how to connect is shown only where there is something to connect to */
       if (this.state.screen === 'upload' || this.state.screen === 'settings') this.homeRefresh(true);
       if (this.state.screen === 'settings') this.refreshRunLogStatus();   /* G11b-1: a no-op under PPP.learner 'legacy' */
+      if (this.state.screen === 'settings' && SYNC_MODE === 'on') this.syncMount();   /* G13-S1 */
       if (this.state.homeSheet) this.setState({ homeSheet: false });       /* the sheet that explains the PC button belongs to the Add screen */
       /* G10b-4: the link in its read-only field (the copy fallback) and the shown code are put away when Settings is left */
       if (this.state.screen !== 'settings' && (this.state.homePairManual || this.state.homeCodeShown)) this.setState({ homePairManual: false, homeCodeShown: false });
@@ -14383,6 +14468,8 @@ class Component extends DCLogic {
     const uid = this.state.user ? this.state.user.id : null;
     if (this._shareUid !== undefined && uid !== this._shareUid && this.state.screen === 'shared') this.loadShared(true);
     this._shareUid = uid;
+    /* G13-S1: the section of Settings is put back if the page made its column again while Settings stayed open */
+    if (SYNC_MODE === 'on' && this._sync && this.state.screen === 'settings' && !document.querySelector('[data-sync-mount]')) this.syncMount();
   }
   componentWillUnmount() {
     this._dead = true;
@@ -14394,6 +14481,8 @@ class Component extends DCLogic {
     clearTimeout(this._staffRetry);
     clearTimeout(this._homeTimer); clearTimeout(this._pairTimer);
     if (window.PPP_PAIR) window.PPP_PAIR.listen(null);
+    if (window.PPP_LIBPAIR) window.PPP_LIBPAIR.listen(null);
+    if (this._sync) { try { this._sync.destroy(); } catch (e) { /* gone */ } this._sync = null; }
     if (this._homeVis) document.removeEventListener('visibilitychange', this._homeVis);
     clearTimeout(this._focusFollow);
     clearTimeout(this._miss);
@@ -19106,6 +19195,13 @@ class Component extends DCLogic {
     if (id === 'demo') return;
     const lib0 = this.libraryRead();
     const gone = lib0.songs.find(s => s.id === id);
+    /* G13-S1 (PPP.sync 'on' and syncing): the song as it is goes to Recently deleted, and a removal is sent to the library; nothing happens otherwise */
+    if (this._sync && this._sync.engine && gone) {
+      try {
+        if ((this.state.songId || 'demo') === id) this.writeSlot();
+        this._sync.engine.noteRemoved(id, gone, localStorage.getItem(SONG_KEY + id));
+      } catch (e) { /* the trash is not the removal's problem */ }
+    }
     if ((this.state.songId || 'demo') === id) {
       const back = opts.back && this._prevSongId && this._prevSongId !== id ? this._prevSongId : 'demo';
       this.openSong(back, { stay: true, noShelve: true, quiet: true });
@@ -19119,6 +19215,86 @@ class Component extends DCLogic {
     forgetRunLog(id);
     this.setState({ armedRemove: null });
     if (!opts.quiet && gone) this.say(tx('Removed {{title}} from My Songs.', { title: gone.title }));
+  }
+  /* ============================ sync between devices (G13-S1) ============================
+     PPP.sync 'on' only (docs/GOALS/G13_PRODUCTIZATION.md section 7). sync/client.js is the engine and sync/ui.js the section of Settings; this is the page around them: what they may
+     read and change of the page (the adapter), when they are loaded, where the section is mounted, and what a #lib= link does. Nothing here runs while PPP.sync is 'off'. */
+  syncAdapter() {
+    const A = this;
+    return {
+      libraryRead: () => A.libraryRead(),
+      libraryWrite: lib => A.libraryWrite(lib),
+      openSongId: () => A.state.songId || 'demo',
+      saveNow: () => { if (!A._frozen) A.saveNow(); },
+      frozen: () => !!A._frozen,
+      /* the progress that is not one song's, as the page holds it now */
+      readState: () => { const S = A.state; return { minutes: S.minutes, xp: S.xp, streak: S.streak, sessions: S.sessions, skillMs: S.skillMs, learnDone: S.learnDone, learnLesson: S.learnLesson, learnStep: S.learnStep, course: S.course }; },
+      applyState: patch => {
+        const p = Object.assign({}, patch);
+        if (p.course && window.PPP_COURSE) p.course = window.PPP_COURSE.norm(p.course);
+        A.setState(p);
+      },
+      applyOpenProgress: p => A.syncApplyOpenProgress(p),
+      /* a removal that came from another device goes through the page's own, with its cleanups (videos, the engraving cache, the practice log) */
+      removeSongs: ids => ids.forEach(id => A.removeSong(id, { quiet: true })),
+      forgetThumbs: ids => { if (A._thumbs) ids.forEach(id => { delete A._thumbs[id]; }); }
+    };
+  }
+  /* the practice of the song on the screen, from another device, merged into what the page holds (which is what it will save): never its score, its loop or its tempo */
+  syncApplyOpenProgress(p) {
+    const B = window.PPPBackup, S = this.state;
+    if (!B || !p || typeof p !== 'object') return;
+    const num = v => typeof v === 'number' && isFinite(v);
+    const patch = {};
+    if (p.history && p.history.byMeasure) patch.history = B.mergeHistory(S.history, p.history);
+    if (p.memory && p.memory.sections) patch.memory = B.mergeMemory(S.memory, p.memory);
+    if (p.secs && typeof p.secs === 'object') patch.secs = B.mergeSecs(S.secs, p.secs);
+    if (num(p.memLevel)) patch.memLevel = Math.max(num(S.memLevel) ? S.memLevel : 0, p.memLevel);
+    if (num(p.blindRuns)) patch.blindRuns = Math.max(num(S.blindRuns) ? S.blindRuns : 0, p.blindRuns);
+    if (p.mastered) patch.mastered = true;
+    this._model = null; this._seq = null;
+    this.setState(patch);
+  }
+  syncBoot() {
+    if (SYNC_MODE !== 'on' || this._sync || this._syncLoading) return;
+    this._syncLoading = true;
+    loadSyncModules().then(S => {
+      this._syncLoading = false;
+      if (!S || this._dead || this._sync) return;
+      this._sync = S.boot({
+        adapter: this.syncAdapter(), storage: localStorage,
+        say: text => this.say(text),
+        onTurnedOn: () => { setSyncMode('on'); },
+        onSongsChanged: () => { try { this.setState({ library: this.libraryRead().songs }); } catch (e) { /* the list comes with the next write */ } }
+      });
+      if (!this._sync) return;
+      if (this.state.screen === 'settings') this.syncMount();
+      const code = this._syncJoin;
+      if (code) { this._syncJoin = null; setTimeout(() => { this.syncMount(); if (this._sync) this._sync.offerJoin(code); }, 0); }
+    });
+  }
+  /* The section's place is made here, not in the template: with PPP.sync 'off' the template of the page - and so its DOM, down to the numbering of its nodes - is exactly what it was.
+     It goes into the column of Settings after the "My data" section (or after the account row); a node of the page's own that is not React's is left where it is by React. */
+  syncMount() {
+    if (!this._sync) { this.syncBoot(); return; }
+    let host = document.querySelector('[data-sync-mount]');
+    if (!host || !host.isConnected) {
+      const after = document.querySelector('[data-backup-section]') || document.querySelector('[data-account-settings]');
+      if (!after || !after.parentNode) return;
+      host = document.createElement('div');
+      host.setAttribute('data-sync-mount', '');
+      after.parentNode.insertBefore(host, after.nextSibling);
+    }
+    this._sync.mount(host);
+  }
+  /* a sync link: Settings is shown and the question (what will be added) is asked there, never answered for the person */
+  syncPairFromLink() {
+    const p = window.PPP_LIBPAIR && window.PPP_LIBPAIR.take();
+    if (!p || SYNC_MODE !== 'on') return;
+    if (!p.code) { this.say(tx('This sync link is incomplete. Copy it again from the device that shows it.')); return; }
+    this.go('settings')();
+    if (this._sync) setTimeout(() => { this.syncMount(); if (this._sync) this._sync.offerJoin(p.code); }, 0);
+    else { this._syncJoin = p.code; this.syncBoot(); }
   }
   /* ============================ sharing ============================ */
   /* A song is shared as its notes only — never what PPP has learned about

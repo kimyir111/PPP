@@ -51,12 +51,14 @@ class FakeIDB {
 const SECRETS = {
   pc: 'a'.repeat(32) + 'b'.repeat(32),
   pcPrev: 'c'.repeat(32) + 'd'.repeat(32),
-  guest: 'guest-' + 'e1f2'.repeat(10)
+  guest: 'guest-' + 'e1f2'.repeat(10),
+  sync: '0f'.repeat(32)                    /* G13-S1: the code of the song library (ppp.syncstate.v1) */
 };
 function plantSecrets(st) {
   st.setItem('ppp.pclink.v1', JSON.stringify({ v: 1, code: SECRETS.pc }));
   st.setItem('ppp.pclink.prev.v1', JSON.stringify({ v: 1, code: SECRETS.pcPrev }));
   st.setItem('ppp-guest-key', SECRETS.guest);
+  st.setItem('ppp.syncstate.v1', JSON.stringify({ v: 1, code: SECRETS.sync, keys: {} }));
 }
 
 /* ------------------------------------------------------------------------------------------------ data */
@@ -194,9 +196,9 @@ async function p5(mod) {
   const rep2 = await mod.wipe({ storage: profile(1), indexedDB: blocked, blockedMs: 30 });
   if (rep2.ok || !rep2.failed.some(f => f.name === 'ppp-media' && f.why === 'blocked')) return 'a blocked database was not reported: ' + JSON.stringify(rep2);
   /* G11b-1: a browser that cannot list its databases still loses the practice log, by name */
-  const unlisted = new FakeIDB(['ppp-engrave', 'ppp-media', 'ppp-runlog', 'someone-elses'], { noList: true });
+  const unlisted = new FakeIDB(['ppp-engrave', 'ppp-media', 'ppp-runlog', 'ppp-sync', 'someone-elses'], { noList: true });
   const rep3 = await mod.wipe({ storage: profile(1), indexedDB: unlisted, blockedMs: 30 });
-  if (unlisted.dbs.has('ppp-runlog') || unlisted.dbs.has('ppp-media') || unlisted.dbs.has('ppp-engrave')) return 'a database was left where the browser could not list them: ' + [...unlisted.dbs.keys()].join(',');
+  if (unlisted.dbs.has('ppp-runlog') || unlisted.dbs.has('ppp-media') || unlisted.dbs.has('ppp-engrave') || unlisted.dbs.has('ppp-sync')) return 'a database was left where the browser could not list them: ' + [...unlisted.dbs.keys()].join(',');
   if (!unlisted.dbs.has('someone-elses') || !rep3.ok) return 'the unlisted wipe took what is not ours or was not ok: ' + JSON.stringify(rep3);
   return null;
 }
@@ -503,7 +505,7 @@ test('the wipe works where databases() does not exist, and reports a blocked dat
   assert.deepEqual(rep.failed.map(f => f.name + ':' + f.why), ['ppp-engrave:blocked']);
   assert.equal(idb.dbs.has('ppp-media'), false);
   assert.deepEqual(B.pppKeys(st), []);
-  assert.equal(rep.removed.dbs, 2);     /* ppp-media, and ppp-runlog (G11b-1) which is tried by name and is not there: deleting a database that does not exist succeeds */
+  assert.equal(rep.removed.dbs, 3);     /* ppp-media, and ppp-runlog (G11b-1) and ppp-sync (G13-S1) which are tried by name and are not there: deleting a database that does not exist succeeds */
 });
 
 test('the flash message crosses one reload and is read once', () => {
