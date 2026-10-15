@@ -80,6 +80,20 @@ test('a bar marked right is not suspect, and its neighbours are not suspect for 
   s.undo();
   assert.equal(s.bars({ flags: FL })[1].suspect, true);
 });
+test('a bar a person changed is judged by what is in it, not by what the normaliser did to it', () => {
+  const g = L.plain(3);
+  const s = ED.create(g, { normalize: { flags: { 2: ['parts-fragmented'] } } });
+  let bars = s.bars({ flags: FL });
+  assert.equal(bars[1].suspect, true, 'the normaliser said the parts of this bar could not be joined');
+  assert.ok(bars[1].strong.indexOf('fragmented') >= 0);
+  s.apply({ op: 'step', head: L.notesOf(g, 1)[0].heads[0], by: 1 });
+  bars = s.bars({ flags: FL });
+  assert.equal(bars[1].suspect, false, 'a bar that was looked at and changed is read as it stands');
+  assert.equal(bars[1].edited, true);
+  assert.equal(bars[0].suspect || bars[2].suspect, false);
+  s.undo();
+  assert.equal(s.bars({ flags: FL })[1].suspect, true, 'undone, the doubt is back');
+});
 test('report: the validator and the flags again, reviewed bars out, the draft cap stays', () => {
   const g = L.graphOf([{ rh: [q('C5'), q('D5'), q('E5')], lh: [w('C3')] }, { rh: [q('C5'), q('D5'), q('E5'), q('F5')], lh: [w('C3')] }]);
   const s = ED.create(g);

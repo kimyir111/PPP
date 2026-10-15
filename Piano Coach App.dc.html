@@ -14410,7 +14410,11 @@ class Component extends DCLogic {
       /* what others have shared changes while you are away from it */
       if (this.state.screen === 'shared') this.loadShared(!!this.state.sharedList);
       if (this.state.screen === 'review') this.warmSingleModules();
-      if (this.state.screen !== 'review' && this._omrEd) this.closeOmrEditor();        /* G12-4: the bar editor belongs to the review */
+      if (this.state.screen !== 'review' && this._omrEd) {                              /* G12-4: the bar editor belongs to the review: the sheet goes, and its steps (a graph each) are let go */
+        this.closeOmrEditor();
+        if (this._omrSaveT) { clearTimeout(this._omrSaveT); this._omrSaveT = null; this.saveNow(); }
+        this._omrEd = null;
+      }
       if (this.state.screen === 'review' && this.omrEditable(this.state)) this.warmOmrEditor();
       /* the review screen of a PDF or a MusicXML import has no use for v2 (G10a-5b: v2 is the default, so only a recording's review asks for its files) */
       if (this.state.screen === 'upload' || (this.state.screen === 'review' && isRecordingSong(this.state.importSource))) this.warmRecordingModules();
@@ -15798,7 +15802,12 @@ class Component extends DCLogic {
       loopFrom: keepLoop ? this.state.loopFrom : first.from, loopTo: keepLoop ? this.state.loopTo : first.to,
       beat: Score.startQ(fresh, first.from),
       reviewFrom: Score.measure(fresh, this.state.reviewFrom) ? this.state.reviewFrom : Score.first(fresh)
-    }, () => { this.syncLibraryMeasures(fresh); this.saveNow(); });
+    }, () => {
+      this.syncLibraryMeasures(fresh);
+      /* the song is written a moment after the last step (a person taps several in a row; a whole score is written each time), and at once on "Accept and practise" */
+      clearTimeout(this._omrSaveT);
+      this._omrSaveT = setTimeout(() => { if (!this._dead) this.saveNow(); }, 900);
+    });
   }
   /* G10a-4: v2's scripts and weights (about 250 KB, 17 requests), fetched ahead of the first conversion when a screen that converts a recording opens. A no-op while the classic method is set. */
   warmRecordingModules() {

@@ -192,3 +192,19 @@ the page-to-bars map of each entry (`pages`) and a `known_differences` list afte
 | `omrbench/fetch_real.py`, `real-scan.json` | the real-scan tier's fetch script and its (empty) list |
 | `omrbench/flagdata.py`, `node/flags-cli.js`, `node/flags-fit.js` | G12-3: the per-bar dataset of omr/flags.js on a recorded run, its CLI, the fit and the held-out judgement |
 | `baselines/*.json` | committed numbers of Audiveris 5.11.0  |
+
+## The correction editor (G12-4)
+
+`omr/edit-ops.js` (the graph ops of the bar editor), `omr/editor.js` (its session: undo, redo, the checks, the report) and `omr/editor-ui.js` (the sheet).
+Design: `docs/GOALS/G12_OMR.md` sections 9 and 25 (gate A4).
+
+```
+npm run test:omr-editor                                  # Node, about 25 s, a step of shard-g: every op, the session, random edit/undo sequences
+                                                         # (undo gives back the original bytes), 48 mutants of the op wiring
+OMR_EDITOR_SEEDS=40 OMR_EDITOR_STEPS=45 npm run test:omr-editor    # the stress size of the property test (a few minutes)
+NODE_ENV=production HOST=127.0.0.1 PORT=<p> node server.js &       # then, with Chrome and puppeteer:
+PPP_PORT=<p> node -r ./tests/engrave/tools/with-port.js tests/omr-editor-app.test.js   # every edit kind on a phone-sized page, drawn = played, persistence, Korean, timing
+```
+
+`tests/omr/editor/lib.js` writes a small piano score as MusicXML from a short description (`q('C5')`, `e8('F#4', {acc: 'sharp'})`, `rest`, ties and chords)
+and has the checks every edit must pass (`check`: valid, the Score of `toScore` agrees and links, the serialised text survives a parse).
