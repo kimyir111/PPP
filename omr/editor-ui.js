@@ -99,9 +99,13 @@
       return h('button', { type: 'button', 'data-act': act, class: o.cls || '', disabled: o.disabled, title: o.title || label, 'aria-label': o.aria || label, 'aria-pressed': o.pressed === undefined ? undefined : String(!!o.pressed), onclick: fn }, [label]);
     };
 
-    const state = { bar: null, sel: null, head: null, add: false, value: 'quarter', tools: false, msg: null, split: false, time: false, clef: false, stave: false };
+    const state = { bar: null, sel: null, head: null, add: false, value: 'quarter', tools: false, msg: null, detail: null, split: false, time: false, clef: false, stave: false };
+    /* the bar the person was on before each step (aligned with the session's steps), so that an undo lands where the step was made and a redo where it was */
+    const trail = [], redoTrail = [];
     const root = h('div', { class: 'ppp-edit', role: 'dialog', 'aria-modal': 'false', 'aria-label': tx('Fix measures'), 'data-omr-editor': '1' });
     let stage = null, svg = null, geometry = null, closed = false, padBefore = null, body = null;
+    /* what the drawing of the bar was made from: the same graph and bar is not drawn again when only the words around it change */
+    let painted = null, keepStage = null;
     (doc.body || doc.documentElement).appendChild(root);
 
     /* ---------------------------------------------------------------- what is on the graph now */
@@ -109,7 +113,7 @@
     const measures = () => graph().timeline.measures;
     const idxOf = id => measures().findIndex(m => m.id === id);
     const numberOf = (m, i) => { const n = parseInt(m.number, 10); return isFinite(n) ? n : i + 1; };
-    const barInfo = () => session.bars({ flags: host.flags });
+    const barInfo = quick => session.bars({ flags: host.flags, quick: !!quick, hint: host.hint || null });
     function resolveBar(x) {
       const ms = measures();
       if (typeof x === 'string' && ms.some(m => m.id === x)) return x;
@@ -150,6 +154,7 @@
     function paintBar() {
       if (!stage) return;
       geometry = null; svg = null;
+      painted = { graph: graph(), bar: state.bar, add: state.add };
       const E = host.engrave;
       const w = ED.windowGraph(graph(), state.bar);
       if (!E || !E.layout || !E.svg || !w) { stage.textContent = tx('This measure could not be drawn.'); return; }
@@ -242,17 +247,18 @@
       const pt = pointOf(ev);
       if (!pt) return;
       const near = nearestNote(pt);
-      if (near && !state.add) { select(near.g.getAttribute('data-ev'), pt); return; }
-      if (state.add) {
-        const si = staffAtY(pt.y);
-        if (near && near.d <= 4 * 4) { select(near.g.getAttribute('data-ev'), pt); }
-        const pitch = pitchAtY(si, pt.y);
-        if (!pitch) return;
-        addNoteAt(si, pitch, pt);
+      if (!state.add) {
+        if (near) { select(near.g.getAttribute('data-ev'), pt); return; }
+        state.sel = null; state.head = null;
+        render();
         return;
       }
-      state.sel = null; state.head = null;
-      render();
+      /* adding: a tap on a note itself selects it; a tap anywhere else on a staff puts a note there */
+      if (near && near.dx === 0 && near.dy === 0 && near.g.getAttribute('data-rest') !== '1') { select(near.g.getAttribute('data-ev'), pt); return; }
+      const si = staffAtY(pt.y);
+      const pitch = pitchAtY(si, pt.y);
+      if (!pitch) return;
+      addNoteAt(si, pitch, pt);
     }
     function select(evId, pt) {
       const d = ED.describe(graph(), evId);
@@ -300,9 +306,11 @@
     /* a change: through the session, then the sheet is drawn, then the page is told (the page's own drawing waits for the sheet's) */
     function run(cmd) {
       const r = session.apply(cmd);
-      if (!r.ok) { state.msg = errorText(r.code); render(); return r; }
+      if (!r.ok) { state.msg = errorText(r.code); state.detail = r.detail ? [r.detail.code, r.detail.message].filter(Boolean).join(' ') : [r.code, r.message].filter(Boolean).join(' '); render(); return r; }
       if (!r.changed) { state.msg = null; render(); return r; }
       state.msg = null;
+      trail.push(state.bar);
+      redoTrail.length = 0;
       changed(r, 'apply');
       return r;
     }
@@ -314,7 +322,7 @@
       state.sel = exists(f.event) ? f.event : (exists(state.sel) ? state.sel : null);
       const d = state.sel ? ED.describe(graph(), state.sel) : null;
       state.head = d && d.heads.length ? (d.heads.some(x => x.id === f.head) ? f.head : (d.heads.some(x => x.id === state.head) ? state.head : d.heads[0].id)) : null;
-      render();
+      render(true);
       notify(kind, r);
     }
     function notify(kind, r) {
@@ -324,9 +332,23 @@
         if (win && typeof win.requestAnimationFrame === 'function') win.requestAnimationFrame(() => win.setTimeout(go, 0)); else go();
       }
     }
-    const undo = () => { const r = session.undo(); if (!r.ok) { say(errorText(r.code)); return; } changed(r, 'undo'); };
-    const redo = () => { const r = session.redo(); if (!r.ok) { say(errorText(r.code)); return; } changed(r, 'redo'); };
-    const discard = () => { const r = session.discard(); if (r.changed) changed(r, 'discard'); };
+    const undo = () => {
+      const r = session.undo();
+      if (!r.ok) { say(errorText(r.code)); return; }
+      const was = trail.pop();
+      redoTrail.push(state.bar);
+      if (was && resolveBar(was)) r.focus = Object.assign({}, r.focus || {}, { measure: was });
+      changed(r, 'undo');
+    };
+    const redo = () => {
+      const r = session.redo();
+      if (!r.ok) { say(errorText(r.code)); return; }
+      const next = redoTrail.pop();
+      trail.push(state.bar);
+      changed(r, 'redo');
+      void next;
+    };
+    const discard = () => { const r = session.discard(); if (r.changed) { trail.push(state.bar); redoTrail.length = 0; changed(r, 'discard'); } };
     function goBar(id) {
       const b = resolveBar(id);
       if (!b) return;
@@ -353,12 +375,16 @@
     }
 
     /* ---------------------------------------------------------------- the sheet */
-    function render() {
+    /* quick: the bars' doubts as of the last check (the new check comes next, off the edit's own time) */
+    function render(quick) {
       if (closed) return;
       const keepScroll = body ? body.scrollTop : 0;
       const ms = measures();
       const bi = idxOf(state.bar);
-      const bars = barInfo();
+      const bars = barInfo(quick);
+      /* the drawing stays when the graph and the bar are the same: the stage element is put back */
+      keepStage = stage && painted && painted.graph === graph() && painted.bar === state.bar && svg ? stage : null;
+      if (keepStage && keepStage.parentNode) keepStage.parentNode.removeChild(keepStage);
       const info = bars[bi] || { suspect: false, reasons: [], fill: [] };
       const suspectCount = bars.filter(b => b.suspect).length;
       const sel = state.sel ? ED.describe(graph(), state.sel) : null;
@@ -395,13 +421,13 @@
       why.forEach(x => body.appendChild(x));
 
       /* the bar */
-      stage = h('div', { class: 'ppp-edit-stage', 'data-stage': '1', onclick: onTap });
+      if (keepStage) stage = keepStage; else stage = h('div', { class: 'ppp-edit-stage', 'data-stage': '1', onclick: onTap });
       body.appendChild(stage);
       /* how full each staff is */
       body.appendChild(h('div', { class: 'ppp-edit-fill' }, info.fill.map(f => h('span', { class: 'ppp-edit-chip ' + (f.ok ? 'good' : 'bad'), 'data-fill': f.index + ':' + (f.ok ? 'ok' : 'no') },
         [tx('{{hand}}: {{have}} of {{need}} beats', { hand: handName(f.index), have: fmtBeats(beats(f.have)), need: fmtBeats(beats(f.need)) })]))));
 
-      if (state.msg) body.appendChild(h('div', { class: 'ppp-edit-msg', role: 'alert', 'data-msg': '1', text: state.msg }));
+      if (state.msg) body.appendChild(h('div', { class: 'ppp-edit-msg', role: 'alert', 'data-msg': '1', 'data-detail': state.detail || '', text: state.msg }));
 
       /* accept */
       body.appendChild(h('div', { class: 'ppp-edit-row' }, [
@@ -435,14 +461,19 @@
         ]),
         h('div', { class: 'ppp-edit-hint', 'data-steps': steps.undo + ':' + steps.redo, text: steps.undo ? tx('{{n}} changes made', { n: steps.undo }) : tx('No changes yet') })
       ]));
-      /* the page behind the sheet can be scrolled to its end */
-      if (doc.body) {
-        if (padBefore === null) padBefore = doc.body.style.paddingBottom || '';
-        const hgt = Math.min(root.offsetHeight || 0, (win && win.innerHeight ? win.innerHeight * 0.84 : 400));
-        if (win && win.innerWidth <= 720) doc.body.style.paddingBottom = Math.round(hgt + 16) + 'px';
+      /* the page behind the sheet can be scrolled to its end (the sheet's greatest height: the sheet is not measured, which would make the page lay out again) */
+      if (doc.body && padBefore === null) {
+        padBefore = doc.body.style.paddingBottom || '';
+        if (win && win.innerWidth <= 720) doc.body.style.paddingBottom = Math.round((win.innerHeight || 600) * 0.84 + 16) + 'px';
       }
       body.scrollTop = keepScroll;
-      paintBar();
+      if (keepStage) markSelection(); else paintBar();
+      if (quick) {
+        /* the check of the new graph, after the sheet is drawn: the header and the reason change, the drawing does not */
+        const g = graph();
+        const win = (typeof setTimeout === 'function' ? setTimeout : (f => f()));
+        win(() => { if (!closed && graph() === g) render(false); }, 0);
+      }
     }
     function valueLabel(v) {
       return v === 'whole' ? tx('Whole') : v === 'half' ? tx('Half') : v === 'quarter' ? tx('Quarter') : v === 'eighth' ? tx('Eighth') : tx('16th');
@@ -513,7 +544,9 @@
         const total = beats(m.dur) / (4 / unit);
         const chips = [];
         for (let k = 1; k < Math.round(total); k++) {
-          const at = k + '/' + unit;
+          const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+          const g = gcd(k, unit);
+          const at = (k / g) + (unit / g === 1 ? '' : '/' + (unit / g));
           chips.push(btn('bar-split-' + k, tx('After beat {{n}}', { n: k }), () => { state.split = false; run({ op: 'split', measure: m.id, at: at }); }));
         }
         if (!chips.length) chips.push(h('div', { class: 'ppp-edit-hint', text: tx('This measure is too short to split.') }));
@@ -568,7 +601,8 @@
     state.bar = resolveBar(opts.measure) || (measures()[0] || {}).id;
     if (!state.bar) throw new Error('the score has no measure');
     root.addEventListener('keydown', ev => { if (ev.key === 'Escape') close(); });
-    render();
+    /* the first drawing is made from what the page already knows about its bars; the check of the graph comes after it */
+    render(!!host.hint);
     const controller = {
       version: VERSION, el: root, state: state,
       go: x => goBar(x), close: close, refresh: () => { render(); },

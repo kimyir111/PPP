@@ -15709,15 +15709,18 @@ class Component extends DCLogic {
   async openOmrEditor(number) {
     const S = this.state;
     const held = this._omrEd;
+    /* a tap on the strip that cannot open the sheet still moves the strip */
+    const follow = () => { if (this.state.reviewFrom !== number) this.setState({ reviewFrom: number }); };
     if (held && held.ui && !held.ui.closed && held.scoreId === S.score.id) { held.ui.go(number); return; }
     const ok = await loadOmrEditor();
-    if (!ok) { this.say(tx('The measure editor could not be loaded. Try again in a moment.')); return; }
-    try { await loadEngrave(); } catch (e) { this.say(tx('The measure editor could not be loaded. Try again in a moment.')); return; }
+    if (!ok) { this.say(tx('The measure editor could not be loaded. Try again in a moment.')); follow(); return; }
+    try { await loadEngrave(); } catch (e) { this.say(tx('The measure editor could not be loaded. Try again in a moment.')); follow(); return; }
     const sc = this.state.score;
     let src = null;
     try { src = await window.PPPEngrave.app.resolve(sc, { key: this.state.songId }); } catch (e) { src = null; }
     if (!src || !src.graph || (src.via !== 'live' && src.via !== 'store') || !src.graph.ext || !src.graph.ext['ppp.omr']) {
       this.say(tx('This score was not read from a page, so its measures cannot be edited here.'));
+      follow();
       return;
     }
     /* one session for this score and this visit: a second tap on a strip, or the sheet closed and opened again, goes on from the steps already made (the Score may have been replaced by
@@ -15729,10 +15732,13 @@ class Component extends DCLogic {
       this._omrEd = rec;
     }
     const self = this;
+    /* the strip follows the sheet, after the sheet is drawn */
+    if (this.state.reviewFrom !== number) setTimeout(() => { if (self.state.reviewFrom !== number) self.setState({ reviewFrom: number }); }, 0);
     rec.ui = window.PPPOmrEditorUI.open({
       document: document, window: window, session: rec.session, measure: number,
       host: {
         tx: tx, engrave: omrEngraveApi(), flags: window.PPPOmrFlags,
+        hint: this.state.importReport && this.state.importReport.suspectMeasures ? { suspect: this.state.importReport.suspectMeasures, codes: this.state.importReport.flagCodes || {} } : null,
         onChange: info => self.omrEditorChange(info),
         onBar: n => { if (self.state.reviewFrom !== n) self.setState({ reviewFrom: n }); },
         onClose: () => self.omrEditorClosed(),
@@ -22134,7 +22140,7 @@ class Component extends DCLogic {
           style: 'flex:1;min-width:3px;height:22px;padding:0;border-radius:4px;cursor:pointer;border:1px solid '
             + (shown ? 'var(--accent)' : 'transparent') + ';background:' + (suspect ? 'var(--bad)' : why ? 'var(--warn)' : 'var(--accent-2)')
             + ';opacity:' + (shown ? 1 : suspect ? 0.85 : why ? 0.8 : 0.4) + ';',
-          on: () => { this.setState({ reviewFrom: mm.number }); if (omrEdit) this.openOmrEditor(mm.number); }
+          on: () => { if (omrEdit) this.openOmrEditor(mm.number); else this.setState({ reviewFrom: mm.number }); }
         };
       }),
       reviewIssues: this.reviewIssueLines(S, score).map(i => ({

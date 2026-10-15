@@ -87,7 +87,7 @@ const OPS_MUTATIONS = [
   { id: 'MUT-REVIEWED-ALWAYS-CLEARED', why: 'every edit takes every reviewed mark off', edits: [["    const keep = fl.filter(f => !(f.kind === 'review' && f.code === 'reviewed' && f.ids && f.ids.length && f.ids.every(x => ids.has(x))));", "    const keep = fl.filter(f => !(f.kind === 'review' && f.code === 'reviewed'));"]], scenarios: ['reviewedCleared'] }
 ];
 const ED_MUTATIONS = [
-  { id: 'MUT-UNDO-NO-STEP', why: 'an edit is not kept for undo', edits: [["      states.push({ graph: res.graph, focus: focus || null, label: label || '' });", "      void focus;"]], scenarios: ['sessionUndo', 'sessionRedoDies', 'sessionDiscard'] },
+  { id: 'MUT-UNDO-NO-STEP', why: 'an edit is not kept for undo', edits: [["      states.push({ graph: res.graph, focus: focus || null, back: back || focus || null, label: label || '' });", "      void focus;"]], scenarios: ['sessionUndo', 'sessionRedoDies', 'sessionDiscard'] },
   { id: 'MUT-UNDO-WRONG-STATE', why: 'an undo goes two steps back', edits: [["        const was = cur();\n        pos--;", "        const was = cur();\n        pos = Math.max(0, pos - 2);"]], scenarios: ['sessionUndo'] },
   { id: 'MUT-REDO-KEPT', why: 'a new edit after an undo leaves the old redo steps', edits: [["      states.length = pos + 1;\n", ""]], scenarios: ['sessionRedoDies'] },
   { id: 'MUT-REFUSAL-STEP', why: 'a refused edit makes a step', edits: [["          if (e && e.name === 'EditError') return { ok: false, code: e.code, message: e.message, detail: e.detail || null };", "          if (e && e.name === 'EditError') { after({ graph: cur().graph }, null, 'x'); return { ok: false, code: e.code, message: e.message, detail: e.detail || null }; }"]], scenarios: ['sessionRefusalNoStep'] },

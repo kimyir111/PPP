@@ -56,8 +56,13 @@
   const samePitch = (a, b) => !!a && !!b && a.step === b.step && a.oct === b.oct && (a.alter || 0) === (b.alter || 0);
   const sameAcc = (a, b) => (a ? a.type : null) === (b ? b.type : null);
   const cp = x => JSON.parse(JSON.stringify(x));
-  const rat = x => (typeof x === 'string' ? R.parse(x) : x);
-  const num = x => R.toNumber(rat(x));
+  /* a place given as text may not be reduced ("2/4"): the graph's own is */
+  const place = x => {
+    if (typeof x !== 'string') return R.make(x.n, x.d);
+    const m = /^(-?\d+)(?:\/(\d+))?$/.exec(x);
+    if (!m) fail('no-target', 'not a place: ' + x);
+    return R.make(+m[1], m[2] ? +m[2] : 1);
+  };
 
   /* ------------------------------------------------------------------ one transaction */
   /* fn(d, touched): edits d.doc (and calls d's methods); `touched` collects the measure IDs the edit changed (their 'reviewed' flags go in the same transaction) */
@@ -528,7 +533,7 @@
       const m = measureOf(d, args.measure);
       const part = d.doc.parts.find(p => p.staves.some(s => s.id === args.staff));
       if (!part) fail('no-target', 'no staff ' + args.staff);
-      const at = R.parse(args.at);
+      const at = place(args.at);
       const mdur = R.parse(m.dur);
       if (R.sign(at) < 0 || R.ge(at, mdur)) fail('no-target', 'outside the bar');
       const pitch = { step: args.pitch.step, oct: args.pitch.oct };
@@ -956,7 +961,7 @@
     return run(g, (d, touched) => {
       const tl = d.doc.timeline, ms = tl.measures;
       const m = measureOf(d, args.measure);
-      const at = R.parse(args.at);
+      const at = place(args.at);
       const mdur = R.parse(m.dur);
       if (R.sign(at) <= 0 || R.ge(at, mdur)) fail('no-target', 'outside the bar');
       const i = d.mIdx.get(m.id);

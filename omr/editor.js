@@ -125,8 +125,8 @@
       heads: (e.heads || []).map(h => ({ id: h.id, pitch: h.pitch ? clone(h.pitch) : null, name: pitchName(h.pitch), midi: h.pitch ? SG.pitch.midi(h.pitch) : null, acc: h.acc ? h.acc.type : null,
         staff: h.staff || e.staff })),
       canValue: valueOk,
-      canRest: e.kind === 'note' && !e.grace,
-      canNote: e.kind === 'rest',
+      canRest: e.kind === 'note' && !e.grace && !tup,
+      canNote: e.kind === 'rest' && !tup,
       canStaff: part.staves.length > 1 && !e.grace,
       measureRest: !!(disp && disp.measureRest)
     };
@@ -216,7 +216,9 @@
       part.spanners.forEach(s => { if (s.type === 'tuplet' && s.parent !== undefined && !tupIds.has(s.parent)) delete s.parent; });
       doc.parts.push(part);
     });
-    try { return SG.seal(doc).graph; } catch (e) { return null; }
+    /* not validated here (it is the drawing's input, made from a graph that was: the tests validate every bar of the scores they have), which is what keeps the
+       bar's drawing to a few milliseconds; the engraver is the judge of what it is given, and the sheet says so when it cannot draw */
+    try { return SG.deepFreeze(SG.canonicalize(doc)); } catch (e) { return null; }
   }
 
   /* ------------------------------------------------------------------ how full each staff of a bar is */
@@ -250,12 +252,13 @@
     let pos = 0;
     const base = graph;
     let checkCache = null;
+    let lastIds = null;         /* the last full check: { byId: Map(bar ID -> its bar of the answer) }, to show while the new one is made */
 
     const cur = () => states[pos];
-    function after(res, focus, label) {
-      /* a new step ends what was to be redone */
+    function after(res, focus, label, back) {
+      /* a new step ends what was to be redone; `back` is where an undo of it lands (the bar a deleted bar was) */
       states.length = pos + 1;
-      states.push({ graph: res.graph, focus: focus || null, label: label || '' });
+      states.push({ graph: res.graph, focus: focus || null, back: back || focus || null, label: label || '' });
       if (states.length > limit + 1) states.splice(0, states.length - (limit + 1));
       pos = states.length - 1;
       checkCache = null;
@@ -268,8 +271,11 @@
       if (r.measure) f.measure = r.measure;
       if (r.event) f.event = r.event;
       if (r.head) f.head = r.head;
+      /* the note the person was working on: where an undo goes back to (it is there again by then) */
+      if (command.event) f.event = f.event || command.event;
+      if (command.head) f.head = f.head || command.head;
       if (['step', 'octave', 'accidental', 'value'].indexOf(command.op) >= 0) { f.event = command.event || f.event; if (command.head) f.head = command.head; }
-      if (command.op === 'delete') f.measure = null;
+      if (command.op === 'delete') f.measure = res.measures && res.measures[0] ? res.measures[0] : null;      /* the bar that took its place */
       return f;
     }
 
@@ -290,7 +296,7 @@
         }
         if (!res.changed) return { ok: true, changed: false, graph: cur().graph, measures: [], focus: null };
         const focus = focusOf(command, res);
-        after(res, focus, command.op);
+        after(res, focus, command.op, command.op === 'delete' ? { measure: command.measure } : focus);
         return { ok: true, changed: true, graph: res.graph, measures: res.measures, focus: focus, idMap: res.idMap, op: command.op };
       },
       undo() {
@@ -298,7 +304,7 @@
         const was = cur();
         pos--;
         checkCache = null;
-        return { ok: true, graph: cur().graph, measures: [], focus: was.focus, op: was.label };
+        return { ok: true, graph: cur().graph, measures: [], focus: was.back || was.focus, op: was.label };
       },
       redo() {
         if (pos >= states.length - 1) return { ok: false, code: 'nothing', message: 'nothing to redo' };
@@ -344,18 +350,28 @@
           } catch (e) { res = FL.analyze(g, { normalize: { flags: flags } }); }
         }
         checkCache = { graph: g, res: res };
+        if (res && res.ok) lastIds = { byId: new Map(g.timeline.measures.map((m, i) => [m.id, res.bars[i]])) };
         return res;
       },
+      /* o.quick: no new check of the graph now (it costs as much as the edit): the last answer, by bar ID, for the bars that were there, `pending` for the rest */
       bars(o) {
         o = o || {};
         const g = cur().graph;
-        const res = o.res || (o.flags ? session.check(o.flags) : session.check());
+        const hint = o.hint && !lastIds ? o.hint : null;                   /* what the page already knows (its report): the suspect bar numbers and their codes */
+        const quick = !!o.quick && !(checkCache && checkCache.graph === g) && (!!lastIds || !!hint);
+        const res = quick ? null : (o.res || (o.flags ? session.check(o.flags) : session.check()));
         const reviewed = EO.reviewedBars(g), edited = EO.editedBars(g);
         return g.timeline.measures.map((m, i) => {
-          const b = res && res.ok ? res.bars[i] : null;
+          let b = quick ? (lastIds ? lastIds.byId.get(m.id) || null : null) : (res && res.ok ? res.bars[i] : null);
+          if (quick && !lastIds && hint) {
+            const no = numberOf(g, m, i);
+            const sus = (hint.suspect || []).indexOf(no) >= 0;
+            const codes = (hint.codes && hint.codes[no]) || [];
+            b = { suspect: sus, strong: [], weak: codes.slice(), reasons: codes.map(c => ({ code: c, strength: 'weak' })) };
+          }
           const isRev = reviewed.has(m.id);
           return {
-            id: m.id, number: numberOf(g, m, i), index: i,
+            id: m.id, number: numberOf(g, m, i), index: i, pending: quick,
             suspect: !!(b && b.suspect) && !isRev, flagged: !!(b && b.suspect), reviewed: isRev,
             edited: edited.has(m.id), strong: b ? b.strong.slice() : [], weak: b ? b.weak.slice() : [],
             reasons: b ? b.reasons.map(r => ({ code: r.code, strength: r.strength })) : [],
