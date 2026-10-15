@@ -61,6 +61,10 @@
 :root { --ppp-cjk: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo UI", "Meiryo", "Noto Sans CJK JP", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans KR", "Noto Sans JP", "Noto Sans SC"; }
 :root:lang(ja) { --ppp-cjk: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo UI", "Meiryo", "Noto Sans CJK JP", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans CJK KR", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans JP", "Noto Sans KR", "Noto Sans SC"; }
 :root:lang(zh) { --ppp-cjk: "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", "Hiragino Sans GB", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo UI", "Meiryo", "Noto Sans CJK JP", "Noto Sans SC", "Noto Sans KR", "Noto Sans JP"; }
+/* Korean breaks lines at spaces, not inside a word: without it a narrow screen leaves one syllable alone on a line ("요." "지" "세요."). overflow-wrap: anywhere still breaks a word that is longer
+   than its box, and (unlike break-word) lowers the min-content width, so no flex or grid item grows past the screen. Checked at 360, 412 and 1440 px on Home, My Songs, Practice and Settings:
+   the lone syllables go and nothing overflows. */
+:root:lang(ko) body { word-break: keep-all; overflow-wrap: anywhere; }
 </style>
 <script>
 /* G13-4b2 (U7): Google's Noto Sans for a script only when the device has no font for it (bare Linux, a stripped container), asked for after load and an idle moment, the page's language first,
@@ -126,16 +130,23 @@
 </script>
 <script>
 /* G13-7b (U5, G13-D11): anonymous counters - how a broken release is seen without waiting for a complaint. Per visit, in this page's memory: uncaught errors and unhandled rejections (the
-   CLASS of the error, never its message, stack or address), a script or stylesheet of the page that did not load, the engraver's and the practice plan's fallbacks (codes), lazy groups that failed,
-   time to first paint and to "app ready" in buckets, language, mobile or desktop. Sent once, when the page is hidden or closed (again only if something new happened), as one POST of under 1 KB to
-   this site's /api/stats: no cookie, no identifier; the server keeps totals in memory and prints them in its hourly `stats:` line (client-stats.js). Nothing is sent when a person turned it off
-   (Settings > About & licences: 'ppp.counts.v1' = '0'), on Do Not Track or Global Privacy Control, or when there is nothing to say. Nothing throws or waits. In the head, not in a lazy group: a
-   release that breaks the boot never loads a lazy group, and that is the visit that most needs counting. */
+   CLASS of the error, never its message, stack or address), a script or stylesheet that did not load (this site's: `load`, another's: `thirdparty`), the engraver's and the practice plan's
+   fallbacks (codes), lazy groups that failed, time to first paint and to "app ready" in buckets, language, mobile or desktop. Sent when the page is hidden or closed (again only if something new
+   happened, at most 5 a page load) as one POST of under 1 KB to this site's /api/stats: no cookie, no identifier; the server keeps totals in memory and prints them in its hourly `stats:` line
+   (client-stats.js). NEVER the request that wakes a sleeping server: the server must have answered this page in the last 10 minutes, else the counts wait in localStorage
+   ('ppp.counts.pending.v1', numbers only, 3 bodies, 7 days) and go with the next visit. Nothing is sent when a person turned it off (Settings > About & licences: 'ppp.counts.v1' = '0'), on Do Not
+   Track or Global Privacy Control, or when there is nothing to say. Nothing throws or waits. In the head, not in a lazy group: a release that breaks the boot never loads a lazy group, and that
+   is the visit that most needs counting. */
 (function () {
   var W = window, D = document, N = navigator;
-  var KEY = 'ppp.counts.v1', CAP = 20;
+  var KEY = 'ppp.counts.v1', PEND = 'ppp.counts.pending.v1';
+  var CAP = 20, MAX_OWN = 5, MAX_PENDING = 3, AWAKE_MS = 10 * 60 * 1000, KEEP_MS = 7 * 24 * 60 * 60 * 1000;
   var ERRS = { TypeError: 'type', ReferenceError: 'reference', RangeError: 'range', SyntaxError: 'syntax' };
-  var err = {}, any = false, rej = 0, first = true, readyAt = null, base = { eng: {}, prc: {}, lz: 0 }, mem = null;
+  /* the codes the server knows (client-stats.js); any other is counted as `other`, so a body is never over 1 KB */
+  var ENG = { SOURCE_THREW: 1, SOURCE_NONE: 1, SOURCE_DISAGREES: 1, LINK_FAILED: 1, PLAN_THREW: 1, LAYOUT_THREW: 1, SYNC_THREW: 1 };
+  var PRC = { NOT_LOADED: 1, NO_ENGRAVER: 1, EMPTY: 1, RESOLVE_ERROR: 1, NO_GRAPH: 1, LINK_FAILED: 1, MEASURES: 1, IDENTITY: 1, ABS_MISMATCH: 1, BUILD_ERROR: 1, NOT_READY: 1 };
+  var err = {}, any = false, rej = 0, first = true, readyAt = null, base = { eng: {}, prc: {}, lz: 0 }, mem = null, posts = 0, contactAt = 0;
+  var has = function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); };
   /* a person's choice: this page's memory first (a storage that cannot be written still keeps it for the visit), then the stored one */
   function userOn() {
     if (mem !== null) return mem;
@@ -146,18 +157,18 @@
   }
   function enabled() { return userOn() && !signal(); }
   function bump(k) { err[k] = Math.min(CAP, (err[k] || 0) + 1); any = true; }
-  /* capture: a script or stylesheet that failed to load does not bubble */
+  /* capture: a script or stylesheet that failed to load does not bubble. This site's own: `load`; another site's (Google Fonts, a CDN, a blocker): `thirdparty` */
   W.addEventListener('error', function (e) {
     try {
       var t = e && e.target;
       if (t && t !== W && t.nodeType === 1) {
         var n = String(t.tagName).toLowerCase();
-        if (n === 'script' || n === 'link') bump('load');
+        if (n === 'script' || n === 'link') bump(String(t.src || t.href || '').indexOf(W.location.origin + '/') === 0 ? 'load' : 'thirdparty');
         return;
       }
       if (/^(?:chrome|moz|safari-web|safari)-extension:/.test(String(e && e.filename || ''))) return;   /* a browser extension's, not the page's */
       var name = e && e.error && e.error.name;
-      bump(Object.prototype.hasOwnProperty.call(ERRS, name) ? ERRS[name] : 'other');
+      bump(has(ERRS, name) ? ERRS[name] : 'other');
     } catch (x) { /* counting never throws */ }
   }, true);
   W.addEventListener('unhandledrejection', function () { try { rej = Math.min(CAP, rej + 1); } catch (x) { /* none */ } });
@@ -165,13 +176,30 @@
   function fcp() {
     try { var e = W.performance.getEntriesByName('first-contentful-paint'); return e.length ? e[0].startTime : null; } catch (x) { return null; }
   }
+  /* The last time THIS site's server answered the page (the page itself, an API call, a script, a sound: anything that came over the network from this origin, not from the cache). Render's free
+     instance sleeps after 15 idle minutes and a request wakes it for another 15: a beacon sent when the page closes after a long quiet session would be that request (G13-D11). */
+  function seen(e) {
+    try {
+      if (!e || !(e.transferSize > 0) || String(e.name || '').indexOf(W.location.origin + '/') !== 0) return;
+      var t = W.performance.timeOrigin + e.responseEnd;
+      if (t > contactAt) contactAt = t;
+    } catch (x) { /* none */ }
+  }
+  try { new W.PerformanceObserver(function (l) { l.getEntries().forEach(seen); }).observe({ type: 'resource', buffered: true }); } catch (x) { /* the page's own load still counts */ }
+  function awake() {
+    try { W.performance.getEntriesByType('navigation').forEach(seen); } catch (x) { /* none */ }
+    return contactAt > 0 && Date.now() - contactAt < AWAKE_MS;
+  }
   /* what the page's own counters hold now; a deferred global is read through PPP_LAZY.peek, which never loads anything */
   function peek(name) { try { var L = W.PPP_LAZY; return (L && L.peek ? L.peek(name) : W[name]) || null; } catch (x) { return null; } }
-  function nums(o, out) { if (o && typeof o === 'object') for (var k in o) if (typeof o[k] === 'number' && o[k] > 0) out[k] = o[k]; return out; }
+  function nums(o, known, out) {
+    if (o && typeof o === 'object') for (var k in o) if (typeof o[k] === 'number' && o[k] > 0) { var c = has(known, k) ? k : 'other'; out[c] = (out[c] || 0) + o[k]; }
+    return out;
+  }
   function late() {
     var o = { eng: {}, prc: {}, lz: 0 };
-    try { var P = peek('PPPEngravePage'); nums(P && P.stats && P.stats.fallbacks, o.eng); } catch (x) { /* none */ }
-    try { var S = W.PPP && W.PPP.practiceStats; nums(S && S.practiceFallback && S.practiceFallback.reasons, o.prc); } catch (x) { /* none */ }
+    try { var P = peek('PPPEngravePage'); nums(P && P.stats && P.stats.fallbacks, ENG, o.eng); } catch (x) { /* none */ }
+    try { var S = W.PPP && W.PPP.practiceStats; nums(S && S.practiceFallback && S.practiceFallback.reasons, PRC, o.prc); } catch (x) { /* none */ }
     try { var g = W.PPP_LAZY.status().groups; for (var i = 0; i < g.length; i++) if (g[i].failed) o.lz++; } catch (x) { /* none */ }
     return o;
   }
@@ -197,19 +225,62 @@
     } catch (x) { /* the beacon below */ }
     try { if (N.sendBeacon) N.sendBeacon('/api/stats', s); } catch (x) { /* nobody waits for it */ }
   }
-  function flush() { try { if (!enabled()) return; var s = body(); if (s) post(s); } catch (x) { /* none */ } }
+  /* Counts that could not be sent without waking the server wait here, as the beacon bodies they would have been (numbers and fixed names: at most MAX_PENDING of them, a week at most, dropped
+     the moment a person turns the counters off) and go with the next visit, whose own load has just proved the server awake. */
+  function pending() {
+    try {
+      var a = JSON.parse(W.localStorage.getItem(PEND) || '[]'), out = [], now = Date.now();
+      if (!Array.isArray(a)) return out;
+      for (var i = 0; i < a.length && out.length < MAX_PENDING; i++) {
+        var p = a[i];
+        if (p && typeof p.t === 'number' && now - p.t < KEEP_MS && p.t - now < 60000 && typeof p.b === 'string' && p.b.length <= 1000) out.push({ t: p.t, b: p.b });
+      }
+      return out;
+    } catch (x) { return []; }
+  }
+  function keep(s) {
+    try {
+      var a = pending();
+      a.push({ t: Date.now(), b: s });
+      while (a.length > MAX_PENDING) a.shift();
+      W.localStorage.setItem(PEND, JSON.stringify(a));
+    } catch (x) { /* not kept: those counts are lost, which is the lesser harm */ }
+  }
+  function sendPending() {
+    try {
+      if (!awake()) return;
+      var a = pending();
+      try { W.localStorage.removeItem(PEND); } catch (x) { /* none */ }
+      if (!enabled()) return;                       /* turned off since: they are dropped, not sent */
+      for (var i = 0; i < a.length; i++) post(a[i].b);
+    } catch (x) { /* none */ }
+  }
+  function flush() {
+    try {
+      if (!enabled() || posts >= MAX_OWN) return;     /* at most MAX_OWN beacons a page load, however often it is hidden and shown */
+      var s = body();
+      if (!s) return;
+      posts++;
+      if (awake()) post(s); else keep(s);
+    } catch (x) { /* none */ }
+  }
   D.addEventListener('visibilitychange', function () { if (D.visibilityState === 'hidden') flush(); });
   W.addEventListener('pagehide', flush);
   W.PPP_COUNTS = {
-    ready: function () { try { if (readyAt === null) readyAt = W.performance.now(); } catch (x) { /* none */ } },
+    ready: function () {
+      try {
+        if (readyAt === null) { readyAt = W.performance.now(); setTimeout(sendPending, 4000); }
+      } catch (x) { /* none */ }
+    },
     enabled: enabled,
     signal: signal,
     on: userOn,
     set: function (on) {
       mem = !!on;
-      try { if (on) W.localStorage.removeItem(KEY); else W.localStorage.setItem(KEY, '0'); } catch (x) { /* not remembered: this visit only */ }
+      try { if (on) W.localStorage.removeItem(KEY); else { W.localStorage.setItem(KEY, '0'); W.localStorage.removeItem(PEND); } } catch (x) { /* not remembered: this visit only */ }
     },
-    flush: flush
+    flush: flush,
+    sendPending: sendPending
   };
 })();
 </script>
@@ -14558,7 +14629,7 @@ class Component extends DCLogic {
       aboutBuild: [tx('PPP — Piano Practice Partner'), build].filter(Boolean).join(' · '),
       aboutLocal: tx('Your songs are saved only in this browser. PPP\'s server receives a song only when you share it or ask it to arrange or read it.'),
       /* G13-7b (U5): the anonymous counters of the head script (PPP_COUNTS) and the one switch that turns them off. The label is the same in both states (aria-pressed carries it); the line under it says what is so now. */
-      aboutCounts: tx('To see when a page breaks or loads slowly, PPP sends a few anonymous counts (errors, load times) when you leave the page. They have no name, address or ID, and no songs. The server only adds them up.'),
+      aboutCounts: tx('To see when a page breaks or loads slowly, PPP sends a few anonymous counts (errors, load times) when you leave the page. They have no name, address or ID, and no songs. The server has to see your connection\'s address for a moment, but it stores nothing: it only adds the counts up.'),
       ...this.countsVals(),
       aboutYoutube: tx('Use recordings you have the right to use. The score PPP writes is for your own practice.') + ' '
         + tx('A score made from a YouTube link cannot be posted to Shared Scores. You can still send its link.'),
@@ -14632,7 +14703,8 @@ class Component extends DCLogic {
       backupApply: () => this.backupApply(), backupCancel: () => this.backupCancel(), bkKey: e => this.bkKey(e),
       bkBoxStyle: box(false),
       wipeTitle: tx('Delete everything on this device'),
-      wipeNote: tx('Removes your songs, practice progress, settings, PC link and sharing key from this browser. Links you already shared stay online, and your account is not touched. This cannot be undone.'),
+      wipeNote: tx('Removes your songs, practice progress, settings, PC link and sharing key from this browser. Links you already shared stay online, and your account is not touched. This cannot be undone.')
+        + ' ' + tx('If you turned off anonymous counts, that choice stays.'),   /* G13-7b: the opt-out is a choice, not data: library-backup.js wipe keeps it */
       wipeAccountOn: signedIn,
       wipeAccountText: tx('You are signed in. Progress kept in your account stays there and comes back here after the reload; only this device is cleared.'),
       wipeStartLabel: tx('Delete everything…'), wipeStartStyle: danger, wipeAsk: () => this.wipeAsk(),

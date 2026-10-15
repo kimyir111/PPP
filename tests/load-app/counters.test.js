@@ -22,9 +22,9 @@ test.before(async () => {
 });
 test.after(async () => { if (browser) await browser.close(); if (srv) srv.close(); });
 
-/* a visit; `before` runs in every new document before the page's own scripts */
-async function open(before, locale) {
-  const ctx = await browser.createBrowserContext();
+/* a visit; `before` runs in every new document before the page's own scripts; `again` is the context of an earlier visit (same localStorage: "the next visit") */
+async function open(before, locale, again) {
+  const ctx = again || await browser.createBrowserContext();
   const page = await ctx.newPage();
   await page.setViewport({ width: 1280, height: 900 });
   await page.evaluateOnNewDocument((src, loc) => {
@@ -43,7 +43,7 @@ async function open(before, locale) {
     await page.evaluate(() => { const b = [...document.querySelectorAll('aside nav button')].find(x => /^(Settings|설정)$/.test((x.innerText || '').trim().split('\n')[0].trim())); b.click(); });
     await page.waitForSelector('[data-counts-toggle]', { timeout: 15000 });
   };
-  return { ctx, page, posts, errors, hide, settings, close: () => ctx.close() };
+  return { ctx, page, posts, errors, hide, settings, close: () => (again ? page.close() : ctx.close()) };
 }
 const parse = p => JSON.parse(p.body);
 /* run `code` as an inline script of the page (an error thrown by puppeteer's own evaluate is not the page's: the window sees it without its Error object) */
@@ -166,7 +166,7 @@ test('the switch is in the page\'s language (Korean)', async () => {
   await v.page.waitForSelector('[data-counts-toggle]', { timeout: 15000 });
   const t = await v.page.evaluate(() => ({ label: document.querySelector('[data-counts-toggle]').innerText, note: document.querySelector('[data-counts-note]').innerText, text: document.querySelector('[data-about-counts-text]').innerText }));
   assert.equal(t.label, '익명 숫자 보내기');
-  assert.match(t.note, /켜져 있습니다/);
+  assert.match(t.note, /켜져 있어요/);
   assert.match(t.text, /익명/);
   await v.close();
 });
@@ -186,4 +186,79 @@ test('end to end: the server prints what the browsers sent in its hourly line, a
   assert.ok(s.lines >= 1 && s.beacons >= 1 && s.visits >= 1 && s.range >= 1, JSON.stringify(s) + ' ' + srv.log().slice(-300));
   const text = clientLines().join('\n');
   assert.ok(!/boom|127\.0\.0\.1|example|ppp_locale|Mozilla/.test(text));
+});
+
+/* ---- the server must never be woken by a beacon (G13-D11): the exit of a long quiet session is kept, not sent ---- */
+
+/* the page believes 20 minutes have passed since the server last answered it (the clock the page reads, not the machine's) */
+const later = (v, ms) => v.page.evaluate(n => { const real = Date.now; Date.now = () => real.call(Date) + n; }, ms);
+
+test('a session that was quiet for 20 minutes sends nothing when it closes: the counts wait in localStorage and go with the next visit, once the server has answered that one', async () => {
+  const v = await open();
+  await later(v, 20 * 60 * 1000);
+  await inPage(v, "setTimeout(function () { throw new TypeError('after a long session'); }, 0);");
+  await sleep(300);
+  await v.hide();
+  assert.equal(v.posts.length, 0, 'no request: it would be the one that wakes the instance');
+  const kept = await v.page.evaluate(() => localStorage.getItem('ppp.counts.pending.v1'));
+  assert.ok(kept, 'kept');
+  const list = JSON.parse(kept);
+  assert.equal(list.length, 1);
+  assert.deepEqual(JSON.parse(list[0].b).err, { type: 1 });
+  assert.equal(JSON.parse(list[0].b).pv, 1);
+  /* the clock the page read ran 20 minutes ahead of the machine's: put the time of the kept entry back to the machine's, as 20 real minutes would have made it */
+  await v.page.evaluate(() => { const l = JSON.parse(localStorage.getItem('ppp.counts.pending.v1')); l.forEach(e => { e.t -= 20 * 60 * 1000; }); localStorage.setItem('ppp.counts.pending.v1', JSON.stringify(l)); });
+  await v.page.close();
+  /* the next visit, same profile: its own load has just come from the server; 4 s after its app is ready the kept counts go */
+  const w = await open(null, 'en-US', v.ctx);
+  const t0 = Date.now();
+  while (w.posts.length < 1 && Date.now() - t0 < 15000) await sleep(200);
+  assert.equal(w.posts.length, 1, 'the kept counts were sent by the next visit');
+  const b = parse(w.posts[0]);
+  assert.deepEqual(b.err, { type: 1 });
+  assert.equal(b.loc, 'en', 'the visit that was kept, with its own language');
+  assert.equal(await w.page.evaluate(() => localStorage.getItem('ppp.counts.pending.v1')), null, 'and removed');
+  await w.hide();
+  assert.equal(w.posts.length, 2, 'the visit\'s own beacon follows, as always');
+  await w.page.close();
+  await v.ctx.close();
+});
+
+test('a failed file is `load` when it is this site\'s and `thirdparty` when it is another\'s', async () => {
+  const v = await open();
+  await inPage(v, "var a = document.createElement('script'); a.src = '/no-such-file-g13.js'; document.head.appendChild(a); var b = document.createElement('script'); b.src = 'http://127.0.0.1:1/x.js'; document.head.appendChild(b); var c = document.createElement('link'); c.rel = 'stylesheet'; c.href = 'http://127.0.0.1:1/y.css'; document.head.appendChild(c);");
+  await sleep(1500);
+  await v.hide();
+  const b = parse(v.posts[0]);
+  assert.deepEqual(b.err, { load: 1, thirdparty: 2 });
+  await v.close();
+});
+
+test('at most five beacons a page load', async () => {
+  const v = await open();
+  for (let i = 0; i < 8; i++) {
+    await inPage(v, "setTimeout(function () { throw new TypeError('n'); }, 0);");
+    await sleep(150);
+    await v.hide();
+  }
+  assert.equal(v.posts.length, 5);
+  await v.close();
+});
+
+test('"Delete everything on this device" keeps a person\'s choice not to send counts, and says so; everything else of ppp* goes', async () => {
+  const v = await open('try { localStorage.setItem("ppp.counts.v1", "0"); localStorage.setItem("ppp.counts.pending.v1", "[]"); localStorage.setItem("ppp.something", "x"); } catch (e) {}', 'ko-KR');
+  const noted = await v.page.evaluate(() => { const b = [...document.querySelectorAll('aside nav button')].find(x => /^설정$/.test((x.innerText || '').trim().split('\n')[0].trim())); b.click(); return true; });
+  assert.ok(noted);
+  await v.page.waitForSelector('[data-counts-toggle]', { timeout: 15000 });
+  const note = await v.page.evaluate(() => document.body.innerText.includes('익명 숫자 보내기를 꺼 두었다면 그 설정은 그대로 남아요.'));
+  assert.ok(note, 'the delete section says the choice stays (Korean)');
+  const r = await v.page.evaluate(async () => {
+    const rep = await window.PPPBackup.wipe({});
+    return { ok: rep.ok, kept: rep.kept, keys: Object.keys(localStorage).filter(k => /^ppp/i.test(k)), optOut: localStorage.getItem('ppp.counts.v1') };
+  });
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.keys, ['ppp.counts.v1']);
+  assert.equal(r.optOut, '0');
+  assert.deepEqual(r.kept, ['ppp.counts.v1']);
+  await v.close();
 });

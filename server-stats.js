@@ -8,6 +8,8 @@
      static      the page and every file it loads (anything that is not /api, /helper or /health)
      api-auth    /api/auth/...           api-shares   /api/shares...        health   /health and /api/health
      api-jobs    /api/jobs..., /api/worker..., /api/pc-links... (the home-PC queue)
+     api-stats   /api/stats (G13-7b: the page's anonymous counters). Its refusals - a bad body, another site's Origin, a limit - are by design and come from browsers, so its 4xx and 429 are
+                 counted in its own class only and NOT in the totals `4xx` and `tooMany` (the release checklist reads those as alarms); its 5xx (our own bug) and store errors still are
      other       every other /api route, /helper, and a request whose address cannot be read
    No address, no id, no path, no header, no user data is kept or printed - only the numbers. Nothing is served over HTTP.
 
@@ -31,7 +33,9 @@
 const { AsyncLocalStorage } = require('async_hooks');
 const clientStats = require('./client-stats');
 
-const CLASSES = ['static', 'api-auth', 'api-shares', 'api-jobs', 'health', 'other'];
+const CLASSES = ['static', 'api-auth', 'api-shares', 'api-jobs', 'api-stats', 'health', 'other'];
+/* what a class does NOT add to the totals of the line (see api-stats above) */
+const QUIET = { 'api-stats': { '4xx': true, tooMany: true } };
 const HOUR_MS = 60 * 60 * 1000;
 
 /* the route class of a request line (the part of req.url before ? and #), read the way server.js reads it: new URL(req.url, base).pathname */
@@ -43,6 +47,7 @@ function classify(rawUrl) {
   if (p === '/api/auth' || p.startsWith('/api/auth/')) return 'api-auth';
   if (p === '/api/shares' || p.startsWith('/api/shares/')) return 'api-shares';
   if (/^\/api\/(jobs|worker|pc-links)(\/|$)/.test(p)) return 'api-jobs';
+  if (p === '/api/stats') return 'api-stats';
   if (p === '/api' || p.startsWith('/api/')) return 'other';
   return 'static';
 }
@@ -64,7 +69,7 @@ function createStats(opts) {
     CLASSES.forEach(k => { o.by[k] = { requests: 0, '4xx': 0, tooMany: 0, '5xx': 0, storeErrors: 0 }; });
     return o;
   }
-  function total(key) { return CLASSES.reduce((n, k) => n + c.by[k][key], 0); }
+  function total(key) { return CLASSES.reduce((n, k) => n + (QUIET[k] && QUIET[k][key] ? 0 : c.by[k][key]), 0); }
 
   /* the line for the counters now (null when nothing was counted), and the counters start again */
   function flush(final) {

@@ -143,6 +143,9 @@ test('the font stack is Figtree, then --ppp-cjk (the device\'s own CJK fonts, th
     assert.equal(new Set(s).size, s.length, 'no family twice');
     for (const f of ['Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans CJK KR', 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', 'Noto Sans CJK JP', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC']) assert.ok(s.includes(f), f);
   }
+  /* Korean breaks at spaces (no lone syllable on a line), and a word longer than its box still breaks without raising the min-content width; Japanese and Chinese are left to break anywhere */
+  assert.match(css, /:root:lang\(ko\) body \{ word-break: keep-all; overflow-wrap: anywhere; \}/);
+  assert.ok(!/:root:lang\((ja|zh)\) body/.test(css));
   assert.equal([...PAGE.matchAll(/font-family: Figtree, var\(--ppp-cjk\), system-ui, sans-serif;/g)].length, 3, 'the body rule and the two shells');
   assert.ok(!/'Noto Sans (KR|JP|SC)'/.test(PAGE.slice(PAGE.indexOf('<helmet>'))), 'no family named in the template any more');
   const lessons = fs.readFileSync(path.join(REPO, 'lessons.js'), 'utf8');

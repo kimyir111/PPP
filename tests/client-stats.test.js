@@ -47,6 +47,10 @@ function unitPart() {
     ok('an unknown error class is counted as `other`, nothing else of it', r.ok && r.doc.err && r.doc.err.type === 1 && r.doc.err.other === 14 && Object.keys(r.doc.err).sort().join() === 'other,type', J(r.doc.err));
   }
   {
+    const r = CS.sanitize({ v: 1, err: { thirdparty: 3, load: 1 } });
+    ok('`thirdparty` is a class of error of its own (another site\'s file that did not load)', r.ok && J(r.doc.err) === J({ thirdparty: 3, load: 1 }), J(r.doc));
+  }
+  {
     const r = CS.sanitize({ v: 1, rej: 9999, lz: 51, err: { type: 1e9, load: 7.5, syntax: -3, range: '4', reference: null, other: true } });
     ok('a number over the cap is the cap (50)', r.ok && r.doc.rej === 50 && r.doc.lz === 50 && r.doc.err.type === 50, J(r.doc));
     ok('a number that is not a whole number, is negative, or is not a number is dropped', r.ok && J(Object.keys(r.doc.err)) === J(['type']), J(r.doc.err));
@@ -96,7 +100,7 @@ function unitPart() {
     const s = CS.snapshot(agg);
     ok('beacons 4, visits 3, stale 1, mobile 2, desktop 1, withErrors 2', s.beacons === 4 && s.visits === 3 && s.stale === 1 && s.mobile === 2 && s.desktop === 1 && s.withErrors === 2, J(s));
     ok('locale ko 1 ja 1 zh 0 en 1; fcp lt2 1 lt8 1 ge8 1; ready lt4 1 lt8 1 none 1', J(s.locale) === J({ ko: 1, ja: 1, zh: 0, en: 1 }) && s.fcp.lt2 === 1 && s.fcp.lt8 === 1 && s.fcp.ge8 === 1 && s.fcp.lt4 === 0 && s.ready.lt4 === 1 && s.ready.lt8 === 1 && s.ready.none === 1, J([s.locale, s.fcp, s.ready]));
-    ok('errors type 2 load 1 other 1; rejections 2; lazyFailed 1; engrave PLAN_THREW 1 only; practice NOT_READY 3 only', J(s.errors) === J({ type: 2, reference: 0, range: 0, syntax: 0, load: 1, other: 1 }) && s.rejections === 2 && s.lazyFailed === 1 && J(s.engrave) === J({ PLAN_THREW: 1 }) && J(s.practice) === J({ NOT_READY: 3 }), J(s));
+    ok('errors type 2 load 1 other 1; rejections 2; lazyFailed 1; engrave PLAN_THREW 1 only; practice NOT_READY 3 only', J(s.errors) === J({ type: 2, reference: 0, range: 0, syntax: 0, load: 1, thirdparty: 0, other: 1 }) && s.rejections === 2 && s.lazyFailed === 1 && J(s.engrave) === J({ PLAN_THREW: 1 }) && J(s.practice) === J({ NOT_READY: 3 }), J(s));
     const keys = o => Object.keys(o).sort().join();
     ok('the keys of a snapshot are fixed whatever came', keys(CS.snapshot(CS.fresh())) === keys(s) || keys(CS.snapshot(CS.fresh())) === 'beacons,desktop,engrave,errors,fcp,lazyFailed,locale,mobile,practice,ready,rejections,stale,visits,withErrors', keys(s));
     const nums = []; (function walk(x) { if (x && typeof x === 'object') Object.values(x).forEach(walk); else nums.push(x); })(s);
@@ -172,9 +176,10 @@ async function startServer(env) {
   await sleep(150);
   srv.statsLines = () => srv.out.split(/\r?\n/).filter(l => l.startsWith('stats: '));
   srv.clientTotals = () => {
-    const t = { beacons: 0, visits: 0, stale: 0, mobile: 0, desktop: 0, withErrors: 0, rejections: 0, lazyFailed: 0, errors: {}, engrave: {}, practice: {}, locale: {}, fcp: {}, ready: {}, requests: 0, other: 0, tooMany: 0, fourxx: 0 };
+    const t = { beacons: 0, visits: 0, stale: 0, mobile: 0, desktop: 0, withErrors: 0, rejections: 0, lazyFailed: 0, errors: {}, engrave: {}, practice: {}, locale: {}, fcp: {}, ready: {}, requests: 0, stats: { requests: 0, '4xx': 0, tooMany: 0, '5xx': 0 }, tooMany: 0, fourxx: 0 };
     srv.statsLines().map(l => JSON.parse(l.slice(7))).forEach(d => {
-      t.requests += d.requests; t.other += d.by.other.requests; t.tooMany += d.tooMany; t.fourxx += d['4xx'];
+      t.requests += d.requests; t.tooMany += d.tooMany; t.fourxx += d['4xx'];
+      Object.keys(t.stats).forEach(k => { t.stats[k] += d.by['api-stats'][k]; });
       const c = d.client;
       if (!c) return;
       ['beacons', 'visits', 'stale', 'mobile', 'desktop', 'withErrors', 'rejections', 'lazyFailed'].forEach(k => { t[k] += c[k]; });
@@ -242,8 +247,8 @@ async function serverPart() {
     ok('the numbers of the first two are in: type errors 2, a rejection, 2 lazy failures, PLAN_THREW 1, NOT_READY 1, and 2 beacons with an error', t.errors.type === 2 && t.rejections === 1 && t.lazyFailed === 2 && t.engrave.PLAN_THREW === 1 && t.practice.NOT_READY === 1 && t.withErrors === 2, J(t));
     ok('and the language of the beacons: ko 1, en 1, zh 6', t.locale.ko === 1 && t.locale.en === 1 && t.locale.zh === 6, J(t.locale));
     ok('the timing: first paint lt4 1 (a), ge8 1 (b), lt2 6; ready lt4 1, none 1, lt2 6', t.fcp.lt4 === 1 && t.fcp.ge8 === 1 && t.fcp.lt2 === 6 && t.ready.lt4 === 1 && t.ready.none === 1 && t.ready.lt2 === 6, J([t.fcp, t.ready]));
-    ok('the requests of the beacons are counted as the server\'s own, under `other` (they are /api requests): 22 with the GET and the PUT', t.other === 22, J([t.other, t.requests]));
-    ok('the 4xx and 429 counters show the refusals: 5 x 400, 413, 400 (deep), 2 x 403, 3 x 429, 3 x 404 = 15, and 3 of them 429', t.fourxx === 15 && t.tooMany === 3, J([t.fourxx, t.tooMany]));
+    ok('the requests of the route are in its own class, api-stats: 22 with the GET and the PUT (and the GET of /stats is a static 404, the 23rd request)', t.stats.requests === 22 && t.requests === 23, J([t.stats, t.requests]));
+    ok('its refusals - 5 x 400, 413, 400 (deep), 2 x 403, 3 x 429, GET and PUT 404 = 14, 3 of them 429 - are counted there, and are NOT in the totals 4xx and tooMany (the release alarms): only the 404 of /stats is', t.stats['4xx'] === 14 && t.stats.tooMany === 3 && t.fourxx === 1 && t.tooMany === 0 && t.stats['5xx'] === 0, J([t.stats, t.fourxx, t.tooMany]));
     const text = lines.join('\n');
     ok('no address, cookie, key value or text of the requests is in the lines', !/127\.0\.0\.1|203\.0\.113|SESSIONCOOKIE|ppp_session|SECRETVALUE|someone|example|evil|deadbee|abc1234|cstats-test-secret/.test(text), lines[0] && lines[0].slice(0, 200));
     ok('every line is the strict shape: numbers and names, nothing else', lines.length >= 1 && lines.every(l => /^stats: \{[\w",:{}-]+\}$/.test(l)) && !/"[^"]*":"/.test(text), lines[0] && lines[0].slice(0, 120));
@@ -258,6 +263,15 @@ async function serverPart() {
     for (let i = 0; i < 6; i++) rs.push((await call(srv2.port, 'POST', '/api/stats', '{"v":1}')).status);
     ok('six beacons from loopback with a limit of two: all 204', rs.every(s => s === 204), rs.join());
   } finally { await srv2.close(); }
+
+  heading('the default limit is 300 beacons an address in ten minutes (a classroom behind one address)');
+  const srv3 = await startServer({ PPP_STATS_INTERVAL_MS: '900' });
+  try {
+    const xff = { 'X-Forwarded-For': '203.0.113.77' };
+    const rs = [];
+    for (let i = 0; i < 305; i++) rs.push((await call(srv3.port, 'POST', '/api/stats', '{"v":1}', xff)).status);
+    ok('305 from one remote address: the first 300 are 204, the next 5 are 429', rs.slice(0, 300).every(s => s === 204) && rs.slice(300).every(s => s === 429), [rs.filter(s => s === 204).length, rs.filter(s => s === 429).length].join('/'));
+  } finally { await srv3.close(); }
 }
 
 (async () => {

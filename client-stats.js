@@ -13,7 +13,8 @@
      beacons          POSTs accepted             visits       beacons that carry the first one of a page (pv)       stale     beacons from a page of another build
      mobile/desktop   of the visits              locale       ko ja zh en                                              withErrors  beacons with an error or a rejection
      fcp, ready       buckets of the visits: lt2 (< 2 s) lt4 (< 4 s) lt8 (< 8 s) ge8 (>= 8 s) none (not reached when the page was left)
-     errors           uncaught errors by class: type reference range syntax load (a script or stylesheet of the page that did not load) other
+     errors           uncaught errors by class: type reference range syntax load (a script or stylesheet of THIS site that did not load) thirdparty (one of another site's: Google
+                      Fonts, a CDN, a blocker at work) other
      rejections       unhandled promise rejections           lazyFailed      lazy groups that did not load
      engrave          the engraver's fallbacks by code       practice        the practice plan's fallbacks (stayed on the legacy plan) by reason
    The keys are fixed, so the memory is fixed (about sixty numbers). The line holds numbers only.
@@ -25,7 +26,7 @@ const CAP = 50;
 const MAX_BODY = 1024;
 const LOCALES = ['ko', 'ja', 'zh', 'en'];
 const BUCKETS = ['lt2', 'lt4', 'lt8', 'ge8', 'none'];
-const ERROR_CLASSES = ['type', 'reference', 'range', 'syntax', 'load', 'other'];
+const ERROR_CLASSES = ['type', 'reference', 'range', 'syntax', 'load', 'thirdparty', 'other'];
 /* engrave/page.js fail() codes and practice's practiceGraphBuild reasons; anything else is counted as `other` */
 const ENGRAVE_CODES = ['SOURCE_THREW', 'SOURCE_NONE', 'SOURCE_DISAGREES', 'LINK_FAILED', 'PLAN_THREW', 'LAYOUT_THREW', 'SYNC_THREW'];
 const PRACTICE_CODES = ['NOT_LOADED', 'NO_ENGRAVER', 'EMPTY', 'RESOLVE_ERROR', 'NO_GRAPH', 'LINK_FAILED', 'MEASURES', 'IDENTITY', 'ABS_MISMATCH', 'BUILD_ERROR', 'NOT_READY'];

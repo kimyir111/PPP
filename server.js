@@ -572,10 +572,11 @@ const signupKey = crypto.createHmac('sha256', SECRET).update('ppp-signup-address
 const signupTagOf = ip => crypto.createHmac('sha256', signupKey).update(homeJobs.addrKey(ip)).digest('hex').slice(0, 16);
 /* G13-7b (U5): POST /api/stats takes the anonymous counters of a page (client-stats.js: what is accepted, what is kept - totals in memory, one `stats:` line an hour). One browser sends one a visit, so
    an address (a keyed hash made new at every start, held ten minutes: the same trick as the signup tag, with a key that is not the session secret) may send STATS_PER_WINDOW in STATS_WINDOW_MS
-   (a school behind one address is a few dozen visits; more are not counted, and answered 429, which the page never looks at). The machine itself (the socket, loopback) is not limited: a developer's
+   (a classroom or a campus behind one address is a few hundred visits; more are not counted, and answered 429, which the page never looks at; each beacon only adds capped numbers, so the limit protects
+   nothing but the log's tidiness). The machine itself (the socket, loopback) is not limited: a developer's
    server, and the browser suites that close many pages. */
 const clientStats = require('./client-stats');
-const STATS_PER_WINDOW = parseInt(process.env.PPP_STATS_BEACONS, 10) || 60;
+const STATS_PER_WINDOW = parseInt(process.env.PPP_STATS_BEACONS, 10) || 300;
 const STATS_WINDOW_MS = 10 * 60 * 1000;
 const statsBeacons = guestShare.slidingWindow(STATS_PER_WINDOW, STATS_WINDOW_MS, undefined, 5000);
 const statsKey = crypto.randomBytes(32);
