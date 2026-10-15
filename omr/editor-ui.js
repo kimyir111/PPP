@@ -50,6 +50,7 @@
     '.ppp-edit-stage svg{display:block;color:var(--paper-ink,var(--ink,#222));margin:0 auto}',
     '.ppp-edit-stage .ppp-edit-sel{color:var(--accent,#6048dc)}',
     '.ppp-edit-stage .ppp-edit-sel *{stroke-width:inherit}',
+    '.ppp-edit-crop{width:100%;max-height:140px;margin:0 0 8px;border:1px solid var(--line,#ddd);border-radius:10px;background-color:#fff}',
     '.ppp-edit-fill{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}',
     '.ppp-edit-chip{display:inline-flex;align-items:center;min-height:32px;padding:0 10px;border-radius:999px;border:1px solid var(--line,#ddd);background:var(--bg,#f6f6f6);font-size:12.5px}',
     '.ppp-edit-chip.bad{border-color:var(--bad,#c33);color:var(--bad,#c33)}',
@@ -429,6 +430,16 @@
       } else why.push(h('div', { class: 'ppp-edit-why', 'data-why': 'none', text: info.edited ? tx('You changed this measure.') : tx('Nothing stands out in this measure.') }));
       why.forEach(x => body.appendChild(x));
 
+      /* the page itself, cropped to this bar (only when the bars of the page are as many as the import's) */
+      const bi0 = session.baseIndexOf(state.bar);
+      const crop = bi0 >= 0 && typeof host.crop === 'function' ? host.crop(bi0, session.base.timeline.measures.length) : null;
+      if (crop) {
+        body.appendChild(h('div', { class: 'ppp-edit-label', text: tx('On the page') }));
+        body.appendChild(h('div', { class: 'ppp-edit-crop', 'data-crop': crop.page + ':' + Math.round(crop.x) + ',' + Math.round(crop.y) + ',' + Math.round(crop.w) + ',' + Math.round(crop.h),
+          role: 'img', 'aria-label': tx('On the page'),
+          style: 'background-image:url("' + crop.url + '");background-repeat:no-repeat;background-size:' + (crop.pageW / crop.w * 100) + '% auto;background-position:'
+            + (crop.pageW > crop.w ? crop.x / (crop.pageW - crop.w) * 100 : 0) + '% ' + (crop.pageH > crop.h ? crop.y / (crop.pageH - crop.h) * 100 : 0) + '%;aspect-ratio:' + crop.w + ' / ' + crop.h + ';' }));
+      }
       /* the bar */
       if (keepStage) stage = keepStage; else stage = h('div', { class: 'ppp-edit-stage', 'data-stage': '1', onclick: onTap });
       body.appendChild(stage);

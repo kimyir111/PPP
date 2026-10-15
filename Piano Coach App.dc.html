@@ -8707,7 +8707,7 @@ const Import = {
       if (!systems) {
         try { layer = PdfLayer.fromCanvas(canvas, pdfVp.width, pdfVp.height) || layer; } catch (e) {}
       }
-      pages.push({ dataUrl: canvas.toDataURL('image/png'), width: canvas.width, height: canvas.height, layer: layer });
+      pages.push({ dataUrl: canvas.toDataURL('image/png'), width: canvas.width, height: canvas.height, layer: layer, pdfW: pdfVp.width, pdfH: pdfVp.height });
     }
     return pages;
   },
@@ -8728,7 +8728,7 @@ const Import = {
           ctx.drawImage(img, 0, 0);
           let layer = null;
           try { layer = PdfLayer.fromCanvas(c, c.width, c.height); } catch (e) {}
-          resolve([{ dataUrl: c.toDataURL('image/png'), width: c.width, height: c.height, layer: layer }]);
+          resolve([{ dataUrl: c.toDataURL('image/png'), width: c.width, height: c.height, layer: layer, pdfW: c.width, pdfH: c.height }]);
         };
         img.onerror = () => reject(importError('bad-image', tx('That image could not be opened.')));
         img.src = fr.result;
@@ -8992,6 +8992,22 @@ const Import = {
       if (res.bars.length !== measures.length) { report.flagsFailed = 'bars-differ'; return; }
       FL.mergeIntoReport(report, res, { numbers: measures.map(m => m.number), notes: (score.notes || []).filter(n => !n.rest).length, partial: FL.hasChecker ? null : 'no-notation-checker' }, tx);
     } catch (e) { report.flagsFailed = 'threw: ' + String(e && (e.code || e.message) || e).slice(0, 160); }
+  },
+
+  /* G12-4: where the bars of a page are on its picture (pixels of p.dataUrl), from the page's own lines: per system, top to bottom, {top, bottom, bars: [[x0, x1], ...]}; null when the page has
+     no layer. The sheet of the bar editor crops the page with it when the bars read and the bars found are as many (omrCrop). */
+  pageBars(p) {
+    if (!p || !p.layer || !(p.pdfW > 0) || !(p.pdfH > 0) || !(p.width > 0)) return null;
+    const lay = PdfLayer.layout(p.layer, 2);
+    const kx = p.width / p.pdfW, ky = p.height / p.pdfH;
+    return lay.systems.filter(s => s.staves.length && s.bars.length).map(s => {
+      const t = s.staves[0], b = s.staves[s.staves.length - 1];
+      const pad = 3 * (t.gap || 6);
+      return {
+        top: Math.max(0, (p.pdfH - (t.top + pad)) * ky), bottom: Math.min(p.height, (p.pdfH - (b.bottom - pad)) * ky),
+        bars: s.bars.map(x => [Math.max(0, x.x0 * kx), Math.min(p.width, x.x1 * kx)])
+      };
+    });
   },
 
   /* ---- stitch per-page MusicXML into one document ----
@@ -10430,6 +10446,7 @@ const Import = {
       } catch (e) { /* the first pass stands as it is */ }
     }
 
+    if (OMR_MODE === 'v2') pages.forEach(p => { try { p.bars = Import.pageBars(p); } catch (e) { p.bars = null; } });   /* G12-4: where each bar is on the picture, for the editor's crop (the layer itself is let go below) */
     if (kind === 'pdf') pages.forEach(p => { delete p.layer; });
 
     if (source.engine === 'pdf') {
@@ -15698,7 +15715,9 @@ class Component extends DCLogic {
     try {
       const E = lazyPeek('PPPEngrave');
       const r = E && E.app ? E.app.resolveSync(S.score) : null;
-      v = !!(r && (r.via === 'live' || r.via === 'store') && r.graph && r.graph.ext && r.graph.ext['ppp.omr']);
+      /* a page (a PDF or a photo) read by an engine has the mark of that in its graph; a draft the browser made of one has the graph of its Score (live, or projected from it): both are for the editor */
+      const page = !!(S.importSource && (S.importSource.kind === 'pdf' || S.importSource.kind === 'image'));
+      v = !!(r && r.graph && r.via !== 'none' && (page || (r.graph.ext && r.graph.ext['ppp.omr'])));
     } catch (e) { v = false; }
     this._omrOk = { score: S.score, v: v };
     return v;
@@ -15722,7 +15741,8 @@ class Component extends DCLogic {
     const sc = this.state.score;
     let src = null;
     try { src = await window.PPPEngrave.app.resolve(sc, { key: this.state.songId }); } catch (e) { src = null; }
-    if (!src || !src.graph || (src.via !== 'live' && src.via !== 'store') || !src.graph.ext || !src.graph.ext['ppp.omr']) {
+    const fromPage = !!(this.state.importSource && (this.state.importSource.kind === 'pdf' || this.state.importSource.kind === 'image'));
+    if (!src || !src.graph || src.via === 'none' || !(fromPage || (src.graph.ext && src.graph.ext['ppp.omr']))) {
       this.say(tx('This score was not read from a page, so its measures cannot be edited here.'));
       follow();
       return;
@@ -15747,6 +15767,7 @@ class Component extends DCLogic {
         onBar: n => { if (self.state.reviewFrom !== n) self.setState({ reviewFrom: n }); },
         onClose: () => self.omrEditorClosed(),
         say: m => self.say(m),
+        crop: (index, count) => self.omrCrop(index, count),
         play: n => self.omrPlayBar(n)
       }
     });
@@ -15765,6 +15786,17 @@ class Component extends DCLogic {
     }
   }
   /* "Play this measure": a loop of that one bar for as long as the sheet is open */
+  /* the crop of the page for the bar that was the index-th of the import (null unless the bars found on the pages are as many as the import's: the mapping is by order, and a count that
+     differs says that it cannot be trusted - the page image then stays whole) */
+  omrCrop(index, count) {
+    const pages = this.reviewPages();
+    const all = [];
+    pages.forEach((p, pi) => (p.bars || []).forEach(s => s.bars.forEach(b => all.push({ page: pi, top: s.top, bottom: s.bottom, x0: b[0], x1: b[1] }))));
+    const c = all.length && all.length === count ? all[index] : null;
+    if (!c || !(c.x1 - c.x0 > 4) || !(c.bottom - c.top > 4)) return null;
+    const p = pages[c.page];
+    return { url: p.dataUrl, pageW: p.width, pageH: p.height, x: c.x0, y: c.top, w: c.x1 - c.x0, h: c.bottom - c.top, page: c.page + 1 };
+  }
   omrPlayBar(n) {
     const S = this.state, rec = this._omrEd;
     if (!rec) return;

@@ -98,6 +98,7 @@ const IN_PAGE = `
     const A = window.PPP.app, r = window.__last;
     A.adoptScore(r.score);
     A.enterSong(r.score, r.source, true, null);
+    A._pageImages = r.pageImages || null;
     A.setState({ screen: 'review', importReport: r.report, importSource: r.source, reviewFrom: 1, fileName: 'page.pdf' });
   };
   /* the graph the page is on, what is drawn, what is played */
@@ -294,6 +295,18 @@ const IN_PAGE = `
   ok('the bar is drawn alone: 3 + 1 notes, the sheet is at the bottom of the screen and as wide as the screen', head.svg && head.notes === 4 && Math.abs(head.bottom - head.vh) < 2 && head.w >= 380, short(head));
   const small = await page.evaluate(() => [...document.querySelectorAll('[data-omr-editor] button')].map(b => { const r = b.getBoundingClientRect(); return { a: b.getAttribute('data-act'), w: Math.round(r.width), h: Math.round(r.height) }; }).filter(b => b.w < 44 || b.h < 44));
   ok('every control of the sheet is at least 44 px', small.length === 0, short(small));
+  /* the page itself, cropped to the bar: bar 2 of 6 of a page whose bar lines are at known places */
+  {
+    const c = await page.evaluate(() => { const el = document.querySelector('[data-omr-editor] [data-crop]'); const p = window.PPP.app._pageImages[0]; return el ? { crop: el.getAttribute('data-crop'), w: p.width, h: p.height, pdfW: p.pdfW } : null; });
+    ok('the sheet shows the page cropped to the bar', !!c, short(c));
+    if (c) {
+      const [pg, x, y, w, h] = c.crop.replace(':', ',').split(',').map(Number);
+      const k = c.w / c.pdfW, xs = barLines(6);
+      const want = [xs[1] * k, xs[2] * k];                         /* bar 2: from the second bar line to the third */
+      const inter = Math.max(0, Math.min(x + w, want[1]) - Math.max(x, want[0])), union = Math.max(x + w, want[1]) - Math.min(x, want[0]);
+      ok('the crop is the bar: its width overlaps the bar\'s on the page by >= 0.8 (gate A4)', inter / union >= 0.8, 'overlap ' + (Math.round(inter / union * 100) / 100) + ' crop ' + Math.round(x) + '..' + Math.round(x + w) + ' want ' + Math.round(want[0]) + '..' + Math.round(want[1]));
+    }
+  }
   ok('first open: the sheet is on screen within 2 s of the tap (files already there)', opened < 2000, opened + ' ms');
   const base = await snap(page);
   invariant('opened', base);
@@ -545,6 +558,35 @@ const IN_PAGE = `
     }, songId);
     ok('after a reload the song\'s graph is read from the store and agrees with its Score', res.via === 'store' && res.agree && res.rev === kept.rev, short([res, kept.rev]));
     await p2.close();
+  }
+
+  /* ================================================================ a Score with no graph of its own (a browser draft, a score read back from its slot) */
+  console.log('a score whose graph is projected from it (no import graph) is edited too');
+  {
+    const { page: p3 } = await fresh();
+    const v = await load(p3, xml6, 'v2', pdf6);
+    ok('imports', !v.error && v.bars === 6, short(v));
+    await p3.evaluate(() => {
+      const A = window.PPP.app, r = window.__last;
+      const copy = JSON.parse(JSON.stringify(r.score));       /* a Score no producer remembered (one note is another note: no graph agrees with it) */
+      const n0 = copy.notes.find(x => !x.rest && x.p === 'D5'); n0.p = 'E5'; n0.midi += 2;
+      A.adoptScore(copy);
+      A.enterSong(copy, r.source, true, null);
+      A.setState({ screen: 'review', importReport: r.report, importSource: r.source, reviewFrom: 1, fileName: 'page.pdf' });
+    });
+    await wait(500);
+    const via0 = await p3.evaluate(() => window.PPPEngrave.app.resolveSync(window.PPP.app.state.score).via);
+    ok('the Score has no graph of its own: the engraver rebuilds one from it (projected)', via0 === 'projected', via0);
+    const btn = await p3.evaluate(() => !!document.querySelector('button[data-omr-edit]'));
+    ok('the review offers the editor all the same', btn, '');
+    await openAt(p3, 1);
+    const ev = await p3.evaluate(() => { const g = window.PPPEngrave.app.resolveSync(window.PPP.app.state.score).graph; const e = g.parts[0].events.find(x => x.kind === 'note' && x.staff === g.parts[0].staves[0].id); return e.id; });
+    await tapEv(p3, ev);
+    const r1 = await click(p3, 'step-up');
+    const done = await settled(p3);
+    const s1 = await p3.evaluate(() => window.__snap());
+    ok('an edit is made: the page then draws and plays that graph (live, agrees)', r1 === 'ok' && done && s1.via === 'live' && s1.agree && s1.link && s1.same, short([r1, done, s1.via, s1.agree, s1.same]));
+    await p3.close();
   }
 
   /* ================================================================ two parts the normaliser could not join */

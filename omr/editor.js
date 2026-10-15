@@ -319,6 +319,8 @@
         return { ok: true, changed: true, graph: base, measures: [], focus: null, op: 'discard' };
       },
       get edited() { return cur().graph !== base; },
+      /* where a bar was in the import (the graph the visit began with), or -1: a bar put in since has no place on the page */
+      baseIndexOf(id) { return base.timeline.measures.findIndex(m => m.id === id); },
       /* omr/flags.js on the graph now: its own answer, by bar index */
       check(FL) {
         FL = FL || (browser && browser.PPPOmrFlags) || null;
