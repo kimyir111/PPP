@@ -32,7 +32,8 @@ const DAY = 24 * 3600 * 1000;
 function rules() {
   console.log('\n── the rules: the name, the end dates, the caps ──');
   const GG = G.GUEST;
-  ok('the limits are the ones named',
+  /* GUEST_POST_NO_CONSTANTS=1 (the second pass of the mutation run) leaves this one out, so each number is found only by what it DOES in the tests below */
+  if (!process.env.GUEST_POST_NO_CONSTANTS) ok('the limits are the ones named',
     GG.PER_GUEST_LISTED === 10 && GG.PER_ADDR_LISTED === 20 && GG.TOTAL_LISTED === 300 && GG.TOTAL_LISTED_BYTES === 24 * 1024 * 1024
     && GG.POST_PER_KEY_PER_DAY === 5 && GG.POST_PER_IP_PER_DAY === 10 && GG.POST_GLOBAL_PER_DAY === 60 && GG.TTL_LISTED_MS === 90 * DAY && GG.TTL_MS === 30 * DAY
     && GG.MAX_BYTES === 1024 * 1024 && GG.NAME_MAX === 24);
@@ -162,7 +163,8 @@ async function main() {
     ok('"mine" with another key lists nothing of theirs', mineOther.status === 200 && mineOther.body.shares.length === 0);
     const opened = await req(P, 'GET', '/api/shares/' + id);
     ok('it opens by its link for anyone', opened.status === 200 && opened.body.score && opened.body.mine === false && opened.body.guest === true);
-    ok('its link page asks search engines not to index it, and has its preview card', /noindex/.test((await req(P, 'GET', '/?share=' + id)).text));
+    /* a mutant copy (tests/guest-post.mutants.js) holds the server's modules only, not the page */
+    if (fs.existsSync(path.join(SRC, 'Piano Coach App.dc.html'))) ok('its link page asks search engines not to index it', /noindex/.test((await req(P, 'GET', '/?share=' + id)).text));
 
     console.log('\n── nobody else can change it: a wrong key, no key and another guest are the same 403 ──');
     const B = secretOf();
