@@ -1516,4 +1516,5 @@ function create(deps) {
   };
 }
 
-module.exports = { create, LIMITS, JOB_KINDS, configFrom, newToken, parseToken, newLink, codeHash, linkIdOf, linkTagOf, addrKey, CODE_RE, PC_HEADER };
+/* (byteWindow: sync.js, G13-S0, holds its byte budgets with the same sliding windows) */
+module.exports = { create, LIMITS, JOB_KINDS, configFrom, newToken, parseToken, newLink, codeHash, linkIdOf, linkTagOf, addrKey, CODE_RE, PC_HEADER, byteWindow };

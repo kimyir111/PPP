@@ -10,6 +10,12 @@
      api-jobs    /api/jobs..., /api/worker..., /api/pc-links... (the home-PC queue)
      other       every other /api route, /helper, and a request whose address cannot be read
    No address, no id, no path, no header, no user data is kept or printed - only the numbers. Nothing is served over HTTP.
+   A GAUGE (addGauge) is a function that reports one more block of numbers in the line, under its own name, and gives its feature a class of its own: sync.js (G13-S0, only with
+   PPP_SYNC=1) adds `sync` (libraries, items, bytes against its cap, what was written and read since the last line, the refusals by kind) and the class
+     api-sync    /api/libs..., /api/sync/...
+   Without a gauge there is no such class and no such block - those paths are `other`'s, as they were - so the line of a server that has the feature switched off is exactly what
+   it was. A gauge is read when the line is printed and may reset its own window; it is only numbers; one that sets `warn` (a sentence of numbers) also prints one
+   `stats: WARNING ...` line.
 
    The line, once an hour of the process being awake (the timer is unref'd: it never keeps a process or a test alive), and once more when the
    process is told to stop (SIGTERM; Render spins the free instance down after 15 idle minutes, so most processes live less than an hour and would
@@ -39,6 +45,7 @@ function classify(rawUrl) {
   if (p === '/api/auth' || p.startsWith('/api/auth/')) return 'api-auth';
   if (p === '/api/shares' || p.startsWith('/api/shares/')) return 'api-shares';
   if (/^\/api\/(jobs|worker|pc-links)(\/|$)/.test(p)) return 'api-jobs';
+  if (/^\/api\/(libs|sync)(\/|$)/.test(p)) return 'api-sync';
   if (p === '/api' || p.startsWith('/api/')) return 'other';
   return 'static';
 }
@@ -53,14 +60,17 @@ function createStats(opts) {
   let windowAt = bootAt;
   let timer = null;
   let termHooked = false;
+  /* the classes of THIS instance: the six, and api-sync once a feature that has a gauge of that name is switched on */
+  const classes = CLASSES.slice();
+  const gauges = {};
   let c = fresh();
 
   function fresh() {
     const o = { idlePoolErrors: 0, by: {} };
-    CLASSES.forEach(k => { o.by[k] = { requests: 0, '4xx': 0, tooMany: 0, '5xx': 0, storeErrors: 0 }; });
+    classes.forEach(k => { o.by[k] = { requests: 0, '4xx': 0, tooMany: 0, '5xx': 0, storeErrors: 0 }; });
     return o;
   }
-  function total(key) { return CLASSES.reduce((n, k) => n + c.by[k][key], 0); }
+  function total(key) { return classes.reduce((n, k) => n + c.by[k][key], 0); }
 
   /* the line for the counters now (null when nothing was counted), and the counters start again */
   function flush(final) {
@@ -75,9 +85,19 @@ function createStats(opts) {
       by: c.by
     };
     if (final) doc.final = true;
+    const warnings = [];
+    Object.keys(gauges).forEach(name => {
+      try {
+        const g = gauges[name]();
+        if (g && typeof g === 'object') {
+          doc[name] = g;
+          ['warn', 'warnLibs'].forEach(k => { if (typeof g[k] === 'string') warnings.push(g[k]); });
+        }
+      } catch (e) { /* a gauge that fails is left out of the line */ }
+    });
     const line = 'stats: ' + JSON.stringify(doc);
     c = fresh(); windowAt = t;
-    try { log(line); } catch (e) { /* a log that fails is not a reason to fail */ }
+    try { log(line); warnings.forEach(w => log('stats: WARNING ' + String(w).replace(/[^ -~]/g, '?').slice(0, 200))); } catch (e) { /* a log that fails is not a reason to fail */ }
     return line;
   }
 
@@ -106,7 +126,8 @@ function createStats(opts) {
   /* a request has arrived: count it, and its answer when it is sent. Never throws: counting must not touch a request. */
   function track(req, res) {
     try {
-      const cls = classify(req && req.url);
+      let cls = classify(req && req.url);
+      if (!c.by[cls]) cls = 'other';          /* (api-sync, when its feature is not on) */
       c.by[cls].requests++;
       const ctx = { cls: cls, open: true };
       als.enterWith(ctx);
@@ -129,7 +150,17 @@ function createStats(opts) {
     } catch (e) { /* none */ }
   }
 
-  return { track: track, storeError: storeError, flush: flush, classify: classify, CLASSES: CLASSES };
+  /* a block of numbers more in the line (see the header); the name is a fixed word of the code, never data. The sync gauge also brings its route class. */
+  function addGauge(name, fn) {
+    if (!/^[a-z]{1,12}$/.test(String(name)) || typeof fn !== 'function') return;
+    gauges[name] = fn;
+    if (name === 'sync' && classes.indexOf('api-sync') < 0) {
+      classes.splice(classes.indexOf('health'), 0, 'api-sync');
+      c.by['api-sync'] = { requests: 0, '4xx': 0, tooMany: 0, '5xx': 0, storeErrors: 0 };
+    }
+  }
+
+  return { track: track, storeError: storeError, flush: flush, classify: classify, addGauge: addGauge, CLASSES: CLASSES };
 }
 
 /* the instance server.js uses; PPP_STATS_INTERVAL_MS is only for the test that starts the real server (default: an hour) */
