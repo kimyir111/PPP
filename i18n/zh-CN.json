@@ -2277,6 +2277,8 @@
     "Model library did not initialise.": "模型库没有初始化成功。",
     "Could not load the piano transcription model.": "无法加载钢琴扒谱模型。",
     "The piano model could not be downloaded. Reading a recording in this browser needs an internet connection (the model is about 60 MB).": "无法下载钢琴模型。在此浏览器中读取录音需要联网（模型约 60 MB）。",
+    "The piano model could not be started in this browser. Reload the page and try again.": "无法在此浏览器中启动钢琴模型。请刷新页面后重试。",
+    "PPP is still busy with another recording. Try again in a moment.": "仍在读取另一段录音，请稍后再试。",
     "The note-detection library could not be loaded. Reading a recording in this browser needs an internet connection.": "无法加载音符识别库。在此浏览器中读取录音需要联网。",
     "AI unavailable": "AI 暂不可用",
     "Unsupported style": "不支持的风格",

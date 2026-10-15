@@ -2277,6 +2277,8 @@
     "Model library did not initialise.": "モデルライブラリの初期化に失敗しました。",
     "Could not load the piano transcription model.": "ピアノ採譜モデルを読み込めませんでした。",
     "The piano model could not be downloaded. Reading a recording in this browser needs an internet connection (the model is about 60 MB).": "ピアノのモデルをダウンロードできませんでした。このブラウザーで録音を読み取るにはインターネット接続が必要です（モデルは約60MBです）。",
+    "The piano model could not be started in this browser. Reload the page and try again.": "このブラウザーでピアノのモデルを起動できませんでした。ページを再読み込みしてから、もう一度お試しください。",
+    "PPP is still busy with another recording. Try again in a moment.": "別の録音をまだ読み取っています。しばらくしてから、もう一度お試しください。",
     "The note-detection library could not be loaded. Reading a recording in this browser needs an internet connection.": "音の検出ライブラリを読み込めませんでした。このブラウザーで録音を読み取るにはインターネット接続が必要です。",
     "AI unavailable": "AIを利用できません",
     "Unsupported style": "未対応のスタイルです",

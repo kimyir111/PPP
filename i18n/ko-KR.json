@@ -2277,6 +2277,8 @@
     "Model library did not initialise.": "모델 라이브러리가 시작되지 않았어요.",
     "Could not load the piano transcription model.": "피아노 받아쓰기 모델을 불러오지 못했어요.",
     "The piano model could not be downloaded. Reading a recording in this browser needs an internet connection (the model is about 60 MB).": "피아노 모델을 내려받지 못했어요. 이 브라우저에서 녹음을 읽으려면 인터넷 연결이 필요해요(모델이 약 60MB예요).",
+    "The piano model could not be started in this browser. Reload the page and try again.": "피아노 모델을 이 브라우저에서 시작하지 못했어요. 페이지를 새로 고친 뒤 다시 해 보세요.",
+    "PPP is still busy with another recording. Try again in a moment.": "다른 녹음을 아직 읽고 있어요. 잠시 뒤에 다시 해 보세요.",
     "The note-detection library could not be loaded. Reading a recording in this browser needs an internet connection.": "음 인식 라이브러리를 불러오지 못했어요. 이 브라우저에서 녹음을 읽으려면 인터넷 연결이 필요해요.",
     "AI unavailable": "AI를 사용할 수 없어요",
     "Unsupported style": "지원하지 않는 스타일이에요",
