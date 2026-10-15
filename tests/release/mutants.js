@@ -12,7 +12,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const REPO = path.resolve(__dirname, '..', '..');
-const RELEASE = 'tools/release/release.js', ISSUE = 'tools/release/smoke-issue.js', STATS = 'server-stats.js';
+const RELEASE = 'tools/release/release.js', ISSUE = 'tools/release/smoke-issue.js', STATS = 'server-stats.js', CLIENT = 'client-stats.js';
 
 const MUTANTS = [
   /* the gate */
@@ -60,17 +60,34 @@ const MUTANTS = [
   { name: 'the hourly timer keeps the process alive (no unref)', file: STATS, find: 'timer.unref();', put: '', test: 'stats', env: 'PPP_STATS_MODULE' },
   { name: 'the line carries the request path (a leak)', file: STATS, find: "      by: c.by\n    };", put: "      by: c.by, lastPath: String(lastUrl)\n    };", extra: [{ find: 'const cls = classify(req && req.url);', put: 'const cls = classify(req && req.url); lastUrl = req && req.url;' }, { find: 'let termHooked = false;', put: 'let termHooked = false; let lastUrl = "";' }], test: 'stats', env: 'PPP_STATS_MODULE' },
   { name: 'SIGTERM does not print the last line', file: STATS, find: "try { flush(true); } catch (e) { /* none */ }\n    try { process.stdout.write", put: "try { process.stdout.write", test: 'stats', env: 'PPP_STATS_MODULE' },
-  { name: 'SIGTERM prints the line and never stops the process', file: STATS, find: "try { process.kill(process.pid, 'SIGTERM'); } catch (e) { process.exit(143); }", put: 'void 0;', test: 'stats', env: 'PPP_STATS_MODULE' }
+  { name: 'SIGTERM prints the line and never stops the process', file: STATS, find: "try { process.kill(process.pid, 'SIGTERM'); } catch (e) { process.exit(143); }", put: 'void 0;', test: 'stats', env: 'PPP_STATS_MODULE' },
+  /* G13-7b: the anonymous counters of the pages (client-stats.js) and where they join the line (server-stats.js) */
+  { name: 'a code or class the server has no name for is kept as it came (the whitelist is gone)', file: CLIENT, find: 'if (names.indexOf(k) >= 0) {', put: 'if (true) {', test: 'client', env: 'PPP_CLIENT_STATS_MODULE' },
+  { name: 'a count has no cap', file: CLIENT, find: 'return Math.min(v, CAP);', put: 'return v;', test: 'client', env: 'PPP_CLIENT_STATS_MODULE' },
+  { name: 'a fractional count is taken', file: CLIENT, find: "if (typeof v !== 'number' || !Number.isInteger(v) || v < 0) return null;", put: "if (typeof v !== 'number' || v < 0) return null;", test: 'client', env: 'PPP_CLIENT_STATS_MODULE' },
+  { name: 'a negative count is taken', file: CLIENT, find: "if (typeof v !== 'number' || !Number.isInteger(v) || v < 0) return null;", put: "if (typeof v !== 'number' || !Number.isInteger(v)) return null;", test: 'client', env: 'PPP_CLIENT_STATS_MODULE' },
+  { name: 'another version of the beacon is accepted', file: CLIENT, find: "if (raw.v !== 1) return { ok: false, why: 'version' };", put: '', test: 'client', env: 'PPP_CLIENT_STATS_MODULE' },
+  { name: 'an array is a beacon', file: CLIENT, find: "typeof v === 'object' && !Array.isArray(v);", put: "typeof v === 'object';", test: 'client', env: 'PPP_CLIENT_STATS_MODULE' },
+  { name: 'the timing of a beacon that is not the first of a page is taken', file: CLIENT, find: 'if (raw.pv === 1) {', put: 'if (true) {', test: 'client', env: 'PPP_CLIENT_STATS_MODULE' },
+  { name: 'the build string is kept whatever it is', file: CLIENT, find: "if (typeof raw.b === 'string' && /^[0-9a-f]{7,12}$/.test(raw.b)) doc.b = raw.b;", put: "if (typeof raw.b === 'string') doc.b = raw.b;", test: 'client', env: 'PPP_CLIENT_STATS_MODULE' },
+  { name: 'the whole body is handed on, with its unknown keys', file: CLIENT, find: 'return { ok: true, doc: doc };', put: 'return { ok: true, doc: raw };', test: 'client', env: 'PPP_CLIENT_STATS_MODULE' },
+  { name: 'a beacon from another build is not counted as stale', file: CLIENT, find: 'if (stale) agg.stale++;', put: '', test: 'client', env: 'PPP_CLIENT_STATS_MODULE' },
+  { name: 'the unknown codes together are not capped', file: CLIENT, find: 'if (other) out.other = Math.min(CAP, (out.other || 0) + other);', put: 'if (other) out.other = (out.other || 0) + other;', extra: [{ find: 'else if (withOther) { other = Math.min(CAP, other + n); any = true; }', put: 'else if (withOther) { other = other + n; any = true; }' }], test: 'client', env: 'PPP_CLIENT_STATS_MODULE' },
+  { name: 'a beacon with an error is not counted as one with errors', file: CLIENT, find: 'if (failing) agg.withErrors++;', put: '', test: 'client', env: 'PPP_CLIENT_STATS_MODULE' },
+  { name: 'the line has a client key even when no beacon came', file: STATS, find: 'if (c.client.beacons) doc.client = clientStats.snapshot(c.client);', put: 'doc.client = clientStats.snapshot(c.client);', test: 'stats', env: 'PPP_STATS_MODULE' },
+  { name: 'a window with only beacons prints nothing', file: STATS, find: '&& !c.idlePoolErrors && !c.client.beacons) {', put: '&& !c.idlePoolErrors) {', test: 'client', env: 'PPP_STATS_MODULE' },
+  { name: 'the client counters are not reset after a line', file: STATS, find: 'c = fresh(); windowAt = t;', put: 'c = Object.assign(fresh(), { client: c.client }); windowAt = t;', test: 'client', env: 'PPP_STATS_MODULE' }
 ];
 
 const TESTS = {
   release: { cmd: [path.join(REPO, 'tests', 'release', 'release.test.js')] },
-  stats: { cmd: [path.join(REPO, 'tests', 'server-stats.test.js'), '--unit'] }
+  stats: { cmd: [path.join(REPO, 'tests', 'server-stats.test.js'), '--unit'] },
+  client: { cmd: [path.join(REPO, 'tests', 'client-stats.test.js'), '--unit'] }
 };
 
 function run(test, envName, modulePath) {
   const env = Object.assign({}, process.env);
-  delete env.PPP_RELEASE_MODULE; delete env.PPP_SMOKE_ISSUE_MODULE; delete env.PPP_STATS_MODULE;
+  delete env.PPP_RELEASE_MODULE; delete env.PPP_SMOKE_ISSUE_MODULE; delete env.PPP_STATS_MODULE; delete env.PPP_CLIENT_STATS_MODULE;
   if (envName) env[envName] = modulePath;
   return new Promise(resolve => {
     const child = spawn(process.execPath, TESTS[test].cmd, { env, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -93,6 +110,7 @@ async function pool(items, limit, fn) {
 }
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-mutants-'));
+fs.copyFileSync(path.join(REPO, 'client-stats.js'), path.join(tmp, 'client-stats.js'));       /* a mutated server-stats.js finds it beside itself */
 let bad = 0;
 const say = (ok, text) => { console.log((ok ? '  ✓ ' : '  ✗ ') + text); if (!ok) bad++; };
 const failing = out => out.split('\n').filter(l => l.includes('✗'));
