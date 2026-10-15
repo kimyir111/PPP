@@ -17,6 +17,7 @@
                       Fonts, a CDN, a blocker at work) other
      rejections       unhandled promise rejections           lazyFailed      lazy groups that did not load
      engrave          the engraver's fallbacks by code       practice        the practice plan's fallbacks (stayed on the legacy plan) by reason
+     libFallbacks     (G13-8) the optional libraries PPP could not serve itself and the page took from their CDN address, by library: pdfjs, tfjs-2.8.6, magenta-music, basic-pitch
    The keys are fixed, so the memory is fixed (about sixty numbers). The line holds numbers only.
 
    Not here: the rate limit and the address it is keyed by (server.js: a keyed hash that is made new at every start, kept for ten minutes); the route. */
@@ -30,6 +31,8 @@ const ERROR_CLASSES = ['type', 'reference', 'range', 'syntax', 'load', 'thirdpar
 /* engrave/page.js fail() codes and practice's practiceGraphBuild reasons; anything else is counted as `other` */
 const ENGRAVE_CODES = ['SOURCE_THREW', 'SOURCE_NONE', 'SOURCE_DISAGREES', 'LINK_FAILED', 'PLAN_THREW', 'LAYOUT_THREW', 'SYNC_THREW'];
 const PRACTICE_CODES = ['NOT_LOADED', 'NO_ENGRAVER', 'EMPTY', 'RESOLVE_ERROR', 'NO_GRAPH', 'LINK_FAILED', 'MEASURES', 'IDENTITY', 'ABS_MISMATCH', 'BUILD_ERROR', 'NOT_READY'];
+/* the names of the page's PPP.libFallbacks (G13-8) */
+const LIB_CODES = ['pdfjs', 'tfjs-2.8.6', 'magenta-music', 'basic-pitch'];
 const MAX_KEYS = 32;      /* an object of a beacon is read for at most this many keys */
 
 const isPlain = v => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -75,6 +78,8 @@ function sanitize(raw) {
   if (eng) doc.eng = eng;
   const prc = counted(raw.prc, PRACTICE_CODES, true);
   if (prc) doc.prc = prc;
+  const lib = counted(raw.lib, LIB_CODES, true);
+  if (lib) doc.lib = lib;
   const lz = count(raw.lz);
   if (lz) doc.lz = lz;
   return { ok: true, doc: doc };
@@ -87,7 +92,7 @@ function fresh() {
     beacons: 0, visits: 0, stale: 0, mobile: 0, desktop: 0, withErrors: 0,
     locale: zero(LOCALES), fcp: zero(BUCKETS), ready: zero(BUCKETS),
     errors: zero(ERROR_CLASSES), rejections: 0, lazyFailed: 0,
-    engrave: zero(ENGRAVE_CODES.concat('other')), practice: zero(PRACTICE_CODES.concat('other'))
+    engrave: zero(ENGRAVE_CODES.concat('other')), practice: zero(PRACTICE_CODES.concat('other')), libFallbacks: zero(LIB_CODES.concat('other'))
   };
 }
 
@@ -108,6 +113,7 @@ function add(agg, doc, stale) {
   if (failing) agg.withErrors++;
   if (doc.eng) Object.keys(doc.eng).forEach(k => { agg.engrave[k] += doc.eng[k]; });
   if (doc.prc) Object.keys(doc.prc).forEach(k => { agg.practice[k] += doc.prc[k]; });
+  if (doc.lib) Object.keys(doc.lib).forEach(k => { agg.libFallbacks[k] += doc.lib[k]; });
   if (doc.lz) agg.lazyFailed += doc.lz;
 }
 
@@ -118,8 +124,8 @@ function snapshot(agg) {
     beacons: agg.beacons, visits: agg.visits, stale: agg.stale, mobile: agg.mobile, desktop: agg.desktop, withErrors: agg.withErrors,
     locale: Object.assign({}, agg.locale), fcp: Object.assign({}, agg.fcp), ready: Object.assign({}, agg.ready),
     errors: Object.assign({}, agg.errors), rejections: agg.rejections, lazyFailed: agg.lazyFailed,
-    engrave: nonzero(agg.engrave), practice: nonzero(agg.practice)
+    engrave: nonzero(agg.engrave), practice: nonzero(agg.practice), libFallbacks: nonzero(agg.libFallbacks)
   };
 }
 
-module.exports = { CAP, MAX_BODY, LOCALES, BUCKETS, ERROR_CLASSES, ENGRAVE_CODES, PRACTICE_CODES, sanitize, fresh, add, snapshot };
+module.exports = { CAP, MAX_BODY, LOCALES, BUCKETS, ERROR_CLASSES, ENGRAVE_CODES, PRACTICE_CODES, LIB_CODES, sanitize, fresh, add, snapshot };

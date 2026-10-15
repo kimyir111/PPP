@@ -47,6 +47,12 @@ function unitPart() {
     ok('an unknown error class is counted as `other`, nothing else of it', r.ok && r.doc.err && r.doc.err.type === 1 && r.doc.err.other === 14 && Object.keys(r.doc.err).sort().join() === 'other,type', J(r.doc.err));
   }
   {
+    /* G13-8: the optional libraries PPP could not serve itself (PPP.libFallbacks): the four names the page has, anything else is `other`, capped like every count */
+    const r = CS.sanitize({ v: 1, lib: { pdfjs: 2, 'tfjs-2.8.6': 1, 'basic-pitch': 999, 'something-new': 4, 'magenta-music': 0 } });
+    ok('lib: the known library names are kept (capped), another is `other`, a zero is nothing', r.ok && J(r.doc.lib) === J({ pdfjs: 2, 'tfjs-2.8.6': 1, 'basic-pitch': 50, other: 4 }), J(r.doc));
+    ok('lib is dropped when it is not an object', CS.sanitize({ v: 1, lib: [1, 2] }).doc.lib === undefined && CS.sanitize({ v: 1, lib: 'pdfjs' }).doc.lib === undefined);
+  }
+  {
     const r = CS.sanitize({ v: 1, err: { thirdparty: 3, load: 1 } });
     ok('`thirdparty` is a class of error of its own (another site\'s file that did not load)', r.ok && J(r.doc.err) === J({ thirdparty: 3, load: 1 }), J(r.doc));
   }
@@ -102,7 +108,7 @@ function unitPart() {
     ok('locale ko 1 ja 1 zh 0 en 1; fcp lt2 1 lt8 1 ge8 1; ready lt4 1 lt8 1 none 1', J(s.locale) === J({ ko: 1, ja: 1, zh: 0, en: 1 }) && s.fcp.lt2 === 1 && s.fcp.lt8 === 1 && s.fcp.ge8 === 1 && s.fcp.lt4 === 0 && s.ready.lt4 === 1 && s.ready.lt8 === 1 && s.ready.none === 1, J([s.locale, s.fcp, s.ready]));
     ok('errors type 2 load 1 other 1; rejections 2; lazyFailed 1; engrave PLAN_THREW 1 only; practice NOT_READY 3 only', J(s.errors) === J({ type: 2, reference: 0, range: 0, syntax: 0, load: 1, thirdparty: 0, other: 1 }) && s.rejections === 2 && s.lazyFailed === 1 && J(s.engrave) === J({ PLAN_THREW: 1 }) && J(s.practice) === J({ NOT_READY: 3 }), J(s));
     const keys = o => Object.keys(o).sort().join();
-    ok('the keys of a snapshot are fixed whatever came', keys(CS.snapshot(CS.fresh())) === keys(s) || keys(CS.snapshot(CS.fresh())) === 'beacons,desktop,engrave,errors,fcp,lazyFailed,locale,mobile,practice,ready,rejections,stale,visits,withErrors', keys(s));
+    ok('the keys of a snapshot are fixed whatever came', keys(CS.snapshot(CS.fresh())) === keys(s) || keys(CS.snapshot(CS.fresh())) === 'beacons,desktop,engrave,errors,fcp,lazyFailed,libFallbacks,locale,mobile,practice,ready,rejections,stale,visits,withErrors', keys(s));
     const nums = []; (function walk(x) { if (x && typeof x === 'object') Object.values(x).forEach(walk); else nums.push(x); })(s);
     ok('every value of it is a whole number', nums.length >= 30 && nums.every(n => Number.isInteger(n) && n >= 0), String(nums.length));
   }

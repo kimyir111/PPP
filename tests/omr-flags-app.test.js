@@ -27,8 +27,9 @@ const path = require('path');
 const { preparePage } = require('./boot');
 
 const URL = 'http://127.0.0.1:8777/Piano%20Coach%20App.dc.html';
-const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js';
-const PDFJS_WORKER = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js';
+/* G13-8: pdf.js is the page's own file (vendor/pdfjs-3.11.174/, the same build the page used to take from jsDelivr), so these suites need no network for it; a path, so that it follows the server the suite is run against */
+const PDFJS = '/vendor/pdfjs-3.11.174/pdf.min.js';
+const PDFJS_WORKER = '/vendor/pdfjs-3.11.174/pdf.worker.min.js';
 const errors = [];
 const ok = (name, cond, detail) => {
   console.log((cond ? '  ✓ ' : '  ✗ ') + name + (detail ? ' — ' + detail : ''));

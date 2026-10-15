@@ -72,7 +72,7 @@ function rig(o) {
       status: () => ({ mode: 'on', groups: lazy.groups })
     };
   }
-  if (o.practice) win.PPP = { practiceStats: o.practice };
+  if (o.practice || o.libs) win.PPP = Object.assign({}, o.practice ? { practiceStats: o.practice } : {}, o.libs ? { libFallbacks: o.libs } : {});
   if (o.globals) Object.keys(o.globals).forEach(k => {
     Object.defineProperty(win, k, { configurable: true, enumerable: false, get() { win.directReads = (win.directReads || 0) + 1; return o.globals[k]; } });
   });
@@ -327,6 +327,21 @@ test('the engraver\'s and the practice plan\'s fallbacks and the lazy groups tha
   assert.equal(p.sent.length, 2, 'nothing new: nothing sent');
 });
 
+test('G13-8: the optional libraries that came from their CDN address (PPP.libFallbacks) are sent as what is new, by name; another name is `other`', () => {
+  const libs = { pdfjs: 1, 'basic-pitch': 2 };
+  const p = rig({ libs });
+  p.doc.hide();
+  assert.deepEqual(p.bodies()[0].lib, { pdfjs: 1, 'basic-pitch': 2 });
+  libs['tfjs-2.8.6'] = 1; libs.pdfjs = 3; libs['a-library-of-tomorrow'] = 7;
+  p.doc.show(); p.doc.hide();
+  assert.deepEqual(p.bodies()[1].lib, { 'tfjs-2.8.6': 1, pdfjs: 2, other: 7 }, 'only the difference since the last beacon');
+  p.doc.show(); p.doc.hide();
+  assert.equal(p.sent.length, 2, 'nothing new: nothing sent');
+  const q = rig({});
+  q.doc.hide();
+  assert.equal(q.bodies()[0].lib, undefined, 'a healthy page sends no lib key');
+});
+
 test('a code the server has no name for is counted as `other` here, so a body is never over 1 KB and never a 413', () => {
   const fb = { PLAN_THREW: 1 }, rs = { NOT_READY: 2 };
   for (let i = 0; i < 400; i++) { fb['SOMETHING_NEW_' + i] = 3; rs['NEW_REASON_WITH_A_LONG_NAME_' + i] = 2; }
@@ -351,10 +366,11 @@ test('a deferred global is read only through PPP_LAZY.peek (a plain read would l
 test('the largest body there can be - every class, every code, every count at its cap - is under 1 KB', () => {
   const ENG = ['SOURCE_THREW', 'SOURCE_NONE', 'SOURCE_DISAGREES', 'LINK_FAILED', 'PLAN_THREW', 'LAYOUT_THREW', 'SYNC_THREW'];
   const PRC = ['NOT_LOADED', 'NO_ENGRAVER', 'EMPTY', 'RESOLVE_ERROR', 'NO_GRAPH', 'LINK_FAILED', 'MEASURES', 'IDENTITY', 'ABS_MISMATCH', 'BUILD_ERROR', 'NOT_READY'];
-  const fb = { MYSTERY: 9999 }, rs = { MYSTERY: 9999 };
+  const fb = { MYSTERY: 9999 }, rs = { MYSTERY: 9999 }, libs = { MYSTERY: 9999 };
   ENG.forEach(k => { fb[k] = 9999; }); PRC.forEach(k => { rs[k] = 9999; });
+  ['pdfjs', 'tfjs-2.8.6', 'magenta-music', 'basic-pitch'].forEach(k => { libs[k] = 9999; });
   const groups = []; for (let i = 0; i < 40; i++) groups.push({ failed: true });
-  const p = rig({ globals: { PPPEngravePage: { stats: { fallbacks: fb } } }, practice: { practiceFallback: { reasons: rs } }, groups, build: 'abcdef012345', lang: 'zh-CN', ua: 'Mobile Android' });
+  const p = rig({ globals: { PPPEngravePage: { stats: { fallbacks: fb } } }, practice: { practiceFallback: { reasons: rs } }, libs, groups, build: 'abcdef012345', lang: 'zh-CN', ua: 'Mobile Android' });
   p.counts.ready();
   ['TypeError', 'ReferenceError', 'RangeError', 'SyntaxError', 'Error'].forEach(n => { for (let i = 0; i < 30; i++) p.win.fire('error', err(n)); });
   for (let i = 0; i < 30; i++) { p.win.fire('error', { target: { nodeType: 1, tagName: 'SCRIPT', src: ORIGIN + '/a.js' } }); p.win.fire('error', { target: { nodeType: 1, tagName: 'LINK', href: 'https://x.example/a.css' } }); p.win.fire('unhandledrejection', {}); }
@@ -366,6 +382,8 @@ test('the largest body there can be - every class, every code, every count at it
   assert.equal(b.err.thirdparty, 20);
   assert.equal(b.eng.PLAN_THREW, 20);
   assert.equal(b.eng.other, 20);
+  assert.equal(b.lib.pdfjs, 20);
+  assert.equal(b.lib.other, 20);
   assert.equal(b.lz, 20);
 });
 

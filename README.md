@@ -77,6 +77,10 @@ and components this app is built from. It is reference material and was not pull
 binds to. The runtime boots itself, takes React 18 (served from `vendor/react-18.3.1/`; `?cdn=1` loads the same files from unpkg, G13-1), and mounts. Because the format
 is preserved, the app still round-trips to Claude Design.
 
+The libraries of the two optional features are served from `vendor/` as well, byte for byte as published and only when the feature is used (G13-8): pdf.js for a PDF or a photo,
+TensorFlow.js with Magenta.js and Basic Pitch for reading a recording in the browser; `?cdn=1` puts jsDelivr and esm.sh back for them too. What is still fetched from another site is the
+piano model's weights (about 60 MB, from Google): reading a recording in the browser needs internet; the home PC worker does not.
+
 ## Importing a PDF or a photo
 
 Every route ends in the same two steps, so nothing downstream can tell where a score came from:

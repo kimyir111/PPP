@@ -69,7 +69,8 @@ const codeSpans = md => Array.from(lf(md).matchAll(/`([^`\n]+)`/g)).map(m => m[1
 
 function copyrightLine(root, rel) {
   const lines = read(root, rel).split('\n').map(l => l.trim());
-  return (lines.find(l => /^Copyright\b/i.test(l)) || '').replace(/,$/, '');
+  /* the template line of the Apache appendix ("Copyright [yyyy] [name of copyright owner]") is not a notice */
+  return (lines.find(l => /^Copyright\b/i.test(l) && !/\[yyyy\]/i.test(l)) || '').replace(/,$/, '');
 }
 function walkFiles(root, rel) {
   const out = [];
@@ -103,6 +104,8 @@ function readVendor(root, problems) {
 
   const sections = [];
   const families = [];
+  /* the licence texts of what is compiled into the vendored files: one block per package, its name in the block's title */
+  const embeddedTexts = exists(root, 'vendor/LICENSE-embedded.txt') ? read(root, 'vendor/LICENSE-embedded.txt') : null;
   secs.forEach(s => {
     const name = s.heading.replace(/\/$/, '');
     if (!exists(root, 'vendor/' + name)) { problems.push('vendor/README.md has a section "' + s.heading + '" but vendor/' + name + ' is not there'); return; }
@@ -131,7 +134,20 @@ function readVendor(root, problems) {
       sec.licence = plain(p.replace(/^Licence:\s*/, ''));
       sec.licenceFiles = Array.from(p.matchAll(/`([^`]+\.txt)`/g)).map(m => m[1]);
       sec.files = filesTable.rows.map(r => ({ file: plain(r[0]), from: plain(r[1]), size: plain(r[2]), sha256: plain(r[3]) }));
-      sec.title = plain((/^React and ReactDOM [\d.]+/m.exec(s.body) || [name])[0]);
+      /* the title: the words of the first paragraph before its first comma or bracket ("React and ReactDOM 18.3.1, the UMD ...", "pdf.js 3.11.174 (npm ...), ...") */
+      const first = s.body.trim().split(/\n\s*\n/)[0].replace(/\s*\n\s*/g, ' ');
+      sec.title = plain((/^(.+?)(?:\s\(|,\s)/.exec(first) || [null, name])[1]);
+      /* optional paragraphs (G13-8): what it is used for, and the copyright notice as the files carry it (an Apache LICENSE file holds only the template line) */
+      sec.use = plain(paragraphStarting(s.body, 'Used for:').replace(/^Used for:\s*/, ''));
+      sec.copyright = plain(paragraphStarting(s.body, 'Copyright:').replace(/^Copyright:\s*/, ''));
+      /* what is compiled into the files (G13-8): a table "Embedded | Version | Licence | Copyright | From | How it is known"; each one's licence text must be in vendor/LICENSE-embedded.txt */
+      const emb = tables.find(t => /^Embedded/.test(t.header[0]));
+      sec.embedded = emb ? emb.rows.map(r => ({ name: plain(r[0]), version: plain(r[1]), licence: plain(r[2]), copyright: plain(r[3]), from: plain(r[4]), how: plain(r[5]) })) : [];
+      sec.embedded.forEach(e => {
+        if (!e.name || !e.version || !e.licence || !e.copyright || !e.from || !e.how) problems.push('vendor/README.md section "' + s.heading + '": an Embedded row (' + (e.name || '?') + ') has an empty cell (name, version, licence, copyright, from, how it is known)');
+        const key = e.name.split(/[\s,(]/)[0];
+        if (!embeddedTexts || embeddedTexts.indexOf(key) < 0) problems.push('vendor/README.md section "' + s.heading + '": the embedded package ' + key + ' has no licence text in vendor/LICENSE-embedded.txt');
+      });
       if (!/^Licence:/.test(p)) problems.push('vendor/README.md section "' + s.heading + '" has no "Licence:" paragraph');
     } else if (filesTable && /^Family/.test(filesTable.header[1] || '') && famTable) {
       sec.kind = 'fonts';
@@ -204,7 +220,10 @@ function readCdn(root, registry, vendor, code, problems) {
   const fallback = registry.cdn.fallbackOf;
   Array.from(found.keys()).sort().forEach(pkg => {
     if (fallback[pkg]) {
-      if (!vendorNames.has(fallback[pkg])) problems.push('the page names ' + pkg + ' at a CDN as a fallback of vendor/' + fallback[pkg] + ', which is not in vendor/');
+      /* one folder, or several (TensorFlow.js has two versions) */
+      [].concat(fallback[pkg]).forEach(f => {
+        if (!vendorNames.has(f)) problems.push('the page names ' + pkg + ' at a CDN as a fallback of vendor/' + f + ', which is not in vendor/');
+      });
       return;
     }
     if (!pkgs[pkg]) { problems.push('the page loads ' + pkg + ' from a CDN and tools/notices/notices.json has no licence row for it (cdn.packages)'); return; }
@@ -230,7 +249,16 @@ function readCdn(root, registry, vendor, code, problems) {
   for (const m of text.matchAll(/https:\/\/storage\.googleapis\.com\/[\w./-]+/g)) {
     if (!registry.cdn.other.some(o => m[0].slice('https://'.length).indexOf(o.key) === 0)) problems.push('the page names ' + m[0] + ' and tools/notices/notices.json has no row for it (cdn.other)');
   }
-  return { packages: packages, googleFamilies: googleFamilies, other: other };
+  /* the vendored libraries the page also names at a CDN, only as the way back: by the title of their vendor/ section */
+  const wayBack = [];
+  Object.keys(fallback).forEach(pkg => {
+    if (pkg.charAt(0) === '_' || !found.has(pkg)) return;
+    [].concat(fallback[pkg]).forEach(f => {
+      const sec = vendor.sections.find(x => x.name === f);
+      if (sec && wayBack.indexOf(sec.title) < 0) wayBack.push(sec.title);
+    });
+  });
+  return { packages: packages, googleFamilies: googleFamilies, other: other, wayBack: wayBack };
 }
 
 /* Every host the served code names is one tools/notices/notices.json has classified. A library, a font or a data file from a host nobody has looked at (a cdnjs script,
@@ -408,7 +436,7 @@ function build(root) {
 
   /* 2. what PPP serves itself */
   p('## Code and fonts PPP serves itself (`vendor/`)', '',
-    'Each file is kept byte for byte as its authors published it (hashes in `vendor/README.md`). The licence text of each travels with it in `vendor/`.', '');
+    'Each file is kept byte for byte as its authors published it (hashes in `vendor/README.md`). The licence text of each travels with it in `vendor/`; the licences of the packages some of them have compiled in are in `vendor/LICENSE-embedded.txt`.', '');
   vendor.sections.forEach(s => {
     if (s.kind === 'library') {
       p('### ' + s.title + ' - ' + (s.licence.split(',')[0] || ''), '',
@@ -422,10 +450,15 @@ function build(root) {
           list(['Font', 'Licence', 'Notice'], s.buildFonts.map(f => [plain(f.font), plain(f.licence), plain(f.notice)])), '');
       }
     } else if (s.kind === 'package') {
-      p('### ' + s.title + ' - ' + (s.licence.split(' ')[0] || ''), '',
-        list(['File', 'From', 'sha256'], s.files.map(f => ['`vendor/' + f.file + '`', plain(f.from), '`' + f.sha256 + '`'])), '',
-        '- Licence: ' + s.licence,
-        '- Copyright: ' + (s.licenceFiles.map(f => copyrightLine(root, 'vendor/' + f)).filter(Boolean)[0] || ''), '');
+      p('### ' + s.title + ' - ' + (s.licence.split(/[\s,]/)[0] || ''), '',
+        list(['File', 'From', 'sha256'], s.files.map(f => ['`vendor/' + f.file + '`', plain(f.from), '`' + f.sha256 + '`'])), '');
+      if (s.embedded && s.embedded.length) {
+        p('Compiled into the file' + (s.files.length > 1 ? 's' : '') + ' above by their authors (the licence texts are `vendor/LICENSE-embedded.txt`):', '',
+          list(['Package', 'Version', 'Licence', 'Copyright', 'From'], s.embedded.map(e => [e.name, e.version, e.licence, e.copyright, e.from])), '');
+      }
+      if (s.use) p('- Used for: ' + s.use);
+      p('- Licence: ' + s.licence,
+        '- Copyright: ' + (s.copyright || s.licenceFiles.map(f => copyrightLine(root, 'vendor/' + f)).filter(Boolean)[0] || ''), '');
     } else if (s.kind === 'fonts') {
       p('### Fonts - ' + s.licence + ' (OFL-1.1)', '',
         'The woff2 files are Google Fonts\' own, unmodified. The licence permits redistribution with its notice, which is here.', '',
@@ -435,16 +468,20 @@ function build(root) {
   });
 
   /* 3. CDN */
-  p('## Libraries loaded from a CDN, not served by PPP', '',
-    'Until they are vendored (G13-8) these are fetched by your browser from the host named, only when the feature that needs them is used.', '');
-  p(list(['Library', 'Versions', 'Licence', 'Used for'],
-    cdn.packages.map(c => [plain(c.name) + ' (`' + c.pkg + '`)', c.versions.join(', '), plain(c.licence), plain(c.use)])), '');
+  p('## Libraries loaded from another site, not served by PPP', '',
+    'These are fetched by your browser from the host named, only when the feature that needs them is used.', '');
+  if (cdn.packages.length) {
+    p(list(['Library', 'Versions', 'Licence', 'Used for'],
+      cdn.packages.map(c => [plain(c.name) + ' (`' + c.pkg + '`)', c.versions.join(', '), plain(c.licence), plain(c.use)])), '');
+  }
   if (cdn.googleFamilies.length) {
     p('Fonts from Google Fonts for Korean, Japanese and Chinese text: ' + cdn.googleFamilies.join(', ') + '. Licence: ' + registry.cdn.fonts.licence + ' (OFL-1.1), fetched from ' + registry.cdn.fonts.host + ' only on a device that has no font of its own for that script, after the page has loaded. Everywhere else the text is drawn in the fonts of your device.', '');
   }
   cdn.other.forEach(o => p('- ' + o.name + ' - ' + o.host + ': ' + o.use + '. Licence: ' + o.licence + '.'));
   if (cdn.other.length) p('');
-  p('React and ReactDOM are also named at unpkg.com, only as the way back (`?cdn=1`); PPP serves them itself (above).', '');
+  if (cdn.wayBack.length) {
+    p(cdn.wayBack.join('; ') + ' - named at unpkg.com, cdn.jsdelivr.net or esm.sh as well, only as the way back (`?cdn=1`, or when PPP\'s own copy cannot be fetched); PPP serves them itself (above).', '');
+  }
   if (services.length) {
     p('Other sites the page itself contacts (their own terms apply; no licence of theirs is carried here):', '');
     services.forEach(s => p('- ' + s.host + ': ' + s.note));
