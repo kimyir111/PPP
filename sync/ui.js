@@ -198,6 +198,7 @@
     }
     function stop() {
       engine.forget();
+      if (opts.onStopped) opts.onStopped();
       try { root.sessionStorage.removeItem(RC_KEY); } catch (e) { /* none */ }
       set({ panel: null, recovery: null, msg: { kind: 'ok', text: tx('Syncing is off on this device. Your songs here were not touched.') } });
     }
@@ -206,6 +207,7 @@
       set({ busy: true });
       const r = await engine.deleteLibrary();
       try { root.sessionStorage.removeItem(RC_KEY); } catch (e) { /* none */ }
+      if (r.ok && opts.onStopped) opts.onStopped();
       if (!r.ok) { set({ busy: false, panel: null, msg: { kind: 'bad', text: errorText(r.error) } }); return; }
       set({ busy: false, panel: null, recovery: null, msg: { kind: 'ok', text: tx('The library was deleted from the server. Your songs on this device and in your backup files are still here.') } });
     }

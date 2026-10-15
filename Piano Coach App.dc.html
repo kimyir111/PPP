@@ -54,7 +54,7 @@
     var rest = h.slice(5), amp = rest.indexOf('&');
     var c = amp < 0 ? rest : rest.slice(0, amp);
     try { c = decodeURIComponent(c); } catch (e) { /* as it is */ }
-    c = c.replace(/[s-]+/g, '').toLowerCase();
+    c = c.replace(/[\s-]+/g, '').toLowerCase();
     try { history.replaceState(history.state, '', location.href.replace(/#.*$/, '')); } catch (e) { /* the address stays as it is; the joining goes on */ }
     pending = /^[0-9a-f]{64}$/.test(c) ? { code: c, live: started } : { bad: true, live: started };
     if (listener) listener();
@@ -15026,7 +15026,9 @@ class Component extends DCLogic {
       bkBoxStyle: box(false),
       wipeTitle: tx('Delete everything on this device'),
       wipeNote: tx('Removes your songs, practice progress, settings, PC link and sharing key from this browser. Links and posts you already shared stay online - without the key you can no longer take them down; a link ends within 30 days and a post within 90. Your account is not touched. This cannot be undone.')
-        + ' ' + tx('If you turned off anonymous counts, that choice stays.'),   /* G13-7b: the opt-out is a choice, not data: library-backup.js wipe keeps it */
+        + ' ' + tx('If you turned off anonymous counts, that choice stays.')   /* G13-7b: the opt-out is a choice, not data: library-backup.js wipe keeps it */
+        /* G13-S1 (only while this device syncs): the code of the song library goes with the rest; the library on the server stays */
+        + (this._sync && this._sync.engine && this._sync.engine.isOn() ? ' ' + tx('The code of your synced song library is removed from this browser too, so keep it if you want to use the library again. The library itself stays on the server until you delete it.') : ''),
       wipeAccountOn: signedIn,
       wipeAccountText: tx('You are signed in. Progress kept in your account stays there and comes back here after the reload; only this device is cleared.'),
       wipeStartLabel: tx('Delete everything…'), wipeStartStyle: danger, wipeAsk: () => this.wipeAsk(),
@@ -19264,7 +19266,9 @@ class Component extends DCLogic {
       this._sync = S.boot({
         adapter: this.syncAdapter(), storage: localStorage,
         say: text => this.say(text),
-        onTurnedOn: () => { setSyncMode('on'); },
+        /* the page draws a sentence of its own (Delete everything) that depends on whether this device syncs: it is drawn again when that changes */
+        onTurnedOn: () => { setSyncMode('on'); try { this.forceUpdate(); } catch (e) { /* the next draw */ } },
+        onStopped: () => { try { this.forceUpdate(); } catch (e) { /* the next draw */ } },
         onSongsChanged: () => { try { this.setState({ library: this.libraryRead().songs }); } catch (e) { /* the list comes with the next write */ } }
       });
       if (!this._sync) return;

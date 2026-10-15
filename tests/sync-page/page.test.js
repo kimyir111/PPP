@@ -84,6 +84,14 @@ const heading = t => console.log('\n── ' + t + ' ──');
       await D.ctx.close();
     }
 
+    heading('with the lazy loader off (PPP.split off) the files come as script tags and the section is the same');
+    {
+      const D = await newDevice('nosplit', { cards: SONGS.cards.slice(0, 2), slots: SONGS.slots });
+      await D.open('?sync=on&split=off');
+      ok('the section is in Settings, and PPPSync is there', await D.settings() && (await D.page.evaluate(() => typeof window.PPPSync + '|' + (window.PPP_LAZY ? window.PPP_LAZY.mode : 'none'))) === 'object|off');
+      await D.ctx.close();
+    }
+
     /* ------------------------------------------------------------------ A turns it on */
     heading('A turns syncing on with 30 songs');
     const A = await newDevice('A', { cards: SONGS.cards, slots: SONGS.slots, secrets: { pc: 'aa'.repeat(32), guest: 'bb'.repeat(16) }, xp: 100, minutes: 40 });
@@ -111,12 +119,14 @@ const heading = t => console.log('\n── ' + t + ' ──');
     ok('the status line says synced, in Korean', (await A.text('[data-sync-status]')) === ko('Synced {{when}}', { when: ko('just now') }) || /^동기화됨 · /.test(await A.text('[data-sync-status]')));
     const lsA = await A.ls();
     ok('the page remembers the switch on this device, and the state holds the code', lsA['ppp.sync.v1'] === 'on' && JSON.parse(lsA['ppp.syncstate.v1']).code === CODE);
+    ok('"Delete everything" in Settings says that the code of the library goes with it (and that the library stays on the server)', (await A.text('[data-wipe-row]') || '').includes(ko('The code of your synced song library is removed from this browser too, so keep it if you want to use the library again. The library itself stays on the server until you delete it.')));
     ok('a backup of A has neither the code nor the PC link nor the guest key', await A.page.evaluate(async () => {
       const B = window.PPPBackup, f = B.build(localStorage, {}), s = JSON.stringify(f);
       const st = JSON.parse(localStorage.getItem('ppp.syncstate.v1'));
       return s.indexOf(st.code) < 0 && s.indexOf('aa'.repeat(32)) < 0 && s.indexOf('bb'.repeat(16)) < 0;
     }));
-    ok('and no item sent held the PC link or the guest key', !H.syncSeen.some(x => false) && true);
+    const texts = await H.itemTexts(CODE);
+    ok('and no item of the library holds the PC link, the guest key or the code itself (' + texts.length + ' items read back)', texts.length === 31 && texts.every(s => s.indexOf('aa'.repeat(32)) < 0 && s.indexOf('bb'.repeat(16)) < 0 && s.indexOf(CODE) < 0), String(texts.length));
 
     /* ------------------------------------------------------------------ B opens the link */
     heading('B opens the link: the question first, then the library comes and its own songs are added');
@@ -316,6 +326,13 @@ const heading = t => console.log('\n── ' + t + ' ──');
     ok('C holds a code that is neither of the earlier ones', /^[0-9a-f]{64}$/.test(CODE3) && CODE3 !== CODE && CODE3 !== CODE2);
     await C.synced(60000);
     ok('C received the library: its 34 songs less the 17 that were removed', (await C.cards()).length === 17, String((await C.cards()).length));
+    /* a link whose code was typed in groups (spaces, dashes) is read as well */
+    {
+      const D = await newDevice('grouped');
+      await D.page.goto(H.pageUrl + '?sync=on#lib=' + CODE3.replace(/(.{8})(?=.)/g, '$1%20').replace(/%20(.{8})%20/, '-$1-'), { waitUntil: 'networkidle2', timeout: 60000 });
+      ok('a link with spaces and dashes between the groups is read: the question comes', await waitFor(() => D.exists('[data-sync-join-box]'), 15000) && (await D.page.evaluate(() => location.hash)) === '');
+      await D.ctx.close();
+    }
     const overflow = await C.page.evaluate(() => { const s = document.querySelector('[data-sync-section]'); return s ? s.scrollWidth - s.clientWidth : -1; });
     ok('on a 360 px phone the section does not overflow', overflow <= 1 && (await C.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)), String(overflow));
     await A.engine();

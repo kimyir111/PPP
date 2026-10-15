@@ -105,6 +105,18 @@ async function startHarness(o) {
       try { server.closeAllConnections && server.closeAllConnections(); } catch (e) { /* gone */ }
       server.close(() => { L.rmDir(dir); resolve(); });
     }),
+    /* the plain text of every item the library holds (what a person's devices sent, unpacked): for a check that no secret is in any of them */
+    itemTexts: async code => {
+      const zlib = require('zlib');
+      const id = mkSync.libIdOf(mkSync.codeHash(code));
+      const rows = await store.changes(id, 0, 5000);
+      const out = [];
+      for (let i = 0; i < rows.length; i += 25) {
+        const part = await store.getItems(id, rows.slice(i, i + 25).filter(r => !r.deleted).map(r => r.key), 64 * 1024 * 1024);
+        part.forEach(r => { if (r.body) out.push(zlib.gunzipSync(r.body).toString('utf8')); });
+      }
+      return out;
+    },
     /* the library's own listing, with the code a test holds */
     list: async code => {
       let since = 0, items = [], maxRev = 0;

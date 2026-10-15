@@ -2514,6 +2514,7 @@
     "{{n}} songs that were missing here came back from the library.": "이 기기에서 사라졌던 {{n}}곡을 라이브러리에서 다시 가져왔어요.",
     "A song in the library could not be read and was skipped.": "라이브러리의 곡 하나를 읽을 수 없어 건너뛰었어요.",
     "A song you removed was changed on another device, so it came back.": "삭제한 곡을 다른 기기에서 바꿨기 때문에 다시 돌아왔어요.",
-    "\"{{title}}\" was removed on another device, but this browser could not keep a copy in Recently deleted, so it was kept here.": "“{{title}}”을(를) 다른 기기에서 삭제했지만, 이 브라우저가 ‘최근 삭제한 곡’에 사본을 보관하지 못해서 이 기기에는 그대로 두었어요."
+    "\"{{title}}\" was removed on another device, but this browser could not keep a copy in Recently deleted, so it was kept here.": "“{{title}}”을(를) 다른 기기에서 삭제했지만, 이 브라우저가 ‘최근 삭제한 곡’에 사본을 보관하지 못해서 이 기기에는 그대로 두었어요.",
+    "The code of your synced song library is removed from this browser too, so keep it if you want to use the library again. The library itself stays on the server until you delete it.": "동기화한 곡 라이브러리의 코드도 이 브라우저에서 지워져요. 라이브러리를 다시 쓰려면 코드를 따로 보관해 두세요. 라이브러리 자체는 직접 삭제하기 전까지 서버에 남아 있어요."
   }
 }

@@ -2514,6 +2514,7 @@
     "{{n}} songs that were missing here came back from the library.": "この端末から消えていた{{n}}曲をライブラリから復元しました。",
     "A song in the library could not be read and was skipped.": "ライブラリの曲1曲を読み取れなかったためスキップしました。",
     "A song you removed was changed on another device, so it came back.": "削除した曲が他の端末で変更されたため、元に戻りました。",
-    "\"{{title}}\" was removed on another device, but this browser could not keep a copy in Recently deleted, so it was kept here.": "「{{title}}」は他の端末で削除されましたが、このブラウザーが「最近削除した曲」にコピーを保管できなかったため、この端末には残しました。"
+    "\"{{title}}\" was removed on another device, but this browser could not keep a copy in Recently deleted, so it was kept here.": "「{{title}}」は他の端末で削除されましたが、このブラウザーが「最近削除した曲」にコピーを保管できなかったため、この端末には残しました。",
+    "The code of your synced song library is removed from this browser too, so keep it if you want to use the library again. The library itself stays on the server until you delete it.": "同期しているライブラリのコードもこのブラウザーから削除されます。ライブラリを再び使うには、コードを別に保管しておいてください。ライブラリ自体は、削除するまでサーバーに残ります。"
   }
 }
