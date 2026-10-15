@@ -13,7 +13,9 @@
      first paint; the app globals (PPP.recording, PPP.recordingArrange, PPP.practice) have the intended defaults; the code the head defers (G13-4e)
      came in, with no synchronous load, and Home's thumbnail is drawn; the practice screen of a fresh profile plans the sample from its graph and
      counts no fallback (G11a-5); anonymous routes answer as designed
-     (auth/me, shares, the PC queue routes 401, no CORS headers); optionally the pairing link and the logs.
+     (auth/me, shares, the PC queue routes 401, no CORS headers); the optional libraries the page names under vendor/ (pdf.js, TensorFlow.js,
+     Magenta.js, Basic Pitch: G13-8) are each served by hash and immutable - the page falls back to the CDN when one is missing, so a miss
+     would otherwise go unseen; optionally the pairing link and the logs.
    It does NOT run the real transcription (6 minutes): that is for a change of the pipeline, by hand (docs/GOALS/G10 section 25). */
 'use strict';
 const fs = require('fs');
@@ -56,6 +58,18 @@ async function main() {
   const m = /PPP_BUILD="([^"]*)"/.exec(page.body);
   check('the page serves a build stamp', !!m, m ? m[1] : 'none');
   if (SHA) check('the live build is the expected commit', !!m && m[1].startsWith(SHA.slice(0, 7)), m ? m[1] + ' vs ' + SHA.slice(0, 7) : '');
+
+  // 1b. the vendored optional libraries (G13-8): named in the page by content hash; each must be there
+  const vend = Array.from(new Set(page.body.match(/\.\/vendor\/(?:pdfjs|tfjs|magenta-music|basic-pitch)-[\d.]+\/[\w./-]+\?h=[0-9a-f]{12}/g) || []));
+  if (!vend.length) check('the optional libraries are served by PPP (vendor/)', true, 'not in this build');
+  else {
+    const bad = [];
+    for (const u of vend) {
+      const r = await get('/' + u.slice(2));
+      if (r.status !== 200 || !/immutable/.test(r.headers['cache-control'] || '')) bad.push(u.replace(/^.*vendor\//, '') + ' -> HTTP ' + r.status + ' ' + (r.headers['cache-control'] || ''));
+    }
+    check('the optional libraries are served by PPP (vendor/): each by hash and immutable', bad.length === 0, bad.length ? bad.slice(0, 3).join(' | ') : vend.length + ' files');
+  }
 
   // 2. anonymous API
   const me = await get('/api/auth/me');

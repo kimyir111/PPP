@@ -78,7 +78,8 @@ const BUDGETS = [
   // G13 section 10, gate 1: the core has no runtime third-party dependency (today the page is blank when unpkg is down)
   { id: 'offline-renders', name: 'Third parties blocked: Home renders (1 = yes)', mode: 'offline3p', unit: '', target: 1, dir: 'min', today: 0, get: r => (r.homeRendered ? 1 : 0) },
   { id: 'offline-errors', name: 'Third parties blocked: page errors', mode: 'offline3p', unit: '', target: 0, today: 1, get: r => r.pageErrors.length },
-  { id: 'offline-attempts', name: 'Third parties blocked: requests attempted to unpkg.com', mode: 'offline3p', unit: '', target: 0, today: 2, get: r => r.third.filter(t => /(^|\.)unpkg\.com\//.test(t.url.replace(/^https?:\/\//, ''))).length }
+  // G13-8 widens it from unpkg.com to every code CDN: pdf.js, TensorFlow.js, Magenta.js and Basic Pitch are PPP's own now, and none of them is asked for at boot anyway
+  { id: 'offline-attempts', name: 'Third parties blocked: requests attempted to a code CDN (unpkg.com, jsDelivr, esm.sh, cdnjs)', mode: 'offline3p', unit: '', target: 0, today: 2, get: r => r.third.filter(t => /^(unpkg\.com|cdn\.jsdelivr\.net|esm\.sh|cdnjs\.cloudflare\.com)\//.test(t.url.replace(/^https?:\/\//, ''))).length }
 ];
 
 const median = xs => { const v = xs.filter(x => typeof x === 'number' && isFinite(x)).sort((a, b) => a - b); return v.length ? (v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2) : null; };
