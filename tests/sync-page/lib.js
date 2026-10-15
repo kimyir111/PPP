@@ -7,9 +7,11 @@ const path = require('path');
 const L = require('../sync/lib.js');
 
 const REPO = L.REPO;
-const MERGE = require(path.join(REPO, 'sync', 'merge.js'));
-const CLIENT = require(path.join(REPO, 'sync', 'client.js'));
-const BACKUP = require(path.join(REPO, 'library-backup.js'));
+/* the modules under test: this tree's, or - for the mutation runner (tests/sync-page/mutants.js) - the copies in PPP_SYNC_MODULES_DIR (a folder with sync/ and library-backup.js) */
+const MODS = process.env.PPP_SYNC_MODULES_DIR ? path.resolve(process.env.PPP_SYNC_MODULES_DIR) : REPO;
+const MERGE = require(path.join(MODS, 'sync', 'merge.js'));
+const CLIENT = require(path.join(MODS, 'sync', 'client.js'));
+const BACKUP = require(path.join(MODS, 'library-backup.js'));
 
 class FakeStorage {
   constructor() { this.m = new Map(); this.quota = Infinity; this.writes = 0; }
@@ -66,7 +68,7 @@ function makeDevice(svc, name, opts) {
     readState: () => Object.assign({}, st),
     applyState: patch => { Object.assign(st, patch); },
     applyOpenProgress: p => { dev.openProgress.push(p); },
-    removeSongs: ids => { ids.forEach(id => { dev.removeSong(id, true); }); },
+    removeSongs: ids => { ids.forEach(id => { dev.removeSong(id); }); },
     forgetThumbs: () => {}
   };
   const trash = {
@@ -83,7 +85,7 @@ function makeDevice(svc, name, opts) {
     headers['X-Forwarded-For'] = dev.ip;
     dev.requests.push({ method: init.method || 'GET', url: String(url), headers: Object.assign({}, init.headers || {}), body: init.body || null, credentials: init.credentials });
     if (!dev.online) throw new TypeError('fetch failed (offline)');
-    if (dev.intercept) { const r = dev.intercept(url, init); if (r) return r; }
+    if (dev.intercept) { const r = await dev.intercept(url, init); if (r) return r; }
     if (dev.failNext) { const f = dev.failNext; dev.failNext = null; return f(url, init); }
     return fetch(url, Object.assign({}, init, { headers: headers }));
   };
@@ -117,9 +119,9 @@ function makeDevice(svc, name, opts) {
   };
   dev.editCard = (id, fn) => { const lib = adapter.libraryRead(); const c = lib.songs.find(x => x.id === id); fn(c); adapter.libraryWrite(lib); };
   /* the page's removeSong: the engine is told first (card and slot as they are), then the card and the slot go */
-  dev.removeSong = (id, byEngine) => {
+  dev.removeSong = id => {
     const card = dev.card(id), raw = storage.getItem('ppp.song.v1.' + id);
-    if (!byEngine && card) engine.noteRemoved(id, card, raw);
+    if (card) engine.noteRemoved(id, card, raw);
     const lib = adapter.libraryRead();
     lib.songs = lib.songs.filter(c => c.id !== id);
     adapter.libraryWrite(lib);

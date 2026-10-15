@@ -103,6 +103,7 @@ const DAY = 24 * 3600 * 1000, HOUR = 3600 * 1000;
     const rm = await B.settle();
     ok('B no longer lists it, and keeps it for 30 days', !B.card('song-a9') && !B.slotRaw('song-a9') && (await B.engine.trashList()).some(r => r.id === 'song-a9'), JSON.stringify(rm.asks));
     ok('A\'s trash has it too', (await A.engine.trashList()).some(r => r.id === 'song-a9'));
+    ok('a removal that came from the other device was not sent back as a removal of this one', B.requests.filter(r => r.method === 'DELETE').length === 0, String(B.requests.filter(r => r.method === 'DELETE').length));
     /* edit beats a removal */
     B.removeSong('song-a10');
     A.editSlot('song-a10', s => { s.history.byMeasure['3'] = { attempts: 1, lastAt: 99 }; });
@@ -131,6 +132,8 @@ const DAY = 24 * 3600 * 1000, HOUR = 3600 * 1000;
     await A.settle();
     const rb = await B.settle(3);
     ok('B asks before it removes 17 songs, and removed none', rb.asks.some(a => a.kind === 'delete-in' && a.n === 17) && ids.every(id => !!B.card(id)), JSON.stringify(rb.asks.map(a => a.kind + a.n)));
+    await B.engine.syncNow('test'); await B.engine.syncNow('test');
+    ok('an unanswered question stays (the same list is made again) and nothing was removed meanwhile', B.engine.status().asks.some(a => a.kind === 'delete-in' && a.n === 17) && ids.every(id => !!B.card(id)));
     await B.engine.answer('delete-in', 'no');
     await B.settle();
     ok('"no" keeps the 17 on B, and the question does not come back', ids.every(id => !!B.card(id)) && !B.engine.status().asks.length);

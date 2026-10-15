@@ -210,8 +210,7 @@ const dump = async (svc, code) => {
       A.addSong('sf-big', { seed: 5, notes: 400 });
       await A.settle();
       const before = JSON.stringify(Array.from(B.storage.m.entries()));
-      B.storage.quota = JSON.stringify(Array.from(B.storage.m.entries())).length - 200 + 200;   /* no room for one more song */
-      B.storage.quota = Array.from(B.storage.m.entries()).reduce((n, e) => n + e[0].length + e[1].length, 0) + 100;
+      B.storage.quota = Array.from(B.storage.m.entries()).reduce((n, e) => n + e[0].length + e[1].length, 0) + 3000;   /* room for the bookkeeping, not for a song */
       await B.engine.syncNow('test');
       const full = B.engine.status();
       ok('B says its storage is full', full.error === 'storage', full.error);
@@ -235,6 +234,22 @@ const dump = async (svc, code) => {
       const c = B.card('evil');
       ok('it arrived, and its links that are not web addresses were blanked', !!c && c.url === null && B.slot('evil').importSource.url === null, JSON.stringify(c && c.url));
       ok('its score hash is the one made here, not the sender\'s', MERGE.scoreHashOf(B.slot('evil')) !== 'zzzz');
+      /* a body that is a gzip bomb (a library that is not ours, or a hostile one) is refused as it is unpacked, and does not stop the cycle */
+      const zlib = require('zlib');
+      const bomb = zlib.gzipSync(Buffer.alloc(24 * 1024 * 1024, 0x20)).toString('base64');
+      const realItems = (await dump(svc, made.code)).items.find(i => /^song:sh/.test(i.key) || /^song:s/.test(i.key));
+      B.intercept = async (url, init) => {
+        if (/\/api\/sync\/items\?keys=/.test(url)) {
+          B.intercept = null;
+          return new Response(JSON.stringify({ items: [Object.assign({}, realItems, { body: bomb })], missing: [], maxRev: realItems.rev }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+        return null;
+      };
+      const rs = JSON.parse(B.storage.getItem('ppp.syncstate.v1'));
+      rs.since = 0; rs.keys[realItems.key] = {}; B.storage.setItem('ppp.syncstate.v1', JSON.stringify(rs));
+      await B.engine.syncNow('test');
+      B.intercept = null;
+      ok('a body that unpacks to 24 MB is refused at the bound (the item is marked unreadable, the cycle goes on)', (B.engine._load().keys[realItems.key] || {}).bad === 'not-gzip' && !B.engine.status().error, JSON.stringify(B.engine._load().keys[realItems.key]));
       /* a score with no measures is not a song */
       const bad = { v: 1, card: { title: 'Nothing' }, score: { measures: [], notes: [] } };
       const p2 = await svc.anon.put('/api/sync/items', { device: 'a1b2c3d4e5f60718', items: [{ key: 'song:nothing', baseRev: 0, hash: 'nothing123456789', body: L.b64(bad) }] }, { headers: { 'X-PPP-Lib': made.code } });
@@ -248,6 +263,147 @@ const dump = async (svc, code) => {
       ok('a song with the guest key in it is not sent, the others are', !srv.items.some(i => i.key === 'song:sh-secret') && srv.items.some(i => i.key === 'song:sh-fine'));
       ok('and it is marked as one that cannot be sent', B.engine.status().songs.bad >= 1);
       ok('no request body of B holds the key', B.requests.every(r => !r.body || !String(r.body).includes('g'.repeat(40))));
+    }
+
+    /* ------------------------------------------------------------------ bookkeeping */
+    heading('bookkeeping: what is not sent leaves nothing behind; the cursor follows our own writes; an open song is not overwritten; odd ids; a request that hangs');
+    {
+      const { A, B, made } = await pair(svc, 4, 'b');
+      /* a song that was never sent and is removed leaves nothing pending */
+      A.addSong('sb-tmp', { seed: 80 });
+      A.failNext = () => { throw new TypeError('network down'); };
+      await A.engine.syncNow('test');                   /* seen to change; the send fails */
+      ok('the song was seen and is waiting', A.engine.status().songs.pending >= 1);
+      A.removeSong('sb-tmp');
+      svc.clock.t += 20 * 60 * 1000;
+      await A.engine.syncNow('test');
+      ok('a song that was never sent and was removed leaves no record and nothing pending', !A.engine._load().keys['song:sb-tmp'] && A.engine.status().songs.pending === 0);
+      ok('and nothing about it was sent', !(await dump(svc, made.code)).items.some(i => i.key === 'song:sb-tmp'));
+      /* the cursor follows our own writes: the next poll costs the library no statement */
+      svc.clock.t += 1000;
+      A.editSlot('sb0', s => { s.tempo = 61; });
+      await A.engine.syncNow('test');
+      const c0 = svc.store.total();
+      await A.engine.syncNow('poll');
+      ok('after a push, the next poll is answered without the store (the cursor moved with our own revisions)', svc.store.total() === c0, String(svc.store.total() - c0));
+      /* but a write of another device in between is not skipped */
+      B.editSlot('sb1', s => { s.tempo = 62; });
+      await B.engine.syncNow('test');
+      svc.clock.t += 1000;
+      A.editSlot('sb2', s => { s.tempo = 63; });
+      await A.engine.syncNow('test');
+      ok('a write of another device between two of ours is not stepped over: it arrives', A.slot('sb1').tempo === 62 && A.slot('sb2').tempo === 63);
+      await B.engine.syncNow('test');
+      ok('and B has the one of A', B.slot('sb2').tempo === 63);
+      /* a write of another device that lands between this device's look at the library and its own send is not stepped over by the cursor */
+      svc.clock.t += 1000;
+      A.editSlot('sb0', s => { s.tempo = 71; });
+      B.editSlot('sb1', s => { s.tempo = 72; });
+      let raced = false;
+      A.intercept = async (url, init) => {
+        if (!raced && init && init.method === 'PUT') { raced = true; A.intercept = null; await B.engine.syncNow('test'); }
+        return null;
+      };
+      await A.engine.syncNow('test');
+      A.intercept = null;
+      const cursorA = A.engine._load().since;
+      await A.engine.syncNow('poll');
+      ok('the write that landed in between is in A after the next poll, and the cursor did not skip it', A.slot('sb1').tempo === 72 && cursorA < (await dump(svc, made.code)).maxRev, cursorA + ' < ' + (await dump(svc, made.code)).maxRev);
+      /* the answer of a send is lost: the same send again is told "conflict" with the very hash that was sent, and that is "applied" - nothing is fetched or merged for it */
+      svc.clock.t += 1000;
+      A.editSlot('sb0', s => { s.tempo = 73; });
+      let lost = false;
+      A.intercept = async (url, init) => {
+        if (!lost && init && init.method === 'PUT') {
+          lost = true;
+          const real = await fetch(url, Object.assign({}, init, { headers: Object.assign({}, init.headers, { 'X-Forwarded-For': A.ip }) }));   /* the library has it ... */
+          await real.text();
+          throw new TypeError('the answer was lost');                                                                                         /* ... and the device does not know */
+        }
+        return null;
+      };
+      await A.engine.syncNow('test');
+      ok('the lost answer is an error for that cycle', A.engine.status().error === 'offline');
+      A.intercept = null;
+      svc.clock.t += 20 * 60 * 1000;
+      /* the page is hidden: a send with no look at the library first (keepalive); the library answers "conflict" with the hash that was sent: that is "applied" */
+      await A.engine.flush();
+      const srvRev = (await dump(svc, made.code)).items.find(i => i.key === 'song:sb0').rev;
+      ok('the same send again is "applied" by its hash: the item is clean and has the revision of the library', A.engine.status().songs.pending === 0 && A.engine._load().keys['song:sb0'].rev === srvRev && A.engine._load().keys['song:sb0'].d === 0, JSON.stringify(A.engine._load().keys['song:sb0']));
+      /* a song that was linked by identity keeps its id; another device then uses that id for a DIFFERENT song: the linked one is not overwritten */
+      const P = L.makeDevice(svc, 'Pb'), Q = L.makeDevice(svc, 'Qb');
+      P.addSong('sb-own', { seed: 600, title: 'Same score' });
+      const pm = await P.engine.createLibrary();
+      await P.engine.syncNow('test');
+      Q.addSong('sb-mine', { seed: 600, title: 'Same score' });        /* the same score under another id: it is linked to "song:sb-own" */
+      await Q.engine.join(pm.code, { addLocal: true });
+      await Q.engine.syncNow('test');
+      ok('the same score under another id is linked, not doubled', Q.cards().filter(c => c.title === 'Same score').length === 1 && Q.engine._load().keys['song:sb-own'].id === 'sb-mine');
+      const linkedScore = JSON.stringify(Q.slot('sb-mine').score);
+      P.addSong('sb-mine', { seed: 700, title: 'Different song, same id' });
+      svc.clock.t += 1000;
+      await P.engine.syncNow('test');
+      await Q.engine.syncNow('test');
+      ok('a different song that arrives under the id of a linked one is a song of its own; the linked one keeps its score',
+        JSON.stringify(Q.slot('sb-mine').score) === linkedScore && Q.cards().some(c => c.title === 'Different song, same id' && c.id !== 'sb-mine') && Q.cards().length === 2,
+        Q.cards().map(c => c.id + ':' + c.title).join(' | '));
+      /* the song on the screen is not overwritten by an older text of its own */
+      svc.clock.t += 1000;
+      A.open = 'sb3';
+      B.editSlot('sb3', s => { s.history.byMeasure['3'] = { attempts: 5, lastAt: 123 }; s.memLevel = 2; });
+      await B.engine.syncNow('test');
+      const revBefore = (await dump(svc, made.code)).items.find(i => i.key === 'song:sb3').rev;
+      A.openProgress.length = 0;
+      await A.engine.syncNow('test');
+      ok('the practice of the song A has on the screen goes into the page (the adapter), not into its slot', A.openProgress.length === 1 && A.openProgress[0].memLevel === 2 && !A.slot('sb3').history.byMeasure['3']);
+      ok('and A did not send its older text over it (the item of the library did not move)', (await dump(svc, made.code)).items.find(i => i.key === 'song:sb3').rev === revBefore);
+      /* the page saves what it holds (the same practice as the library's): equal to the library's version, so there is nothing to send */
+      A.storage.setItem('ppp.song.v1.sb3', B.slotRaw('sb3'));
+      A.open = 'demo';
+      await A.engine.syncNow('test');
+      ok('when the page then saves exactly the practice of the library nothing is sent (it is compared with the version of the library, not with the old text)', (await dump(svc, made.code)).items.find(i => i.key === 'song:sb3').rev === revBefore);
+      /* a score that arrives for the song on the screen is not put under the person's hands: it waits, and goes in when they leave */
+      svc.clock.t += 1000;
+      A.open = 'sb2';
+      B.editSlot('sb2', s => { s.score = L.packedScore(30, 4, 4242, 'Changed on B'); });
+      await B.engine.syncNow('test');
+      const scoreBefore = JSON.stringify(A.slot('sb2').score);
+      await A.engine.syncNow('test');
+      ok('the song on the screen keeps its score while it is open, and the change waits (it is not lost)', JSON.stringify(A.slot('sb2').score) === scoreBefore && !!A.engine._load().defer['song:sb2']);
+      A.open = 'demo';
+      await A.engine.syncNow('test');
+      ok('when the person leaves it, the new score comes in', JSON.stringify(A.slot('sb2').score) !== scoreBefore && !A.engine._load().defer['song:sb2'] && A.slot('sb2').score.title === 'Changed on B');
+      /* an id the library would not take as it is */
+      const odd = 'has space/and:slash ' + 'x'.repeat(70);
+      A.addSong(odd, { seed: 90, title: 'Odd one' });
+      await A.engine.syncNow('test');
+      const oddKey = A.engine._load().keys[L.MERGE.keyOf(odd)];
+      ok('an id with spaces, slashes and 90 characters is named by a hash and is sent', !!oddKey && oddKey.rev > 0 && oddKey.id === odd && (await dump(svc, made.code)).items.some(i => i.key === L.MERGE.keyOf(odd)));
+      A.removeSong(odd);
+      await A.engine.syncNow('test');
+      ok('and its removal is a removal (not a song that was lost and comes back)', (await dump(svc, made.code)).items.some(i => i.key === L.MERGE.keyOf(odd) && i.deleted) && !A.card(odd));
+      /* what the library forgot (its tombstones are purged at 30 days) is forgotten here a little later */
+      const keyRec = A.engine._load().keys[L.MERGE.keyOf(odd)];
+      ok('the tombstone is remembered with the time it was learnt', keyRec && keyRec.del === 1 && keyRec.delAt > 0);
+      svc.clock.t += 36 * DAY;
+      await A.engine.syncNow('test');
+      ok('after 36 days the record is gone (the library purged the tombstone long ago)', !A.engine._load().keys[L.MERGE.keyOf(odd)]);
+    }
+    {
+      /* a request that hangs is a failed request, not a cycle that never ends */
+      let fast = false;      /* the time-out of a request is made short only once the library exists */
+      const D = L.makeDevice(svc, 'Dh', { setTimeout: (fn, ms) => (fast && ms >= 45000 && ms <= 120000 ? setTimeout(fn, 25) : 0) });
+      D.addSong('sh0', { seed: 3 });
+      const made = await D.engine.createLibrary();
+      ok('the library of the device that will meet a hanging request is made', made.ok);
+      fast = true;
+      D.intercept = (url, init) => (init && init.signal ? new Promise((resolve, reject) => { init.signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))); }) : null);
+      const t0 = Date.now();
+      /* the cycle must end by itself: a cycle that is still waiting after 6 s is the failure (and is left behind) */
+      const ended = await Promise.race([D.engine.syncNow('test').then(() => true), new Promise(r => setTimeout(() => r(false), 6000))]);
+      const st = D.engine.status();
+      ok('a request that does not answer is given up (aborted by its own time-out) and said to be a connection problem', ended && Date.now() - t0 < 5000 && st.error === 'offline' && st.phase === 'idle', Date.now() - t0 + ' ms ' + st.error);
+      D.intercept = null;
     }
 
     /* ------------------------------------------------------------------ a stuck conflict, a frozen page, two tabs */

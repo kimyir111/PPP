@@ -62,6 +62,7 @@ const pb = { history: hist('2', 5, 20, [{ at: 2, from: 2, to: 2, tempo: 80, hand
 const mab = M.mergeProgress(pa, pb, 100, 200), mba = M.mergeProgress(pb, pa, 200, 100);
 ok('commutative: the same whichever side asks', same(mab, mba));
 ok('idempotent: merging a version with itself changes nothing', same(M.mergeProgress(pa, pa, 5, 5), pa) && same(M.mergeProgress(mab, mab, 5, 5), mab));
+ok('memory: the sections of both, the higher level, whichever side is newer', (() => { const m = M.mergeProgress(pa, pb, 300, 200).memory; return !!m.sections.s2 && m.sections.s1.level === 3; })());
 ok('the history is the union: both measures, both runs', mab.history.byMeasure['1'] && mab.history.byMeasure['2'] && mab.history.runs.length === 2);
 ok('per measure the record with more attempts wins', same(M.mergeProgress({ history: hist('1', 2, 50) }, { history: hist('1', 5, 10) }, 1, 1).history.byMeasure['1'], { attempts: 5, lastAt: 10 }));
 ok('on equal attempts the later record wins', same(M.mergeProgress({ history: hist('1', 4, 50) }, { history: hist('1', 4, 90) }, 1, 1).history.byMeasure['1'], { attempts: 4, lastAt: 90 }));
@@ -77,6 +78,7 @@ const cb = { title: 'New title', composer: 'C2', kind: 'musicxml', addedAt: 70, 
 const mc = M.mergeCard(ca, cb, 'b', 'b');
 ok('what belongs to the score follows the score (title, composer, measures)', mc.title === 'New title' && mc.composer === 'C2' && mc.measures === 12);
 ok('addedAt the earlier, lastAt the later, prog and mem with the later', mc.addedAt === 50 && mc.lastAt === 500 && mc.prog === 80 && mc.mem === 40);
+ok('a score that is not the newer side\'s: the title follows the SCORE, the rest the newer side', (() => { const m = M.mergeCard(ca, cb, 'a', 'b'); return m.title === 'New title' && m.composer === 'C2' && m.measures === 12 && m.lastAt === 500; })());
 ok('the card merge is commutative with its sides swapped', same(M.mergeCard(ca, cb, 'b', 'b'), M.mergeCard(cb, ca, 'a', 'a')));
 
 heading('the score: one side changed it, or both');

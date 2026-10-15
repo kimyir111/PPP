@@ -39,6 +39,7 @@
 
   const STATE_KEY = 'ppp.syncstate.v1';
   const LOCK_KEY = 'ppp.synclock.v1';
+  const REMOVED_KEY = 'ppp.syncremoved.v1';     /* { <local id>: { at, key, title } }: songs the person removed that the library has not been told of */
   const SONG_KEY = 'ppp.song.v1.', DEMO = 'demo';
   const HOUR = 3600 * 1000, DAY = 24 * HOUR;
   /* the library's own limits as a client keeps them (sync.js LIMITS): 240 item writes an hour; this page stays a few below so that a refusal is the exception */
@@ -196,14 +197,15 @@
     const rt = { phase: 'idle', error: null, asks: [], notices: [], remoteApply: false, pulled: 0, pushed: 0, pullTotal: 0, waitUntil: 0 };
 
     /* ------------------------------------------------ state */
-    const blank = (device, keep) => Object.assign({ v: 1, code: '', tag: '', device: device || '', since: 0, keys: {}, removed: {}, only: {}, defer: {}, gone: [], ctr: {}, ctrAt: {}, ctrRemote: {},
+    const blank = (device, keep) => Object.assign({ v: 1, code: '', tag: '', device: device || '', since: 0, keys: {}, only: {}, defer: {}, gone: [], ctr: {}, ctrAt: {}, ctrRemote: {},
       writes: [], next: 0, fail: 0, mig: null, lastSyncAt: 0, keptUntil: '', createdAt: 0, joinedAt: 0, tooOld: 0, lib: null, okDeleteIn: false, okDeleteOut: false, okKeepGone: false }, keep || {});
     const newDevice = () => { let s = ''; for (let i = 0; i < 16; i++) s += Math.floor(rand() * 16).toString(16); return s; };
     function load() {
       let d;
       try { d = parse(storage.getItem(STATE_KEY) || 'null'); } catch (e) { d = null; }
       if (!isObj(d) || d.v !== 1 || !isObj(d.keys)) d = blank('');
-      ['removed', 'only', 'ctr', 'ctrAt', 'ctrRemote', 'defer'].forEach(k => { if (!isObj(d[k])) d[k] = {}; });
+      ['only', 'ctr', 'ctrAt', 'ctrRemote', 'defer'].forEach(k => { if (!isObj(d[k])) d[k] = {}; });
+      delete d.removed;
       if (!Array.isArray(d.writes)) d.writes = [];
       if (!Array.isArray(d.gone)) d.gone = [];
       if (typeof d.device !== 'string' || !/^[0-9a-f]{16}$/.test(d.device)) d.device = newDevice();
@@ -214,6 +216,14 @@
       try { storage.setItem(STATE_KEY, JSON.stringify(S)); return true; } catch (e) { rt.error = 'storage'; return false; }
     }
     const rec = key => S.keys[key] || (S.keys[key] = {});
+    /* the state is read again at the start of a call unless a cycle is running (then it is the cycle's, and the call changes what the cycle holds) */
+    const cur = () => { if (!(running && S)) S = load(); return S; };
+    /* the removals the person made have a key of their own: a save of the state cannot lose one that another tab (or this one, in the middle of a cycle) wrote */
+    const removedMap = () => { const d = parse(storage.getItem(REMOVED_KEY) || 'null'); return isObj(d) ? d : {}; };
+    const removedPut = (id, v) => { const m = removedMap(); m[id] = v; try { storage.setItem(REMOVED_KEY, JSON.stringify(m)); } catch (e) { /* the song comes back from the library */ } };
+    const removedDel = id => { const m = removedMap(); if (has(m, id)) { delete m[id]; try { storage.setItem(REMOVED_KEY, JSON.stringify(m)); } catch (e) { /* stays, and is asked about again */ } } };
+    /* a tombstone is known for this item (its revision); when this device learnt it is kept, and it is forgotten after the library has surely purged it (30 days) */
+    const tomb = (r, rev) => { if (isNum(rev) && rev) r.rev = rev; r.hash = ''; r.del = 1; r.d = 0; r.lh = ''; r.fp = ''; r.delAt = now(); };
     function emit() {
       const snap = status();
       listeners.slice().forEach(f => { try { f(snap); } catch (e) { /* a listener's problem */ } });
@@ -255,12 +265,16 @@
       if (o.recovery) headers['X-PPP-Recovery'] = o.recovery;
       let body;
       if (o.body !== undefined) { headers['Content-Type'] = 'application/json'; body = typeof o.body === 'string' ? o.body : JSON.stringify(o.body); }
-      let res;
+      /* a request that does not answer is a failed request: a cold server may take half a minute, a body of megabytes on a slow line two minutes; no more than that holds a cycle */
+      const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+      const timer = ctl ? setT(() => { try { ctl.abort(); } catch (e) { /* done */ } }, o.timeout || (method === 'PUT' ? 120000 : 45000)) : null;
+      let res, json = null;
       try {
-        res = await doFetch(base + path, { method: method, headers: headers, body: body, credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer', keepalive: !!o.keepalive });
-      } catch (e) { throw netError(e); }
-      let json = null;
-      try { json = await res.json(); } catch (e) { json = null; }
+        try {
+          res = await doFetch(base + path, { method: method, headers: headers, body: body, credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer', keepalive: !!o.keepalive, signal: ctl ? ctl.signal : undefined });
+        } catch (e) { throw netError(e); }
+        try { json = await res.json(); } catch (e) { json = null; }
+      } finally { if (timer !== null && timer !== undefined) clearT(timer); }
       if (res.ok || (res.status === 409 && o.allow409)) return { status: res.status, body: isObj(json) ? json : {} };
       throw apiError(res.status, json, res.headers);
     }
@@ -344,9 +358,12 @@
       return good;
     }
 
-    /* the identity index of the songs that are not yet linked to an item of the library: identity -> local id */
+    /* the identity index of the songs that are not yet linked to an item of the library: identity -> local id. Made once a cycle (a join of 500 songs would otherwise parse every
+       unlinked slot again for each batch of 25); a song that is linked leaves it. */
+    let _identCache = null;
     function identityIndex() {
-      const idx = {};
+      if (_identCache) return _identCache;
+      const idx = _identCache = {};
       libOf().songs.forEach(c => {
         if (!isObj(c) || typeof c.id !== 'string' || c.id === DEMO) return;
         const r = S.keys[keyForId(c.id)];
@@ -368,8 +385,7 @@
       l0.songs.forEach(c => { if (isObj(c) && typeof c.id === 'string') cards[c.id] = c; });
       const open = openId();
       const t = now();
-      let ident = null;
-      const plan = [];       /* { id, text|null, card, before, key, rec: patch, link } */
+      const plan = [];       /* { id, text|null, card, before, key, patch, mapped, item, openOnly } */
       const taken = {};
       const arranged = c => { if (typeof c.arrangedFrom === 'string') c.arrangedFrom = idForKey(M.keyOf(c.arrangedFrom)) || c.arrangedFrom; return c; };
       got.forEach(g => {
@@ -379,9 +395,9 @@
         let id = known && typeof known.id === 'string' ? known.id : M.idOf(key);
         if (!linked && !cards[id] && slotRaw(id) === null) {
           /* nothing here under that name: the same song may be here under another (the same score, the same method-book piece, the same shared score) */
-          if (!ident) ident = identityIndex();
+          const ident = identityIndex();
           const hit = M.identityKeys(remote.card, remote.scoreHash).map(k => ident[k]).find(Boolean);
-          if (hit && !taken[hit]) id = hit;
+          if (hit && !taken[hit]) { id = hit; Object.keys(ident).forEach(k => { if (ident[k] === hit) delete ident[k]; }); }
         }
         if (!linked && cards[id] && keyForId(id) !== key && S.keys[keyForId(id)] && S.keys[keyForId(id)].rev) id = 'song-r' + M.hashText(key).slice(1, 15);   /* another item's id */
         if (taken[id]) return;
@@ -392,7 +408,7 @@
         const raw = slotRaw(id);
         if (!card || raw === null) {
           /* new here, or a card whose slot is gone: the library's copy comes back (what the person removed here and the library changed since is brought back too) */
-          delete S.removed[id];
+          removedDel(id);
           const c = arranged(M.cardOfItem(remote, id, card));
           plan.push({ id: id, text: JSON.stringify(M.slotOfItem(remote)), card: c, before: raw, key: key, patch: patch, mapped: mapped, item: remote });
           taken[id] = true;
@@ -412,7 +428,7 @@
           if (isOpen) {
             /* the song on the screen keeps its score; the practice goes into what the page holds (which is what it saves), and its card follows */
             if (adapter.applyOpenProgress) adapter.applyOpenProgress(remote.progress);
-            plan.push({ id: id, text: null, card: c, before: raw, key: key, patch: Object.assign({}, patch, { d: 1 }), mapped: mapped, item: remote, openOnly: true });
+            plan.push({ id: id, text: null, card: c, before: raw, key: key, patch: Object.assign({}, patch, { lh: M.contentHash(remote) }), mapped: mapped, item: remote, openOnly: true });
           } else {
             plan.push({ id: id, text: JSON.stringify(M.slotOfItem(remote)), card: c, before: raw, key: key, patch: patch, mapped: mapped, item: remote });
           }
@@ -428,7 +444,8 @@
         const p2 = Object.assign({}, patch, { at: Math.max(mItem.savedAt || 0, (known && known.at) || 0) }, same ? {} : { d: 1, lh: '' });
         if (isOpen) {
           if (adapter.applyOpenProgress) adapter.applyOpenProgress(mItem.progress);
-          plan.push({ id: id, text: null, card: c, before: raw, key: key, patch: Object.assign({}, p2, { d: 1, lh: '' }), mapped: mapped, item: mItem, openOnly: true });
+          /* the page holds the merge now and will save it: until its slot changes nothing is to be sent (the stored text is the old one); what it saves is then compared with the library's version */
+          plan.push({ id: id, text: null, card: c, before: raw, key: key, patch: Object.assign({}, p2, { d: 0, lh: M.contentHash(remote) }), mapped: mapped, item: mItem, openOnly: true });
         } else {
           plan.push({ id: id, text: JSON.stringify(M.slotOfItem(mItem)), card: c, before: raw, key: key, patch: p2, mapped: mapped, item: mItem });
         }
@@ -454,7 +471,6 @@
         const rawNow = slotRaw(p.id);
         r.fp = rawNow === null ? '' : fpOf(rawNow, p.card);
         if (!p.patch.d && !('lh' in p.patch)) r.lh = M.contentHash(p.item);
-        if (p.patch.d && p.openOnly) r.lh = '';
         res.applied++;
       });
       if (adapter.forgetThumbs) { try { adapter.forgetThumbs(plan.map(p => p.id)); } catch (e) { /* a cache */ } }
@@ -617,17 +633,17 @@
       const go = [];
       tombs.forEach(m => {
         const r = rec(m.key);
-        if (m.key === 'state') { r.rev = m.rev; r.hash = ''; r.del = 1; return; }
+        if (m.key === 'state') { tomb(r, m.rev); return; }
         const id = idForKey(m.key), card = cards[id];
         delete S.defer[m.key];
-        if (!card) { r.rev = m.rev; r.hash = ''; r.del = 1; r.d = 0; delete S.removed[id]; return; }
-        if (S.only[id]) { r.rev = m.rev; r.hash = ''; r.del = 1; return; }
+        if (!card) { tomb(r, m.rev); removedDel(id); return; }
+        if (S.only[id]) { tomb(r, m.rev); return; }
         const raw = slotRaw(id);
         const L = raw ? localItem(card, raw, r.at || 0) : null;
         const changed = r.d === 1 || (!!L && !(r.rev && r.lh === M.contentHash(L)));
         if (changed) {
           /* an edit beats a deletion: the song stays and is sent again over the tombstone's revision */
-          r.rev = m.rev; r.hash = ''; r.del = 1; r.d = 1; r.lh = '';
+          tomb(r, m.rev); r.d = 1;
           notice({ code: 'kept', title: card.title || '', key: m.key });
           return;
         }
@@ -649,9 +665,8 @@
       rt.remoteApply = true;
       try { if (adapter.removeSongs) adapter.removeSongs(list.map(x => x.id)); } finally { rt.remoteApply = false; }
       list.forEach(x => {
-        const r = rec(x.key);
-        r.rev = x.rev || r.rev || 0; r.hash = ''; r.del = 1; r.d = 0; r.lh = ''; r.fp = '';
-        delete S.removed[x.id];
+        tomb(rec(x.key), x.rev);
+        removedDel(x.id);
       });
       resetIdKey();
       notice({ code: 'removed', n: list.length, why: why });
@@ -675,21 +690,26 @@
         if (r.fp !== fp) {
           const it = localItem(card, raw, t);
           if (!it || !isObj(it.score) || !Array.isArray(it.score.measures) || !it.score.measures.length) { r.bad = 'no-score'; r.fp = fp; return; }
+          /* an id the library would not take as it is (too long, other characters) is named by a hash: the id is kept with it, so that the name finds the song again */
+          if (key !== 'song:' + id) r.id = id;
           if (r.bad === 'no-score') delete r.bad;
           if (r.lh !== M.contentHash(it)) { r.d = 1; r.at = t; } else r.d = 0;
           r.fp = fp;
         }
         if (r.d && !r.bad) dirty.push({ key: key, id: id, card: card, open: open === id });
       });
-      /* a song the library has (an item with a revision here) and My Songs has not: removed by the person (the page told: S.removed), or lost (it comes back) */
-      const removed = [], vanished = [];
+      /* a song the library has (an item with a revision here) and My Songs has not: removed by the person (the page told: the removed map), or lost (it comes back) */
+      const removed = [], vanished = [], rm = removedMap();
       Object.keys(S.keys).forEach(key => {
         if (key === 'state' || seen[key]) return;
         const r = S.keys[key];
-        if (!r || !r.rev || r.del || r.only) return;
+        if (!r) return;
+        /* a tombstone is remembered while the library has it (30 days) and a little longer; a song that was never sent and has no card is nothing */
+        if (r.del && isNum(r.delAt) && t - r.delAt > 35 * DAY) { delete S.keys[key]; return; }
+        if (!r.rev && !r.del) { delete S.keys[key]; return; }
         const id = idForKey(key);
-        if (S.only[id]) return;
-        if (S.removed[id]) removed.push({ key: key, id: id, rev: r.rev });
+        if (!r.rev || r.del || S.only[id]) return;
+        if (rm[id]) removed.push({ key: key, id: id, rev: r.rev });
         else if (r.hash) vanished.push(key);
       });
       return { dirty: dirty, removed: removed, vanished: vanished };
@@ -752,12 +772,17 @@
           delete rr.bad;
           out.sent++;
         };
-        (Array.isArray(b.applied) ? b.applied : []).forEach(a => {
+        const appliedList = Array.isArray(b.applied) ? b.applied : [];
+        appliedList.forEach(a => {
           const x = isObj(a) ? sentBy[a.key] : null;
           if (!x) return;
           done(a.key, a.rev, x);
           S.writes.push(now());
         });
+        /* the revisions that were just made are the next ones after the cursor and the library has nothing after them: the cursor moves to them (a poll then costs the library no
+           statement), else the next listing names them and is skipped over by their hashes */
+        const revs = appliedList.map(a => a && a.rev).filter(isNum).sort((p, q) => p - q);
+        if (revs.length && !(Array.isArray(b.conflicts) && b.conflicts.length) && isNum(b.maxRev) && revs[0] === S.since + 1 && revs[revs.length - 1] === b.maxRev && revs.length === b.maxRev - S.since) S.since = b.maxRev;
         (Array.isArray(b.conflicts) ? b.conflicts : []).forEach(c => {
           const x = isObj(c) ? sentBy[c.key] : null;
           if (!x) return;
@@ -827,7 +852,7 @@
       if (!removed.length) return;
       const total = adapter.libraryRead().songs.length + removed.length;
       if (M.needsAsk(removed.length, total) && !S.okDeleteOut) {
-        asks.push({ kind: 'delete-out', n: removed.length, total: total, titles: removed.slice(0, 8).map(x => (S.removed[x.id] && S.removed[x.id].title) || ''), ids: removed.map(x => x.id) });
+        asks.push({ kind: 'delete-out', n: removed.length, total: total, titles: removed.slice(0, 8).map(x => { const m = removedMap()[x.id]; return (m && m.title) || ''; }), ids: removed.map(x => x.id) });
         return;
       }
       for (const x of removed) {
@@ -836,21 +861,23 @@
         try {
           r = await request('DELETE', '/api/sync/items/' + encodeURIComponent(x.key) + '?baseRev=' + encodeURIComponent(String(x.rev)) + '&device=' + S.device, { allow409: true });
         } catch (e) {
-          if (e.status === 404) { rec(x.key).del = 1; delete S.removed[x.id]; continue; }
+          if (e.status === 404) { tomb(rec(x.key)); removedDel(x.id); continue; }
           throw e;
         }
         const rr = rec(x.key);
         if (r.status === 409) {
           /* the item moved on after this device last saw it: the library's change stands, and the song is brought back */
           const c = (r.body.conflicts || [])[0];
-          if (c) { rr.rev = c.rev; rr.hash = ''; rr.del = c.deleted ? 1 : 0; }
-          delete S.removed[x.id];
+          if (c) { rr.rev = c.rev; rr.hash = ''; rr.del = c.deleted ? 1 : 0; if (c.deleted) rr.delAt = now(); }
+          removedDel(x.id);
           notice({ code: 'changed-elsewhere', id: x.id });
           continue;
         }
-        rr.rev = r.body.rev; rr.del = 1; rr.hash = ''; rr.d = 0; rr.lh = ''; rr.fp = '';
-        delete S.removed[x.id];
+        tomb(rr, r.body.rev);
+        removedDel(x.id);
         S.writes.push(now());
+        /* a tombstone that follows the cursor exactly moves it on (the next poll then costs the library nothing) */
+        if (isNum(r.body.rev) && isNum(r.body.maxRev) && r.body.rev === S.since + 1 && r.body.maxRev === r.body.rev) S.since = r.body.maxRev;
         if (isObj(r.body.library)) setLibrary(r.body.library);
       }
       S.okDeleteOut = false;
@@ -859,7 +886,6 @@
     /* songs that were lost here (the card went and nobody asked) and that the library has: fetched again */
     async function restoreVanished(keys) {
       const metas = keys.map(k => ({ key: k, rev: S.keys[k].rev, hash: S.keys[k].hash }));
-      keys.forEach(k => { S.keys[k].hash = ''; S.keys[k].rev = 0; });
       const bodies = await fetchBodies(metas);
       const good = await itemsOf(metas, bodies);
       if (!good.length) return;
@@ -871,6 +897,7 @@
     async function cycleOnce(reason, keepalive) {
       S = load();
       resetIdKey();
+      _identCache = null;
       if (!S.code) return;
       const asks = [];
       rt.pulled = 0; rt.pushed = 0; rt.pullTotal = 0;
@@ -895,7 +922,7 @@
             adapter.libraryRead().songs.forEach(c => { if (isObj(c)) have[c.id] = true; });
             const missing = Object.keys(S.keys).filter(k => {
               const r = S.keys[k];
-              return k !== 'state' && r && r.rev && !listed[k] && !r.del && !r.only && !S.only[idForKey(k)] && have[idForKey(k)];
+              return k !== 'state' && r && r.rev && !listed[k] && !r.del && !S.only[idForKey(k)] && have[idForKey(k)];
             });
             if (missing.length) {
               S.gone = Array.from(new Set(S.gone.concat(missing)));
@@ -1015,7 +1042,7 @@
     }
     function pendingCount() {
       let n = 0;
-      Object.keys(S.keys).forEach(k => { const r = S.keys[k]; if (r && r.d && !r.bad && !r.only) n++; });
+      Object.keys(S.keys).forEach(k => { const r = S.keys[k]; if (r && r.d && !r.bad) n++; });
       return n;
     }
 
@@ -1034,7 +1061,7 @@
         });
       } catch (e) { /* no library to count */ }
       let pending = 0, bad = 0;
-      Object.keys(s.keys).forEach(k => { const r = s.keys[k]; if (!r) return; if (r.bad) bad++; else if (r.d && !r.only) pending++; });
+      Object.keys(s.keys).forEach(k => { const r = s.keys[k]; if (!r) return; if (r.bad) bad++; else if (r.d) pending++; });
       const t = now();
       const used = s.writes.filter(x => t - x < HOUR).length;
       const room = Math.max(0, WRITES_PER_HOUR - WRITE_MARGIN - used);
@@ -1052,7 +1079,7 @@
     const api = {
       /* a library for this device: POST /api/libs. -> { ok, code, recovery, tag, keptUntil } or { ok: false, error } */
       async createLibrary() {
-        S = load();
+        S = cur();
         if (S.code) return { ok: false, error: 'already' };
         if (!canGzip() && !env.gzip) return { ok: false, error: 'unsupported' };
         let r;
@@ -1075,7 +1102,7 @@
         opts = opts || {};
         const c = parseCode(code);
         if (!c) return { ok: false, error: 'bad-format' };
-        S = load();
+        S = cur();
         if (!canGzip() && !env.gzip) return { ok: false, error: 'unsupported' };
         let r;
         try { r = await request('GET', '/api/sync/changes?since=0', { code: c }); } catch (e) { return { ok: false, error: errorName(e), status: e.status }; }
@@ -1095,7 +1122,7 @@
       async enterNewCode(code) {
         const c = parseCode(code);
         if (!c) return { ok: false, error: 'bad-format' };
-        S = load();
+        S = cur();
         let r;
         try { r = await request('GET', '/api/sync/changes?since=0', { code: c }); } catch (e) { return { ok: false, error: errorName(e), status: e.status }; }
         S.code = c; S.next = 0; S.fail = 0;
@@ -1107,7 +1134,7 @@
       },
       /* a new code, the old one dead from this moment. -> { ok, code } */
       async rotate() {
-        S = load();
+        S = cur();
         if (!S.code) return { ok: false, error: 'off' };
         let r;
         try { r = await request('POST', '/api/libs/me/rotate', { body: {} }); } catch (e) { return { ok: false, error: errorName(e), status: e.status }; }
@@ -1122,7 +1149,7 @@
         opts = opts || {};
         const rc = parseCode(recovery);
         if (!rc) return { ok: false, error: 'bad-format' };
-        S = load();
+        S = cur();
         let r;
         try { r = await request('POST', '/api/libs/recover', { code: null, recovery: rc, body: {} }); } catch (e) { return { ok: false, error: errorName(e), status: e.status }; }
         if (S.code) { S.code = r.body.code; S.next = 0; S.fail = 0; }
@@ -1140,7 +1167,7 @@
       },
       /* stop syncing on this device: the code is forgotten, nothing local is touched */
       forget() {
-        S = load();
+        S = cur();
         S = blank(S.device, { ctr: S.ctr, ctrAt: S.ctrAt });
         save();
         if (timer) { clearT(timer); timer = null; }
@@ -1150,7 +1177,7 @@
       },
       /* delete the library on the site (this device's code must still be one); this device then stops */
       async deleteLibrary() {
-        S = load();
+        S = cur();
         if (!S.code) return { ok: false, error: 'off' };
         try { await request('DELETE', '/api/libs/me'); } catch (e) {
           if (!(e.status === 401 && (e.code === 'deleted' || e.code === 'rotated'))) return { ok: false, error: errorName(e), status: e.status };
@@ -1184,24 +1211,23 @@
       /* the page tells that the person removes a song of My Songs: kept for the trash, and sent as a deletion */
       noteRemoved(id, card, raw) {
         if (rt.remoteApply || !onlyHas()) return;
-        S = load();
+        S = cur();
         if (id === DEMO || !raw || !isObj(card)) return;
         const key = keyForId(id);
         if (S.keys[key] && S.keys[key].rev) {
-          S.removed[id] = { at: now(), key: key, title: typeof card.title === 'string' ? card.title : '' };
-          save();
+          removedPut(id, { at: now(), key: key, title: typeof card.title === 'string' ? card.title : '' });
         }
         trashPut(id, card, raw, 'local').catch(() => {});
       },
       /* the answer to a question in status().asks. choice: 'yes' | 'no' */
       async answer(kind, choice) {
-        S = load();
+        S = cur();
         const ask = rt.asks.find(a => a.kind === kind);
         if (!ask) return { ok: false };
         rt.asks = rt.asks.filter(a => a.kind !== kind);
         if (kind === 'delete-in') {
           if (choice === 'yes') S.okDeleteIn = true;
-          else ask.keys.forEach((k, i) => { const r = rec(k); r.rev = ask.revs[i] || r.rev; r.hash = ''; r.del = 1; r.only = 1; r.d = 0; });
+          else ask.keys.forEach((k, i) => { tomb(rec(k), ask.revs[i]); S.only[idForKey(k)] = 1; });
         } else if (kind === 'delete-out') {
           if (choice === 'yes') S.okDeleteOut = true;
           else await restoreFromTrash(ask.ids);
@@ -1225,7 +1251,7 @@
       trashAvailable: () => trash.available(),
       /* a removed song comes back: its slot and card are written again and it is sent as a new version over the tombstone */
       async restore(tid) {
-        S = load();
+        S = cur();
         let row = null;
         try { row = await trash.get(tid); } catch (e) { row = null; }
         if (!row) return { ok: false, error: 'missing' };
@@ -1236,7 +1262,7 @@
         resetIdKey();
         const r = rec(id === row.id ? keyForId(id) : M.keyOf(id));
         r.d = 1; r.lh = ''; r.fp = ''; r.at = now();
-        delete S.removed[row.id];
+        removedDel(row.id);
         if (adapter.forgetThumbs) { try { adapter.forgetThumbs([id]); } catch (e) { /* a cache */ } }
         save();
         try { await trash.del(tid); } catch (e) { /* the entry stays */ }
@@ -1246,7 +1272,7 @@
       },
       async trashDelete(tid) { try { await trash.del(tid); return true; } catch (e) { return false; } },
       /* "keep only on this device" for a song, or back */
-      setOnly(id, on) { S = load(); if (on) S.only[id] = 1; else delete S.only[id]; save(); emit(); },
+      setOnly(id, on) { S = cur(); if (on) S.only[id] = 1; else delete S.only[id]; save(); emit(); },
       /* tests */
       _rt: rt, _load: load
     };
@@ -1255,7 +1281,7 @@
       try { rows = await trash.list(); } catch (e) { rows = []; }
       for (const id of ids) {
         const row = rows.find(r => r.id === id);
-        delete S.removed[id];
+        removedDel(id);
         if (!row) continue;
         if (adapter.libraryRead().songs.some(c => isObj(c) && c.id === id)) continue;
         if (writeSongs([{ id: id, text: row.slot, card: Object.assign({}, row.card, { id: id }), before: null }])) { try { await trash.del(row.tid); } catch (e) { /* stays */ } }
