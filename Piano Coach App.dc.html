@@ -15808,6 +15808,8 @@ class Component extends DCLogic {
   omrEditorChange(info) {
     const rec = this._omrEd;
     if (!rec || !info || !info.graph) return;
+    /* a step that a newer one has already followed (two taps in one frame): the newer one's call is on its way, and a Score of this graph beside the checks of that one would be a mixture */
+    if (info.graph !== rec.session.graph) return;
     const S = this.state, old = S.score;
     let fresh;
     try {
@@ -15827,12 +15829,13 @@ class Component extends DCLogic {
     } catch (e) { report = S.importReport; }
     this._model = null; this._seq = null; this._rangeCache = null; this._kbRange = Score.keyRange(fresh);
     this._omrOk = { score: fresh, v: true };
+    if (this.state.playing) this.stopTransport();      /* the player was started on the Score that is being replaced */
     const first = fresh.sections && fresh.sections[0] ? fresh.sections[0] : { from: Score.first(fresh), to: Score.first(fresh) };
     const keepLoop = !!(this._omrEd && this._omrEd.playWas);
     this.setState({
       score: fresh, importReport: report, secs: seedSecs(fresh),
       loopFrom: keepLoop ? this.state.loopFrom : first.from, loopTo: keepLoop ? this.state.loopTo : first.to,
-      beat: Score.startQ(fresh, first.from),
+      beat: Score.startQ(fresh, first.from), playing: false,
       reviewFrom: Score.measure(fresh, this.state.reviewFrom) ? this.state.reviewFrom : Score.first(fresh)
     }, () => {
       this.syncLibraryMeasures(fresh);
