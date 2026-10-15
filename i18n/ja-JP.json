@@ -2496,6 +2496,8 @@
     "That change could not be shown. It was undone.": "その変更を表示できなかったので、元に戻しました。",
     "This is a draft from a photo: check the red measures against the page.": "写真から読み取った下書きです。赤い小節を楽譜と見比べて確認してください。",
     "Previous to check": "前の確認",
-    "Next to check": "次の確認"
+    "Next to check": "次の確認",
+    "Changed by you": "自分で直した小節",
+    "1 measure to check": "確認する小節 1個"
   }
 }

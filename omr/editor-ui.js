@@ -281,24 +281,33 @@
       const ids = staffIds();
       const staff = ids[si];
       if (!staff) return;
-      /* the place: the nearest rest of that staff (by x), else the nearest note's place for a chord */
-      const cands = [];
+      /* the place: the column of that staff nearest the tap. A rest takes the note at its start; a note takes it into its chord, unless the tap is past the note and there is
+         time left after it (a hole the engine left): then the note stands where that note ends */
+      const cols = [];
       noteGroups().forEach(g => {
         const on = (g.getAttribute('data-onset') || '').split('|');
         if ((parseInt(on[2], 10) || 1) !== si + 1) return;
         let b = null;
         try { b = g.getBBox(); } catch (e) { b = null; }
-        if (!b) return;
-        cands.push({ ev: g.getAttribute('data-ev'), rest: g.getAttribute('data-rest') === '1', cx: b.x + b.width / 2 });
+        const d = b ? ED.describe(graph(), g.getAttribute('data-ev')) : null;
+        if (d) cols.push({ ev: d.id, rest: d.kind === 'rest', cx: b.x + b.width / 2, at: d.at, dur: d.dur });
       });
-      const rests = cands.filter(c => c.rest).sort((a, b) => Math.abs(a.cx - pt.x) - Math.abs(b.cx - pt.x));
-      const notes = cands.filter(c => !c.rest).sort((a, b) => Math.abs(a.cx - pt.x) - Math.abs(b.cx - pt.x));
-      let target = rests[0] || null;
-      if (notes[0] && (!target || Math.abs(notes[0].cx - pt.x) + 3 < Math.abs(target.cx - pt.x))) target = notes[0];
-      if (!target) { say(tx('There is no free place for a note there.')); return; }
-      const d = ED.describe(graph(), target.ev);
-      if (!d) return;
-      run({ op: 'add', measure: state.bar, staff: staff, at: d.at, pitch: { step: pitch.step, oct: pitch.oct }, value: state.value });
+      if (!cols.length) { say(tx('There is no free place for a note there.')); return; }
+      const fr = s => { const m = /^(\d+)(?:\/(\d+))?$/.exec(s); return m ? [+m[1], m[2] ? +m[2] : 1] : [0, 1]; };
+      const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+      const add = (x, y) => { const n = x[0] * y[1] + y[0] * x[1], d = x[1] * y[1], g = gcd(n, d) || 1; return [n / g, d / g]; };
+      const lt = (x, y) => x[0] * y[1] < y[0] * x[1];
+      const text = x => (x[1] === 1 ? String(x[0]) : x[0] + '/' + x[1]);
+      cols.sort((a, b) => Math.abs(a.cx - pt.x) - Math.abs(b.cx - pt.x));
+      const c = cols[0];
+      let at = c.at;
+      if (!c.rest && pt.x > c.cx + 6) {
+        const end = add(fr(c.at), fr(c.dur));
+        const bar = graph().timeline.measures.find(m => m.id === state.bar);
+        const nextStart = cols.map(x => fr(x.at)).filter(x => lt(fr(c.at), x)).reduce((m, x) => (lt(x, m) ? x : m), fr(bar.dur));
+        if (lt(end, nextStart)) at = text(end);
+      }
+      run({ op: 'add', measure: state.bar, staff: staff, at: at, pitch: { step: pitch.step, oct: pitch.oct }, value: state.value });
     }
 
     /* ---------------------------------------------------------------- doing things */
@@ -399,7 +408,7 @@
         btn('prev-bar', '‹', () => stepBar(-1), { disabled: bi <= 0, aria: tx('Previous measure') }),
         h('div', { class: 'ppp-edit-title', 'aria-live': 'polite' }, [
           tx('Measure {{n}} of {{total}}', { n: numberOf(ms[bi], bi), total: ms.length }),
-          h('small', { text: suspectCount ? tx('{{n}} measures to check', { n: suspectCount }) : tx('Nothing left to check') })
+          h('small', { text: suspectCount === 1 ? tx('1 measure to check') : suspectCount ? tx('{{n}} measures to check', { n: suspectCount }) : tx('Nothing left to check') })
         ]),
         btn('next-bar', '›', () => stepBar(1), { disabled: bi >= ms.length - 1, aria: tx('Next measure') }),
         btn('close', '✕', close, { aria: tx('Close') })

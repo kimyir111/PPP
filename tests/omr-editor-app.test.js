@@ -105,7 +105,7 @@ const IN_PAGE = `
     const A = window.PPP.app, S = A.state, G = window.PPPScoreGraph, E = window.PPPEngrave;
     const src = E.app.resolveSync(S.score);
     const g = src.graph;
-    const fromGraph = JSON.stringify(G.legacy.comparable(G.legacy.toScore(g, { name: 'x' })));
+    const fromGraph = JSON.stringify(G.legacy.comparable(G.legacy.toScore(g, { name: S.score.title })));
     const inScore = JSON.stringify(G.legacy.comparable(S.score));
     const R = G.rational;
     const nums = g.timeline.measures.map((m, i) => parseInt(m.number, 10) || i + 1);
@@ -113,8 +113,11 @@ const IN_PAGE = `
     const want = [];
     g.parts.forEach(p => p.events.forEach(e => { const i = g.timeline.measures.findIndex(m => m.id === e.m); if (i >= 0 && shownBars.indexOf(nums[i]) >= 0 && !e.grace) want.push(e.id); }));
     const drawn = [...document.querySelectorAll('[data-review-score] g.ppp-note')].map(x => x.getAttribute('data-ev'));
+    let at = -1;
+    if (fromGraph !== inScore) { at = 0; while (at < fromGraph.length && fromGraph[at] === inScore[at]) at++; }
     return {
       via: src.via, agree: !!(src.agree && src.agree.ok), link: !!(src.link && src.link.ok), text: G.serialize(g), same: fromGraph === inScore,
+      differ: at < 0 ? null : { graph: fromGraph.slice(Math.max(0, at - 60), at + 80), score: inScore.slice(Math.max(0, at - 60), at + 80) },
       rev: g.rev, bars: g.timeline.measures.length, nums: nums, sounding: S.score.notes.filter(n => !n.rest).length,
       heads: g.parts.reduce((s, p) => s + p.events.reduce((t, e) => t + (e.kind === 'note' && !e.grace ? e.heads.length : 0), 0), 0),
       drawnOk: drawn.slice().sort().join() === want.slice().sort().join(), drawn: drawn.length, want: want.length,
@@ -341,6 +344,10 @@ const IN_PAGE = `
   await edit('sharp', async () => {}, 'acc-sharp', async () => ok('D5 became D#5 with the sharp printed', (await pitchesOf(1, 0)).join() === 'C5,D#5,E5,F5' && (await bar(page, 1)).ev.some(e => e.acc === 'sharp'), short(await bar(page, 1))));
   await edit('flat', async () => {}, 'acc-flat', async () => ok('D5 became Db5', (await pitchesOf(1, 0)).join() === 'C5,Db5,E5,F5', short(await pitchesOf(1, 0))));
   await edit('natural', async () => {}, 'acc-natural', async () => ok('a natural is printed and D stays D', (await pitchesOf(1, 0)).join() === 'C5,D5,E5,F5' && (await bar(page, 1)).ev.some(e => e.acc === 'natural'), short(await bar(page, 1))));
+  await click(page, 'acc-sharp'); await settled(page);
+  await edit('no accidental', async () => {}, 'acc-none', async () => ok('D5 is D5 again, with nothing printed', (await pitchesOf(1, 0)).join() === 'C5,D5,E5,F5' && !(await bar(page, 1)).ev.some(e => e.acc), short(await bar(page, 1))));
+  await click(page, 'undo'); await settled(page);
+  ok('the sharp made for that case is undone again', (await snap(page)).text === baseText, '');
   await edit('shorter', async () => {}, 'val-halve', async () => ok('D5 is an eighth and a rest follows it', (await kindsOf(1, 0)).join() === 'n0:1/4,n1/4:1/8,r3/8:1/8,n1/2:1/4,n3/4:1/4', short(await kindsOf(1, 0))));
   const r1 = await click(page, 'val-double');
   ok('longer: D5 into E5 is refused with a sentence, nothing changes', r1 === 'disabled' || r1 === 'ok', r1);
@@ -410,11 +417,54 @@ const IN_PAGE = `
   await edit('clef of the left hand: treble', async () => {}, 'clef-1-G', async () => ok('the left hand\'s C3 is now A4', (await pitchesOf(1, 1)).join() === 'A4', short(await pitchesOf(1, 1))));
   await click(page, 'tools'); await wait(60);
 
+  console.log('the bar that did not fill is fixed with a tap, and the strip and the sheet say so');
+  {
+    await goto(page, 2);
+    const e3 = (await bar(page, 2)).ev.filter(e => e.s === 0 && e.k === 'n')[2];     /* E5, the last note of the bar */
+    const pt = await page.evaluate(id => {
+      const g = document.querySelector('[data-omr-editor] g.ppp-note[data-ev="' + id + '"]');
+      const svg = document.querySelector('[data-omr-editor] svg');
+      const b = g.getBoundingClientRect();
+      const st = svg.querySelector('g.ppp-stave path.vf-stave');
+      const ys = st.getAttribute('d').split('M').filter(Boolean).map(s => parseFloat(s.trim().split(/[ ,]/)[1]));
+      const p = svg.createSVGPoint(); p.x = 0; p.y = ys[0];                    /* the top line: F5 */
+      const m = p.matrixTransform(svg.getScreenCTM());
+      return { x: b.x + b.width / 2 + 34, y: m.y };
+    }, e3.id);
+    const was = await snap(page);
+    const stateBefore = await page.evaluate(() => document.querySelector('[data-omr-editor] [data-why]').getAttribute('data-why'));
+    ok('bar 2 is a doubt before the tap', stateBefore === 'suspect' && was.suspect.indexOf(2) >= 0, stateBefore);
+    await click(page, 'add-mode'); await wait(60);
+    await page.evaluate(() => { window.__prev = window.PPP.app.state.score; });
+    await page.touchscreen.tap(pt.x, pt.y);
+    const took = await settled(page);
+    ok('a tap in the empty place after the last note puts a note there (at the end of the last note)', took, '');
+    const fixed = await snap(page);
+    invariant('fixed', fixed);
+    const b2 = await bar(page, 2);
+    ok('it is an F5 on the fourth beat, and the right hand fills the bar', b2.ev.some(e => e.s === 0 && e.k === 'n' && e.at === '3/4' && e.p === 'F5'), short(b2.ev.filter(e => e.s === 0).map(e => e.k + e.at + e.p)));
+    await wait(150);
+    const live = await page.evaluate(() => ({ why: document.querySelector('[data-omr-editor] [data-why]').getAttribute('data-why'), fill: [...document.querySelectorAll('[data-omr-editor] [data-fill]')].map(x => x.getAttribute('data-fill')), head: document.querySelector('[data-omr-editor] .ppp-edit-title small').textContent,
+      cell: (() => { const c = [...document.querySelectorAll('button[title^="Measure "]')].find(b => /^Measure 2( |$)/.test(b.getAttribute('title'))); return c ? { title: c.getAttribute('title'), bg: c.style.background, bb: c.style.borderBottom } : null; })() }));
+    ok('the check is made again live: the bar is no longer a doubt, its hand is full', live.why !== 'suspect' && live.fill.every(f => /:ok$/.test(f)), short(live));
+    ok('the report is made again: the bar is not in the suspect list and the confidence went up', fixed.suspect.indexOf(2) < 0 && fixed.conf >= was.conf, short([was.suspect, fixed.suspect, was.conf, fixed.conf]));
+    ok('the strip says the bar was changed (and it is not red)', live.cell && /Changed by you/.test(live.cell.title) && !/bad/.test(live.cell.bg), short(live.cell));
+    await click(page, 'add-mode'); await wait(60);
+    await click(page, 'undo'); await settled(page);
+    await wait(150);
+    const back = await snap(page);
+    ok('undo: the bar is a doubt again', back.text === baseText && back.suspect.indexOf(2) >= 0, short(back.suspect));
+  }
+
   console.log('a bar marked right; undo, redo and discard');
   await goto(page, 2);
   const b2 = await snap(page);
   ok('bar 2 is a suspect bar', b2.suspect.indexOf(2) >= 0, short(b2.suspect));
   await edit('this measure is right', async () => {}, 'reviewed', async (b, a) => ok('bar 2 is no longer a suspect bar of the report', a.suspect.indexOf(2) < 0 && a.conf >= b.conf, short([b.suspect, a.suspect])));
+  await click(page, 'reviewed'); await settled(page);
+  await edit('take the mark off', async () => {}, 'unreviewed', async (b, a) => ok('bar 2 is a suspect bar again', a.suspect.indexOf(2) >= 0, short(a.suspect)));
+  await click(page, 'undo'); await settled(page);
+  await click(page, 'undo'); await settled(page);
   /* a real edit of bar 2 now: still undoable all the way */
   const x1 = await evOf(2, 0, 0);
   await tapEv(page, x1.id);
@@ -494,6 +544,41 @@ const IN_PAGE = `
       return { via: src.via, agree: !!(src.agree && src.agree.ok), rev: src.graph && src.graph.rev, opened: A.state.songId === id };
     }, songId);
     ok('after a reload the song\'s graph is read from the store and agrees with its Score', res.via === 'store' && res.agree && res.rev === kept.rev, short([res, kept.rev]));
+    await p2.close();
+  }
+
+  /* ================================================================ two parts the normaliser could not join */
+  console.log('staves: a score of two one-staff parts (bar counts that differ): hands and one piano part');
+  {
+    const mk = (id, clef, oct, nb) => '<part id="' + id + '">' + Array.from({ length: nb }, (_, m) => '<measure number="' + (m + 1) + '">' + (m === 0 ? '<attributes><divisions>4</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>' + clef[0]
+      + '</sign><line>' + clef[1] + '</line></clef></attributes>' : '') + ['C', 'D', 'E', 'F'].map(x => '<note><pitch><step>' + x + '</step><octave>' + oct + '</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type></note>').join('') + '</measure>').join('') + '</part>';
+    const two = '<?xml version="1.0"?><score-partwise version="3.1"><identification><encoding><software>Audiveris 5.11.0</software></encoding></identification><part-list><score-part id="P1"><part-name>R</part-name></score-part><score-part id="P2"><part-name>L</part-name></score-part></part-list>'
+      + mk('P1', ['G', 2], 5, 4) + mk('P2', ['F', 4], 3, 2) + '</score-partwise>';
+    const { page: p2 } = await fresh();
+    const v = await load(p2, two, 'v2', linesPdf(barLines(4)));
+    const np = await p2.evaluate(() => { const r = window.__last; return r && r.graph ? r.graph.parts.length : -1; });
+    ok('the import kept two one-staff parts (the normaliser could not join them)', !v.error && np === 2, short([v, np]));
+    if (!v.error && np === 2) {
+      await review(p2);
+      await p2.waitForFunction(() => !!window.PPPOmrEditorUI, { timeout: 15000 }).catch(() => {});
+      await openAt(p2, 1);
+      await click(p2, 'tools'); await wait(120);
+      const before = await snap(p2);
+      const hasHand = await p2.evaluate(() => ({ lh0: !!document.querySelector('[data-omr-editor] button[data-act="hand-lh-0"]'), rh1: !!document.querySelector('[data-omr-editor] button[data-act="hand-rh-1"]'), merge: !!document.querySelector('[data-omr-editor] button[data-act="merge-staves"]') }));
+      ok('the sheet offers the hands and "one piano part" for two parts', hasHand.lh0 && hasHand.rh1 && hasHand.merge, short(hasHand));
+      await click(p2, 'merge-staves');
+      await settled(p2);
+      const after = await snap(p2);
+      const parts = await p2.evaluate(() => window.PPPEngrave.app.resolveSync(window.PPP.app.state.score).graph.parts.map(p => p.staves.length));
+      ok('the two staves are one part of two staves; the page plays the graph', parts.join() === '2' && after.via === 'live' && after.agree && after.link && after.same, short([parts, after.via, after.agree, after.same, after.differ]));
+      await click(p2, 'undo'); await settled(p2);
+      ok('undo: two parts again, the bytes of before', (await snap(p2)).text === before.text, '');
+      const handBefore = (await p2.evaluate(() => window.PPPEngrave.app.resolveSync(window.PPP.app.state.score).graph.parts.map(p => p.id))).join();
+      await click(p2, 'hand-rh-1'); await settled(p2);
+      const handAfter = (await p2.evaluate(() => window.PPPEngrave.app.resolveSync(window.PPP.app.state.score).graph.parts.map(p => p.id))).join();
+      const hands = await p2.evaluate(() => { const A = window.PPP.app; return A.state.score.notes.filter(n => !n.rest).reduce((o, n) => { const k = n.hand + n.staff; o[k] = (o[k] || 0) + 1; return o; }, {}); });
+      ok('the second staff becomes the right hand (the parts change places), and the hands follow', handAfter !== handBefore && handAfter.split(',').reverse().join() === handBefore && (await snap(p2)).agree, short([handBefore, handAfter, hands]));
+    }
     await p2.close();
   }
 

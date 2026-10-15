@@ -2496,6 +2496,8 @@
     "That change could not be shown. It was undone.": "그 변경을 보여 줄 수 없어서 되돌렸어요.",
     "This is a draft from a photo: check the red measures against the page.": "사진에서 읽은 초안이에요. 빨간 마디를 악보와 비교해 확인해 주세요.",
     "Previous to check": "이전 확인",
-    "Next to check": "다음 확인"
+    "Next to check": "다음 확인",
+    "Changed by you": "직접 고친 마디",
+    "1 measure to check": "확인할 마디 1개"
   }
 }

@@ -413,6 +413,10 @@
           out.level = 'poor';
         }
         out.edited = session.edited;
+        /* the bars a person changed (the provenance of the graph says so), by the numbers of the strip */
+        const edBars = EO.editedBars(g);
+        const edNumbers = g.timeline.measures.map((m, i) => (edBars.has(m.id) ? numberOf(g, m, i) : null)).filter(x => x !== null);
+        if (edNumbers.length) out.editedMeasures = edNumbers; else delete out.editedMeasures;
         return out;
       },
       /* the bars with a doubt left, in bar order: the numbers of the strip */

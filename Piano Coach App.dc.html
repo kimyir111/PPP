@@ -22132,14 +22132,15 @@ class Component extends DCLogic {
         const why = (S.importReport && S.importReport.uncertainWhy && S.importReport.uncertainWhy[mm.number]) || null;
         const shown = mm.number >= S.reviewFrom && mm.number <= Score.step(score, S.reviewFrom, 3);
         const flagCodes = (S.importReport && S.importReport.flagCodes && S.importReport.flagCodes[mm.number]) || null;   /* G12-3: the codes omr/flags.js gave this bar (v2 imports); the sentences are made now, in the language of now */
+        const changed = ((S.importReport && S.importReport.editedMeasures) || []).indexOf(mm.number) > -1;           /* G12-4: a bar the person changed in the editor */
         const flagText = flagCodes && S.screen === 'review' ? this.flagSentences(flagCodes) : [];   /* only a screen that shows them asks for the module */
         const reasons = (why ? [why.indexOf('grid') > -1 ? tx('PPP was not sure of the beat') : '', why.indexOf('hands') > -1 ? tx('PPP was not sure which hand plays some notes') : ''].filter(Boolean) : [])
           .concat(flagText).join(' · ');
         return {
-          title: tx(suspect ? 'Measure {{n}} · needs checking' : 'Measure {{n}}', { n: mm.number }) + (reasons ? ' · ' + reasons : ''),
+          title: tx(suspect ? 'Measure {{n}} · needs checking' : 'Measure {{n}}', { n: mm.number }) + (reasons ? ' · ' + reasons : '') + (changed ? ' · ' + tx('Changed by you') : ''),
           style: 'flex:1;min-width:3px;height:22px;padding:0;border-radius:4px;cursor:pointer;border:1px solid '
             + (shown ? 'var(--accent)' : 'transparent') + ';background:' + (suspect ? 'var(--bad)' : why ? 'var(--warn)' : 'var(--accent-2)')
-            + ';opacity:' + (shown ? 1 : suspect ? 0.85 : why ? 0.8 : 0.4) + ';',
+            + ';opacity:' + (shown ? 1 : suspect ? 0.85 : why ? 0.8 : 0.4) + ';' + (changed ? 'border-bottom:4px solid var(--ink);' : ''),
           on: () => { if (omrEdit) this.openOmrEditor(mm.number); else this.setState({ reviewFrom: mm.number }); }
         };
       }),

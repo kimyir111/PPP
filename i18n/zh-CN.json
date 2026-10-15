@@ -2496,6 +2496,8 @@
     "That change could not be shown. It was undone.": "无法显示这次修改，已经撤销。",
     "This is a draft from a photo: check the red measures against the page.": "这是从照片识别出的草稿：请把红色小节和纸上的乐谱对照检查。",
     "Previous to check": "上一个待查",
-    "Next to check": "下一个待查"
+    "Next to check": "下一个待查",
+    "Changed by you": "你修改过的小节",
+    "1 measure to check": "有 1 个小节待检查"
   }
 }
