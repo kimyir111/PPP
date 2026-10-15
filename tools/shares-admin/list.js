@@ -55,10 +55,20 @@ async function fromFile(dir) {
 }
 
 async function fromPostgres(url, allowRemote) {
-  let host = '';
-  try { host = new URL(url).hostname; } catch (e) { usage('that is not a database URL'); }
-  const local = /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(host);
-  if (!local && !allowRemote) usage('refusing: the database is not on this machine (' + host.replace(/^[^.]+/, '***') + '). Pass --allow-remote only with the owner\'s word.');
+  /* where the connection really goes: the host of the URL AND whatever its query says (libpq reads ?host= and ?hostaddr=, a name, a socket directory or a comma list, and
+     that wins over the URL's own host: postgres://localhost/db?host=db.example.net is a remote database). Every one of them must be this machine. */
+  const hosts = [];
+  if (!/^postgres(?:ql)?:\/\//i.test(url)) usage('that is not a database URL');
+  /* by hand, not new URL(): a libpq URL may have no host at all before the query (postgres://user@/db?host=/var/run/postgresql), which WHATWG URL refuses */
+  const m = /^[a-z]+:\/\/(?:[^@/?]*@)?(\[[^\]]*\]|[^/:?]*)(?::\d*)?(?:\/[^?]*)?(?:\?(.*))?$/i.exec(url);
+  if (!m) usage('that is not a database URL');
+  if (m[1]) { try { hosts.push(decodeURIComponent(m[1]).replace(/^\[|\]$/g, '')); } catch (e) { hosts.push(m[1]); } }
+  const qs = new URLSearchParams(m[2] || '');
+  ['host', 'hostaddr'].forEach(k => qs.getAll(k).forEach(v => String(v).split(',').forEach(h => { if (h.trim()) hosts.push(h.trim()); })));
+  try { const cs = require('pg-connection-string').parse(url); if (cs && cs.host) String(cs.host).split(',').forEach(h => { if (h.trim()) hosts.push(h.trim()); }); } catch (e) { /* the package is optional here: the parse above is the check */ }
+  const isLocal = h => /^(localhost|127\.0\.0\.1|\[?::1\]?)$/i.test(h) || h.charAt(0) === '/';
+  const local = hosts.length > 0 && hosts.every(isLocal);
+  if (!local && !allowRemote) usage('refusing: the database is not on this machine (' + (hosts.filter(h => !isLocal(h)).join(', ') || 'no host named').replace(/^[^.]+/, '***') + '). Pass --allow-remote only with the owner\'s word.');
   const { Client } = require('pg');
   const c = new Client({ connectionString: url, ssl: /render\.com|neon\.tech|sslmode=require/i.test(url) ? { rejectUnauthorized: false } : undefined });
   await c.connect();

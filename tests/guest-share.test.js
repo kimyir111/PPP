@@ -214,7 +214,7 @@ async function main() {
     console.log('\n── creating a guest link ──');
     const A = secretOf();
     const none = await post(P, null, { songKey: 's1', title: 'T', score: smallScore() }, nextIp());
-    ok('no guest key and no session: 401, as before', none.status === 401 && /Sign in to share/.test(none.body.error), none.status + '');
+    ok('no guest key and no session: 401, as before', none.status === 401 && /sharing key/.test(none.body.error) && !/sign in/i.test(none.body.error), none.status + '');
     const shortKey = await post(P, 'tooshort', { songKey: 's1', title: 'T', score: smallScore() }, nextIp());
     ok('a key that is not a key is the same 401', shortKey.status === 401, shortKey.status + '');
 
@@ -286,17 +286,19 @@ async function main() {
     ok('title and composer are clipped (120, 160) as for an account', long.status === 201 && long.body.title.length === 120 && long.body.composer.length === 160, long.body && long.body.title.length + '/' + long.body.composer.length);
     const bigBody = n => JSON.stringify({ songKey: 'big', title: 'Big', score: smallScore('Big', { pad: 'x'.repeat(n) }) });
     const big = await req(P, 'POST', '/api/shares', { guest: A, ip: ipA, tolerateReset: true, body: bigBody(1024 * 1024 + 10) });
-    ok('a guest body over 1 MB is refused with a real 413 JSON answer (not a reset)', big.status === 413 && /too large/.test(big.body.error) && /guest/.test(big.body.error), big.status + ' ' + big.text.slice(0, 80));
+    ok('a guest body over 1 MB is refused with a real 413 JSON answer (not a reset)', big.status === 413 && /too large/.test(big.body.error) && /1 MB/.test(big.body.error) && !/sign in/i.test(big.body.error), big.status + ' ' + big.text.slice(0, 80));
     const huge = await req(P, 'POST', '/api/shares', { guest: A, ip: ipA, tolerateReset: true, body: bigBody(20 * 1024 * 1024) });
     ok('one far over the limit is refused too (413, or the connection is cut)', huge.status === 413 || huge.status === 'reset', String(huge.status));
     const nearly = await post(P, A, { songKey: 'nearly', title: 'Nearly 1 MB', score: smallScore('Nearly', { pad: 'x'.repeat(900 * 1024) }) }, ipA);
     ok('900 KB of score is fine for a guest', nearly.status === 201, nearly.status + '');
     const withPreview = await post(P, A, { songKey: 'pv', title: 'With a preview', score: smallScore('P'), preview: smallScore('P') }, ipA);
     const pvRow = readRows(srv.dir).find(r => r.id === withPreview.body.id);
-    ok('a small preview is kept, and counted in the row\'s bytes', withPreview.status === 201 && !!pvRow.preview && pvRow.bytes === G.rowBytes(smallScore('P'), smallScore('P')), pvRow && String(pvRow.bytes));
-    const bigPreview = await post(P, A, { songKey: 'pv2', title: 'Big preview', score: smallScore('P'), preview: smallScore('P', { pad: 'x'.repeat(30 * 1024) }) }, ipA);
+    /* G13 no login: a preview is REBUILT from what a preview is (share-guest.js normalizePreview), so what is kept and counted is the rebuilt one */
+    ok('a small preview is kept (rebuilt), and counted in the row\'s bytes', withPreview.status === 201 && !!pvRow.preview && pvRow.preview.measures.length === 2 && pvRow.bytes === G.rowBytes(pvRow.score, pvRow.preview), pvRow && String(pvRow.bytes));
+    const fatNotes = Array.from({ length: 400 }, (_, i) => ({ m: 1, b: i % 4, dur: 1, staff: 1, voice: 1, midi: 60, p: 'C5', acc: null, hand: 'r', rest: false, chord: false, tieStart: false, tieStop: false, slurStart: false, slurStop: false, type: 'quarter', dots: 0 }));
+    const bigPreview = await post(P, A, { songKey: 'pv2', title: 'Big preview', score: smallScore('P'), preview: smallScore('P', { notes: fatNotes }) }, ipA);
     const pvRow2 = readRows(srv.dir).find(r => r.id === bigPreview.body.id);
-    ok('a preview over 24 KB is dropped, and not counted', bigPreview.status === 201 && pvRow2.preview === null && pvRow2.bytes === G.rowBytes(smallScore('P'), null), pvRow2 && String(pvRow2.bytes));
+    ok('a preview over 24 KB (once rebuilt) is dropped, and not counted', bigPreview.status === 201 && pvRow2.preview === null && pvRow2.bytes === G.rowBytes(pvRow2.score, null), pvRow2 && String(pvRow2.bytes));
     const nullMeasure = await post(P, A, { songKey: 'nm', title: 'T', score: { measures: [null], notes: [] } }, ipA);
     const nullNote = await post(P, A, { songKey: 'nn', title: 'T', score: { measures: [{}], notes: [null] } }, ipA);
     ok('measures:[null] and notes:[null] are 422, not stored', nullMeasure.status === 422 && nullNote.status === 422 && !readRows(srv.dir).some(r => r.songKey === 'nm' || r.songKey === 'nn'), nullMeasure.status + '/' + nullNote.status);
@@ -335,7 +337,7 @@ async function main() {
     }
     ok('20 links are fine', created === 20, created + ' ' + (last && last.status));
     const over = await post(P, B, { songKey: 'cap-20', title: 'Cap 20', score: smallScore() }, '198.51.100.99');
-    ok('the 21st is 429 (one browser keeps 20)', over.status === 429 && /guest links/i.test(over.body.error), over.status + '');
+    ok('the 21st is 429 (one browser keeps 20)', over.status === 429 && /as many links/i.test(over.body.error) && !/sign in/i.test(over.body.error), over.status + '');
     const upd = await post(P, B, { songKey: 'cap-3', title: 'Cap 3 again', score: smallScore() }, '198.51.100.98');
     ok('but sharing one of the 20 again still works', upd.status === 200, upd.status + '');
     const freed = await req(P, 'DELETE', '/api/shares/' + upd.body.id, { guest: B });
@@ -470,7 +472,8 @@ async function main() {
     const shrink = await growBig(0, 1);
     ok('a re-send that shrinks is always welcome', shrink.status === 200, shrink.status + '');
     const withPrev = await post(P, E, { songKey: 'tiny-0', title: 'Tiny 0', score: smallScore('Tiny', { pad: 'x'.repeat(100 * 1024) }), preview: smallScore('P', { pad: 'y'.repeat(20 * 1024) }) }, nextIp());
-    ok('a re-send with a preview counts the preview in its growth', withPrev.status === 200 && readRows(srv.dir).find(r => r.id === tiny[0]).bytes === G.rowBytes(smallScore('Tiny', { pad: 'x'.repeat(100 * 1024) }), smallScore('P', { pad: 'y'.repeat(20 * 1024) })));
+    const prevRow = readRows(srv.dir).find(r => r.id === tiny[0]);
+    ok('a re-send with a preview counts the preview in its growth', withPrev.status === 200 && !!prevRow.preview && prevRow.bytes === G.rowBytes(prevRow.score, prevRow.preview));
     writeRows(srv.dir, rowsBase);
     const smallOk = await post(P, secretOf(), { songKey: 'bytes-ok', title: 'Small', score: smallScore() }, nextIp());
     ok('with the filler gone, a new link fits again', smallOk.status === 201, smallOk.status + '');

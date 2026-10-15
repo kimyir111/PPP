@@ -562,10 +562,14 @@ const guestPosts = {
   ip: guestShare.slidingWindow(GUEST.POST_PER_IP_PER_DAY, GUEST.DAY_MS),
   all: guestShare.slidingWindow(GUEST.POST_GLOBAL_PER_DAY, GUEST.DAY_MS)
 };
-/* null when this request may post (its three places are taken), else the refusal { status, error, code }; nothing is left taken on a refusal */
-function takeGuestPost(ip, gid) {
+/* On Render with no SESSION_SECRET the address tag is a hash with a key everybody can read: no guest post is taken (and it is said once, loudly, at the start). */
+const GUEST_POSTS_NO_SECRET = !!process.env.RENDER && !process.env.SESSION_SECRET;
+/* null when this request may post, else the refusal { status, error, code }; nothing is left taken on a refusal. `free`: it is a post put back the same day it was listed
+   (guestShare.recentlyListed): the same post, so no new place of the day is taken - the switch and the secret still hold, and so do the caps on what is held. */
+function takeGuestPost(ip, gid, free) {
   /* the owner's switch: PPP_GUEST_POSTS=0 refuses every new guest post (the page says there is no room right now); posts already made stay until they end or are taken down. Links are not affected. */
-  if (process.env.PPP_GUEST_POSTS === '0') return { status: 503, code: 'busy', error: guestShare.BUSY };
+  if (process.env.PPP_GUEST_POSTS === '0' || GUEST_POSTS_NO_SECRET) return { status: 503, code: 'busy', error: guestShare.BUSY };
+  if (free) return null;
   if (!guestPosts.key.take(gid)) return { status: 429, code: 'too-many-posts', error: 'This browser has posted as many scores today as a guest may. Try again tomorrow.' };
   if (!guestPosts.ip.take(ip)) {
     guestPosts.key.release(gid);
@@ -578,13 +582,16 @@ function takeGuestPost(ip, gid) {
   return null;
 }
 function releaseGuestPost(ip, gid) { guestPosts.key.release(gid); guestPosts.ip.release(ip); guestPosts.all.release('all'); }
+/* the address of a request as every guest limit counts it: an IPv6 address is its /48 (the biggest block one site is given; a /64 or a /56 of it is the same place), an IPv4-mapped
+   one is the IPv4 (home-jobs.js addrKey, which the signup limit and the PC links use). The windows, the held counts and the address tag are all of this one name. */
+const guestPlaceOf = req => homeJobs.addrKey(guestShare.clientAddress(req).ip || 'unknown');
 /* the keyed hash of the address a listed guest post was made from (an IPv6 address counts as its /48, as for the PC links and the signup limit): kept only on a post
    that is listed, for the cap per address and for the owner's read-only look at growth (tools/shares-admin/list.js); cleared when the post is taken down */
 const guestAddrKey = crypto.createHmac('sha256', SECRET).update('ppp-guest-post-address').digest();
 const guestAddrTagOf = ip => crypto.createHmac('sha256', guestAddrKey).update(homeJobs.addrKey(ip)).digest('hex').slice(0, 16);
 /* an oversized guest body is read this far and thrown away, so the answer is a 413 and not a reset */
 const GUEST_DRAIN_BYTES = 16 * 1024 * 1024;
-const GUEST_TOO_BIG = 'That score is too large to share as a guest. Sign in to share larger scores.';
+const GUEST_TOO_BIG = 'That score is too large to share (the limit is 1 MB, about 4,000 notes). Share a part of it.';
 /* a constant for pg_advisory_xact_lock: guest creates take turns */
 const GUEST_LOCK_KEY = 727001;
 /* G13-5 (TD26): who may make an account, and how fast. Making one costs a scrypt on the one thread, and a row for good. Three limits, each from one address
@@ -659,11 +666,14 @@ function youtubeDerivedShare(score, flag) {
 /* What the list shows: no score, only the preview drawn on its card. */
 function shareCard(row, viewer) {
   const mine = ownsShare(viewer, row);
+  /* G13 no login: what the list shows is made safe on the way OUT as well as on the way in (rows stored before the rules, or written by a store I do not control): the text
+     cleaned of controls and bidi overrides, and the preview - which the page's engraver DRAWS - rebuilt from what a preview is (guestShare.normalizePreview) */
+  const T = guestShare.cleanText;
   const card = {
-    id: row.id, title: row.title, composer: row.composer, kind: row.kind, genre: row.genre || '',
-    measures: row.measures, owner: row.ownerName, mine: mine,
+    id: row.id, title: T(row.title, 120), composer: T(row.composer, 160), kind: T(row.kind, 24), genre: T(row.genre || '', 32),
+    measures: row.measures, owner: T(row.ownerName, 160), mine: mine,
     songKey: mine ? row.songKey : undefined,
-    listed: !!row.listed, preview: row.preview || null,
+    listed: !!row.listed, preview: row.preview ? guestShare.normalizePreview(row.preview, 4) : null,
     createdAt: row.createdAt, updatedAt: row.updatedAt
   };
   /* only a guest link has an end date; and only a guest's row is marked, so the page can say "Guest" in the person's language (the owner name stays "Guest") */
@@ -1455,7 +1465,7 @@ async function handleShares(req, res, url) {
   if (p === '/api/shares' && method === 'GET') {
     const mine = url.searchParams.get('mine') === '1';
     /* yours: what the account holds and what this browser's guest key holds (a person who signed in later still sees their guest posts) */
-    if (mine && !user && !guestId) return jsonError(res, 401, 'Sign in to see your shared scores.');
+    if (mine && !user && !guestId) return jsonError(res, 401, 'This browser has no sharing key yet: nothing is shared from it.');
     const asked = parseInt(url.searchParams.get('limit'), 10);
     const limit = asked > 0 ? Math.min(asked, mine ? SHARE_LIST_LIMIT : SHARE_PAGE_MAX) : mine ? SHARE_LIST_LIMIT : SHARE_PAGE;
     const cursorText = url.searchParams.get('cursor');
@@ -1480,7 +1490,7 @@ async function handleShares(req, res, url) {
   }
 
   if (p === '/api/shares' && method === 'POST') {
-    if (!user && !guestId) return jsonError(res, 401, 'Sign in to share your scores.');
+    if (!user && !guestId) return jsonError(res, 401, 'This browser did not send its sharing key. Reload the page and try again.');
     /* no account: an unlisted link only. The public write is rationed before the body is read (is there room
        left for this address and for the server?), counted once the request proves to be a real share, and
        requests that fail validation get a small budget of their own, so they are neither free nor able to
@@ -1489,7 +1499,7 @@ async function handleShares(req, res, url) {
     let ip = null;
     if (guest) {
       const who = guestShare.clientAddress(req);
-      ip = who.ip || 'unknown';
+      ip = homeJobs.addrKey(who.ip || 'unknown');
       if (!guestSourceLogged) { guestSourceLogged = true; console.log('Guest links: the first request named its client from ' + who.source); }
       if (!guestLimits.ip.peek(ip) || !guestLimits.fails.peek(ip) || !guestLimits.all.peek('all')) {
         return jsonError(res, 429, 'Too many links were made from here just now. Try again in a little while.');
@@ -1513,8 +1523,11 @@ async function handleShares(req, res, url) {
     if (!validScore(body.score)) return refuse(422, 'That is not a score PPP can share.');
     const songKey = clipText(body.songKey, 80);
     if (!songKey) return refuse(422, 'That is not a score PPP can share.');
-    const title = clipText(body.title || body.score.title, 120);
+    const title = guestShare.cleanText(body.title || body.score.title, 120);
     if (!title) return refuse(422, 'A shared score needs a title.');
+    /* what the score carries in its own title and composer is shown as well (the card of an opened link, the shelf of whoever adds it): the same cleaning, and the staves and
+       staff numbers a drawing loops over are bounded (an honest score has 1 to 3 staves) */
+    guestShare.cleanScore(body.score);
     /* G13-3: not to the public list - for an account and for a guest alike (a guest is charged for asking, as for any request that cannot be kept). A link (listed left out,
        or false) is not refused. */
     if (body.listed === true && youtubeDerivedShare(body.score, body.youtubeDerived)) {
@@ -1526,8 +1539,13 @@ async function handleShares(req, res, url) {
     const previewMax = guest ? GUEST.PREVIEW_MAX_BYTES : 96 * 1024;
     let preview = null, bytes = 0;
     try {
-      preview = validScore(body.preview) && body.preview.measures.length <= 4
-        && JSON.stringify(body.preview).length < previewMax ? body.preview : null;
+      /* the preview is DRAWN by the page's engraver: what is stored is rebuilt from what a preview is (4 bars, 400 notes, staves and staff 1..4, every number finite and small),
+         not what was sent. Not a preview at all (not an object with bars and notes): 422. Too big once rebuilt: dropped, as before. */
+      if (body.preview != null) {
+        const np = guestShare.normalizePreview(body.preview, 4);
+        if (!np) return refuse(422, 'That is not a score PPP can share.');
+        preview = JSON.stringify(np).length < previewMax ? np : null;
+      }
       if (guest) bytes = guestShare.rowBytes(body.score, preview);
     } catch (e) {
       /* nested too deep to be written down: not a score */
@@ -1537,16 +1555,20 @@ async function handleShares(req, res, url) {
     const buildRow = prev => {
       const now = new Date().toISOString();
       /* sending a link never takes a posted score down, and never posts one (a guest's too); a guest's post is only what the request says, or what it already was */
-      const listed = typeof body.listed === 'boolean' ? body.listed : !!(prev && prev.listed);
-      if (guest && listed) {
-        const why = takeGuestPost(ip, guestId);
+      const wasListed = !!(prev && prev.listed);
+      const listed = typeof body.listed === 'boolean' ? body.listed : wasListed;
+      /* a limit is asked only when the row BECOMES listed (a post sent again, or a link re-sent while its post stands, is not a new post: the hourly limits, the size and the
+         caps on what is held still hold). Put back the day it was listed, it is the same post: no new place of the day. */
+      if (guest && listed && !wasListed) {
+        const free = guestShare.recentlyListed(prev, nowMs);
+        const why = takeGuestPost(ip, guestId, free);
         if (why) return { refuse: why };
-        postTaken = true;
+        postTaken = !free;
       }
       const r = {
         id: prev ? prev.id : newShareId(),
         ownerId: ownerId, ownerName: guest ? guestShare.guestName(body.displayName) : user.displayName, songKey: songKey,
-        title: title, composer: clipText(body.composer, 160), genre: guest ? '' : clipText(body.genre, 32), kind: clipText(body.kind, 24),
+        title: title, composer: guestShare.cleanText(body.composer, 160), genre: guest ? '' : guestShare.cleanText(body.genre, 32), kind: guestShare.cleanText(body.kind, 24),
         measures: body.score.measures.length,
         listed: listed,
         preview: preview, score: body.score,
@@ -1636,15 +1658,17 @@ async function handleShares(req, res, url) {
     if (!userOwns) {
       /* a guest's own row: put into the public list (rationed like a post: a day's places, and the caps of a new post, inside the store's turn), or taken out of it
          (which costs nothing, and is always allowed) */
-      let ip = null, took = false;
+      let ip = null, took = false, tag = null;
       if (body.listed === true && !row.listed) {
-        ip = guestShare.clientAddress(req).ip || 'unknown';
-        const why = takeGuestPost(ip, guestId);
+        ip = guestPlaceOf(req);
+        tag = guestAddrTagOf(ip);
+        const free = guestShare.recentlyListed(row, Date.now());
+        const why = takeGuestPost(ip, guestId, free);
         if (why) return jsonError(res, why.status, why.error, { code: why.code });
-        took = true;
+        took = !free;
       }
       let out;
-      try { out = await store.guestSetListed(guestId, row.id, body.listed, took ? guestAddrTagOf(ip) : null, Date.now()); }
+      try { out = await store.guestSetListed(guestId, row.id, body.listed, tag, Date.now()); }
       catch (e) {
         if (took) releaseGuestPost(ip, guestId);
         logStoreError(e);
@@ -1685,8 +1709,8 @@ async function shareMeta(id, req) {
   /* G13-3 (U9): a score made from a YouTube link is for its owner's practice; its link is for the people it was sent to, as a guest link is: not for a search engine and with
      no title or description of it in a preview (the page's own <title> is all the link says) */
   if (youtubeDerivedShare(row.score, false)) return '<meta name="robots" content="noindex">';
-  const title = row.title + (row.composer ? ' · ' + row.composer : '');
-  const desc = row.measures + (row.measures === 1 ? ' bar' : ' bars') + ' · shared by ' + row.ownerName + ' on PPP — Piano Practice Partner';
+  const title = guestShare.cleanText(row.title, 120) + (row.composer ? ' · ' + guestShare.cleanText(row.composer, 160) : '');
+  const desc = row.measures + (row.measures === 1 ? ' bar' : ' bars') + ' · shared by ' + guestShare.cleanText(row.ownerName, 160) + ' on PPP — Piano Practice Partner';
   return [
     /* a guest link is for the people it was sent to, not for a search engine */
     guestShare.isGuestOwner(row.ownerId) ? '<meta name="robots" content="noindex">' : '',
@@ -1870,6 +1894,8 @@ store.ready().then(() => {
   server.listen(PORT, HOST, () => {
     console.log('PPP listening on http://' + HOST + ':' + PORT);
     if (!jobsService.isDisabled()) console.log('Home-PC worker queue: an idle worker is told to wait ' + jobsService.config.idlePollS + ' s, a busy one ' + jobsService.config.activePollS + ' s (PPP_WORKER_IDLE_POLL_S, PPP_WORKER_ACTIVE_POLL_S)');
+    if (!process.env.SESSION_SECRET) console.warn('SESSION_SECRET is not set: sessions and the keyed address tags use the public development secret.' + (GUEST_POSTS_NO_SECRET ? ' Guest posts to Shared Scores are OFF until it is set (links and accounts are not affected).' : ''));
+    if (process.env.PPP_GUEST_POSTS === '0') console.log('Guest posts to Shared Scores are OFF (PPP_GUEST_POSTS=0): links and accounts are not affected.');
     console.log('Guest links: the client address is read from ' + (process.env.RENDER ? 'CF-Connecting-IP, then True-Client-IP, then ' : '')
       + 'X-Forwarded-For (' + (Math.max(1, parseInt(process.env.PPP_PROXY_HOPS, 10) || 1)) + ' from the right), then the socket');
     if (HOST === '127.0.0.1' || HOST === 'localhost') startHelperIfMissing();

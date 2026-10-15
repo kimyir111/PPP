@@ -35,7 +35,7 @@ function rules() {
   /* GUEST_POST_NO_CONSTANTS=1 (the second pass of the mutation run) leaves this one out, so each number is found only by what it DOES in the tests below */
   if (!process.env.GUEST_POST_NO_CONSTANTS) ok('the limits are the ones named',
     GG.PER_GUEST_LISTED === 10 && GG.PER_ADDR_LISTED === 20 && GG.TOTAL_LISTED === 300 && GG.TOTAL_LISTED_BYTES === 24 * 1024 * 1024
-    && GG.POST_PER_KEY_PER_DAY === 5 && GG.POST_PER_IP_PER_DAY === 10 && GG.POST_GLOBAL_PER_DAY === 60 && GG.TTL_LISTED_MS === 90 * DAY && GG.TTL_MS === 30 * DAY
+    && GG.POST_PER_KEY_PER_DAY === 5 && GG.POST_PER_IP_PER_DAY === 10 && GG.POST_GLOBAL_PER_DAY === 150 && GG.TTL_LISTED_MS === 90 * DAY && GG.TTL_MS === 30 * DAY
     && GG.MAX_BYTES === 1024 * 1024 && GG.NAME_MAX === 24);
   const T0 = Date.parse('2026-10-01T00:00:00Z');
   ok('a link ends in 30 days, a post in 90', Date.parse(G.expiryFor(T0)) - T0 === 30 * DAY && Date.parse(G.expiryFor(T0, false)) - T0 === 30 * DAY && Date.parse(G.expiryFor(T0, true)) - T0 === 90 * DAY);
@@ -43,8 +43,8 @@ function rules() {
   ok('Korean, Japanese, Chinese and accents are names', G.guestName('김피아노') === '김피아노' && G.guestName('ピアノさん') === 'ピアノさん' && G.guestName('钢琴') === '钢琴' && G.guestName('José') === 'José');
   ok('a name is cut to 24 characters by code point (no pair is split)', Array.from(G.guestName('가'.repeat(40))).length === 24 && G.guestName('😀'.repeat(30)) === '😀'.repeat(24));
   ok('control and bidi-override characters are dropped', G.guestName('A‮B\u0007C​D') === 'A B C D' && !/[‮\u0007​]/.test(G.guestName('x‮y')));
-  ok('the site\'s own name is not a guest\'s ("PPP Library", "ppp admin"), and "Pppfan" is just a name',
-    G.guestName('PPP Library') === 'Guest' && G.guestName('ppp admin') === 'Guest' && G.guestName('PPP') === 'Guest' && G.guestName('Pppfan') === 'Pppfan');
+  ok('the site\'s own name is not a guest\'s, wherever it stands ("PPP Library", "ppp admin", "The PPP team", "Pppfan")',
+    G.guestName('PPP Library') === 'Guest' && G.guestName('ppp admin') === 'Guest' && G.guestName('PPP') === 'Guest' && G.guestName('The PPP team') === 'Guest' && G.guestName('Pppfan') === 'Guest');
   ok('an address or a contact is not a name', ['me@example.com', 'https://x.example', 'www.foo.org', 'see foo.com', 'kim@naver'].every(n => G.guestName(n) === 'Guest'));
 
   const none = { ownerListed: 0, addrListed: 0, totalListed: 0, totalListedBytes: 0 };
@@ -242,8 +242,10 @@ async function main() {
     const downK = await req(P, 'PATCH', '/api/shares/' + perKey[0].body.id, { guest: K, body: { listed: false } });
     ok('taking one down costs nothing and is always allowed', downK.status === 200 && downK.body.listed === false);
     const upK = await req(P, 'PATCH', '/api/shares/' + perKey[0].body.id, { guest: K, body: { listed: true }, ip: nextIp() });
-    ok('putting it back is a post, so it is refused today (429)', upK.status === 429 && upK.body.code === 'too-many-posts');
-    ok('the refused ones left nothing posted', readRows(srv.dir).filter(r => r.ownerId === G.guestOwnerId(K) && r.listed).length === 4);
+    ok('putting it back the same day is the same post: 200, no new place of the day', upK.status === 200 && upK.body.listed === true, upK.status + '');
+    const putLinkK = await req(P, 'PATCH', '/api/shares/' + asLink2.body.id, { guest: K, body: { listed: true }, ip: nextIp() });
+    ok('but putting a link that was never listed into the list is a new post: refused today (429)', putLinkK.status === 429 && putLinkK.body.code === 'too-many-posts');
+    ok('the refused ones left nothing posted', readRows(srv.dir).filter(r => r.ownerId === G.guestOwnerId(K) && r.listed).length === 5);
 
     console.log('\n── how many one address may post in a day: 10 ──');
     const ipX = '198.51.100.7';
@@ -359,7 +361,10 @@ async function main() {
     const racers = await Promise.all(Array.from({ length: 5 }, (_, i) => postAs(P, same2, { songKey: 'one-song', title: 'Same ' + i, listed: true }, '100.65.' + (i + 1) + '.1')));
     ok('5 at once for the same song: one row, answers 200/201 only, one link', racers.every(r => r.status === 200 || r.status === 201) && new Set(racers.map(r => r.body.id)).size === 1
       && readRows(srv.dir).filter(r => r.ownerId === G.guestOwnerId(same2)).length === 1, racers.map(r => r.status).join());
-    ok('(the 5 were 5 posts of the day: the next is the 6th and is refused)', (await postAs(P, same2, { songKey: 'one-song', title: 'again', listed: true }, nextIp())).status === 429);
+    ok('(they were ONE post: the day still has four places for four new posts, and the fifth is refused)', await (async () => {
+      for (let i = 0; i < 4; i++) { const r = await postAs(P, same2, { songKey: 'more-' + i, title: 'more', listed: true }, nextIp()); if (r.status !== 201) return false; }
+      return (await postAs(P, same2, { songKey: 'more-x', title: 'more', listed: true }, nextIp())).status === 429;
+    })());
 
     console.log('\n── an account is not changed ──');
     const U = (method, p, body) => req(P, method, p, { cookie: cookie, body: body, ip: nextIp() });
@@ -400,19 +405,19 @@ async function main() {
     try { fs.rmSync(srv.dir, { recursive: true, force: true }); } catch (e) { /* a temp dir */ }
   }
 
-  console.log('\n── how many posts the whole site takes in a day: 60 ──');
+  console.log('\n── how many posts the whole site takes in a day: 150 ──');
   const srv3 = await server();
   try {
     const made = [];
     const k0 = secretOf();
     let firstId = null;
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 150; i++) {
       const r = await postAs(srv3.port, i === 0 ? k0 : secretOf(), { listed: true }, '172.20.' + Math.floor(i / 50) + '.' + (i % 50 + 1));
       if (i === 0) firstId = r.body.id;
       made.push(r.status);
     }
     const sixtyFirst = await postAs(srv3.port, secretOf(), { listed: true }, '172.21.0.1');
-    ok('60 posts from 60 browsers and addresses are made; the 61st is 503 busy', made.every(s => s === 201) && sixtyFirst.status === 503 && sixtyFirst.body.code === 'busy', made.filter(s => s !== 201).join(',') + ' / ' + sixtyFirst.status);
+    ok('150 posts from 150 browsers and addresses are made; the 151st is 503 busy', made.every(s => s === 201) && sixtyFirst.status === 503 && sixtyFirst.body.code === 'busy', made.filter(s => s !== 201).join(',') + ' / ' + sixtyFirst.status);
     ok('a link is still made', (await postAs(srv3.port, secretOf(), { listed: false }, '172.21.0.2')).status === 201);
     const downSite = await req(srv3.port, 'PATCH', '/api/shares/' + firstId, { guest: k0, body: { listed: false } });
     ok('and taking one down is not refused', downSite.status === 200 && downSite.body.listed === false);
@@ -445,7 +450,279 @@ async function main() {
   } finally { await srv2.close(); try { fs.rmSync(srv2.dir, { recursive: true, force: true }); } catch (e) { /* temp */ } }
 }
 
-main().then(() => {
+
+/* ---------- the review of PR 275: a preview is drawn by every viewer's engraver; the address is the /48; text is cleaned; the names; the messages ---------- */
+const PREVIEWS = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'guest-previews.json'), 'utf8'));
+const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
+/* what the page's engraver may be given (the invariants, written down here independently of the rebuilding code) */
+function unsafePreview(p) {
+  const why = [];
+  if (!isObj(p)) return ['not an object'];
+  if (![1, 2, 3, 4].includes(p.staves)) why.push('staves ' + JSON.stringify(p.staves));
+  if (!Array.isArray(p.measures) || p.measures.length < 1 || p.measures.length > 4) why.push('measures');
+  if (!Array.isArray(p.notes) || p.notes.length > 400) why.push('notes');
+  const nums = new Set((p.measures || []).map(m => m.number));
+  (p.notes || []).forEach((n, i) => {
+    if (!Number.isInteger(n.staff) || n.staff < 1 || n.staff > 4) why.push('note ' + i + ' staff ' + n.staff);
+    if (!Number.isInteger(n.voice) || n.voice < 1 || n.voice > 8) why.push('note ' + i + ' voice ' + n.voice);
+    if (!Number.isInteger(n.dots) || n.dots < 0 || n.dots > 4) why.push('note ' + i + ' dots ' + n.dots);
+    if (!nums.has(n.m)) why.push('note ' + i + ' bar ' + n.m);
+  });
+  (p.measures || []).forEach((m, i) => {
+    if (!isObj(m.time) || !Number.isInteger(m.time.beats) || m.time.beats < 1 || m.time.beats > 32) why.push('measure ' + i + ' beats');
+    if (m.lenQ !== undefined && !(m.lenQ > 0 && m.lenQ <= 32)) why.push('measure ' + i + ' lenQ');
+  });
+  const walk = (v, d, where) => {
+    if (d > 8) { why.push('deep at ' + where); return; }
+    if (typeof v === 'number' && !(Number.isFinite(v) && Math.abs(v) <= 1000)) why.push('number ' + v + ' at ' + where);
+    if (typeof v === 'string' && (v.length > 400 || /[\u0000-\u001f\u202a-\u202e\u2066-\u2069]/.test(v))) why.push('string at ' + where);
+    if (Array.isArray(v)) { if (v.length > 400) why.push('array ' + v.length + ' at ' + where); v.forEach((x, i) => walk(x, d + 1, where + '[' + i + ']')); }
+    else if (isObj(v)) { if (Object.keys(v).length > 60) why.push('keys at ' + where); Object.keys(v).forEach(k => { if (k === '__proto__') why.push('__proto__ at ' + where); walk(v[k], d + 1, where + '.' + k); }); }
+  };
+  walk(p, 0, '$');
+  return why;
+}
+/* the page's own copy of the rebuilding (thumbSafe, between the markers), run here to be held to the same answers as the server's */
+function pageThumbSafe() {
+  const html = fs.readFileSync(process.env.PPP_PAGE_FILE || path.join(path.resolve(__dirname, '..'), 'Piano Coach App.dc.html'), 'utf8');
+  const a = html.indexOf('/* thumb-safe:begin */'), b = html.indexOf('/* thumb-safe:end */');
+  if (a < 0 || b < a) return null;
+  const T = new Function('class T {\n' + html.slice(a, b) + '\n}\nreturn T;')();
+  return new T();
+}
+function prng(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+/* a random preview that is wrong in one or two places: the values are the ones that hang or bloat a drawing */
+function mutated(rand) {
+  const names = Object.keys(PREVIEWS);
+  const p = JSON.parse(JSON.stringify(PREVIEWS[names[Math.floor(rand() * names.length)]]));
+  const pool = [0, -1, 1, 2, 3, 4, 5, 8, 100, 1e6, 1e9, -1e9, 0.5, 1e-9, null, true, false, '', 'abc', '1000000', '\u202e', 'x'.repeat(5000), {}, [], [1, 2, 3], { a: { b: { c: { d: { e: { f: { g: { h: 1 } } } } } } } },
+    Array.from({ length: 700 }, (_, i) => ({ m: 1, b: i % 4, dur: 1, staff: 1, voice: 1, midi: 60 })), 1e300, -1e300];
+  const paths = [];
+  const collect = (v, pre, d) => { if (d > 3 || v === null || typeof v !== 'object') return; Object.keys(v).slice(0, 12).forEach(k => { paths.push(pre.concat(k)); collect(v[k], pre.concat(k), d + 1); }); };
+  collect(p, [], 0);
+  const n = 1 + Math.floor(rand() * 3);
+  for (let i = 0; i < n; i++) {
+    const at = paths[Math.floor(rand() * paths.length)];
+    let o = p;
+    for (let j = 0; j < at.length - 1; j++) { if (o && typeof o === 'object') o = o[at[j]]; }
+    const val = pool[Math.floor(rand() * pool.length)];
+    if (o && typeof o === 'object') o[at[at.length - 1]] = JSON.parse(JSON.stringify(val === undefined ? null : val));
+  }
+  if (rand() < 0.15) p['__proto__x'] = 1;
+  return p;
+}
+
+async function hardening() {
+  console.log('\n── a preview is rebuilt: what the engraver is given is bounded (the staves 1e6 post that hung every viewer) ──');
+  const base = PREVIEWS['prelude-fragment'];
+  const same = x => JSON.stringify(x);
+  ok('a real preview of a real score is returned unchanged, for each sample (marks, chords, a 3-staff vocal part)', Object.keys(PREVIEWS).every(k => same(G.normalizePreview(PREVIEWS[k], 4)) === same(PREVIEWS[k]) || (() => { try { require('assert').deepStrictEqual(G.normalizePreview(PREVIEWS[k], 4), PREVIEWS[k]); return true; } catch (e) { return false; } })()));
+  ok('rebuilding is idempotent', Object.keys(PREVIEWS).every(k => { const o = G.normalizePreview(PREVIEWS[k], 4); try { require('assert').deepStrictEqual(G.normalizePreview(o, 4), o); return true; } catch (e) { return false; } }));
+  const huge = JSON.parse(JSON.stringify(base));
+  huge.notes = Array.from({ length: 1500 }, (_, i) => ({ m: 1, b: i % 4, dur: 1, staff: 1, voice: 1, dots: 0, midi: 60 }));
+  huge.measures = Array.from({ length: 9 }, (_, i) => Object.assign({}, base.measures[0], { number: i + 1 }));
+  huge.pedals = Array.from({ length: 500 }, () => ({ m: 1, b: 0, type: 'start', kind: 'damper' }));
+  const hugeOut = G.normalizePreview(huge, 4);
+  ok('caps: 4 bars, 400 notes, 64 events in a list (1500 notes, 9 bars and 500 pedals sent)', hugeOut.measures.length === 4 && hugeOut.notes.length === 400 && hugeOut.pedals.length === 64, hugeOut.measures.length + '/' + hugeOut.notes.length + '/' + hugeOut.pedals.length);
+  ok('a 2-bar ask is 2 bars', G.normalizePreview(huge, 2).measures.length === 2);
+  const staffy = JSON.parse(JSON.stringify(base)); staffy.staves = 1e6; staffy.notes[0].staff = 1e6; staffy.notes[1].voice = -5; staffy.notes[2].dots = 99;
+  const so = G.normalizePreview(staffy, 4);
+  ok('staves and staff are 1..4, voices 1..8, dots 0..4', so.staves === 4 && so.notes[0].staff === 4 && so.notes[1].voice === 1 && so.notes[2].dots === 4);
+  const cases = [
+    ['staves 1e6', p => { p.staves = 1e6; }], ['a note on staff 1e6', p => { p.notes[0].staff = 1e6; }], ['staves as a string "1000000"', p => { p.staves = '1000000'; }],
+    ['voice 1e9', p => { p.notes[0].voice = 1e9; }], ['dots 1e6', p => { p.notes[0].dots = 1e6; }], ['time.beats 1e7', p => { p.measures[0].time.beats = 1e7; }],
+    ['lenQ 1e9', p => { p.measures[0].lenQ = 1e9; }], ['dur 1e9', p => { p.notes[0].dur = 1e9; }], ['b 1e9', p => { p.notes[0].b = 1e9; }],
+    ['1500 notes', p => { p.notes = Array.from({ length: 1500 },(_, i) => Object.assign({}, p.notes[0], { b: i % 4 })); }],
+    ['9 bars', p => { p.measures = Array.from({ length: 9 }, (_, i) => Object.assign({}, p.measures[0], { number: i + 1 })); }],
+    ['nested 40 deep', p => { let o = {}; for (let i = 0; i < 40; i++) o = { o: o }; p.marks = [{ m: 1, b: 0, x: o }]; }],
+    ['NaN-like and Infinity-like numbers (as 1e999 in JSON text)', p => { p.tempo = 1e999; p.notes[0].midi = -1e999; }],
+    ['control and bidi characters in every string', p => { p.title = 'T\u202eitle\u0007'; p.notes[0].p = 'C\u202e5'; p.chords = [{ m: 1, b: 0, text: 'G\u2066\u200b' }]; }]
+  ];
+  const K = secretOf();
+  const srv = await server();
+  const P = srv.port;
+  try {
+    for (const [name, f] of cases) {
+      const p = JSON.parse(JSON.stringify(base));
+      f(p);
+      const raw = JSON.stringify({ songKey: 'pv-' + crypto.randomBytes(4).toString('hex'), title: 'Poison ' + name, listed: true, preview: p, score: smallScore('P') }).replace(/"tempo":null/, '"tempo":1e999');
+      const r = await req(P, 'POST', '/api/shares', { guest: secretOf(), ip: nextIp(), body: raw });
+      const stored = r.status === 201 ? readRows(srv.dir).find(x => x.id === r.body.id) : null;
+      const bad = stored ? (stored.preview === null ? [] : unsafePreview(stored.preview)) : null;   /* null: too big once rebuilt, dropped as before */
+      const listed = r.status === 201 ? ((await req(P, 'GET', '/api/shares?limit=100')).body.shares.find(s => s.id === r.body.id) || {}).preview : null;
+      ok(name + ': stored rebuilt (or refused), and what the list hands out is safe', (r.status === 422 || (r.status === 201 && stored && bad.length === 0 && (listed === null || unsafePreview(listed).length === 0))),
+        r.status + ' ' + (bad ? bad.slice(0, 3).join('; ') : '') + ' ' + (listed ? unsafePreview(listed).slice(0, 2).join('; ') : ''));
+    }
+    const notPreview = [['a string', 'x'], ['an empty object', {}], ['no bars', { measures: [], notes: [] }], ['bars that are not objects', { measures: [1, 2], notes: [] }], ['an array', []]];
+    for (const [name, v] of notPreview) {
+      const r = await postAs(P, secretOf(), { listed: true, preview: v });
+      ok('a preview that is ' + name + ' is 422, nothing stored', r.status === 422 && !readRows(srv.dir).some(x => x.id === (r.body || {}).id));
+    }
+    const su = await req(P, 'POST', '/api/auth/signup', { body: { email: 'pv-' + Date.now() + '@example.com', password: 'practice-ok', displayName: 'Pv' }, ip: nextIp() });
+    const cookieA = (su.headers['set-cookie'] || []).map(c2 => c2.split(';')[0]).join('; ');
+    const accBig = await req(P, 'POST', '/api/shares', { cookie: cookieA, ip: nextIp(), body: { songKey: 'acc-big', title: 'Account big preview', listed: true, score: smallScore('A'), preview: huge } });
+    const accRow = accBig.status === 201 ? readRows(srv.dir).find(x => x.id === accBig.body.id) : null;
+    ok('an account\'s preview is rebuilt too: 1500 notes and 9 bars sent, 400 notes and 4 bars kept, safe', !!accRow && accRow.preview && accRow.preview.notes.length === 400 && accRow.preview.measures.length === 4 && unsafePreview(accRow.preview).length === 0, accBig.status + '');
+    const noPreview = await postAs(P, secretOf(), { listed: true });
+    ok('and no preview at all is fine: 201, preview null', noPreview.status === 201 && readRows(srv.dir).find(x => x.id === noPreview.body.id).preview === null);
+
+    console.log('\n── a row stored before the rules (poisoned in the file) is handed out rebuilt ──');
+    const poisonOwner = G.guestOwnerId(secretOf());
+    const poisonRow = (id, mut) => {
+      const p = JSON.parse(JSON.stringify(base)); mut(p);
+      return { id: id, ownerId: poisonOwner, ownerName: 'Evil\u202eName', songKey: id, title: 'Old\u202etitle', composer: 'Co\u0007mp', genre: '', kind: '', measures: 2, listed: true, preview: p,
+        score: smallScore('Old'), bytes: 100, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 40 * DAY).toISOString() };
+    };
+    writeRows(srv.dir, readRows(srv.dir).concat([poisonRow('poison0000001', p => { p.staves = 1e6; }), poisonRow('poison0000002', p => { p.notes[0].staff = 1e6; }), poisonRow('poison0000003', p => { p.staves = '1000000'; })]));
+    const list = await req(P, 'GET', '/api/shares?limit=100');
+    const poisoned = list.body.shares.filter(s => /^poison/.test(s.id));
+    ok('the three poisoned rows are in the list, and each preview is safe', poisoned.length === 3 && poisoned.every(s => unsafePreview(s.preview).length === 0), poisoned.map(s => unsafePreview(s.preview).join(',')).join(' | '));
+    ok('their title, composer and owner are cleaned on the way out', poisoned.every(s => !/[\u202e\u0007]/.test(s.title + s.composer + s.owner)) && poisoned[0].title === 'Old title', poisoned[0].title + ' / ' + poisoned[0].owner);
+    const one = await req(P, 'GET', '/api/shares/poison0000001');
+    ok('the link of a poisoned row hands out a safe preview too', unsafePreview(one.body.preview).length === 0);
+
+    console.log('\n── titles, composers and names carry no control or bidi character ──');
+    const t = await postAs(P, secretOf(), { listed: true, title: 'Moon\u202elight\u0007', composer: 'Bee\u200bthoven\u2066', displayName: 'Pa\u202et', kind: 'x\u0007y' });
+    const trow = readRows(srv.dir).find(x => x.id === t.body.id);
+    ok('stored cleaned (title, composer, name, kind)', t.status === 201 && trow.title === 'Moon light' && trow.composer === 'Bee thoven' && trow.ownerName === 'Pa t' && !/[\u0000-\u001f\u202e]/.test(trow.kind), JSON.stringify([trow.title, trow.composer, trow.ownerName, trow.kind]));
+    const t2 = await postAs(P, secretOf(), { listed: true, score: smallScore('Inner\u202etitle', { composer: 'In\u0007ner' }) });
+    ok('and the score\'s own title and composer too', !/[\u202e\u0007]/.test(JSON.stringify(readRows(srv.dir).find(x => x.id === t2.body.id).score)));
+
+    console.log('\n── the address is the /48: a new /64 or a new key is not a new place ──');
+    const v6 = [];
+    for (let i = 0; i < 12; i++) v6.push(await postAs(P, secretOf(), { listed: true }, '2001:db8:abcd:' + (i + 1).toString(16) + '::' + (i + 7).toString(16)));
+    ok('10 posts from one /48 (12 different /64s, 12 different keys) are made; the 11th and 12th are 429', v6.slice(0, 10).every(r => r.status === 201) && v6[10].status === 429 && v6[11].status === 429, v6.map(r => r.status).join(' '));
+    const tagOf = id => readRows(srv.dir).find(x => x.id === id).addrTag;
+    const tagsSame = new Set(v6.slice(0, 10).map(r => tagOf(r.body.id)));
+    const other48 = await postAs(P, secretOf(), { listed: true }, '2001:db8:abce:1::1');
+    ok('all ten carry one address tag; another /48 has another and is not held up', tagsSame.size === 1 && other48.status === 201 && tagOf(other48.body.id) !== [...tagsSame][0]);
+    const mapped = await postAs(P, secretOf(), { listed: true }, '::ffff:198.51.100.9');
+    const plain4 = await postAs(P, secretOf(), { listed: true }, '198.51.100.9');
+    ok('an IPv4-mapped address is the IPv4 (the same tag)', mapped.status === 201 && plain4.status === 201 && tagOf(mapped.body.id) === tagOf(plain4.body.id));
+    const links = [];
+    for (let i = 0; i < 32; i++) links.push((await postAs(P, secretOf(), { listed: false }, '2001:db8:1111:' + (i + 1).toString(16) + '::5')).status);
+    ok('links: 30 an hour from one /48 (32 different /64s), the 31st and 32nd are 429', links.slice(0, 30).every(s => s === 201) && links[30] === 429 && links[31] === 429, links.join(' '));
+    ok('and a guest at another address is served', (await postAs(P, secretOf(), { listed: false }, '2001:db8:2222::9')).status === 201);
+
+    console.log('\n── a post put back the same day is one post; sending a posted score again asks nothing ──');
+    const Kp = secretOf();
+    const mine5 = [];
+    for (let i = 0; i < 5; i++) mine5.push(await postAs(P, Kp, { listed: true }, '192.0.2.' + (50 + i)));
+    ok('five posts are the day of a browser', mine5.every(r => r.status === 201));
+    const down1 = await req(P, 'PATCH', '/api/shares/' + mine5[0].body.id, { guest: Kp, body: { listed: false } });
+    const back1 = await req(P, 'PATCH', '/api/shares/' + mine5[0].body.id, { guest: Kp, body: { listed: true }, ip: '192.0.2.60' });
+    ok('taken down and put back the same day: 200 (the same post, no new place)', down1.status === 200 && back1.status === 200 && back1.body.listed === true, back1.status + '');
+    const again = await postAs(P, Kp, { songKey: mine5[1].body.songKey || 'x', listed: true, title: 'Again' }, '192.0.2.61');
+    const rowOf = id => readRows(srv.dir).find(x => x.id === id);
+    const sk = rowOf(mine5[2].body.id).songKey;
+    const resend = await postAs(P, Kp, { songKey: sk, listed: true, title: 'Resent' }, '192.0.2.62');
+    ok('a posted score sent again with listed:true is the same post: 200, no new place', resend.status === 200 && resend.body.id === mine5[2].body.id, resend.status + '');
+    const linkResend = await postAs(P, Kp, { songKey: sk, title: 'Link again' }, '192.0.2.63');
+    ok('and re-sent as a link (listed left out) it stays posted: 200', linkResend.status === 200 && linkResend.body.listed === true && linkResend.body.id === mine5[2].body.id);
+    const sk3 = rowOf(mine5[3].body.id).songKey;
+    await req(P, 'PATCH', '/api/shares/' + mine5[3].body.id, { guest: Kp, body: { listed: false } });
+    const postBack = await postAs(P, Kp, { songKey: sk3, listed: true, title: 'Back by POST' }, '192.0.2.67');
+    ok('a post taken down and sent again by POST the same day is the same post: 200 (no new place)', postBack.status === 200 && postBack.body.listed === true && postBack.body.id === mine5[3].body.id, postBack.status + '');
+    const sixth = await postAs(P, Kp, { listed: true }, '192.0.2.64');
+    ok('a sixth NEW post is still 429', sixth.status === 429 && sixth.body.code === 'too-many-posts', sixth.status + '');
+    const lnk = await postAs(P, Kp, { listed: false }, '192.0.2.65');
+    const putLink = await req(P, 'PATCH', '/api/shares/' + lnk.body.id, { guest: Kp, body: { listed: true }, ip: '192.0.2.66' });
+    ok('and putting a link that was never listed into the list is a new post: 429', putLink.status === 429, putLink.status + '');
+    void again;
+
+    console.log('\n── putting links into the list is counted by the /48 too ──');
+    const putters = [];
+    for (let i = 0; i < 12; i++) {
+      const kk = secretOf();
+      const l = await postAs(P, kk, { listed: false }, '2001:db8:70' + (i % 10) + ':' + i + '::1');
+      putters.push({ key: kk, id: l.body.id });
+    }
+    const puts = [];
+    for (let i = 0; i < putters.length; i++) puts.push((await req(P, 'PATCH', '/api/shares/' + putters[i].id, { guest: putters[i].key, body: { listed: true }, ip: '2001:db8:beef:' + (i + 1).toString(16) + '::2' })).status);
+    ok('12 links put into the list from 12 different /64s of one /48: 10 are 200, the rest 429', puts.slice(0, 10).every(s => s === 200) && puts[10] === 429 && puts[11] === 429, puts.join(' '));
+
+    console.log('\n── a guest is not told to sign in ──');
+    const said = [];
+    const big = await req(P, 'POST', '/api/shares', { guest: secretOf(), ip: nextIp(), tolerateReset: true, body: JSON.stringify({ songKey: 'b', title: 'B', score: smallScore('B', { pad: 'x'.repeat(1024 * 1024 + 10) }) }) });
+    said.push(big.text);
+    said.push((await req(P, 'POST', '/api/shares', { ip: nextIp(), body: { songKey: 'n', title: 'N', score: smallScore() } })).text);
+    said.push((await req(P, 'GET', '/api/shares?mine=1')).text);
+    const Kf = secretOf();
+    for (let i = 0; i < 21; i++) { const r = await postAs(P, Kf, { listed: false }, '203.1.' + (100 + Math.floor(i / 4)) + '.' + (i % 4 + 1)); if (r.status !== 201) said.push(r.text); }
+    said.push(sixth.text, putLink.text, v6[10].text);
+    ok('no refusal of the server (too big, no key, too many links, too many posts, day, address) says "sign in"', said.length >= 7 && said.every(s => !/sign in/i.test(s)), said.filter(s => /sign in/i.test(s)).join(' | ').slice(0, 200));
+  } finally { await srv.close(); try { fs.rmSync(srv.dir, { recursive: true, force: true }); } catch (e) { /* temp */ } }
+
+  console.log('\n── the read-only look treats a host in the query string as a host ──');
+  {
+    const { execFileSync } = require('child_process');
+    const tool = path.join(SRC, 'tools', 'shares-admin', 'list.js');
+    const refused = url => { try { execFileSync(process.execPath, [tool, '--db-url', url], { encoding: 'utf8', stdio: 'pipe', timeout: 20000 }); return false; } catch (e) { return e.status === 2 && /refusing/.test(String(e.stderr)) && !/u:p/.test(String(e.stderr)); } };
+    ok('postgres://u:p@localhost/ppp?host=db.example.net is remote', refused('postgres://u:p@localhost/ppp?host=db.example.net'));
+    ok('postgres://u:p@localhost/ppp?hostaddr=203.0.113.5 is remote', refused('postgres://u:p@localhost/ppp?hostaddr=203.0.113.5'));
+    ok('postgres://u:p@/ppp?host=localhost,db.example.net is remote (a list)', refused('postgres://u:p@/ppp?host=localhost,db.example.net'));
+    ok('postgres://u:p@db.example.net/ppp is remote', refused('postgres://u:p@db.example.net/ppp'));
+    const localFails = url => { try { execFileSync(process.execPath, [tool, '--db-url', url], { encoding: 'utf8', stdio: 'pipe', timeout: 20000 }); return false; } catch (e) { return !/refusing/.test(String(e.stderr)); } };
+    ok('a local URL is not refused (it fails to connect, here, and says so)', localFails('postgres://u:p@127.0.0.1:1/ppp') && localFails('postgres://u:p@localhost:1/ppp?host=127.0.0.1'));
+  }
+
+  console.log('\n── the page and the server rebuild a preview the same way ──');
+  const page = pageThumbSafe();
+  ok('the page has thumbSafe between its markers', !!page && typeof page.thumbSafe === 'function');
+  if (page) {
+    const rand = prng(20261015);
+    let differ = 0, unsafe = 0, firstBad = '';
+    for (let i = 0; i < 1500; i++) {
+      const p = mutated(rand);
+      const a = G.normalizePreview(p, 4), b = page.thumbSafe(p, 4);
+      if (JSON.stringify(a) !== JSON.stringify(b)) { differ++; if (!firstBad) firstBad = 'case ' + i; }
+      if (a && unsafePreview(a).length) { unsafe++; if (!firstBad) firstBad = 'unsafe ' + i + ': ' + unsafePreview(a).slice(0, 2).join(','); }
+      if (b && unsafePreview(b).length) { unsafe++; }
+    }
+    ok('1,500 random wrong previews: the page and the server give the same answer, and it is always safe', differ === 0 && unsafe === 0, differ + ' differ, ' + unsafe + ' unsafe ' + firstBad);
+    const twoBars = G.normalizePreview(mutated(prng(7)), 2);
+    ok('a preview asked for 2 bars has at most 2', !twoBars || twoBars.measures.length <= 2);
+    const sc = page.scoreSafe({ staves: 1e6, notes: [{ staff: 1e6 }, { staff: -5 }, { staff: 'x' }] });
+    ok('the page bounds the staves of a whole score before it is kept (1..8)', sc.staves === 8 && sc.notes.map(n => n.staff).join() === '8,1,1');
+  }
+  console.log('\n── names that pass for the site, and the unit rules of the review ──');
+  const bad = ['The PPP team', 'Official PPP', 'PPP Library', 'ppp', 'p.p.p', 'P P P', 'ＰＰＰ', 'Р P P', 'ΡΡΡ', 'admin', 'Admin', 'Administrator', 'support', 'Support Team', 'moderator', 'staff', 'owner',
+    '관리자', '운영자', '공식 계정', '管理员', '官方', '管理者', '運営', 'サポート', 'a\u0301\u0301\u0301\u0301\u0301dmin', 'ａｄｍｉｎ'];
+  const failed = bad.filter(n => G.guestName(n) !== 'Guest');
+  ok('every name that passes for the site, its owner or its staff is "Guest" (' + bad.length + ' tried: English, Korean, Chinese, Japanese, fullwidth, Cyrillic, Greek, spaced, zalgo)', failed.length === 0, failed.join(' | '));
+  const fine = ['Alice', '김피아노', 'Mina Park', 'José', '田中', 'Piano Fan', 'Лена'];
+  ok('ordinary names are kept', fine.every(n => G.guestName(n) === n), fine.filter(n => G.guestName(n) !== n).join(' | '));
+  const zalgo = 'x' + '\u0301'.repeat(30);
+  ok('a name of 30 combining marks is cut to two', Array.from(G.guestName(zalgo)).length <= 3, JSON.stringify(G.guestName(zalgo)));
+  ok('cleanText takes the controls and bidi overrides out', G.cleanText('a\u202eb\u0007c\u200bd\u2066e', 40) === 'a b c d e' && G.cleanText('x'.repeat(500), 10).length === 10);
+  const T0 = Date.parse('2026-10-01T00:00:00Z');
+  ok('recentlyListed: a row listed within the day (end date > 89 days away) is, a link or a post of last week is not',
+    G.recentlyListed({ expiresAt: G.expiryFor(T0 - 3600e3, true) }, T0) && !G.recentlyListed({ expiresAt: G.expiryFor(T0 - 2 * DAY, true) }, T0) && !G.recentlyListed({ expiresAt: G.expiryFor(T0, false) }, T0) && !G.recentlyListed(null, T0));
+
+  console.log('\n── no secret on Render: guest posting is off by itself ──');
+  const srv5 = await server({ RENDER: 'true', SESSION_SECRET: '' });
+  try {
+    const k5 = secretOf();
+    const off = await req(srv5.port, 'POST', '/api/shares', { guest: k5, headers: {}, ip: nextIp(), body: { songKey: 'r1', title: 'R', listed: true, score: smallScore() } });
+    ok('a guest post is 503 busy', off.status === 503 && off.body.code === 'busy', off.status + '');
+    const lk = await req(srv5.port, 'POST', '/api/shares', { guest: k5, ip: nextIp(), body: { songKey: 'r2', title: 'R2', score: smallScore() } });
+    ok('a link is still made', lk.status === 201);
+  } finally { await srv5.close(); try { fs.rmSync(srv5.dir, { recursive: true, force: true }); } catch (e) { /* temp */ } }
+
+  console.log('\n── PPP_GUEST_POSTS=0 does not stop a link re-send of a score that is already posted ──');
+  const kq = secretOf();
+  const posted = { id: 'seededpost01', ownerId: G.guestOwnerId(kq), ownerName: 'Guest', songKey: 'sx', title: 'Posted', composer: '', genre: '', kind: '', measures: 2, listed: true, preview: null, score: smallScore('Posted'),
+    bytes: 100, addrTag: 'abcd1234abcd1234', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 80 * DAY).toISOString() };
+  const srv6 = await server({ PPP_GUEST_POSTS: '0' }, [posted]);
+  try {
+    const re = await req(srv6.port, 'POST', '/api/shares', { guest: kq, ip: nextIp(), body: { songKey: 'sx', title: 'Posted again', score: smallScore('Posted again') } });
+    ok('the link re-send is 200 and stays posted', re.status === 200 && re.body.listed === true && re.body.id === 'seededpost01', re.status + ' ' + JSON.stringify(re.body).slice(0, 80));
+    const fresh = await req(srv6.port, 'POST', '/api/shares', { guest: kq, ip: nextIp(), body: { songKey: 'sy', title: 'New', listed: true, score: smallScore() } });
+    ok('a NEW post is 503 busy under the switch', fresh.status === 503);
+  } finally { await srv6.close(); try { fs.rmSync(srv6.dir, { recursive: true, force: true }); } catch (e) { /* temp */ } }
+}
+
+main().then(hardening).then(() => {
   console.log('\n────────────────────────────────────────');
   if (errors.length) {
     console.log(errors.length + ' PROBLEM(S):');
