@@ -54,6 +54,10 @@ async function main() {
         const x = await rawHead(S.port, 'PUT /api/sync/items HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\nContent-Length: 4000000000\r\n\r\n');
         return x.status === 401 && Date.now() - t0 < 2000;
       })());
+      ok('... and the refusal closes the connection: the body that was announced is not read only to be thrown away', await (async () => {
+        const x = await rawHead(S.port, 'PUT /api/sync/items HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\nContent-Length: 4000000000\r\n\r\n');
+        return x.status === 401 && /\r\nconnection: close\r\n/i.test(x.text);
+      })());
       ok('... and with a VALID code the same announcement is refused before a byte is read as well (413 too-large, connection closed)', await (async () => {
         const x = await rawHead(S.port, 'PUT /api/sync/items HTTP/1.1\r\nHost: x\r\nX-PPP-Lib: ' + code + '\r\nContent-Type: application/json\r\nContent-Length: 4000000000\r\n\r\n');
         return x.status === 413;
@@ -520,6 +524,14 @@ async function main() {
         for (let i = 0; i < 122; i++) res.push((await W4.putItems([L.item('song:same', L.songBody(8), 0)])).status);
         ok('120 write requests an hour even when each conflicts (the work is counted, not only what is kept); the 121st is 429', res[0] === 200 && res.slice(1, 120).every(s => s === 409) && res[120] === 429 && res[121] === 429, res.slice(115).join());
       } finally { await S4.close(); }
+      /* write requests count for a DELETE of something that is not there as well (nothing is deleted, the work was done) */
+      const S8 = await L.startSync({ libs: ['a'], memory: true });
+      try {
+        const D8 = S8.as('a');
+        const st8 = [];
+        for (let i = 0; i < 122; i++) st8.push((await D8.delItem('song:none', 0)).status);
+        ok('120 delete requests an hour even when they delete nothing (404 each); the 121st is 429 too-many', st8.slice(0, 120).every(s => s === 404) && st8[120] === 429 && st8[121] === 429, st8.slice(115).join());
+      } finally { await S8.close(); }
       /* changes that need the database: 120 an hour */
       const S5 = await L.startSync({ libs: ['a'] });
       try {
@@ -596,6 +608,16 @@ async function main() {
       ok('two libraries of one address share the address\'s quarter: the second one\'s second item is 429 share', bad(r, 429, 'share'), r.status + ' ' + r.text);
       ok('a library of another address is not (its quarter, whole)', (await S3.as('y').putItems([L.item('song:a'), L.item('song:b')])).status === 200);
     } finally { await S3.close(); }
+    /* a library with no address tag (an older row) is held to its own quarter */
+    const S7 = await L.startSync({ config: { ingressPerHour: a1 * 8, ingressPerDay: a1 * 100 } });
+    try {
+      const codeU = 'cd'.repeat(32);
+      await S7.inner.createLib({ id: Sync.libIdOf(Sync.codeHash(codeU)), hash: Sync.codeHash(codeU).toString('hex'), createdAt: S7.clock.t, ipTag: '' }, 100);
+      const putU = list => L.req(S7.port, 'PUT', '/api/sync/items', { headers: { 'X-PPP-Lib': codeU }, body: { device: 'a1b2c3d4e5f60718', items: list } });
+      const first = await putU([L.item('song:a'), L.item('song:b')]);
+      const third = await putU([L.item('song:c')]);
+      ok('a library that has no address tag is held to its own quarter: two items, the third is 429 share', first.status === 200 && bad(third, 429, 'share'), first.status + ' ' + third.status + ' ' + third.text);
+    } finally { await S7.close(); }
     /* the day */
     const S4 = await L.startSync({ libs: ['a'], config: { ingressPerHour: a1 * 100, ingressPerDay: a1 * 8 } });
     try {
@@ -618,6 +640,10 @@ async function main() {
       const r = await A.items(['song:a']);
       ok('the refusal says when (Retry-After) and is the library\'s share, not the site\'s', bad(r, 429, 'share') && +r.headers['retry-after'] >= 60, r.status + ' ' + r.text);
       ok('another library\'s reads are not affected', (await S5.as('b').items(['song:a'])).status === 200);
+      const manyKeys = Array.from({ length: 25 }, (_, i) => 'song:none' + i);
+      const refusals = [];
+      for (let i = 0; i < 15; i++) refusals.push((await A.items(manyKeys)).body.code);
+      ok('refused reads do not use up the 300 items an hour: fifteen refused reads of 25 names are all "share" (the items are given back), none is "too-many"', refusals.every(c => c === 'share'), refusals.join());
       S5.advance(61 * 60 * 1000);
       ok('an hour later the library reads again', (await A.items(['song:a'])).status === 200);
     } finally { await S5.close(); }
@@ -887,6 +913,16 @@ async function main() {
       const made = await Promise.all(Array.from({ length: 12 }, () => S.anon.post('/api/libs', {}, { ip: ip })));
       ok('twelve libraries made at once from one address: exactly five are made (the place is taken before anything is awaited)', made.filter(x => x.status === 201).length === 5 && made.filter(x => x.status === 429).length === 7, made.map(x => x.status).join());
       ok('and the codes are all different', new Set(made.filter(x => x.status === 201).map(x => x.body.code)).size === 5);
+      {
+        /* a store that takes its time: the place of a library being made must be taken before the store is asked, or twelve at once all pass the limit */
+        const innerS = L.mod('sync-store.js').fileSyncStore(L.tmpDir('ppp-sync-slowmake-'), { memory: true });
+        const slowMake = Object.assign({}, innerS, { createLib: async function () { await sleep(80); return innerS.createLib.apply(innerS, arguments); } });
+        const Tm = await L.startSync({ store: slowMake });
+        try {
+          const m2 = await Promise.all(Array.from({ length: 12 }, () => Tm.anon.post('/api/libs', {}, { ip: '198.51.100.230' })));
+          ok('with a store that takes 80 ms, twelve libraries made at once from one address are still exactly five: the place is taken before the store is asked', m2.filter(x => x.status === 201).length === 5 && m2.filter(x => x.status === 429).length === 7, m2.map(x => x.status).join());
+        } finally { await Tm.close(); }
+      }
       const codes = made.filter(x => x.status === 201).map(x => x.body.code);
       const rot = await Promise.all(Array.from({ length: 12 }, () => L.req(S.port, 'POST', '/api/libs/me/rotate', { headers: { 'X-PPP-Lib': codes[0] }, body: {} })));
       ok('twelve code changes at once with one code: exactly one succeeds, the others are told "rotated" (or 429)', rot.filter(x => x.status === 201).length === 1 && rot.filter(x => x.status !== 201).every(x => (x.status === 401 && x.body.code === 'rotated') || x.status === 429), rot.map(x => x.status + (x.body && x.body.code ? ':' + x.body.code : '')).join());
@@ -963,6 +999,23 @@ async function main() {
       S3.store.fail.on = false;
       ok('the item is still there and the counters are right', (await A.items(['song:one'])).body.items[0].deleted === false && (await A.changes(2)).body.library.tombs === 0);
     } finally { await S3.close(); }
+    {
+      /* a write that is made durable and whose answer is lost (the connection dropped after the commit) */
+      const innerL = L.mod('sync-store.js').fileSyncStore(L.tmpDir('ppp-sync-lost-'), { memory: true });
+      const flag = { throwAfter: false };
+      const lossy = Object.assign({}, innerL, { putItems: async function () { const x = await innerL.putItems.apply(innerL, arguments); if (flag.throwAfter) throw new Error('the answer was lost'); return x; } });
+      const S5 = await L.startSync({ store: lossy, libs: ['a'] });
+      try {
+        const A = S5.as('a');
+        await A.putItems([L.item('song:one')]);
+        flag.throwAfter = true;
+        const lost = await A.putItems([L.item('song:two')]);
+        flag.throwAfter = false;
+        const after = await A.changes(1);
+        ok('a write that was made durable but whose answer was lost is a 503 for its sender and is not lost for the others: the library is read again and the next poll sees it (revision 2)',
+          bad(lost, 503, 'store') && after.status === 200 && after.body.items.length === 1 && after.body.items[0].key === 'song:two' && after.body.maxRev === 2, JSON.stringify([lost.status, after.body && after.body.maxRev]));
+      } finally { await S5.close(); }
+    }
     const S4 = await L.startSync({ libs: ['a'] });
     try {
       S4.svc.disable('tables could not be made');

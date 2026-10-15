@@ -1,15 +1,87 @@
-/* Shared parts of the song-library sync tests (G13-S0): the checker and the request helper of the home-PC worker's tests, and a service of sync.js on a real HTTP server of
-   its own with a COUNTING store (so a test can say "this poll ran no SQL"), a clock the test moves, and helpers that make the items a page makes: a song as gzip JSON.
+/* Shared parts of the song-library sync tests (G13-S0): a checker, a request helper, a service of sync.js on a real HTTP server of its own with a COUNTING store (so a test can say
+   "this poll ran no SQL"), a clock the test moves, and helpers that make the items a page makes: a song as gzip JSON.
 
-   The modules under test are the repository's, or - for the mutation runner (tests/sync/mutants.js) - the copies in HOME_MODULES_DIR (the same variable the PC queue's runner
-   uses: the copy holds every module the service needs). Nothing here is read by the app. */
+   The modules under test are the repository's, or - for the mutation runner (tests/sync/mutants.js) - the copies in HOME_MODULES_DIR (a folder that holds every module the service needs;
+   the variable is the one the PC queue's runner uses). Nothing here is read by the app. */
 'use strict';
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const http = require('http');
+const crypto = require('crypto');
 const zlib = require('zlib');
-const W = require('../home-worker/lib');
 const { freePort } = require('../serve-free');
-const { http, crypto } = W;
 
+const REPO = path.resolve(__dirname, '..', '..');
+const MODS = process.env.HOME_MODULES_DIR ? path.resolve(process.env.HOME_MODULES_DIR) : REPO;
+const mod = rel => require(path.join(MODS, rel));
 const MiB = 1048576;
+
+const errors = [];
+let passed = 0;
+const ok = (name, cond, detail) => {
+  console.log((cond ? '  ✓ ' : '  ✗ ') + name + (detail ? ' — ' + detail : ''));
+  if (cond) passed++; else errors.push(name + (detail ? ' — ' + detail : ''));
+};
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const heading = t => console.log('\n── ' + t + ' ──');
+function finish(label) {
+  if (errors.length) {
+    console.error('\n' + errors.length + ' failed (' + passed + ' passed): ' + label);
+    errors.slice(0, 12).forEach(e => console.error('  - ' + e));
+    process.exit(1);
+  }
+  console.log('\n' + passed + ' passed: ' + label);
+}
+
+/* one request to 127.0.0.1:port; o.body: an object (JSON) or a string; o.headers; o.ip: the client address (X-Forwarded-For); returns { status, body (parsed or null), text, headers } */
+function req(port, method, p, o) {
+  o = o || {};
+  return new Promise((resolve, reject) => {
+    const body = o.body == null ? null : Buffer.from(typeof o.body === 'string' ? o.body : JSON.stringify(o.body));
+    const headers = Object.assign({}, o.headers || {});
+    if (body) { headers['Content-Type'] = headers['Content-Type'] || 'application/json'; headers['Content-Length'] = body.length; }
+    if (o.ip) headers['X-Forwarded-For'] = o.ip;
+    const r = http.request({ host: '127.0.0.1', port: port, method: method, path: p, headers: headers, agent: false }, res => {
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => {
+        const text = Buffer.concat(chunks).toString('utf8');
+        let json = null; try { json = JSON.parse(text); } catch (e) { json = null; }
+        resolve({ status: res.statusCode, body: json, text: text, headers: res.headers });
+      });
+    });
+    r.on('error', reject);
+    r.end(body);
+  });
+}
+/* the same two functions as server.js's send and jsonError (this file does not import server.js: it starts nothing) */
+function send(res, status, body, headers) {
+  const extra = headers || {};
+  if (typeof body === 'object' && body !== null && !Buffer.isBuffer(body)) { extra['Content-Type'] = 'application/json; charset=utf-8'; body = JSON.stringify(body); }
+  extra['X-Content-Type-Options'] = 'nosniff';
+  res.writeHead(status, extra);
+  res.end(body);
+}
+const jsonError = (res, status, message, extra) => send(res, status, Object.assign({ error: message }, extra || {}));
+
+/* wraps a store: every method call is counted (by name) and can be made to fail */
+function countingStore(inner) {
+  const calls = {};
+  const fail = { on: false, only: null };
+  const wrapped = { kind: inner.kind, calls: calls, fail: fail, total: () => Object.values(calls).reduce((a, b) => a + b, 0), reset: () => { Object.keys(calls).forEach(k => delete calls[k]); } };
+  Object.keys(inner).forEach(k => {
+    if (typeof inner[k] !== 'function') return;
+    wrapped[k] = async function () {
+      calls[k] = (calls[k] || 0) + 1;
+      if (fail.on && (!fail.only || fail.only === k)) throw new Error('store is down (test)');
+      return inner[k].apply(inner, arguments);
+    };
+  });
+  return wrapped;
+}
+const tmpDir = prefix => fs.mkdtempSync(path.join(os.tmpdir(), prefix || 'ppp-sync-'));
+const rmDir = d => { try { fs.rmSync(d, { recursive: true, force: true }); } catch (e) { /* gone */ } };
 
 /* one gzip JSON item as the page makes it */
 const gz = obj => zlib.gzipSync(Buffer.isBuffer(obj) ? obj : Buffer.from(typeof obj === 'string' ? obj : JSON.stringify(obj)));
@@ -31,20 +103,20 @@ function item(key, obj, baseRev) {
   return { key: key, baseRev: baseRev || 0, hash: hashOf(o), body: b64(o) };
 }
 
-/* The service on its own HTTP server. opts: { store (an inner store; default a file store in a temp dir), config, env, libs (names of the libraries to make; default none),
-   ipSecret, resume (the creds() of an earlier service: the same libraries on a store that kept them - a restart) }. Each library is made through POST /api/libs from an
-   address of its own (10.251.x.y), so the per-address limits never get in the way of a test that is about something else. */
+/* The service on its own HTTP server. opts: { store (an inner store; default a file store in a temp dir), memory (the default store keeps its data in memory), config, env, libs (names of
+   the libraries to make; default none), ipSecret, resume (the creds() of an earlier service: the same libraries on a store that kept them - a restart) }. Each library is made through
+   POST /api/libs from an address of its own (10.251.x.y), so the per-address limits never get in the way of a test that is about something else. */
 async function startSync(opts) {
   opts = opts || {};
-  const mkSync = W.mod('sync.js');
-  const { fileSyncStore } = W.mod('sync-store.js');
-  const dir = W.tmpDir('ppp-sync-');
+  const mkSync = mod('sync.js');
+  const { fileSyncStore } = mod('sync-store.js');
+  const dir = tmpDir('ppp-sync-');
   const inner = opts.store || fileSyncStore(dir, { memory: !!opts.memory });
-  const store = W.countingStore(inner);
+  const store = countingStore(inner);
   const clock = { t: Date.parse('2026-10-15T12:00:00Z') };
   const logged = [];
   const svc = mkSync.create({
-    store: store, send: W.send, jsonError: W.jsonError,
+    store: store, send: send, jsonError: jsonError,
     clientIp: r => String((r.headers['x-forwarded-for'] || '127.0.0.1')).split(',').pop().trim(),
     ipSecret: opts.ipSecret || 'test-secret', now: () => clock.t, env: opts.env || {}, config: opts.config,
     logError: e => logged.push(String(e && e.message))
@@ -52,10 +124,10 @@ async function startSync(opts) {
   const server = http.createServer((rq, rs) => {
     const url = new URL(rq.url, 'http://' + (rq.headers.host || 'localhost'));
     if (svc.owns(url.pathname)) return svc.handle(rq, rs, url);
-    W.jsonError(rs, 404, 'Not found');
+    jsonError(rs, 404, 'Not found');
   });
-  /* a free port: asked of serve-free (PPP_PORT_RANGE=10601-10649 keeps a machine that reserves a band for its suites inside it); a port taken between the asking and the
-     listening is asked for again */
+  /* a free port: asked of serve-free (PPP_PORT_RANGE=10601-10649 keeps a machine that reserves a band for its suites inside it); a port taken between the asking and the listening
+     is asked for again */
   let port = 0;
   for (let tries = 0; ; tries++) {
     port = await freePort();
@@ -67,11 +139,11 @@ async function startSync(opts) {
   const codes = {}, ids = {};
   if (opts.resume) { Object.assign(codes, opts.resume.codes); Object.assign(ids, opts.resume.ids); }
   let nextAddr = 1;
-  const call = (method, p, o) => W.req(port, method, p, o);
+  const call = (method, p, o) => req(port, method, p, o);
   const S = {
     port: port, svc: svc, store: store, inner: inner, clock: clock, dir: dir, logged: logged, module: mkSync,
     advance: ms => { clock.t += ms; },
-    close: () => new Promise(r => { server.closeAllConnections && server.closeAllConnections(); server.close(() => { W.rmDir(dir); r(); }); }),
+    close: () => new Promise(r => { server.closeAllConnections && server.closeAllConnections(); server.close(() => { rmDir(dir); r(); }); }),
     code: n => codes[n], libId: n => ids[n],
     creds: () => ({ codes: Object.assign({}, codes), ids: Object.assign({}, ids) }),
     /* make a library as a browser does (no sign-in); `name` is what the test calls it; o.ip: the address it is made from (default: a new one each time) */
@@ -109,4 +181,5 @@ function countingQuery(pool) {
   return o;
 }
 
-module.exports = Object.assign({}, W, { MiB, gz, b64, score, songBody, hashOf, item, startSync, countingQuery });
+module.exports = { REPO, MODS, mod, MiB, ok, errors, sleep, heading, finish, req, send, jsonError, countingStore, tmpDir, rmDir, http, fs, path, os, crypto,
+  gz, b64, score, songBody, hashOf, item, startSync, countingQuery };

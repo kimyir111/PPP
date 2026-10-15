@@ -8,7 +8,8 @@
        401 before anything else; a wrong code is counted per address (20 an hour, then 429), FAILURES only; the compare is constant time.
      - NO BODY IS READ UNTIL THE CODE IS KNOWN, and then it is read by body-reader.js, the one reader of the site: bounded in size, in time (60 s / 10 s), in memory (chunks are
        coalesced) and in SHAPE (home-omr.js jsonGuard, counted as the bytes arrive, before anything is parsed) - and the same guard runs again over the DECOMPRESSED bytes of every
-       item, which is where a zip bomb or a million-object JSON hides. One place per library, one per address and two for the site hold a body at a time.
+       item, which is where a zip bomb or a million-object JSON hides. One place per library, one per address and eight for the site hold a body while it arrives; two items are
+       unpacked at a time (a ceiling no sender can hold); six answers with bodies are made at a time.
      - ITEMS are stored gzip (BYTEA); the server inflates with a hard output cap, checks the shape of a song, and stores the compressed bytes it was given.
      - EVERY BUDGET IS HELD THREE WAYS (the site's, and a QUARTER of it for each library and for each creating address), so one stranger cannot use up what everybody else
        needs: bytes written, bytes read, items written, items read, libraries made, stored bytes. Synced content is NEVER evicted to make room: at a cap the answer is
@@ -474,9 +475,9 @@ function create(deps) {
     return body;
   }
   /* routes that take no body are not read: a request that announces one is answered and the connection closed (the body is never held) */
+  const announcesBody = req => { const cl = req.headers['content-length']; return (cl !== undefined && Number(cl) !== 0) || req.headers['transfer-encoding'] !== undefined; };
   function noBody(req) {
-    const cl = req.headers['content-length'];
-    if ((cl !== undefined && Number(cl) !== 0) || req.headers['transfer-encoding'] !== undefined) throw httpError(400, 'This request takes no body.', 'no-body-expected', { close: true });
+    if (announcesBody(req)) throw httpError(400, 'This request takes no body.', 'no-body-expected', { close: true });
   }
   const reply = (res, status, body, headers) => deps.send(res, status, body, Object.assign({ 'Cache-Control': 'no-store' }, headers));
 
@@ -871,7 +872,7 @@ function create(deps) {
   /* resolves when the request has been answered; never rejects */
   async function handle(req, res, url) {
     win.requests++;
-    if (disabledWhy) return deps.send(res, 503, { error: 'Syncing songs is not available right now. Try again in a minute.', code: 'store', disabled: true }, { 'Cache-Control': 'no-store' });
+    if (disabledWhy) return deps.send(res, 503, { error: 'Syncing songs is not available right now. Try again in a minute.', code: 'store', disabled: true }, announcesBody(req) ? { 'Cache-Control': 'no-store', Connection: 'close' } : { 'Cache-Control': 'no-store' });
     try {
       await route(req, res, url);
     } catch (e) {
@@ -880,14 +881,15 @@ function create(deps) {
         const b = (h.code && BUCKET[h.code]) || 'other';
         win.refused[b]++;
         const headers = h.extra && h.extra.retryAfter ? { 'Retry-After': String(h.extra.retryAfter) } : {};
-        /* a body that was refused without being read (or that stalled, or was cut) is not read on: the answer closes the connection */
-        if (h.extra && h.extra.close) headers.Connection = 'close';
+        /* a body that was refused without being read (or that stalled, or was cut) is not read on: the answer closes the connection. So does the refusal (a wrong code, a limit, a
+           busy place) of a request that announced a body: otherwise the server would read the whole of it only to throw it away. */
+        if ((h.extra && h.extra.close) || (announcesBody(req) && (h.status === 401 || h.status === 403 || h.status === 429 || h.status === 503))) headers.Connection = 'close';
         if (!res.headersSent) deps.send(res, h.status, Object.assign({ error: e.message }, h.code ? { code: h.code } : {}), Object.assign({ 'Cache-Control': 'no-store' }, headers));
         return;
       }
       win.refused.store++;
       logError(e);
-      if (!res.headersSent) deps.send(res, 503, { error: 'Syncing songs is not available right now. Try again in a minute.', code: 'store' }, { 'Cache-Control': 'no-store' });
+      if (!res.headersSent) deps.send(res, 503, { error: 'Syncing songs is not available right now. Try again in a minute.', code: 'store' }, announcesBody(req) ? { 'Cache-Control': 'no-store', Connection: 'close' } : { 'Cache-Control': 'no-store' });
     }
   }
 

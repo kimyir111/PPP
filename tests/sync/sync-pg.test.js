@@ -104,7 +104,8 @@ const strip = (o, drop) => JSON.stringify(o, (k, v) => (drop.indexOf(k) >= 0 ? u
       await q(PRODUCTION_SQL);
       const counts = async () => (await one(`SELECT (SELECT count(*) FROM ppp_users)::int u, (SELECT count(*) FROM ppp_progress)::int p, (SELECT count(*) FROM ppp_shares)::int s`))[0];
       const before = await counts();
-      const m1 = await SS.migrate(pool), m2 = await SS.migrate(pool);
+      const migrates = () => SS.migrate(pool).catch(e => ({ ok: false, threw: String(e.code || e.message) }));      /* (an exception is a failed check here, not a crashed run) */
+      const m1 = await migrates(), m2 = await migrates();
       ok('migrate on the production-shaped database, twice: ok both times, no row of theirs touched', m1.ok === true && m2.ok === true && same(await counts(), before));
       const cols = async t => (await one(`SELECT column_name FROM information_schema.columns WHERE table_name = $1 ORDER BY ordinal_position`, [t])).map(r => r.column_name).join();
       ok('ppp_sync_libs has the designed columns (the hash of the code, the keyed tag of the address - never a code or an address)', (await cols('ppp_sync_libs')) === 'id,client_hash,created_at,last_used_at,created_ip_tag,revoked_at,rotated_from,bytes,items,tombs,max_rev', await cols('ppp_sync_libs'));
@@ -127,11 +128,11 @@ const strip = (o, drop) => JSON.stringify(o, (k, v) => (drop.indexOf(k) >= 0 ? u
       /* a view in the place of the items table: the migration says "off", undoes its part (also the libs table made before it), and the rest is as it was */
       await dropSync();
       await q('CREATE VIEW ppp_sync_items AS SELECT 1 AS lib_id');
-      const bad = await SS.migrate(pool);
+      const bad = await migrates();
       ok('something else named ppp_sync_items: migrate does not throw, it says { ok: false } with the error, and undoes its own part (no ppp_sync_libs left half made)', bad.ok === false && !!bad.error && bad.error.code === '42809'
         && (await one(`SELECT count(*)::int n FROM pg_class WHERE relname = 'ppp_sync_libs'`))[0].n === 0 && same(await counts(), before), JSON.stringify(bad.error && bad.error.code));
       await q('DROP VIEW ppp_sync_items');
-      const okAgain = await SS.migrate(pool);
+      const okAgain = await migrates();
       ok('and with the thing out of the way the next migrate makes both (a restart tries again)', okAgain.ok === true);
       /* a lost connection is thrown (nothing was committed) */
       const dead = await SS.migrate({ connect: async () => { throw Object.assign(new Error('gone'), { code: 'ECONNRESET' }); } }).then(() => 'resolved', e => e.code);

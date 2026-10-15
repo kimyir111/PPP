@@ -55,6 +55,7 @@ function rawSocket(S, method, p, o) {
   const head = method + ' ' + p + ' HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Type: application/json\r\nContent-Length: ' + o.declared + '\r\n'
     + (o.lib ? 'X-PPP-Lib: ' + S.code(o.lib) + '\r\n' : '') + (o.ip ? 'X-Forwarded-For: ' + o.ip + '\r\n' : '') + '\r\n';
   const sock = net.connect(S.port, '127.0.0.1');
+  sock.setTimeout(8000, () => sock.destroy());     /* (a server that does not cut a stalled sender must fail the test, not hang it) */
   const out = { sock: sock, status: 0, body: null, closed: false, tResp: 0, tClose: 0, t0: Date.now() };
   let buf = '';
   out.done = new Promise(resolve => {
@@ -160,6 +161,20 @@ async function child() {
     r = await put('b', [item('song:legit', legit)]);
     clearInterval(meter);
     out.legit = { status: r.status, ms: r.ms, peakGrowthMB: Math.round((peak - heap0) / MiB) };
+    /* an item at the structure bound: 487,000 small objects in 7.9 MB (a container per 17 bytes, the bound is one per 16): the most a parse can be made to cost */
+    {
+      const N = 487000;
+      const parts = ['{"v":1,"score":' + JSON.stringify(L.score(8, 4)) + ',"card":{"x":['];
+      for (let i = 0; i < N; i++) parts.push((i ? ',' : '') + '{"k":"vvvvvvvv"}');
+      parts.push(']}}');
+      const atBound = Buffer.from(parts.join(''));
+      await quiet(); heap0 = heapNow();
+      let peak2 = 0;
+      const meter2 = setInterval(() => { peak2 = Math.max(peak2, process.memoryUsage().heapUsed); }, 5);
+      r = await put('b', [item('song:bound', atBound)]);
+      clearInterval(meter2);
+      out.bound = { status: r.status, code: r.body && r.body.code, ms: r.ms, mb: Math.round(atBound.length / MiB * 10) / 10, peakGrowthMB: Math.round((peak2 - heap0) / MiB), maxGap: maxGap };
+    }
     /* and 25 small songs in one request */
     r = await put('b', Array.from({ length: 25 }, (_, i) => item('song:s' + i, L.songBody(40 + i))));
     out.batch = { status: r.status, applied: r.body && r.body.applied && r.body.applied.length };
@@ -174,6 +189,23 @@ async function child() {
       const heapAfter = heapNow();
       const next = await put('a', [item('song:after', L.songBody(8))]);
       out.flood = { sent: fl.sent, ms: fl.ms, heapBeforeMB: Math.round(heapBefore / MiB), heapAfterMB: Math.round(heapAfter / MiB), maxGap: maxGap, after: next.status, rowsBefore: rowsBefore, rows: (await S.inner.changes(S.libId('a'), 0, 99999)).length };
+    }
+    /* the reader itself, with no socket between (a network may hand 1-byte chunks over as one, a test must not depend on it): 900,000 one-byte chunks are emitted at once. Held as
+       they come they are 900,000 Buffers (about 350 bytes each: the child's heap is 200 MB); coalesced as they arrive they are a few 64 KB ones. */
+    {
+      const { EventEmitter } = require('events');
+      const BR = L.mod('body-reader.js');
+      const fake = new EventEmitter();
+      fake.destroy = () => {};
+      fake.headers = {};
+      await quiet();
+      const h0 = heapNow();
+      const done = BR.readBody(fake, { limit: 2 * MiB, drain: 2 * MiB, totalMs: 60000, idleMs: 60000 });
+      for (let i = 0; i < 900000; i++) fake.emit('data', Buffer.from('A'));
+      const h1 = heapNow();
+      fake.emit('end');
+      const got = await done;
+      out.coalesce = { bytes: got.length, heldGrowthMB: Math.round((h1 - h0) / MiB) };
     }
     /* the unauthenticated door: 900 KB of {} to POST /api/libs (4 KB is its cap) */
     await quiet();
@@ -222,9 +254,12 @@ async function amplification() {
   ok('a zip bomb of ' + g.bomb.gzKB + ' KB of gzip that unpacks to 512 MB: 413 item-too-large at 8 MB, in ' + g.bomb.ms + ' ms, the heap grew ' + g.bomb.heapGrowthMB + ' MB (< 40), the loop not blocked',
     g.bomb.status === 413 && g.bomb.code === 'item-too-large' && g.bomb.heapGrowthMB < 40 && g.bomb.maxGap < 150, JSON.stringify(g.bomb));
   ok('the biggest legitimate item (7.5 MB unpacked) is accepted and its peak is ' + g.legit.peakGrowthMB + ' MB of heap (< 60): what the two places for unpacking are sized by', g.legit.status === 200 && g.legit.peakGrowthMB < 60, JSON.stringify(g.legit));
+  ok('an item AT the structure bound (' + g.bound.mb + ' MB, a container per 17 bytes) is accepted, and its parse is the most a body can cost: a peak of ' + g.bound.peakGrowthMB + ' MB of heap (< 120; two are unpacked at a time)',
+    g.bound.status === 200 && g.bound.peakGrowthMB < 120, JSON.stringify(g.bound));
   ok('and a batch of 25 songs is accepted', g.batch.status === 200 && g.batch.applied === 25, JSON.stringify(g.batch));
   ok('a body sent ONE BYTE AT A TIME (' + g.flood.sent + ' writes, inside the cap) is not held chunk by chunk: the heap after it is ' + g.flood.heapAfterMB + ' MB (' + g.flood.heapBeforeMB + ' before; held as it was it is about 350 MB and ends the child); the library\'s place is free after it and nothing was stored',
     g.flood.sent >= 800000 && g.flood.heapAfterMB < g.flood.heapBeforeMB + 40 && g.flood.after === 200 && g.flood.rows === g.flood.rowsBefore + 1, JSON.stringify(g.flood));
+  ok('the reader, fed 900,000 one-byte chunks at once with no socket: ' + g.coalesce.bytes + ' bytes read, and what it held on the way was ' + g.coalesce.heldGrowthMB + ' MB of heap (< 60; as the chunks came it is 300 MB)', g.coalesce.bytes === 900000 && g.coalesce.heldGrowthMB < 60, JSON.stringify(g.coalesce));
   ok('900 KB of {} to POST /api/libs (its cap is 4 KB) is refused (413 or 422) in under a second', (g.makeLib.status === 413 || g.makeLib.status === 422) && g.makeLib.ms < 2000 && g.makeLib.maxGap < 150, JSON.stringify(g.makeLib));
   ok('the child\'s heap ends small (' + g.heapMB + ' MB used, ' + g.rssMB + ' MB resident)', g.heapMB < 120, JSON.stringify(g));
 }
