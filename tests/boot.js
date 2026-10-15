@@ -1,9 +1,8 @@
-/* Shared Puppeteer boot: force English UI and skip the login gate. */
+/* Shared Puppeteer boot: force English UI. (There is no login gate any more - G13 "no login anywhere" - so the old 'ppp-guest' flag that skipped it is not set.) */
 function preparePage(page) {
   return page.evaluateOnNewDocument(() => {
     try {
       localStorage.setItem('ppp-locale', 'en-US');
-      localStorage.setItem('ppp-guest', '1');
     } catch (e) {}
     /* The routes a person takes, by clicking what they would click. Loop and
        memory work are tabs of the Practice page, and upload is the button

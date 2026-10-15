@@ -63,8 +63,8 @@ test('the notices say every item of G13 section E8', () => {
     /* the catalogue */
     'Open Hymnal', 'Beyer', 'Czerny 100', 'Czerny 30', 'Czerny 40', 'Hanon', 'Burgm', 'Sonatinas', 'PDMX', 'Typesets under review', 'Seed library',
     'public domain or under free licences',
-    /* the demo (its decision is pending: the note for whoever decides is in notices.json, not in what is served) */
-    'The built-in demo score',
+    /* the demo (U6 was decided on 2026-10-15: it is "PPP Practice Theme", by PPP) */
+    'The built-in demo score', 'PPP Practice Theme',
     /* YouTube: what really happens, including the fallback site that receives the link */
     'YouTube links', 'Use recordings you have the right to use', 'cannot be posted to Shared Scores', 'loader.to', 'receives the link you pasted', 'youtube-nocookie.com',
     /* tools, models and packages, with the licences this repository states (and none invented) */
@@ -83,7 +83,9 @@ test('what is served is what a reader may see: no internal note, no promise, no 
   assert.ok(!/replac(?:e|es|ing) them/.test(NOTICES), 'the notices promise that PPP will replace something');
   assert.ok(!/hymn tunes[^.]*are public[- ]domain/i.test(NOTICES), 'the hymns are said to be public domain without the qualification');
   const reg = JSON.parse(read('tools/notices/notices.json'));
-  assert.match(reg.demo.todo, /^TODO\(U6\)/, 'the pending U6 note is kept in notices.json');
+  /* U6 is decided (2026-10-15): no pending note is left, and the demo is not named after a film piece or a living composer */
+  assert.ok(!('todo' in reg.demo), 'the U6 note is still in notices.json after the decision');
+  assert.ok(!/Interstellar|Zimmer/.test(NOTICES) && !/Interstellar|Zimmer/.test(reg.demo.text), 'the demo is still named after a film piece or its composer');
   /* a table that is a table in markdown reads badly as the plain text it is served as: none is left */
   assert.ok(!/^\| ---/m.test(NOTICES), 'a pipe table is in the served notices');
 });

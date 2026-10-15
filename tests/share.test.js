@@ -2,9 +2,11 @@
    sent as a link; the link opens for someone with no account and no guest
    session; taking it down and stopping sharing do what they say.
 
-   Sharing needs no account (guest link sharing): with none, the Share dialog makes an
-   UNLISTED link, a second person opens it, and the guest can stop sharing it from the
-   browser that made it. Posting to Shared Scores stays an account feature.
+   Sharing needs no account (G13 "no login anywhere"): with none, the Share dialog makes an
+   UNLISTED link or POSTS the score to Shared Scores under a name the guest may give, a second
+   person opens it, and the guest can take it down and stop sharing it from the browser that
+   made it (the guest key of that browser is the only capability; tests/guest-post.test.js has
+   the limits).
 
    Drives the real UI against the Node server. Never reaches a social
    network: window.open is recorded, not followed. */
@@ -87,7 +89,8 @@ const recordOpens = page => page.evaluateOnNewDocument(() => {
     return {
       open: !!dlg,
       signIn: !!document.querySelector('[data-share-signin]'),
-      hint: ((document.querySelector('[data-share-signin]') || {}).innerText || '').replace(/\s+/g, ' '),
+      hint: ((document.querySelector('[data-share-guest-note]') || {}).innerText || '').replace(/\s+/g, ' '),
+      name: !!document.querySelector('[data-share-name-input]'),
       post: !!document.querySelector('[data-share-post]'),
       copy: !!document.querySelector('[data-share-net="copy"]'),
       nets: [...document.querySelectorAll('[data-share-net]')].map(b => b.getAttribute('data-share-net')),
@@ -97,11 +100,12 @@ const recordOpens = page => page.evaluateOnNewDocument(() => {
   });
   ok('the dialog opens for a guest', guestDlg.open);
   ok('it offers the link flow: copy, X, Facebook, LINE, Threads, email', ['copy', 'x', 'facebook', 'line', 'threads', 'email'].every(n => guestDlg.nets.indexOf(n) > -1), guestDlg.nets.join(', '));
-  ok('it does not offer posting to Shared Scores, and says why in one line', !guestDlg.post && guestDlg.signIn && /Posting to Shared Scores needs an account/.test(guestDlg.hint), guestDlg.hint);
-  ok('the optional sign-in hint has the Login button', await page.evaluate(() => /^Sign in$/.test(((document.querySelector('[data-share-signin] button') || {}).textContent || '').trim())));
+  ok('it offers posting to Shared Scores, with an optional name, and one honest note about what a guest post is',
+    guestDlg.post && guestDlg.name && /only this browser can take it down/.test(guestDlg.hint) && /90 days/.test(guestDlg.hint), guestDlg.hint);
+  ok('and there is no sign-in wall or hint in the dialog', !guestDlg.signIn && !/Sign in/.test(guestDlg.text), guestDlg.text.slice(0, 160));
   ok('and the copyright line stays visible', guestDlg.fine, guestDlg.text.slice(-160));
   ok('it says the link is unlisted and expires', /not listed/.test(guestDlg.text) && /30 days/.test(guestDlg.text));
-  ok('and no wall: nothing says "Sign in to share your scores"', !/Sign in to share your scores/.test(guestDlg.text));
+  ok('and no wall: nothing says "Sign in to share your scores" or "needs an account"', !/Sign in to share your scores|needs an account/.test(guestDlg.text));
   ok('and it does not warn that the browser cannot keep a key, before any key exists (storage works)', !/cannot keep a key/.test(guestDlg.text), guestDlg.text.slice(0, 200));
   await page.evaluate(() => document.querySelector('[data-share-net="x"]').click());
   await page.waitForFunction(() => !!document.querySelector('[data-share-link]'), { timeout: 8000 }).catch(() => {});
@@ -129,10 +133,57 @@ const recordOpens = page => page.evaluateOnNewDocument(() => {
     gate: !!document.querySelector('[data-auth]'),
     card: ((document.querySelector('[data-shared-linked]') || {}).innerText || '').replace(/\s+/g, ' ')
   }));
-  ok('a second person opens the guest link in another browser and sees the score', !gLand.gate && /Shared with you/.test(gLand.card) && /Guest/.test(gLand.card) && /Prelude/.test(gLand.card), gLand.card.slice(0, 100));
+  ok('a second person opens the guest link in another browser and sees the score', !gLand.gate && /Shared with you/.test(gLand.card) && /Shared by a guest/.test(gLand.card) && /Prelude/.test(gLand.card), gLand.card.slice(0, 100));
   const gTheirDelete = await api(gOther, '/api/shares/' + gId, { method: 'DELETE' });
   ok('and cannot take it down', gTheirDelete.status === 403 && (await api(gOther, '/api/shares/' + gId)).status === 200, String(gTheirDelete.status));
+  const gTheirPatch = await api(gOther, '/api/shares/' + gId, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ listed: true }) });
+  ok('nor put it in the list', gTheirPatch.status === 403 && !(await api(gOther, '/api/shares')).body.shares.some(s => s.id === gId), String(gTheirPatch.status));
   await ctxG.close();
+
+  console.log('\n── as a guest: posting to Shared Scores, under a name, and taking it down ──');
+  await page.type('[data-share-name-input]', 'Pat Pianist');
+  await sleep(100);
+  ok('the name is remembered in this browser only', (await page.evaluate(() => localStorage.getItem('ppp-guest-name'))) === 'Pat Pianist');
+  await page.evaluate(() => document.querySelector('[data-share-post]').click());
+  await page.waitForFunction(() => (document.querySelector('[data-share-post]') || {}).getAttribute && document.querySelector('[data-share-post]').getAttribute('data-posted') === 'true', { timeout: 8000 }).catch(() => {});
+  ok('Post turns into Take down, with no login screen', (await page.evaluate(() => document.querySelector('[data-share-post]').textContent.trim())) === 'Take down' && await page.evaluate(() => !document.querySelector('[data-auth]')));
+  const gPosted = await api(page, '/api/shares/' + gId, { headers: { 'X-PPP-Guest': gKey } });
+  ok('the server has it listed, in the name given, mine for this browser, ending in about 90 days',
+    gPosted.status === 200 && gPosted.body.listed === true && gPosted.body.owner === 'Pat Pianist' && gPosted.body.mine === true
+    && Math.abs(Date.parse(gPosted.body.expiresAt) - (Date.now() + 90 * 86400000)) < 5 * 60000, JSON.stringify(gPosted.body && { l: gPosted.body.listed, o: gPosted.body.owner }));
+  ok('it is in the public list for everybody, and the key is not in what is sent back', (await api(page, '/api/shares')).body.shares.some(s => s.id === gId && s.listed) && JSON.stringify(gPosted.body).indexOf(gKey) < 0);
+  ok('the link note now says it lasts 90 days', await page.evaluate(() => /stops working after 90 days/.test(document.querySelector('[data-share-dialog]').innerText)));
+  await page.keyboard.press('Escape');
+  await page.evaluate(() => window.__pppTest.nav('Shared Scores'));
+  await page.waitForFunction(id => !!document.querySelector('[data-shared="' + id + '"]'), { timeout: 8000 }, gId).catch(() => {});
+  const gCard = await page.evaluate(id => { const c = document.querySelector('[data-shared="' + id + '"]'); return c ? c.innerText.replace(/\s+/g, ' ') : null; }, gId);
+  ok('Shared Scores shows it as yours, by the name given', !!gCard && /Yours · posted/.test(gCard) && /Shared by Pat Pianist/.test(gCard), String(gCard).slice(0, 120));
+  await page.evaluate(() => { const b = [...document.querySelectorAll('[data-shared-page] button')].find(x => /Shared by me/.test(x.innerText)); if (b) b.click(); });
+  await page.waitForFunction(id => !!document.querySelector('[data-shared="' + id + '"]'), { timeout: 8000 }, gId).catch(() => {});
+  const mineList = await page.evaluate(() => [...document.querySelectorAll('[data-shared]')].map(c => c.getAttribute('data-shared')));
+  ok('"Shared by me" lists it with no account (the key names it), and no sign-in line is on the page', mineList.indexOf(gId) > -1 && await page.evaluate(() => !/Sign in/.test(document.querySelector('[data-shared-page]').innerText)), mineList.join(','));
+  await page.evaluate(() => { const b = [...document.querySelectorAll('[data-shared-page] button')].find(x => x.innerText.trim() === 'All'); if (b) b.click(); });
+  const ctxP = await browser.createBrowserContext();
+  const seeP = await ctxP.newPage();
+  await seeP.evaluateOnNewDocument(() => { try { localStorage.setItem('ppp-locale', 'en-US'); } catch (e) {} });
+  seeP.on('pageerror', e => errors.push('[pageerror P] ' + e.message));
+  await seeP.setViewport({ width: 1280, height: 900 });
+  await seeP.goto(URL, { waitUntil: 'networkidle2', timeout: 45000 });
+  await booted(seeP);
+  await seeP.evaluate(() => window.PPP.app.go('shared')());
+  await seeP.waitForFunction(id => !!document.querySelector('[data-shared="' + id + '"]'), { timeout: 10000 }, gId).catch(() => {});
+  const pCard = await seeP.evaluate(id => { const c = document.querySelector('[data-shared="' + id + '"]'); return c ? c.innerText.replace(/\s+/g, ' ') : null; }, gId);
+  ok('somebody else with no account sees it in the list, by the name, not as theirs', !!pCard && /Shared by Pat Pianist/.test(pCard) && !/Yours/.test(pCard), String(pCard).slice(0, 120));
+  await ctxP.close();
+  await page.evaluate(() => window.__pppTest.nav('My Songs'));
+  await sleep(300);
+  await page.evaluate(id => document.querySelector('[data-share-song="' + id + '"]').click(), songId);
+  await sleep(250);
+  await page.evaluate(() => document.querySelector('[data-share-post]').click());
+  await page.waitForFunction(() => document.querySelector('[data-share-post]').getAttribute('data-posted') === 'false', { timeout: 8000 }).catch(() => {});
+  const gDown = await api(page, '/api/shares/' + gId, { headers: { 'X-PPP-Guest': gKey } });
+  ok('Take down: unlisted, out of the list, the link still opens', gDown.status === 200 && gDown.body.listed === false && !(await api(page, '/api/shares')).body.shares.some(s => s.id === gId));
+  ok('and the name box is back, with the name in it', await page.evaluate(() => (document.querySelector('[data-share-name-input]') || {}).value === 'Pat Pianist'));
 
   await page.evaluate(() => document.querySelector('[data-share-stop]').click());
   await sleep(150);
@@ -154,11 +205,17 @@ const recordOpens = page => page.evaluateOnNewDocument(() => {
     const perBrowser = { error: 'This browser has made as many guest links as PPP keeps. Stop sharing one, or sign in.' };
     const tooMany = { error: 'Too many links were made from here just now. Try again in a little while.' };
     const tooBig = { error: 'That score is too large to share as a guest. Sign in to share larger scores.' };
+    const busy = { error: 'Shared Scores has no room for more posts from guests right now. Try again later.', code: 'busy' };
+    const dayKey = { error: 'This browser has posted as many scores today as a guest may. Try again tomorrow.', code: 'too-many-posts' };
+    const heldKey = { error: 'This browser has posted as many scores as PPP keeps for a guest. Take one down first.', code: 'too-many-posts' };
     const cases = [
       ['503 guest links are full', 503, full, { 'en-US': /Guest links are full right now/, 'ko-KR': /게스트 링크가 가득 찼어요/, 'ja-JP': /ゲストリンクがいっぱいです/, 'zh-CN': /访客链接目前已满/ }],
       ['429 one browser has 20', 429, perBrowser, { 'en-US': /as many guest links/, 'ko-KR': /게스트 링크 수를 다 채웠어요/, 'ja-JP': /ゲストリンクの上限/, 'zh-CN': /访客链接数量已达上限/ }],
       ['429 too many from one address', 429, tooMany, { 'en-US': /Too many links were made/, 'ko-KR': /링크가 너무 많이 만들어졌어요/, 'ja-JP': /リンクが多すぎます/, 'zh-CN': /链接太多了/ }],
-      ['413 too large for a guest', 413, tooBig, { 'en-US': /too large to share as a guest/, 'ko-KR': /게스트로는 이렇게 큰 악보/, 'ja-JP': /ゲストではこの大きさ/, 'zh-CN': /访客无法分享这么大/ }]
+      ['413 too large for a guest', 413, tooBig, { 'en-US': /too large to share as a guest/, 'ko-KR': /게스트로는 이렇게 큰 악보/, 'ja-JP': /ゲストではこの大きさ/, 'zh-CN': /访客无法分享这么大/ }],
+      ['503 busy: Shared Scores has no room for guest posts', 503, busy, { 'en-US': /has no room for more posts from guests/, 'ko-KR': /로그인 없이 올릴 수 있는 자리가 가득 찼어요/, 'ja-JP': /ログインなしで投稿できる枠がいっぱい/, 'zh-CN': /未登录发布的名额已满/ }],
+      ['429 as many posts today as a guest may', 429, dayKey, { 'en-US': /as many scores today as a guest may/, 'ko-KR': /오늘 이 브라우저에서 올릴 수 있는 악보 수를 다 채웠어요/, 'ja-JP': /今日このブラウザで投稿できる楽譜の上限/, 'zh-CN': /今天这个浏览器能发布的乐谱数量已满/ }],
+      ['429 as many posts held as a guest may', 429, heldKey, { 'en-US': /as many scores as PPP keeps for a guest/, 'ko-KR': /하나를 먼저 내려 주세요/, 'ja-JP': /先に1つ下げてください/, 'zh-CN': /请先撤下一份/ }]
     ];
     let fake = null;
     const handler = r => {
@@ -333,11 +390,11 @@ const recordOpens = page => page.evaluateOnNewDocument(() => {
   await sleep(400);
   const shelfB = await other.evaluate(() => [...document.querySelectorAll('[data-song]')].map(c => c.innerText.replace(/\s+/g, ' ')));
   ok('it is in their My Songs, marked as a shared score', shelfB.some(t => /Prelude/.test(t) && /Shared score/.test(t)), shelfB.join(' | ').slice(0, 160));
-  ok('and with no account they can send it on as a link, but not post it', await other.evaluate(() => {
+  ok('and with no account they can send it on as a link, or post it as a guest, and nothing asks them to sign in', await other.evaluate(() => {
     const b = [...document.querySelectorAll('[data-share-song]')].find(x => x.getAttribute('data-share-song') !== 'demo');
     if (!b) return false;
     b.click();
-    return new Promise(r => setTimeout(() => r(!!document.querySelector('[data-share-net="copy"]') && !document.querySelector('[data-share-post]') && !!document.querySelector('[data-share-signin]')), 250));
+    return new Promise(r => setTimeout(() => r(!!document.querySelector('[data-share-net="copy"]') && !!document.querySelector('[data-share-post]') && !document.querySelector('[data-share-signin]') && !document.querySelector('[data-auth]')), 250));
   }));
 
   const theirs = await api(other, '/api/shares/' + shareId, { method: 'DELETE' });

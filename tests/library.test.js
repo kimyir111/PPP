@@ -159,7 +159,7 @@ const ok = (name, cond, detail) => {
   await page.evaluate(() => document.querySelector('[data-score-practice]').click());
   await sleep(300);
   ok('Practice goes to the practice page', await page.evaluate(() => window.PPP.app.state.screen === 'player'));
-  ok('opening the sample switches the song', /Interstellar/.test(await title()));
+  ok('opening the sample switches the song', /PPP Practice Theme/.test(await title()));
   const demoTempo = await tempo();
   ok('the sample has its own tempo back', demoTempo === '60', demoTempo + ' BPM (was left at 60)');
   await cards();
@@ -187,7 +187,7 @@ const ok = (name, cond, detail) => {
   await sleep(400);
   const c3 = await cards();
   ok('the second removes it', c3.length === 1 && c3[0].id === 'demo', c3.map(c => c.title).join(', '));
-  ok('and PPP goes back to a song that exists', c3[0].current && /Interstellar/.test(await title()));
+  ok('and PPP goes back to a song that exists', c3[0].current && /PPP Practice Theme/.test(await title()));
   const noSample = await page.evaluate(() => !document.querySelector('[data-remove-song="demo"]'));
   ok('the sample cannot be removed', noSample);
 

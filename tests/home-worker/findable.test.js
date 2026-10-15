@@ -150,7 +150,7 @@ const GONE = 'cd'.repeat(32);          /* a well-formed code that no link of the
       let s = await addState(p);
       ok('the Add screen with a YouTube link typed has a "High-quality (my PC)" button that opens the sheet (not the Settings page); the primary button and its note are not there', s.help && s.helpLabel === 'High-quality (my PC)' && !s.pc && !s.note && !s.jobs && !s.kind, JSON.stringify(s));
       ok('it is in the row of "Make sheet music"', await p.evaluate(() => { const h = document.querySelector('[data-home-pc-help]'), m = [...document.querySelectorAll('[data-youtube] button')].find(x => /Make sheet music/.test(x.innerText)); return !!h && !!m && h.parentElement === m.parentElement; }));
-      ok('the page asked the site once whether it has the queue (no PC code, nothing about jobs) and asked nothing more', p.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-links)/.test(r)).join() === 'GET /api/worker/status', p.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-links)/.test(r)).join());
+      ok('the page asked the queue nothing at all (G13 no login: the one probe of G10b-5, a 401 on a visitor\'s page, is gone)', p.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-links)/.test(r)).length === 0, p.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-links)/.test(r)).join());
       await shot(p, '[data-youtube]', 'g10b5-nolink-card-1100-en.png');
       await click(p, '[data-home-pc-help]'); await sleep(400);
       const sheet = await text(p, '[data-home-sheet]');
@@ -160,7 +160,7 @@ const GONE = 'cd'.repeat(32);          /* a well-formed code that no link of the
       ok('a "More in Settings" link and a Close button', (await text(p, '[data-home-sheet-settings]')) === 'More in Settings' && await has(p, '[data-home-sheet-close]'));
       const html = await p.evaluate(() => document.querySelector('[data-home-sheet]').outerHTML);
       ok('the sheet shows no secret: no 64-hex code, no PC token (ppw_), no pairing link (#pc=), no input field', !/[0-9a-f]{64}/i.test(html + sheet) && !/ppw_/.test(html + sheet) && !/#pc=/.test(html + sheet) && !/<input|<textarea/i.test(html), sheet.slice(0, 80));
-      ok('opening it created nothing: no link in this browser, no request to make one, nothing sent to the queue but the one probe', (await stored(p)) === null && !p.__rec.posts.length && (await p.evaluate(() => Object.keys(localStorage).filter(k => /pclink/.test(k)).length)) === 0, JSON.stringify(p.__rec.posts));
+      ok('opening it created nothing: no link in this browser, no request to make one, nothing sent to the queue at all', (await stored(p)) === null && !p.__rec.posts.length && (await p.evaluate(() => Object.keys(localStorage).filter(k => /pclink/.test(k)).length)) === 0, JSON.stringify(p.__rec.posts));
       await shot(p, null, 'g10b5-sheet-1100-en.png');
       await click(p, '[data-home-sheet-close]'); await sleep(250);
       ok('Close puts it away', !(await has(p, '[data-home-sheet]')));
@@ -256,7 +256,14 @@ const GONE = 'cd'.repeat(32);          /* a well-formed code that no link of the
       if (baseHtml) { const old = await open('', { baseHtml: baseHtml }); await goAdd(old); oldCard = await cardOf(old); await old.close(); } else console.log('  - git history of b7f9fb5 not available: the identical-card checks of this section are skipped');
       const off = await open('', { queue: 'off' });
       await goAdd(off); await sleep(600);
-      ok('no link, queue off: no button of any kind, no state line', await (async () => { const s = await addState(off); return !s.pc && !s.help && !s.kind; })());
+      /* G13 no login: the page no longer asks the site anything before the person acts (the probe was a 401 on every visitor's page), so it cannot know the queue is off yet:
+         the secondary "how to connect" button is offered, and nothing else */
+      ok('no link, queue off, nothing tried yet: only the secondary help button (the page asks nothing, so it cannot know); no primary button, no state line', await (async () => { const s = await addState(off); return !!s.help && !s.pc && !s.kind; })());
+      ok('and the page asked the queue nothing', off.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-links)/.test(r)).length === 0, off.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-links)/.test(r)).join());
+      await goSettings(off);
+      await click(off, '[data-home-link-make]'); await sleep(900);
+      await goAdd(off); await sleep(500);
+      ok('after "Create my PC link" was refused (the queue is off): no button of any kind, no state line', await (async () => { const s = await addState(off); return !s.pc && !s.help && !s.kind; })());
       if (oldCard) ok('and the Add card of that visitor is the one of main before the feature, tag for tag (' + oldCard.length + ' characters)', (await cardOf(off)) === oldCard, '');
       await off.close();
       const off2 = await open('', { queue: 'off', store: storeOf((await mkLink(srv, true)).code) });

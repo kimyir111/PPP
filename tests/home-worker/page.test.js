@@ -5,7 +5,8 @@
    worker - so what is checked here is the PAGE: when the button shows, what it sends, the list, what a reload keeps, Open writing the score from the PC's notes (v2 or
    classic), the review screen's words, saving, and that nothing changes for anyone who has no link.
 
-     - no link on this device: no primary button, no note, no list, no request about jobs (G10b-5: ONE probe, GET /api/worker/status with no header, to learn whether the site has the queue); the
+     - no link on this device: no primary button, no note, no list, and NO request at all (G10b-5 had one probe, GET /api/worker/status with no header, to learn whether the site has the queue;
+       it answered 401 and a browser logs that as a console error on a visitor's page, so G13 "no login anywhere" removed it: a site without the queue is learned from "Create my PC link"); the
        Add-sheet-music card is identical, tag for tag, to the card of the commit before the feature EXCEPT for the one secondary button "High-quality (my PC)" that opens the sheet saying how to
        connect (G10b-5: the button must always be findable; tests/home-worker/findable.test.js has every state of it); the Settings card offers "Create my PC link" and "Use a PC link from
        another device" and says no sign-in is needed
@@ -121,7 +122,7 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
     const guest = await openPage(browser, base);
     await goAdd(guest);
     ok('no primary button, no note, no list on the Add screen; the secondary button (how to connect) is there instead (G10b-5)', !(await has(guest, '[data-home-pc]')) && !(await has(guest, '[data-home-note]')) && !(await has(guest, '[data-home-jobs]')) && await has(guest, '[data-home-pc-help]'));
-    ok('a device with no link asks the site NOTHING about jobs or links while the Add screen is open - only the one probe that learns whether the site has the queue (GET /api/worker/status, no PC code)', queued(guest).join() === 'GET /api/worker/status' && await guest.evaluate(() => window.__fetches.every(f => !f.headers || !f.headers['X-PPP-PC'])), queued(guest).join(', '));
+    ok('a device with no link asks the site NOTHING about jobs, links or the worker while the Add screen is open - not even the probe it used to make (G13 no login: that was a 401)', queued(guest).length === 0 && await guest.evaluate(() => window.__fetches.every(f => !f.headers || !f.headers['X-PPP-PC'])), queued(guest).join(', '));
     let baseHtml = null;
     /* b7f9fb5: main as it was before G10b-2 (the home-PC queue with accounts; for a device with no account and no link the Add card is the plain one) */
     try { baseHtml = execFileSync('git', ['show', 'b7f9fb5:Piano Coach App.dc.html'], { cwd: L.REPO, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }); } catch (e) { baseHtml = null; }
@@ -145,7 +146,7 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
     ok('Settings has the Connect my PC card for everybody, with no sign-in: the button to make a link, the way to use one from another device', await has(guest, '[data-home-settings]') && /Connect my PC/.test(await text(guest, '[data-home-settings]'))
       && /Create my PC link/.test(await text(guest, '[data-home-link-make]')) && (await has(guest, '[data-home-use-input]')) && (await has(guest, '[data-home-use-go]')) && /Use a PC link from another device/.test(await text(guest, '[data-home-use]')));
     ok('it says that no account or sign-in is needed, and offers none of the link\'s buttons yet', /No account or sign-in is needed/.test(await text(guest, '[data-home-no-account]')) && !(await has(guest, '[data-home-link]')) && !(await has(guest, '[data-home-new]')));
-    ok('the Settings screen asked the site once (no header) whether it has the queue; nothing about jobs', queued(guest).join() === 'GET /api/worker/status', queued(guest).join(', '));
+    ok('the Settings screen asked the site nothing either (no probe, no 401)', queued(guest).length === 0, queued(guest).join(', '));
     ok('no page or console error', clean(guest), errs(guest));
     await guest.close();
 
@@ -202,7 +203,7 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
       const b = await pg.evaluate(() => { const e = document.querySelector('[data-home-pc]'); return e && { disabled: e.disabled }; });
       return !!b && b.disabled === false && (await text(pg, '[data-home-pc-state]')) === 'Your PC has not connected yet: it will take the job when it does' && (await pg.evaluate(() => document.querySelector('[data-home-pc-state]').getAttribute('data-home-pc-state'))) === 'never-seen' && !(await has(pg, '[data-home-note]')) && !(await has(pg, '[data-home-jobs]'));
     })());
-    ok('the Add screen now asks for the list with the code (and the Settings screen asked nothing without a link: the probe was made once before the link existed)', pg.__rec.requests.some(r => r === 'GET /api/jobs'));
+    ok('the Add screen now asks for the list with the code (and the Settings screen asked nothing without a link)', pg.__rec.requests.some(r => r === 'GET /api/jobs'));
 
     heading('the PC connects: the button, the note');
     const token0 = token;
@@ -542,7 +543,10 @@ const queued = page => page.__rec.requests.filter(r => /\/api\/(jobs|worker|pc-l
       await off.close();
       const off2 = await openPage(browser, base, { queue503: 'off' });
       await goSettings(off2); await sleep(500);
-      ok('a device with NO link learns it from the one probe of the Settings screen: the card is not offered', !(await has(off2, '[data-home-settings]')) && off2.__rec.requests.filter(r => /^GET \/api\/worker\/status/.test(r)).length === 1 && queued(off2).length === 1, queued(off2).join());
+      ok('a device with NO link asks nothing (no probe: it was a 401 on every visitor\'s Settings screen): the card is offered', (await has(off2, '[data-home-settings]')) && queued(off2).length === 0, queued(off2).join());
+      await click(off2, '[data-home-link-make]'); await sleep(700);
+      ok('"Create my PC link" is refused once, with the reason (the queue is switched off), and the card goes: nothing is made on this device', !(await has(off2, '[data-home-settings]')) && await off2.evaluate(() => window.PPP.app.state.homeOff === true)
+        && (await stored(off2)) === null && queued(off2).length === 1, queued(off2).join());
       await off2.close();
       const blip = await openPage(browser, base, { queue503: 'blip' });
       await goSettings(blip);

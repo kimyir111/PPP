@@ -209,7 +209,7 @@
     "Next,": "다음,",
     "Dark": "다크",
     "Light": "라이트",
-    "Guest": "둘러보기",
+    "Guest": "손님",
     "Sign in": "로그인",
     "Sign out": "로그아웃",
     "Sign up": "가입",
@@ -2369,6 +2369,21 @@
     "Your own PC's mark is shown in Settings. If someone else gave you the link, choose \"Use the draft instead\". The pictures wait on the site only until that PC takes them, then they are deleted.": "내 PC의 표시는 설정에서 볼 수 있어요. 다른 사람에게 받은 연결 링크라면 '초안으로 대신하기'를 눌러 주세요. 사진은 그 PC가 가져갈 때까지만 사이트에 있다가 지워져요.",
     "Send to that PC": "그 PC로 보내기",
     "The site is taking in as many scores as it may for now.": "지금은 사이트가 받을 수 있는 악보를 다 받았어요.",
-    "This device or network has sent as many scores as the site takes in for now.": "이 기기나 네트워크에서 지금 보낼 수 있는 악보를 다 보냈어요."
+    "This device or network has sent as many scores as the site takes in for now.": "이 기기나 네트워크에서 지금 보낼 수 있는 악보를 다 보냈어요.",
+    "Not now": "다음에",
+    "Sign in (optional)": "로그인 (선택)",
+    "Everything in PPP works without an account. Sign in only if you already have one, or want your progress kept in an account.": "PPP의 모든 기능은 계정 없이 쓸 수 있어요. 이미 계정이 있거나, 연습 기록을 계정에 보관하고 싶을 때만 로그인하세요.",
+    "Signed in as {{name}}": "{{name}} 님으로 로그인했어요",
+    "Your progress is also kept in your account.": "연습 기록이 계정에도 보관돼요.",
+    "Name shown with your post (optional)": "게시물에 표시할 이름 (선택)",
+    "No account is behind a guest post: only this browser can take it down, and it ends after 90 days unless you post it again. If you clear this browser’s data, you can no longer manage it.": "로그인 없이 올린 악보는 이 브라우저에서만 내릴 수 있어요. 다시 올리지 않으면 90일 뒤에 사라져요. 이 브라우저의 데이터를 지우면 더는 관리할 수 없어요.",
+    "Anyone with the link can open it. It stops working after 90 days, and sending it again renews it.": "링크를 가진 사람은 누구나 열 수 있어요. 90일 뒤에는 열리지 않게 되고, 다시 보내면 기간이 늘어나요.",
+    "Shared by a guest": "손님이 공유",
+    "This browser has posted as many scores as PPP keeps for a guest. Take one down first.": "이 브라우저에서 올릴 수 있는 악보 수를 다 채웠어요. 하나를 먼저 내려 주세요.",
+    "As many scores as PPP keeps are posted from here already. Take one down, or try again later.": "이 네트워크에서 올릴 수 있는 악보 수를 다 채웠어요. 하나를 내리거나 나중에 다시 해 주세요.",
+    "Shared Scores has no room for more posts from guests right now. Try again later.": "지금은 로그인 없이 올릴 수 있는 자리가 가득 찼어요. 나중에 다시 해 주세요.",
+    "This browser has posted as many scores today as a guest may. Try again tomorrow.": "오늘 이 브라우저에서 올릴 수 있는 악보 수를 다 채웠어요. 내일 다시 해 주세요.",
+    "As many scores as a guest may post in a day have been posted from here. Try again tomorrow.": "오늘 이 네트워크에서 올릴 수 있는 악보 수를 다 채웠어요. 내일 다시 해 주세요.",
+    "PPP Practice Theme": "PPP 연습곡"
   }
 }

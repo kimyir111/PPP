@@ -209,7 +209,7 @@
     "Next,": "次、",
     "Dark": "ダーク",
     "Light": "ライト",
-    "Guest": "ちょっと見る",
+    "Guest": "ゲスト",
     "Sign in": "ログイン",
     "Sign out": "ログアウト",
     "Sign up": "登録",
@@ -2369,6 +2369,21 @@
     "Your own PC's mark is shown in Settings. If someone else gave you the link, choose \"Use the draft instead\". The pictures wait on the site only until that PC takes them, then they are deleted.": "ご自身のPCの表示は設定で確認できます。他の人から受け取ったリンクの場合は「下書きで進める」を選んでください。画像は、そのPCが受け取るまでの間だけサイトに置かれ、その後は削除されます。",
     "Send to that PC": "そのPCに送る",
     "The site is taking in as many scores as it may for now.": "現在、サイトが受け付けられる楽譜の上限に達しています。",
-    "This device or network has sent as many scores as the site takes in for now.": "この端末またはネットワークから、現在送れる楽譜の上限に達しました。"
+    "This device or network has sent as many scores as the site takes in for now.": "この端末またはネットワークから、現在送れる楽譜の上限に達しました。",
+    "Not now": "あとで",
+    "Sign in (optional)": "ログイン（任意）",
+    "Everything in PPP works without an account. Sign in only if you already have one, or want your progress kept in an account.": "PPPのすべての機能はアカウントなしで使えます。すでにアカウントをお持ちの場合や、練習の記録をアカウントに保管したい場合だけログインしてください。",
+    "Signed in as {{name}}": "{{name}} としてログイン中",
+    "Your progress is also kept in your account.": "練習の記録はアカウントにも保管されます。",
+    "Name shown with your post (optional)": "投稿に表示する名前（任意）",
+    "No account is behind a guest post: only this browser can take it down, and it ends after 90 days unless you post it again. If you clear this browser’s data, you can no longer manage it.": "ログインなしで投稿した楽譜は、このブラウザからだけ下げられます。もう一度投稿しない限り90日後に終了します。このブラウザのデータを消すと、管理できなくなります。",
+    "Anyone with the link can open it. It stops working after 90 days, and sending it again renews it.": "リンクを知っている人は誰でも開けます。90日後に開けなくなり、もう一度送ると延長されます。",
+    "Shared by a guest": "ゲストが共有",
+    "This browser has posted as many scores as PPP keeps for a guest. Take one down first.": "このブラウザで投稿できる楽譜の上限に達しました。先に1つ下げてください。",
+    "As many scores as PPP keeps are posted from here already. Take one down, or try again later.": "このネットワークから投稿できる楽譜の上限に達しています。1つ下げるか、あとでもう一度お試しください。",
+    "Shared Scores has no room for more posts from guests right now. Try again later.": "現在、ログインなしで投稿できる枠がいっぱいです。あとでもう一度お試しください。",
+    "This browser has posted as many scores today as a guest may. Try again tomorrow.": "今日このブラウザで投稿できる楽譜の上限に達しました。明日もう一度お試しください。",
+    "As many scores as a guest may post in a day have been posted from here. Try again tomorrow.": "今日このネットワークから投稿できる楽譜の上限に達しました。明日もう一度お試しください。",
+    "PPP Practice Theme": "PPP練習曲"
   }
 }

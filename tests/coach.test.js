@@ -205,7 +205,7 @@ function harness() {
   const R = await page.evaluate(harness);
 
   console.log('\n── what the coach is allowed to know ──');
-  ok('the context carries the real song', R.ctx.title === 'Interstellar Theme' && R.ctx.measureCount === 64,
+  ok('the context carries the real song', R.ctx.title === 'PPP Practice Theme' && R.ctx.measureCount === 64,
     R.ctx.title + ', ' + R.ctx.measureCount + ' measures');
   ok('it carries measured weakness, not a guess',
     !!R.ctx.weakTop && R.ctx.weakTop.left < R.ctx.weakTop.right,

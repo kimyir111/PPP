@@ -802,7 +802,7 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
       <button type="submit" onClick="{{ submitAuth }}" style="width: 100%; padding: 12px; border-radius: 11px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">{{ authSubmit }}</button>
       </form>
       <button type="button" onClick="{{ toggleAuthMode }}" style="width: 100%; margin-top: 8px; padding: 10px; border-radius: 11px; border: 0; background: transparent; color: var(--ink2); font-family: inherit; font-size: 13px; cursor: pointer;">{{ authSwitch }}</button>
-      <button type="button" onClick="{{ continueGuest }}" style="width: 100%; margin-top: 4px; padding: 10px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;">{{ guestCta }}</button>
+      <button type="button" data-auth-close onClick="{{ closeAuth }}" style="width: 100%; margin-top: 4px; padding: 10px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;">{{ guestCta }}</button>
     </div>
   </div>
 </sc-if>
@@ -936,9 +936,6 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
         <span style="width: 12px; height: 12px; border: 1.5px solid var(--ink2); border-radius: 4px 4px 6px 6px; display: block;"></span>
         <span style="position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 999px; background: var(--accent); border: 1.5px solid var(--bg);"></span>
       </button>
-      <sc-if value="{{ showSignInBtn }}" hint-placeholder-val="{{ false }}">
-        <button type="button" onClick="{{ accountOn }}" style="padding: 8px 14px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;">{{ signInBtnLabel }}</button>
-      </sc-if>
       <button onClick="{{ accountOn }}" style="display: flex; align-items: center; gap: 9px; padding: 4px 0 4px 14px; border: 0; border-left: 1px solid var(--line); background: transparent; cursor: pointer; font-family: inherit; color: inherit; text-align: left;">
         <div style="width: 32px; height: 32px; border-radius: 999px; background: var(--accent-2); color: var(--accent); display: grid; place-items: center; font-size: 12px; font-weight: 600;">{{ userInitials }}</div>
         <div class="ppp-account-meta" style="line-height: 1.25;">
@@ -2512,6 +2509,13 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
               </sc-for>
             </div>
           </div>
+          <div data-account-settings style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px 22px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div style="min-width: 0; flex: 1; flex-basis: 260px;">
+              <div data-account-title style="font-size: 13.5px; font-weight: 500;">{{ accountTitle }}</div>
+              <div data-account-sub style="font-size: 12px; line-height: 1.5; color: var(--ink3); margin-top: 2px;">{{ accountSub }}</div>
+            </div>
+            <button type="button" data-account-action onClick="{{ accountAction }}" style="margin-left: auto; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--ink3);">{{ accountActionLabel }}</button>
+          </div>
           <sc-if value="{{ bkOn }}" hint-placeholder-val="{{ true }}">
             <div data-backup-section style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px 22px; display: flex; flex-direction: column; gap: 14px;">
               <div>
@@ -3088,6 +3092,14 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
           <section style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg);">
             <div style="font-size: 13.5px; font-weight: 600;">{{ sharePostHeading }}</div>
             <p id="ppp-share-post-note" data-share-post-note data-blocked="{{ sharePostBlockedAttr }}" style="margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink2);">{{ sharePostNote }}</p>
+            <sc-if value="{{ shareNameOn }}" hint-placeholder-val="{{ false }}">
+              <label data-share-name style="display: block; font-size: 12px; color: var(--ink3);">{{ shareNameLabel }}
+                <input type="text" data-share-name-input maxlength="24" autocomplete="off" value="{{ shareName }}" placeholder="{{ shareNamePlaceholder }}" onChange="{{ setShareName }}" style="display: block; width: 100%; margin-top: 6px; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: inherit; font-size: 13px; box-sizing: border-box;" />
+              </label>
+            </sc-if>
+            <sc-if value="{{ shareGuestNoteOn }}" hint-placeholder-val="{{ false }}">
+              <p data-share-guest-note style="margin: 0; font-size: 12px; line-height: 1.55; color: var(--ink3);">{{ shareGuestNote }}</p>
+            </sc-if>
             <button data-share-post data-posted="{{ sharePostedAttr }}" disabled="{{ sharePostDisabled }}" aria-disabled="{{ sharePostDisabled }}" aria-describedby="ppp-share-post-note" onClick="{{ sharePost }}" style="{{ sharePostStyle }}">{{ sharePostLabel }}</button>
           </section>
         </sc-if>
@@ -3107,12 +3119,6 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
               </sc-for>
             </div>
           </section>
-        </sc-if>
-        <sc-if value="{{ shareNeedsSignIn }}" hint-placeholder-val="{{ false }}">
-          <div data-share-signin style="display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border: 1px dashed var(--line); border-radius: 14px; background: transparent;">
-            <p style="margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink2);">{{ shareSignInNote }}</p>
-            <button onClick="{{ shareSignIn }}" style="{{ shareSignInStyle }}">{{ shareSignInLabel }}</button>
-          </div>
         </sc-if>
         <sc-if value="{{ shareHasError }}" hint-placeholder-val="{{ false }}">
           <p role="alert" data-share-error data-no-i18n="1" style="margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--bad);">{{ shareError }}</p>
@@ -4816,6 +4822,10 @@ const DEMO_SECTIONS = [
   ['s8', 57, 64, 'Fast note sequence', true]
 ];
 
+/* G13 (U6, decided 2026-10-15): the built-in sample is a pattern PPP generates (it is not anybody's piece), so it carries PPP's own name. Its id stays 'demo', so saved
+   sessions line up. The title is looked up in the person's language where it is shown (the shelf, the header); the stored score keeps the English one. */
+const DEMO_TITLE = 'PPP Practice Theme';
+const DEMO_COMPOSER = 'PPP';
 function buildDemoScore() {
   const RH = ['A4', 'C5', 'E5', 'D5', 'F5', 'E5', 'G5', 'A5', 'F5', 'E5', 'C5', 'D5', 'B4', 'E5', 'G4', 'B4', 'D5', 'C5'];
   const LH = [['A2', 'E3'], ['F2', 'C3'], ['C3', 'G3'], ['G2', 'D3'], ['E2', 'B2'], ['D3', 'A3']];
@@ -4845,7 +4855,7 @@ function buildDemoScore() {
     })));
   }
   return Score.finalize({
-    id: 'demo', title: 'Interstellar Theme', composer: 'Hans Zimmer · arr. solo piano',
+    id: 'demo', title: DEMO_TITLE, composer: DEMO_COMPOSER,
     source: 'built-in', tempo: 84, staves: 2, measures, notes,
     sections: DEMO_SECTIONS.map(d => ({ id: d[0], from: d[1], to: d[2], reason: d[3], hard: !!d[4] })),
     seeds: DEMO_SEED
@@ -13767,7 +13777,10 @@ class Component extends DCLogic {
       sidebarCollapsed: false,
       sidebarOpen: false,
       user: null,
-      guest: (function () { try { return localStorage.getItem('ppp-guest') === '1' || !!sharedParam() || !!(window.PPP_PAIR && window.PPP_PAIR.has()); } catch (e) { return false; } })(),
+      /* G13 (no login anywhere): nothing is behind an account, and no sign-in card is shown to a visitor. authOpen is the OPTIONAL sign-in form (Settings > Account), closed
+         at the start; guestName is the name a person may give a post (kept in this browser only). */
+      authOpen: false,
+      guestName: (function () { try { return String(localStorage.getItem('ppp-guest-name') || '').slice(0, 24); } catch (e) { return ''; } })(),
       authReady: false,
       authMode: 'login',
       authBusy: false,
@@ -14557,17 +14570,6 @@ class Component extends DCLogic {
     if (I) I.setLocale(locale);
     this.setState({ locale: locale, localeMenuOpen: false });
   }
-  readGuest() {
-    /* a shared score's link opens for anyone, without an account */
-    if (this._viaShare) return true;
-    try { return localStorage.getItem('ppp-guest') === '1'; } catch (e) { return false; }
-  }
-  writeGuest(on) {
-    try {
-      if (on) localStorage.setItem('ppp-guest', '1');
-      else localStorage.removeItem('ppp-guest');
-    } catch (e) {}
-  }
   hostedAuth() {
     try {
       const h = location.hostname;
@@ -14590,8 +14592,7 @@ class Component extends DCLogic {
           this.setState({ authReady: true });
           return;
         }
-        this.writeGuest(false);
-        this.setState({ user: user, guest: false, authReady: true });
+        this.setState({ user: user, authOpen: false, authReady: true });
         this.pullProgress();
       })
       .catch(() => this.setState({ authReady: true }));
@@ -14648,23 +14649,26 @@ class Component extends DCLogic {
     });
     attempt()
       .then(user => {
-        this.writeGuest(false);
-        this.setState({ user: user, guest: false, authBusy: false, authPassword: '', authConfirm: '', authError: '' });
+        this.setState({ user: user, authOpen: false, authBusy: false, authPassword: '', authConfirm: '', authError: '' });
         this.say(tx('Signed in.'));
         if (signup) this.pushProgress();
         else this.pullProgress();
       })
       .catch(e => this.setState({ authBusy: false, authError: e.message || tx('Could not reach the server.') }));
   }
-  continueGuest() {
-    this.writeGuest(true);
-    this.setState({ guest: true, user: null, authError: '' });
-  }
+  /* the optional sign-in form: opened from Settings > Account (or a link that says "Sign in"), closed by "Not now" or by signing in */
+  openAuth(mode) { this.setState({ authOpen: true, authMode: mode === 'signup' ? 'signup' : 'login', authError: '' }); }
+  closeAuth() { this.setState({ authOpen: false, authError: '' }); }
   signOut() {
     fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
-    this.writeGuest(false);
-    this.setState({ user: null, guest: false, authMode: 'login', authError: '' });
+    this.setState({ user: null, authOpen: false, authMode: 'login', authError: '' });
     this.say(tx('Signed out.'));
+  }
+  /* the name a person may give a post (optional; kept in this browser only; the server cuts it and may replace it with "Guest") */
+  setGuestName(v) {
+    const name = Array.from(String(v == null ? '' : v)).slice(0, 24).join('');
+    try { if (name.trim()) localStorage.setItem('ppp-guest-name', name); else localStorage.removeItem('ppp-guest-name'); } catch (e) { /* no storage: the name lasts until the page closes */ }
+    this.setState({ guestName: name });
   }
   pullProgress() {
     fetch('/api/progress', { credentials: 'include' })
@@ -16612,12 +16616,9 @@ class Component extends DCLogic {
     if (!code) {
       if (this.state.homeWorker || (this.state.homeJobs || []).length || this.state.homeUnrec) this.setState({ homeWorker: null, homeJobs: [], homeUnrec: false });
       this._unrec = null; clearTimeout(this._unrecTimer); this._unrecTimer = 0;
-      /* the Settings screen of a device with no link: ask ONCE whether this site has the queue at all (no header: a site that has it answers 401 "no-link", one that has switched it
-         off 503 "disabled", an older one 404), so that the card is not offered where there is nothing to connect to. The Add screen asks nothing. */
-      if (unused && !this._homeProbed && PcLink.supported()) {
-        this._homeProbed = true;
-        try { await this.homeApi('/api/worker/status'); } catch (e) { if (!this._dead && (e.off || e.status === 404)) this.setState({ homeOff: true }); }
-      }
+      /* G13 (no login anywhere): a device with no link asks the site NOTHING. It used to ask once (GET /api/worker/status without a code, which answers 401), and a browser
+         logs every 4xx as a console error on the visitor's page. A site that has the queue switched off (503 "disabled") or never had it (404) is learned from the first thing
+         the person does: "Make a PC link" fails once with the reason and the card goes (makePcLink sets homeOff). */
       return;
     }
     if (!this._homeVis && typeof document !== 'undefined') {
@@ -18348,7 +18349,7 @@ class Component extends DCLogic {
      last left — the open song's live figures are songProgress/songMemory. */
   shelfSongs() {
     const S = this.state;
-    return [Object.assign({ id: 'demo', title: 'Interstellar Theme', composer: 'Hans Zimmer · arr. solo piano', kind: 'built-in', measures: 64 },
+    return [Object.assign({ id: 'demo', title: tx(DEMO_TITLE), composer: DEMO_COMPOSER, kind: 'built-in', measures: 64 },
       S.libraryDemo || this.demoShelfDefaults())].concat(S.library || []);
   }
   /* The sample's figures before it has ever been left: its seeded accuracy,
@@ -18699,7 +18700,7 @@ class Component extends DCLogic {
         /* an older server, or a page not served by PPP's server at all */
         const missing = !body || (r.status === 404 && body.error === 'Not found');
         /* the one 5xx that is an answer, not an outage: guest links are full */
-        const full = r.status === 503 && !!body && body.code === 'guest-full' && typeof body.error === 'string';
+        const full = r.status === 503 && !!body && (body.code === 'guest-full' || body.code === 'busy') && typeof body.error === 'string';
         const err = new Error(tx(full ? body.error : r.status >= 500 ? 'Could not reach the server.'
           : missing ? 'Sharing needs the PPP server.' : body.error));
         err.status = r.status;
@@ -18760,10 +18761,9 @@ class Component extends DCLogic {
   /* Send a song to the server: posted to Shared Scores (listed true), taken
      down (false), or only given a link (left out). Each send carries the
      score as it is now, so a song changed since it was shared is updated.
-     With no account only a link can be made (an unlisted guest link). */
+     With no account a guest key owns the share (a link ends in 30 days, a post in 90; sending it again renews it), and the post carries the name the person gave, or "Guest". */
   publishSong(songId, listed) {
     const guest = !this.state.user;
-    if (guest && listed) return Promise.reject(new Error(tx('Posting to Shared Scores needs an account.')));
     /* G13-3 (U9): a song made from a YouTube link is not posted to the public list; its link is made as for any song */
     const ytDerived = this.youtubeDerivedOf(songId);
     if (ytDerived && listed === true) return Promise.reject(new Error(tx('A score made from a YouTube link cannot be posted to Shared Scores. You can still send its link.')));
@@ -18777,7 +18777,8 @@ class Component extends DCLogic {
       composer: score.composer === 'Unknown' ? '' : score.composer || '',
       genre: card.genre || '', kind: card.kind || '',
       listed: listed, score: score, preview: preview,
-      youtubeDerived: ytDerived ? true : undefined
+      youtubeDerived: ytDerived ? true : undefined,
+      displayName: guest && (this.state.guestName || '').trim() ? this.state.guestName.trim() : undefined
     });
     /* an account may share 4 MB; a guest link holds 1 MB */
     if (new Blob([body]).size > (guest ? 1024 * 1024 : 4 * 1024 * 1024)) {
@@ -18803,7 +18804,7 @@ class Component extends DCLogic {
     let changed = false;
     lib.songs.forEach(card => {
       const row = list.find(r => r.songKey === card.id);
-      const want = row ? { id: row.id, listed: !!row.listed } : null;
+      const want = row ? (row.expiresAt ? { id: row.id, listed: !!row.listed, guest: true } : { id: row.id, listed: !!row.listed }) : null;
       if (JSON.stringify(want) === JSON.stringify(card.share || null)) return;
       /* a list cut short cannot say a song is not shared */
       if (!want && list.length >= 100) return;
@@ -18822,7 +18823,8 @@ class Component extends DCLogic {
     const mine = S.sharedFilter === 'Mine';
     if (more && (S.sharedMore === 'loading' || !S.sharedNext || mine)) return;
     const seq = more ? (this._sharedSeq || 0) : (this._sharedSeq = (this._sharedSeq || 0) + 1);
-    if (mine && !S.user) { this.setState({ sharedList: [], sharedNext: null, sharedLoad: 'ready', sharedError: '' }); return; }
+    /* "mine" is what the account holds and what this browser's guest key holds; with neither there is nothing to ask the server */
+    if (mine && !S.user && !GuestKey.peek()) { this.setState({ sharedList: [], sharedNext: null, sharedLoad: 'ready', sharedError: '' }); return; }
     if (more) this.setState({ sharedMore: 'loading' });
     else this.setState(quiet ? { sharedMore: 'idle' } : { sharedLoad: 'loading', sharedError: '', sharedMore: 'idle' });
     const genre = SHARE_GENRES.indexOf(S.sharedFilter) > -1 ? S.sharedFilter : '';
@@ -18973,7 +18975,7 @@ class Component extends DCLogic {
     if (this.state.sharedOpening) return;
     this.setState({ sharedOpening: x.id });
     const got = this._linkedScore && this.state.sharedLinked && this.state.sharedLinked.id === x.id
-      ? Promise.resolve({ id: x.id, title: x.title, owner: x.owner, score: this._linkedScore })
+      ? Promise.resolve({ id: x.id, title: x.title, owner: x.owner, guest: x.guest, score: this._linkedScore })
       : this.shareApi('/' + encodeURIComponent(x.id));
     got.then(row => {
       let score = null;
@@ -18992,7 +18994,7 @@ class Component extends DCLogic {
       this.setState({
         importSource: score.source.kind === 'youtube' ? Object.assign({}, source, { kind: 'youtube', url: score.source.url, youtubeId: score.source.youtubeId }) : source,
         importReport: null, importKind: null, upload: 'empty', pendingSong: null,
-        fileName: score.title, fileMeta: tx('Shared by {{name}}', { name: row.owner })
+        fileName: score.title, fileMeta: this.sharedByLabel(row)
       });
       this.adoptScore(score);
       this.enterSong(score, source, false);
@@ -19003,6 +19005,10 @@ class Component extends DCLogic {
       this.setState({ sharedOpening: null });
       this.say(e.message || tx('That shared score could not be read.'));
     });
+  }
+  /* "Shared by <name>", or - for a guest who gave no name - "Shared by a guest" in the person's language */
+  sharedByLabel(x) {
+    return x && x.guest && x.owner === 'Guest' ? tx('Shared by a guest') : tx('Shared by {{name}}', { name: x ? x.owner : '' });
   }
   sharedThumb(key, full, bars) {
     this._sharedThumbs = this._sharedThumbs || {};
@@ -19026,7 +19032,7 @@ class Component extends DCLogic {
     const th = !near ? null : big ? this.sharedThumb('linked:' + x.id, this._linkedScore, 4) : this.sharedThumb(x.id + ':' + x.updatedAt, x.preview, 2);
     return {
       id: x.id, title: x.title,
-      sub: [x.composer, tx('Shared by {{name}}', { name: x.owner })].filter(Boolean).join(' · '),
+      sub: [x.composer, this.sharedByLabel(x)].filter(Boolean).join(' · '),
       meta: tx('{{n}} measures', { n: x.measures }) + ' · ' + this.agoLabel(Date.parse(x.updatedAt)),
       thumb: th ? this.sv({
         score: th, staves: th.staves, startM: Score.first(th), count: big ? 4 : 2, mW: big ? 170 : 150,
@@ -19115,7 +19121,6 @@ class Component extends DCLogic {
   postShared(on) {
     const t = this.shareTarget();
     if (!t || !t.mine || t.d.busy) return;
-    if (!this.state.user) return this.patchShareDialog({ error: tx('Posting to Shared Scores needs an account.') });
     this.patchShareDialog({ busy: 'post', error: '', armStop: false });
     /* posting sends the notes as they are now */
     const run = on && t.card ? this.publishSong(t.card.id, true)
@@ -19448,9 +19453,6 @@ class Component extends DCLogic {
     if (S.sharedLoad === 'error') {
       note = S.sharedError || tx('Could not reach the server.');
       act = { label: tx('Try again'), on: () => this.loadShared() };
-    } else if (mine && !S.user) {
-      note = tx('Sign in to see the scores you have shared. Links you sent as a guest stay on their song in My Songs.');
-      act = { label: tx('Sign in'), on: () => this.setState({ guest: false }) };
     } else if (!S.sharedList) note = tx('Loading shared scores…');
     else if (!list.length && (mine || (!q && !genre))) {
       note = tx(mine ? 'You have not shared a score yet. Share one from My Songs.' : 'Nothing has been shared yet. Share one of your songs from My Songs.');
@@ -19485,7 +19487,7 @@ class Component extends DCLogic {
     const S = this.state, t = this.shareTarget();
     if (!t) return { shareOpen: false };
     const d = t.d, sh = t.share;
-    /* no account: the link is still made (an unlisted guest link); only posting to Shared Scores needs one */
+    /* no account: a guest key owns the share. The link ends in 30 days and a post in 90; a name is optional (G13 no login) */
     const guest = !S.user;
     const guestHint = guest && !!t.card;
     const posted = !!(sh && sh.listed);
@@ -19503,10 +19505,13 @@ class Component extends DCLogic {
     if (typeof navigator !== 'undefined' && navigator.share) nets.unshift(['native', 'Other apps…', '↗', 'background:var(--accent-3);color:var(--accent);']);
     return {
       shareOpen: true, shareTitle: t.title, shareHeading: tx('Share'), shareCloseLabel: tx('Close'), closeShare: () => this.closeShareDialog(),
-      shareNeedsSignIn: guestHint,
-      shareSignInNote: tx('Posting to Shared Scores needs an account. Sign in to also post it there and manage your links from any device.'),
-      shareSignInLabel: tx('Sign in'), shareSignInStyle: plain, shareSignIn: () => this.setState({ shareDlg: null, guest: false }),
-      shareCanPost: t.mine && !guest,
+      shareCanPost: t.mine,
+      shareNameOn: guest && !posted && !!t.card && !ytBlocked,
+      shareNameLabel: tx('Name shown with your post (optional)'),
+      shareName: S.guestName || '', shareNamePlaceholder: tx('Guest'),
+      setShareName: e => this.setGuestName(e && e.target ? e.target.value : e),
+      shareGuestNoteOn: guest && t.mine && !ytBlocked,
+      shareGuestNote: tx('No account is behind a guest post: only this browser can take it down, and it ends after 90 days unless you post it again. If you clear this browser’s data, you can no longer manage it.'),
       sharePostHeading: tx('Shared Scores'),
       sharePostNote: ytBlocked ? tx('A score made from a YouTube link cannot be posted to Shared Scores. You can still send its link.')
         : tx(posted ? 'Posted — anyone using PPP can find it in Shared Scores and add it to their songs.'
@@ -19518,8 +19523,9 @@ class Component extends DCLogic {
       shareCanLink: true,
       shareLinkHeading: tx('Send a link'),
       shareLinkNote: guest
-        ? tx(sh ? 'Anyone with the link can open it. It is not listed in Shared Scores, and it stops working after 30 days.'
-          : 'A link is made the first time you send one. It is not listed anywhere, and it stops working after 30 days.')
+        ? (posted ? tx('Anyone with the link can open it. It stops working after 90 days, and sending it again renews it.')
+          : tx(sh ? 'Anyone with the link can open it. It is not listed in Shared Scores, and it stops working after 30 days.'
+            : 'A link is made the first time you send one. It is not listed anywhere, and it stops working after 30 days.'))
           + (guestHint && !GuestKey.persistent() ? ' ' + tx('This browser cannot keep a key for this link, so you can only take it down until you close this page.') : '')
         : tx(sh ? 'Anyone with the link can open it, posted or not.' : 'A link is made the first time you send one. Sending it does not post the song.'),
       shareHasLink: !!sh, shareLinkText: sh ? this.shareLink(sh.id) : '',
@@ -20927,8 +20933,9 @@ class Component extends DCLogic {
         style: 'width:100%;text-align:left;padding:8px 10px;border:0;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;background:' + (opt.locale === S.locale ? 'var(--accent-3)' : 'transparent') + ';color:var(--ink);',
         chipStyle: this.chip(opt.locale === S.locale)
       })),
-      isAuthGate: !S.guest && !S.user,
-      isAppReady: !!(S.guest || S.user),
+      /* the sign-in form is shown only when asked for (Settings > Account); never at the start */
+      isAuthGate: !!S.authOpen && !S.user,
+      isAppReady: true,
       authTitle: tx(S.authMode === 'signup' ? 'Create your PPP account' : 'Sign in to PPP'),
       authLead: tx('Practice from any device.'),
       authIsSignup: S.authMode === 'signup',
@@ -20944,8 +20951,8 @@ class Component extends DCLogic {
       submitAuth: e => this.submitAuth(e),
       toggleAuthMode: () => this.setState(st => ({ authMode: st.authMode === 'signup' ? 'login' : 'signup', authError: '' })),
       authSwitch: tx(S.authMode === 'signup' ? 'Already have an account? Sign in' : 'Need an account? Sign up'),
-      continueGuest: () => this.continueGuest(),
-      guestCta: tx('Continue as guest'),
+      closeAuth: () => this.closeAuth(),
+      guestCta: tx('Not now'),
       authNameLabel: tx('Display name'),
       authEmailLabel: tx('Email'),
       authPasswordLabel: tx('Password'),
@@ -20956,11 +20963,15 @@ class Component extends DCLogic {
         return ((parts[0] || 'G').charAt(0) + (parts[1] ? parts[1].charAt(0) : '')).toUpperCase();
       })(),
       userName: (S.user && S.user.displayName) || tx('Guest'),
-      userRole: S.user ? tx('Returning player') : tx('Sign in to sync progress across devices.'),
-      accountOn: () => { if (S.user) this.signOut(); else { this.writeGuest(false); this.setState({ guest: false, authMode: 'login', authError: '' }); } },
-      openSignup: () => { this.writeGuest(false); this.setState({ guest: false, authMode: 'signup', authError: '' }); },
-      showSignInBtn: !S.user,
-      signInBtnLabel: tx('Sign in'),
+      /* a visitor has no role line (no nag); the chip of a visitor goes to Settings, where the optional sign-in is */
+      userRole: S.user ? tx('Returning player') : '',
+      accountOn: () => { if (S.user) this.signOut(); else this.go('settings')(); },
+      openSignup: () => this.openAuth('signup'),
+      accountTitle: S.user ? tx('Signed in as {{name}}', { name: S.user.displayName || S.user.email || '' }) : tx('Sign in (optional)'),
+      accountSub: S.user ? tx('Your progress is also kept in your account.')
+        : tx('Everything in PPP works without an account. Sign in only if you already have one, or want your progress kept in an account.'),
+      accountActionLabel: S.user ? tx('Sign out') : tx('Sign in'),
+      accountAction: () => { if (S.user) this.signOut(); else this.openAuth('login'); },
       showGamification: this.props.showGamification !== false,
       toast: S.toast,
       toastStyle: `position:fixed;left:50%;bottom:88px;transform:translateX(-50%) translateY(${S.toast ? '0' : '12px'});z-index:60;padding:11px 18px;border-radius:12px;background:var(--ink);color:var(--surface);font-size:13px;font-weight:500;box-shadow:var(--shadow);pointer-events:none;opacity:${S.toast ? 1 : 0};transition:opacity .25s ease, transform .25s ease;max-width:70vw;text-align:center;`,
