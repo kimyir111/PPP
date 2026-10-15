@@ -339,12 +339,16 @@
       check('startTransport: the transport holds a graph plan', tp && tp.plan && tp.plan.graph);
       tp.t0 = 1000; tp.schedT = 1000;
       app.schedule(1000, S);
-      /* a change under a running transport (here the hands) plans again from where it is */
+      /* a change of the key under a running transport (here the hands): the run keeps its plan (G11a-5: the matcher began on it) and the key moves on */
       S.hands = 'right';
       const oldPlan = tp.plan;
       app.advance(1050);
-      check('advance: a change of hands under a running transport is planned again, from the graph', app._tp && app._tp.plan && app._tp.plan.graph && app._tp.key.indexOf('right') > 0, app._tp && app._tp.key);
-      void oldPlan;
+      check('advance: a change of hands under a running transport keeps the graph plan of the run', app._tp && app._tp.plan === oldPlan && app._tp.plan.graph && app._tp.key.indexOf('right') > 0, app._tp && app._tp.key);
+      /* a change of the range is planned again, from where it is, from the graph */
+      S.beat = tp.beat;          /* setState is not applied in this probe: the playhead is put where the transport moved it, or the page would take the change for a seek and begin another run */
+      S.loopTo = Math.max(first + 1, Math.min(last, first + 3));
+      app.advance(1060);
+      check('advance: a change of the range under a running transport is planned again, from the graph', app._tp && app._tp.plan && app._tp.plan.graph && app._tp.plan !== oldPlan && app._tp.to === S.loopTo, app._tp && app._tp.to);
       /* a run keeps its plan: the switch flipped in the middle of a run changes neither the transport nor what the next lap expects */
       setMode('legacy');
       try {

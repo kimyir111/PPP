@@ -24,8 +24,8 @@ const ROWS = [
   ['W4', 'beginRun asks PianoScore.of again', [CALL_SITE("    const plan = keep ? tp.plan : practicePlan(S.score, from, to);", "    const plan = keep ? tp.plan : PianoScore.of(S.score, from, to);")], 'leak'],
   ['W5', 'startTransport asks PianoScore.of again', [CALL_SITE("    const plan = practicePlan(S.score, from, to);\n    const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);\n    const t0 = now + this.leadMs(now);",
     "    const plan = PianoScore.of(S.score, from, to);\n    const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);\n    const t0 = now + this.leadMs(now);")], 'leak,spies'],
-  ['W6', 'a transport planned again (hands changed) asks PianoScore.of again', [CALL_SITE("      const plan = practicePlan(S.score, from, to);\n      const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);\n      if (sq < -0.001",
-    "      const plan = PianoScore.of(S.score, from, to);\n      const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);\n      if (sq < -0.001")], 'leak'],
+  ['W6', 'a transport planned again (the range changed) asks PianoScore.of again', [CALL_SITE("      const plan = keepPlan ? tp.plan : practicePlan(S.score, from, to);\n      const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);\n      if (sq < -0.001",
+    "      const plan = keepPlan ? tp.plan : PianoScore.of(S.score, from, to);\n      const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);\n      if (sq < -0.001")], 'leak'],
   ['W7', 'the simulation (fire) asks PianoScore.of again', [CALL_SITE("    const plan = (PRACTICE_MODE === 'graph' && this._tp && this._tp.plan) || practicePlan(S.score, from, to);\n    const list = plan.strikes || [];", "    const plan = PianoScore.of(S.score, from, to);\n    const list = plan.strikes || [];")], 'leak'],
   ['W8', "follow mode's gates are the legacy ones under 'graph'", [["    const viaGraph = !!(gp && gp.graph && practiceModuleReady());", "    const viaGraph = false;"]], 'gates,leak'],
   /* the switch */
@@ -69,7 +69,11 @@ const ROWS = [
   ['W42', 'the warm-up never runs (the source of a large Score is never resolved)', [["  if (!PRACTICE_CACHE || !score || typeof score !== 'object') return Promise.resolve(false);", "  if (true) return Promise.resolve(false);"]], 'warm'],
   ['W43', 'a NOT_READY decision is never made again', [["  if (hit.reason === 'NOT_READY') return !!(bag && (bag.src || bag.warmFailedAt));", "  if (hit.reason === 'NOT_READY') return false;"]], 'warm'],
   ['W44', 'the keyboard hint asks for a plan at render and makes it on the spot', [["    const gp = practicePlanWarm(this.state.score, from, to);", "    const gp = practicePlan(this.state.score, from, to);"]], 'warm'],
-  ['W45', "the falling notes are drawn on the page's plan while a transport runs on another (a graph plan arrived under a run that began on the legacy one)", [["    const own = PRACTICE_MODE === 'graph' && S.playing && tpx && tpx.plan && tpx.key === this.transportKey(S) ? tpx.plan : null;", "    const own = null;"]], 'warm']
+  ['W45', "the falling notes are drawn on the page's plan while a transport runs on another (a graph plan arrived under a run that began on the legacy one)", [["    const own = PRACTICE_MODE === 'graph' && S.playing && tpx && tpx.plan && tpx.key === this.transportKey(S) ? tpx.plan : null;", "    const own = null;"]], 'warm'],
+  /* the review of #272 */
+  ['W46', 'a change of the key of the transport (tempo, hands) plans the run again on whatever plan the page has by now (a graph plan that arrived under a run the matcher began on the legacy one)', [["      const plan = keepPlan ? tp.plan : practicePlan(S.score, from, to);", "      const plan = practicePlan(S.score, from, to);"]], 'warm'],
+  ['W47', 'a piece with a D.C./D.S./Fine/To Coda mark waits for the warm-up like any other (its first run plays without the jump)', [["  if (practiceJumpMarked(score)) return true;", ""]], 'warm'],
+  ['W48', 'the warm-up of a song that is no longer open is made all the same', [["  const stale = () => { const A = window.PPP && window.PPP.app; return wasOpen && !!A && !!A.state && A.state.score !== score; };", "  const stale = () => false;"]], 'warm']
 ];
 
 function runSuitesOn(port, names) {

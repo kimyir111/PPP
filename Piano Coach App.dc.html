@@ -3714,7 +3714,7 @@ function setPracticeFix(v) {
   return practiceFixText(PRACTICE_FIX);
 }
 /* what 'graph' did: plans made from a graph (and how many followed a D.C./D.S./To Coda, and how many hold grace notes), and the plans that stayed legacy, by reason and by song (the id of the Score, like PPP.engraveStats.bySong) */
-const PRACTICE_STATS = { graph: 0, served: 0, jumps: 0, graces: 0, practiceFallback: { total: 0, reasons: {}, bySong: {} }, warm: { started: 0, done: 0, failed: 0, ms: 0 } };
+const PRACTICE_STATS = { graph: 0, served: 0, syncResolved: 0, jumps: 0, graces: 0, practiceFallback: { total: 0, reasons: {}, bySong: {} }, warm: { started: 0, done: 0, failed: 0, cancelled: 0, ms: 0 } };
 /* `graph` counts the plans MADE from a graph (by the player or by the warm-up); `served` counts the answers of practicePlan - what the player, the matcher, the falling notes and the gates were
    handed - that were graph plans (G11a-5: a suite on 'graph' proves the player used the graph by this, not by what the idle warm-up made) */
 function practiceServed(plan) { if (plan && plan.graph) PRACTICE_STATS.served++; return plan; }
@@ -3843,14 +3843,25 @@ const PRACTICE_RETRY = { NOT_LOADED: 1, NO_ENGRAVER: 1, RESOLVE_ERROR: 1, NO_GRA
 /* G11a-5 / TD31. Is the source of this Score (the graph that states its music, and the link of its notes to the graph's heads) already at hand, or would asking for it have to work it
    out here and now? It is at hand when it was resolved before (practiceWarm, or an earlier plan: bag.src); when warming it failed (the plan then does it as G11a-3 did: a plan is better
    late than legacy); when the engraver holds the producer's own graph for this very Score object (an import, a recording, an arrangement: the renderer, the save and the first Play are
-   all right after it); and when the Score is small, PRACTICE_SYNC_NOTES notes or fewer (the work is 0.12 ms a note at CPU 4x: 60 ms for 500 notes, measured cold). A large Score read back
-   from its slot has no producer's graph: its source is a projection of the Score (fromScore, agree, link: 230-245 ms at CPU 4x for the 1,900-note pieces after the page has settled,
-   340-400 ms in the frame that opens the song) and that is not worked out on the thread that plays. */
+   all right after it); when the Score is small, PRACTICE_SYNC_NOTES notes or fewer (the work is 0.12 ms a note at CPU 4x: 60 ms for 500 notes, measured cold); and when the Score carries a
+   mark that sends the player somewhere (a D.C., D.S., Fine or To Coda: the marks survive the slot, and a piece with a jump has one, 0 counterexamples in 225 catalogue pieces): the first run of
+   such a piece must not play without its jump, and for those pieces the synchronous resolve costs 109-117 ms at CPU 4x, less than the legacy player's own first plan at the Play tap
+   (129-149 ms). A large Score with none of these, read back from its slot, has no producer's graph: its source is a projection of the Score (fromScore, agree, link: 230-245 ms at CPU 4x for
+   the 1,900-note pieces after the page has settled, 340-400 ms in the frame that opens the song) and that is not worked out on the thread that plays. Grace notes cannot be told from the Score
+   (the legacy Score drops them): a first run in the window plays without them, unjudged ornaments. */
 const PRACTICE_SYNC_NOTES = 500;
+const PRACTICE_JUMP_MARKS = { dc: 1, ds: 1, fine: 1, tocoda: 1 };
+function practiceJumpMarked(score) {
+  const ms = score && score.marks;
+  if (!ms || !ms.length) return false;
+  for (let i = 0; i < ms.length; i++) if (PRACTICE_JUMP_MARKS[ms[i].kind] === 1) return true;
+  return false;
+}
 function practiceSourceAtHand(score, bag) {
   if (!PRACTICE_CACHE) return true;
   if (bag && (bag.src || bag.warmFailedAt)) return true;
   if (score.notes && score.notes.length <= PRACTICE_SYNC_NOTES) return true;
+  if (practiceJumpMarked(score)) return true;
   try { const Eng = practicePeek('PPPEngrave'); return !!(Eng && Eng.app.hasLive(score)); } catch (e) { return true; }
 }
 function practiceIdle(fn) {
@@ -3880,8 +3891,16 @@ function practiceWarm(score) {
   const t0 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
   W.started++;
   const fail = () => { bag.warming = null; bag.warmFailedAt = Date.now(); W.failed++; return false; };
+  /* a song that was open when it was asked for and is not any more is not worked out (a person flicking past three big cards would have the engraver project each: 110-230 ms a task at CPU 4x);
+     asked for again when it is open again. A Score that was never the open one (a probe's, a plan for a copy) is warmed as before. */
+  const A0 = window.PPP && window.PPP.app;
+  const wasOpen = !!(A0 && A0.state && A0.state.score === score);
+  const stale = () => { const A = window.PPP && window.PPP.app; return wasOpen && !!A && !!A.state && A.state.score !== score; };
+  const cancel = () => { bag.warming = null; W.cancelled++; return false; };
   bag.warming = practiceNeedModules().then(ok => ok ? new Promise(resolve => {
+    if (stale()) { resolve(cancel()); return; }
     const step2 = () => {
+      if (stale()) { resolve(cancel()); return; }
       try {
         const A = window.PPP && window.PPP.app, S = A && A.state;
         practiceGraphPlan(score, Score.first(score), Score.last(score));
@@ -3894,6 +3913,7 @@ function practiceWarm(score) {
       } catch (e) { resolve(fail()); }
     };
     practiceIdle(() => {
+      if (stale()) { resolve(cancel()); return; }
       try {
         const Eng = practicePeek('PPPEngrave');
         const A = window.PPP && window.PPP.app, S = A && A.state;
@@ -3943,6 +3963,8 @@ function practiceGraphPlan(score, from, to) {
   let entry;
   if (r.plan) {
     PRACTICE_STATS.graph++;
+    /* a large Score whose source was worked out here and now (a mark that sends the player somewhere, or a graph the engraver holds): counted, so that the cost of the rule can be seen */
+    if (!src0 && score.notes && score.notes.length > PRACTICE_SYNC_NOTES) PRACTICE_STATS.syncResolved++;
     if (r.plan.jumps && r.plan.jumps.length) PRACTICE_STATS.jumps++;
     if (r.plan.strikes.some(x => x.grace)) PRACTICE_STATS.graces++;
     entry = { plan: r.plan, graph: true };
@@ -15708,7 +15730,7 @@ class Component extends DCLogic {
       writtenStart: writtenStart, writtenEnd: writtenEnd,
       schedT: t0, skipTo: -Infinity, beat: b, soundQ: b0,
       born: now, waiting: !(p && p.running()) && !this.midiOutLive(),
-      plan: plan, from: from, to: to
+      plan: plan, from: from, to: to, score: S.score
     };
     this._playAlong = false;
     this._resume = null;
@@ -15774,7 +15796,10 @@ class Component extends DCLogic {
           t0 = heard; skip = sq;
         }
       }
-      const plan = practicePlan(S.score, from, to);
+      /* G11a-5 (review of #272, F1): a run keeps its plan. A change of the key (the tempo, the hands, the screen) that leaves the Score and the range alone is planned again for its scale only:
+         the matcher began on tp.plan (beginRun keeps it, lap after lap), and a graph plan that arrived meanwhile (practiceWarm) would put the transport on strikes the matcher does not expect. */
+      const keepPlan = PRACTICE_MODE === 'graph' && tp.plan && tp.score === S.score && tp.from === from && tp.to === to;
+      const plan = keepPlan ? tp.plan : practicePlan(S.score, from, to);
       const scale = (S.tempo || 84) / Math.max(1, S.score.tempo || 84);
       if (sq < -0.001 || sq >= plan.soundLengthQ) {
         this.startTransport(S, writtenStart);
@@ -15782,7 +15807,7 @@ class Component extends DCLogic {
       } else {
         Object.assign(tp, {
           b0: sq, t0: t0, scale: scale, msQ: 60000 / Math.max(1, S.tempo), key: key,
-          startB: 0, endB: plan.soundLengthQ, schedT: t0, skipTo: skip, plan: plan, soundQ: sq
+          startB: 0, endB: plan.soundLengthQ, schedT: t0, skipTo: skip, plan: plan, soundQ: sq, from: from, to: to, score: S.score
         });
       }
     }

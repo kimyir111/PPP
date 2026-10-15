@@ -499,6 +499,89 @@ async function sectionWarm(browser, url) {
   });
   check('the keyboard hint at render: today\'s rule, no plan made and nothing resolved on the spot, the warm-up asked once', q.open && q.hintRule && q.hintCalls === 0 && q.hintMade === 0 && q.hintWarmed === true, JSON.stringify(q));
   check('a transport that began on the legacy plan keeps its notes on that plan while the source arrives, and the next plan is the graph plan', q.tpLegacy && q.tlOnTransport && q.warmed2 === true && q.stillOnTransport && q.graphNow && q.afterStop, JSON.stringify(q));
+  /* review of #272: (B) a large saved piece that carries a D.C./D.S./Fine/To Coda mark is planned on the spot, with its jump, so that its first run never plays without it; (F1) a run that began
+     on the legacy plan keeps it when the key of the transport changes under it (tempo, hands): the transport and the matcher stay on one plan; (F3) the warm-up of a song that is no longer open
+     is not made */
+  const z = await h.page.evaluate(async () => {
+    const P = window.PPP, Probe = window.PPPSwitchProbe, app = P.app;
+    const pk = n => (window.PPP_LAZY && window.PPP_LAZY.peek ? window.PPP_LAZY.peek(n) : window[n]);
+    const E = pk('PPPEngrave').app;
+    const made = () => { const r = E.stats.resolved; return (r.live || 0) + (r.store || 0) + (r.projected || 0) + (r.none || 0); };
+    const copyOf = live => P.Score.finalize(P.unpackScore(JSON.parse(JSON.stringify(P.packScore(live)))));
+    const out = {};
+    const S0 = app.state, saved = {};
+    ['score', 'tempo', 'loop', 'loopFrom', 'loopTo', 'beat', 'playing', 'hands', 'practiceMode', 'screen'].forEach(k => { saved[k] = S0[k]; });
+    const savedTp = app._tp, savedPiano = app._piano, savedPerf = app._perf, savedSim = app._sim, savedSet = app.setState;
+    const hadOwnSet = Object.prototype.hasOwnProperty.call(app, 'setState');
+    const open = score => {
+      const S = app.state;
+      Object.assign(S, { score: score, tempo: score.tempo || 84, loop: false, loopFrom: P.Score.first(score), loopTo: P.Score.last(score), beat: 0, playing: false, hands: 'both', practiceMode: 'practice', screen: 'practice' });
+      return S;
+    };
+    const fakePiano = { running: () => true, wake: () => {}, now: () => 0, clockOffset: () => 0, strike: () => ({}), release: () => {}, click: () => {}, cancelAfter: () => {}, silence: () => {} };
+    try {
+      /* B: sonatina 015 is 961 notes with one D.C.; read back from its slot it has no producer's graph and carries its mark */
+      const dcLive = await Probe.loadScore({ file: 'catalog/method/sonatina/015.mxl' });
+      const dc = copyOf(dcLive);
+      out.dcNotes = dc.notes.length;
+      out.dcMarked = (dc.marks || []).some(k => ['dc', 'ds', 'fine', 'tocoda'].indexOf(k.kind) >= 0);
+      out.dcLive = E.hasLive(dc);
+      const f0 = P.practiceStats.practiceFallback.total, sr0 = P.practiceStats.syncResolved, m0 = made();
+      const pdc = P.practicePlan(dc, P.Score.first(dc), P.Score.last(dc));
+      out.dcGraph = !!pdc.graph;
+      out.dcJumps = pdc.jumps ? pdc.jumps.length : 0;
+      out.dcFallbacks = P.practiceStats.practiceFallback.total - f0;
+      out.dcSync = P.practiceStats.syncResolved - sr0;
+      out.dcMade = made() - m0;
+      /* F1: a big piece with no mark: the first plan is the legacy plan; the run begins on it; the source arrives; the tempo changes */
+      const big = copyOf(await Probe.loadScore({ file: 'catalog/method/sonatina/020.mxl' }));
+      let S = open(big);
+      app._piano = fakePiano; app._tp = null; app._sim = null;
+      app.setState = function () {};
+      const first = P.Score.first(big), last = P.Score.last(big);
+      app.beginRun(S, null, null);
+      app.startTransport(S, P.Score.startQ(big, first));
+      const tp = app._tp;
+      S.playing = true;            /* the page's own tick stops a transport that nobody is playing */
+      out.beganLegacy = !!tp && !tp.plan.graph && app._perf._plan === tp.plan;
+      out.warmedBig = await P.practiceWarm(big);
+      out.graphThere = !!P.practicePlan(big, first, last).graph;
+      S = app.state;
+      S.beat = tp.beat;            /* the playhead is where the transport put it: a seek would begin another run */
+      S.tempo = (S.tempo || 84) + 20;
+      app.advance(tp.t0 + 50);
+      out.keptAfterTempo = app._tp.plan === app._perf._plan && !app._tp.plan.graph;
+      S.hands = 'right';
+      app.advance(tp.t0 + 100);
+      out.keptAfterHands = app._tp.plan === app._perf._plan && !app._tp.plan.graph;
+      /* ...and a change of the range is planned again, from the graph (the matcher follows at the next lap) */
+      S.loop = true; S.loopFrom = first; S.loopTo = Math.min(last, first + 5);
+      app.advance(tp.t0 + 150);
+      out.replannedOnRange = !!app._tp.plan.graph && app._tp.to === S.loopTo;
+      /* F3: two copies of a big piece; the first was open when its warm-up was asked for, the second is open when it is to be done */
+      const liveC = await Probe.loadScore({ file: 'catalog/method/sonatina/016.mxl' });
+      const ca = copyOf(liveC), cb = copyOf(liveC);
+      open(ca);
+      const c0 = P.practiceStats.warm.cancelled, fl0 = P.practiceStats.warm.failed, m1 = made();
+      const pa = P.practiceWarm(ca);
+      open(cb);
+      out.cancelRes = await pa;
+      out.cancelMade = made() - m1;
+      out.cancelCount = P.practiceStats.warm.cancelled - c0;
+      out.cancelFailed = P.practiceStats.warm.failed - fl0;
+      out.openOne = await P.practiceWarm(cb);
+    } catch (e) {
+      out.error = String(e && e.message || e);
+    } finally {
+      if (hadOwnSet) app.setState = savedSet; else delete app.setState;
+      app._piano = savedPiano; app._tp = savedTp; app._perf = savedPerf; app._sim = savedSim;
+      Object.assign(app.state, saved);
+    }
+    return out;
+  });
+  check('B: a saved D.C. piece of more than 500 notes carries its mark, and its first plan is made on the spot, with the jump, counted as resolved on the spot and not as a fallback', !z.error && z.dcNotes > 500 && z.dcMarked && !z.dcLive && z.dcGraph && z.dcJumps > 0 && z.dcFallbacks === 0 && z.dcSync === 1 && z.dcMade >= 1, JSON.stringify(z));
+  check('F1: a run that began on the legacy plan keeps it, transport and matcher together, when the tempo or the hands change under it; another range is planned again', z.beganLegacy && z.warmedBig === true && z.graphThere && z.keptAfterTempo && z.keptAfterHands && z.replannedOnRange, JSON.stringify(z));
+  check('F3: the warm-up of a song that is no longer open is not made (nothing resolved, not counted as a failure), and the open one is', z.cancelRes === false && z.cancelMade === 0 && z.cancelCount === 1 && z.cancelFailed === 0 && z.openOne === true, JSON.stringify(z));
   check('the page ran without an error', h.errors.length === 0, h.errors.join(' | '));
   await h.close();
 }
