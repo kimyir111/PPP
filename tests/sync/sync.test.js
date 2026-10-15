@@ -28,6 +28,10 @@ async function main() {
     ok('stored: 16 MB a library, 48 MB an address, 128 MB the site (the sync cap of U3), warned at 80 %', Lm.LIB_BYTES === 16 * MiB && Lm.ADDRESS_BYTES === 48 * MiB && Lm.TOTAL_BYTES === 128 * MiB && Lm.WARN_AT === 0.8);
     ok('rates: 240 items written an hour, 20 wrong codes an hour, 300 items read an hour, 5 code changes an hour', Lm.WRITES_PER_HOUR === 240 && Lm.BAD_CODES_PER_HOUR === 20 && Lm.READ_ITEMS_PER_HOUR === 300 && Lm.ROTATES_PER_HOUR === 5);
     ok('bytes: the site reads at most 150 MB a day; a library and an address use a quarter of each budget at most', Lm.EGRESS_PER_DAY === 150 * MiB && Lm.BUDGET_SHARE === 0.25);
+    ok('a body has 60 s in all and 10 s without a byte; a request may be 6 MB; 8 bodies are received at once and 2 unpacked; 6 answers with bodies are made at once; an answer holds 6 MB of bodies; changes come 500 at a time',
+      Lm.BODY_TOTAL_MS === 60000 && Lm.BODY_IDLE_MS === 10000 && Lm.PUT_BODY === 6 * MiB && Lm.PUTS_AT_ONCE === 8 && Lm.PROCESS_AT_ONCE === 2 && Lm.READS_AT_ONCE === 6 && Lm.READ_BODY_CAP === 6 * MiB && Lm.CHANGES_PAGE === 500);
+    ok('rows: 3,000 to a library and 60,000 in all; requests that write: 120 an hour (480 for an address); deletions 60 an hour; changes that ask the database 120 an hour; code changes 20 an hour an address',
+      Lm.LIB_ROWS === 3000 && Lm.SITE_ROWS === 60000 && Lm.WRITE_REQUESTS_PER_HOUR === 120 && Lm.WRITE_REQUESTS_PER_IP_PER_HOUR === 480 && Lm.DELETES_PER_HOUR === 60 && Lm.CHANGES_SQL_PER_HOUR === 120 && Lm.ROTATES_PER_IP_PER_HOUR === 20);
     ok('the library is touched in the database at most once a day; the purge runs at most every 6 hours', Lm.TOUCH_MS === D && Lm.PURGE_EVERY_MS === 6 * 3600 * 1000);
     ok('the code is 64 hex and its id is domain separated (a PC link\'s code of the same bytes is another library)', (() => {
       const n = Sync.newLibrary();
@@ -339,9 +343,60 @@ async function main() {
       ok('a gzip of 5,000 nested arrays: 422 bad-item (and the process is alive: no stack overflow)', bad(r, 422, 'bad-item'));
       ok('(and nothing of any of those was stored)', (await S.inner.changes(S.libId('a'), 0, 99)).map(x => x.key).sort().join() === 'song:edge,song:p1,song:under,state', (await S.inner.changes(S.libId('a'), 0, 99)).map(x => x.key).join());
       /* batch size on the wire */
+      r = await put(Array.from({ length: 5 }, (_, i) => mk('song:w' + i, L.gz(Object.assign(L.songBody(8), { card: { t: L.crypto.randomBytes(860 * 1024).toString('base64') } })))));
+      ok('five items of ~860 KB of gzip each (4.3 MB of gzip, 5.7 MB of request: under the 6 MB the request may be, over the 4 MB of gzip): 413 batch-too-large, nothing stored', bad(r, 413, 'batch-too-large') && (await S.inner.changes(S.libId('a'), 0, 99)).every(x => !/^song:w/.test(x.key)), r.status + ' ' + r.text.slice(0, 100));
       r = await put(Array.from({ length: 6 }, (_, i) => mk('song:w' + i, L.gz(Object.assign(L.songBody(8), { card: { t: L.crypto.randomBytes(900 * 1024).toString('base64') } })))));
-      ok('six items of ~900 KB of gzip each (more than 4 MB of gzip in a request): refused (413 batch-too-large or too-large), nothing stored', (r.status === 413) && (await S.inner.changes(S.libId('a'), 0, 99)).every(x => !/^song:w/.test(x.key)), r.status + ' ' + r.text.slice(0, 100));
+      ok('six of them (7.2 MB of request, more than the 6 MB a request may be): 413 too-large, nothing stored', bad(r, 413, 'too-large') && (await S.inner.changes(S.libId('a'), 0, 99)).every(x => !/^song:w/.test(x.key)), r.status + ' ' + r.text.slice(0, 100));
     } finally { await S.close(); }
+  }
+
+  heading('long answers: changes come in pages, bodies in answers of at most 6 MB');
+  {
+    const S = await L.startSync({ libs: ['a'], memory: true });
+    try {
+      const A = S.as('a');
+      for (let b = 0; b < 21; b++) {
+        if (b % 9 === 8) S.advance(61 * 60 * 1000);
+        const r = await A.putItems(Array.from({ length: 25 }, (_, i) => L.item('song:p' + (b * 25 + i), L.songBody(5))));
+        if (r.status !== 200) throw new Error('page fixture: ' + r.status + ' ' + r.text.slice(0, 120));
+      }
+      const first = await A.changes(0);
+      ok('525 items: the first answer holds 500, says there is more, and where to go on from (nextSince = the last revision it gave)', first.status === 200 && first.body.items.length === 500 && first.body.more === true && first.body.nextSince === 500 && first.body.maxRev === 525 && first.body.items[499].rev === 500, JSON.stringify([first.body.items.length, first.body.more, first.body.nextSince]));
+      const rest = await A.changes(first.body.nextSince);
+      ok('the next answer holds the other 25, no more, and nextSince is the revision of the library: a device that has them asks nothing after it', rest.body.items.length === 25 && rest.body.more === false && rest.body.nextSince === 525 && rest.body.items[0].rev === 501, JSON.stringify([rest.body.items.length, rest.body.more, rest.body.nextSince]));
+      S.advance(61 * 60 * 1000);
+      for (let i = 0; i < 4; i++) await A.delItem('song:p' + i, i + 1);
+      const del = await A.changes(525);
+      ok('`deletions` counts the tombstones of an answer: the number a device asks about before it removes songs (G13 doc 7.5: more than three)', del.body.deletions === 4 && del.body.items.every(x => x.deleted === true), JSON.stringify([del.body.deletions, del.body.items.length]));
+      ok('...and a mixed answer counts only the tombstones', (await A.changes(520)).body.deletions === 4 && (await A.changes(520)).body.items.length === 9);
+    } finally { await S.close(); }
+    const S2 = await L.startSync({ libs: ['a'], memory: true });
+    try {
+      const A = S2.as('a');
+      const big = (k, i) => L.item(k, Object.assign(L.songBody(8), { card: { t: L.crypto.randomBytes(850 * 1024).toString('base64') + i } }));
+      await A.putItems([big('song:g0', 0), big('song:g1', 1), big('song:g2', 2), big('song:g3', 3)]);
+      await A.putItems([big('song:g4', 4), big('song:g5', 5), big('song:g6', 6), big('song:g7', 7)]);
+      const keys = Array.from({ length: 8 }, (_, i) => 'song:g' + i);
+      const r = await A.items(keys);
+      const inline = r.body.items.filter(i => i.body).length, deferred = r.body.items.filter(i => i.deferred).length;
+      const bodiesBytes = r.body.items.reduce((n, i) => n + (i.body ? Buffer.from(i.body, 'base64').length : 0), 0);
+      ok('eight items of ~870 KB of gzip (7 MB in all): an answer holds bodies up to 6 MB of gzip and says which items it deferred; the order asked for is kept', r.status === 200 && inline >= 6 && inline <= 7 && deferred === 8 - inline && bodiesBytes <= 6 * MiB
+        && r.body.items.slice(0, inline).every(i => !!i.body) && r.body.items.slice(inline).every(i => i.deferred === true && !i.body), JSON.stringify([inline, deferred, bodiesBytes]));
+      const more = await A.items(keys.slice(inline));
+      ok('and the deferred ones are asked for again and come', more.status === 200 && more.body.items.every(i => !!i.body && !i.deferred));
+    } finally { await S2.close(); }
+    const S3 = await L.startSync({ libs: ['a'], memory: true });
+    try {
+      const A = S3.as('a');
+      await A.putItems([L.item('song:one')]);
+      const code = S3.code('a');
+      const heads = (method, p, extra) => method + ' ' + p + ' HTTP/1.1\r\nHost: x\r\nX-PPP-Lib: ' + code + '\r\n' + extra + '\r\n';
+      const g = await rawHead(S3.port, heads('GET', '/api/sync/changes?since=0', 'Content-Length: 5\r\n') + 'hello');
+      const d = await rawHead(S3.port, heads('DELETE', '/api/sync/items/song%3Aone?baseRev=1', 'Content-Length: 5\r\n') + 'hello');
+      const t = await rawHead(S3.port, heads('GET', '/api/sync/changes?since=0', 'Transfer-Encoding: chunked\r\n') + '5\r\nhello\r\n0\r\n\r\n');
+      ok('a GET or a DELETE that carries a body is refused (400 no-body-expected) and the connection closed: the body is never read or held', g.status === 400 && d.status === 400 && t.status === 400 && /no-body-expected/.test(g.text), [g.status, d.status, t.status].join());
+      ok('(and the item was not deleted)', (await A.items(['song:one'])).body.items[0].deleted === false);
+    } finally { await S3.close(); }
   }
 
   heading('what a library may hold: bytes, rows; nothing is ever evicted');
@@ -691,8 +746,9 @@ async function main() {
         let st = (await T.anon.post('/api/libs', {}, { ip: ipA })).status;
         ok('(five made from one address, the sixth is refused)', st === 429);
         const del = await L.req(T.port, 'DELETE', '/api/libs/me', { headers: { 'X-PPP-Lib': codes[0] } });
+        await T.svc._state.purge(T.clock.t);
         st = (await T.anon.post('/api/libs', {}, { ip: ipA })).status;
-        ok('making and deleting is no way round the per-address limit: the deleted one still counts for the hour', del.status === 200 && st === 429, del.status + ' ' + st);
+        ok('making and deleting is no way round the per-address limit: the deleted one still counts for the hour (and a purge run at once does not take it: it is kept two days)', del.status === 200 && st === 429, del.status + ' ' + st);
         const rr = await L.req(T.port, 'GET', '/api/sync/changes?since=0', { headers: { 'X-PPP-Lib': codes[0] } });
         ok('the code of a deleted library says so (401 deleted), and is not counted as a wrong one', bad(rr, 401, 'deleted'));
         ok('the deleted library\'s items are gone from the store', (await T.inner.changes(Sync.libIdOf(Sync.codeHash(codes[0])), 0, 99)).length === 0);
@@ -701,6 +757,16 @@ async function main() {
         ok('two days later the deleted row is purged from the store', !(await T.inner.loadAll()).libs.some(l => l.id === Sync.libIdOf(Sync.codeHash(codes[0]))));
         ok('and after that its code is simply not a code (401 bad-code)', bad(await L.req(T.port, 'GET', '/api/sync/changes?since=0', { headers: { 'X-PPP-Lib': codes[0] } }), 401, 'bad-code'));
       } finally { await T.close(); }
+      /* changing the code is not making a library: it does not use the address's five an hour */
+      const U = await L.startSync({ memory: true });
+      try {
+        const cs = [];
+        for (let i = 0; i < 4; i++) cs.push((await U.anon.post('/api/libs', {}, { ip: '198.51.100.124' })).body.code);
+        const rot = await L.req(U.port, 'POST', '/api/libs/me/rotate', { headers: { 'X-PPP-Lib': cs[0] }, body: {} });
+        const fifth = await U.anon.post('/api/libs', {}, { ip: '198.51.100.124' });
+        const sixth = await U.anon.post('/api/libs', {}, { ip: '198.51.100.124' });
+        ok('four libraries made, one of them given a new code: the address may still make its fifth (not its sixth)', rot.status === 201 && fifth.status === 201 && sixth.status === 429, rot.status + ' ' + fifth.status + ' ' + sixth.status);
+      } finally { await U.close(); }
     } finally { await S.close(); }
   }
 

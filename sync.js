@@ -251,10 +251,10 @@ function create(deps) {
   }
 
   /* the unpacking of items, a few at a time (FIFO; the places above bound how many wait): the token is handed to the next waiter, never given back first */
-  let processing = 0;
+  let processing = 0, processingPeak = 0;
   const processWaiters = [];
   async function heavy(fn) {
-    if (processing >= C.processAtOnce) await new Promise(r => processWaiters.push(r)); else processing++;
+    if (processing >= C.processAtOnce) await new Promise(r => processWaiters.push(r)); else { processing++; if (processing > processingPeak) processingPeak = processing; }
     try { return await fn(); } finally { const w = processWaiters.shift(); if (w) w(); else processing--; }
   }
   let readsNow = 0;
@@ -913,7 +913,7 @@ function create(deps) {
     isDisabled: () => !!disabledWhy,
     /* for tests */
     _state: { libs: libs, rotatedTo: rotatedTo, limiters: limiters, stats: stats, config: C, budget: (kind, t) => ({ hour: budget[kind].hour.used(t), day: budget[kind].day.used(t) }),
-      isLoaded: () => loaded, forgetAll: () => { loaded = false; }, purge: t => purgeIfDue(t, true), slots: slots, window: () => win }
+      isLoaded: () => loaded, forgetAll: () => { loaded = false; }, purge: t => purgeIfDue(t, true), slots: slots, window: () => win, peakProcessing: () => processingPeak }
   };
 }
 
