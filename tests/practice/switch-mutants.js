@@ -1,4 +1,4 @@
-/* G11a-3: mutation checks of the practice switch (tests/practice/switch.js). One line of the app's page is BROKEN on its way to the browser (the proxy of lib.js rewrites it; no file is
+/* G11a-3, G11a-5: mutation checks of the practice switch (tests/practice/switch.js). One line of the app's page is BROKEN on its way to the browser (the proxy of lib.js rewrites it; no file is
    touched), and the switch test, run on the sections the row names, must go RED. A row that survives is a rule nothing watches; a row whose line is no longer in the page is STALE and
    fails too (a mutation that silently stops applying would pass as a mutant nobody killed). The control (nothing broken) must be green.
 
@@ -29,20 +29,20 @@ const ROWS = [
   ['W7', 'the simulation (fire) asks PianoScore.of again', [CALL_SITE("    const plan = (PRACTICE_MODE === 'graph' && this._tp && this._tp.plan) || practicePlan(S.score, from, to);\n    const list = plan.strikes || [];", "    const plan = PianoScore.of(S.score, from, to);\n    const list = plan.strikes || [];")], 'leak'],
   ['W8', "follow mode's gates are the legacy ones under 'graph'", [["    const viaGraph = !!(gp && gp.graph && practiceModuleReady());", "    const viaGraph = false;"]], 'gates,leak'],
   /* the switch */
-  ['W9', "legacy is no longer the default", [["const PRACTICE_DEFAULT = 'legacy';", "const PRACTICE_DEFAULT = 'graph';"]], 'switch'],
-  ['W10', 'a value that is neither legacy nor graph is graph', [["function practiceChoice(v) { return v === 'legacy' || v === 'graph' ? v : null; }", "function practiceChoice(v) { return v === 'legacy' ? v : v ? 'graph' : null; }"]], 'switch'],
-  ['W11', 'a localStorage that throws gives graph', [["  try { m = practiceChoice(localStorage.getItem(PRACTICE_KEY)) || m; } catch (e) { /* no storage: the default */ }", "  try { m = practiceChoice(localStorage.getItem(PRACTICE_KEY)) || m; } catch (e) { m = 'graph'; }"]], 'switch'],
-  ['W12', "a page on 'legacy' asks for practice/plan.js at start", [["if (PRACTICE_MODE === 'graph') loadPracticeModule();", "loadPracticeModule();"]], 'switch'],
+  ['W9', "graph is no longer the default (the flip of G11a-5 undone)", [["const PRACTICE_DEFAULT = 'graph';", "const PRACTICE_DEFAULT = 'legacy';"]], 'switch'],
+  ['W10', 'a value that is neither legacy nor graph is legacy', [["function practiceChoice(v) { return v === 'legacy' || v === 'graph' ? v : null; }", "function practiceChoice(v) { return v === 'graph' ? v : v ? 'legacy' : null; }"]], 'switch'],
+  ['W11', 'a localStorage that throws gives legacy', [["  try { m = practiceChoice(localStorage.getItem(PRACTICE_KEY)) || m; } catch (e) { /* no storage: the default */ }", "  try { m = practiceChoice(localStorage.getItem(PRACTICE_KEY)) || m; } catch (e) { m = 'legacy'; }"]], 'switch'],
+  ['W12', "the module is read with a plain read of window.PPPPractice (a synchronous load of the group on the thread that plays)", [["    return (L && typeof L.peek === 'function' ? L.peek(name) : window[name]) || null;", "    return window[name] || null;"]], 'switch'],
   ['W13', "legacy is not PianoScore.of itself (a copy of its plan)", [["  if (PRACTICE_MODE !== 'graph') return PianoScore.of(score, from, to);", "  if (PRACTICE_MODE !== 'graph') return Object.assign({}, PianoScore.of(score, from, to));"]], 'switch'],
   ['W14', 'the setter does not ask for the module', [["  if (c === 'graph') loadPracticeModule();", ""]], 'switch'],
   /* the fallback */
   ['W15', 'a fallback is not counted', [["    practiceCountFallback(score, r.reason);", ""]], 'fallbacks'],
   ['W16', 'a link that is not ok is used', [["  if (!src.link || !src.link.ok) return { reason: 'LINK_FAILED' };", "  if (!src.link) return { reason: 'LINK_FAILED' };"]], 'fallbacks'],
   ['W17', 'a plan that cannot be built is thrown into the player', [["    return { reason: 'BUILD_ERROR' };", "    throw e;"]], 'fallbacks'],
-  ['W18', 'a fallback is never decided again', [["  if (hit && (hit.graph || !(hit.tries < 5 && PRACTICE_RETRY[hit.reason] && hit.stamp !== practiceStamp()))) return hit.plan;", "  if (hit) return hit.plan;"]], 'fallbacks'],
-  ['W19', 'nothing is kept: every ask builds again', [["  if (hit && (hit.graph || !(hit.tries < 5 && PRACTICE_RETRY[hit.reason] && hit.stamp !== practiceStamp()))) return hit.plan;", "  if (false) return hit.plan;"]], 'fallbacks'],
-  ['W28', 'a fallback is decided again at every ask (the stamp is not looked at)', [["hit.tries < 5 && PRACTICE_RETRY[hit.reason] && hit.stamp !== practiceStamp()", "hit.tries < 5 && PRACTICE_RETRY[hit.reason]"]], 'fallbacks'],
-  ['W29', 'a fallback is decided again for ever (no limit on the tries)', [["hit.tries < 5 && PRACTICE_RETRY", "PRACTICE_RETRY"]], 'fallbacks'],
+  ['W18', 'a fallback is never decided again', [["  if (hit && (hit.graph || !practiceRetryable(hit, bag))) return hit.plan;", "  if (hit) return hit.plan;"]], 'fallbacks'],
+  ['W19', 'nothing is kept: every ask builds again', [["  if (hit && (hit.graph || !practiceRetryable(hit, bag))) return hit.plan;", "  if (false) return hit.plan;"]], 'fallbacks'],
+  ['W28', 'a fallback is decided again at every ask (the stamp is not looked at)', [["  return hit.tries < 5 && !!PRACTICE_RETRY[hit.reason] && hit.stamp !== practiceStamp();", "  return hit.tries < 5 && !!PRACTICE_RETRY[hit.reason];"]], 'fallbacks'],
+  ['W29', 'a fallback is decided again for ever (no limit on the tries)', [["  return hit.tries < 5 && !!PRACTICE_RETRY[hit.reason] && hit.stamp !== practiceStamp();", "  return !!PRACTICE_RETRY[hit.reason] && hit.stamp !== practiceStamp();"]], 'fallbacks'],
   ['W30', 'a plan that cannot be built is decided again whenever the engraver has been busy', [["const PRACTICE_RETRY = { NOT_LOADED: 1, NO_ENGRAVER: 1, RESOLVE_ERROR: 1, NO_GRAPH: 1, LINK_FAILED: 1 };", "const PRACTICE_RETRY = { NOT_LOADED: 1, NO_ENGRAVER: 1, RESOLVE_ERROR: 1, NO_GRAPH: 1, LINK_FAILED: 1, BUILD_ERROR: 1, MEASURES: 1, IDENTITY: 1, EMPTY: 1 };"]], 'fallbacks'],
   ['W20', 'a plan made from the graph is not counted', [["    PRACTICE_STATS.graph++;", ""]], 'switch,fallbacks'],
   /* the plan the player reads */
@@ -61,7 +61,15 @@ const ROWS = [
   ['W38', "practicePlan returns the legacy plan under 'graph': the practice suites on --practice graph say the graph plan was not engaged", [["  return practiceGraphPlan(score, from, to);", "  return PianoScore.of(score, from, to);"]], 'suites:playback-scheduler'],
   ['W37', 'the bar index of an expected note is one bar early', [["        mIdx: s.visit ? s.visit.index : undefined,", "        mIdx: s.visit ? Math.max(0, s.visit.index - 1) : undefined,"]], 'matcher'],
   ['W26', 'the matcher\'s result has no byMeasureIdx', [["      byMeasureIdx: byMeasureIdx,", ""]], 'matcher'],
-  ['W27', "the module's plan is built for the Score's tempo of 120, not the Score's", [["  const qpm = +score.tempo > 0 && isFinite(+score.tempo) ? +score.tempo : 84;", "  const qpm = 120;"]], 'spies,sweep']
+  ['W27', "the module's plan is built for the Score's tempo of 120, not the Score's", [["  const qpm = +score.tempo > 0 && isFinite(+score.tempo) ? +score.tempo : 84;", "  const qpm = 120;"]], 'spies,sweep'],
+  /* G11a-5 (TD31): the source of a large song read back from its slot is worked out in idle time, not on the thread that plays */
+  ['W39', 'a large Score read back from its slot is resolved on the spot (the size bound is no bound)', [["const PRACTICE_SYNC_NOTES = 500;", "const PRACTICE_SYNC_NOTES = 1e9;"]], 'warm'],
+  ['W40', 'a small Score waits too (every Score without a producer\'s graph is NOT_READY)', [["const PRACTICE_SYNC_NOTES = 500;", "const PRACTICE_SYNC_NOTES = -1;"]], 'warm'],
+  ['W41', 'a Score the engraver holds the producer\'s graph of waits too', [["  try { const Eng = practicePeek('PPPEngrave'); return !!(Eng && Eng.app.hasLive(score)); } catch (e) { return true; }", "  return false;"]], 'warm'],
+  ['W42', 'the warm-up never runs (the source of a large Score is never resolved)', [["  if (!PRACTICE_CACHE || !score || typeof score !== 'object') return Promise.resolve(false);", "  if (true) return Promise.resolve(false);"]], 'warm'],
+  ['W43', 'a NOT_READY decision is never made again', [["  if (hit.reason === 'NOT_READY') return !!(bag && (bag.src || bag.warmFailedAt));", "  if (hit.reason === 'NOT_READY') return false;"]], 'warm'],
+  ['W44', 'the keyboard hint asks for a plan at render and makes it on the spot', [["    const gp = practicePlanWarm(this.state.score, from, to);", "    const gp = practicePlan(this.state.score, from, to);"]], 'warm'],
+  ['W45', "the falling notes are drawn on the page's plan while a transport runs on another (a graph plan arrived under a run that began on the legacy one)", [["    const own = PRACTICE_MODE === 'graph' && S.playing && tpx && tpx.plan && tpx.key === this.transportKey(S) ? tpx.plan : null;", "    const own = null;"]], 'warm']
 ];
 
 function runSuitesOn(port, names) {

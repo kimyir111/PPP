@@ -27,7 +27,8 @@ const PAGE = 'Piano%20Coach%20App.dc.html';
 const GROUP_URL = {
   score: /\/scoregraph\/[\w-]+\.js\?h=/, engrave: /\/engrave\/[\w-]+\.js\?h=/,       /* the head's eight files and the fifteen the drawing code loads when a view asks */
   audio: /\/audio-score\.js\?h=/, arranger: /\/(playability|difficulty|songgraph|arrangement|realize)\/[\w-]+\.js\?h=/,
-  backup: /\/library-backup\.js\?h=/, lessons: /\/lessons\.js\?h=/
+  backup: /\/library-backup\.js\?h=/, lessons: /\/lessons\.js\?h=/,
+  practice: /\/practice\/plan\.js\?h=/     /* G11a-5: the practice plan, the default player */
 };
 const groupsRe = (...names) => new RegExp(names.map(n => GROUP_URL[n].source).join('|'));
 const ANY_LAZY = new RegExp(Object.values(GROUP_URL).map(r => r.source).join('|'));
@@ -91,8 +92,8 @@ test('on (the default): no deferred file is asked for before the first paint; al
   const o = await open();
   try {
     assert.equal(await o.page.evaluate(() => window.PPP.split), 'on');
-    /* the six groups of the head, and the fifteen drawing files Home's thumbnail makes up (engravePage) */
-    await o.page.waitForFunction(() => { const g = window.PPP_LAZY.status().groups; return g.length >= 7 && g.every(x => x.done); }, { timeout: 30000 });
+    /* the seven groups of the head (G11a-5 added practice), and the fifteen drawing files Home's thumbnail makes up (engravePage) */
+    await o.page.waitForFunction(() => { const g = window.PPP_LAZY.status().groups; return g.length >= 8 && g.every(x => x.done); }, { timeout: 30000 });
     const fcp = await o.page.evaluate(() => { const e = performance.getEntriesByName('first-contentful-paint')[0]; return e ? performance.timeOrigin + e.startTime : null; });
     assert.ok(fcp, 'a first contentful paint');
     const lazyReqs = o.requests.filter(r => ANY_LAZY.test(r.url));
@@ -102,7 +103,7 @@ test('on (the default): no deferred file is asked for before the first paint; al
     assert.deepEqual(early.map(r => r.url), [], 'no deferred file before the first contentful paint');
     const s = await lazy(o.page);
     assert.equal(s.syncLoads, 0, 'nothing had to be loaded synchronously: ' + JSON.stringify(s.syncLog));
-    assert.deepEqual(s.groups, ['backup:done', 'score:done', 'arranger:done', 'audio:done', 'engrave:done', 'lessons:done', 'engravePage:done']);
+    assert.deepEqual(s.groups, ['backup:done', 'score:done', 'arranger:done', 'audio:done', 'engrave:done', 'practice:done', 'lessons:done', 'engravePage:done']);
     assert.equal(await o.page.evaluate(() => typeof Object.getOwnPropertyDescriptor(window, 'PPPScoreGraph').get), 'undefined', 'plain properties again once everything is in');
     noErrors(o);
   } finally { await o.close(); }
@@ -113,9 +114,9 @@ test('on: the page is the page there was - the same globals, Home draws its thum
   try {
     await o.page.waitForFunction(() => window.PPP_LAZY.status().groups.every(g => g.done), { timeout: 30000 });
     await o.page.waitForFunction(() => document.querySelectorAll('.ppp-score svg.ppp-engraved').length >= 1, { timeout: 30000 });
-    const g = await o.page.evaluate(() => ['PPPScoreGraph', 'PPPScoreGraphModules', 'PPPAudioScore', 'PPPSongGraph', 'PPPRealize', 'PPPArrangement', 'PPPPlayability', 'PPPDifficulty', 'PPPEngrave', 'PPPEngraveModules', 'PPPBackup', 'PPP_LESSONS', 'PPPEngravePage']
+    const g = await o.page.evaluate(() => ['PPPScoreGraph', 'PPPScoreGraphModules', 'PPPAudioScore', 'PPPSongGraph', 'PPPRealize', 'PPPArrangement', 'PPPPlayability', 'PPPDifficulty', 'PPPEngrave', 'PPPEngraveModules', 'PPPPractice', 'PPPBackup', 'PPP_LESSONS', 'PPPEngravePage']
       .map(n => n + ':' + typeof window[n]).join(' '));
-    assert.equal(g, 'PPPScoreGraph:object PPPScoreGraphModules:object PPPAudioScore:object PPPSongGraph:object PPPRealize:object PPPArrangement:object PPPPlayability:object PPPDifficulty:object PPPEngrave:object PPPEngraveModules:object PPPBackup:object PPP_LESSONS:object PPPEngravePage:object');
+    assert.equal(g, 'PPPScoreGraph:object PPPScoreGraphModules:object PPPAudioScore:object PPPSongGraph:object PPPRealize:object PPPArrangement:object PPPPlayability:object PPPDifficulty:object PPPEngrave:object PPPEngraveModules:object PPPPractice:object PPPBackup:object PPP_LESSONS:object PPPEngravePage:object');
     const urls = o.requests.filter(r => ANY_LAZY.test(r.url));
     assert.ok(urls.every(r => /\?h=[0-9a-f]{12}$/.test(r.url)), 'every deferred file is asked for by its content hash (so the browser may keep it for good)');
     noErrors(o);

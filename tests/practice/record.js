@@ -206,7 +206,7 @@ const flag = name => process.argv.indexOf(name) >= 0;
 async function withPage(url, fn) {
   let srv = null;
   if (!url) { srv = await L.serve(); url = srv.url; }
-  const app = await L.openApp(url);
+  const app = await L.openApp(url, { practice: 'legacy' });   /* G11a-5: the recorder is about the legacy player, which is no longer the page's default */
   try { return await fn(app.page, url); }
   finally { await app.close(); if (srv) await srv.close(); }
 }

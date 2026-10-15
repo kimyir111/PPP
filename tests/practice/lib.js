@@ -50,6 +50,10 @@ async function serve() {
 
 /* A page on `url` that has booted the app (window.PPP.app exists) and carries the canon functions as window.PPPPracticeCanon.
    opts.cpu       CPU throttle rate (1 = none)
+   opts.practice  'legacy' | 'graph': the remembered choice of PPP.practice, set before the app runs (G11a-5: the page's own default is 'graph', so a probe that is about the legacy player
+                  says so; nothing set = the page's own default)
+   opts.settle    wait until every deferred group of the page is in (PPP_LAZY, G13-4e) before returning: a probe that adds its own copy of a module with addScriptTag would otherwise
+                  race the prefetch, which brings the page's own copy of practice/plan.js (G11a-5) over it
    opts.fakeMidi  a function installed before the page's scripts (evaluateOnNewDocument), e.g. a fake Web MIDI input
    opts.width/height  viewport */
 async function openApp(url, opts) {
@@ -59,10 +63,12 @@ async function openApp(url, opts) {
   await page.setViewport({ width: opts.width || 1280, height: opts.height || 860 });
   await preparePage(page);
   if (opts.fakeMidi) await page.evaluateOnNewDocument(opts.fakeMidi);
+  if (opts.practice) await page.evaluateOnNewDocument(v => { try { localStorage.setItem('ppp.practice.v1', v); } catch (e) { /* no storage */ } }, opts.practice);
   const problems = [];
   page.on('pageerror', e => problems.push('pageerror: ' + e.message));
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForFunction(() => window.PPP && window.PPP.app && window.PPP.PianoScore && window.PPPScoreGraph, { timeout: 60000 });
+  if (opts.settle) await page.waitForFunction(() => { const L = window.PPP_LAZY; return !L || typeof L.status !== 'function' || L.status().mode !== 'on' || (L.status().groups.length > 0 && L.status().groups.every(g => g.done)); }, { timeout: 90000 });
   await page.addScriptTag({ content: CANON_SRC });
   let cdp = null;
   if (opts.cpu && opts.cpu !== 1) {

@@ -516,6 +516,8 @@
     rec.dangling = dangling.length;
     if (!dangling.length) { rec.fail.push('no tie that leads nowhere in this piece'); return rec; }
     const n = dangling[0];
+    /* G11a-5: the hint is asked at every render and does not make a plan of a large Score on the spot: its source is worked out in idle time (the page's own warm-up). A render is long after that; here it is waited for. */
+    await PPP.practiceWarm(score);
     for (const fix of ['on', 'off', 'jumps,graces,repeats']) {
       await inMode(fix, async () => {
         const patch = stateFor(score, w);

@@ -51,7 +51,8 @@ const ROWS = [
 
 function runSuites(port, names) {
   return new Promise(resolve => {
-    const child = spawn(process.execPath, [path.join(__dirname, 'run-suites.js'), '--port', String(port), '--only', names.join(','), '--log-dir', path.join(__dirname, 'out', 'mutant-suites')],
+    /* G11a-5: the rows break the LEGACY player (PianoScore) and its follow gates, and the suites named were measured on it: they run on the explicit legacy choice (the page's default is the graph plan now) */
+    const child = spawn(process.execPath, [path.join(__dirname, 'run-suites.js'), '--port', String(port), '--practice', 'legacy', '--only', names.join(','), '--log-dir', path.join(__dirname, 'out', 'mutant-suites')],
       { cwd: L.ROOT, env: process.env, stdio: ['ignore', 'pipe', 'pipe'] });
     let text = '';
     child.stdout.on('data', d => { text += d; });

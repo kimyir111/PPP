@@ -155,6 +155,9 @@ function build(opts) {
   });
   const methodsObj = '({\n' + x.methods.map(m => m.text).join(',\n') + '\n})';
   const code = x.engines.map(c => c.text).join('\n') + '\n' +
+    /* G11a-5: the page's default player is the graph plan now, which needs a page, the engraver and practice/plan.js: none of them is in this vm. The policy under test is what the app does
+       with the LEGACY plan (practicePlan is then PianoScore.of, as before G11a-5), so the choice is made explicitly, once, here */
+    "PRACTICE_MODE = 'legacy';\n" +
     'const __methods = ' + methodsObj + ';\n' +
     'const __stateInit = () => ' + x.stateInit + ';\n' +
     'const __startToday = function (S) {\n' + x.startToday + '};\n' +

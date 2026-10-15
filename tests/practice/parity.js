@@ -460,7 +460,8 @@ async function spiesInPage(items, opts) {
 
 /* ---- running ---- */
 async function openParityApp(url, planSource) {
-  const app = await L.openApp(url);
+  /* G11a-5: the legacy player is the oracle (the page's own default is the graph plan now), and the page's own copy of practice/plan.js has arrived before the one under test is added */
+  const app = await L.openApp(url, { practice: 'legacy', settle: true });
   await app.page.addScriptTag({ content: fs.readFileSync(CORE_SRC, 'utf8') });
   await app.page.addScriptTag({ content: planSource });
   const ok = await app.page.evaluate(() => !!(window.PPPPractice && window.PPPPractice.plan && window.PPPParity && window.PPPEngraveModules && window.PPPEngraveModules.source));

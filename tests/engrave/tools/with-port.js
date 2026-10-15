@@ -25,9 +25,10 @@ const http = require('http');
 const TO = process.env.PPP_PORT || '8793';
 const STRICT = process.env.PPP_STRICT === '1';
 const KEEP_8788 = process.env.PPP_KEEP_8788 === '1';
-/* PPP_PRACTICE=graph (G11a-3): every document the suite opens starts on PPP.practice 'graph' (the remembered choice, set before the app runs - the same way PPP_STRICT works), so a
-   suite written for the legacy player is run against the graph plan without being edited. Nothing set (or any other value): the page's own default. */
-const PRACTICE = process.env.PPP_PRACTICE === 'graph' ? 'graph' : '';
+/* PPP_PRACTICE=legacy|graph (G11a-3, G11a-5): every document the suite opens starts on PPP.practice 'legacy' or 'graph' (the remembered choice, set before the app runs - the same way
+   PPP_STRICT works), so a suite is run against either player without being edited. Since G11a-5 the page's own default is 'graph': PPP_PRACTICE=legacy is the explicit way back, and
+   nothing set (or any other value) is the page's own default, which the summary line below reports. */
+const PRACTICE = process.env.PPP_PRACTICE === 'graph' || process.env.PPP_PRACTICE === 'legacy' ? process.env.PPP_PRACTICE : '';
 /* PPP_SPLIT=on|off (G13-4e): every document the suite opens starts with PPP.split remembered as that (localStorage 'ppp.split.v1', set before the app runs), so a suite is run on
    the lazy page or on the page with every script in its head without being edited. PPP_SPLIT_START=0 also keeps the idle prefetch from starting ('ppp.splitStart'): only what the
    page itself asks for is loaded, and every read that came too early shows in the "split sync loads" line (a caller without PPP_LAZY.ensure). Nothing set: the page's own default. */
@@ -193,7 +194,7 @@ process.on('exit', () => {
   if (summary.songs.length) process.stdout.write('[with-port]   songs: ' + summary.songs.join('; ') + '\n');
   /* G11a-3: which practice plan the suite ran on, and what the graph plan did (plans made from a graph; plans that stayed legacy, by reason) */
   const pr = summary.practice;
-  if (PRACTICE || pr.graph || pr.fallback) {
+  if (PRACTICE || pr.graph || pr.fallback || pr.modes.size) {
     process.stdout.write('[with-port]   practice ' + ([...pr.modes].join('/') || '?') + ': graph plans ' + pr.graph + ', fallbacks ' + pr.fallback +
       (pr.fallback ? ' (' + Object.keys(pr.reasons).map(k => k + ' ' + pr.reasons[k]).join(', ') + ')' : '') + '\n');
   }

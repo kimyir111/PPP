@@ -36,7 +36,7 @@ class PathClasses(unittest.TestCase):
         return practice_plan.path_class(p)
 
     def test_the_page_the_practice_modules_and_the_suites_run(self):
-        for p in ("Piano Coach App.dc.html", "practice/plan.js", "practice/sub/x.js", "tests/follow.test.js", "tests/midi.test.js",
+        for p in ("Piano Coach App.dc.html", "practice/plan.js", "practice/sub/x.js", "tests/follow.test.js", "tests/midi.test.js", "lazy-load.js",
                   "tests/boot.js", "tests/serve-free.js", "tests/engrave/tools/with-port.js", "package.json", "package-lock.json"):
             self.assertTrue(self.cls(p)[0], p)
 
@@ -56,7 +56,7 @@ class PathClasses(unittest.TestCase):
             self.assertEqual(self.cls(p), (True, True), p)
 
     def test_the_page_a_suite_and_the_node_tests_of_practice_do_not_run_the_mutation_check(self):
-        for p in ("Piano Coach App.dc.html", "tests/follow.test.js", "practice/plan.js", "practice/variant.js", "package.json",
+        for p in ("Piano Coach App.dc.html", "tests/follow.test.js", "practice/plan.js", "practice/variant.js", "package.json", "lazy-load.js",
                   "tests/practice/plan.test.js", "tests/practice/helpers.js", "tests/practice/fixtures/pedals.musicxml",
                   "tests/practice/parity-core.test.js", "tests/practice/fixtures/parity/dangling-ties.musicxml"):
             self.assertEqual(self.cls(p), (True, False), p)

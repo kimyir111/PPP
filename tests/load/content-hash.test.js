@@ -364,7 +364,7 @@ test('G13-4e: the deferred blocks of the head are named by hash, lazy-load.js co
   const head = headOf(served);
   const blocks = [...head.matchAll(/<noscript data-ppp-lazy="([^"]+)"([^>]*)>([\s\S]*?)<\/noscript>/g)];
   assert.ok(blocks.length >= 6, 'the head has its deferred blocks (' + blocks.length + ')');
-  assert.deepEqual(blocks.map(b => b[1]), ['backup', 'score', 'arranger', 'audio', 'engrave', 'lessons']);
+  assert.deepEqual(blocks.map(b => b[1]), ['backup', 'score', 'arranger', 'audio', 'engrave', 'practice', 'lessons']);
   assert.ok(head.indexOf('./lazy-load.js?h=') > -1 && head.indexOf('./lazy-load.js?h=') < head.indexOf('<noscript data-ppp-lazy'), 'the module that reads the blocks comes first');
   assert.ok(head.indexOf('./i18n.js?h=') < head.indexOf('./lazy-load.js?h='), 'and after i18n.js, the first script of the page (the order the pairing test pins)');
   /* each block is followed by the call that registers it, and nothing else sits between */
