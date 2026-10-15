@@ -109,6 +109,16 @@ function randomCommand(g, rnd) {
 
 /* ------------------------------------------------------------------------------------------------ the invariants */
 const comparable = sc => JSON.stringify(SG.legacy.comparable(sc));
+/* how many notes sound other than their notation says (a printed accidental, the one before it in the bar, the key): an edit never makes this number larger -
+   a note that sounded what it said goes on doing so, and the one the edit set is set from its notation */
+function inconsistent(g) {
+  const idx = new Map(g.timeline.measures.map((m, i) => [m.id, i]));
+  let n = 0;
+  g.parts.forEach(p => p.staves.forEach(st => g.timeline.measures.forEach(m => {
+    L.OPS.walk(g, idx, p, st.id, m.id).forEach(x => { if (x.implied !== undefined && (x.h.pitch.alter || 0) !== x.implied) n++; });
+  })));
+  return n;
+}
 function sound(g, label) {
   const bad = L.check(g, label);
   assert.equal(bad, null, bad);
@@ -179,6 +189,11 @@ async function sequence(fx, seed, steps) {
     applied++;
     assert.notEqual(session.graph, before, label + ': a change that is no new graph');
     sound(session.graph, label + ' ' + cmd.op);
+    /* the carry of an accidental is kept: no note starts to sound other than its notation says because of an edit elsewhere */
+    {
+      const a = inconsistent(before), b = inconsistent(session.graph);
+      assert.ok(b <= a, label + ' ' + cmd.op + ': ' + (b - a) + ' more note(s) sound other than their notation says (' + a + ' -> ' + b + ')');
+    }
     if (i % 3 === 0) drawable(session.graph, rnd, label + ' ' + cmd.op);
     if (i % 8 === 0) fullDraw(session.graph, label + ' ' + cmd.op);
     seen.push(session.graph);
