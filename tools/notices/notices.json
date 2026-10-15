@@ -3,26 +3,6 @@
   "cdn": {
     "_about": "Packages the served code (the page, support.js and the modules it loads) names at cdn.jsdelivr.net/npm, unpkg.com or esm.sh. Every package found there must have a row here, and a row whose package is no longer named (it was vendored) must go: build.js --check says which.",
     "packages": {
-      "pdfjs-dist": {
-        "name": "pdf.js",
-        "licence": "Apache-2.0",
-        "use": "reading a PDF or a photo of a score (the import screen); loaded only when one is added"
-      },
-      "@tensorflow/tfjs": {
-        "name": "TensorFlow.js",
-        "licence": "Apache-2.0",
-        "use": "the in-browser recording transcription (version 2.8.6 with Magenta.js) and the Basic Pitch path (version 3.21.0); loaded only when a recording is converted in the browser"
-      },
-      "@magenta/music": {
-        "name": "Magenta.js",
-        "licence": "Apache-2.0",
-        "use": "the in-browser recording transcription (Onsets and Frames); loaded only when a recording is converted in the browser"
-      },
-      "@spotify/basic-pitch": {
-        "name": "Basic Pitch",
-        "licence": "Apache-2.0",
-        "use": "the in-browser note detection path and its model; loaded only when a recording is converted in the browser"
-      },
       "@babel/standalone": {
         "name": "Babel standalone",
         "licence": "MIT",
@@ -30,9 +10,13 @@
       }
     },
     "fallbackOf": {
-      "_about": "npm packages that PPP serves itself (vendor/) and that the page names at a CDN only as the way back (?cdn=1). They need no row of their own here.",
+      "_about": "npm packages that PPP serves itself (vendor/) and that the page names at a CDN only as the way back (?cdn=1, or when PPP's own copy cannot be fetched). They need no row of their own here: the section of vendor/README.md is theirs.",
       "react": "react-18.3.1",
-      "react-dom": "react-18.3.1"
+      "react-dom": "react-18.3.1",
+      "pdfjs-dist": "pdfjs-3.11.174",
+      "@tensorflow/tfjs": ["tfjs-2.8.6", "tfjs-3.21.0"],
+      "@magenta/music": "magenta-music-1.23.1",
+      "@spotify/basic-pitch": "basic-pitch-1.0.1"
     },
     "fonts": {
       "_about": "Families of the Google Fonts stylesheet the page asks for after it has loaded (Korean, Japanese and Chinese text): the Latin families are served by PPP itself (vendor/fonts).",

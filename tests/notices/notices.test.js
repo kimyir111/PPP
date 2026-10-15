@@ -154,9 +154,9 @@ test('the server hands out /THIRD_PARTY_NOTICES.md as text, and not the generato
 /* ---- mutants ---- */
 const MUTANTS = [
   ['a vendor folder with no row', c => {
-    fs.mkdirSync(path.join(c, 'vendor', 'pdfjs-3.11.174'));
-    fs.writeFileSync(path.join(c, 'vendor', 'pdfjs-3.11.174', 'pdf.min.js'), '/* pdf.js */\n');
-  }, /vendor\/pdfjs-3\.11\.174.*has no "## pdfjs-3\.11\.174" section/],
+    fs.mkdirSync(path.join(c, 'vendor', 'somelib-9.9.9'));
+    fs.writeFileSync(path.join(c, 'vendor', 'somelib-9.9.9', 'somelib.min.js'), '/* some library */\n');
+  }, /vendor\/somelib-9\.9\.9.*has no "## somelib-9\.9\.9" section/],
   ['a file in a vendor folder that README does not name', c => {
     fs.writeFileSync(path.join(c, 'vendor', 'react-18.3.1', 'react-extra.js'), '/* extra */\n');
   }, /vendor\/react-18\.3\.1\/react-extra\.js has no row in vendor\/README\.md/],

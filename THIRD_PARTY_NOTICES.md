@@ -59,21 +59,62 @@ The woff2 files are Google Fonts' own, unmodified. The licence permits redistrib
 - `vendor/fonts/jetbrains-mono-v24-latin-ext.woff2` - Family and subset: JetBrains Mono, latin-ext; From: https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwhsk.woff2
 - `vendor/fonts/noto-music-v21-music.woff2` - Family and subset: Noto Music 400, music (U+25CC, U+2669-266F, U+1D000-1D0F5, U+1D100-1D245: the clefs and accidentals the lessons and the Home card draw); From: https://fonts.gstatic.com/s/notomusic/v21/pe0rMIiSN5pO63htf1sxEkW7I9tScg.woff2
 
-## Libraries loaded from a CDN, not served by PPP
+### pdf.js 3.11.174 - Apache-2.0
 
-Until they are vendored (G13-8) these are fetched by your browser from the host named, only when the feature that needs them is used.
+- `vendor/pdfjs-3.11.174/pdf.min.js` - From: https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js (npm pdfjs-dist@3.11.174); sha256: `978fd1b2d134a98e98966186a97777bebf87d8e770dadab1ece3687e21a5aa6c`
+- `vendor/pdfjs-3.11.174/pdf.worker.min.js` - From: https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js (npm pdfjs-dist@3.11.174); sha256: `38cde5311957b86bc3669f93e7d2566de333a90055ed6635bef60d9bf00e96f2`
+
+- Used for: reading a PDF or a photo of a score (the import screen); loaded only when one is added.
+- Licence: Apache-2.0, pdfjs-3.11.174/LICENSE.txt (the package's own LICENSE, byte for byte). The package has no NOTICE file.
+- Copyright: Copyright 2023 Mozilla Foundation (the notice in the header of both files).
+
+### TensorFlow.js 2.8.6 - Apache-2.0
+
+- `vendor/tfjs-2.8.6/tf.min.js` - From: https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.8.6/dist/tf.min.js (npm @tensorflow/tfjs@2.8.6); sha256: `0082fff8188ab64a65fd02a936d3f97bdf388a11ae2ba0b9a58ae7d48fa85b14`
+
+- Used for: the in-browser recording transcription (Onsets and Frames, with Magenta.js); loaded only when a recording is converted in the browser.
+- Licence: Apache-2.0, tfjs-2.8.6/LICENSE.txt (the LICENSE of github.com/tensorflow/tfjs at the tag tfjs-v2.8.6, byte for byte: the npm tarball carries no licence file). The package has no NOTICE file.
+- Copyright: Copyright 2021 Google LLC (the notice in the file's header).
+
+### Magenta.js 1.23.1 - Apache-2.0
+
+- `vendor/magenta-music-1.23.1/transcription.js` - From: https://cdn.jsdelivr.net/npm/@magenta/music@1.23.1/es6/transcription.js (npm @magenta/music@1.23.1); sha256: `7284bdbf628aa7e58bd8509a6de80886bf0f1564a58775ec413034229c6c0733`
+
+- Used for: the in-browser recording transcription (Onsets and Frames); loaded only when a recording is converted in the browser.
+- Licence: Apache-2.0, magenta-music-1.23.1/LICENSE.txt (the LICENSE of github.com/magenta/magenta-js, byte for byte: the npm tarball carries no licence file, and that file has had one commit, of 2018-03-27). The package has no NOTICE file.
+- Copyright: Copyright 2018 The Magenta Team. All rights reserved. (the first line of that LICENSE; the bundle has no header of its own).
+
+### TensorFlow.js 3.21.0 - Apache-2.0
+
+- `vendor/tfjs-3.21.0/tf.fesm.min.js` - From: npm @tensorflow/tfjs@3.21.0, dist/tf.fesm.min.js; sha256: `2b719ce53b3de9798b23836074de66ac38edadf61066e4d04d7929d100a2a03a`
+
+- Used for: the Basic Pitch note-detection path of the in-browser recording transcription; loaded only when a recording is converted in the browser as a full song (arrangement mode) or when the Onsets and Frames model could not run.
+- Licence: Apache-2.0, tfjs-3.21.0/LICENSE.txt (the LICENSE of github.com/tensorflow/tfjs at the tag tfjs-v3.21.0, byte for byte: the npm tarball carries no licence file). The package has no NOTICE file.
+- Copyright: Copyright 2022 Google LLC (the notice in the file's header).
+
+### Basic Pitch 1.0.1 - Apache-2.0
+
+- `vendor/basic-pitch-1.0.1/esm/index.js` - From: npm @spotify/basic-pitch@1.0.1, esm/index.js; sha256: `c49399b9859489f9968c7257cd83dfa2f4954260b21184f793f05b87a055aa7b`
+- `vendor/basic-pitch-1.0.1/esm/inference.js` - From: npm @spotify/basic-pitch@1.0.1, esm/inference.js; sha256: `d0bceb71ee6d35aa50575dea0b09bf9ef324353f1dc862ddc30450bdcfa65d6a`
+- `vendor/basic-pitch-1.0.1/esm/toMidi.js` - From: npm @spotify/basic-pitch@1.0.1, esm/toMidi.js; sha256: `c6492ceae181d24fb254a152d0853f2a60f27e78547db96258026ddcd81ef618`
+- `vendor/basic-pitch-1.0.1/model/model.json` - From: https://cdn.jsdelivr.net/npm/@spotify/basic-pitch@1.0.1/model/model.json (npm @spotify/basic-pitch@1.0.1); sha256: `1ed1aaee3409ec1dc098c8b01f430c0911f6fe9412e7af8086750f9e8f302f68`
+- `vendor/basic-pitch-1.0.1/model/group1-shard1of1.bin` - From: https://cdn.jsdelivr.net/npm/@spotify/basic-pitch@1.0.1/model/group1-shard1of1.bin (npm @spotify/basic-pitch@1.0.1); sha256: `b142a95737a52e1e412d5f92e73d8bb80dfe8d04941acc0702f11f4524fb377c`
+
+- Used for: the note-detection fallback of the in-browser recording transcription (the model is part of this folder: this path needs no internet); loaded only when a recording is converted in the browser as a full song (arrangement mode) or when the Onsets and Frames model could not run.
+- Licence: Apache-2.0, basic-pitch-1.0.1/LICENSE.txt (the package's own LICENSE, byte for byte). The package has no NOTICE file.
+- Copyright: Copyright 2022 Spotify AB (the notice in the package's src/*.ts; the compiled esm/ files carry none).
+
+## Libraries loaded from another site, not served by PPP
+
+These are fetched by your browser from the host named, only when the feature that needs them is used.
 
 - Babel standalone (`@babel/standalone`) - Versions: 7.29.0; Licence: MIT; Used for: named by support.js for JSX templates; this page has none and never requests it
-- Magenta.js (`@magenta/music`) - Versions: 1.23.1; Licence: Apache-2.0; Used for: the in-browser recording transcription (Onsets and Frames); loaded only when a recording is converted in the browser
-- Basic Pitch (`@spotify/basic-pitch`) - Versions: 1.0.1; Licence: Apache-2.0; Used for: the in-browser note detection path and its model; loaded only when a recording is converted in the browser
-- TensorFlow.js (`@tensorflow/tfjs`) - Versions: 2.8.6, 3.21.0; Licence: Apache-2.0; Used for: the in-browser recording transcription (version 2.8.6 with Magenta.js) and the Basic Pitch path (version 3.21.0); loaded only when a recording is converted in the browser
-- pdf.js (`pdfjs-dist`) - Versions: 3.11.174; Licence: Apache-2.0; Used for: reading a PDF or a photo of a score (the import screen); loaded only when one is added
 
 Fonts from Google Fonts for Korean, Japanese and Chinese text: Noto Sans JP, Noto Sans KR, Noto Sans SC. Licence: SIL Open Font License 1.1 (OFL-1.1), fetched from fonts.googleapis.com after the page has loaded.
 
 - Onsets and Frames checkpoint (Magenta model weights) - storage.googleapis.com: the in-browser recording transcription; about 60 MB, fetched only when a recording is converted in the browser. Licence: see the checkpoint's own terms (this repository does not restate them).
 
-React and ReactDOM are also named at unpkg.com, only as the way back (`?cdn=1`); PPP serves them itself (above).
+React and ReactDOM 18.3.1; pdf.js 3.11.174; TensorFlow.js 2.8.6; TensorFlow.js 3.21.0; Magenta.js 1.23.1; Basic Pitch 1.0.1 - named at unpkg.com, cdn.jsdelivr.net or esm.sh as well, only as the way back (`?cdn=1`, or when PPP's own copy cannot be fetched); PPP serves them itself (above).
 
 Other sites the page itself contacts (their own terms apply; no licence of theirs is carried here):
 
