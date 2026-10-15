@@ -658,7 +658,7 @@ function create(deps) {
     const t0 = now();
     /* the item budget is taken before the database is asked (a refused request costs it nothing), and not given back: the keys were looked up */
     if (!takeN(limiters.readItems, lib.key, keys.length)) throw httpError(429, 'This library has read as many songs as it may this hour. Try again in a while.', 'too-many', { retryAfter: 600 });
-    /* the bytes: a library, its address and the site each have an hour and a day; the answer that crosses a budget is served (it is at most one answer of READ_BODY_CAP) */
+    /* the bytes: a library, its address and the site each have an hour and a day; the one answer that crosses a budget is served (at most one: the look and the reservation below have no await between them) */
     const why = budgetWhy('out', t0, lib, 1);
     if (why) { giveN(limiters.readItems, lib.key, keys.length); throw budgetError(why, 'out', t0, lib, 1); }
     /* THE WORST THIS ANSWER CAN WEIGH IS RESERVED BEFORE THE STORE IS ASKED and the difference given back after: six answers at once all passing the look above before any of them

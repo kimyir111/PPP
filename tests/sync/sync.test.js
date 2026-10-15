@@ -1268,10 +1268,24 @@ async function main() {
       for (let i = 0; i < 6; i++) { const x = await L.req(S2.port, 'POST', '/api/libs/recover', { body: {}, ip: '203.0.113.79', headers: { 'X-PPP-Recovery': cur.recovery } }); res.push(x.status); if (x.status === 201) cur = x.body; }
       ok('recoveries and changes of code share the 5 an hour of a library (the first one above was the first): the 5th and 6th are 429', res.join() === '201,201,201,201,429,429', res.join());
     } finally { await S2.close(); }
+    /* the places of a change of code are held per address as well, whatever the change is made with */
+    const S4 = await L.startSync({ memory: true });
+    try {
+      const made = [];
+      for (let i = 0; i < 24; i++) made.push((await S4.anon.post('/api/libs', {}, { ip: '198.51.' + (100 + i) + '.7' })).body);
+      const byCode = [], byRecovery = [];
+      for (let i = 0; i < 12; i++) byCode.push((await L.req(S4.port, 'POST', '/api/libs/me/rotate', { body: {}, ip: '203.0.113.120', headers: { 'X-PPP-Lib': made[i].code } })).status);
+      for (let i = 12; i < 24; i++) byRecovery.push((await L.req(S4.port, 'POST', '/api/libs/recover', { body: {}, ip: '203.0.113.120', headers: { 'X-PPP-Recovery': made[i].recovery } })).status);
+      ok('changes of code from one address are 20 an hour, with a code or a recovery code alike: 12 by code and 8 by recovery code are 201, the other 4 are 429',
+        byCode.every(s => s === 201) && byRecovery.slice(0, 8).every(s => s === 201) && byRecovery.slice(8).every(s => s === 429), byCode.join() + ' | ' + byRecovery.join());
+      const another = await L.req(S4.port, 'POST', '/api/libs/recover', { body: {}, ip: '203.0.113.121', headers: { 'X-PPP-Recovery': made[23].recovery } });
+      ok('... and a refused one has not used its library up: from another address the same recovery code works', another.status === 201, another.status + ' ' + another.text.slice(0, 100));
+    } finally { await S4.close(); }
   }
 
   heading('a hung store does not freeze the writer');
   {
+    const within = p => Promise.race([p, sleep(6000).then(() => ({ status: 0, text: 'no answer in 6 s', body: {}, headers: {} }))]);   /* (a request that never comes back is a failed check, not a test that hangs) */
     const innerS = L.mod('sync-store.js').fileSyncStore(L.tmpDir('ppp-sync-hang-'), { memory: true });
     const hang = { lib: null };
     const stuck = Object.assign({}, innerS, { putItems: function (libId) { if (hang.lib && libId === hang.lib) return new Promise(() => {}); return innerS.putItems.apply(innerS, arguments); } });
@@ -1282,12 +1296,12 @@ async function main() {
       const t0 = Date.now();
       const first = S.as('a').putItems([L.item('song:two')], { ip: '198.51.100.201' });
       await sleep(50);
-      const other = await S.as('b').putItems([L.item('song:other')], { ip: '198.51.100.202' });
-      const f = await first;
+      const other = await within(S.as('b').putItems([L.item('song:other')], { ip: '198.51.100.202' }));
+      const f = await within(first);
       ok('a write whose store call never comes back is a 503 store after the time-out (400 ms here, 15 s in production)', bad(f, 503, 'store') && Date.now() - t0 >= 350 && Date.now() - t0 < 3000, f.status + ' ' + (Date.now() - t0));
       ok('and the writer is not held for ever: another library\'s write (queued behind it) is served as soon as the time-out has passed', other.status === 200 && Date.now() - t0 < 3000, other.status + ' ' + (Date.now() - t0));
       hang.lib = null;
-      ok('the library of the hung call is read again at the next request and works', (await S.as('a').putItems([L.item('song:three')], { ip: '198.51.100.201' })).status === 200);
+      ok('the library of the hung call is read again at the next request and works', (await within(S.as('a').putItems([L.item('song:three')], { ip: '198.51.100.201' }))).status === 200);
     } finally { await S.close(); }
     /* reads and polls that hang end the same way, and a read that failed gives back what it reserved */
     const innerR = L.mod('sync-store.js').fileSyncStore(L.tmpDir('ppp-sync-hang3-'), { memory: true });
@@ -1300,15 +1314,15 @@ async function main() {
       const before = SR.svc._state.budget('out', SR.clock.t);
       hangR.on = true;
       let t0 = Date.now();
-      let r = await SR.as('a').items(['song:one']);
+      let r = await within(SR.as('a').items(['song:one']));
       ok('a read whose store call never comes back: 503 store after the time-out', bad(r, 503, 'store') && Date.now() - t0 < 3000, r.status + ' ' + (Date.now() - t0));
       const after = SR.svc._state.budget('out', SR.clock.t);
       ok('... and what it reserved of the hour and day budgets is given back (nothing was sent)', after.hour === before.hour && after.day === before.day, JSON.stringify([before, after]));
       t0 = Date.now();
-      r = await SR.as('a').changes(0);
+      r = await within(SR.as('a').changes(0));
       ok('a poll whose store call never comes back: 503 store after the time-out', bad(r, 503, 'store') && Date.now() - t0 < 3000, r.status + ' ' + (Date.now() - t0));
       hangR.on = false;
-      ok('and the next read is served (the place it held was given back)', (await SR.as('a').items(['song:one'])).status === 200);
+      ok('and the next read is served (the place it held was given back)', (await within(SR.as('a').items(['song:one']))).status === 200);
     } finally { await SR.close(); }
     const innerL = L.mod('sync-store.js').fileSyncStore(L.tmpDir('ppp-sync-hang2-'), { memory: true });
     const hang2 = { on: true };
