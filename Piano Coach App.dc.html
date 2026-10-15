@@ -4822,10 +4822,9 @@ const DEMO_SECTIONS = [
   ['s8', 57, 64, 'Fast note sequence', true]
 ];
 
-/* G13 (U6, decided 2026-10-15): the built-in sample is a pattern PPP generates (it is not anybody's piece), so it carries PPP's own name. Its id stays 'demo', so saved
-   sessions line up. The title is looked up in the person's language where it is shown (the shelf, the header); the stored score keeps the English one. */
-const DEMO_TITLE = 'PPP Practice Theme';
-const DEMO_COMPOSER = 'PPP';
+/* G13 (U6, decided 2026-10-15): the built-in sample is a pattern PPP generates (it is not anybody's piece), so it carries PPP's own name, "PPP Practice Theme" by "PPP". Its id
+   stays 'demo', so saved sessions line up. The title is looked up in the person's language where it is shown (shelfSongs, the header); the stored score keeps the English one.
+   (No new top-level name: the practice-sim baseline records the page's top-level declarations.) */
 function buildDemoScore() {
   const RH = ['A4', 'C5', 'E5', 'D5', 'F5', 'E5', 'G5', 'A5', 'F5', 'E5', 'C5', 'D5', 'B4', 'E5', 'G4', 'B4', 'D5', 'C5'];
   const LH = [['A2', 'E3'], ['F2', 'C3'], ['C3', 'G3'], ['G2', 'D3'], ['E2', 'B2'], ['D3', 'A3']];
@@ -4855,7 +4854,7 @@ function buildDemoScore() {
     })));
   }
   return Score.finalize({
-    id: 'demo', title: DEMO_TITLE, composer: DEMO_COMPOSER,
+    id: 'demo', title: 'PPP Practice Theme', composer: 'PPP',
     source: 'built-in', tempo: 84, staves: 2, measures, notes,
     sections: DEMO_SECTIONS.map(d => ({ id: d[0], from: d[1], to: d[2], reason: d[3], hard: !!d[4] })),
     seeds: DEMO_SEED
@@ -18349,7 +18348,7 @@ class Component extends DCLogic {
      last left — the open song's live figures are songProgress/songMemory. */
   shelfSongs() {
     const S = this.state;
-    return [Object.assign({ id: 'demo', title: tx(DEMO_TITLE), composer: DEMO_COMPOSER, kind: 'built-in', measures: 64 },
+    return [Object.assign({ id: 'demo', title: tx('PPP Practice Theme'), composer: 'PPP', kind: 'built-in', measures: 64 },
       S.libraryDemo || this.demoShelfDefaults())].concat(S.library || []);
   }
   /* The sample's figures before it has ever been left: its seeded accuracy,
