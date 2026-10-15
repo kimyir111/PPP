@@ -1,0 +1,5 @@
+{
+ "about": "G11c-1: the bytes (LF) of practice/variant.js that the page asks for as practice/variant.js?v=VARIANT_FILE_V (tests/practice-variant/variant-file-version.test.js): change the file, raise VARIANT_FILE_V in the page, write the new line here.",
+ "VARIANT_FILE_V": 1,
+ "sha256": "fd6dcbb1b5558282961742d9cb3fbb10eb729012060f1160c55bacf9435bcf54"
+}
