@@ -100,7 +100,7 @@ async function start() {
 
     console.log('\n── a guest link on Postgres ──');
     const K = secretOf();
-    const c = await post(P(), K, { songKey: 'a', title: 'PG guest', listed: true, genre: 'Classical', score: smallScore('PG') }, '10.0.0.1');
+    const c = await post(P(), K, { songKey: 'a', title: 'PG guest', genre: 'Classical', score: smallScore('PG') }, '10.0.0.1');
     ok('201, unlisted, no genre, with an end date', c.status === 201 && c.body.listed === false && c.body.genre === '' && !!c.body.expiresAt, c.status + '');
     const rowSql = (await one('SELECT owner_id, bytes, expires_at FROM ppp_shares WHERE id = $1', [c.body.id]))[0];
     ok('owner is g_<hash>, bytes is the score size, expires in 30 days', rowSql.owner_id === G.guestOwnerId(K) && rowSql.bytes === G.rowBytes(smallScore('PG'), null)

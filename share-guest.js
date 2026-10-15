@@ -1,14 +1,17 @@
-/* Guest link sharing: the pure parts, so they can be tested with a clock they are given.
+/* Guest sharing: the pure parts, so they can be tested with a clock they are given.
 
-   A visitor with no account can send one of their songs as an UNLISTED link. The
-   browser makes a random secret and keeps it in localStorage; every guest request
-   carries it in the X-PPP-Guest header. The server never stores the secret, only
-   owner_id = 'g_' + the first 24 hex of its sha256, so a database dump cannot be used to take a
-   guest's links down, and the secret is never sent back. The header is what lets
-   the same browser re-share a song (same row, same link) and stop sharing it later.
+   A visitor with no account can send one of their songs as an UNLISTED link, and (G13 "no login
+   anywhere") can POST it to the public Shared Scores. The browser makes a random secret and keeps it
+   in localStorage; every guest request carries it in the X-PPP-Guest header (never in a URL). The
+   server never stores the secret, only owner_id = 'g_' + the first 24 hex of its sha256, so a
+   database dump cannot be used to take a guest's links down, and the secret is never sent back. The
+   header is what lets the same browser re-share a song (same row, same link), see its own posts,
+   take one down from the list, and stop sharing it later.
 
-   A guest link is never listed in Shared Scores, and it expires. server.js does
-   the HTTP and the store; the limits live here. */
+   Every guest row expires (30 days for a link, 90 for a post that is listed; sending it again renews
+   it) and is counted against caps: per browser, per address, for the whole site. A post is refused
+   with a clear answer (429 for "you", 503 `busy` for "the site"), never made room for by deleting
+   somebody else's. server.js does the HTTP and the store; the limits live here. */
 'use strict';
 const crypto = require('crypto');
 
@@ -39,7 +42,25 @@ const GUEST = {
   /* a guest link is a loan, not a home; sending it again renews it */
   TTL_MS: 30 * 24 * 60 * 60 * 1000,
   /* sweep expired guest rows at start and this often */
-  SWEEP_MS: 6 * 60 * 60 * 1000
+  SWEEP_MS: 6 * 60 * 60 * 1000,
+
+  /* ---- G13 no login: posting to the PUBLIC list as a guest ----
+     A post is a guest row with listed = true. It is held to everything above (the same 1 MB, the same 20 rows a browser, the same totals) and to its own caps.
+     A post lives longer than a link (people look for a score in the list for longer than they keep a link), and still ends: a list that nobody tends cleans itself. */
+  TTL_LISTED_MS: 90 * 24 * 60 * 60 * 1000,
+  /* how many posts one browser, one address (a class may share one) and the whole site hold AT ONCE, and the most bytes the posts hold in all */
+  PER_GUEST_LISTED: 10,
+  PER_ADDR_LISTED: 20,
+  TOTAL_LISTED: 300,
+  TOTAL_LISTED_BYTES: 24 * 1024 * 1024,
+  /* how many times a day a request may PUT a score into the public list (a new post, a changed one, a taken-down one put back), by browser key, by address, and for the site.
+     Counted in memory like the hourly limits above; the totals above are what survive a restart. */
+  DAY_MS: 24 * 60 * 60 * 1000,
+  POST_PER_KEY_PER_DAY: 5,
+  POST_PER_IP_PER_DAY: 10,
+  POST_GLOBAL_PER_DAY: 60,
+  /* the name a guest may give a post, in characters (code points) */
+  NAME_MAX: 24
 };
 
 /* The secret is a random string from the browser: letters, digits, - and _, 32 to 128 long. */
@@ -66,8 +87,20 @@ function sameOwner(a, b) {
   return x.length === y.length && crypto.timingSafeEqual(x, y);
 }
 
-function expiryFor(nowMs) {
-  return new Date(nowMs + GUEST.TTL_MS).toISOString();
+/* when a row written now ends: 30 days for a link, 90 for a post that is listed */
+function expiryFor(nowMs, listed) {
+  return new Date(nowMs + (listed ? GUEST.TTL_LISTED_MS : GUEST.TTL_MS)).toISOString();
+}
+
+/* The name a guest's post carries in the list. Nothing typed is trusted: control and bidi-override characters go, white space is collapsed, it is cut to NAME_MAX
+   characters (by code point, so no pair is split), and it must not be the site's own name or look like an address or a contact (those stand in for the name
+   "Guest", which the page shows in the person's language). */
+function guestName(raw) {
+  let s = (typeof raw === 'string' ? raw : '').replace(/[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]/g, ' ').replace(/\s+/g, ' ').trim();
+  s = Array.from(s).slice(0, GUEST.NAME_MAX).join('').trim();
+  if (!s) return GUEST.OWNER_NAME;
+  if (/^ppp(?![a-z0-9])/i.test(s) || /https?:|www\.|@|\.(?:com|net|org|io|kr|jp|cn|co)(?![a-z0-9])/i.test(s)) return GUEST.OWNER_NAME;
+  return s;
 }
 
 /* A row with an expiry in the past is gone, whether or not it has been swept yet. */
@@ -189,8 +222,11 @@ function inspect(root, maxDepth) {
 /* The one place that decides whether a guest link may be stored. `prev` is this browser's row for this song (or null),
    `ownerCount` how many links this browser has, `usage` what all guest links hold ({ count, bytes }), `newBytes` what
    this one would hold. Returns null when it may be, else { status, error, code }.
-   A re-send replaces the old copy, so it counts as its growth: a tiny link re-sent at full size is held to the cap too. */
-function decide(prev, ownerCount, usage, newBytes) {
+   A re-send replaces the old copy, so it counts as its growth: a tiny link re-sent at full size is held to the cap too.
+   `listing` (G13 no login) is given when the row will be LISTED: { ownerListed, addrListed, totalListed, totalListedBytes } are the posts held now (this row's own
+   previous copy included, when it was listed). A row that was not listed and becomes so is a new post and is held to the three counts; a post that is re-sent
+   is held to the bytes of all posts. The refusals are the person's own (429) or the site's (503 `busy`: refused, never made room for by deleting someone's). */
+function decide(prev, ownerCount, usage, newBytes, listing) {
   if (!prev && ownerCount >= GUEST.PER_GUEST) {
     return { status: 429, error: 'This browser has made as many guest links as PPP keeps. Stop sharing one, or sign in.' };
   }
@@ -199,12 +235,22 @@ function decide(prev, ownerCount, usage, newBytes) {
   if (count > GUEST.TOTAL_SHARES || bytes > GUEST.TOTAL_BYTES) {
     return { status: 503, error: 'Guest links are full right now. Try again later, or sign in to share.', code: 'guest-full' };
   }
+  if (listing) {
+    const wasListed = !!(prev && prev.listed);
+    if (!wasListed) {
+      if (listing.ownerListed >= GUEST.PER_GUEST_LISTED) return { status: 429, code: 'too-many-posts', error: 'This browser has posted as many scores as PPP keeps for a guest. Take one down first.' };
+      if (listing.addrListed >= GUEST.PER_ADDR_LISTED) return { status: 429, code: 'too-many-posts', error: 'As many scores as PPP keeps are posted from here already. Take one down, or try again later.' };
+      if (listing.totalListed >= GUEST.TOTAL_LISTED) return { status: 503, code: 'busy', error: BUSY };
+    }
+    if (listing.totalListedBytes - (wasListed ? (prev.bytes || 0) : 0) + newBytes > GUEST.TOTAL_LISTED_BYTES) return { status: 503, code: 'busy', error: BUSY };
+  }
   return null;
 }
+const BUSY = 'Shared Scores has no room for more posts from guests right now. Try again later.';
 
 /* What a row holds, as the guest accounting counts it: its score and its preview. */
 function rowBytes(score, preview) {
   return Buffer.byteLength(JSON.stringify(score)) + (preview == null ? 0 : Buffer.byteLength(JSON.stringify(preview)));
 }
 
-module.exports = { GUEST, validSecret, guestOwnerId, isGuestOwner, sameOwner, expiryFor, expired, slidingWindow, clientIp, clientAddress, inspect, decide, rowBytes };
+module.exports = { GUEST, BUSY, validSecret, guestOwnerId, isGuestOwner, sameOwner, expiryFor, guestName, expired, slidingWindow, clientIp, clientAddress, inspect, decide, rowBytes };
