@@ -499,6 +499,8 @@ All of this at $0 on the existing free tiers.
   draw gets its own stylesheet (one family a request, 4 weights, `display=swap`, ~110 KB of CSS instead of 331 KB), after `load` and an idle moment: the page's own language first, alone; the others 1 s after it has
   settled, and not on a data saver (`navigator.connection.saveData`); a language change in Settings (a `MutationObserver` on `<html lang>`) asks for that script then if it was not asked for. No canvas, or any doubt
   (a character that measures as the box), means "has none": the web font is asked for, as it always was. Nothing here shadows an installed font any more (the web face is only added where there is none).
+  In a page whose language has no script of its own (English) nothing is waited for: `PPP_CJK_SETTLED` is resolved at once, so the piano recordings (G13-4d) do not wait for a stylesheet that is only for a title in another
+  language (`tests/load-app/samples.test.js` drives a Korean page for that reason).
 - *No connection hint.* The helmet's two `preconnect` and one `dns-prefetch` to Google Fonts (G13-4b) made every device open two connections to that site at boot. They are now `<meta name="application-name">`,
   `<meta name="referrer">` (the header's own value) and `<link rel="license" href="./THIRD_PARTY_NOTICES.md">`: three elements that fetch nothing and contact no one, so the template keeps its element count and no
   `data-dc-tpl` stamp of the DOM moves (`tests/load/fonts.test.js`). `THIRD_PARTY_NOTICES.md` says the Noto Sans families are fetched "only on a device that has no font of its own for that script".
