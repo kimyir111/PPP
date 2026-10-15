@@ -1,10 +1,13 @@
-/* G11a-3: THE PRACTICE SWITCH (docs/GOALS/G11 section 6.3, G11-D11). PPP.practice = 'legacy' (default) | 'graph', and practicePlan(), the one function the nine places that used to ask
-   PianoScore.of for a plan now ask. What must hold, in a real page:
+/* G11a-3, G11a-5: THE PRACTICE SWITCH (docs/GOALS/G11 section 6.3, G11-D11, section 10.6). PPP.practice = 'graph' (default since G11a-5) | 'legacy', and practicePlan(), the one function the nine
+   places that used to ask PianoScore.of for a plan now ask. What must hold, in a real page:
 
-     switch      'legacy' is the default, and anything that is not exactly 'legacy' or 'graph' is legacy (?practice=garbage, a stored garbage value, a throwing localStorage); 'legacy' never
-                 requests practice/plan.js (the page does not even know it); 'graph' requests it once, and the setter PPP.practice = ... does the same and is remembered
+     switch      'graph' is the default (PPP.practiceDefault), and anything that is not exactly 'legacy' or 'graph' is the default (?practice=garbage, a stored garbage value, a throwing
+                 localStorage); 'legacy' is the explicit way back (the address for that visit, or remembered): practicePlan IS PianoScore.of and nothing counts; practice/plan.js is a
+                 deferred group of the head, asked for once, and the page never reads it before it is in (no synchronous load); the setter PPP.practice = ... is remembered
      identity    under 'legacy' practicePlan IS PianoScore.of (the very object); the scheduler's queue (every note on/off, CC64/66/67, metronome click) at 8x the written tempo on the
-                 12 pieces of the parity harness has the digests recorded on the tree BEFORE this phase (tests/practice/baselines/switch.json: `record` is run on a checkout of main)
+                 12 pieces of the parity harness has the digests recorded on the tree BEFORE G11a-3 (tests/practice/baselines/switch.json: `record` is run on a checkout of main)
+     warm        (G11a-5, TD31) a large song read back from its slot (no producer's graph) is NOT resolved on the thread that plays: its first plan is the legacy plan, counted NOT_READY,
+                 and the source is worked out in idle time (PPP.practiceWarm), after which it is planned from its graph; a small one, and one the engraver holds the graph of, are planned at once
      graph       the same 12 pieces under 'graph': the same queue to the bit, and the scheduler really ran on a graph plan; five scripted performances through the real
                  PerformanceEngine give the same verdicts, results and Learning.record history, `expected` carries evId/head/mIdx (the graph's event id, by value, before and after a match: noteOn keeps the key event in `ev`) and the result byMeasureIdx; the falling notes and follow
                  mode's gates are the same
@@ -18,7 +21,7 @@
      node tests/practice/switch.js                      all of it (about 3-4 minutes; the sweep is the 418 files of the parity corpus)
      node tests/practice/switch.js --quick              3 pieces for the scheduler and the matcher, every 12th catalogue file for the sweep (about 1 minute)
      node tests/practice/switch.js --sample 5           the sweep reads every 5th catalogue file (+ every fixture)
-     node tests/practice/switch.js --only switch,spies  some sections: switch, spies, matcher, visual, gates, leak, fallbacks, late, sweep, perf
+     node tests/practice/switch.js --only switch,spies  some sections: switch, spies, matcher, visual, gates, leak, fallbacks, late, warm, sweep, perf
      node tests/practice/switch.js --url URL            a page already served (the mutation check's proxy); the page of a tree from before this phase answers `record` only
      node tests/practice/switch.js record               rewrite tests/practice/baselines/switch.json: run it on a checkout of main from BEFORE G11a-3 (git archive), with --url
    Needs puppeteer (npm ci; on a developer's machine NODE_PATH may point at another tree's node_modules). Exit code 1 when a check fails. */
@@ -102,9 +105,12 @@ async function sectionSwitch(browser, url) {
   const exercise = async page => page.evaluate(async () => {
     /* what the player does: a plan for a range, the matcher begins a run, the falling notes, a scheduler pass */
     const P = window.PPP, Probe = window.PPPSwitchProbe;
+    /* G11a-5: the module is a deferred group of the head, and a read of window.PPPPractice before it is in would load it synchronously (the very thing the page must not do): read it with peek */
+    const pk = n => (window.PPP_LAZY && window.PPP_LAZY.peek ? window.PPP_LAZY.peek(n) : window[n]);
+    if (P.practice === 'graph') await P.loadPracticeModule();
     const sc = await Probe.loadScore({ file: 'catalog/hymns/all-creatures.musicxml' });
     const a = P.Score.first(sc), b = P.Score.last(sc);
-    const out = { mode: P.practice, key: (() => { try { return localStorage.getItem('ppp.practice.v1'); } catch (e) { return 'throws'; } })() };
+    const out = { mode: P.practice, def: P.practiceDefault, key: (() => { try { return localStorage.getItem('ppp.practice.v1'); } catch (e) { return 'throws'; } })() };
     out.same = [[a, b], [a + 1, a + 4], [null, null], [a, null]].every(r => P.practicePlan(sc, r[0], r[1]) === P.PianoScore.of(sc, r[0], r[1]));
     out.nullScore = JSON.stringify(P.practicePlan(null)) === JSON.stringify(P.PianoScore.of(null));
     const eng = new P.PerformanceEngine(sc);
@@ -112,51 +118,74 @@ async function sectionSwitch(browser, url) {
     out.expected = eng.expected.length;
     out.graphPlan = !!(eng._plan && eng._plan.graph);
     out.timeline = P.PianoVisual.scoreToTimeline(sc, { from: a, to: b, tempo: sc.tempo || 84 }).notes.length;
-    out.module = !!(window.PPPPractice && window.PPPPractice.plan);
+    const m = pk('PPPPractice');
+    out.module = !!(m && m.plan);
     out.stats = JSON.parse(JSON.stringify(P.practiceStats));
+    /* the page's own reads of the deferred module: none may have loaded it synchronously (PPP_LAZY's safety net logs a read that comes too early) */
+    out.syncPractice = window.PPP_LAZY && window.PPP_LAZY.status ? window.PPP_LAZY.status().syncLog.filter(s => s.group === 'practice').length : 0;
     return out;
   });
 
-  /* the default */
+  /* the default: 'graph' since G11a-5, the four fixes on, nothing remembered. The idle prefetch is held back (ppp.splitStart, the test switch of lazy-load.js), so that the module comes only
+     because the page's own first plan asks for it, and a plain read of it before it is in shows in the synchronous loads of PPP_LAZY */
   {
-    const h = await openPage(browser, url);
+    const h = await openPage(browser, url, { init: () => { try { localStorage.setItem('ppp.splitStart', '0'); } catch (e) { /* none */ } } });
     const r = await exercise(h.page);
-    check('the default is legacy', r.mode === 'legacy' && r.key === null, JSON.stringify([r.mode, r.key]));
-    check('legacy: practicePlan is PianoScore.of (the very object, whole piece, a window, open ends)', r.same && r.nullScore);
-    check('legacy: the matcher and the falling notes ran on the legacy plan, no ev on a note', !r.graphPlan && r.expected > 0 && r.timeline > 0);
-    check('legacy: practice/plan.js is not requested, and the page does not know it', practiceRequests(h).length === 0 && !r.module, JSON.stringify(practiceRequests(h)));
-    check('legacy: nothing is counted', r.stats.graph === 0 && r.stats.practiceFallback.total === 0, JSON.stringify(r.stats));
+    check('the default is graph (PPP.practice, PPP.practiceDefault), and nothing is remembered', r.mode === 'graph' && r.def === 'graph' && r.key === null, JSON.stringify([r.mode, r.def, r.key]));
+    check('default: the matcher ran on a graph plan, the very plan practicePlan gives, nothing fell back', r.graphPlan && !r.same && r.expected > 0 && r.timeline > 0 && r.stats.graph >= 1 && r.stats.practiceFallback.total === 0, JSON.stringify(r.stats));
+    check('default: practice/plan.js is the deferred group of the head, asked for once, and the page never read it before it was in (no synchronous load)', r.module && planRequests(h) === 1 && r.syncPractice === 0, JSON.stringify([r.module, planRequests(h), r.syncPractice]));
     check('the page ran without an error', h.errors.length === 0, h.errors.join(' | '));
     await h.close();
   }
-  /* ?practice= */
+  /* the same page with the prefetch on: the group is brought by the page itself, once */
   {
-    const h = await openPage(browser, url, { query: '?practice=graph' });
-    const loaded = await h.page.evaluate(() => window.PPP.loadPracticeModule());
+    const h = await openPage(browser, url);
     const r = await exercise(h.page);
-    check('?practice=graph is graph, the module is requested exactly once', r.mode === 'graph' && loaded === true && planRequests(h) === 1 && r.module, JSON.stringify([r.mode, loaded, planRequests(h)]));
-    check('graph: the matcher ran on a graph plan, the very plan practicePlan gives', r.graphPlan && !r.same && r.stats.graph >= 1 && r.stats.practiceFallback.total === 0, JSON.stringify(r.stats));
-    check('?practice=graph is for that visit only (nothing is remembered)', r.key === null, String(r.key));
-    check('graph: the page ran without an error', h.errors.length === 0, h.errors.join(' | '));
+    check('default, with the prefetch: graph, and the group is asked for once', r.mode === 'graph' && r.graphPlan && r.module && planRequests(h) === 1 && r.syncPractice === 0, JSON.stringify([r.mode, r.graphPlan, r.module, planRequests(h), r.syncPractice]));
     await h.close();
   }
-  for (const q of ['?practice=garbage', '?practice=GRAPH', '?practice=', '?practice=graph%20', '?practice=1', '?practice=legacy&practice=graph']) {
+  /* the explicit way back: ?practice=legacy is for that visit only */
+  {
+    const h = await openPage(browser, url, { query: '?practice=legacy' });
+    const r = await exercise(h.page);
+    check('?practice=legacy is legacy, and is not remembered', r.mode === 'legacy' && r.key === null, JSON.stringify([r.mode, r.key]));
+    check('legacy: practicePlan is PianoScore.of (the very object, whole piece, a window, open ends)', r.same && r.nullScore);
+    check('legacy: the matcher and the falling notes ran on the legacy plan, no ev on a note', !r.graphPlan && r.expected > 0 && r.timeline > 0);
+    check('legacy: nothing is counted, and the module was never read (the group may still arrive: the prefetch brings every group)', r.stats.graph === 0 && r.stats.practiceFallback.total === 0 && r.syncPractice === 0, JSON.stringify(r.stats));
+    check('legacy: the page ran without an error', h.errors.length === 0, h.errors.join(' | '));
+    await h.close();
+  }
+  /* ?practice=graph is the default said out loud; what is no choice is the default */
+  for (const q of ['?practice=graph', '?practice=garbage', '?practice=GRAPH', '?practice=', '?practice=graph%20', '?practice=1', '?practice=legacy%20', '?practice=LEGACY']) {
     const h = await openPage(browser, url, { query: q });
     const r = await exercise(h.page);
-    check(q + ' is legacy, and nothing of practice/ is requested', r.mode === 'legacy' && practiceRequests(h).length === 0 && !r.module && r.same, JSON.stringify([r.mode, practiceRequests(h)]));
+    check(q + ' is graph (what is no choice is the default)', r.mode === 'graph' && r.graphPlan && r.key === null, JSON.stringify([r.mode, r.graphPlan, r.key]));
+    await h.close();
+  }
+  {
+    /* the first of two is not a choice either: the address is read by URLSearchParams.get, which gives the first */
+    const h = await openPage(browser, url, { query: '?practice=legacy&practice=graph' });
+    const r = await exercise(h.page);
+    check('?practice=legacy&practice=graph: the first one is read (legacy)', r.mode === 'legacy' && r.same, JSON.stringify([r.mode]));
     await h.close();
   }
   /* what the device remembers */
   {
-    const h = await openPage(browser, url, { init: () => { try { localStorage.setItem('ppp.practice.v1', 'graph'); } catch (e) { /* none */ } } });
-    const loaded = await h.page.evaluate(() => window.PPP.loadPracticeModule());
-    check('a remembered "graph" is graph, and asks for the module at start', (await h.page.evaluate(() => window.PPP.practice)) === 'graph' && loaded && planRequests(h) === 1);
+    const h = await openPage(browser, url, { init: () => { try { localStorage.setItem('ppp.practice.v1', 'legacy'); } catch (e) { /* none */ } } });
+    const r = await exercise(h.page);
+    check('a remembered "legacy" is legacy (the way back that outlives the visit)', r.mode === 'legacy' && r.same && r.key === 'legacy', JSON.stringify([r.mode, r.key]));
     await h.close();
   }
-  for (const v of ['junk', 'Graph', '', '1', 'true']) {
+  {
+    const h = await openPage(browser, url, { init: () => { try { localStorage.setItem('ppp.practice.v1', 'legacy'); } catch (e) { /* none */ } }, query: '?practice=graph' });
+    const r = await exercise(h.page);
+    check('...and the address still chooses for that visit', r.mode === 'graph' && r.graphPlan && r.key === 'legacy', JSON.stringify([r.mode, r.key]));
+    await h.close();
+  }
+  for (const v of ['junk', 'Legacy', '', '1', 'true']) {
     const h = await openPage(browser, url, { init: v2 => { try { localStorage.setItem('ppp.practice.v1', v2); } catch (e) { /* none */ } }, initArgs: [v] });
     const r = await exercise(h.page);
-    check('a remembered ' + JSON.stringify(v) + ' is legacy, nothing requested', r.mode === 'legacy' && practiceRequests(h).length === 0 && r.same, JSON.stringify([r.mode, practiceRequests(h)]));
+    check('a remembered ' + JSON.stringify(v) + ' is graph (the default)', r.mode === 'graph' && r.graphPlan, JSON.stringify([r.mode, r.graphPlan]));
     await h.close();
   }
   /* a storage that throws */
@@ -167,12 +196,12 @@ async function sectionSwitch(browser, url) {
     };
     const h = await openPage(browser, url, { init: throwing });
     const mode = await h.page.evaluate(() => window.PPP.practice);
-    check('a localStorage that throws is legacy, and the page still starts', mode === 'legacy' && practiceRequests(h).length === 0, mode + ' ' + h.errors.join(' | '));
-    await h.page.evaluate(() => { window.PPP.practice = 'graph'; });
-    check('...setting the switch does not throw either (it is just not remembered)', (await h.page.evaluate(() => window.PPP.practice)) === 'graph');
+    check('a localStorage that throws is graph (the default), and the page still starts', mode === 'graph', mode + ' ' + h.errors.join(' | '));
+    await h.page.evaluate(() => { window.PPP.practice = 'legacy'; });
+    check('...setting the switch does not throw either (it is just not remembered)', (await h.page.evaluate(() => window.PPP.practice)) === 'legacy');
     await h.close();
-    const h2 = await openPage(browser, url, { init: throwing, query: '?practice=graph' });
-    check('...and the address still chooses for that visit', (await h2.page.evaluate(() => window.PPP.practice)) === 'graph');
+    const h2 = await openPage(browser, url, { init: throwing, query: '?practice=legacy' });
+    check('...and the address still chooses for that visit', (await h2.page.evaluate(() => window.PPP.practice)) === 'legacy');
     await h2.close();
   }
   /* the setter */
@@ -181,23 +210,36 @@ async function sectionSwitch(browser, url) {
     const r = await h.page.evaluate(async () => {
       const P = window.PPP, key = () => localStorage.getItem('ppp.practice.v1');
       const out = {};
-      P.practice = 'graph';
+      P.practice = 'legacy';
       out.a = [P.practice, key()];
-      /* the setter asks for the module by itself: it is here a moment later without anybody calling loadPracticeModule */
-      for (let i = 0; i < 100 && !(window.PPPPractice && window.PPPPractice.plan); i++) await new Promise(r => setTimeout(r, 50));
-      out.arrived = !!(window.PPPPractice && window.PPPPractice.plan);
-      out.loaded = await P.loadPracticeModule();
       P.practice = 'junk';
       out.b = [P.practice, key()];
-      P.practice = 'graph'; P.practice = null;
+      P.practice = 'legacy'; P.practice = null;
       out.c = [P.practice, key()];
-      P.practice = 'legacy';
+      P.practice = 'graph';
       out.d = [P.practice, key()];
+      /* the setter asks for the module by itself, and it is here without anybody calling loadPracticeModule */
+      out.loaded = await P.loadPracticeModule();
       return out;
     });
-    check('PPP.practice = "graph" is remembered and asks for the module', JSON.stringify(r.a) === '["graph","graph"]' && r.arrived && r.loaded === true && planRequests(h) === 1, JSON.stringify(r));
-    check('a value that is no choice puts legacy back and forgets the remembered one', JSON.stringify(r.b) === '["legacy",null]' && JSON.stringify(r.c) === '["legacy",null]', JSON.stringify([r.b, r.c]));
-    check('"legacy" is remembered', JSON.stringify(r.d) === '["legacy","legacy"]', JSON.stringify(r.d));
+    check('"legacy" is remembered', JSON.stringify(r.a) === '["legacy","legacy"]', JSON.stringify(r.a));
+    check('a value that is no choice puts graph (the default) back and forgets the remembered one', JSON.stringify(r.b) === '["graph",null]' && JSON.stringify(r.c) === '["graph",null]', JSON.stringify([r.b, r.c]));
+    check('"graph" is remembered, and the module is there', JSON.stringify(r.d) === '["graph","graph"]' && r.loaded === true && planRequests(h) === 1, JSON.stringify([r.d, r.loaded, planRequests(h)]));
+    await h.close();
+  }
+  /* with the prefetch held back nothing asks for the module until a plan is wanted; the setter asks for it (a page that is on 'legacy' and is put on 'graph') */
+  {
+    const h = await openPage(browser, url, { query: '?practice=legacy', init: () => { try { localStorage.setItem('ppp.splitStart', '0'); } catch (e) { /* none */ } } });
+    const r = await h.page.evaluate(async () => {
+      const pk = n => (window.PPP_LAZY && window.PPP_LAZY.peek ? window.PPP_LAZY.peek(n) : window[n]);
+      const has = () => !!(pk('PPPPractice') && pk('PPPPractice').plan);
+      await new Promise(r => setTimeout(r, 1500));
+      const before = has();
+      window.PPP.practice = 'graph';
+      for (let i = 0; i < 100 && !has(); i++) await new Promise(r => setTimeout(r, 50));
+      return { before: before, after: has() };
+    });
+    check('a page on legacy with the prefetch held back has no module; PPP.practice = "graph" asks for it', !r.before && r.after, JSON.stringify(r));
     await h.close();
   }
 }
@@ -340,6 +382,210 @@ async function sectionLate(browser, url) {
   await h.close();
 }
 
+/* ---- TD31: the first plan of a large Score that has no live graph is not made on the thread that plays ---- */
+async function sectionWarm(browser, url) {
+  head('the source of a large song read back from its slot is worked out in idle time (G11a-5, TD31)');
+  const h = await openPage(browser, url);
+  const r = await h.page.evaluate(async () => {
+    const P = window.PPP, Probe = window.PPPSwitchProbe;
+    const pk = n => (window.PPP_LAZY && window.PPP_LAZY.peek ? window.PPP_LAZY.peek(n) : window[n]);
+    const out = { mode: P.practice };
+    await P.loadPracticeModule();
+    for (let i = 0; i < 200 && !pk('PPPEngrave'); i++) await new Promise(r => setTimeout(r, 50));
+    /* a count of the engraver's resolutions that were made (a memo hit is not one): the hot path must not make one for such a Score */
+    const app = pk('PPPEngrave').app;
+    const made = () => { const r = app.stats.resolved; return (r.live || 0) + (r.store || 0) + (r.projected || 0) + (r.none || 0); };
+    /* a Score read back from its slot: packed, stringified, unpacked, finalized - no producer's graph */
+    const nonLive = async file => {
+      const live = await Probe.loadScore({ file: file });
+      const s = P.Score.finalize(P.unpackScore(JSON.parse(JSON.stringify(P.packScore(live)))));
+      return { live: live, s: s, notes: s.notes.length };
+    };
+    const big = await nonLive('catalog/method/sonatina/020.mxl');
+    const small = await nonLive('catalog/hymns/all-creatures.musicxml');
+    out.bigNotes = big.notes; out.smallNotes = small.notes;
+    out.bigLive = app.hasLive(big.s); out.smallLive = app.hasLive(small.s);
+    const a = P.Score.first(big.s), b = P.Score.last(big.s);
+    const F = () => JSON.parse(JSON.stringify(P.practiceStats.practiceFallback));
+    /* 1. the first plan: the legacy plan, counted NOT_READY once, no resolution on this thread */
+    const m0 = made(), w0 = P.practiceStats.warm.started;   /* the page warms the sample it opens with by itself: only the difference is this Score's */
+    const t0 = performance.now();
+    const p1 = P.practicePlan(big.s, a, b);
+    out.firstMs = performance.now() - t0;
+    out.p1Legacy = !p1.graph && p1 === P.PianoScore.of(big.s, a, b);
+    out.syncAtFirst = made() - m0;
+    out.f1 = F();
+    out.again = P.practicePlan(big.s, a, b) === p1 && F().total === out.f1.total;
+    out.warm0 = JSON.parse(JSON.stringify(P.practiceStats.warm));
+    out.warmAsked = out.warm0.started - w0;
+    /* 2. the warm-up: idle time, then the graph plan; the legacy decision is made again once */
+    out.warmed = await P.practiceWarm(big.s);
+    const p2 = P.practicePlan(big.s, a, b);
+    out.p2Graph = !!p2.graph && p2 !== p1;
+    out.strikes = p2.strikes.length;
+    out.f2 = F();
+    out.warm1 = JSON.parse(JSON.stringify(P.practiceStats.warm));
+    out.sameRange = P.practicePlan(big.s, a, b) === p2;
+    /* 3. a small Score has no wait: the graph plan at once */
+    const sa = P.Score.first(small.s), sb = P.Score.last(small.s);
+    const before = F().total;
+    const q = P.practicePlan(small.s, sa, sb);
+    out.smallGraph = !!q.graph && F().total === before;
+    /* 4. a Score the engraver holds the producer's graph of is not made to wait either */
+    const lp = P.practicePlan(big.live, P.Score.first(big.live), P.Score.last(big.live));
+    out.liveGraph = !!lp.graph && app.hasLive(big.live);
+    return out;
+  });
+  check('the test Scores are what they claim: a large one and a small one, none with a producer\'s graph', r.bigNotes > 500 && r.smallNotes <= 500 && !r.bigLive && !r.smallLive, JSON.stringify([r.bigNotes, r.smallNotes, r.bigLive, r.smallLive]));
+  check('the first plan of the large Score is the legacy plan (the very object), and the engraver was not asked to resolve it on the spot', r.p1Legacy && r.syncAtFirst === 0, JSON.stringify([r.p1Legacy, r.syncAtFirst]));
+  check('...counted as NOT_READY once (asking again counts nothing), with the warm-up begun', r.f1.reasons.NOT_READY === 1 && r.f1.total === 1 && r.again && r.warmAsked === 1, JSON.stringify([r.f1, r.again, r.warm0, r.warmAsked]));
+  check('...and it is quick: the plan is made by the legacy build only', r.firstMs < 150, r.firstMs.toFixed(1) + ' ms');
+  check('after the warm-up: the plan is made from the graph, the song is planned again once, nothing more is counted', r.warmed === true && r.p2Graph && r.strikes > 0 && r.f2.total === 1 && r.warm1.done >= 1 && r.warm1.failed === 0 && r.sameRange, JSON.stringify([r.warmed, r.p2Graph, r.f2, r.warm1]));
+  check('a small Score is planned from its graph at once, with no wait and nothing counted', r.smallGraph, String(r.smallGraph));
+  check('a Score the engraver holds the producer\'s graph of is planned at once too (an import, a recording)', r.liveGraph, String(r.liveGraph));
+  /* the page's own paths: the keyboard hint is asked at every render and must not make a plan or resolve a Score on the spot; and a run that began on the legacy plan keeps drawing its notes on that plan
+     when the source arrives meanwhile (visualTransportFrame follows the transport only when both hold the very same plan) */
+  const q = await h.page.evaluate(async () => {
+    const P = window.PPP, Probe = window.PPPSwitchProbe, app = P.app;
+    const pk = n => (window.PPP_LAZY && window.PPP_LAZY.peek ? window.PPP_LAZY.peek(n) : window[n]);
+    const E = pk('PPPEngrave').app;
+    const made = () => { const r = E.stats.resolved; return (r.live || 0) + (r.store || 0) + (r.projected || 0) + (r.none || 0); };
+    const live = await Probe.loadScore({ file: 'catalog/method/sonatina/020.mxl' });
+    const fresh = () => P.Score.finalize(P.unpackScore(JSON.parse(JSON.stringify(P.packScore(live)))));
+    const out = {};
+    const PS = P.PianoScore, origOf = PS.of;
+    let calls = 0;
+    const S0 = app.state, saved = {};
+    ['score', 'tempo', 'loop', 'loopFrom', 'loopTo', 'beat', 'playing', 'hands', 'practiceMode', 'screen'].forEach(k => { saved[k] = S0[k]; });
+    const savedTp = app._tp;
+    try {
+      /* the Score is put into the page's state by hand, with no render: a render asks for the keyboard hint itself and would start the warm-up before this probe looks */
+      const open = score => {
+        const S = app.state;
+        Object.assign(S, { score: score, tempo: score.tempo || 84, loop: false, loopFrom: P.Score.first(score), loopTo: P.Score.last(score), beat: 0, playing: false, hands: 'both', practiceMode: 'practice', screen: 'practice' });
+        return S;
+      };
+      const big = fresh();
+      let S = open(big);
+      out.open = S.score === big;
+      PS.of = function () { calls++; return origOf.apply(this, arguments); };
+      const m0 = made();
+      const hint = app.carriedFn();
+      out.hintCalls = calls; out.hintMade = made() - m0;
+      PS.of = origOf;
+      out.hintRule = typeof hint === 'function';
+      out.hintWarmed = await P.practiceWarm(big);
+      /* the transport that began on the legacy plan */
+      const big2 = fresh();
+      S = open(big2);
+      const first = P.Score.first(big2), last = P.Score.last(big2);
+      app.startTransport(S, P.Score.startQ(big2, first));
+      out.tpLegacy = !!app._tp && !app._tp.plan.graph;
+      S.playing = true;
+      const tl1 = app.visualTimeline(S);
+      out.tlOnTransport = tl1.plan === app._tp.plan;
+      out.warmed2 = await P.practiceWarm(big2);
+      const tl2 = app.visualTimeline(S);
+      out.stillOnTransport = tl2.plan === app._tp.plan && !tl2.plan.graph;
+      out.graphNow = !!P.practicePlan(big2, first, last).graph;
+      S.playing = false;
+      out.afterStop = !!app.visualTimeline(S).plan.graph;
+    } finally {
+      PS.of = origOf;
+      app._tp = savedTp;
+      Object.assign(app.state, saved);
+    }
+    return out;
+  });
+  check('the keyboard hint at render: today\'s rule, no plan made and nothing resolved on the spot, the warm-up asked once', q.open && q.hintRule && q.hintCalls === 0 && q.hintMade === 0 && q.hintWarmed === true, JSON.stringify(q));
+  check('a transport that began on the legacy plan keeps its notes on that plan while the source arrives, and the next plan is the graph plan', q.tpLegacy && q.tlOnTransport && q.warmed2 === true && q.stillOnTransport && q.graphNow && q.afterStop, JSON.stringify(q));
+  /* review of #272: (B) a large saved piece that carries a D.C./D.S./Fine/To Coda mark is planned on the spot, with its jump, so that its first run never plays without it; (F1) a run that began
+     on the legacy plan keeps it when the key of the transport changes under it (tempo, hands): the transport and the matcher stay on one plan; (F3) the warm-up of a song that is no longer open
+     is not made */
+  const z = await h.page.evaluate(async () => {
+    const P = window.PPP, Probe = window.PPPSwitchProbe, app = P.app;
+    const pk = n => (window.PPP_LAZY && window.PPP_LAZY.peek ? window.PPP_LAZY.peek(n) : window[n]);
+    const E = pk('PPPEngrave').app;
+    const made = () => { const r = E.stats.resolved; return (r.live || 0) + (r.store || 0) + (r.projected || 0) + (r.none || 0); };
+    const copyOf = live => P.Score.finalize(P.unpackScore(JSON.parse(JSON.stringify(P.packScore(live)))));
+    const out = {};
+    const S0 = app.state, saved = {};
+    ['score', 'tempo', 'loop', 'loopFrom', 'loopTo', 'beat', 'playing', 'hands', 'practiceMode', 'screen'].forEach(k => { saved[k] = S0[k]; });
+    const savedTp = app._tp, savedPiano = app._piano, savedPerf = app._perf, savedSim = app._sim, savedSet = app.setState;
+    const hadOwnSet = Object.prototype.hasOwnProperty.call(app, 'setState');
+    const open = score => {
+      const S = app.state;
+      Object.assign(S, { score: score, tempo: score.tempo || 84, loop: false, loopFrom: P.Score.first(score), loopTo: P.Score.last(score), beat: 0, playing: false, hands: 'both', practiceMode: 'practice', screen: 'practice' });
+      return S;
+    };
+    const fakePiano = { running: () => true, wake: () => {}, now: () => 0, clockOffset: () => 0, strike: () => ({}), release: () => {}, click: () => {}, cancelAfter: () => {}, silence: () => {} };
+    try {
+      /* B: sonatina 015 is 961 notes with one D.C.; read back from its slot it has no producer's graph and carries its mark */
+      const dcLive = await Probe.loadScore({ file: 'catalog/method/sonatina/015.mxl' });
+      const dc = copyOf(dcLive);
+      out.dcNotes = dc.notes.length;
+      out.dcMarked = (dc.marks || []).some(k => ['dc', 'ds', 'fine', 'tocoda'].indexOf(k.kind) >= 0);
+      out.dcLive = E.hasLive(dc);
+      const f0 = P.practiceStats.practiceFallback.total, sr0 = P.practiceStats.syncResolved, m0 = made();
+      const pdc = P.practicePlan(dc, P.Score.first(dc), P.Score.last(dc));
+      out.dcGraph = !!pdc.graph;
+      out.dcJumps = pdc.jumps ? pdc.jumps.length : 0;
+      out.dcFallbacks = P.practiceStats.practiceFallback.total - f0;
+      out.dcSync = P.practiceStats.syncResolved - sr0;
+      out.dcMade = made() - m0;
+      /* F1: a big piece with no mark: the first plan is the legacy plan; the run begins on it; the source arrives; the tempo changes */
+      const big = copyOf(await Probe.loadScore({ file: 'catalog/method/sonatina/020.mxl' }));
+      let S = open(big);
+      app._piano = fakePiano; app._tp = null; app._sim = null;
+      app.setState = function () {};
+      const first = P.Score.first(big), last = P.Score.last(big);
+      app.beginRun(S, null, null);
+      app.startTransport(S, P.Score.startQ(big, first));
+      const tp = app._tp;
+      S.playing = true;            /* the page's own tick stops a transport that nobody is playing */
+      out.beganLegacy = !!tp && !tp.plan.graph && app._perf._plan === tp.plan;
+      out.warmedBig = await P.practiceWarm(big);
+      out.graphThere = !!P.practicePlan(big, first, last).graph;
+      S = app.state;
+      S.beat = tp.beat;            /* the playhead is where the transport put it: a seek would begin another run */
+      S.tempo = (S.tempo || 84) + 20;
+      app.advance(tp.t0 + 50);
+      out.keptAfterTempo = app._tp.plan === app._perf._plan && !app._tp.plan.graph;
+      S.hands = 'right';
+      app.advance(tp.t0 + 100);
+      out.keptAfterHands = app._tp.plan === app._perf._plan && !app._tp.plan.graph;
+      /* ...and a change of the range is planned again, from the graph (the matcher follows at the next lap) */
+      S.loop = true; S.loopFrom = first; S.loopTo = Math.min(last, first + 5);
+      app.advance(tp.t0 + 150);
+      out.replannedOnRange = !!app._tp.plan.graph && app._tp.to === S.loopTo;
+      /* F3: two copies of a big piece; the first was open when its warm-up was asked for, the second is open when it is to be done */
+      const liveC = await Probe.loadScore({ file: 'catalog/method/sonatina/016.mxl' });
+      const ca = copyOf(liveC), cb = copyOf(liveC);
+      open(ca);
+      const c0 = P.practiceStats.warm.cancelled, fl0 = P.practiceStats.warm.failed, m1 = made();
+      const pa = P.practiceWarm(ca);
+      open(cb);
+      out.cancelRes = await pa;
+      out.cancelMade = made() - m1;
+      out.cancelCount = P.practiceStats.warm.cancelled - c0;
+      out.cancelFailed = P.practiceStats.warm.failed - fl0;
+      out.openOne = await P.practiceWarm(cb);
+    } catch (e) {
+      out.error = String(e && e.message || e);
+    } finally {
+      if (hadOwnSet) app.setState = savedSet; else delete app.setState;
+      app._piano = savedPiano; app._tp = savedTp; app._perf = savedPerf; app._sim = savedSim;
+      Object.assign(app.state, saved);
+    }
+    return out;
+  });
+  check('B: a saved D.C. piece of more than 500 notes carries its mark, and its first plan is made on the spot, with the jump, counted as resolved on the spot and not as a fallback', !z.error && z.dcNotes > 500 && z.dcMarked && !z.dcLive && z.dcGraph && z.dcJumps > 0 && z.dcFallbacks === 0 && z.dcSync === 1 && z.dcMade >= 1, JSON.stringify(z));
+  check('F1: a run that began on the legacy plan keeps it, transport and matcher together, when the tempo or the hands change under it; another range is planned again', z.beganLegacy && z.warmedBig === true && z.graphThere && z.keptAfterTempo && z.keptAfterHands && z.replannedOnRange, JSON.stringify(z));
+  check('F3: the warm-up of a song that is no longer open is not made (nothing resolved, not counted as a failure), and the open one is', z.cancelRes === false && z.cancelMade === 0 && z.cancelCount === 1 && z.cancelFailed === 0 && z.openOne === true, JSON.stringify(z));
+  check('the page ran without an error', h.errors.length === 0, h.errors.join(' | '));
+  await h.close();
+}
+
 /* ---- the sweep ---- */
 async function sectionSweep(browser, url, args) {
   head('the corpus under "graph"');
@@ -454,6 +700,7 @@ async function main() {
     if (want('leak')) await sectionLeak(browser, url);
     if (want('fallbacks')) await sectionFallbacks(browser, url);
     if (want('late')) await sectionLate(browser, url);
+    if (want('warm')) await sectionWarm(browser, url);
     if (want('sweep')) summary.sweep = await sectionSweep(browser, url, args);
     if (want('perf')) summary.perf = await sectionPerf(browser, url);
   } finally {

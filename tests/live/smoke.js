@@ -10,8 +10,9 @@
 
    What it checks (each line PASS/FAIL, exit code 1 on any FAIL):
      /health ok; the page carries the expected build; a fresh profile loads with no page error and no failed request, with no /rec/ request at
-     first paint; the app globals (PPP.recording, PPP.recordingArrange) have the intended defaults; the code the head defers (G13-4e) came in,
-     with no synchronous load, and Home's thumbnail is drawn; anonymous routes answer as designed
+     first paint; the app globals (PPP.recording, PPP.recordingArrange, PPP.practice) have the intended defaults; the code the head defers (G13-4e)
+     came in, with no synchronous load, and Home's thumbnail is drawn; the practice screen of a fresh profile plans the sample from its graph and
+     counts no fallback (G11a-5); anonymous routes answer as designed
      (auth/me, shares, the PC queue routes 401, no CORS headers); optionally the pairing link and the logs.
    It does NOT run the real transcription (6 minutes): that is for a change of the pipeline, by hand (docs/GOALS/G10 section 25). */
 'use strict';
@@ -87,10 +88,13 @@ async function main() {
     check('a fresh profile loads with no page or console error', errors.length === 0, errors.slice(0, 3).join(' | '));
     check('a fresh profile has no failed request (4xx/5xx)', failed.length === 0, failed.slice(0, 3).join(' | '));
     check('no /rec/ request at first paint', recReqs.length === 0, recReqs.length + ' requests');
-    const g = await p.evaluate(() => ({ build: window.PPP_BUILD, rec: window.PPP && window.PPP.recording, lead: window.PPP && window.PPP.recordingArrange, arranger: window.PPP && window.PPP.arranger }));
+    const g = await p.evaluate(() => ({ build: window.PPP_BUILD, rec: window.PPP && window.PPP.recording, lead: window.PPP && window.PPP.recordingArrange, arranger: window.PPP && window.PPP.arranger,
+      practice: window.PPP && window.PPP.practice, practiceDefault: window.PPP && window.PPP.practiceDefault }));
     check('PPP.recording is v2 by default', g.rec === 'v2', String(g.rec));
     check('PPP.recordingArrange is the lead sheet by default', g.lead === 'leadsheet', String(g.lead));
     check('PPP.arranger is the one-note arranger by default', g.arranger === 'single', String(g.arranger));
+    /* G11a-5: the practice player is the plan made from the ScoreGraph by default (the build's own constant, PPP.practiceDefault, says so; a build from before the flip has none: not a failure) */
+    check('PPP.practice is the graph plan by default', g.practiceDefault === undefined || (g.practiceDefault === 'graph' && g.practice === 'graph'), g.practiceDefault === undefined ? 'not in this build' : g.practice + ' / default ' + g.practiceDefault);
     /* G13-4e: the code the head defers (lazy-load.js) comes in after the first paint, with no synchronous load, and Home's thumbnail is drawn. A build from before the split has no PPP_LAZY: not a failure. */
     const lz = await p.evaluate(async () => {
       const L = window.PPP_LAZY;
@@ -103,6 +107,21 @@ async function main() {
     check('PPP.split is on by default and every deferred group of the head came in after the first paint', lz === null || (lz.split === 'on' && lz.all), lz === null ? 'not in this build' : lz.split + ' / ' + lz.groups);
     check('no deferred global was read before its group was in (0 synchronous loads)', lz === null || lz.sync === 0, lz === null ? 'not in this build' : String(lz.sync));
     check('the score thumbnail of Home is engraved', lz === null || lz.drawn >= 1, lz === null ? 'not in this build' : String(lz.drawn));
+    /* G11a-5 (TD31): the practice screen of a fresh profile - the sample song, which has no producer's graph - works out its source in idle time, and then plans it from the graph; nothing falls back */
+    const pp = await p.evaluate(async () => {
+      const P = window.PPP;
+      if (!P || P.practiceDefault === undefined || !P.practiceStats) return null;
+      const A = P.app, sc = A && A.state && A.state.score;
+      if (!sc || !sc.measures || !sc.measures.length) return { err: 'no score is open' };
+      A.go('player')();
+      const t0 = Date.now();
+      while (Date.now() - t0 < 30000 && !(P.practiceStats.warm.done >= 1 || P.practiceStats.warm.failed >= 1)) await new Promise(r => setTimeout(r, 200));
+      const plan = P.practicePlan(sc, P.Score.first(sc), P.Score.last(sc));
+      const fb = P.practiceStats.practiceFallback;
+      return { screen: A.state.screen, notes: sc.notes.length, graphPlan: !!plan.graph, graph: P.practiceStats.graph, fallbacks: fb.total, reasons: JSON.stringify(fb.reasons), warm: JSON.stringify(P.practiceStats.warm), sync: window.PPP_LAZY && window.PPP_LAZY.status ? window.PPP_LAZY.status().syncLoads : 0 };
+    });
+    check('the practice screen plans the sample from its graph, and no fallback is counted (G11a-5)', pp === null || (!pp.err && pp.graphPlan && pp.graph >= 1 && pp.fallbacks === 0 && pp.screen === 'player'), pp === null ? 'not in this build' : pp.err || ('screen ' + pp.screen + ', ' + pp.notes + ' notes, graph plans ' + pp.graph + ', fallbacks ' + pp.fallbacks + ' ' + pp.reasons + ', warm ' + pp.warm));
+    check('the practice code read no deferred global early (still 0 synchronous loads)', pp === null || pp.err || pp.sync === 0, pp === null ? 'not in this build' : String(pp.sync));
     await ctx.close();
 
     // 4. the pairing link (read-only: the status route)

@@ -42,8 +42,8 @@
 # to paint, long tasks) against its committed baseline. The same three jobs run every night and on a manual run. G11a-2 adds two more: practice-parity (the
 # event-parity harness tests/practice/parity.js: practice/plan.js against the legacy player, every difference booked to its cause; the whole corpus in about a minute, a
 # sample of it on a pull request) and practice-parity-mutants (the planted defects of practice/plan.js the check must notice, in four shards). G11a-3 (the PPP.practice switch) adds
-# three things: practice-suites runs the eleven suites twice, once on the legacy player and once with every page started on PPP.practice 'graph' (a matrix of two checks);
-# practice-switch is the switch's own test (tests/practice/switch.js: the default and what is no choice, the module requested only under 'graph', the scheduler's queue of the 12
+# three things: practice-suites runs the twelve suites twice, once on the explicit legacy player and once on the page's own default, 'graph' since G11a-5 (a matrix of two checks);
+# practice-switch is the switch's own test (tests/practice/switch.js: the default and what is no choice, the module a deferred group asked for once and never read early, the scheduler's queue of the 12
 # pieces equal to the one recorded on main before the switch, the matcher, the falling notes and follow mode equal, the fallbacks counted, the corpus swept, the build time);
 # practice-switch-mutants breaks one line of the switch at a time and the test must go red (in three shards). A manual run can be
 # narrowed to them with `-f only=practice` (the heavy nightly jobs below are then skipped; the gate still runs), and `-f perf_record=true`
@@ -721,10 +721,11 @@ jobs:
   # practice-suites: the twelve practice and playback browser suites (follow, falling-notes, memory, learning, playback-scheduler, coach, midi,
   # interactions, lessons, course, alignment, learner-log (G11b-1: PPP.learner and the run log): about 600 checks) on a port the runner is given, with NODE_ENV=production and
   # tests/engrave/tools/with-port.js (G11-D12). They had never run in CI before; a suite is green only if it exits 0, fails no check and prints
-  # about as many checks as it did when the list was written (a suite that stopped testing is not a pass). About 4 minutes of suites. G11a-3: twice, as a matrix - the page's
-  # own player (PPP.practice 'legacy') and every page started on 'graph' (the plan made from the ScoreGraph; tests/engrave/tools/with-port.js sets the remembered choice before
-  # the app runs) - and the suites must pass both ways, unedited. Each player in two shards (run-suites.js --shard K/2: every second suite; 2.6 and 1.5 minutes of suites, so that no check
-  # is longer than 4 minutes with its install).
+  # about as many checks as it did when the list was written (a suite that stopped testing is not a pass). About 4 minutes of suites. G11a-3: twice, as a matrix. Since G11a-5 the page's
+  # own default is 'graph' (the plan made from the ScoreGraph, the four fixes on): the 'graph' check runs the suites on what a visitor gets (nothing is set; run-suites.js is red when
+  # a page was not on 'graph'), and the 'legacy' check on the explicit way back (tests/engrave/tools/with-port.js sets the remembered choice 'legacy' before the app runs; red when a
+  # page was not on 'legacy' or built a graph plan). The suites must pass both ways, unedited. Each player in two shards (run-suites.js --shard K/2: every second suite; 2.6 and 1.5
+  # minutes of suites, so that no check is longer than 4 minutes with its install).
   practice-suites:
     needs: practice-plan
     if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.run == 'true')) }}
@@ -854,10 +855,12 @@ jobs:
       - run: node tests/practice/parity-mutants.js --shard ${{ matrix.part }}/4
         if: ${{ github.event_name != 'pull_request' }}
 
-  # practice-switch: the PPP.practice switch in a real page on a free port (tests/practice/switch.js, docs/GOALS/G11 section 6.3): what is no choice is legacy; 'legacy' never requests
-  # practice/plan.js; the scheduler's queue of the 12 pieces at 8x under 'legacy' is the digest recorded on main before the switch (tests/practice/baselines/switch.json) and under
-  # 'graph' the same to the bit; five scripted performances, the falling notes and follow mode's gates give the same answers on either plan; a song whose graph does not state its
-  # music keeps the legacy plan and is counted by reason and by song; the corpus swept under 'graph' (fallbacks on the catalogue: 0); the build time against the legacy build + 25%.
+  # practice-switch: the PPP.practice switch in a real page on a free port (tests/practice/switch.js, docs/GOALS/G11 section 6.3, section 10.6): what is no choice is 'graph' (the default
+  # since G11a-5; 'legacy' is the explicit way back); practice/plan.js is a deferred group of the head, asked for once and never read before it is in; the scheduler's queue of the 12 pieces
+  # at 8x under 'legacy' is the digest recorded on main before the switch (tests/practice/baselines/switch.json) and under 'graph' the same to the bit; five scripted performances, the
+  # falling notes and follow mode's gates give the same answers on either plan; a song whose graph does not state its music keeps the legacy plan and is counted by reason and by song;
+  # a large song read back from its slot is resolved in idle time and its first plan is the legacy plan, counted NOT_READY (TD31); the corpus swept under 'graph' (fallbacks on the
+  # catalogue: 0); the build time against the legacy build + 25%.
   # The whole corpus takes a minute or two; a pull request reads every 5th catalogue file and every fixture.
   practice-switch:
     needs: practice-plan

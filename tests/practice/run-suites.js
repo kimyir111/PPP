@@ -10,7 +10,9 @@
      node tests/practice/run-suites.js --shard 2/3        every third suite (the CI jobs that split the list use this)
      node tests/practice/run-suites.js --log-dir DIR      each suite's full output (default tests/practice/out/suites)
      node tests/practice/run-suites.js --port N           use the server already listening on N (the mutation proxy of mutants.js) instead of starting one
-     node tests/practice/run-suites.js --practice graph   every page starts on PPP.practice 'graph' (G11a-3: the same suites against the plan made from the ScoreGraph; default legacy)
+     node tests/practice/run-suites.js --practice legacy  every page starts on the EXPLICIT choice PPP.practice 'legacy' (the way back, kept one release by G11a-5)
+     node tests/practice/run-suites.js --practice graph   the page's own default (G11a-5: 'graph', the plan made from the ScoreGraph with the four fixes on, which is what a visitor gets;
+                                                          nothing is set, and the run is red when a page was not on 'graph'). This is the default of the runner.
 
    A suite's checks are the lines its own ok() helper prints, starting with a tick or a cross (playback-scheduler: PASS or FAIL). The run is red when a suite exits non-zero, runs
    past its limit, or prints no check at all (a suite that silently did nothing is not a pass). The last lines of a failing suite are printed
@@ -46,13 +48,14 @@ const SUITES = [
   { name: 'learner-log', file: 'learner-log.test.js', limit: 12, min: 109 }
 ];
 
-/* with-port.js ends a suite's output with what the pages did: `[with-port]   practice <modes>: graph plans N, fallbacks M (reasons)`. On --practice graph every page must have been on 'graph', and a suite that
-   plans at all must have built a graph plan: a suite that ran 'green' on the legacy plan under the name of the graph would prove nothing. */
+/* with-port.js ends a suite's output with what the pages did: `[with-port]   practice <modes>: graph plans N, fallbacks M (reasons)`. On --practice graph (the page's own default since G11a-5: nothing
+   is set, so a page that is on 'graph' is the proof that the default is) every page must have been on 'graph', and a suite that plans at all must have built a graph plan: a suite that ran 'green'
+   on the legacy plan under the name of the graph would prove nothing. On --practice legacy (an explicit choice) every page must have been on 'legacy' and none may have built a graph plan. */
 const PRACTICE_LINE = /\[with-port\]\s+practice ([^:\s]+): graph plans (\d+), fallbacks (\d+)/;
 function graphProblem(r, practice) {
-  if (practice !== 'graph') return null;
-  if (!r.graph) return 'no "[with-port] practice" line in the output: the pages could not be read, so nothing says the suite ran on the graph plan';
-  if (r.graph.modes !== 'graph') return 'a page ran on PPP.practice "' + r.graph.modes + '", not only on "graph"';
+  if (!r.graph) return 'no "[with-port] practice" line in the output: the pages could not be read, so nothing says which plan the suite ran on';
+  if (r.graph.modes !== practice) return 'a page ran on PPP.practice "' + r.graph.modes + '", not only on "' + practice + '"';
+  if (practice === 'legacy') return r.graph.plans > 0 ? r.graph.plans + ' graph plans were built on --practice legacy: the explicit choice was not kept' : null;
   if (!r.suite.noPlans && r.graph.plans < 1) return 'the suite built no graph plan on --practice graph (it does not reach the switch; if it never plans, mark it noPlans in SUITES)';
   return null;
 }
@@ -61,7 +64,7 @@ const PASS_LINE = /^\s*(✓|PASS) /;
 const FAIL_LINE = /^\s*(✗|FAIL) /;
 
 function parseArgs(argv) {
-  const a = { only: null, list: false, shard: null, port: null, practice: 'legacy', logDir: null };
+  const a = { only: null, list: false, shard: null, port: null, practice: 'graph', logDir: null };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i];
     if (k === '--only') a.only = String(argv[++i] || '').split(',').filter(Boolean);
@@ -72,7 +75,7 @@ function parseArgs(argv) {
     else if (k === '--practice') { a.practice = argv[++i]; if (a.practice !== 'legacy' && a.practice !== 'graph') throw new Error('--practice legacy|graph'); }
     else throw new Error('unknown argument ' + k);
   }
-  if (!a.logDir) a.logDir = path.join(__dirname, 'out', a.practice === 'graph' ? 'suites-graph' : 'suites');
+  if (!a.logDir) a.logDir = path.join(__dirname, 'out', 'suites-' + a.practice);
   return a;
 }
 
@@ -83,7 +86,7 @@ function runOne(suite, port, logDir, practice) {
     const chunks = [];
     const env = Object.assign({}, process.env, { PPP_PORT: String(port), NODE_ENV: 'production' });
     delete env.PPP_URL;                      // the suites that read it would bypass the port rewrite
-    if (practice === 'graph') env.PPP_PRACTICE = 'graph'; else delete env.PPP_PRACTICE;   // with-port.js starts every page on PPP.practice 'graph'
+    if (practice === 'legacy') env.PPP_PRACTICE = 'legacy'; else delete env.PPP_PRACTICE;   // with-port.js starts every page on the explicit 'legacy'; 'graph' is the page's own default, so nothing is set
     const child = spawn(process.execPath, ['-r', WITH_PORT, path.join(ROOT, 'tests', suite.file)], { cwd: ROOT, env, stdio: ['ignore', 'pipe', 'pipe'] });
     child.stdout.on('data', d => chunks.push(d));
     child.stderr.on('data', d => chunks.push(d));

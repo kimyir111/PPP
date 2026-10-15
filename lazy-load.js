@@ -35,9 +35,9 @@
   var DEFAULT = (options && options.defaultMode) || 'on';
   /* the order of the downloads (and of the prefetch). The first wave is the two small files a tap can ask for in the first seconds (lessons.js 28 KB, library-backup.js 11 KB: 39 KB, a
      fifth of a second of a slow line): they go out alone, so that they are not one share in seventy of it. The second is what draws the thumbnail of Home (the library, the engraver's
-     source, its fifteen drawing files). A file of a wave goes out only when the files of the waves before it are in - or, for a wave in OVERLAP, have begun to answer: the next
+     source, its fifteen drawing files). The third is practice/plan.js (18 KB: the default player since G11a-5, wanted by the first Play of a song) beside audio-score.js. A file of a wave goes out only when the files of the waves before it are in - or, for a wave in OVERLAP, have begun to answer: the next
      request then crosses the line while the answer is still coming, and the line is not left empty for a round trip. What a read that cannot wait asks for is not held. */
-  var WAVES = (options && options.waves) || [['lessons', 'backup'], ['score', 'engrave', 'engravePage'], ['audio'], ['arranger']];
+  var WAVES = (options && options.waves) || [['lessons', 'backup'], ['score', 'engrave', 'engravePage'], ['practice', 'audio'], ['arranger']];
   var OVERLAP = (options && options.overlap) || [false];
   var PRIORITY = [].concat.apply([], WAVES);
   /* downloads in flight at once: more than a line can use at the same time only cuts the line into thinner shares (and a file that is asked for waits for all of them) */

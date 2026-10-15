@@ -22,3 +22,11 @@ test('the page names the version of practice/plan.js the repository holds', () =
   assert.equal(pin.PRACTICE_FILE_V, v, 'tests/practice/baselines/plan-file.json says version ' + pin.PRACTICE_FILE_V + ', the page ' + v);
   assert.equal(planSha, pin.sha256, 'practice/plan.js changed: raise PRACTICE_FILE_V in the page (now ' + v + ') and write {"PRACTICE_FILE_V": ' + (v + 1) + ', "sha256": "' + planSha + '"} to tests/practice/baselines/plan-file.json');
 });
+
+/* G11a-5: practice/plan.js is also a deferred group of the head, and the served page names it by its content hash; the ?v= of the source is what the hash replaces, and what a server that does
+   not know about hashes (and this test) reads. It is kept equal to PRACTICE_FILE_V, so that the page asks for one version of the file in every way it can ask. */
+test('the head names the same version of practice/plan.js in its deferred block', () => {
+  const m = /<noscript data-ppp-lazy="practice"[^>]*>\s*<script src="\.\/practice\/plan\.js\?v=(\d+)"><\/script>\s*<\/noscript>/.exec(page);
+  assert.ok(m, 'the head has no <noscript data-ppp-lazy="practice"> block naming ./practice/plan.js?v=N');
+  assert.equal(+m[1], pin.PRACTICE_FILE_V, 'the head says ?v=' + m[1] + ', PRACTICE_FILE_V is ' + pin.PRACTICE_FILE_V);
+});

@@ -30,10 +30,10 @@ import sys
 # G11a-1's Node unit tests of practice/).
 APP_FILES = ("Piano Coach App.dc.html",)
 APP_DIRS = ("practice/", "tests/practice/")
-# The suites themselves and what they and the probes stand on (the server helper, the page boot, the port rewrite).
+# The suites themselves and what they and the probes stand on (the server helper, the page boot, the port rewrite, and since G11a-5 the deferred loader: practice/plan.js is a group of the head).
 SUITE_FILES = tuple("tests/%s.test.js" % n for n in (
     "follow", "falling-notes", "memory", "learning", "playback-scheduler", "coach", "midi", "interactions", "lessons", "course", "alignment", "learner-log"))
-RUN_FILES = ("tests/boot.js", "tests/serve-free.js", "tests/engrave/tools/with-port.js", "package.json", "package-lock.json")
+RUN_FILES = ("lazy-load.js", "tests/boot.js", "tests/serve-free.js", "tests/engrave/tools/with-port.js", "package.json", "package-lock.json")
 # The probes: a change here also runs the mutation check. (A change to G11a-1's Node unit tests in tests/practice/ is a practice test, `run`,
 # and not a probe.)
 HARNESS_DIRS = ("tests/practice/baselines/",)

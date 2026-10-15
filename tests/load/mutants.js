@@ -14,7 +14,7 @@ const { spawnSync } = require('child_process');
 const REPO = path.resolve(__dirname, '..', '..');
 const SERVER = ['server.js', 'static-allow.js', 'static-assets.js', 'share-guest.js', 'home-jobs.js', 'home-jobs-store.js', 'home-result.js', 'home-omr.js', 'body-reader.js', 'signup-limit.js', 'server-stats.js'];
 const ROOT_FILES = ['Piano Coach App.dc.html', 'i18n.js', 'lazy-load.js', 'support.js', 'lessons.js', 'course.js', 'score-search.js', 'library-backup.js', 'audio-score.js', 'package.json', 'render.yaml'];
-const DIRS = ['scoregraph', 'playability', 'difficulty', 'songgraph', 'arrangement', 'realize', 'engrave', 'vendor', 'i18n', 'candidates', 'critics', 'repair', 'rec'];
+const DIRS = ['scoregraph', 'playability', 'difficulty', 'songgraph', 'arrangement', 'realize', 'engrave', 'vendor', 'i18n', 'candidates', 'critics', 'repair', 'rec', 'practice'];   /* practice/ since G11a-5: practice/plan.js is a deferred group of the head */
 const SINGLES = ['audio/piano/A0.mp3', 'assets/hands/hand-right-black.png', 'catalog/shared-seeds.json', 'catalog/hymns/all-creatures.musicxml', 'difficulty/tools/dataset/method-books.json'];
 
 function copyDir(from, to) {
