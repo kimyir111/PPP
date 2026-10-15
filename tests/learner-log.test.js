@@ -72,9 +72,13 @@ async function open(browser, o) {
   o = o || {};
   const ctx = await browser.createBrowserContext();
   const page = await ctx.newPage();
-  const probe = { errors: [], requests: [], toasts: [] };
+  const probe = { errors: [], requests: [], toasts: [], all: [] };
   page.on('pageerror', e => probe.errors.push(e.message));
-  page.on('request', r => { if (/practice\/runlog/.test(r.url())) probe.requests.push(r.url()); });
+  page.on('request', r => { if (/practice\/runlog/.test(r.url())) probe.requests.push(r.url()); if (/\/practice\//.test(r.url())) probe.all.push(r.url()); });
+  if (o.block) {       /* a request the page is not to get (G11b-3: a module that cannot be had) */
+    await page.setRequestInterception(true);
+    page.on('request', r => { if (o.block.test(r.url())) r.abort(); else r.continue(); });
+  }
   await preparePage(page);
   if (o.midi) await page.evaluateOnNewDocument(installFakeMidi);
   for (const [fn, arg] of o.init || []) await page.evaluateOnNewDocument(fn, arg);
@@ -186,7 +190,7 @@ async function switchSection(browser) {
   ok('and a choice made in the address is not remembered', b.key === null);
   const c = await mode('', [stored('typed')]);
   ok('a remembered typed is typed', c.learner === 'typed' && c.mod === 'object');
-  const d1 = await mode('', [stored('adaptive')]);
+  const d1 = await mode('', [stored('adaptiv')]);   /* a typo (G11b-3: 'adaptive' itself is the third word now, tests/practice/adaptive-sections.js) */
   const d2 = await mode('', [stored('TYPED')]);
   const d3 = await mode('?learner=junk');
   const d4 = await mode('?learner=Typed');
@@ -1387,6 +1391,10 @@ async function frozenSection(browser) {
       if (want('demolive')) await demoLiveSection(browser);
       if (want('democonnect')) await demoConnectSection(browser);
       if (want('ui')) await uiSection(browser);
+      /* G11b-3: PPP.learner 'adaptive' (tests/practice/adaptive-sections.js) */
+      if (['adswitch', 'adcard', 'adseq', 'adtempo', 'adlocale', 'addemo', 'adfallback', 'adpersist', 'adbudget', 'adui'].some(want)) {
+        await require('./practice/adaptive-sections').run(browser, { open, toPractice, toSettings, ok, sleep, errors, calibration, CALIB_REF }, want);
+      }
     }
   } finally {
     await browser.close();
