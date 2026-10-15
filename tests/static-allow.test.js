@@ -68,8 +68,8 @@ function expectedServed(rel) {
   const ext = path.extname(name);
   if (parts.length === 1) return ROOT_SERVED.indexOf(name) > -1;
   const top = parts[0];
-  /* G11a-3: PPP.practice 'graph' loads practice/plan.js; G11b-1: PPP.learner 'typed' loads practice/runlog.js. Nothing else of practice/ (the simulator and the variant splice are not loaded by any page) */
-  if (top === 'practice') return rel === 'practice/plan.js' || rel === 'practice/runlog.js';
+  /* G11a-3: PPP.practice 'graph' loads practice/plan.js; G11b-1: PPP.learner 'typed' loads practice/runlog.js; G11c-1: PPP.variant 'on' loads practice/variant.js. Nothing else of practice/ (the simulator is not loaded by any page) */
+  if (top === 'practice') return rel === 'practice/plan.js' || rel === 'practice/runlog.js' || rel === 'practice/variant.js';
   if (CODE_DIRS.indexOf(top) > -1) {
     if (parts.length === 2) return ext === '.js';
     if (rel === 'scoregraph/tools/notation-check.js') return true;                          /* G12-3: the checker omr/flags.js reads (its other tool, ledger-stats.js, is not the page's) */
@@ -101,7 +101,7 @@ test('isServed: the examples that matter', () => {
     'difficulty/tools/dataset/method-books.json', 'i18n/ko-KR.json', 'audio/piano/A0.mp3', 'assets/hands/hand-right-black.png',
     'catalog/index.json', 'catalog/method/index.json', 'catalog/hymns/index.json', 'catalog/hymns/all-creatures.musicxml', 'catalog/method/beyer/001.mxl',
     'samples/prelude-fragment.musicxml', 'vendor/vexflow-4.2.3.js', 'vendor/LICENSE-vexflow.txt', 'vendor/react-18.3.1/react.production.min.js',
-    'vendor/react-18.3.1/LICENSE-react.txt', 'THIRD_PARTY_NOTICES.md', 'omr/normalize.js', 'omr/apply.js', 'omr/flags.js', 'scoregraph/tools/notation-check.js', 'practice/plan.js', 'practice/runlog.js',
+    'vendor/react-18.3.1/LICENSE-react.txt', 'THIRD_PARTY_NOTICES.md', 'omr/normalize.js', 'omr/apply.js', 'omr/flags.js', 'scoregraph/tools/notation-check.js', 'practice/plan.js', 'practice/runlog.js', 'practice/variant.js',
     'vendor/fonts/figtree-v9-latin.woff2', 'vendor/fonts/instrument-serif-v5-italic-latin-ext.woff2', 'vendor/fonts/noto-music-v21-music.woff2', 'vendor/fonts/LICENSE-figtree-OFL.txt',
     /* G13-8: the optional libraries, their licences, and Basic Pitch's model with its one weights file */
     'vendor/pdfjs-3.11.174/pdf.min.js', 'vendor/pdfjs-3.11.174/pdf.worker.min.js', 'vendor/pdfjs-3.11.174/LICENSE.txt', 'vendor/tfjs-2.8.6/tf.min.js',
@@ -116,7 +116,7 @@ test('isServed: the examples that matter', () => {
     'vendor/basic-pitch-1.0.1/model/a/b.bin', 'vendor/fonts/../../server.js', 'vendor/fonts/figtree-v9-latin.woff2::$DATA', 'vendor/fonts/.hidden.woff2', 'vendor/fonts/Figtree-v9-latin.WOFF2.exe',
     '.env', '.git/config', '.github/workflows/bench.yml', 'data/store.json', 'node_modules/pg/package.json', 'review/build.js', 'Server.js', 'SUPPORT.JS', 'scoregraph/INDEX.JS',
     'scoregraph/../server.js', 'vendor/../server.js', 'vendor/./vexflow-4.2.3.js', 'vendor/react-18.3.1/../../server.js', '../server.js', '/server.js', 'scoregraph\\index.js', '', 'scoregraph/', 'scoregraph', 'scoregraph//index.js', 'support.js\0', 'support.js.',
-    'support.js::$DATA', 'practice/sim.js', 'practice/variant.js', 'practice/plan.js.map', 'practice/../server.js', 'practice/tools/anything.js', 'Practice/plan.js'].forEach(rel => assert.equal(allow.isServed(rel), false, JSON.stringify(rel)));
+    'support.js::$DATA', 'practice/sim.js', 'practice/variant.js.map', 'practice/plan.js.map', 'practice/../server.js', 'practice/tools/anything.js', 'Practice/plan.js'].forEach(rel => assert.equal(allow.isServed(rel), false, JSON.stringify(rel)));
   assert.equal(allow.isServed(null), false);
   assert.equal(allow.isServed(undefined), false);
   assert.equal(allow.isServed({}), false);
