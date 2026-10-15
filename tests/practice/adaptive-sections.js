@@ -248,14 +248,15 @@ async function run(browser, h, want) {
       const full = A.coachContext();
       const det = PPP.Coach.deterministicPlan(full);
       const checked = PPP.Coach.validate(JSON.parse(JSON.stringify(det)), full);
-      return { ok: v.ok, issues: v.issues.length, task: v.plan && v.plan.tasks[0], adaptive: !!full.adaptive, summary: full.adaptive && full.adaptive.summary, planTasks: full.adaptive && full.adaptive.plan ? full.adaptive.plan.tasks.length : 0,
+      return { ok: v.ok, issues: v.issues.length, card: { from: rec.from, to: rec.to, hands: rec.hands, tempoPct: rec.tempoPct }, task: v.plan && v.plan.tasks[0], adaptive: !!full.adaptive, summary: full.adaptive && full.adaptive.summary, planTasks: full.adaptive && full.adaptive.plan ? full.adaptive.plan.tasks.length : 0,
         detSame: JSON.stringify(det) === JSON.stringify(full.adaptive && full.adaptive.plan), checkedOk: checked.ok, checkedIssues: checked.issues.length, perc: full.allowed.percentages.length,
         listed: A.state.coachPlan ? A.state.coachPlan.tasks.map(t => t.range.start + '-' + t.range.end + ' ' + t.hand + ' ' + t.tempoPercent) : null, noLLM: JSON.stringify(full).length > 0 };
     });
-    ok('the card\'s task goes through Coach.validate whole: ok, no repair, no drop', guard.ok && guard.issues === 0 && guard.task.range.start === guard.task.range.start, JSON.stringify(guard.task));
-    ok('Coach.context carries the model\'s summary (runs, focus, the weakest passages as measured percentages, reviews due) and the policy\'s validated plan', guard.adaptive && guard.summary.runs === 14 && !!guard.summary.focus && guard.summary.passages.length >= 1 && typeof guard.summary.passages[0].accuracy === 'number' && guard.planTasks >= 1, JSON.stringify(guard.summary));
+    ok('the card\'s task goes through Coach.validate whole: ok, no repair, no drop', guard.ok && guard.issues === 0 && !!guard.task && guard.task.range.start === guard.card.from && guard.task.range.end === guard.card.to && guard.task.hand === guard.card.hands && guard.task.tempoPercent === guard.card.tempoPct, JSON.stringify(guard.task));
+    const gs = guard.summary || { runs: -1, focus: null, passages: [] };
+    ok('Coach.context carries the model\'s summary (runs, focus, the weakest passages as measured percentages, reviews due) and the policy\'s validated plan', guard.adaptive && !!gs.focus && gs.runs === 14 && gs.passages.length >= 1 && typeof gs.passages[0].accuracy === 'number' && guard.planTasks >= 1, JSON.stringify(guard.summary));
     ok('the deterministic coach answers with that plan, and it passes validate again untouched', guard.detSame && guard.checkedOk && guard.checkedIssues === 0, JSON.stringify({ same: guard.detSame, ok: guard.checkedOk, i: guard.checkedIssues }));
-    const sums = guard.summary.passages[0];
+    const sums = gs.passages[0] || {};
     ok('the summary names the weak left hand: the weakest passage overlaps bars 9-12 and its left accuracy is below its right accuracy', sums.from <= 12 && sums.to >= 9 && sums.leftAccuracy != null && sums.rightAccuracy != null && sums.leftAccuracy < sums.rightAccuracy, JSON.stringify(sums));
     const coachList = await A1.p.page.evaluate(async () => { await PPP.app.requestPlan({ keepDone: true }); const pl = PPP.app.state.coachPlan; return pl ? { src: PPP.app.state.coachSource, tasks: pl.tasks.map(t => ({ s: t.range.start, e: t.range.end, h: t.hand, p: t.tempoPercent, why: t.reason })), goal: pl.todayGoal } : null; });
     ok('the session\'s list on the practice page is made from it, planned by PPP, each task with a reason', coachList && coachList.src === 'PPP' && coachList.tasks.length >= 1 && coachList.tasks.every(t => t.why && t.why.length > 8), JSON.stringify(coachList));
