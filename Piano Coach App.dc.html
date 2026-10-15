@@ -15726,9 +15726,11 @@ class Component extends DCLogic {
   warmOmrEditor() {
     if (OMR_MODE !== 'v2' || this._omrWarm) return;
     this._omrWarm = true;
-    const go = () => { loadOmrEditor().then(ok => { if (!ok) this._omrWarm = false; }); loadEngrave().catch(() => {}); };
+    const go = () => { loadOmrEditor().then(ok => { if (!ok) this._omrWarm = false; }); this.omrEngrave().catch(() => {}); };
     if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: 3000 }); else setTimeout(go, 800);
   }
+  /* the engraver's layout core for the sheet (the one place the editor asks for it) */
+  omrEngrave() { return loadEngrave(); }
   async openOmrEditor(number) {
     const S = this.state;
     const held = this._omrEd;
@@ -15737,7 +15739,7 @@ class Component extends DCLogic {
     if (held && held.ui && !held.ui.closed && held.scoreId === S.score.id) { held.ui.go(number); return; }
     const ok = await loadOmrEditor();
     if (!ok) { this.say(tx('The measure editor could not be loaded. Try again in a moment.')); follow(); return; }
-    try { await loadEngrave(); } catch (e) { this.say(tx('The measure editor could not be loaded. Try again in a moment.')); follow(); return; }
+    try { await this.omrEngrave(); } catch (e) { this.say(tx('The measure editor could not be loaded. Try again in a moment.')); follow(); return; }
     const sc = this.state.score;
     let src = null;
     try { src = await window.PPPEngrave.app.resolve(sc, { key: this.state.songId }); } catch (e) { src = null; }
