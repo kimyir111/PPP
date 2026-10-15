@@ -5,7 +5,7 @@
    a change durable, to read what was there once after a boot (loadAll), and to read items; the bodies are never in memory. An idle poll calls none of them.
 
    A library is a row named by a one-way hash of a secret code the person's devices keep (ppp_sync_libs.id = 'lib_' + 22 hex of sha256('ppp-lib-v1:' + code); the hash
-   itself is client_hash). An item is one song (key 'song:<id>') or the cross-song progress (key 'state'): a gzip JSON body (BYTEA, never JSONB: 3-10x the bytes, and Neon's
+   itself is client_hash; recovery_hash is the hash of a second code, shown once, that can only give the library a new code). An item is one song (key 'song:<id>') or the cross-song progress (key 'state'): a gzip JSON body (BYTEA, never JSONB: 3-10x the bytes, and Neon's
    egress counts them), the revision the library had when it was written (one counter per library), a tombstone (deleted_at, body NULL) for a deletion.
 
    Every change is ONE statement that names the library in its WHERE and re-checks the revision it was based on, so a library can only change its own rows, an item can
@@ -16,7 +16,8 @@
    (rows = items + tombs). They are changed in the same statement as the rows, so they cannot differ from them for one instance. Times are milliseconds since the epoch here,
    TIMESTAMPTZ in the database. A library is
      { id, hash (sha256 of 'ppp-lib-v1:' + code, hex), createdAt, lastUsedAt, ipTag (a KEYED hash of the creating address, never the address), revokedAt, rotatedFrom,
-       bytes, items, tombs, maxRev }
+       bytes, items, tombs, maxRev, purgedThrough (the highest revision of a tombstone that was purged: a device whose last-seen revision is below it may have missed a deletion),
+       recoveryHash }
    and an item's metadata { key, rev, deleted, deletedAt, hash, bytes, device, updatedAt }. */
 'use strict';
 const fs = require('fs');
@@ -43,7 +44,9 @@ const SCHEMA_SQL = `
     bytes BIGINT NOT NULL DEFAULT 0,
     items INTEGER NOT NULL DEFAULT 0,
     tombs INTEGER NOT NULL DEFAULT 0,
-    max_rev BIGINT NOT NULL DEFAULT 0
+    max_rev BIGINT NOT NULL DEFAULT 0,
+    purged_through BIGINT NOT NULL DEFAULT 0,
+    recovery_hash TEXT
   );
   CREATE INDEX IF NOT EXISTS ppp_sync_libs_created ON ppp_sync_libs (created_at);
   CREATE TABLE IF NOT EXISTS ppp_sync_items (
@@ -97,13 +100,13 @@ const ms = v => (v == null ? 0 : (v instanceof Date ? v.getTime() : Date.parse(v
 const at = t => new Date(t);
 const num = v => (v == null ? 0 : Number(v));
 
-const LIB_COLS = 'id, client_hash, created_at, last_used_at, created_ip_tag, revoked_at, rotated_from, bytes, items, tombs, max_rev';
+const LIB_COLS = 'id, client_hash, created_at, last_used_at, created_ip_tag, revoked_at, rotated_from, bytes, items, tombs, max_rev, purged_through, recovery_hash';
 const META_COLS = 'key, rev, deleted_at, content_hash, bytes, device, updated_at';
 
 function libOfRow(r) {
   return {
     id: r.id, hash: r.client_hash, createdAt: ms(r.created_at), lastUsedAt: ms(r.last_used_at), ipTag: r.created_ip_tag || '', revokedAt: ms(r.revoked_at),
-    rotatedFrom: r.rotated_from || '', bytes: num(r.bytes), items: r.items | 0, tombs: r.tombs | 0, maxRev: num(r.max_rev)
+    rotatedFrom: r.rotated_from || '', bytes: num(r.bytes), items: r.items | 0, tombs: r.tombs | 0, maxRev: num(r.max_rev), purgedThrough: num(r.purged_through), recoveryHash: r.recovery_hash || ''
   };
 }
 function metaOfRow(r) {
@@ -134,10 +137,10 @@ function pgSyncStore(query) {
     /* a new library: ONE statement, refused (false) when the site already holds `maxLive` live ones - the guard of the cap, in the statement, so two writers cannot pass it together */
     async createLib(l, maxLive) {
       const r = await query(
-        'INSERT INTO ppp_sync_libs (id, client_hash, created_at, last_used_at, created_ip_tag)'
-        + ' SELECT $1::text, $2::text, $3::timestamptz, $3::timestamptz, $4::text'
+        'INSERT INTO ppp_sync_libs (id, client_hash, created_at, last_used_at, created_ip_tag, recovery_hash)'
+        + ' SELECT $1::text, $2::text, $3::timestamptz, $3::timestamptz, $4::text, $6::text'
         + ' WHERE (SELECT count(*) FROM ppp_sync_libs WHERE revoked_at IS NULL) < $5::int',
-        [l.id, l.hash, at(l.createdAt), l.ipTag || '', maxLive == null ? 1000000 : maxLive]);
+        [l.id, l.hash, at(l.createdAt), l.ipTag || '', maxLive == null ? 1000000 : maxLive, l.recoveryHash || null]);
       return (r.rowCount || 0) === 1;
     },
     /* the library gets a new code: the old row is kept (revoked) so the old code can be told "rotated", the new row takes its items, counters, revision and birth (so
@@ -145,12 +148,13 @@ function pgSyncStore(query) {
     async rotateLib(oldId, nl, t) {
       /* (the old row keeps its counters: they are not read for a revoked library, and `old` returns them as the locked row had them) */
       const r = await query(
-        'WITH old AS (UPDATE ppp_sync_libs SET revoked_at = $3 WHERE id = $1 AND revoked_at IS NULL RETURNING created_at, created_ip_tag, bytes, items, tombs, max_rev),'
-        + ' nl AS (INSERT INTO ppp_sync_libs (id, client_hash, created_at, last_used_at, created_ip_tag, rotated_from, bytes, items, tombs, max_rev)'
-        + '   SELECT $2::text, $4::text, old.created_at, $3::timestamptz, old.created_ip_tag, $1::text, old.bytes, old.items, old.tombs, old.max_rev FROM old RETURNING id),'
+        'WITH old AS (UPDATE ppp_sync_libs SET revoked_at = $3 WHERE id = $1 AND revoked_at IS NULL RETURNING created_at, created_ip_tag, bytes, items, tombs, max_rev, purged_through, recovery_hash),'
+        + ' nl AS (INSERT INTO ppp_sync_libs (id, client_hash, created_at, last_used_at, created_ip_tag, rotated_from, bytes, items, tombs, max_rev, purged_through, recovery_hash)'
+        + '   SELECT $2::text, $4::text, old.created_at, $3::timestamptz, old.created_ip_tag, $1::text, old.bytes, old.items, old.tombs, old.max_rev, old.purged_through,'
+        + '     COALESCE($5::text, old.recovery_hash) FROM old RETURNING id),'
         + ' mv AS (UPDATE ppp_sync_items SET lib_id = $2 WHERE lib_id = $1 AND EXISTS (SELECT 1 FROM nl) RETURNING 1)'
         + ' SELECT (SELECT count(*) FROM nl)::int AS made, (SELECT count(*) FROM mv)::int AS moved',
-        [oldId, nl.id, at(t), nl.hash]);
+        [oldId, nl.id, at(t), nl.hash, nl.recoveryHash || null]);
       return !!rowsOf(r)[0] && rowsOf(r)[0].made === 1;
     },
     /* the library is deleted with everything in it: the row is marked revoked (kept two days, for the per-address limits) and its items are gone, ONE statement */
@@ -172,16 +176,16 @@ function pgSyncStore(query) {
       const r = await query(
         'WITH dl AS (DELETE FROM ppp_sync_libs WHERE id = ANY($1::text[]) RETURNING id),'
         + ' di AS (DELETE FROM ppp_sync_items WHERE lib_id = ANY($1::text[]) RETURNING 1),'
-        + ' dt AS (DELETE FROM ppp_sync_items WHERE $2::timestamptz IS NOT NULL AND deleted_at IS NOT NULL AND deleted_at < $2::timestamptz AND lib_id <> ALL($1::text[]) RETURNING lib_id),'
-        + ' cnt AS (SELECT lib_id, count(*)::int AS n FROM dt GROUP BY lib_id),'
-        + ' up AS (UPDATE ppp_sync_libs l SET tombs = l.tombs - cnt.n, bytes = l.bytes - cnt.n * ' + R + ' FROM cnt WHERE l.id = cnt.lib_id RETURNING l.id, l.tombs, l.bytes)'
+        + ' dt AS (DELETE FROM ppp_sync_items WHERE $2::timestamptz IS NOT NULL AND deleted_at IS NOT NULL AND deleted_at < $2::timestamptz AND lib_id <> ALL($1::text[]) RETURNING lib_id, rev),'
+        + ' cnt AS (SELECT lib_id, count(*)::int AS n, max(rev) AS top FROM dt GROUP BY lib_id),'
+        + ' up AS (UPDATE ppp_sync_libs l SET tombs = l.tombs - cnt.n, bytes = l.bytes - cnt.n * ' + R + ', purged_through = GREATEST(l.purged_through, cnt.top) FROM cnt WHERE l.id = cnt.lib_id RETURNING l.id, l.tombs, l.bytes, l.purged_through)'
         + " SELECT 'c' AS k, NULL::text AS id, (SELECT count(*) FROM dl)::bigint AS a, (SELECT count(*) FROM di)::bigint AS b, (SELECT count(*) FROM dt)::bigint AS c, NULL::timestamptz AS oldest"
-        + " UNION ALL SELECT 'u', up.id, up.tombs, up.bytes, 0, (SELECT min(i.deleted_at) FROM ppp_sync_items i WHERE i.lib_id = up.id AND i.deleted_at IS NOT NULL AND i.deleted_at >= $2::timestamptz) FROM up",
+        + " UNION ALL SELECT 'u', up.id, up.tombs, up.bytes, up.purged_through, (SELECT min(i.deleted_at) FROM ppp_sync_items i WHERE i.lib_id = up.id AND i.deleted_at IS NOT NULL AND i.deleted_at >= $2::timestamptz) FROM up",
         [ids, tombBefore == null ? null : at(tombBefore)]);
       const out = { libs: 0, items: 0, tombs: 0, updated: [] };
       rowsOf(r).forEach(x => {
         if (x.k === 'c') { out.libs = num(x.a); out.items = num(x.b); out.tombs = num(x.c); }
-        else out.updated.push({ id: x.id, tombs: num(x.a), bytes: num(x.b), oldestTomb: ms(x.oldest) });
+        else out.updated.push({ id: x.id, tombs: num(x.a), bytes: num(x.b), purgedThrough: num(x.c), oldestTomb: ms(x.oldest) });
       });
       return out;
     },
@@ -189,6 +193,14 @@ function pgSyncStore(query) {
     async deleteOrphans() {
       const r = await query('DELETE FROM ppp_sync_items i WHERE NOT EXISTS (SELECT 1 FROM ppp_sync_libs l WHERE l.id = i.lib_id)');
       return r.rowCount || 0;
+    },
+    /* the counters of one library as the database has them now (ONE statement; the service asks when a device claims to be ahead of the library, so that a restored database or a
+       second process is not told "reset" from a cache): { found, live, maxRev, bytes, items, tombs, purgedThrough } */
+    async libState(id) {
+      const r = await query('SELECT max_rev, bytes, items, tombs, purged_through, revoked_at FROM ppp_sync_libs WHERE id = $1', [id]);
+      const x = rowsOf(r)[0];
+      if (!x) return { found: false, live: false };
+      return { found: true, live: x.revoked_at == null, maxRev: num(x.max_rev), bytes: num(x.bytes), items: x.items | 0, tombs: x.tombs | 0, purgedThrough: num(x.purged_through) };
     },
     /* the metadata of the items written after `since`, oldest first (one more than `limit` is asked for by the caller to know there is more) */
     async changes(libId, since, limit) {
@@ -207,7 +219,9 @@ function pgSyncStore(query) {
     /* A batch of items written in ONE statement (see the header). items: [{ key, base, hash, bytes, body (Buffer), device }], keys distinct. An item whose current revision is
        above its base is not written and comes back as a conflict with the server's metadata; the others are written with consecutive new revisions. The whole batch is refused
        (applied: nothing) when it would grow the library by more than growthMax accounted bytes, or add more than rowsRoom rows, or the library is not live.
-       Returns { ok: false, reason: 'gone' } or { ok: false, reason: 'quota', growth, newRows } (what the batch would have added) or { ok: true, maxRev, bytes, items, tombs, applied: [{ key, rev }], conflicts: [meta], lost: [key] } (lost: a key the
+       An item whose base is above 0 for a key that is not there at all (its tombstone was purged: the device was away longer than the tombstones are kept) is not written as a new
+       item: its key is in `gone` (a conflict of its own kind), and the device must say again, with base 0, that it means to bring the song back.
+       Returns { ok: false, reason: 'gone' } or { ok: false, reason: 'quota', growth, newRows } (what the batch would have added) or { ok: true, maxRev, bytes, items, tombs, applied: [{ key, rev }], conflicts: [meta], gone: [key], lost: [key] } (lost: a key the
        statement decided to write and then found changed by another writer meanwhile - only with two instances). */
     async putItems(libId, items, t, o) {
       const params = [libId, at(t), o.growthMax, o.rowsRoom];
@@ -220,7 +234,7 @@ function pgSyncStore(query) {
         'WITH v (key, base, hash, nbytes, body, device, ord) AS (VALUES ' + rows.join(', ') + '),'
         + ' cur AS (SELECT i.key, i.rev, i.bytes, (i.deleted_at IS NULL) AS live FROM ppp_sync_items i WHERE i.lib_id = $1 AND i.key IN (SELECT key FROM v)),'
         + ' ok AS (SELECT v.*, c.key IS NOT NULL AS existed, COALESCE(c.live, false) AS was_live, COALESCE(c.bytes, 0) AS old_bytes, (row_number() OVER (ORDER BY v.ord))::int AS n'
-        + '   FROM v LEFT JOIN cur c ON c.key = v.key WHERE c.key IS NULL OR c.rev <= v.base),'
+        + '   FROM v LEFT JOIN cur c ON c.key = v.key WHERE (c.key IS NULL AND v.base = 0) OR (c.key IS NOT NULL AND c.rev <= v.base)),'
         + ' tot AS (SELECT count(*)::int AS cnt,'
         + '   COALESCE(sum(nbytes + ' + R + ' - CASE WHEN was_live THEN old_bytes + ' + R + ' WHEN existed THEN ' + R + ' ELSE 0 END), 0)::bigint AS d_bytes,'
         + '   (count(*) FILTER (WHERE NOT was_live))::int AS d_items,'
@@ -239,15 +253,17 @@ function pgSyncStore(query) {
         + '   NULL::bigint AS max_rev, NULL::bigint AS lbytes, NULL::int AS items, NULL::int AS tombs, NULL::boolean AS live, NULL::int AS cnt, NULL::bigint AS dbytes, NULL::int AS newrows FROM ins'
         + " UNION ALL SELECT 'c', i.key, i.rev, i.deleted_at, i.content_hash, i.bytes, i.device, i.updated_at, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL"
         + '   FROM ppp_sync_items i WHERE i.lib_id = $1 AND i.key IN (SELECT key FROM v) AND i.key NOT IN (SELECT key FROM ok)'
+        + " UNION ALL SELECT 'x', v.key, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL FROM v WHERE v.base > 0 AND v.key NOT IN (SELECT key FROM cur)"
         + " UNION ALL SELECT 'm', NULL, NULL, NULL, NULL, NULL, NULL, NULL, upd.max_rev, upd.bytes, upd.items, upd.tombs, NULL, NULL, NULL, NULL FROM upd"
         + " UNION ALL SELECT 'g', NULL, NULL, NULL, NULL, NULL, NULL, NULL, l.max_rev, l.bytes, l.items, l.tombs, (l.id IS NOT NULL AND l.revoked_at IS NULL), (SELECT cnt FROM tot), (SELECT d_bytes FROM tot), (SELECT new_rows FROM tot)"
         + '   FROM (SELECT 1) one LEFT JOIN ppp_sync_libs l ON l.id = $1';
       const rs = rowsOf(await query(sql, params));
-      const applied = [], conflicts = [];
+      const applied = [], conflicts = [], gone = [];
       let m = null, g = null;
       rs.forEach(x => {
         if (x.k === 'a') applied.push({ key: x.key, rev: num(x.rev) });
         else if (x.k === 'c') conflicts.push(metaOfRow(x));
+        else if (x.k === 'x') gone.push(x.key);
         else if (x.k === 'm') m = x;
         else if (x.k === 'g') g = x;
       });
@@ -255,15 +271,16 @@ function pgSyncStore(query) {
       const pos = new Map(items.map((it, i) => [it.key, i]));
       applied.sort((a, b) => a.rev - b.rev);
       conflicts.sort((a, b) => pos.get(a.key) - pos.get(b.key));
+      gone.sort((a, b) => pos.get(a) - pos.get(b));
       if (!g || !g.live) return { ok: false, reason: 'gone' };
       if (!m) {
         /* nothing was written: every item conflicted (a normal answer), or the guards of the statement said no */
         if (g.cnt > 0) return { ok: false, reason: 'quota', growth: num(g.dbytes), newRows: g.newrows | 0 };
-        return Object.assign({ ok: true, applied: [], conflicts: conflicts, lost: [] }, countersOf(g));
+        return Object.assign({ ok: true, applied: [], conflicts: conflicts, gone: gone, lost: [] }, countersOf(g));
       }
-      const got = new Set(applied.map(a => a.key)), conf = new Set(conflicts.map(c => c.key));
-      const lost = items.filter(it => !got.has(it.key) && !conf.has(it.key)).map(it => it.key);
-      return Object.assign({ ok: true, applied: applied, conflicts: conflicts, lost: lost }, countersOf(m));
+      const got = new Set(applied.map(a => a.key)), conf = new Set(conflicts.map(c => c.key)), goneSet = new Set(gone);
+      const lost = items.filter(it => !got.has(it.key) && !conf.has(it.key) && !goneSet.has(it.key)).map(it => it.key);
+      return Object.assign({ ok: true, applied: applied, conflicts: conflicts, gone: gone, lost: lost }, countersOf(m));
     },
     /* A tombstone for one item, in ONE statement, over the revision the deleter saw (base). Returns { ok: false, reason: 'gone' } or
        { ok: true, state: 'deleted' | 'already' | 'conflict' | 'missing', rev, meta?, maxRev, bytes, items, tombs }:
@@ -325,7 +342,7 @@ function fileSyncStore(dir, opts) {
   const meta = (key, it) => ({ key: key, rev: it.rev, deleted: !!it.deletedAt, deletedAt: it.deletedAt || 0, hash: it.hash || '', bytes: it.bytes | 0, device: it.device || '', updatedAt: it.updatedAt || 0 });
   const counters = l => ({ maxRev: l.maxRev, bytes: l.bytes, items: l.items, tombs: l.tombs });
   const libOut = l => ({ id: l.id, hash: l.hash, createdAt: l.createdAt, lastUsedAt: l.lastUsedAt, ipTag: l.ipTag || '', revokedAt: l.revokedAt || 0, rotatedFrom: l.rotatedFrom || '',
-    bytes: l.bytes | 0, items: l.items | 0, tombs: l.tombs | 0, maxRev: l.maxRev | 0 });
+    bytes: l.bytes | 0, items: l.items | 0, tombs: l.tombs | 0, maxRev: l.maxRev | 0, purgedThrough: l.purgedThrough | 0, recoveryHash: l.recoveryHash || '' });
   const R = ROW_OVERHEAD;
   return {
     kind: 'file',
@@ -344,14 +361,16 @@ function fileSyncStore(dir, opts) {
     async createLib(l, maxLive) {
       const d = load();
       if (maxLive != null && d.libs.filter(x => !x.revokedAt).length >= maxLive) return false;
-      d.libs.push({ id: l.id, hash: l.hash, createdAt: l.createdAt, lastUsedAt: l.createdAt, ipTag: l.ipTag || '', revokedAt: 0, rotatedFrom: '', bytes: 0, items: 0, tombs: 0, maxRev: 0 });
+      d.libs.push({ id: l.id, hash: l.hash, createdAt: l.createdAt, lastUsedAt: l.createdAt, ipTag: l.ipTag || '', revokedAt: 0, rotatedFrom: '', bytes: 0, items: 0, tombs: 0, maxRev: 0,
+        purgedThrough: 0, recoveryHash: l.recoveryHash || '' });
       save(d);
       return true;
     },
     async rotateLib(oldId, nl, t) {
       const d = load(), o = live(d, oldId);
       if (!o) return false;
-      d.libs.push({ id: nl.id, hash: nl.hash, createdAt: o.createdAt, lastUsedAt: t, ipTag: o.ipTag, revokedAt: 0, rotatedFrom: oldId, bytes: o.bytes, items: o.items, tombs: o.tombs, maxRev: o.maxRev });
+      d.libs.push({ id: nl.id, hash: nl.hash, createdAt: o.createdAt, lastUsedAt: t, ipTag: o.ipTag, revokedAt: 0, rotatedFrom: oldId, bytes: o.bytes, items: o.items, tombs: o.tombs, maxRev: o.maxRev,
+        purgedThrough: o.purgedThrough | 0, recoveryHash: nl.recoveryHash || o.recoveryHash || '' });
       o.revokedAt = t;
       if (d.items[oldId]) { d.items[nl.id] = d.items[oldId]; delete d.items[oldId]; }
       save(d);
@@ -379,13 +398,16 @@ function fileSyncStore(dir, opts) {
       if (tombBefore != null) {
         d.libs.forEach(l => {
           const its = d.items[l.id] || {};
-          let n = 0, oldest = 0;
+          let n = 0, oldest = 0, top = 0;
           Object.keys(its).forEach(k => {
             const t = its[k].deletedAt;
             if (!t) return;
-            if (t < tombBefore) { delete its[k]; n++; } else if (!oldest || t < oldest) oldest = t;
+            if (t < tombBefore) { if (its[k].rev > top) top = its[k].rev; delete its[k]; n++; } else if (!oldest || t < oldest) oldest = t;
           });
-          if (n) { l.tombs -= n; l.bytes -= n * R; out.tombs += n; out.updated.push({ id: l.id, tombs: l.tombs, bytes: l.bytes, oldestTomb: oldest }); }
+          if (n) {
+            l.tombs -= n; l.bytes -= n * R; l.purgedThrough = Math.max(l.purgedThrough | 0, top); out.tombs += n;
+            out.updated.push({ id: l.id, tombs: l.tombs, bytes: l.bytes, purgedThrough: l.purgedThrough, oldestTomb: oldest });
+          }
         });
       }
       if (out.libs || out.tombs) save(d);
@@ -397,6 +419,11 @@ function fileSyncStore(dir, opts) {
       Object.keys(d.items).forEach(id => { if (!known.has(id)) { n += Object.keys(d.items[id]).length; delete d.items[id]; } });
       if (n) save(d);
       return n;
+    },
+    async libState(id) {
+      const l = load().libs.find(x => x.id === id);
+      if (!l) return { found: false, live: false };
+      return { found: true, live: !l.revokedAt, maxRev: l.maxRev | 0, bytes: l.bytes | 0, items: l.items | 0, tombs: l.tombs | 0, purgedThrough: l.purgedThrough | 0 };
     },
     async changes(libId, since, limit) {
       const its = load().items[libId] || {};
@@ -421,10 +448,11 @@ function fileSyncStore(dir, opts) {
       const d = load(), l = live(d, libId);
       if (!l) return { ok: false, reason: 'gone' };
       const its = itemsOf(d, libId);
-      const applied = [], conflicts = [], plan = [];
+      const applied = [], conflicts = [], gone = [], plan = [];
       let dBytes = 0, dItems = 0, dTombs = 0, newRows = 0;
       items.forEach(it => {
         const cur = its[it.key];
+        if (!cur && it.base > 0) return gone.push(it.key);
         if (cur && cur.rev > it.base) return conflicts.push(meta(it.key, cur));
         const wasLive = !!cur && !cur.deletedAt;
         dBytes += it.bytes + R - (wasLive ? cur.bytes + R : cur ? R : 0);
@@ -433,7 +461,7 @@ function fileSyncStore(dir, opts) {
         if (!cur) newRows++;
         plan.push(it);
       });
-      if (!plan.length) return Object.assign({ ok: true, applied: [], conflicts: conflicts, lost: [] }, counters(l));
+      if (!plan.length) return Object.assign({ ok: true, applied: [], conflicts: conflicts, gone: gone, lost: [] }, counters(l));
       if (dBytes > o.growthMax || newRows > o.rowsRoom) return { ok: false, reason: 'quota', growth: dBytes, newRows: newRows };
       plan.forEach((it, i) => {
         const rev = l.maxRev + 1 + i;
@@ -442,7 +470,7 @@ function fileSyncStore(dir, opts) {
       });
       l.maxRev += plan.length; l.bytes += dBytes; l.items += dItems; l.tombs += dTombs; l.lastUsedAt = t;
       save(d);
-      return Object.assign({ ok: true, applied: applied, conflicts: conflicts, lost: [] }, counters(l));
+      return Object.assign({ ok: true, applied: applied, conflicts: conflicts, gone: gone, lost: [] }, counters(l));
     },
     async deleteItem(libId, key, base, device, t) {
       const d = load(), l = live(d, libId);

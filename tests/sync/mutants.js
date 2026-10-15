@@ -16,7 +16,7 @@ const { spawn } = require('child_process');
 
 const REPO = path.resolve(__dirname, '..', '..');
 const FILES = ['Piano Coach App.dc.html', 'sync.js', 'sync-store.js', 'home-jobs.js', 'home-jobs-store.js', 'home-result.js', 'home-omr.js', 'body-reader.js', 'share-guest.js', 'server.js', 'server-stats.js',
-  'static-allow.js', 'static-assets.js', 'signup-limit.js', 'catalog/shared-seeds.json'];
+  'static-allow.js', 'static-assets.js', 'signup-limit.js', 'catalog/shared-seeds.json', 'tools/sync-admin/lib.js', 'tools/sync-admin/list.js', 'tools/sync-admin/delete.js'];
 const UNIT = 'sync.test.js', ABUSE = 'sync-abuse.test.js', PG = 'sync-pg.test.js', SERVER = 'server.test.js';
 
 /* id, file, what the mutant breaks, the pattern(s), the test that must fail. A pattern is [from, to] (replaced once; it must occur exactly once), or a list of those, each of which may
@@ -24,11 +24,11 @@ const UNIT = 'sync.test.js', ABUSE = 'sync-abuse.test.js', PG = 'sync-pg.test.js
 const M = [
   /* ---- who is asking ---- */
   ['S1', 'sync.js', 'a request with no code is let through to the code check (no 401 before everything)', ["if (raw === undefined) throw httpError(401, 'No library code was sent.', 'no-lib');", ''], UNIT],
-  ['S2', 'sync.js', 'the code is compared by its id only (the full hash is not compared)', ['const same = want.length === got.length && crypto.timingSafeEqual(want, got);', 'const same = want.length === got.length;'], UNIT],
+  ['S2', 'sync.js', 'the code is compared by its id only (the full hash is not compared)', ['const same = want.length === got.length && crypto.timingSafeEqual(want, got);\n    if (!same || !rec || rec.writing) throw badCode(req);', 'const same = want.length === got.length;\n    if (!same || !rec || rec.writing) throw badCode(req);'], UNIT],
   ['S3', 'sync.js', 'the origin check is gone', ['function requireSameSite(req) {\n    if (!sameSite(req))', 'function requireSameSite(req) {\n    if (false)'], UNIT],
   ['S4', 'sync.js', 'the origin is not looked at on the routes that need a code (only when making a library)', ['async function requireLib(req) {\n    requireSameSite(req);', 'async function requireLib(req) {'], UNIT],
   ['S5', 'sync.js', 'a library can be made from a page of another site', ['async function createLib(req, res) {\n    requireSameSite(req);', 'async function createLib(req, res) {'], UNIT],
-  ['S6', 'sync.js', 'wrong codes are never limited', ["if (!limiters.badCodes.take(addressOf(req))) return httpError(429,", "if (false) return httpError(429,"], UNIT],
+  ['S6', 'sync.js', 'wrong codes are never limited', ["if (!limiters.badCodes.take(addressOf(req))) return httpError(429, 'Too many wrong codes from here. Try again later.', 'too-many', { retryAfter: 600 });\n    return httpError(401, 'That library code", "if (false) return httpError(429, 'Too many wrong codes from here. Try again later.', 'too-many', { retryAfter: 600 });\n    return httpError(401, 'That library code"], UNIT],
   ['S7', 'sync.js', 'a valid code is refused while wrong codes from its address are being counted', ['await ensureLoaded();\n    const got = codeHash(raw);', "await ensureLoaded();\n    if (!limiters.badCodes.peek(addressOf(req))) throw httpError(429, 'x', 'too-many');\n    const got = codeHash(raw);"], UNIT],
   ['S8', 'sync.js', 'the hash of the code has no domain prefix', ["const codeHash = code => sha256('ppp-lib-v1:' + code);", "const codeHash = code => sha256(code);"], UNIT],
   ['S9', 'sync.js', 'the code itself (not its hash) is stored', ["hash: made.hash.toString('hex'), createdAt: t, ipTag: tag }, C.maxLibs)", "hash: made.code, createdAt: t, ipTag: tag }, C.maxLibs)"], UNIT],
@@ -44,7 +44,7 @@ const M = [
   ['L3', 'sync.js', 'the site\'s limit of libraries an hour is gone', ['if (n < L.LIBS_PER_HOUR) return 0;', 'return 0;'], UNIT],
   ['L4', 'sync.js', 'the cap of live libraries is gone (both guards: memory and the statement)', [
     ['if (live >= C.maxLibs) throw httpError(503,', 'if (false) throw httpError(503,'],
-    ['createdAt: t, ipTag: tag }, C.maxLibs); }', 'createdAt: t, ipTag: tag }, null); }']], UNIT],
+    ['createdAt: t, ipTag: tag }, C.maxLibs));', 'createdAt: t, ipTag: tag }, null));']], UNIT],
   ['L5', 'sync.js', 'a deleted library does not count for the per-address limits (making and deleting gets round them)', ['if (l.ipTag !== tag || l.rotatedFrom) return;', 'if (l.ipTag !== tag || l.rotatedFrom || l.revokedAt) return;'], UNIT],
   ['L6', 'sync.js', 'changing a code counts as making a library', ['if (l.ipTag !== tag || l.rotatedFrom) return;', 'if (l.ipTag !== tag) return;'], UNIT],
   ['L7', 'sync.js', 'the place of a library being made is taken only after the store answered (twelve at once all pass the limit)', [
@@ -53,7 +53,7 @@ const M = [
   /* ---- items ---- */
   ['I1', 'sync-store.js', 'file store: a write over a newer revision is made (no conflict)', ['if (cur && cur.rev > it.base) return conflicts.push(meta(it.key, cur));', 'if (false) return conflicts.push(meta(it.key, cur));'], UNIT],
   ['I2', 'sync-store.js', 'Postgres: a write over a newer revision is made (both guards)', [
-    ['WHERE c.key IS NULL OR c.rev <= v.base),', 'WHERE true),'],
+    ['WHERE (c.key IS NULL AND v.base = 0) OR (c.key IS NOT NULL AND c.rev <= v.base)),', 'WHERE true),'],
     ['WHERE t.rev < EXCLUDED.rev AND t.rev <= (SELECT v.base FROM v WHERE v.key = t.key)', 'WHERE t.rev < EXCLUDED.rev']], PG],
   ['I3', 'sync-store.js', 'file store: a delete over a newer revision is made', ['if (cur.rev > base) return Object.assign({ ok: true, state: \'conflict\'', 'if (false) return Object.assign({ ok: true, state: \'conflict\''], UNIT],
   ['I4', 'sync-store.js', 'Postgres: a delete over a newer revision is made (both guards)', [
@@ -91,7 +91,7 @@ const M = [
   ['R4', 'sync.js', 'requests that write (a PUT) are not limited', ["spam) */\n    if (!limiters.writeReq.take(lib.key)) throw httpError(429,", "spam) */\n    if (false) throw httpError(429,"], UNIT],
   ['R4b', 'sync.js', 'requests that write (a DELETE) are not limited', ["throw httpError(422, 'The device name is not usable.', 'bad-device');\n    const ip = addressOf(req);\n    if (!limiters.writeReq.take(lib.key)) throw httpError(429,", "throw httpError(422, 'The device name is not usable.', 'bad-device');\n    const ip = addressOf(req);\n    if (false) throw httpError(429,"], UNIT],
   ['R5', 'sync.js', 'changes that ask the database are not limited', ['if (!limiters.changesSql.take(lib.key)) throw httpError(429,', 'if (false) throw httpError(429,'], UNIT],
-  ['R6', 'sync.js', 'a poll that finds nothing asks the store', ['if (since >= lib.maxRev) return reply(res, 200, Object.assign({ items: [], more: false, deletions: 0 }, base, since > lib.maxRev ? { reset: true } : {}));', 'if (since > lib.maxRev) return reply(res, 200, Object.assign({ items: [], more: false, deletions: 0 }, base, { reset: true }));'], UNIT],
+  ['R6', 'sync.js', 'a poll that finds nothing asks the store', ['if (since >= rev0) { giveSql(); return reply(', 'if (since > rev0) { giveSql(); return reply('], UNIT],
   ['R7', 'sync.js', 'items read an hour are not limited', ['if (!takeN(limiters.readItems, lib.key, keys.length)) throw httpError(429,', 'if (false) throw httpError(429,'], UNIT],
   ['R8', 'sync.js', 'changing the code is not limited', ['if (!limiters.rotates.take(lib.key)) throw httpError(429,', 'if (false) throw httpError(429,'], UNIT],
   ['R9', 'sync.js', 'the limits of a library are held under its id: a new code is a fresh library with fresh limits', ['const nl = { id: made.id, key: cur.key,', 'const nl = { id: made.id, key: made.id,'], UNIT],
@@ -107,7 +107,7 @@ const M = [
     ["if (Math.min(b.hour.left(t), b.day.left(t)) < bytes) return 'site';", "if (b.hour.left(t) < bytes) return 'site';"],
     ["if (Math.min(w.hour.left(t), w.day.left(t)) < bytes) return 'share';", "if (w.hour.left(t) < bytes) return 'share';"]], UNIT],
   ['B6', 'sync.js', 'what the site sends is not limited', ["const why = budgetWhy('out', t0, lib, 1);\n    if (why) { giveN(limiters.readItems, lib.key, keys.length); throw budgetError(why, 'out', t0, lib, 1); }", ''], UNIT],
-  ['B7', 'sync.js', 'what the site sends is not counted', ["budgetAdd('out', now(), lib, bytes);", ''], UNIT],
+  ['B7', 'sync.js', 'what the site sends is not counted (the reservation is given back whole)', ["settle(bytes);", 'settle(0);'], UNIT],
   ['B8', 'sync.js', 'a library may use the whole of the site\'s budget (no quarter)', ['share: LIMITS.BUDGET_SHARE,', 'share: 1,'], UNIT],
   ['B9', 'sync.js', 'a refused read keeps its items in the hour', ["if (why) { giveN(limiters.readItems, lib.key, keys.length); throw", "if (why) { throw"], UNIT],
   /* ---- the body, its shape and the unpacking ---- */
@@ -135,18 +135,18 @@ const M = [
   ['P20', 'sync.js', 'items are unpacked any number at a time', ['if (processing >= C.processAtOnce) await new Promise(r => processWaiters.push(r)); else {', 'if (false) await new Promise(r => processWaiters.push(r)); else {'], ABUSE],
   ['P21', 'sync.js', 'answers with bodies are made any number at a time', ["if (readsNow >= C.readsAtOnce) throw httpError(503,", "if (false) throw httpError(503,"], ABUSE],
   ['P22', 'sync.js', 'an answer a reader does not take is held for ever', ['timer = setTimeout(() => { free(); try { res.destroy(); } catch (e) { /* gone */ } }, C.readHoldMs);', ''], ABUSE],
-  ['P23', 'sync.js', 'an answer has no cap on its bodies', ["const rows = await store.getItems(lib.id, keys, L.READ_BODY_CAP);", "const rows = await store.getItems(lib.id, keys, 1e12);"], UNIT],
+  ['P23', 'sync.js', 'an answer has no cap on its bodies', ["store.getItems(lib.id, keys, L.READ_BODY_CAP)", "store.getItems(lib.id, keys, 1e12)"], UNIT],
   ['P25', 'body-reader.js', 'the chunks of a body are held as they arrive (a body sent a byte at a time costs 350 bytes of Buffer a byte)', ["tail.push(c); tailBytes += c.length;\n      if (tail.length >= TAIL_CHUNKS || tailBytes >= TAIL_BYTES) flush();", "chunks.push(c);"], ABUSE],
   ['P24', 'sync.js', 'a body that is refused by the code is read before it', ['const lib = await requireLib(req);\n    const ip = addressOf(req);\n    /* the work this request costs', 'const body0 = await readJson(req, L.PUT_BODY, L.PUT_DRAIN, SHAPES.put);\n    const lib = await requireLib(req);\n    const ip = addressOf(req);\n    /* the work this request costs'], UNIT],
   /* ---- the keeping times ---- */
   ['K1', 'sync.js', 'a library is kept 300 days', ['KEEP_MS: 180 * DAY,', 'KEEP_MS: 300 * DAY,'], UNIT],
-  ['K2', 'sync.js', 'a use does not renew the keeping time', ['const t = now();\n    rec.lastUsedAt = t;\n    await persistUse(rec, t);', 'const t = now();\n    await persistUse(rec, t);'], UNIT],
+  ['K2', 'sync.js', 'a use does not renew the keeping time', ['const t = now();\n    rec.lastUsedAt = t;\n    await persistUse(rec, t);\n    const cur = libs.get(rec.id);', 'const t = now();\n    await persistUse(rec, t);\n    const cur = libs.get(rec.id);'], UNIT],
   ['K3', 'sync.js', 'an empty library is kept as long as any other', ['return l.items + l.tombs === 0 && t - used > L.EMPTY_KEEP_MS;', 'return false;'], UNIT],
   ['K4', 'sync.js', 'tombstones are kept for ever', ["else if (!l.revokedAt && l.oldestTomb && t - l.oldestTomb > L.TOMBSTONE_KEEP_MS) tombDue = true;", ''], UNIT],
   ['K5', 'sync.js', 'a deleted library\'s row is kept for ever', ['if (l.revokedAt) return t - l.revokedAt > L.REVOKED_KEEP_MS;', 'if (l.revokedAt) return false;'], UNIT],
   ['K6', 'sync.js', 'a deleted library\'s row is purged at once', ['if (l.revokedAt) return t - l.revokedAt > L.REVOKED_KEEP_MS;', 'if (l.revokedAt) return true;'], UNIT],
-  ['K7', 'sync-store.js', 'file store: purging tombstones leaves the library\'s counters', ['if (n) { l.tombs -= n; l.bytes -= n * R; out.tombs += n;', 'if (n) { out.tombs += n;'], UNIT],
-  ['K8', 'sync-store.js', 'Postgres: purging tombstones leaves the library\'s counters', ['SET tombs = l.tombs - cnt.n, bytes = l.bytes - cnt.n * \' + R + \' FROM cnt', 'SET tombs = l.tombs, bytes = l.bytes FROM cnt'], PG],
+  ['K7', 'sync-store.js', 'file store: purging tombstones leaves the library\'s counters', ['l.tombs -= n; l.bytes -= n * R; l.purgedThrough', 'l.purgedThrough'], UNIT],
+  ['K8', 'sync-store.js', 'Postgres: purging tombstones leaves the library\'s counters', ["SET tombs = l.tombs - cnt.n, bytes = l.bytes - cnt.n * ' + R + ', purged_through", "SET tombs = l.tombs, bytes = l.bytes, purged_through"], PG],
   ['K9', 'sync-store.js', 'file store: a purged library leaves its items', ['out.libs++; out.items += Object.keys(d.items[l.id] || {}).length; delete d.items[l.id]; return false;', 'out.libs++; out.items += Object.keys(d.items[l.id] || {}).length; return false;'], UNIT],
   ['K10', 'sync.js', 'the purge looks only every minute... never at a write', ['if (!force && t - lastPurge < L.PURGE_EVERY_MS) return;', 'if (!force) return;'], UNIT],
   ['K11', 'sync.js', 'item rows no library names are never deleted', ["if (orphansDue && typeof store.deleteOrphans === 'function') {", "if (false) {"], UNIT],
@@ -157,7 +157,42 @@ const M = [
   ['M4', 'server.js', 'the server does not switch the feature off when its tables could not be made', ['syncService.disable(why1);', ''], PG],
   ['M5', 'sync-store.js', 'the migration drops the table before making it', ['CREATE TABLE IF NOT EXISTS ppp_sync_libs (', 'DROP TABLE IF EXISTS ppp_sync_libs; CREATE TABLE IF NOT EXISTS ppp_sync_libs ('], PG],
   ['M6', 'server.js', 'the routes are mounted whatever PPP_SYNC says', ["const SYNC_ON = process.env.PPP_SYNC === '1';", "const SYNC_ON = true;"], SERVER],
-  ['M8', 'sync.js', 'the warning at 80 % is not given', ["if (bytes >= C.totalBytes * L.WARN_AT) out.warn =", "if (false) out.warn ="], UNIT]
+  ['M8', 'sync.js', 'the warning at 80 % is not given', ["if (bytes >= C.totalBytes * L.WARN_AT) out.warn =", "if (false) out.warn ="], UNIT],
+  /* ---- the review's fixes: the position a device is given, the budgets of reads and polls, a device that was away, the recovery code, a hung store ---- */
+  ['N1', 'sync.js', 'the position of a page is the revision the library has AFTER the rows were fetched (a write in between is skipped over)', ['const top = Math.max(rev0, last);', 'const top = Math.max(lib.maxRev, last);'], UNIT],
+  ['N2', 'sync.js', 'a device that says it is ahead is told "reset" from the cache, without asking the library\'s own row', ['if (st && st.found && st.live) {', 'if (false) {'], UNIT],
+  ['N3', 'sync.js', 'a device that was away is never told tooOld', ['if (since < lib.purgedThrough) {', 'if (false) {'], UNIT],
+  ['N4', 'sync.js', 'the rows of a page of changes are not counted against the budgets', ["budgetAdd('out', now(), lib, size);", ''], UNIT],
+  ['N5', 'sync.js', 'the budgets are not looked at before a page of changes is fetched', ["if (why) { giveSql(); throw budgetError(why, 'out', t0, lib, 1); }", ''], UNIT],
+  ['B10', 'sync.js', 'the bytes of a read are counted after it was served (six at once all pass the look at the budget)', [
+    ["    budgetAdd('out', t0, lib, worst);\n", ''],
+    ['const settle = actual => { if (worst > actual) windowsOf(\'out\', lib).forEach(w => w.sub(t0, worst - actual, now())); };', "const settle = actual => budgetAdd('out', now(), lib, actual);"]], UNIT],
+  ['B11', 'sync.js', 'what a read may weigh is reserved as one byte (the reservation does not hold the worst case)', ['const worst = Math.max(1, Math.min(L.READ_BODY_CAP, lib.bytes, keys.length * L.ITEM_GZIP_MAX));', 'const worst = 1;'], UNIT],
+  ['B12', 'sync.js', 'a read whose store call failed keeps what it reserved', ['try { rows = await guarded(store.getItems(lib.id, keys, L.READ_BODY_CAP)); } catch (e) { settle(0); throw e; }', 'try { rows = await guarded(store.getItems(lib.id, keys, L.READ_BODY_CAP)); } catch (e) { throw e; }'], UNIT],
+  ['G1', 'sync.js', 'a key that is `gone` is not told to the device (the write looks as if it had no conflict)', ['.concat((r.gone || []).map(k => ({ key: k, rev: 0, deleted: false, hash: \'\', bytes: 0, device: \'\', updatedAt: null, gone: true })))', ''], UNIT],
+  ['G2', 'sync-store.js', 'file store: a revision of a key that is not there is written as a new item', ['if (!cur && it.base > 0) return gone.push(it.key);', ''], UNIT],
+  ['G3', 'sync-store.js', 'Postgres: a revision of a key that is not there is written as a new item', ['WHERE (c.key IS NULL AND v.base = 0) OR (c.key IS NOT NULL AND c.rev <= v.base)),', 'WHERE c.key IS NULL OR c.rev <= v.base),'], PG],
+  ['G4', 'sync-store.js', 'Postgres: a key that is gone is not reported', ['FROM v WHERE v.base > 0 AND v.key NOT IN (SELECT key FROM cur)"', 'FROM v WHERE false AND v.key NOT IN (SELECT key FROM cur)"'], PG],
+  ['K12', 'sync-store.js', 'file store: the revision of a purged tombstone is not kept', ['l.purgedThrough = Math.max(l.purgedThrough | 0, top);', ''], UNIT],
+  ['K13', 'sync-store.js', 'Postgres: the revision of a purged tombstone is not kept', ['purged_through = GREATEST(l.purged_through, cnt.top)', 'purged_through = l.purged_through'], PG],
+  ['K14', 'sync-store.js', 'Postgres: a new code does not carry the purged revision over', ['old.max_rev, old.purged_through,', 'old.max_rev, 0,'], PG],
+  ['K15', 'sync-store.js', 'Postgres: a new code made by a change of code (no new recovery code) loses the library\'s recovery code', ['COALESCE($5::text, old.recovery_hash)', '$5::text'], PG],
+  ['C1', 'sync.js', 'the recovery code is compared by the start of its hash only', ['const same = want.length === got.length && crypto.timingSafeEqual(want, got);\n    if (!same || !rec || rec.revokedAt || rec.writing) throw badRecovery(req);', 'const same = want.length === got.length;\n    if (!same || !rec || rec.revokedAt || rec.writing) throw badRecovery(req);'], UNIT],
+  ['C2', 'sync.js', 'wrong recovery codes are never limited', ["if (!limiters.badCodes.take(addressOf(req))) return httpError(429, 'Too many wrong codes from here. Try again later.', 'too-many', { retryAfter: 600 });\n    return httpError(401, 'That recovery code", "if (false) return httpError(429, 'Too many wrong codes from here. Try again later.', 'too-many', { retryAfter: 600 });\n    return httpError(401, 'That recovery code"], UNIT],
+  ['C3', 'sync.js', 'the recovery code can be used from a page of another site', ['async function recover(req, res) {\n    requireSameSite(req);', 'async function recover(req, res) {'], UNIT],
+  ['C4', 'sync.js', 'the recovery code is not used up (the same one can be used again)', ['return rotateWithBody(req, res, rec, true);', 'return rotateWithBody(req, res, rec, false);'], UNIT],
+  ['C5', 'sync.js', 'the recovery code itself (not its hash) is stored', ['recoveryHash: made.recoveryHash.toString(\'hex\'), hash:', 'recoveryHash: made.recovery, hash:'], UNIT],
+  ['C6', 'sync.js', 'the recovery code of a deleted library still works', [
+    ['if (!same || !rec || rec.revokedAt || rec.writing) throw badRecovery(req);', 'if (!same || !rec || rec.writing) throw badRecovery(req);'],
+    ['if (cur.recoveryHash && recoveryIndex.get(recoveryKeyOf(cur.recoveryHash)) === cur.id) recoveryIndex.delete(recoveryKeyOf(cur.recoveryHash));', '']], UNIT],
+  ['C7', 'sync.js', 'the recovery code has the hash domain of a library code', ["const recoveryHashOf = code => sha256('ppp-lib-recovery-v1:' + code);", "const recoveryHashOf = code => sha256('ppp-lib-v1:' + code);"], UNIT],
+  ['C8', 'sync.js', 'recoveries from one address are not limited (only per library)', ['if (!limiters.rotatesIp.take(ip)) {', 'if (false) {'], UNIT],
+  ['T1', 'sync.js', 'the one writer waits for a store call for ever', ['try { return await guarded(fn()); }', 'try { return await fn(); }'], UNIT],
+  ['T2', 'sync.js', 'a read waits for the store for ever', ['try { rows = await guarded(store.getItems(', 'try { rows = await (store.getItems('], UNIT],
+  ['T3', 'sync.js', 'a poll waits for the store for ever', ['const rows = await guarded(store.changes(lib.id, since, L.CHANGES_PAGE + 1));', 'const rows = await store.changes(lib.id, since, L.CHANGES_PAGE + 1);'], UNIT],
+  ['T4', 'server.js', 'a query of the song store has no time-out (a hung statement keeps its connection)', ['return getPool().query({ text: sql, values: params, query_timeout: SYNC_QUERY_MS });', 'return getPool().query({ text: sql, values: params });'], PG],
+  ['O1', 'tools/sync-admin/lib.js', 'the operator\'s tools touch a database that is not on this machine without --allow-remote', ["if (remote && flags['allow-remote'] !== true) {", 'if (false) {'], UNIT],
+  ['O2', 'tools/sync-admin/delete.js', 'delete.js deletes without --confirm', ['if (flags.confirm !== true) {', 'if (false) {'], PG]
 ];
 
 /* ---------------- the runner ---------------- */

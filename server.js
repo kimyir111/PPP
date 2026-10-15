@@ -801,6 +801,13 @@ function postgresStore(url) {
   async function q(sql, params) {
     return getPool().query(sql, params);
   }
+  /* G13-S0: the song-library store's queries have a time-out. node-pg drops the connection of a query that does not answer in query_timeout and fails the query, so a hung
+     connection ends one request with a 503 (and the next read of the libraries), instead of holding the library's one writer for ever. Only these queries have it: nothing
+     else of the site is changed. PPP_SYNC_QUERY_MS (10 s; 1 s at least) is for a slower database. */
+  const SYNC_QUERY_MS = Math.max(1000, parseInt(process.env.PPP_SYNC_QUERY_MS, 10) || 10000);
+  async function qs(sql, params) {
+    return getPool().query({ text: sql, values: params, query_timeout: SYNC_QUERY_MS });
+  }
   const INSERT_SHARE = `INSERT INTO ppp_shares (id, owner_id, owner_name, song_key, title, composer, genre, kind, measures, listed, preview, score, created_at, updated_at, expires_at, bytes)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
          ON CONFLICT (id) DO UPDATE SET owner_name = EXCLUDED.owner_name, title = EXCLUDED.title,
@@ -812,7 +819,7 @@ function postgresStore(url) {
     row.createdAt, row.updatedAt, row.expiresAt || null, row.bytes || 0];
   return {
     jobStore: homeJobsStore.pgJobStore(q),
-    syncStore: SYNC_ON ? syncStoreMod.pgSyncStore(q) : null,
+    syncStore: SYNC_ON ? syncStoreMod.pgSyncStore(qs) : null,
     async ready() {
       /* the whole schema work of a boot - this SQL, then the home-PC queue's two tables - runs in one transaction under an advisory lock (home-jobs-store.js): two
          instances booting together take turns instead of racing or deadlocking. This SQL is fatal when it fails, as it always was; the queue's tables are

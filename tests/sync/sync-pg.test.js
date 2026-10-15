@@ -75,7 +75,10 @@ function rng(seed) {
 const hexOf = r => Buffer.from(r).toString('hex');
 const safe = st => { const o = {}; Object.keys(st).forEach(k => { o[k] = typeof st[k] === 'function' ? function () { return Promise.resolve(st[k].apply(st, arguments)).catch(e => ({ threw: String(e.code || e.message) })); } : st[k]; }); return o; };
 const normBody = x => (x.body ? hexOf(x.body) : null);
-const strip = (o, drop) => JSON.stringify(o, (k, v) => (drop.indexOf(k) >= 0 ? undefined : (v && v.type === 'Buffer' && Array.isArray(v.data) ? Buffer.from(v.data).toString('hex') : v)));
+/* an object's keys in order: a map that two stores build in an order of their own (the tombstones of loadAll) is the same map */
+const sortKeys = v => (Buffer.isBuffer(v) ? v.toString('hex') : Array.isArray(v) ? v.map(sortKeys) : v && typeof v === 'object' && !(v.type === 'Buffer' && Array.isArray(v.data))
+  ? Object.keys(v).sort().reduce((o, k) => { o[k] = sortKeys(v[k]); return o; }, {}) : v);
+const strip = (o, drop) => JSON.stringify(sortKeys(o), (k, v) => (drop.indexOf(k) >= 0 ? undefined : (v && v.type === 'Buffer' && Array.isArray(v.data) ? Buffer.from(v.data).toString('hex') : v)));
 
 (async () => {
   const pool = new Pool({ connectionString: URL_, max: 6 });
@@ -109,7 +112,7 @@ const strip = (o, drop) => JSON.stringify(o, (k, v) => (drop.indexOf(k) >= 0 ? u
       const m1 = await migrates(), m2 = await migrates();
       ok('migrate on the production-shaped database, twice: ok both times, no row of theirs touched', m1.ok === true && m2.ok === true && same(await counts(), before));
       const cols = async t => (await one(`SELECT column_name FROM information_schema.columns WHERE table_name = $1 ORDER BY ordinal_position`, [t])).map(r => r.column_name).join();
-      ok('ppp_sync_libs has the designed columns (the hash of the code, the keyed tag of the address - never a code or an address)', (await cols('ppp_sync_libs')) === 'id,client_hash,created_at,last_used_at,created_ip_tag,revoked_at,rotated_from,bytes,items,tombs,max_rev', await cols('ppp_sync_libs'));
+      ok('ppp_sync_libs has the designed columns (the hash of the code, the hash of the recovery code, the keyed tag of the address - never a code or an address)', (await cols('ppp_sync_libs')) === 'id,client_hash,created_at,last_used_at,created_ip_tag,revoked_at,rotated_from,bytes,items,tombs,max_rev,purged_through,recovery_hash', await cols('ppp_sync_libs'));
       ok('ppp_sync_items has the designed columns (the body is BYTEA)', (await cols('ppp_sync_items')) === 'lib_id,key,rev,deleted_at,content_hash,device,bytes,body,updated_at'
         && (await one(`SELECT data_type FROM information_schema.columns WHERE table_name = 'ppp_sync_items' AND column_name = 'body'`))[0].data_type === 'bytea');
       const idx = (await one(`SELECT indexname FROM pg_indexes WHERE tablename IN ('ppp_sync_libs', 'ppp_sync_items') ORDER BY 1`)).map(r => r.indexname).join();
@@ -153,7 +156,7 @@ const strip = (o, drop) => JSON.stringify(o, (k, v) => (drop.indexOf(k) >= 0 ? u
         let t = Date.parse('2026-10-15T12:00:00Z');
         const libIds = ['lib_' + 'a'.repeat(22), 'lib_' + 'b'.repeat(22), 'lib_' + 'c'.repeat(22)];
         for (const id of libIds) {
-          const l = { id: id, hash: id.slice(4).repeat(3).slice(0, 64).padEnd(64, '0'), createdAt: t, ipTag: 'tag' + id[4] };
+          const l = { id: id, hash: id.slice(4).repeat(3).slice(0, 64).padEnd(64, '0'), createdAt: t, ipTag: 'tag' + id[4], recoveryHash: id[4].repeat(64) };
           await f.createLib(l, 100); await p.createLib(l, 100);
         }
         const live = libIds.slice();
@@ -202,7 +205,7 @@ const strip = (o, drop) => JSON.stringify(o, (k, v) => (drop.indexOf(k) >= 0 ? u
             check('changes', a, b, i);
           } else if (r < 0.93 && live.length > 1) {
             const nid = 'lib_' + R.bytes(11).toString('hex');
-            const nl = { id: nid, hash: R.bytes(32).toString('hex') };
+            const nl = { id: nid, hash: R.bytes(32).toString('hex'), recoveryHash: R.pick([null, R.bytes(32).toString('hex')]) };
             const a = await f.rotateLib(lib, nl, t), b = await p.rotateLib(lib, nl, t);
             check('rotateLib', a, b, i);
             if (a) { live[live.indexOf(lib)] = nid; known[nid] = known[lib]; }
@@ -210,6 +213,9 @@ const strip = (o, drop) => JSON.stringify(o, (k, v) => (drop.indexOf(k) >= 0 ? u
             const a = await f.deleteLib(lib, t), b = await p.deleteLib(lib, t);
             check('deleteLib', a, b, i);
             if (a) live.splice(live.indexOf(lib), 1);
+          } else if (r < 0.97) {
+            const a = await f.libState(lib), b = await p.libState(lib);
+            check('libState', a, b, i);
           } else {
             const cut = R.pick([null, t - 5000, t - 60000, t + 1e6]);
             const a = await f.purge([], cut), b = await p.purge([], cut);
@@ -311,8 +317,16 @@ const strip = (o, drop) => JSON.stringify(o, (k, v) => (drop.indexOf(k) >= 0 ? u
       const pr = await st2.purge([], t + 30000);
       ok('purge of tombstones before a time: A\'s (made at t) goes, B\'s (made a minute later) stays; the counters of A follow, and the next oldest tombstone of each is named', pr.tombs === 1 && pr.updated.length === 1 && pr.updated[0].id === A && pr.updated[0].tombs === 0
         && (await one(`SELECT tombs, bytes::int FROM ppp_sync_libs WHERE id = $1`, [A]))[0].tombs === 0 && (await one(`SELECT tombs FROM ppp_sync_libs WHERE id = $1`, [B]))[0].tombs === 1);
+      ok('... and the revision of the purged tombstone is kept on the library (purged_through = 3), so a device that is behind it can be told', Number((await one(`SELECT purged_through::int AS p FROM ppp_sync_libs WHERE id = $1`, [A]))[0].p) === 3 && pr.updated[0].purgedThrough === 3, JSON.stringify(pr.updated));
+      const goneAns = await st2.putItems(A, [it('song:p', 1, 7), it('song:new', 0, 8)], t, open);
+      ok('a write with base 1 for a key that was purged is NOT written as new: its key is in gone, the other item of the batch is written (one statement, same answer as the file store)', goneAns.ok && goneAns.gone.length === 1 && goneAns.gone[0] === 'song:p' && goneAns.applied.length === 1 && goneAns.applied[0].key === 'song:new'
+        && (await one(`SELECT count(*)::int n FROM ppp_sync_items WHERE lib_id = $1 AND key = 'song:p'`, [A]))[0].n === 0, JSON.stringify(goneAns));
+      const goneOnly = await st2.putItems(A, [it('song:p', 1, 7)], t, open);
+      ok('a batch that is only that: nothing written, no revision spent, gone answered', goneOnly.ok && goneOnly.gone.length === 1 && goneOnly.applied.length === 0 && Number(goneOnly.maxRev) === Number(goneAns.maxRev));
+      const again0 = await st2.putItems(A, [it('song:p', 0, 9)], t, open);
+      ok('and base 0 for that key (the device says it means to bring the song back) is written as a new item', again0.ok && again0.applied.length === 1 && again0.gone.length === 0);
       const pr2 = await st2.purge([A], null);
-      ok('purge of a library: its row and all its items go in the same statement; the other library is whole', pr2.libs === 1 && pr2.items === 1 && (await one(`SELECT count(*)::int n FROM ppp_sync_items WHERE lib_id = $1`, [A]))[0].n === 0 && (await one(`SELECT count(*)::int n FROM ppp_sync_items WHERE lib_id = $1`, [B]))[0].n === 1);
+      ok('purge of a library: its row and all its items go in the same statement; the other library is whole', pr2.libs === 1 && pr2.items === 3 && (await one(`SELECT count(*)::int n FROM ppp_sync_items WHERE lib_id = $1`, [A]))[0].n === 0 && (await one(`SELECT count(*)::int n FROM ppp_sync_items WHERE lib_id = $1`, [B]))[0].n === 1);
       await q(`INSERT INTO ppp_sync_items (lib_id, key, rev, bytes, body) VALUES ('lib_ghost', 'song:g', 1, 1, 'x')`);
       const la = await st2.loadAll();
       ok('rows no library names are counted by the boot read, and deleteOrphans removes them (and only them)', la.orphanItems === 1 && (await st2.deleteOrphans()) === 1 && (await one(`SELECT count(*)::int n FROM ppp_sync_items`))[0].n === 1);
@@ -340,6 +354,7 @@ const strip = (o, drop) => JSON.stringify(o, (k, v) => (drop.indexOf(k) >= 0 ? u
         await rec('restore', A.putItems([L.item('song:one', L.songBody(11), 5)]));
         await rec('big-batch', A.putItems(Array.from({ length: 25 }, (_, i) => L.item('song:m' + i, L.songBody(5 + (i % 4)), 0))));
         await rec('changes-page', A.changes(6));
+        await rec('del-two', A.delItem('song:two', 2));
         const rot = await A.post('/api/libs/me/rotate', {});
         out.push('rotate ' + rot.status);
         S.clock.t += 3600 * 1000;
@@ -353,6 +368,8 @@ const strip = (o, drop) => JSON.stringify(o, (k, v) => (drop.indexOf(k) >= 0 ? u
         S.advance(40 * 24 * 3600 * 1000);
         await S.svc._state.purge(S.clock.t);
         await rec('after-40-days', N.get('/api/sync/changes?since=0'));
+        await rec('after-40-days-behind', N.get('/api/sync/changes?since=3'));
+        await rec('after-40-days-stale-put', L.req(S.port, 'PUT', '/api/sync/items', { headers: { 'X-PPP-Lib': neu }, body: { device: 'a1b2c3d4e5f60718', items: [L.item('song:two', L.songBody(3), 4)] } }));
         return out;
       };
       await dropSync(); await SS.migrate(pool);
@@ -383,8 +400,10 @@ const strip = (o, drop) => JSON.stringify(o, (k, v) => (drop.indexOf(k) >= 0 ? u
         cq.reset();
         S.advance(10 * 60 * 1000);
         for (let i = 0; i < 100; i++) await A.changes(2);
-        for (let i = 0; i < 30; i++) await A.changes(9);
-        ok('then 100 polls that find nothing and 30 from a device that is ahead run ZERO statements on Postgres', cq.n === 0, cq.n + ' ' + JSON.stringify(cq.seen));
+        ok('then 100 polls that find nothing run ZERO statements on Postgres', cq.n === 0, cq.n + ' ' + JSON.stringify(cq.seen));
+        cq.reset();
+        for (let i = 0; i < 5; i++) await A.changes(9);
+        ok('a device that says it is ahead of the library costs one SELECT of the library\'s own row each time (and only that)', cq.n === 5 && cq.seen.every(s => /FROM ppp_sync_libs WHERE id/.test(s) || /max_rev, bytes/.test(s)), cq.n + ' ' + JSON.stringify(cq.seen));
         cq.reset();
         await A.putItems([L.item('song:two')]);
         ok('a write is one statement', cq.n === 1, cq.n + ' ' + JSON.stringify(cq.seen));
@@ -433,6 +452,39 @@ const strip = (o, drop) => JSON.stringify(o, (k, v) => (drop.indexOf(k) >= 0 ? u
       } else console.log('  - PPP_TEST_PG_CONTAINER is not set: the database-log count is skipped (the in-process count above ran).');
     }
 
+    heading('the operator\'s tools on a real database (list is read only; delete needs --confirm)');
+    {
+      await dropSync(); await SS.migrate(pool);
+      const st = SS.pgSyncStore(q);
+      const t = Date.parse('2026-10-15T12:00:00Z');
+      const TA = 'lib_' + 'a'.repeat(22), TB = 'lib_' + 'b'.repeat(22);
+      const it = (key, n, len) => ({ key: key, base: 0, hash: 'h' + n, bytes: len, body: Buffer.alloc(len, n), device: '' });
+      const open = { growthMax: 1e12, rowsRoom: 1e6 };
+      await st.createLib({ id: TA, hash: 'a1'.repeat(32), createdAt: t, ipTag: 'addr0001', recoveryHash: 'ab'.repeat(32) }, 10);
+      await st.createLib({ id: TB, hash: 'b1'.repeat(32), createdAt: t, ipTag: 'addr0002', recoveryHash: 'cd'.repeat(32) }, 10);
+      await st.putItems(TA, [it('song:very-secret-title', 1, 40000), it('song:two', 2, 5000)], t, open);
+      await st.putItems(TB, [it('song:b-one', 3, 1000)], t, open);
+      const run = (script, args) => spawnSync(process.execPath, [path.join(L.MODS, 'tools', 'sync-admin', script)].concat(args), { encoding: 'utf8', timeout: 30000 });
+      const lst = run('list.js', ['--url', URL_]);
+      const out = lst.stdout + lst.stderr;
+      ok('list.js: exit 0, both libraries, the larger first, the address tags, the totals', lst.status === 0 && out.indexOf(TA) >= 0 && out.indexOf(TB) >= 0 && out.indexOf(TA) < out.indexOf(TB) && /addr0001/.test(out) && /live libraries: 2/.test(out), lst.status + ' ' + out.slice(0, 300));
+      ok('... and it shows no item name, no body, no hash of a code and no password', !/song:|very-secret/.test(out) && out.indexOf('a1'.repeat(32)) < 0 && out.indexOf('ab'.repeat(32)) < 0 && out.indexOf(':pw@') < 0 && out.indexOf('pw@') < 0);
+      const js = run('list.js', ['--url', URL_, '--json']);
+      let parsed = null; try { parsed = JSON.parse(js.stdout); } catch (e) { parsed = null; }
+      ok('list.js --json: the same as data, no field that is a hash', !!parsed && parsed.libraries.length === 2 && parsed.totals.libraries === 2 && parsed.libraries[0].id === TA && !/hash/i.test(Object.keys(parsed.libraries[0]).join().replace(/hasRecovery/i, '')));
+      const before = async () => ({ libs: (await one('SELECT count(*)::int n FROM ppp_sync_libs'))[0].n, items: (await one('SELECT count(*)::int n FROM ppp_sync_items'))[0].n });
+      const b0 = await before();
+      const noConfirm = run('delete.js', ['--id', TB, '--url', URL_]);
+      ok('delete.js without --confirm says what it would delete and exits 3: nothing is changed', noConfirm.status === 3 && /Would delete/.test(noConfirm.stdout) && JSON.stringify(await before()) === JSON.stringify(b0), noConfirm.status + ' ' + noConfirm.stdout + noConfirm.stderr);
+      const unknown = run('delete.js', ['--id', 'lib_' + 'c'.repeat(22), '--url', URL_, '--confirm']);
+      ok('an id that is not there: exit 2, nothing changed', unknown.status === 2 && JSON.stringify(await before()) === JSON.stringify(b0));
+      const del = run('delete.js', ['--id', TB, '--url', URL_, '--confirm']);
+      const b1 = await before();
+      ok('delete.js --confirm removes that library and its items (one statement) and nothing of the other', del.status === 0 && /Deleted/.test(del.stdout) && b1.libs === 1 && b1.items === 2
+        && (await one('SELECT count(*)::int n FROM ppp_sync_items WHERE lib_id = $1', [TA]))[0].n === 2, del.status + ' ' + del.stdout + del.stderr);
+      ok('(and the tool\'s output has no password)', (del.stdout + del.stderr + noConfirm.stdout).indexOf('pw@') < 0);
+    }
+
     heading('server.js: the flag, the boot on production-shaped data, PR -> main -> PR, rollback');
     {
       /* the code of main (the base of this branch) is exported from git into a folder of its own and run for real against the databases this tree has migrated */
@@ -465,7 +517,7 @@ const strip = (o, drop) => JSON.stringify(o, (k, v) => (drop.indexOf(k) >= 0 ? u
       const bootOld = (db, env) => startServer(env, { script: path.join(oldDir, 'server.js'), cwd: oldDir, url: db.url });
       const SYNC_COLS = ['ppp_sync_libs.id text NO ', 'ppp_sync_libs.client_hash text NO ', 'ppp_sync_libs.created_at timestamp with time zone NO now()', 'ppp_sync_libs.last_used_at timestamp with time zone NO now()',
         "ppp_sync_libs.created_ip_tag text NO ''::text", 'ppp_sync_libs.revoked_at timestamp with time zone YES ', 'ppp_sync_libs.rotated_from text YES ', 'ppp_sync_libs.bytes bigint NO 0', 'ppp_sync_libs.items integer NO 0',
-        'ppp_sync_libs.tombs integer NO 0', 'ppp_sync_libs.max_rev bigint NO 0', 'ppp_sync_items.lib_id text NO ', 'ppp_sync_items.key text NO ', 'ppp_sync_items.rev bigint NO ', 'ppp_sync_items.deleted_at timestamp with time zone YES ',
+        'ppp_sync_libs.tombs integer NO 0', 'ppp_sync_libs.max_rev bigint NO 0', 'ppp_sync_libs.purged_through bigint NO 0', 'ppp_sync_libs.recovery_hash text YES ', 'ppp_sync_items.lib_id text NO ', 'ppp_sync_items.key text NO ', 'ppp_sync_items.rev bigint NO ', 'ppp_sync_items.deleted_at timestamp with time zone YES ',
         'ppp_sync_items.content_hash text YES ', "ppp_sync_items.device text NO ''::text", 'ppp_sync_items.bytes integer NO 0', 'ppp_sync_items.body bytea YES ', 'ppp_sync_items.updated_at timestamp with time zone NO now()'];
 
       /* with the flag unset the PR boots exactly as main does: no table, no route, no line */
@@ -565,6 +617,30 @@ const strip = (o, drop) => JSON.stringify(o, (k, v) => (drop.indexOf(k) >= 0 ? u
       const anyOff = boots.filter(b => !b.error).some(b => /Song sync: OFF/.test(b.log()));
       ok('... and none of them switched the feature off', !anyOff);
       await Promise.all(boots.filter(b => !b.error).map(b => b.close()));
+
+      /* a statement that hangs ends in a 503 after the query time-out, and the connection that hung is dropped: the table is locked by another session */
+      {
+        const tdb = await mkDb('ppp_sync_timeout');
+        const tsrv = await startServer({ PPP_SYNC: '1', PPP_SYNC_QUERY_MS: '1500' }, { url: tdb.url });
+        let c = null;
+        try {
+          const mk = await req(tsrv.port, 'POST', '/api/libs', { body: {}, ip: '198.51.100.61' });
+          const H = { 'X-PPP-Lib': mk.body.code };
+          await req(tsrv.port, 'PUT', '/api/sync/items', { headers: H, body: { device: 'a1b2c3d4e5f60718', items: [L.item('song:one')] } });
+          c = await tdb.pool.connect();
+          await c.query('BEGIN');
+          await c.query('LOCK TABLE ppp_sync_items IN ACCESS EXCLUSIVE MODE');
+          const t0 = Date.now();
+          const r = await req(tsrv.port, 'GET', '/api/sync/changes?since=0', { headers: H });
+          const ms = Date.now() - t0;
+          const health = await req(tsrv.port, 'GET', '/health');
+          ok('a statement that hangs (a table locked by another session) is a 503 store after the query time-out (1.5 s here, 10 s in production) - not a request that waits for ever - and the site answers meanwhile',
+            r.status === 503 && r.body.code === 'store' && ms >= 1200 && ms < 8000 && health.status === 200, r.status + ' ' + ms + ' ms ' + r.text.slice(0, 100));
+          await c.query('ROLLBACK'); c.release(); c = null;
+          const again = await req(tsrv.port, 'GET', '/api/sync/changes?since=0', { headers: H });
+          ok('and once the lock is gone the next request is served (the pool dropped the connection that hung and made another)', again.status === 200 && again.body.items.length === 1, again.status + ' ' + again.text.slice(0, 100));
+        } finally { if (c) { try { await c.query('ROLLBACK'); } catch (e) { /* gone */ } c.release(); } await tsrv.close(); }
+      }
 
       /* the feature is optional at the boot: a thing in the way of its tables switches it off, the site and the queue stay */
       const opt = await mkDb('ppp_sync_optional');

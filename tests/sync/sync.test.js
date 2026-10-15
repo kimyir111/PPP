@@ -674,7 +674,8 @@ async function main() {
       for (let i = 0; i < 100; i++) await A.changes(1);
       ok('100 polls that find nothing new (since = the revision the library has) ran ZERO store calls', S.store.total() === 0, JSON.stringify(S.store.calls));
       for (let i = 0; i < 30; i++) { await A.changes(7); }
-      ok('... and a device that is ahead is answered from memory as well', S.store.total() === 0);
+      ok('... and a device that says it is AHEAD costs one SELECT of the library\'s own row each time (the cache may be the one that is behind) and nothing else', S.store.calls.libState === 30 && S.store.total() === 30, JSON.stringify(S.store.calls));
+      S.store.reset();
       S.advance(25 * 3600 * 1000);
       await A.changes(1);
       ok('a day later one poll tells the database the library was used (touchLib) - and no more', S.store.calls.touchLib === 1 && S.store.total() === 1, JSON.stringify(S.store.calls));
@@ -1024,6 +1025,377 @@ async function main() {
       const r2 = await S4.anon.post('/api/libs', {});
       ok('a feature that is switched off answers 503 store with disabled:true on every route (making a library too), and asks the store for nothing', r.status === 503 && r.body.code === 'store' && r.body.disabled === true && r2.status === 503 && r2.body.disabled === true && S4.store.total() === n0, r.text);
     } finally { await S4.close(); }
+  }
+
+  heading('the position a device is given, what a page of changes costs, a library that moved on without the cache');
+  {
+    /* the reviewer's reproduction: the rows travel back while another device writes */
+    const innerS = L.mod('sync-store.js').fileSyncStore(L.tmpDir('ppp-sync-pos-'), { memory: true });
+    let delay = 0, after = false;
+    const slow = Object.assign({}, innerS, { changes: async function () {
+      if (after && delay) await sleep(delay);                      /* the query runs after the other device's write */
+      const r = await innerS.changes.apply(innerS, arguments);     /* ... or before it: the rows are those of the moment it ran */
+      if (!after && delay) await sleep(delay);                     /* ... and travel back for a while */
+      return r;
+    } });
+    const S = await L.startSync({ store: slow, libs: ['a'] });
+    try {
+      const A = S.as('a');
+      let r = await A.putItems([L.item('song:s1'), L.item('song:s2')]);
+      delay = 400; after = false;
+      const poll = A.changes(0);
+      await sleep(100);
+      const w = await A.putItems([L.item('song:s3')]);
+      const got = await poll;
+      ok('a device polls from 0 while another writes revision 3: the answer lists revisions 1 and 2 and its position is 2 - not 3, which it was never given', w.status === 200 && got.status === 200
+        && got.body.items.map(i => i.rev).join() === '1,2' && got.body.nextSince === 2 && got.body.maxRev === 2, JSON.stringify([got.body.items.map(i => i.rev), got.body.nextSince, got.body.maxRev]));
+      delay = 0;
+      const next = await A.changes(got.body.nextSince);
+      ok('and the next poll from that position delivers revision 3', next.body.items.map(i => i.key).join() === 'song:s3' && next.body.nextSince === 3);
+      /* the other order: the query runs after the write, so the answer holds revision 3 and the position says 3 (nothing is held back or skipped) */
+      delay = 300; after = true;
+      const poll2 = A.changes(0);
+      await sleep(80);
+      await A.putItems([L.item('song:s4')]);
+      const got2 = await poll2;
+      ok('a query that ran after the write lists it and its position is past it: the position is the highest of the library\'s revision when the poll began and the last row listed', got2.body.items.map(i => i.rev).join() === '1,2,3,4' && got2.body.nextSince === 4 && got2.body.maxRev === 4, JSON.stringify([got2.body.items.map(i => i.rev), got2.body.nextSince]));
+    } finally { await S.close(); }
+  }
+  {
+    /* the metadata of a page of changes is bytes out of the database: counted against the budgets (the reviewer measured 92.6 KB for a page of 500) */
+    const S = await L.startSync({ libs: ['a', 'b'], memory: true, config: { egressPerHour: 400000, egressPerDay: 4000000 } });
+    try {
+      const A = S.as('a');
+      for (let b = 0; b < 20; b++) {
+        if (b % 9 === 8) S.advance(61 * 60 * 1000);
+        const r = await A.putItems(Array.from({ length: 25 }, (_, i) => L.item('song:m' + (b * 25 + i), L.songBody(2))));
+        if (r.status !== 200) throw new Error('fixture ' + r.status + ' ' + r.text.slice(0, 100));
+      }
+      S.advance(61 * 60 * 1000);
+      const out0 = S.svc.gauge(false).bytesOut;
+      const r1 = await A.changes(0);
+      const out1 = S.svc.gauge(false).bytesOut;
+      ok('a page of 500 rows is ' + r1.text.length + ' bytes (' + Math.round(r1.text.length / 500) + ' a row) and what was charged is exactly what was sent', r1.status === 200 && r1.body.items.length === 500 && out1 - out0 === Buffer.byteLength(r1.text), out1 - out0 + ' vs ' + Buffer.byteLength(r1.text));
+      const r2 = await A.changes(0);
+      const r3 = await A.changes(0);
+      ok('a library\'s quarter of the hour (100,000 here) is two pages: the second crosses it and is served, the third is 429 share with a Retry-After - before the database is asked', r2.status === 200 && bad(r3, 429, 'share') && +r3.headers['retry-after'] >= 60, r2.status + ' ' + r3.status + ' ' + r3.text);
+      S.store.reset();
+      const r4 = await A.changes(0);
+      ok('a refused poll asks the store for nothing', r4.status === 429 && !S.store.calls.changes, JSON.stringify(S.store.calls));
+      ok('a poll that finds nothing new is still free and never refused for it (the answer is a few bytes from memory)', (await A.changes(500)).status === 200);
+      const nB = await S.as('b').putItems([L.item('song:one', L.songBody(2))]);
+      ok('another library is not held up by it', nB.status === 200 && (await S.as('b').changes(0)).status === 200);
+      S.advance(61 * 60 * 1000);
+      ok('and an hour later the page is served again', (await A.changes(0)).status === 200);
+    } finally { await S.close(); }
+    /* the day: the site's 150 MB a day cannot be reached by polling a library of 500 small songs */
+    const S2 = await L.startSync({ libs: ['a'], memory: true, config: { egressPerHour: 64 * L.MiB, egressPerDay: 400000 } });
+    try {
+      const A = S2.as('a');
+      for (let b = 0; b < 20; b++) { if (b % 9 === 8) S2.advance(61 * 60 * 1000); await A.putItems(Array.from({ length: 25 }, (_, i) => L.item('song:m' + (b * 25 + i), L.songBody(2)))); }
+      S2.advance(61 * 60 * 1000);
+      const codes = [];
+      for (let i = 0; i < 6; i++) codes.push((await A.changes(0)).status);
+      ok('the day has its own share: a library of 500 songs polled from 0 gets its quarter of the day (100,000 here: two pages), then 429', codes.slice(0, 2).every(s => s === 200) && codes.slice(2).every(s => s === 429), codes.join());
+    } finally { await S2.close(); }
+  }
+  {
+    /* concurrent reads: the worst case is reserved before the store is asked (the reviewer measured 34.5 MB served against a 2 MB share) */
+    const innerS = L.mod('sync-store.js').fileSyncStore(L.tmpDir('ppp-sync-resv-'), { memory: true });
+    let delay = 0;
+    const slow = Object.assign({}, innerS, { getItems: async function () { if (delay) await sleep(delay); return innerS.getItems.apply(innerS, arguments); } });
+    const S = await L.startSync({ store: slow, libs: ['a'], config: { egressPerHour: 8 * L.MiB, egressPerDay: 80 * L.MiB, ingressPerHour: 64 * L.MiB, ingressPerDay: 128 * L.MiB } });
+    try {
+      const A = S.as('a');
+      const big = (k, i) => L.item(k, Object.assign(L.songBody(8), { card: { t: L.crypto.randomBytes(520 * 1024).toString('base64') + i } }));
+      await A.putItems([big('song:r0', 0), big('song:r1', 1), big('song:r2', 2), big('song:r3', 3), L.item('song:tiny')]);
+      const keys = ['song:r0', 'song:r1', 'song:r2', 'song:r3'];
+      delay = 300;
+      const six = await Promise.all(Array.from({ length: 6 }, () => A.items(keys)));
+      const served = six.filter(x => x.status === 200);
+      const bytes = served.reduce((n, x) => n + x.body.items.reduce((m, i) => m + (i.bytes || 0), 0), 0);
+      const one = served.length ? bytes / served.length : 0;
+      ok('six reads at the same moment of a library whose quarter of the hour is 2 MiB (each answer is about 2.1 MB): the first reserves its worst case before the store is asked, so one or two are served and the others are 429 share - not six',
+        served.length >= 1 && served.length <= 2 && six.filter(x => x.status === 429 && x.body.code === 'share').length === 6 - served.length, six.map(x => x.status).join() + ' served ' + bytes);
+      ok('what was served is the share and at most one answer more (' + Math.round(bytes / 1024) + ' KB of ' + Math.round(2 * L.MiB / 1024) + ' KB + one answer); six answers are 12.5 MB', bytes <= 2 * L.MiB + one + 1, String(bytes));
+      delay = 0;
+      S.advance(61 * 60 * 1000);
+      /* the reservation is given back: reading one small song of a big library, over and over, is not charged for its worst case */
+      const small = [];
+      for (let i = 0; i < 12; i++) small.push((await A.items(['song:tiny'])).status);
+      ok('reading one small song of a library of 2 MB twelve times is not charged for the 1 MB it could have been each time: the reservation is settled to what was sent', small.every(s => s === 200), small.join());
+    } finally { await S.close(); }
+  }
+  {
+    /* a device ahead of what the cache knows: the library's own row is read before it is told "reset" */
+    const S = await L.startSync({ libs: ['a'] });
+    try {
+      const A = S.as('a');
+      await A.putItems([L.item('song:one')]);
+      /* another process wrote: the database is at revision 3, this process's memory at 1 */
+      const w = await S.inner.putItems(S.libId('a'), [{ key: 'song:two', base: 0, hash: 'h'.repeat(16), bytes: 30, body: Buffer.alloc(30, 1), device: '' }, { key: 'song:three', base: 0, hash: 'h'.repeat(16), bytes: 30, body: Buffer.alloc(30, 2), device: '' }],
+        S.clock.t, { growthMax: 1e9, rowsRoom: 1e6 });
+      ok('(fixture: the store is ahead of the service\'s memory)', w.ok && w.maxRev === 3 && S.svc._state.libs.get(S.libId('a')).maxRev === 1);
+      const r = await A.changes(3);
+      ok('a device that has revision 3 is not told "reset" by a cache that is at 1: the library\'s row is read, the answer is a normal "nothing new" with the revision 3, and the memory moved on', r.status === 200 && !r.body.reset && r.body.maxRev === 3 && r.body.items.length === 0 && S.svc._state.libs.get(S.libId('a')).maxRev === 3, JSON.stringify(r.body).slice(0, 160));
+      const r2 = await A.changes(1);
+      ok('and a device that is behind it now gets the two rows', r2.body.items.map(i => i.key).join() === 'song:two,song:three');
+      const r3 = await A.changes(9);
+      ok('a device that is really ahead (9, the library is at 3) is told "reset" with the revision the library has', r3.body.reset === true && r3.body.maxRev === 3);
+      /* a deleted library is not read back */
+      S.store.reset();
+      await A.changes(50);
+      ok('the SELECT is counted like a poll that asks the database (the hour of the library and of the address)', S.store.calls.libState === 1 && S.store.total() === 1, JSON.stringify(S.store.calls));
+    } finally { await S.close(); }
+  }
+
+  heading('a device that was away: tombstones that were purged, items that are gone, a retried write');
+  {
+    const S = await L.startSync({ libs: ['a'] });
+    try {
+      const A = S.as('a');
+      await A.putItems([L.item('song:one'), L.item('song:two'), L.item('song:three')]);
+      await A.delItem('song:one', 1);                                  /* revision 4 */
+      let r = await A.changes(0);
+      ok('no tombstone has been purged: the answer has no tooOld', r.body.tooOld === undefined && r.body.purgedThrough === undefined);
+      S.advance(31 * D);
+      await S.svc._state.purge(S.clock.t);
+      r = await A.changes(2);
+      ok('a device that last saw revision 2, when the tombstone of revision 4 has been purged: tooOld:true with the revision (purgedThrough 4) - it may have missed the deletion and must ask before it pushes', r.status === 200 && r.body.tooOld === true && r.body.purgedThrough === 4 && r.body.items.map(i => i.key).join() === 'song:three', JSON.stringify(r.body).slice(0, 200));
+      r = await A.changes(4);
+      ok('a device that has seen revision 4 is not too old (and a poll with nothing new is the idle answer)', r.status === 200 && r.body.tooOld === undefined);
+      /* the number is kept by the library and by its new code */
+      const rot = await L.req(S.port, 'POST', '/api/libs/me/rotate', { headers: { 'X-PPP-Lib': S.code('a') }, body: {} });
+      const r5 = await L.req(S.port, 'GET', '/api/sync/changes?since=1', { headers: { 'X-PPP-Lib': rot.body.code } });
+      ok('purgedThrough survives a new code', r5.body.tooOld === true && r5.body.purgedThrough === 4);
+      S.svc._state.forgetAll();
+      const r6 = await L.req(S.port, 'GET', '/api/sync/changes?since=1', { headers: { 'X-PPP-Lib': rot.body.code } });
+      ok('... and a restart (it is a column of the library)', r6.body.tooOld === true && r6.body.purgedThrough === 4);
+      /* a write that names a revision of a row that is not there */
+      const B = { put: (list, o) => L.req(S.port, 'PUT', '/api/sync/items', { headers: { 'X-PPP-Lib': rot.body.code }, body: { device: 'a1b2c3d4e5f60718', items: list } }) };
+      let w = await B.put([L.item('song:one', L.songBody(9), 4)]);
+      ok('a write over revision 4 of a song whose tombstone is gone is a conflict `gone` (409), nothing is written: a stale device must not bring a deleted song back without saying so', w.status === 409 && w.body.conflicts.length === 1 && w.body.conflicts[0].gone === true && w.body.conflicts[0].key === 'song:one' && w.body.applied.length === 0, JSON.stringify(w.body).slice(0, 220));
+      const c = await L.req(S.port, 'GET', '/api/sync/items?keys=song%3Aone', { headers: { 'X-PPP-Lib': rot.body.code } });
+      ok('(and no row was made)', c.body.missing.join() === 'song:one');
+      w = await B.put([L.item('song:never', L.songBody(9), 3)]);
+      ok('a revision of a song the library never had is `gone` as well', w.status === 409 && w.body.conflicts[0].gone === true);
+      w = await B.put([L.item('song:one', L.songBody(9), 0), L.item('song:two', L.songBody(9), 2)]);
+      ok('saying so (base 0) brings it back as a new item, and the other items of a batch are not held up by a gone one', w.status === 200 && w.body.applied.length === 2);
+      w = await B.put([L.item('song:ghost', L.songBody(9), 7), L.item('song:fresh', L.songBody(9), 0)]);
+      ok('a batch with one gone item applies the others and is 409', w.status === 409 && w.body.applied.map(a => a.key).join() === 'song:fresh' && w.body.conflicts[0].gone === true && w.body.conflicts[0].key === 'song:ghost', JSON.stringify(w.body).slice(0, 200));
+    } finally { await S.close(); }
+    /* a retried write whose answer was lost */
+    const S2 = await L.startSync({ libs: ['a'] });
+    try {
+      const A = S2.as('a');
+      const it = L.item('song:retry', L.songBody(8), 0);
+      const first = await A.putItems([it]);
+      const again = await A.putItems([it]);
+      ok('a write that is sent again after its answer was lost comes back 409 with the server\'s own metadata, and its hash equals the one that was sent: that is "applied" (G13-S1 reads it so)', first.status === 200 && again.status === 409
+        && again.body.conflicts[0].hash === it.hash && again.body.conflicts[0].rev === first.body.applied[0].rev, JSON.stringify(again.body.conflicts));
+    } finally { await S2.close(); }
+  }
+
+  heading('the recovery code: a second secret that can only give the library a new code');
+  {
+    const S = await L.startSync({ memory: true });
+    try {
+      const mk = await S.anon.post('/api/libs', {}, { ip: '198.51.100.140' });
+      const code = mk.body.code, rec = mk.body.recovery;
+      ok('making a library shows the code and a recovery code, once: two different 64-hex secrets', mk.status === 201 && /^[0-9a-f]{64}$/.test(rec) && rec !== code);
+      const lib = (await S.inner.loadAll()).libs[0];
+      ok('only the hash of the recovery code is stored (and not the hash of the code: a different domain)', lib.recoveryHash !== rec && /^[0-9a-f]{64}$/.test(lib.recoveryHash)
+        && lib.recoveryHash === Sync.recoveryHashOf(rec).toString('hex') && lib.recoveryHash !== lib.hash);
+      const H = c => ({ headers: { 'X-PPP-Lib': c } });
+      await L.req(S.port, 'PUT', '/api/sync/items', Object.assign({ body: { items: [L.item('song:one')] } }, H(code)));
+      let r = await L.req(S.port, 'GET', '/api/sync/changes?since=0', H(rec));
+      ok('the recovery code is not a library code: it opens nothing (401 bad-code, counted)', bad(r, 401, 'bad-code'));
+      r = await L.req(S.port, 'GET', '/api/sync/changes?since=0', { headers: { 'X-PPP-Recovery': rec } });
+      ok('and sent as the recovery header to a route that reads: no code at all (401 no-lib)', bad(r, 401, 'no-lib'));
+      r = await L.req(S.port, 'POST', '/api/libs/recover', { body: {}, headers: { Origin: 'https://evil.example', 'X-PPP-Recovery': rec } });
+      ok('another origin: 403 cross-site, before the recovery code is read', bad(r, 403, 'cross-site'));
+      r = await L.req(S.port, 'POST', '/api/libs/recover', { body: {} });
+      ok('no recovery header: 401 no-recovery', bad(r, 401, 'no-recovery'));
+      r = await L.req(S.port, 'POST', '/api/libs/recover', { body: {}, headers: { 'X-PPP-Recovery': code } });
+      ok('the library code is not a recovery code (401 bad-recovery)', bad(r, 401, 'bad-recovery'));
+      r = await L.req(S.port, 'POST', '/api/libs/recover', { body: {}, headers: { 'X-PPP-Recovery': rec } });
+      ok('the recovery code gives the library a new code AND a new recovery code (it is used once): 201, the items and revisions are there', r.status === 201 && /^[0-9a-f]{64}$/.test(r.body.code) && r.body.code !== code && /^[0-9a-f]{64}$/.test(r.body.recovery) && r.body.recovery !== rec && r.body.recovered === true && r.body.maxRev === 1, r.text.slice(0, 160));
+      const neu = r.body;
+      r = await L.req(S.port, 'GET', '/api/sync/changes?since=0', H(neu.code));
+      ok('the new code reads the library', r.status === 200 && r.body.items.length === 1);
+      r = await L.req(S.port, 'GET', '/api/sync/changes?since=0', H(code));
+      ok('the old code is `rotated`', bad(r, 401, 'rotated'));
+      r = await L.req(S.port, 'POST', '/api/libs/recover', { body: {}, headers: { 'X-PPP-Recovery': rec } });
+      ok('the recovery code that was used is not valid any more (401 bad-recovery)', bad(r, 401, 'bad-recovery'));
+      r = await L.req(S.port, 'POST', '/api/libs/me/rotate', Object.assign({ body: {} }, H(neu.code)));
+      ok('a change of code with the code keeps the recovery code as it was (it is shown once): the recovery of the new library still works after it', r.status === 201 && !r.body.recovery);
+      const afterRotate = await L.req(S.port, 'POST', '/api/libs/recover', { body: {}, headers: { 'X-PPP-Recovery': neu.recovery } });
+      ok('... and does give the library a new code', afterRotate.status === 201 && afterRotate.body.code !== r.body.code);
+      /* the rows after a restart */
+      S.svc._state.forgetAll();
+      const n2 = afterRotate.body;
+      const again = await L.req(S.port, 'POST', '/api/libs/recover', { body: {}, headers: { 'X-PPP-Recovery': n2.recovery } });
+      ok('a restart keeps the recovery code (a column of the library)', again.status === 201);
+      /* a deleted library cannot be recovered */
+      const del = await L.req(S.port, 'DELETE', '/api/libs/me', H(again.body.code));
+      const gone = await L.req(S.port, 'POST', '/api/libs/recover', { body: {}, headers: { 'X-PPP-Recovery': again.body.recovery } });
+      ok('a deleted library is not recovered: 401 bad-recovery', del.status === 200 && bad(gone, 401, 'bad-recovery'));
+    } finally { await S.close(); }
+    /* the index finds a row by the first 22 hex of the hash of the recovery code; the whole hash is compared */
+    const S3 = await L.startSync({});
+    try {
+      const rc = 'ab'.repeat(32);
+      const full = Sync.recoveryHashOf(rc).toString('hex');
+      await S3.inner.createLib({ id: 'lib_' + '5'.repeat(22), hash: 'cd'.repeat(32), recoveryHash: full.slice(0, 22) + '0'.repeat(42), createdAt: S3.clock.t, ipTag: '' }, 100);
+      let r = await L.req(S3.port, 'POST', '/api/libs/recover', { body: {}, headers: { 'X-PPP-Recovery': rc } });
+      ok('a row the index finds by the start of the hash but whose stored hash is not that of the recovery code: refused (the whole hash is compared)', bad(r, 401, 'bad-recovery'), r.status + ' ' + r.text.slice(0, 100));
+      await S3.inner.createLib({ id: 'lib_' + '6'.repeat(22), hash: 'ef'.repeat(32), recoveryHash: Sync.recoveryHashOf('cd'.repeat(32)).toString('hex'), createdAt: S3.clock.t, ipTag: '' }, 100);
+      S3.svc._state.forgetAll();
+      r = await L.req(S3.port, 'POST', '/api/libs/recover', { body: {}, ip: '203.0.113.88', headers: { 'X-PPP-Recovery': 'cd'.repeat(32) } });
+      ok('... and a row that is right is let in', r.status === 201, r.status + ' ' + r.text.slice(0, 100));
+      ok('the hash of a recovery code is of a domain of its own: the same 64 hex hash differently as a code and as a recovery code', !Sync.recoveryHashOf(rc).equals(Sync.codeHash(rc)));
+    } finally { await S3.close(); }
+    /* failures are counted like wrong codes; successes are limited like a change of code */
+    const S2 = await L.startSync({ memory: true });
+    try {
+      const mk = await S2.anon.post('/api/libs', {}, { ip: '198.51.100.141' });
+      const wrongs = [];
+      for (let i = 0; i < 25; i++) wrongs.push((await L.req(S2.port, 'POST', '/api/libs/recover', { body: {}, ip: '203.0.113.77', headers: { 'X-PPP-Recovery': L.crypto.randomBytes(32).toString('hex') } })).status);
+      ok('20 wrong recovery codes an hour from one address are 401, then 429 (the same count as wrong codes)', wrongs.slice(0, 20).every(s => s === 401) && wrongs.slice(20).every(s => s === 429), wrongs.join());
+      const okOne = await L.req(S2.port, 'POST', '/api/libs/recover', { body: {}, ip: '203.0.113.78', headers: { 'X-PPP-Recovery': mk.body.recovery } });
+      ok('a right one from another address is let through', okOne.status === 201);
+      let cur = okOne.body, res = [];
+      for (let i = 0; i < 6; i++) { const x = await L.req(S2.port, 'POST', '/api/libs/recover', { body: {}, ip: '203.0.113.79', headers: { 'X-PPP-Recovery': cur.recovery } }); res.push(x.status); if (x.status === 201) cur = x.body; }
+      ok('recoveries and changes of code share the 5 an hour of a library (the first one above was the first): the 5th and 6th are 429', res.join() === '201,201,201,201,429,429', res.join());
+    } finally { await S2.close(); }
+  }
+
+  heading('a hung store does not freeze the writer');
+  {
+    const innerS = L.mod('sync-store.js').fileSyncStore(L.tmpDir('ppp-sync-hang-'), { memory: true });
+    const hang = { lib: null };
+    const stuck = Object.assign({}, innerS, { putItems: function (libId) { if (hang.lib && libId === hang.lib) return new Promise(() => {}); return innerS.putItems.apply(innerS, arguments); } });
+    const S = await L.startSync({ store: stuck, libs: ['a', 'b'], config: { storeTimeoutMs: 400 } });
+    try {
+      await S.as('a').putItems([L.item('song:one')]);
+      hang.lib = S.libId('a');
+      const t0 = Date.now();
+      const first = S.as('a').putItems([L.item('song:two')], { ip: '198.51.100.201' });
+      await sleep(50);
+      const other = await S.as('b').putItems([L.item('song:other')], { ip: '198.51.100.202' });
+      const f = await first;
+      ok('a write whose store call never comes back is a 503 store after the time-out (400 ms here, 15 s in production)', bad(f, 503, 'store') && Date.now() - t0 >= 350 && Date.now() - t0 < 3000, f.status + ' ' + (Date.now() - t0));
+      ok('and the writer is not held for ever: another library\'s write (queued behind it) is served as soon as the time-out has passed', other.status === 200 && Date.now() - t0 < 3000, other.status + ' ' + (Date.now() - t0));
+      hang.lib = null;
+      ok('the library of the hung call is read again at the next request and works', (await S.as('a').putItems([L.item('song:three')], { ip: '198.51.100.201' })).status === 200);
+    } finally { await S.close(); }
+    /* reads and polls that hang end the same way, and a read that failed gives back what it reserved */
+    const innerR = L.mod('sync-store.js').fileSyncStore(L.tmpDir('ppp-sync-hang3-'), { memory: true });
+    const hangR = { on: false };
+    const never = name => function () { if (hangR.on) return new Promise(() => {}); return innerR[name].apply(innerR, arguments); };
+    const stuckR = Object.assign({}, innerR, { getItems: never('getItems'), changes: never('changes') });
+    const SR = await L.startSync({ store: stuckR, libs: ['a'], config: { storeTimeoutMs: 300 } });
+    try {
+      await SR.as('a').putItems([L.item('song:one')]);
+      const before = SR.svc._state.budget('out', SR.clock.t);
+      hangR.on = true;
+      let t0 = Date.now();
+      let r = await SR.as('a').items(['song:one']);
+      ok('a read whose store call never comes back: 503 store after the time-out', bad(r, 503, 'store') && Date.now() - t0 < 3000, r.status + ' ' + (Date.now() - t0));
+      const after = SR.svc._state.budget('out', SR.clock.t);
+      ok('... and what it reserved of the hour and day budgets is given back (nothing was sent)', after.hour === before.hour && after.day === before.day, JSON.stringify([before, after]));
+      t0 = Date.now();
+      r = await SR.as('a').changes(0);
+      ok('a poll whose store call never comes back: 503 store after the time-out', bad(r, 503, 'store') && Date.now() - t0 < 3000, r.status + ' ' + (Date.now() - t0));
+      hangR.on = false;
+      ok('and the next read is served (the place it held was given back)', (await SR.as('a').items(['song:one'])).status === 200);
+    } finally { await SR.close(); }
+    const innerL = L.mod('sync-store.js').fileSyncStore(L.tmpDir('ppp-sync-hang2-'), { memory: true });
+    const hang2 = { on: true };
+    const stuckLoad = Object.assign({}, innerL, { loadAll: function () { if (hang2.on) return new Promise(() => {}); return innerL.loadAll.apply(innerL, arguments); } });
+    const S2 = await L.startSync({ store: stuckLoad, config: { storeTimeoutMs: 300 } });
+    try {
+      const t0 = Date.now();
+      const r = await S2.anon.post('/api/libs', {}, { ip: '198.51.100.150' });
+      ok('the first read of the libraries that never comes back: 503 store after the time-out, not a request that hangs', bad(r, 503, 'store') && Date.now() - t0 < 3000, r.status + ' ' + (Date.now() - t0));
+      hang2.on = false;
+      ok('and the next request (the store is back) is served', (await S2.anon.post('/api/libs', {}, { ip: '198.51.100.150' })).status === 201);
+    } finally { await S2.close(); }
+  }
+
+  heading('the operator\'s tools refuse a database that is not on this machine');
+  {
+    const cp = require('child_process');
+    const run = (script, args, env) => cp.spawnSync(process.execPath, [L.path.join(L.MODS, 'tools', 'sync-admin', script)].concat(args), { encoding: 'utf8', env: Object.assign({}, process.env, { DATABASE_URL: '' }, env || {}), timeout: 20000 });
+    const remote = 'postgres://neondb_owner:s3cret-pw@ep-cool-123.eu-central-1.aws.neon.tech/ppp?sslmode=require';
+    let r = run('list.js', ['--url', remote]);
+    ok('list.js on a remote database without --allow-remote: exit 2, says where it is and that it will not, shows no password', r.status === 2 && /ep-cool-123/.test(r.stderr) && /--allow-remote/.test(r.stderr) && !/s3cret/.test(r.stdout + r.stderr), r.status + ' ' + r.stderr.slice(0, 200));
+    r = run('delete.js', ['--id', 'lib_' + 'a'.repeat(22), '--confirm', '--url', remote]);
+    ok('delete.js on a remote database with --confirm but not --allow-remote: exit 2, nothing done', r.status === 2 && /--allow-remote/.test(r.stderr), r.status + ' ' + r.stderr.slice(0, 200));
+    r = run('delete.js', ['--id', 'not-an-id', '--url', 'postgres://u:p@127.0.0.1:1/x']);
+    ok('delete.js with something that is not a library id: exit 2', r.status === 2 && /--id/.test(r.stderr));
+    r = run('list.js', []);
+    ok('no database named: exit 2 and a sentence', r.status === 2 && /DATABASE_URL/.test(r.stderr));
+    r = run('list.js', ['--url', 'mysql://u:p@localhost/x']);
+    ok('a URL that is not postgres: exit 2', r.status === 2);
+  }
+
+  heading('a first sync of 500 songs under the limits as built (the arithmetic of 7.9: what the person waits)');
+  {
+    const S = await L.startSync({ libs: ['a'], memory: true });
+    try {
+      const A = S.as('a');
+      let seed = 12345;
+      const rnd = () => { seed = (Math.imul(seed, 1103515245) + 12345) >>> 0; return seed / 4294967296; };
+      /* a song of 2,000 packed note rows of 8 values (a real packed row is longer still), irregular pitches and lengths: tens of KB as JSON, about 20 KB as gzip */
+      const song = i => {
+        const o = L.songBody(8);
+        o.card.title = 'Song ' + i;
+        o.score.notes = Array.from({ length: 2000 }, (_, k) => [1 + (k >> 5), 1 + (k & 1), 1, 40 + Math.floor(rnd() * 45), Math.round(rnd() * 64) / 4, [0.25, 0.5, 0.75, 1, 2][Math.floor(rnd() * 5)], 'n-' + k + '-' + Math.floor(rnd() * 1000), Math.floor(rnd() * 3)]);
+        o.score.measures = Array.from({ length: 63 }, (_, k) => ({ number: k + 1, time: { beats: 4, beatType: 4 } }));
+        return o;
+      };
+      const t0 = S.clock.t;
+      let written = 0, calls = 0, waits = 0;
+      const refusals = {};
+      for (let guard = 0; written < 500 && guard < 400; guard++) {
+        const n = Math.min(25, 500 - written);
+        const items = Array.from({ length: n }, (_, k) => L.item('song:s' + (written + k), song(written + k), 0));
+        const r = await A.putItems(items);
+        calls++;
+        if (r.status === 200) { written += n; continue; }
+        const key = r.status + ' ' + (r.body && r.body.code);
+        refusals[key] = (refusals[key] || 0) + 1;
+        const wait = Math.max(1, Number(r.headers['retry-after']) || 600);
+        S.advance(wait * 1000);
+        waits++;
+      }
+      const upHours = (S.clock.t - t0) / 3600000;
+      const g = (await A.changes(0)).body;
+      ok('500 songs are all written (' + calls + ' requests, ' + waits + ' waits on Retry-After): ' + upHours.toFixed(2) + ' hours of the device\'s clock; the library holds ' + (g.library.bytes / 1048576).toFixed(1) + ' MB',
+        written === 500 && g.library.items === 500 && upHours >= 1.9 && upHours <= 2.2, JSON.stringify({ written: written, upHours: upHours, refusals: refusals, library: g.library }));
+      /* the listing of all 500 rows is ONE page and costs the budgets what it weighs */
+      const hourBefore = S.svc._state.budget('out', S.clock.t).hour;
+      const list = await A.changes(0);
+      const weighed = S.svc._state.budget('out', S.clock.t).hour - hourBefore;
+      ok('the second device\'s first poll lists the 500 items in one answer of about ' + Math.round(weighed / 1024) + ' KB, charged to the read budgets (a library has a quarter of 64 MB an hour)', list.body.items.length === 500 && list.body.more === false && weighed === Buffer.byteLength(list.text) && weighed < 150 * 1024, weighed + ' ' + list.body.items.length);
+      /* the second device reads the bodies, 25 at a time, 300 items an hour: 300 now, 200 an hour later */
+      const t1 = S.clock.t;
+      let got = 0, readWaits = 0;
+      const reads = {};
+      for (let guard = 0; got < 500 && guard < 400; guard++) {
+        const n = Math.min(25, 500 - got);
+        const keys = Array.from({ length: n }, (_, k) => 'song:s' + (got + k));
+        const r = await A.items(keys);
+        if (r.status === 200) { got += r.body.items.filter(x => x.body).length; continue; }
+        const key = r.status + ' ' + (r.body && r.body.code);
+        reads[key] = (reads[key] || 0) + 1;
+        S.advance(Math.max(1, Number(r.headers['retry-after']) || 600) * 1000);
+        readWaits++;
+      }
+      const downHours = (S.clock.t - t1) / 3600000;
+      ok('and reads all 500 bodies: ' + downHours.toFixed(2) + ' hours of the device\'s clock (' + readWaits + ' waits)', got === 500 && downHours >= 0.9 && downHours <= 1.2, JSON.stringify({ got: got, downHours: downHours, reads: reads }));
+    } finally { await S.close(); }
   }
 
   heading('the numbers of the hourly line');

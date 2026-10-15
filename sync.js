@@ -106,7 +106,10 @@ const LIMITS = {
   /* ... a place is held until the answer has been SENT (a reader that takes it a byte at a time holds the memory of the answer for as long as it does), and at most this long */
   READ_HOLD_MS: 120 * 1000,
   /* changes waiting for the one writer at a time */
-  WRITE_QUEUE_MAX: 24
+  WRITE_QUEUE_MAX: 24,
+  /* a call of the store that has not answered in this long is a failed call (503 `store`): a hung connection must not hold a request, or the one writer, for ever. The Postgres store's
+     queries have their own, shorter time-out (server.js: PPP_SYNC_QUERY_MS, 10 s), which also drops the connection that hung */
+  STORE_TIMEOUT_MS: 15 * 1000
 };
 
 function configFrom(env, over) {
@@ -129,7 +132,8 @@ function configFrom(env, over) {
     putsAtOnce: LIMITS.PUTS_AT_ONCE,
     processAtOnce: LIMITS.PROCESS_AT_ONCE,
     readsAtOnce: LIMITS.READS_AT_ONCE,
-    readHoldMs: LIMITS.READ_HOLD_MS
+    readHoldMs: LIMITS.READ_HOLD_MS,
+    storeTimeoutMs: LIMITS.STORE_TIMEOUT_MS
   }, over || {});
 }
 
@@ -144,6 +148,10 @@ const DUMMY_HASH = sha256('no such library');
 
 /* ---- the code of a library: 64 lowercase hex (256 random bits), sent as X-PPP-Lib; nothing else is a code ---- */
 const LIB_HEADER = 'x-ppp-lib';
+/* the RECOVERY code: a second secret made with the library and shown once (the page puts it in the backup file and on the sheet with the QR code). It can do one thing: give the
+   library a new code (POST /api/libs/recover), for the person whose answer to a change of code was lost, or who has lost the code but kept the backup. It reads and writes no item.
+   Only its hash is stored, and it is a master secret like the code: whoever has it can take the library over, so it is kept somewhere else than the code. */
+const RECOVERY_HEADER = 'x-ppp-recovery';
 const CODE_RE = /^[0-9a-f]{64}$/;
 const LIB_PREFIX = 'lib_';
 /* domain-separated: no other secret of the site (a PC link's code, a guest key: also 64 hex) hashes to a library */
@@ -151,10 +159,14 @@ const codeHash = code => sha256('ppp-lib-v1:' + code);
 const libIdOf = hash => LIB_PREFIX + hash.toString('hex').slice(0, 22);
 /* a short, NON-SECRET name of a library, to recognise it in the page: the last 6 hex of its id (itself a one-way hash of the code) */
 const tagOfId = id => (/^lib_[0-9a-f]{22}$/.test(String(id)) ? String(id).slice(-6) : null);
+const recoveryHashOf = code => sha256('ppp-lib-recovery-v1:' + code);
+/* what the recovery codes are indexed by in memory: 22 hex of their hash (the whole hash is compared) */
+const recoveryKeyOf = hash => hash.toString('hex').slice(0, 22);
 function newLibrary() {
   const code = crypto.randomBytes(32).toString('hex');
   const hash = codeHash(code);
-  return { code: code, hash: hash, id: libIdOf(hash) };
+  const recovery = crypto.randomBytes(32).toString('hex');
+  return { code: code, hash: hash, id: libIdOf(hash), recovery: recovery, recoveryHash: recoveryHashOf(recovery) };
 }
 
 /* the keys of items: one song ('song:' + its id) or the progress across songs ('state') */
@@ -205,6 +217,7 @@ function create(deps) {
   /* A library's `key` is what its limiters and budgets are held under. It is NOT its id: the id is derived from the code, so a new code is a new id, and a limiter held under the
      id would be made whole by changing the code (5 times an hour, each time with a fresh 240 writes). The key is the id of the first library of the chain of new codes. */
   const rotatedTo = new Map();     /* old id -> id of the library that took its place (so the old code is told "rotated", not "wrong") */
+  const recoveryIndex = new Map(); /* recoveryKeyOf(its hash) -> id of the live library it belongs to */
   const ipKey = crypto.createHmac('sha256', String(deps.ipSecret || crypto.randomBytes(32).toString('hex'))).update('ppp-sync-address').digest();
   const tagOf = ip => crypto.createHmac('sha256', ipKey).update(homeJobs.addrKey(ip)).digest('hex').slice(0, 16);
   let loaded = false, loading = null, lastPurge = 0, orphansDue = false, loadEpoch = 0;
@@ -308,7 +321,7 @@ function create(deps) {
   function fill(data) {
     /* a library being made right now (its row is not in the database yet) is not in what was read: it must not be lost to a re-read */
     const making = Array.from(libs.values()).filter(l => l.writing);
-    libs.clear(); rotatedTo.clear(); loadEpoch++;
+    libs.clear(); rotatedTo.clear(); recoveryIndex.clear(); loadEpoch++;
     (data.libs || []).forEach(l => {
       if (!l || typeof l.id !== 'string' || l.id.slice(0, 4) !== LIB_PREFIX) return;
       const hash = Buffer.from(String(l.hash), 'hex');
@@ -316,19 +329,29 @@ function create(deps) {
       const revoked = !!l.revokedAt;
       libs.set(l.id, { id: l.id, key: l.id, hash: hash, createdAt: l.createdAt || 0, lastUsedAt: l.lastUsedAt || l.createdAt || 0, persistedAt: l.lastUsedAt || l.createdAt || 0,
         ipTag: l.ipTag || '', revokedAt: l.revokedAt || 0, rotatedFrom: l.rotatedFrom || '',
-        bytes: revoked ? 0 : l.bytes | 0, items: revoked ? 0 : l.items | 0, tombs: revoked ? 0 : l.tombs | 0, maxRev: l.maxRev | 0, oldestTomb: revoked ? 0 : ((data.tombs || {})[l.id] || 0), writing: false });
+        bytes: revoked ? 0 : l.bytes | 0, items: revoked ? 0 : l.items | 0, tombs: revoked ? 0 : l.tombs | 0, maxRev: l.maxRev | 0, oldestTomb: revoked ? 0 : ((data.tombs || {})[l.id] || 0), writing: false,
+        purgedThrough: l.purgedThrough | 0, recoveryHash: l.recoveryHash && /^[0-9a-f]{64}$/.test(l.recoveryHash) ? Buffer.from(l.recoveryHash, 'hex') : null });
       if (l.rotatedFrom) rotatedTo.set(l.rotatedFrom, l.id);
+      const made = libs.get(l.id);
+      if (!revoked && made.recoveryHash) recoveryIndex.set(recoveryKeyOf(made.recoveryHash), l.id);
     });
     making.forEach(l => { if (!libs.has(l.id)) libs.set(l.id, l); });
     /* the key of a library that was made by changing a code is the key of the one it came from (as far back as the rows go) */
     libs.forEach(l => { let k = l, guard = 0; while (k.rotatedFrom && libs.has(k.rotatedFrom) && guard++ < 1000) k = libs.get(k.rotatedFrom); l.key = k.key || k.id; });
     if ((data.orphanItems | 0) > 0) orphansDue = true;
   }
+  /* A call of the store that has not answered in STORE_TIMEOUT_MS is a failed call: a hung connection must not hold a request - or the one writer - for ever. The call itself is not
+     cancelled here (the Postgres store's own query time-out drops the connection that hung); whatever it does when it ends is read back by the next request (staleAfterFailure). */
+  function guarded(p) {
+    let timer = null;
+    const t = new Promise((resolve, reject) => { timer = setTimeout(() => reject(Object.assign(new Error('the store did not answer in time'), { storeTimeout: true })), C.storeTimeoutMs); });
+    return Promise.race([p, t]).then(v => { clearTimeout(timer); return v; }, e => { clearTimeout(timer); throw e; });
+  }
   /* The one read of a boot. Shared by every request that arrives meanwhile; a failure is not remembered (the next request tries again). */
   async function ensureLoaded() {
     if (loaded) return;
     if (!loading) {
-      loading = store.loadAll().then(async data => {
+      loading = guarded(store.loadAll()).then(async data => {
         fill(data); loaded = true; stats.loads++;
         /* the database is awake for this read anyway: what ran out goes now (a statement only if there is something) */
         await purgeIfDue(now(), true);
@@ -393,7 +416,7 @@ function create(deps) {
     if (lib.revokedAt || t - lib.persistedAt < L.TOUCH_MS) return;
     const was = lib.persistedAt;
     lib.persistedAt = t;
-    try { await store.touchLib(lib.id, t); } catch (e) { lib.persistedAt = Math.max(was, t - L.TOUCH_MS + 60 * 1000); logError(e); }
+    try { await guarded(store.touchLib(lib.id, t)); } catch (e) { lib.persistedAt = Math.max(was, t - L.TOUCH_MS + 60 * 1000); logError(e); }
   }
   const keptUntil = lib => iso(lib.lastUsedAt + C.keepMs);
 
@@ -411,7 +434,9 @@ function create(deps) {
     const prev = writeChain;
     let release;
     writeChain = new Promise(r => { release = r; });
-    return prev.then(async () => { try { return await fn(); } finally { writeWaiting--; release(); } });
+    return prev.then(async () => {
+      try { return await guarded(fn()); } catch (e) { if (e && e.storeTimeout) staleAfterFailure(); throw e; } finally { writeWaiting--; release(); }
+    });
   }
   /* a failed write may have been made durable (the answer was lost): read it all again at the next request, so the memory is the database's */
   const staleAfterFailure = () => { loaded = false; };
@@ -442,15 +467,19 @@ function create(deps) {
     });
     if (dead.length || tombDue) {
       try {
-        const r = await store.purge(dead, tombDue ? t - L.TOMBSTONE_KEEP_MS : null);
-        dead.forEach(id => { libs.delete(id); });
+        const r = await guarded(store.purge(dead, tombDue ? t - L.TOMBSTONE_KEEP_MS : null));
+        dead.forEach(id => {
+          const l = libs.get(id);
+          if (l && l.recoveryHash && recoveryIndex.get(recoveryKeyOf(l.recoveryHash)) === id) recoveryIndex.delete(recoveryKeyOf(l.recoveryHash));
+          libs.delete(id);
+        });
         rotatedTo.forEach((to, from) => { if (!libs.has(from)) rotatedTo.delete(from); });
-        (r.updated || []).forEach(u => { const l = libs.get(u.id); if (l) { l.tombs = u.tombs; l.bytes = u.bytes; l.oldestTomb = u.oldestTomb || 0; } });
+        (r.updated || []).forEach(u => { const l = libs.get(u.id); if (l) { l.tombs = u.tombs; l.bytes = u.bytes; l.oldestTomb = u.oldestTomb || 0; l.purgedThrough = Math.max(l.purgedThrough | 0, u.purgedThrough | 0); } });
         win.purgedLibs += r.libs | 0; win.purgedTombs += r.tombs | 0;
       } catch (e) { logError(e); }
     }
     if (orphansDue && typeof store.deleteOrphans === 'function') {
-      try { await store.deleteOrphans(); orphansDue = false; } catch (e) { logError(e); }
+      try { await guarded(store.deleteOrphans()); orphansDue = false; } catch (e) { logError(e); }
     }
   }
 
@@ -525,15 +554,17 @@ function create(deps) {
     if (live >= C.maxLibs) throw httpError(503, 'The site holds as many song libraries as it may for now. Try again later.', 'busy');
     const made = newLibrary();
     if (libs.has(made.id)) throw httpError(503, 'Could not make a library just now. Try again in a minute.', 'store');
-    const lib = { id: made.id, key: made.id, hash: made.hash, createdAt: t, lastUsedAt: t, persistedAt: t, ipTag: tag, revokedAt: 0, rotatedFrom: '', bytes: 0, items: 0, tombs: 0, maxRev: 0, oldestTomb: 0, writing: true };
+    const lib = { id: made.id, key: made.id, hash: made.hash, createdAt: t, lastUsedAt: t, persistedAt: t, ipTag: tag, revokedAt: 0, rotatedFrom: '', bytes: 0, items: 0, tombs: 0, maxRev: 0, oldestTomb: 0, writing: true,
+      purgedThrough: 0, recoveryHash: made.recoveryHash };
     libs.set(lib.id, lib);        /* the place is taken before anything is awaited: requests at the same moment count it */
     let ok = false;
-    try { ok = await store.createLib({ id: lib.id, hash: made.hash.toString('hex'), createdAt: t, ipTag: tag }, C.maxLibs); } catch (e) { libs.delete(lib.id); throw e; }
+    try { ok = await guarded(store.createLib({ id: lib.id, recoveryHash: made.recoveryHash.toString('hex'), hash: made.hash.toString('hex'), createdAt: t, ipTag: tag }, C.maxLibs)); } catch (e) { libs.delete(lib.id); throw e; }
     if (!ok) { libs.delete(lib.id); throw httpError(503, 'The site holds as many song libraries as it may for now. Try again later.', 'busy'); }
     lib.writing = false;
+    recoveryIndex.set(recoveryKeyOf(made.recoveryHash), lib.id);
     win.libsMade++;
-    /* the only time the code is ever shown */
-    reply(res, 201, { id: lib.id, code: made.code, tag: tagOfId(lib.id), createdAt: iso(t), keptUntil: keptUntil(lib) });
+    /* the only time the code and the recovery code are ever shown */
+    reply(res, 201, { id: lib.id, code: made.code, recovery: made.recovery, tag: tagOfId(lib.id), createdAt: iso(t), keptUntil: keptUntil(lib) });
   }
 
   /* ================= GET /api/sync/changes?since=<rev> ================= */
@@ -546,19 +577,54 @@ function create(deps) {
     const lib = await requireLib(req);
     noBody(req);
     const since = parseRev(url.searchParams.get('since'), 'since');
-    const base = { maxRev: lib.maxRev, library: libView(lib) };
-    /* nothing newer than the device has: answered from memory, no statement (and a device that is AHEAD of the library - a restored database - is told so) */
-    if (since >= lib.maxRev) return reply(res, 200, Object.assign({ items: [], more: false, deletions: 0 }, base, since > lib.maxRev ? { reset: true } : {}));
     const ip = addressOf(req);
-    if (!limiters.changesSql.take(lib.key)) throw httpError(429, 'This library asked for changes too often. Try again in a little while.', 'too-many', { retryAfter: 600 });
-    if (!limiters.changesSqlIp.take(ip)) { limiters.changesSql.release(lib.key); throw httpError(429, 'Too many requests from this network. Try again in a little while.', 'too-many', { retryAfter: 600 }); }
-    const rows = await store.changes(lib.id, since, L.CHANGES_PAGE + 1);
+    /* A poll that has to ask the database takes a place in the hour of the library and of the address (an idle poll asks nothing and takes none). */
+    let took = false;
+    const takeSql = () => {
+      if (took) return;
+      if (!limiters.changesSql.take(lib.key)) throw httpError(429, 'This library asked for changes too often. Try again in a little while.', 'too-many', { retryAfter: 600 });
+      if (!limiters.changesSqlIp.take(ip)) { limiters.changesSql.release(lib.key); throw httpError(429, 'Too many requests from this network. Try again in a little while.', 'too-many', { retryAfter: 600 }); }
+      took = true;
+    };
+    const giveSql = () => { if (took) { limiters.changesSql.release(lib.key); limiters.changesSqlIp.release(ip); took = false; } };
+    /* THE REVISION THIS ANSWER IS ABOUT is read once, here, before anything is awaited. A write that commits while the rows are being fetched moves the library's revision on, and an
+       answer that said "go on from the revision the library has NOW" would hand a device a position past rows it was never given (the reviewer's reproduction: items 1 and 2 are
+       listed, another device writes 3, and the answer says nextSince 3). So the position is the highest of this revision and of the last row that is listed, never a number read later. */
+    let rev0 = lib.maxRev;
+    if (since > rev0) {
+      /* a device that says it is AHEAD of the library: the library's own record is read once before it is told so (the cache may be the one that is behind: a restored database, a
+         second process that wrote), and a device that is told "reset" forgets what it knows of the library */
+      takeSql();
+      const st = await guarded(store.libState(lib.id));
+      if (st && st.found && st.live) {
+        if (st.maxRev > lib.maxRev) { lib.maxRev = st.maxRev; lib.bytes = st.bytes; lib.items = st.items; lib.tombs = st.tombs; }
+        if (st.purgedThrough > lib.purgedThrough) lib.purgedThrough = st.purgedThrough;
+      }
+      rev0 = lib.maxRev;
+    }
+    /* nothing newer than the device has: answered from memory, no statement */
+    if (since >= rev0) { giveSql(); return reply(res, 200, Object.assign({ items: [], more: false, deletions: 0, maxRev: rev0, library: libView(lib) }, since > rev0 ? { reset: true } : {})); }
+    takeSql();
+    /* the rows are bytes out of the database like the bodies are: the budget is looked at BEFORE the database is asked, and charged (by what was serialized) after */
+    const t0 = now();
+    const why = budgetWhy('out', t0, lib, 1);
+    if (why) { giveSql(); throw budgetError(why, 'out', t0, lib, 1); }
+    const rows = await guarded(store.changes(lib.id, since, L.CHANGES_PAGE + 1));
     const more = rows.length > L.CHANGES_PAGE;
     const page = more ? rows.slice(0, L.CHANGES_PAGE) : rows;
     /* `deletions` is the number of tombstones in this answer: a device that is told more than a few at once asks before removing songs (G13 doc 7.5) */
     const deletions = page.filter(m => m.deleted).length;
     const last = page.length ? page[page.length - 1].rev : since;
-    reply(res, 200, Object.assign({ items: page.map(metaView), more: more, nextSince: more ? last : lib.maxRev, deletions: deletions }, base));
+    const top = Math.max(rev0, last);
+    const out = { items: page.map(metaView), more: more, nextSince: more ? last : top, deletions: deletions, maxRev: top, library: libView(lib) };
+    /* tombstones older than the keeping time are gone: a device whose last-seen revision is below the highest one that was purged may have missed a deletion, and must ask the person
+       before it pushes what it has (G13 doc 7.5, "a device that was away") */
+    if (since < lib.purgedThrough) { out.tooOld = true; out.purgedThrough = lib.purgedThrough; }
+    const text = JSON.stringify(out);
+    const size = Buffer.byteLength(text);
+    budgetAdd('out', now(), lib, size);
+    win.bytesOut += size;
+    reply(res, 200, text, { 'Content-Type': 'application/json; charset=utf-8' });
   }
 
   /* ================= GET /api/sync/items?keys=a,b,c ================= */
@@ -595,7 +661,13 @@ function create(deps) {
     /* the bytes: a library, its address and the site each have an hour and a day; the answer that crosses a budget is served (it is at most one answer of READ_BODY_CAP) */
     const why = budgetWhy('out', t0, lib, 1);
     if (why) { giveN(limiters.readItems, lib.key, keys.length); throw budgetError(why, 'out', t0, lib, 1); }
-    const rows = await store.getItems(lib.id, keys, L.READ_BODY_CAP);
+    /* THE WORST THIS ANSWER CAN WEIGH IS RESERVED BEFORE THE STORE IS ASKED and the difference given back after: six answers at once all passing the look above before any of them
+       was counted (the reviewer measured 34.5 MB served against a 2 MB share) is what counting afterwards did. The first reservation fills the window, the others are refused. */
+    const worst = Math.max(1, Math.min(L.READ_BODY_CAP, lib.bytes, keys.length * L.ITEM_GZIP_MAX));
+    budgetAdd('out', t0, lib, worst);
+    const settle = actual => { if (worst > actual) windowsOf('out', lib).forEach(w => w.sub(t0, worst - actual, now())); };
+    let rows;
+    try { rows = await guarded(store.getItems(lib.id, keys, L.READ_BODY_CAP)); } catch (e) { settle(0); throw e; }
     let bytes = 0;
     const items = rows.map(r => {
       const o = metaView(r);
@@ -604,7 +676,7 @@ function create(deps) {
       return o;
     });
     const got = new Set(rows.map(r => r.key));
-    budgetAdd('out', now(), lib, bytes);
+    settle(bytes);
     win.itemsRead += rows.length; win.bytesOut += bytes;
     reply(res, 200, { items: items, missing: keys.filter(k => !got.has(k)), maxRev: lib.maxRev });
   }
@@ -735,9 +807,13 @@ function create(deps) {
         giveBack(items.length - applied);
         const wrote = items.filter(it => r.applied.some(a => a.key === it.key)).reduce((n, it) => n + it.bytes, 0);
         budgetAdd('in', t, lib, wrote);
-        win.itemsWritten += applied; win.bytesIn += wrote; win.conflicts += r.conflicts.length;
+        win.itemsWritten += applied; win.bytesIn += wrote; win.conflicts += r.conflicts.length + (r.gone || []).length;
         held = 0;
-        const conflicts = r.conflicts.map(metaView).concat((r.lost || []).map(k => ({ key: k, rev: 0, deleted: false, hash: '', bytes: 0, device: '', updatedAt: null, stale: true })));
+        /* a key the device has a revision of and the library has no row for (its tombstone was purged) is `gone`: the device must say again, with base 0, that it brings the song back;
+           a key that was decided and then lost to another writer (two processes only) is `stale` */
+        const conflicts = r.conflicts.map(metaView)
+          .concat((r.gone || []).map(k => ({ key: k, rev: 0, deleted: false, hash: '', bytes: 0, device: '', updatedAt: null, gone: true })))
+          .concat((r.lost || []).map(k => ({ key: k, rev: 0, deleted: false, hash: '', bytes: 0, device: '', updatedAt: null, stale: true })));
         reply(res, conflicts.length ? 409 : 200, { maxRev: lib.maxRev, applied: r.applied, conflicts: conflicts, library: libView(lib) });
       });
     } catch (e) {
@@ -794,13 +870,9 @@ function create(deps) {
     } catch (e) { refund(); throw e; }
   }
 
-  /* ================= POST /api/libs/me/rotate and DELETE /api/libs/me ================= */
-  async function rotate(req, res) {
-    const lib = await requireLib(req);
-    const ip = addressOf(req);
-    if (!limiters.rotates.take(lib.key)) throw httpError(429, 'The code of this library was changed too often. Try again later.', 'too-many', { retryAfter: 3600 });
-    if (!limiters.rotatesIp.take(ip)) { limiters.rotates.release(lib.key); throw httpError(429, 'Too many code changes from this network. Try again later.', 'too-many', { retryAfter: 3600 }); }
-    try { await readJson(req, L.SMALL_BODY); } catch (e) { limiters.rotates.release(lib.key); limiters.rotatesIp.release(ip); throw e; }
+  /* ================= POST /api/libs/me/rotate, POST /api/libs/recover and DELETE /api/libs/me ================= */
+  /* the library gets a new code (and, for a recovery, a new recovery code too: it is single use); items, revisions, counters and the keeping time carry over */
+  function rotateNow(res, lib, replaceRecovery) {
     return exclusive(async () => {
       const cur = libs.get(lib.id);
       if (!cur || cur.revokedAt || !cur.hash.equals(lib.hash)) throw goneError(lib.id);
@@ -809,17 +881,55 @@ function create(deps) {
       if (libs.has(made.id)) throw httpError(503, 'Could not change the code just now. Try again in a minute.', 'store');
       let ok = false;
       const ep = epoch();
-      try { ok = await store.rotateLib(cur.id, { id: made.id, hash: made.hash.toString('hex') }, t); } catch (e) { staleAfterFailure(); throw e; }
+      try { ok = await store.rotateLib(cur.id, { id: made.id, hash: made.hash.toString('hex'), recoveryHash: replaceRecovery ? made.recoveryHash.toString('hex') : null }, t); } catch (e) { staleAfterFailure(); throw e; }
       checkEpoch(ep);
       if (!ok) throw goneError(lib.id);
       const nl = { id: made.id, key: cur.key, hash: made.hash, createdAt: cur.createdAt, lastUsedAt: t, persistedAt: t, ipTag: cur.ipTag, revokedAt: 0, rotatedFrom: cur.id,
-        bytes: cur.bytes, items: cur.items, tombs: cur.tombs, maxRev: cur.maxRev, oldestTomb: cur.oldestTomb, writing: false };
+        bytes: cur.bytes, items: cur.items, tombs: cur.tombs, maxRev: cur.maxRev, oldestTomb: cur.oldestTomb, writing: false,
+        purgedThrough: cur.purgedThrough, recoveryHash: replaceRecovery ? made.recoveryHash : cur.recoveryHash };
       /* the old code is dead from this turn of the event loop on: its holders are told "rotated" */
       Object.assign(cur, { revokedAt: t, bytes: 0, items: 0, tombs: 0, oldestTomb: 0 });
       libs.set(nl.id, nl);
       rotatedTo.set(cur.id, nl.id);
-      reply(res, 201, { id: nl.id, code: made.code, tag: tagOfId(nl.id), createdAt: iso(nl.createdAt), keptUntil: keptUntil(nl), maxRev: nl.maxRev, rotated: true });
+      if (cur.recoveryHash) recoveryIndex.delete(recoveryKeyOf(cur.recoveryHash));
+      if (nl.recoveryHash) recoveryIndex.set(recoveryKeyOf(nl.recoveryHash), nl.id);
+      reply(res, 201, Object.assign({ id: nl.id, code: made.code, tag: tagOfId(nl.id), createdAt: iso(nl.createdAt), keptUntil: keptUntil(nl), maxRev: nl.maxRev, rotated: true },
+        replaceRecovery ? { recovery: made.recovery, recovered: true } : {}));
     });
+  }
+  /* the places of a change of code: per library and per address, whether it was asked for with the code or with the recovery code */
+  async function rotateWithBody(req, res, lib, replaceRecovery) {
+    const ip = addressOf(req);
+    if (!limiters.rotates.take(lib.key)) throw httpError(429, 'The code of this library was changed too often. Try again later.', 'too-many', { retryAfter: 3600 });
+    if (!limiters.rotatesIp.take(ip)) { limiters.rotates.release(lib.key); throw httpError(429, 'Too many code changes from this network. Try again later.', 'too-many', { retryAfter: 3600 }); }
+    try { await readJson(req, L.SMALL_BODY); } catch (e) { limiters.rotates.release(lib.key); limiters.rotatesIp.release(ip); throw e; }
+    return rotateNow(res, lib, replaceRecovery);
+  }
+  async function rotate(req, res) {
+    const lib = await requireLib(req);
+    return rotateWithBody(req, res, lib, false);
+  }
+  /* A wrong recovery code is a failure like a wrong code, counted per address (20 an hour, then 429): it is a second way in, so it is limited the same way. */
+  function badRecovery(req) {
+    if (!limiters.badCodes.take(addressOf(req))) return httpError(429, 'Too many wrong codes from here. Try again later.', 'too-many', { retryAfter: 600 });
+    return httpError(401, 'That recovery code is not valid.', 'bad-recovery');
+  }
+  async function recover(req, res) {
+    requireSameSite(req);
+    const raw = req.headers[RECOVERY_HEADER];
+    if (raw === undefined) throw httpError(401, 'No recovery code was sent.', 'no-recovery');
+    if (typeof raw !== 'string' || !CODE_RE.test(raw)) throw badRecovery(req);
+    await ensureLoaded();
+    const got = recoveryHashOf(raw);
+    const id = recoveryIndex.get(recoveryKeyOf(got));
+    const rec = id ? libs.get(id) || null : null;
+    const want = rec && rec.recoveryHash ? rec.recoveryHash : DUMMY_HASH;
+    const same = want.length === got.length && crypto.timingSafeEqual(want, got);
+    if (!same || !rec || rec.revokedAt || rec.writing) throw badRecovery(req);
+    const t = now();
+    rec.lastUsedAt = t;
+    await persistUse(rec, t);
+    return rotateWithBody(req, res, rec, true);
   }
 
   async function deleteLib(req, res) {
@@ -835,13 +945,14 @@ function create(deps) {
       checkEpoch(ep);
       if (!ok) throw goneError(lib.id);
       Object.assign(cur, { revokedAt: t, bytes: 0, items: 0, tombs: 0, oldestTomb: 0 });
+      if (cur.recoveryHash && recoveryIndex.get(recoveryKeyOf(cur.recoveryHash)) === cur.id) recoveryIndex.delete(recoveryKeyOf(cur.recoveryHash));
       reply(res, 200, { ok: true });
     });
   }
 
   /* ================= routing ================= */
   function owns(p) {
-    return p === '/api/libs' || p === '/api/libs/me' || p === '/api/libs/me/rotate' || p === '/api/sync/changes' || p === '/api/sync/items' || p.indexOf('/api/sync/items/') === 0;
+    return p === '/api/libs' || p === '/api/libs/me' || p === '/api/libs/me/rotate' || p === '/api/libs/recover' || p === '/api/sync/changes' || p === '/api/sync/items' || p.indexOf('/api/sync/items/') === 0;
   }
   async function route(req, res, url) {
     const m = req.method, p = url.pathname;
@@ -852,6 +963,8 @@ function create(deps) {
       if (m === 'DELETE') return deleteLib(req, res);
     } else if (p === '/api/libs/me/rotate') {
       if (m === 'POST') return rotate(req, res);
+    } else if (p === '/api/libs/recover') {
+      if (m === 'POST') return recover(req, res);
     } else if (p === '/api/sync/changes') {
       if (m === 'GET') return changes(req, res, url);
     } else if (p === '/api/sync/items') {
@@ -866,7 +979,7 @@ function create(deps) {
   }
 
   /* which counter of the hourly line an answer belongs to */
-  const BUCKET = { 'bad-code': 'badCode', 'no-lib': 'badCode', rotated: 'badCode', deleted: 'badCode', 'cross-site': 'crossSite', 'too-many': 'tooMany', 'in-flight': 'tooMany', quota: 'quota', busy: 'busy',
+  const BUCKET = { 'bad-code': 'badCode', 'no-lib': 'badCode', 'bad-recovery': 'badCode', 'no-recovery': 'badCode', rotated: 'badCode', deleted: 'badCode', 'cross-site': 'crossSite', 'too-many': 'tooMany', 'in-flight': 'tooMany', quota: 'quota', busy: 'busy',
     budget: 'budget', share: 'share', slow: 'slow', 'bad-body': 'shape', 'too-large': 'tooLarge', 'item-too-large': 'tooLarge', 'batch-too-large': 'tooLarge', 'bad-item': 'badItem', 'bad-gzip': 'badItem',
     'bad-key': 'badItem', 'dup-key': 'badItem', 'bad-rev': 'badItem', 'bad-hash': 'badItem', 'bad-device': 'badItem', 'no-items': 'badItem', 'too-many-items': 'badItem', store: 'store' };
   /* resolves when the request has been answered; never rejects */
@@ -919,4 +1032,4 @@ function create(deps) {
   };
 }
 
-module.exports = { create, LIMITS, SONG_FIELDS, SHAPES, KEY_RE, CODE_RE, LIB_HEADER, configFrom, newLibrary, codeHash, libIdOf, tagOfId, validScore, itemShape };
+module.exports = { create, LIMITS, SONG_FIELDS, SHAPES, KEY_RE, CODE_RE, LIB_HEADER, RECOVERY_HEADER, configFrom, newLibrary, codeHash, recoveryHashOf, libIdOf, tagOfId, validScore, itemShape };
