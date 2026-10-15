@@ -2384,6 +2384,17 @@
     "Shared Scores has no room for more posts from guests right now. Try again later.": "現在、ログインなしで投稿できる枠がいっぱいです。あとでもう一度お試しください。",
     "This browser has posted as many scores today as a guest may. Try again tomorrow.": "今日このブラウザで投稿できる楽譜の上限に達しました。明日もう一度お試しください。",
     "As many scores as a guest may post in a day have been posted from here. Try again tomorrow.": "今日このネットワークから投稿できる楽譜の上限に達しました。明日もう一度お試しください。",
-    "PPP Practice Theme": "PPP練習曲"
+    "PPP Practice Theme": "PPP練習曲",
+    "That score is too large to share (the limit is 1 MB, about 4,000 notes). Share a part of it.": "この楽譜は大きすぎて共有できません（上限は1MB、音符約4,000個）。一部だけ共有してください。",
+    "This browser has made as many links as PPP keeps. Stop sharing one first.": "このブラウザで作れるリンクの上限に達しました。先に1つ共有を止めてください。",
+    "Sharing by link is full right now. Try again later.": "現在、リンクで共有できる枠がいっぱいです。あとでもう一度お試しください。",
+    "This browser did not send its sharing key. Reload the page and try again.": "このブラウザが共有キーを送っていません。ページを再読み込みして、もう一度お試しください。",
+    "Shared by {{name}} (guest)": "{{name}} さんが共有（ゲスト）",
+    "Removes your songs, practice progress, settings, PC link and sharing key from this browser. Links and posts you already shared stay online - without the key you can no longer take them down; a link ends within 30 days and a post within 90. Your account is not touched. This cannot be undone.": "曲、練習の記録、設定、PCリンク、共有キーをこのブラウザから削除します。すでに共有したリンクや投稿はオンラインに残ります。キーがないと下げられなくなり、リンクは30日、投稿は90日以内に自然に終了します。アカウントはそのままです。元に戻せません。",
+    "You have {{n}} posts in Shared Scores from this browser. Once the key is deleted they can no longer be taken down: they stay up to 90 days. Take them down first if you do not want them to stay.": "このブラウザから投稿した楽譜が{{n}}件あります。キーを消すと下げられなくなり、最長90日間そのまま残ります。残したくない場合は先に下げてください。",
+    "Take my posts down first": "先に投稿を下げる",
+    "Taking your posts down…": "投稿を下げています…",
+    "Some posts could not be taken down. Try again.": "下げられなかった投稿があります。もう一度お試しください。",
+    "Your posts were taken down.": "投稿を下げました。"
   }
 }

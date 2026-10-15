@@ -157,7 +157,7 @@ const recordOpens = page => page.evaluateOnNewDocument(() => {
   await page.evaluate(() => window.__pppTest.nav('Shared Scores'));
   await page.waitForFunction(id => !!document.querySelector('[data-shared="' + id + '"]'), { timeout: 8000 }, gId).catch(() => {});
   const gCard = await page.evaluate(id => { const c = document.querySelector('[data-shared="' + id + '"]'); return c ? c.innerText.replace(/\s+/g, ' ') : null; }, gId);
-  ok('Shared Scores shows it as yours, by the name given', !!gCard && /Yours · posted/.test(gCard) && /Shared by Pat Pianist/.test(gCard), String(gCard).slice(0, 120));
+  ok('Shared Scores shows it as yours, by the name given, and says it is a guest\'s', !!gCard && /Yours · posted/.test(gCard) && /Shared by Pat Pianist \(guest\)/.test(gCard), String(gCard).slice(0, 120));
   await page.evaluate(() => { const b = [...document.querySelectorAll('[data-shared-page] button')].find(x => /Shared by me/.test(x.innerText)); if (b) b.click(); });
   await page.waitForFunction(id => !!document.querySelector('[data-shared="' + id + '"]'), { timeout: 8000 }, gId).catch(() => {});
   const mineList = await page.evaluate(() => [...document.querySelectorAll('[data-shared]')].map(c => c.getAttribute('data-shared')));
@@ -173,7 +173,7 @@ const recordOpens = page => page.evaluateOnNewDocument(() => {
   await seeP.evaluate(() => window.PPP.app.go('shared')());
   await seeP.waitForFunction(id => !!document.querySelector('[data-shared="' + id + '"]'), { timeout: 10000 }, gId).catch(() => {});
   const pCard = await seeP.evaluate(id => { const c = document.querySelector('[data-shared="' + id + '"]'); return c ? c.innerText.replace(/\s+/g, ' ') : null; }, gId);
-  ok('somebody else with no account sees it in the list, by the name, not as theirs', !!pCard && /Shared by Pat Pianist/.test(pCard) && !/Yours/.test(pCard), String(pCard).slice(0, 120));
+  ok('somebody else with no account sees it in the list, by the name and "(guest)", not as theirs', !!pCard && /Shared by Pat Pianist \(guest\)/.test(pCard) && !/Yours/.test(pCard), String(pCard).slice(0, 120));
   await ctxP.close();
   await page.evaluate(() => window.__pppTest.nav('My Songs'));
   await sleep(300);
@@ -201,18 +201,20 @@ const recordOpens = page => page.evaluateOnNewDocument(() => {
 
   console.log('\n── the server\'s own words are shown, in every language, not "could not reach the server" ──');
   {
-    const full = { error: 'Guest links are full right now. Try again later, or sign in to share.', code: 'guest-full' };
-    const perBrowser = { error: 'This browser has made as many guest links as PPP keeps. Stop sharing one, or sign in.' };
+    const full = { error: 'Sharing by link is full right now. Try again later.', code: 'guest-full' };
+    const perBrowser = { error: 'This browser has made as many links as PPP keeps. Stop sharing one first.' };
+    const noKey = { error: 'This browser did not send its sharing key. Reload the page and try again.' };
     const tooMany = { error: 'Too many links were made from here just now. Try again in a little while.' };
-    const tooBig = { error: 'That score is too large to share as a guest. Sign in to share larger scores.' };
+    const tooBig = { error: 'That score is too large to share (the limit is 1 MB, about 4,000 notes). Share a part of it.' };
     const busy = { error: 'Shared Scores has no room for more posts from guests right now. Try again later.', code: 'busy' };
     const dayKey = { error: 'This browser has posted as many scores today as a guest may. Try again tomorrow.', code: 'too-many-posts' };
     const heldKey = { error: 'This browser has posted as many scores as PPP keeps for a guest. Take one down first.', code: 'too-many-posts' };
     const cases = [
-      ['503 guest links are full', 503, full, { 'en-US': /Guest links are full right now/, 'ko-KR': /게스트 링크가 가득 찼어요/, 'ja-JP': /ゲストリンクがいっぱいです/, 'zh-CN': /访客链接目前已满/ }],
-      ['429 one browser has 20', 429, perBrowser, { 'en-US': /as many guest links/, 'ko-KR': /게스트 링크 수를 다 채웠어요/, 'ja-JP': /ゲストリンクの上限/, 'zh-CN': /访客链接数量已达上限/ }],
+      ['503 sharing by link is full', 503, full, { 'en-US': /Sharing by link is full right now/, 'ko-KR': /링크로 공유할 수 있는 자리가 가득 찼어요/, 'ja-JP': /リンクで共有できる枠がいっぱいです/, 'zh-CN': /链接分享的名额已满/ }],
+      ['429 one browser has 20', 429, perBrowser, { 'en-US': /as many links as PPP keeps/, 'ko-KR': /링크 수를 다 채웠어요/, 'ja-JP': /リンクの上限に達しました/, 'zh-CN': /链接数量已满/ }],
+      ['401 no sharing key was sent', 401, noKey, { 'en-US': /did not send its sharing key/, 'ko-KR': /공유 키를 보내지 않았어요/, 'ja-JP': /共有キーを送っていません/, 'zh-CN': /没有发送分享密钥/ }],
       ['429 too many from one address', 429, tooMany, { 'en-US': /Too many links were made/, 'ko-KR': /링크가 너무 많이 만들어졌어요/, 'ja-JP': /リンクが多すぎます/, 'zh-CN': /链接太多了/ }],
-      ['413 too large for a guest', 413, tooBig, { 'en-US': /too large to share as a guest/, 'ko-KR': /게스트로는 이렇게 큰 악보/, 'ja-JP': /ゲストではこの大きさ/, 'zh-CN': /访客无法分享这么大/ }],
+      ['413 too large for a guest', 413, tooBig, { 'en-US': /too large to share \(the limit is 1 MB/, 'ko-KR': /너무 커서 공유할 수 없어요/, 'ja-JP': /大きすぎて共有できません/, 'zh-CN': /太大，无法分享/ }],
       ['503 busy: Shared Scores has no room for guest posts', 503, busy, { 'en-US': /has no room for more posts from guests/, 'ko-KR': /로그인 없이 올릴 수 있는 자리가 가득 찼어요/, 'ja-JP': /ログインなしで投稿できる枠がいっぱい/, 'zh-CN': /未登录发布的名额已满/ }],
       ['429 as many posts today as a guest may', 429, dayKey, { 'en-US': /as many scores today as a guest may/, 'ko-KR': /오늘 이 브라우저에서 올릴 수 있는 악보 수를 다 채웠어요/, 'ja-JP': /今日このブラウザで投稿できる楽譜の上限/, 'zh-CN': /今天这个浏览器能发布的乐谱数量已满/ }],
       ['429 as many posts held as a guest may', 429, heldKey, { 'en-US': /as many scores as PPP keeps for a guest/, 'ko-KR': /하나를 먼저 내려 주세요/, 'ja-JP': /先に1つ下げてください/, 'zh-CN': /请先撤下一份/ }]

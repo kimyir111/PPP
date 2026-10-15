@@ -150,6 +150,9 @@ const openGate = async page => {
   await sleep(1500);
   const held = await stay.evaluate(() => ({ gate: !!document.querySelector('[data-auth]'), title: document.querySelector('[data-auth] h1') ? document.querySelector('[data-auth] h1').innerText : '' }));
   ok('Sign in stays open after /api/auth/me returns', held.gate === true && /Sign in to PPP/.test(held.title), JSON.stringify(held));
+  await stay.keyboard.press('Escape');
+  await sleep(300);
+  ok('Escape closes it, as "Not now" does', await stay.evaluate(() => !document.querySelector('[data-auth]')));
   await stay.close();
 
   await browser.close();

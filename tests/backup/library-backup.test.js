@@ -417,6 +417,29 @@ test('a copy keeps the link to the arrangement it was made from', () => {
   assert.equal(arr.arrangedFrom, copy.id);
 });
 
+test('a guest post\'s mark names the key of THAT browser, which is never in a file: it is not carried by a backup, and an older file\'s is dropped on restore (an account\'s mark stays)', async () => {
+  const a = profile(3);
+  const lib = JSON.parse(a.getItem('ppp.library.v1'));
+  lib.songs[0].share = { id: 'guestpost001', listed: true, guest: true };
+  lib.songs[1].share = { id: 'acctshare001', listed: true };
+  a.setItem('ppp.library.v1', JSON.stringify(lib));
+  const bk = B.build(a, { now: new Date('2026-10-15T09:00:00Z') });
+  assert.equal(bk.library.songs[0].share, undefined, 'the guest mark is not written into the file');
+  assert.deepEqual(bk.library.songs[1].share, { id: 'acctshare001', listed: true });
+  /* a file made before this change, with the mark in it */
+  const old = JSON.parse(JSON.stringify(bk));
+  old.library.songs[0].share = { id: 'guestpost001', listed: true, guest: true };
+  const dec = await B.decode((await B.encode(old, {}, new Date(2026, 9, 15))).bytes, {});
+  assert.equal(dec.ok, true);
+  assert.equal(dec.backup.library.songs[0].share, undefined, 'dropped on reading the file');
+  const b = new FakeStorage();
+  b.setItem('ppp.library.v1', JSON.stringify({ songs: [], current: 'demo', demo: null }));
+  assert.equal(B.apply(dec.backup, b, {}).ok, true);
+  const back = cards(b);
+  assert.equal(back.find(c => c.id === lib.songs[0].id).share, undefined);
+  assert.deepEqual(back.find(c => c.id === lib.songs[1].id).share, { id: 'acctshare001', listed: true });
+});
+
 test('the open song of this device is mirrored in the state; a lost card comes back with its slot', () => {
   const here = profile(2, { prefix: 'song-k' });
   const there = profile(2, { prefix: 'song-k', secrets: false });

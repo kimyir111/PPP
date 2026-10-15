@@ -2576,6 +2576,12 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
               <sc-if value="{{ wipeStep1 }}" hint-placeholder-val="{{ false }}">
                 <div data-wipe-step1 role="alertdialog" aria-label="{{ wipeBoxLabel }}" onKeyDown="{{ bkKey }}" style="{{ wipeBoxStyle }}">
                   <div style="font-size: 12.5px; line-height: 1.5;">{{ wipeStep1Text }}</div>
+                  <sc-if value="{{ wipePostsOn }}" hint-placeholder-val="{{ false }}">
+                    <div data-wipe-posts style="display: flex; flex-direction: column; gap: 8px;">
+                      <div style="font-size: 12.5px; line-height: 1.5; color: var(--bad);">{{ wipePostsText }}</div>
+                      <div><button type="button" onClick="{{ wipeTakeDown }}" data-wipe-takedown style="{{ bkSecStyle }}">{{ wipeTakeDownLabel }}</button></div>
+                    </div>
+                  </sc-if>
                   <sc-if value="{{ wipeAccountOn }}" hint-placeholder-val="{{ false }}">
                     <div data-wipe-account1 style="font-size: 12.5px; line-height: 1.5;">{{ wipeAccountText }}</div>
                   </sc-if>
@@ -14402,6 +14408,30 @@ class Component extends DCLogic {
     this.bkFocus('[data-wipe-cancel]');
   }
   wipeNext() { this.bkSet({ phase: 'wipe2', word: '' }); this.bkFocus('[data-wipe-input]'); }
+  /* the cards whose post was made with this browser's guest key and is listed now */
+  guestPostCards() {
+    try {
+      if (!GuestKey.peek()) return [];
+      return this.libraryRead().songs.filter(c => c && c.share && c.share.guest && c.share.listed);
+    } catch (e) { return []; }
+  }
+  /* "Take my posts down first": every post of this browser's key is taken out of the list (the link stays), one after the other, and the cards say so */
+  async wipeTakeDown() {
+    const cards = this.guestPostCards();
+    if (!cards.length || (this.state.bk || {}).busy) return;
+    this.bkSet({ busy: true, msg: tx('Taking your posts down…'), msgKind: 'info' });
+    let failed = 0;
+    for (const card of cards) {
+      try {
+        const row = await this.shareApi('/' + encodeURIComponent(card.share.id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ listed: false }) });
+        this.rememberShare(card.id, row);
+      } catch (e) {
+        if (e && e.status === 404) this.rememberShare(card.id, null);       /* already gone: that is what was asked for */
+        else failed++;
+      }
+    }
+    this.bkSet({ busy: false, msg: failed ? tx('Some posts could not be taken down. Try again.') : tx('Your posts were taken down.'), msgKind: failed ? 'bad' : 'ok' });
+  }
   wipeCancel() { this.bkSet({ phase: 'idle', word: '', msg: '' }); this.bkFocus('[data-wipe-start]'); }
   wipeType(e) { this.bkSet({ word: e && e.target ? e.target.value : '' }); }
   /* the connections this page itself holds to the databases it is about to delete */
@@ -14460,6 +14490,8 @@ class Component extends DCLogic {
     const busy = !!bk.busy;
     let songs = 0;
     try { songs = this.libraryRead().songs.length; } catch (e) { songs = 0; }
+    /* the songs of this browser that are posted to Shared Scores with its guest key: what deleting the key would leave up for 90 days with no way to take it down */
+    const wipePosts = this.guestPostCards();
     const last = this.bkLastBackup();
     const word = tx('delete');
     const typed = String(bk.word || '').trim().toLowerCase();
@@ -14502,13 +14534,16 @@ class Component extends DCLogic {
       backupApply: () => this.backupApply(), backupCancel: () => this.backupCancel(), bkKey: e => this.bkKey(e),
       bkBoxStyle: box(false),
       wipeTitle: tx('Delete everything on this device'),
-      wipeNote: tx('Removes your songs, practice progress, settings, PC link and sharing key from this browser. Links you already shared stay online, and your account is not touched. This cannot be undone.'),
+      wipeNote: tx('Removes your songs, practice progress, settings, PC link and sharing key from this browser. Links and posts you already shared stay online - without the key you can no longer take them down; a link ends within 30 days and a post within 90. Your account is not touched. This cannot be undone.'),
       wipeAccountOn: signedIn,
       wipeAccountText: tx('You are signed in. Progress kept in your account stays there and comes back here after the reload; only this device is cleared.'),
       wipeStartLabel: tx('Delete everything…'), wipeStartStyle: danger, wipeAsk: () => this.wipeAsk(),
       wipeBoxLabel: tx('Delete everything on this device'),
       wipeStep1: phase === 'wipe1',
       wipeStep1Text: tx('This removes all your songs, your practice progress and your settings from this device. Songs on this device: {{n}}. Make a backup first if you want to keep them.', { n: songs }),
+      wipePostsOn: phase === 'wipe1' && wipePosts.length > 0,
+      wipePostsText: tx('You have {{n}} posts in Shared Scores from this browser. Once the key is deleted they can no longer be taken down: they stay up to 90 days. Take them down first if you do not want them to stay.', { n: wipePosts.length }),
+      wipeTakeDownLabel: tx('Take my posts down first'), wipeTakeDown: () => this.wipeTakeDown(),
       wipeBackupLabel: tx('Back up first'), wipeBackupFirst: () => this.backupMake(),
       wipeNextLabel: tx('Go on to the last check'), wipeNext: () => this.wipeNext(),
       wipeCancelLabel: tx('Cancel'), wipeCancel: () => this.wipeCancel(),
@@ -16306,6 +16341,7 @@ class Component extends DCLogic {
   onKbSplitUp() { this._kbDrag = null; }
 
   onKey(e) {
+    if (e.key === 'Escape' && this.state.authOpen && !this.state.user) { this.closeAuth(); return; }
     if (e.key === 'Escape' && this.state.shareDlg) { this.closeShareDialog(); return; }
     if (e.key === 'Escape' && this.state.homeSheet) { this.setState({ homeSheet: false }); return; }
     const t = e.target;
@@ -18781,7 +18817,7 @@ class Component extends DCLogic {
     });
     /* an account may share 4 MB; a guest link holds 1 MB */
     if (new Blob([body]).size > (guest ? 1024 * 1024 : 4 * 1024 * 1024)) {
-      return Promise.reject(new Error(tx(guest ? 'That score is too large to share as a guest. Sign in to share larger scores.' : 'That score is too large to share.')));
+      return Promise.reject(new Error(tx(guest ? 'That score is too large to share (the limit is 1 MB, about 4,000 notes). Share a part of it.' : 'That score is too large to share.')));
     }
     if (guest) GuestKey.ensure();
     return this.shareApi('', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body })
@@ -18978,7 +19014,7 @@ class Component extends DCLogic {
       : this.shareApi('/' + encodeURIComponent(x.id));
     got.then(row => {
       let score = null;
-      try { score = Score.finalize(JSON.parse(JSON.stringify(row.score))); } catch (e) { score = null; }
+      try { score = Score.finalize(this.scoreSafe(JSON.parse(JSON.stringify(row.score)))); } catch (e) { score = null; }
       if (!score || !score.measures.length || !score.notes.some(n => !n.rest)) throw new Error(tx('That shared score could not be read.'));
       score.id = 'shared:' + row.id + ':' + Date.now();
       const source = { kind: 'shared', name: row.title, shareId: row.id, owner: row.owner, importedAt: Clock.now(), status: 'shared' };
@@ -19005,16 +19041,134 @@ class Component extends DCLogic {
       this.say(e.message || tx('That shared score could not be read.'));
     });
   }
-  /* "Shared by <name>", or - for a guest who gave no name - "Shared by a guest" in the person's language */
+  /* "Shared by <name>"; for a guest "Shared by <name> (guest)", or "Shared by a guest" when no name was given - in the person's language. The word is the page's, not the
+     guest's: whatever a guest calls itself, the card says it is a guest, so a name can never pass for the site. */
   sharedByLabel(x) {
-    return x && x.guest && x.owner === 'Guest' ? tx('Shared by a guest') : tx('Shared by {{name}}', { name: x ? x.owner : '' });
+    if (!x) return '';
+    if (x.guest) return x.owner === 'Guest' ? tx('Shared by a guest') : tx('Shared by {{name}} (guest)', { name: x.owner });
+    return tx('Shared by {{name}}', { name: x.owner });
   }
+  /* thumb-safe:begin */
+  /* G13 no login: a score is DRAWN here from what somebody else sent (the preview on a card, the first bars of a link's score). The engraver loops over staves and staff, and a
+     post that says 1e6 hung the list for everybody; so what is drawn is rebuilt from what a mini score is: at most maxMeasures bars and 400 notes, every number finite and small,
+     staves and staff 1..4, voices 1..8, dots 0..4, times and keys in their ranges, text cleaned and short, objects bounded. It is the same rule as the server's
+     (share-guest.js normalizePreview), which does it on the way in and again on the way out; tests/guest-post.test.js holds the two to the same answers. null: not drawable. */
+  thumbSafe(raw, maxMeasures) {
+    const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
+    const fin = v => typeof v === 'number' && isFinite(v);
+    const num = (v, lo, hi, d) => { const x = typeof v === 'string' && v.trim() !== '' ? Number(v) : v; return fin(x) ? Math.min(hi, Math.max(lo, x)) : d; };
+    const int = (v, lo, hi, d) => { const x = num(v, lo, hi, null); return x === null ? d : Math.round(x); };
+    const clean = (s, n) => Array.from(String(s == null ? '' : s).replace(/[\u0000-\u001f\u007f-\u009f\u00ad\u061c\u180e\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff\ufff9-\ufffb]/g, ' ').replace(/\s+/g, ' ').trim()).slice(0, n || 200).join('').trim();
+    const any = (v, depth) => {
+      if (v === null || typeof v === 'boolean') return v;
+      if (typeof v === 'number') return fin(v) ? Math.min(1000, Math.max(-1000, v)) : null;
+      if (typeof v === 'string') return clean(v, 80);
+      if (depth >= 6) return null;
+      if (Array.isArray(v)) return v.slice(0, 64).map(x => any(x, depth + 1));
+      if (isObj(v)) {
+        const o = {};
+        let n = 0;
+        for (const k of Object.keys(v)) {
+          if (k === '__proto__' || k === 'constructor' || k === 'prototype' || !/^[\w$]{1,32}$/.test(k)) continue;
+          if (++n > 48) break;
+          o[k] = any(v[k], depth + 1);
+        }
+        return o;
+      }
+      return null;
+    };
+    if (!isObj(raw) || !Array.isArray(raw.measures) || !Array.isArray(raw.notes)) return null;
+    const maxM = Math.min(4, maxMeasures || 4);
+    const seen = {};
+    const measures = [];
+    raw.measures.slice(0, maxM).forEach((m, i) => {
+      if (!isObj(m)) return;
+      const o = any(m, 0);
+      o.number = int(m.number, -99, 999, i + 1);
+      if (seen[o.number]) return;
+      seen[o.number] = true;
+      const t = isObj(m.time) ? m.time : {};
+      const bt = [1, 2, 4, 8, 16, 32, 64].indexOf(+t.beatType) > -1 ? +t.beatType : 4;
+      o.time = { beats: int(t.beats, 1, 32, 4), beatType: bt };
+      const k = isObj(m.key) ? m.key : {};
+      o.key = { fifths: int(k.fifths, -7, 7, 0), mode: k.mode === 'minor' ? 'minor' : 'major' };
+      if (fin(m.lenQ) && m.lenQ > 0) o.lenQ = Math.min(32, m.lenQ); else delete o.lenQ;
+      measures.push(o);
+    });
+    if (!measures.length) return null;
+    const notes = [];
+    let maxStaff = 1;
+    for (const n of raw.notes) {
+      if (notes.length >= 400) break;
+      if (!isObj(n)) continue;
+      const m = int(n.m, -99, 999, null);
+      if (m === null || !seen[m]) continue;
+      const o = any(n, 0);
+      o.m = m;
+      o.b = num(n.b, 0, 64, 0);
+      o.dur = num(n.dur, 0, 64, 1);
+      o.voice = int(n.voice, 1, 8, 1);
+      o.staff = int(n.staff, 1, 4, 1);
+      o.dots = int(n.dots, 0, 4, 0);
+      if (o.staff > maxStaff) maxStaff = o.staff;
+      ['midi', 'writtenMidi', 'soundingMidi'].forEach(k => { if (n[k] !== undefined && n[k] !== null) { const x = int(n[k], -48, 200, null); if (x === null) delete o[k]; else o[k] = x; } });
+      if (n.ottavaShift !== undefined && n.ottavaShift !== null) o.ottavaShift = int(n.ottavaShift, -24, 24, 0);
+      if (n.hand !== undefined && n.hand !== null) o.hand = n.hand === 'l' || n.hand === 'x' ? n.hand : 'r';
+      ['rest', 'chord', 'tieStart', 'tieStop', 'slurStart', 'slurStop'].forEach(k => { if (n[k] !== undefined) o[k] = !!n[k]; });
+      if (isObj(n.tm)) o.tm = { a: int(n.tm.a, 1, 32, 3), n: int(n.tm.n, 1, 32, 2) }; else delete o.tm;
+      if (n.finger !== undefined) { const f = int(n.finger, 1, 5, null); if (f === null) delete o.finger; else o.finger = f; }
+      notes.push(o);
+    }
+    const out = {};
+    const SIDE = ['chords', 'pedals', 'marks', 'dynamics', 'wedges', 'tempos'];
+    const HANDLED = { measures: 1, notes: 1, staves: 1, sections: 1, ottavas: 1, title: 1, composer: 1, tempo: 1, id: 1, _byNumber: 1 };
+    SIDE.forEach(k => { HANDLED[k] = 1; });
+    for (const k of Object.keys(raw)) {
+      if (HANDLED[k] || k === '__proto__' || k === 'constructor' || k === 'prototype' || !/^[\w$]{1,32}$/.test(k)) continue;
+      if (Object.keys(out).length >= 48) break;
+      out[k] = any(raw[k], 1);
+    }
+    out.id = clean(raw.id, 64);
+    out.title = clean(raw.title, 120);
+    out.composer = clean(raw.composer, 160);
+    out.tempo = num(raw.tempo, 20, 400, 84);
+    out.staves = Math.max(int(raw.staves, 1, 4, 1), maxStaff);
+    out.measures = measures;
+    out.notes = notes;
+    SIDE.forEach(k => {
+      const list = [];
+      (Array.isArray(raw[k]) ? raw[k] : []).forEach(e => {
+        if (list.length >= 64 || !isObj(e)) return;
+        const m = int(e.m, -99, 999, null);
+        if (m === null || !seen[m]) return;
+        const o = any(e, 0);
+        o.m = m;
+        if (e.b !== undefined) o.b = num(e.b, 0, 64, 0);
+        list.push(o);
+      });
+      out[k] = list;
+    });
+    out.ottavas = [];
+    out.sections = [{ id: 's1', from: measures[0].number, to: measures[measures.length - 1].number }];
+    return out;
+  }
+  /* a whole score that is about to be kept (added from a link): its staves and every staff number bounded, in place (share-guest.js cleanScore) */
+  scoreSafe(score) {
+    if (!score || typeof score !== 'object') return score;
+    const staff = v => { const s = Number(v); return Number.isFinite(s) ? Math.min(8, Math.max(1, Math.round(s))) : 1; };
+    if (score.staves !== undefined) score.staves = staff(score.staves);
+    if (Array.isArray(score.notes)) score.notes.forEach(n => { if (n && typeof n === 'object' && n.staff !== undefined) n.staff = staff(n.staff); });
+    return score;
+  }
+  /* thumb-safe:end */
   sharedThumb(key, full, bars) {
     this._sharedThumbs = this._sharedThumbs || {};
     if (key in this._sharedThumbs) return this._sharedThumbs[key];
     let sc = null;
     try {
-      if (full && full.measures && full.measures.length) sc = Score.finalize(openingBars(JSON.parse(JSON.stringify(full)), bars));
+      /* never drawn as it came: rebuilt by thumbSafe first (a preview that says 1e6 staves hung this list for everybody) */
+      const safe = full && full.measures && full.measures.length ? this.thumbSafe(full, bars) : null;
+      if (safe) sc = Score.finalize(openingBars(safe, bars));
     } catch (e) { sc = null; }
     this._sharedThumbs[key] = sc;
     /* the oldest go when there are many (a long list scrolled through) */

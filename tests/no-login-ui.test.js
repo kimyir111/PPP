@@ -161,6 +161,22 @@ const signInButtons = page => page.evaluate(() => [...document.querySelectorAll(
       await page.waitForFunction(id => !!document.querySelector('[data-shared="' + id + '"]'), { timeout: 10000 }, posted.id).catch(() => {});
       const card = await page.evaluate(id => { const c = document.querySelector('[data-shared="' + id + '"]'); return c ? c.innerText.replace(/\s+/g, ' ') : ''; }, posted.id);
       ok('it is in the list, marked as yours, by "a guest"', /Yours · posted/.test(card) && /Shared by a guest/.test(card), card.slice(0, 120));
+      /* "Delete everything on this device" says what happens to the posts, and offers to take them down first */
+      await page.evaluate(() => window.PPP.app.go('settings')());
+      await sleep(400);
+      await page.evaluate(() => document.querySelector('[data-wipe-start]').click());
+      await sleep(300);
+      const wipe1 = await page.evaluate(() => ({ posts: (document.querySelector('[data-wipe-posts]') || {}).innerText || '', btn: !!document.querySelector('[data-wipe-takedown]'), note: (document.querySelector('[data-wipe-row]') || {}).innerText || '' }));
+      ok('before everything is deleted the page says the post stays up to 90 days with no way to take it down, and offers to take it down first',
+        /1 posts/.test(wipe1.posts) && /90 days/.test(wipe1.posts) && wipe1.btn && /post within 90/.test(wipe1.note), wipe1.posts.replace(/\s+/g, ' ').slice(0, 140));
+      await page.evaluate(() => document.querySelector('[data-wipe-takedown]').click());
+      await page.waitForFunction(id => window.PPP.app.libraryRead().songs.some(c => c.share && c.share.id === id && c.share.listed === false), { timeout: 8000 }, posted.id).catch(() => {});
+      const afterWipeDown = await api('GET', '/api/shares/' + posted.id);
+      ok('"Take my posts down first" took it out of the list (the link and the card stay)', afterWipeDown.status === 200 && afterWipeDown.body.listed === false);
+      await page.evaluate(() => document.querySelector('[data-wipe-cancel]').click());
+      await sleep(200);
+      await page.evaluate(() => window.PPP.app.go('shared')());
+      await sleep(300);
       const down = await page.evaluate(id => window.PPP.app.shareApi('/' + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ listed: false }) }).then(r => r.listed, e => e.message), posted.id);
       ok('take it down from the list: unlisted', down === false, String(down));
       const del = await page.evaluate(id => window.PPP.app.shareApi('/' + id, { method: 'DELETE' }).then(r => r.ok, e => e.message), posted.id);

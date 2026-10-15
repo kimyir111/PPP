@@ -129,7 +129,9 @@
       if (!isObj(card) || !isSongId(card.id)) { skipped++; return; }
       const slot = parse(readSlotRaw(storage, card.id) || 'null');
       if (!isObj(slot) || !isObj(slot.score)) { skipped++; return; }      /* a card with nothing behind it cannot be opened: it is not backed up */
-      songs.push(clone(card));
+      const copy = clone(card);
+      if (isObj(copy.share) && copy.share.guest) delete copy.share;     /* a guest post's mark names this browser's key, which is never in a file (see sanitize) */
+      songs.push(copy);
       slots[card.id] = slot;
     });
     const demoSlot = parse(readSlotRaw(storage, 'demo') || 'null');
@@ -281,6 +283,9 @@
     let blanked = 0;
     const fix = (o, k) => { if (isObj(o) && has(o, k) && !okUrl(o[k])) { o[k] = null; blanked++; } };
     b.library.songs.forEach(c => fix(c, 'url'));
+    /* G13 no login: "this song is posted" on a card made with a guest key means THAT browser's key. The key is never in a backup, so here the mark would say "Posted" over a
+       post nobody on this device can take down: it is left out (files made before this change carry it too). It is not counted: it is a mark, not a link. */
+    b.library.songs.forEach(c => { if (isObj(c) && isObj(c.share) && c.share.guest) delete c.share; });
     Object.keys(b.slots).forEach(id => { const s = b.slots[id]; fix(s.importSource, 'url'); if (isObj(s.score)) fix(s.score.source, 'url'); });
     return blanked;
   }

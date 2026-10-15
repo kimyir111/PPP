@@ -2384,6 +2384,17 @@
     "Shared Scores has no room for more posts from guests right now. Try again later.": "지금은 로그인 없이 올릴 수 있는 자리가 가득 찼어요. 나중에 다시 해 주세요.",
     "This browser has posted as many scores today as a guest may. Try again tomorrow.": "오늘 이 브라우저에서 올릴 수 있는 악보 수를 다 채웠어요. 내일 다시 해 주세요.",
     "As many scores as a guest may post in a day have been posted from here. Try again tomorrow.": "오늘 이 네트워크에서 올릴 수 있는 악보 수를 다 채웠어요. 내일 다시 해 주세요.",
-    "PPP Practice Theme": "PPP 연습곡"
+    "PPP Practice Theme": "PPP 연습곡",
+    "That score is too large to share (the limit is 1 MB, about 4,000 notes). Share a part of it.": "이 악보는 너무 커서 공유할 수 없어요 (한도는 1MB, 음표 약 4,000개). 일부만 공유해 보세요.",
+    "This browser has made as many links as PPP keeps. Stop sharing one first.": "이 브라우저에서 만들 수 있는 링크 수를 다 채웠어요. 하나를 먼저 공유 중지해 주세요.",
+    "Sharing by link is full right now. Try again later.": "지금은 링크로 공유할 수 있는 자리가 가득 찼어요. 나중에 다시 해 주세요.",
+    "This browser did not send its sharing key. Reload the page and try again.": "이 브라우저가 공유 키를 보내지 않았어요. 페이지를 새로 고친 뒤 다시 해 주세요.",
+    "Shared by {{name}} (guest)": "{{name}} 님이 공유 (손님)",
+    "Removes your songs, practice progress, settings, PC link and sharing key from this browser. Links and posts you already shared stay online - without the key you can no longer take them down; a link ends within 30 days and a post within 90. Your account is not touched. This cannot be undone.": "내 곡, 연습 기록, 설정, PC 연결과 공유 키를 이 브라우저에서 지워요. 이미 공유한 링크와 게시물은 온라인에 남아요. 키가 없으면 더는 내릴 수 없고, 링크는 30일, 게시물은 90일 안에 저절로 끝나요. 계정은 그대로예요. 되돌릴 수 없어요.",
+    "You have {{n}} posts in Shared Scores from this browser. Once the key is deleted they can no longer be taken down: they stay up to 90 days. Take them down first if you do not want them to stay.": "이 브라우저에서 올린 게시물이 {{n}}개 있어요. 키를 지우면 더는 내릴 수 없고, 최대 90일 동안 그대로 남아요. 남기고 싶지 않다면 먼저 내려 주세요.",
+    "Take my posts down first": "내 게시물부터 내리기",
+    "Taking your posts down…": "게시물을 내리는 중…",
+    "Some posts could not be taken down. Try again.": "일부 게시물을 내리지 못했어요. 다시 시도해 주세요.",
+    "Your posts were taken down.": "게시물을 내렸어요."
   }
 }

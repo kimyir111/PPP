@@ -2384,6 +2384,17 @@
     "Shared Scores has no room for more posts from guests right now. Try again later.": "目前未登录发布的名额已满。请稍后再试。",
     "This browser has posted as many scores today as a guest may. Try again tomorrow.": "今天这个浏览器能发布的乐谱数量已满。请明天再试。",
     "As many scores as a guest may post in a day have been posted from here. Try again tomorrow.": "今天此网络能发布的乐谱数量已满。请明天再试。",
-    "PPP Practice Theme": "PPP练习曲"
+    "PPP Practice Theme": "PPP练习曲",
+    "That score is too large to share (the limit is 1 MB, about 4,000 notes). Share a part of it.": "这份乐谱太大，无法分享（上限为 1 MB，约 4,000 个音符）。请分享其中一部分。",
+    "This browser has made as many links as PPP keeps. Stop sharing one first.": "这个浏览器能创建的链接数量已满。请先停止分享一个。",
+    "Sharing by link is full right now. Try again later.": "目前链接分享的名额已满。请稍后再试。",
+    "This browser did not send its sharing key. Reload the page and try again.": "这个浏览器没有发送分享密钥。请刷新页面后重试。",
+    "Shared by {{name}} (guest)": "{{name}} 共享（访客）",
+    "Removes your songs, practice progress, settings, PC link and sharing key from this browser. Links and posts you already shared stay online - without the key you can no longer take them down; a link ends within 30 days and a post within 90. Your account is not touched. This cannot be undone.": "会从这个浏览器中删除你的曲谱、练习进度、设置、PC 链接和分享密钥。已分享的链接和已发布的乐谱仍留在网上；没有密钥就无法再撤下，链接 30 天内、发布 90 天内会自动结束。你的账号不受影响。此操作无法撤销。",
+    "You have {{n}} posts in Shared Scores from this browser. Once the key is deleted they can no longer be taken down: they stay up to 90 days. Take them down first if you do not want them to stay.": "这个浏览器发布了 {{n}} 份乐谱。删除密钥后就无法再撤下，最多会保留 90 天。若不想保留，请先撤下。",
+    "Take my posts down first": "先撤下我的发布",
+    "Taking your posts down…": "正在撤下发布…",
+    "Some posts could not be taken down. Try again.": "有些发布未能撤下。请重试。",
+    "Your posts were taken down.": "已撤下发布。"
   }
 }
