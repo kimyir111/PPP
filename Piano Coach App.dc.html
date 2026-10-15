@@ -1133,7 +1133,7 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
                 <span style="font-family: 'Noto Music', serif; font-size: 26px; color: var(--accent);">&#119070;</span>
               </div>
               <div style="font-family: 'Instrument Serif', serif; font-size: 30px; line-height: 1.15; margin-top: 16px; letter-spacing: -0.01em;">{{ dropTitle }}</div>
-              <div style="font-size: 13.5px; line-height: 1.55; color: var(--ink2); margin: 8px auto 0; max-width: 520px;">Sheet music, or a recording of it being played — PPP listens to a recording and writes out the notes.</div>
+              <div style="font-size: 13.5px; line-height: 1.55; color: var(--ink2); margin: 8px auto 0; max-width: 520px;">Sheet music, or a recording of it being played — PPP listens to a recording and writes out the notes. Reading a recording in this browser needs an internet connection (the piano model is about 60 MB).</div>
               <span style="margin-top: 20px; padding: 11px 22px; border-radius: 11px; background: var(--accent); color: #fff; font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; pointer-events: none;">Choose file</span>
               <input type="file" class="ppp-file" data-add-file accept=".musicxml,.xml,.mxl,.pdf,.png,.jpg,.jpeg,.mp3,.wav,.m4a,.aac,.ogg,.oga,.opus,.flac,.mp4,.m4v,.mov,.webm,.mkv,application/pdf" onChange="{{ onFile }}" />
               <div style="display: flex; gap: 6px; justify-content: center; margin-top: 20px; flex-wrap: wrap;">
@@ -8141,8 +8141,63 @@ const OMR_URL = helperUrl();
 const DEV_SCREENS = (() => {
   try { return localStorage.getItem('ppp-dev') === '1'; } catch (e) { return false; }
 })();
-const PDFJS_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js';
-const PDFJS_WORKER = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js';
+/* G13-8 (docs/GOALS/G13_PRODUCTIZATION.md G13-D2/D3): the optional libraries - pdf.js and its worker, TensorFlow.js 2.8.6 with Magenta.js' transcription.js, TensorFlow.js 3.21.0 with Basic Pitch - are
+   served by PPP itself from vendor/, byte for byte as published (vendor/README.md), each asked for by its content hash (?h= = the 12 hex of the file's sha256; tests/engrave/vendor-optional.test.js
+   keeps them right), and only when the feature that needs them is used. PPP.cdn (the head decides it for React too: ?cdn=1, or localStorage 'ppp.cdn' = '1') puts the CDN addresses back; a vendored file
+   that cannot be fetched falls back to its CDN copy once. The model weights are not here (the Onsets & Frames checkpoint, about 60 MB, stays at Google: G13 U8). */
+const PPP_LIBS = {
+  pdfjs: {
+    vendored: { script: './vendor/pdfjs-3.11.174/pdf.min.js?h=978fd1b2d134', worker: './vendor/pdfjs-3.11.174/pdf.worker.min.js?h=38cde5311957' },
+    cdn: { script: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js', worker: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js' }
+  },
+  tf2: {
+    vendored: './vendor/tfjs-2.8.6/tf.min.js?h=0082fff8188a',
+    cdn: 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.8.6/dist/tf.min.js'
+  },
+  magenta: {
+    vendored: './vendor/magenta-music-1.23.1/transcription.js?h=7284bdbf628a',
+    cdn: 'https://cdn.jsdelivr.net/npm/@magenta/music@1.23.1/es6/transcription.js'
+  },
+  /* Basic Pitch is an ES module that imports TensorFlow.js and @tonejs/midi by bare name and its own files without an extension, so the browser needs an import map for it: the page adds one
+     the first time this path is used (no module has been loaded before, nothing else in the page uses one). @tonejs/midi is only used by generateFileData (writing a MIDI file), which PPP
+     never calls, so it is a stand-in that throws if it is ever used; see vendor/README.md. */
+  bp: {
+    vendored: {
+      tf: './vendor/tfjs-3.21.0/tf.fesm.min.js?h=2b719ce53b3d',
+      index: './vendor/basic-pitch-1.0.1/esm/index.js?h=c49399b98594',
+      inference: './vendor/basic-pitch-1.0.1/esm/inference.js?h=d0bceb71ee6d',
+      toMidi: './vendor/basic-pitch-1.0.1/esm/toMidi.js?h=c6492ceae181',
+      model: './vendor/basic-pitch-1.0.1/model/model.json?h=1ed1aaee3409',
+      /* the weights file model.json names: asked for by its own hash (TensorFlow.js would append model.json's query to it) */
+      weights: { 'group1-shard1of1.bin': './vendor/basic-pitch-1.0.1/model/group1-shard1of1.bin?h=b142a95737a5' }
+    },
+    cdn: { model: 'https://cdn.jsdelivr.net/npm/@spotify/basic-pitch@1.0.1/model/model.json' }
+  }
+};
+/* true: the CDN addresses (PPP.cdn); false (the default): vendor/ first */
+const pppWantsCdn = () => typeof window !== 'undefined' && window.PPP_CDN === true;
+/* Two TensorFlow.js versions can be in one page - 2.8.6 (Onsets and Frames) and 3.21.0 (Basic Pitch, the fallback when that model cannot run). Each keeps its engine and its registries in two page
+   globals, window._tfengine and window._tfGlobals, and its tensors find their engine through them at every use. The second to load found the first's, reused its WebGL backend and kernels, and failed on
+   its first shader ("Failed to compile fragment shader"): Basic Pitch never worked after an Onsets and Frames attempt in the same page, and the other way round it was no better.
+   So a library is loaded with those two set aside (pppOwnTf: it makes its own and the page keeps them under its slot), and the one about to be used is put in place (pppUseTf) - before its model is made
+   and before it runs. */
+const PPP_TF = {};
+function pppOwnTf(slot, load) {
+  const kept = { engine: window._tfengine, globals: window._tfGlobals };
+  try { delete window._tfengine; delete window._tfGlobals; } catch (e) { /* not configurable: loaded as before */ }
+  const done = () => {
+    try {
+      /* what this load made is the library's own; the page goes back to what it had (when it had none, the library's stays: as before G13-8) */
+      if (window._tfengine !== undefined) PPP_TF[slot] = { engine: window._tfengine, globals: window._tfGlobals };
+      if (kept.engine !== undefined) { window._tfengine = kept.engine; window._tfGlobals = kept.globals; }
+    } catch (e) { /* as it is */ }
+  };
+  return Promise.resolve().then(load).then(r => { done(); return r; }, e => { done(); throw e; });
+}
+function pppUseTf(slot) {
+  const t = PPP_TF[slot];
+  if (t) { try { window._tfengine = t.engine; window._tfGlobals = t.globals; } catch (e) { /* as it is */ } }
+}
 
 const IMPORT_LIMITS = {
   maxBytes: 40 * 1024 * 1024,
@@ -8160,19 +8215,22 @@ const TRANSCRIBE_POLL_MS = 700;
 let _pdfjs = null;
 function loadPdfJs() {
   if (_pdfjs) return _pdfjs;
-  _pdfjs = new Promise((resolve, reject) => {
+  /* G13-8: PPP's own copy first (vendor/pdfjs-3.11.174/); the CDN one when PPP.cdn says so, or when ours cannot be fetched */
+  const sources = pppWantsCdn() ? [PPP_LIBS.pdfjs.cdn] : [PPP_LIBS.pdfjs.vendored, PPP_LIBS.pdfjs.cdn];
+  const attempt = src => new Promise((resolve, reject) => {
     if (window.pdfjsLib) return resolve(window.pdfjsLib);
     const s = document.createElement('script');
-    s.src = PDFJS_URL;
+    s.src = src.script;
     s.async = true;
     s.onload = () => {
       if (!window.pdfjsLib) return reject(new Error(tx('The PDF reader loaded but did not initialise.')));
-      try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER; } catch (e) {}
+      try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(src.worker, document.baseURI).href; } catch (e) {}
       resolve(window.pdfjsLib);
     };
-    s.onerror = () => reject(new Error(tx('Could not reach the PDF reader.')));
+    s.onerror = () => { try { s.remove(); } catch (e) {} reject(new Error(tx('Could not reach the PDF reader.'))); };
     document.head.appendChild(s);
   });
+  _pdfjs = sources.slice(1).reduce((p, src) => p.catch(() => attempt(src)), attempt(sources[0]));
   return _pdfjs;
 }
 
@@ -9132,25 +9190,32 @@ const Import = {
   pianoAmtLib: null,
   loadPianoAmt() {
     if (Import.pianoAmtLib) return Import.pianoAmtLib;
-    const script = (src, ready) => new Promise((resolve, reject) => {
+    /* G13-8: the code is PPP's own copy (vendor/tfjs-2.8.6/, vendor/magenta-music-1.23.1/) unless PPP.cdn says otherwise or that copy cannot be fetched; the checkpoint below is not (G13 U8) */
+    const one = (src, ready) => new Promise((resolve, reject) => {
       if (ready()) return resolve();
       const s = document.createElement('script');
       s.src = src; s.async = true;
       s.onload = () => ready() ? resolve() : reject(new Error(tx('Model library did not initialise.')));
-      s.onerror = () => reject(new Error(tx('Could not load the piano transcription model.')));
+      s.onerror = () => { try { s.remove(); } catch (e) {} reject(new Error(tx('Could not load the piano transcription model.'))); };
       document.head.appendChild(s);
     });
-    Import.pianoAmtLib = script(
-      'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.8.6/dist/tf.min.js',
+    const script = (lib, ready) => (pppWantsCdn() ? [lib.cdn] : [lib.vendored, lib.cdn])
+      .reduce((p, src, i) => (i ? p.catch(() => one(src, ready)) : one(src, ready)), null);
+    Import.pianoAmtLib = pppOwnTf('v2', () => script(
+      PPP_LIBS.tf2,
       () => !!(window.tf && window.tf.version)
-    ).then(() => script(
-      'https://cdn.jsdelivr.net/npm/@magenta/music@1.23.1/es6/transcription.js',
+    )).then(() => script(
+      PPP_LIBS.magenta,
       () => !!(window.transcription && window.transcription.OnsetsAndFrames)
     )).then(async () => {
+      pppUseTf('v2');
       const model = new window.transcription.OnsetsAndFrames(
         'https://storage.googleapis.com/magentadata/js/checkpoints/transcription/onsets_frames_uni'
       );
-      await model.initialize();
+      try { await model.initialize(); } catch (e) {
+        /* the weights are the one thing that is still fetched from another site (about 60 MB): say so, instead of a bare "Failed to fetch" */
+        throw importError('model-offline', tx('The piano model could not be downloaded. Reading a recording in this browser needs an internet connection (the model is about 60 MB).'));
+      }
       return { model: model, tf: window.tf };
     }).catch(e => {
       Import.pianoAmtLib = null;       /* a temporary CDN failure may recover */
@@ -9196,6 +9261,7 @@ const Import = {
         for (let c = 0; c < decoded.numberOfChannels; c++)
           clip.getChannelData(c).set(decoded.getChannelData(c).subarray(begin, begin + frames));
         if (onPct) onPct(Math.round((ci / Math.max(1, starts.length)) * 90));
+        pppUseTf('v2');
         const seq = await amt.model.transcribeFromAudioBuffer(clip);
         /* A fixed 55 ms gate erased real 32nd notes at the tempos this app
            targets (162 BPM => about 46 ms per 32nd). Build a tiny onset index
@@ -9258,13 +9324,16 @@ const Import = {
   amtLib: null,
   loadAmt() {
     if (Import.amtLib) return Import.amtLib;
+    const L = PPP_LIBS.bp;
     const boot = (tfMod, bpMod) => {
       const tf = tfMod, bp = bpMod;
-      const model = 'https://cdn.jsdelivr.net/npm/@spotify/basic-pitch@1.0.1/model/model.json';
+      const model = L.cdn.model;
       const pitch = new bp.BasicPitch(model);
-      return { tf: tf, bp: bp, pitch: pitch };
+      /* its weights are made while this library's engine is the page's (pppOwnTf), so they are waited for here and not on the first use */
+      return Promise.resolve(pitch.model).then(function () { return { tf: tf, bp: bp, pitch: pitch }; });
     };
-    Import.amtLib = Promise.all([
+    /* the CDN way: what the page did before G13-8, and what PPP.cdn asks for */
+    const fromCdn = () => Promise.all([
       import('https://esm.sh/@tensorflow/tfjs@3.21.0'),
       import('https://esm.sh/@spotify/basic-pitch@1.0.1')
     ]).then(function (mods) { return boot(mods[0], mods[1]); }).catch(function () {
@@ -9272,6 +9341,37 @@ const Import = {
         import('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/+esm'),
         import('https://esm.sh/@spotify/basic-pitch@1.0.1')
       ]).then(function (mods) { return boot(mods[0], mods[1]); });
+    });
+    /* G13-8: PPP's own files (vendor/tfjs-3.21.0/, vendor/basic-pitch-1.0.1/), unchanged as published. Basic Pitch's ES modules name TensorFlow.js by its bare name, @tonejs/midi (only generateFileData
+       uses it, and PPP never calls that) and their own files without ".js", so the page gives the browser an import map once: it makes no request. A browser without import maps, or a file that
+       cannot be fetched, ends in the CDN way above. */
+    const vendored = () => {
+      if (!document.querySelector('script[data-ppp-importmap="basic-pitch"]')) {
+        const map = { imports: {
+          '@tensorflow/tfjs': L.vendored.tf,
+          '@tonejs/midi': 'data:text/javascript,' + encodeURIComponent('export class Midi{constructor(){throw new Error("MIDI file writing is not part of this build")}}'),
+          './vendor/basic-pitch-1.0.1/esm/inference': L.vendored.inference,
+          './vendor/basic-pitch-1.0.1/esm/toMidi': L.vendored.toMidi
+        } };
+        const el = document.createElement('script');
+        el.type = 'importmap';
+        el.setAttribute('data-ppp-importmap', 'basic-pitch');
+        el.textContent = JSON.stringify(map);
+        document.head.appendChild(el);
+      }
+      return Promise.all([import('@tensorflow/tfjs'), import(L.vendored.index)]).then(function (mods) {
+        return Promise.resolve(mods[0].loadGraphModel(L.vendored.model, {
+          weightUrlConverter: function (name) { return L.vendored.weights[name] ? Promise.resolve(L.vendored.weights[name]) : Promise.reject(new Error('unknown weights file ' + name)); }
+        })).then(function (model) {
+          return { tf: mods[0], bp: mods[1], pitch: new mods[1].BasicPitch(model) };
+        });
+      });
+    };
+    Import.amtLib = pppOwnTf('v3', () => (pppWantsCdn() ? fromCdn() : vendored().catch(fromCdn))).catch(function (e) {
+      Import.amtLib = null;        /* a temporary failure may recover */
+      const err = importError('amt-offline', tx('The note-detection library could not be loaded. Reading a recording in this browser needs an internet connection.'));
+      err.cause = e;
+      throw err;
     });
     return Import.amtLib;
   },
@@ -9321,6 +9421,7 @@ const Import = {
     const mono = await Import.resampleMono(audio, 22050);
     try { ac.close(); } catch (e) {}
     const frames = [], onsets = [], contours = [];
+    pppUseTf('v3');
     await amt.pitch.evaluateModel(mono, function (f, o, c) {
       frames.push.apply(frames, f);
       onsets.push.apply(onsets, o);
@@ -11581,7 +11682,7 @@ window.PPP = {
      remembered choice is forgotten. Remembered on this device; ?practiceFix= in the address is for that visit only. Read only while PPP.practice is 'graph'. */
   get practiceFix() { return practiceFixText(PRACTICE_FIX); },
   set practiceFix(v) { setPracticeFix(v); },
-  /* G13-1 (G13-D3): true = React came from unpkg (?cdn=1 or the remembered '1'), false (default) = vendor/react-18.3.1/. Read-only truth about THIS load; a new value applies on the next load. Any value but '1' is no choice: the default returns and the remembered choice is forgotten. */
+  /* G13-1 (G13-D3): true = React came from unpkg (?cdn=1 or the remembered '1'), false (default) = vendor/react-18.3.1/. G13-8: the same switch puts pdf.js, TensorFlow.js, Magenta.js and Basic Pitch back on their CDN addresses (the default is vendor/). Read-only truth about THIS load; a new value applies on the next load. Any value but '1' is no choice: the default returns and the remembered choice is forgotten. */
   get cdn() { return window.PPP_CDN === true; },
   set cdn(v) { try { if (v === '1' || v === 1 || v === true) localStorage.setItem('ppp.cdn', '1'); else localStorage.removeItem('ppp.cdn'); } catch (e) { /* not remembered */ } },
   /* G13-4e (lazy-load.js): 'on' (default: the score library, the engraver's source, audio-score.js, the arranger, the backup module and the lessons come in after the first frame or when a
