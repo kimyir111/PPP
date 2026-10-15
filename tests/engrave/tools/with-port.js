@@ -51,7 +51,7 @@ async function collect(p) {
         return { sync, v: E && E.version,
           draws: S ? S.draws : 0, fb: window.PPP && window.PPP.engraveStats ? window.PPP.engraveStats.fallbacks : null,
           songs: window.PPP && window.PPP.engraveStats ? Object.keys(window.PPP.engraveStats.bySong).map(k => k + ' ' + window.PPP.engraveStats.bySong[k]) : [],
-          pr: window.PPP && window.PPP.practiceStats ? { mode: window.PPP.practice, g: window.PPP.practiceStats.graph, f: window.PPP.practiceStats.practiceFallback.total, r: window.PPP.practiceStats.practiceFallback.reasons } : null };
+          pr: window.PPP && window.PPP.practiceStats ? { mode: window.PPP.practice, g: (window.PPP.practiceStats.served != null ? window.PPP.practiceStats.served : window.PPP.practiceStats.graph), f: window.PPP.practiceStats.practiceFallback.total, r: window.PPP.practiceStats.practiceFallback.reasons } : null };
       }),
       new Promise(res => setTimeout(() => res(null), 1500))
     ]);
@@ -192,7 +192,7 @@ process.on('exit', () => {
     [...summary.syncLoads.entries()].slice(0, 25).forEach(([k, n]) => process.stdout.write('[with-port]     x' + n + ' ' + k.slice(0, 420) + '\n'));
   }
   if (summary.songs.length) process.stdout.write('[with-port]   songs: ' + summary.songs.join('; ') + '\n');
-  /* G11a-3: which practice plan the suite ran on, and what the graph plan did (plans made from a graph; plans that stayed legacy, by reason) */
+  /* G11a-3: which practice plan the suite ran on, and what the graph plan did (G11a-5: plans handed to the player that were graph plans, practiceStats.served; plans that stayed legacy, by reason) */
   const pr = summary.practice;
   if (PRACTICE || pr.graph || pr.fallback || pr.modes.size) {
     process.stdout.write('[with-port]   practice ' + ([...pr.modes].join('/') || '?') + ': graph plans ' + pr.graph + ', fallbacks ' + pr.fallback +

@@ -3714,7 +3714,10 @@ function setPracticeFix(v) {
   return practiceFixText(PRACTICE_FIX);
 }
 /* what 'graph' did: plans made from a graph (and how many followed a D.C./D.S./To Coda, and how many hold grace notes), and the plans that stayed legacy, by reason and by song (the id of the Score, like PPP.engraveStats.bySong) */
-const PRACTICE_STATS = { graph: 0, jumps: 0, graces: 0, practiceFallback: { total: 0, reasons: {}, bySong: {} }, warm: { started: 0, done: 0, failed: 0, ms: 0 } };
+const PRACTICE_STATS = { graph: 0, served: 0, jumps: 0, graces: 0, practiceFallback: { total: 0, reasons: {}, bySong: {} }, warm: { started: 0, done: 0, failed: 0, ms: 0 } };
+/* `graph` counts the plans MADE from a graph (by the player or by the warm-up); `served` counts the answers of practicePlan - what the player, the matcher, the falling notes and the gates were
+   handed - that were graph plans (G11a-5: a suite on 'graph' proves the player used the graph by this, not by what the idle warm-up made) */
+function practiceServed(plan) { if (plan && plan.graph) PRACTICE_STATS.served++; return plan; }
 function practiceCountFallback(score, reason) {
   const f = PRACTICE_STATS.practiceFallback;
   f.total++;
@@ -3957,7 +3960,7 @@ function practiceGraphPlan(score, from, to) {
 /* THE ONE FUNCTION the practice code asks for a plan (it replaced PianoScore.of at its nine call sites). Under 'legacy' it is PianoScore.of, with nothing else done. */
 function practicePlan(score, from, to) {
   if (PRACTICE_MODE !== 'graph') return PianoScore.of(score, from, to);
-  return practiceGraphPlan(score, from, to);
+  return practiceServed(practiceGraphPlan(score, from, to));
 }
 
 /* ============================================================================
