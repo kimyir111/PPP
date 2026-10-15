@@ -624,7 +624,8 @@ All of this at $0 on the existing free tiers.
   - **SRI on the CDN copies.** The CDN `<script>` of pdf.js, TensorFlow.js 2.8.6 and `transcription.js` has `integrity` (the sha384 of the published file, which is the vendored one) and `crossorigin`; the worker (started by
     pdf.js) and the `import()` of the esm.sh / jsDelivr `+esm` builds cannot have one, and `PPP_LIBS` and the README say so.
   - **`PPP.libFallbacks`** (read-only): `{ pdfjs, 'tfjs-2.8.6', 'magenta-music', 'basic-pitch': n }`, the times PPP's own copy could not be fetched; `{}` on a healthy site and under `PPP.cdn`. The browser suites assert it, and
-    `tests/live/smoke.js` reads a PDF with the live site's own pdf.js and checks it is `{}`. It is not in the G13-7b counters payload: that has not landed (#274).
+    `tests/live/smoke.js` reads a PDF with the live site's own pdf.js and checks it is `{}`. It is also one more key of the G13-7b anonymous counters (`lib`: the same four names, `other` for another, capped like
+    every count; the hourly `stats:` line carries `client.libFallbacks` when any arrived), so a quietly failing vendored file is seen on the server without waiting for a complaint.
   - **What the files have compiled in.** Besides the five libraries, the vendored files carry: core-js 3.32.2 (both pdf.js files, MIT), core-js 3.6.5 + seedrandom 2.4.3 + regenerator-runtime (TensorFlow.js 2.8.6, MIT),
     seedrandom 3.0.5 (MIT) + long 4.0.0 (Apache-2.0) (TensorFlow.js 3.21.0), and in `transcription.js` protobufjs 6.x (BSD-3-Clause), buffer (MIT), ieee754 (BSD-3-Clause), base64-js, fft.js, ndarray-resample and the
     packages it uses (MIT). Each is a row of an "Embedded" table in `vendor/README.md` (name, version, licence, copyright, where from, how it is known to be there), the texts are in `vendor/LICENSE-embedded.txt`,

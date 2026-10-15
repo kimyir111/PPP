@@ -249,7 +249,7 @@ A CDN copy of a plain `<script>` (pdf.js, TensorFlow.js 2.8.6, `transcription.js
 answered with anything else is refused by the browser. SRI cannot be put on what is not a `<script>`: pdf.js starts its worker itself (a blob wrapper that calls `importScripts` on a CDN worker), and the Basic Pitch
 fallback is `import()` of esm.sh / jsDelivr `+esm` builds, which are those services' builds and not the published files: those two are taken on the CDN's word, as they were before G13-8.
 A fallback is not silent: `PPP.libFallbacks` (read-only) counts, per library (`pdfjs`, `tfjs-2.8.6`, `magenta-music`, `basic-pitch`), the times PPP's own copy could not be fetched; it is `{}` on a healthy site
-(`tests/live/smoke.js` and the browser suites read it). A pdf.js whose worker cannot be fetched is not handed out: the worker is asked for first and, failing that, taken from the CDN too.
+(`tests/live/smoke.js` and the browser suites read it; the anonymous counters of G13-7b carry it as `lib`). A pdf.js whose worker cannot be fetched is not handed out: the worker is asked for first and, failing that, taken from the CDN too.
 
 What still comes from another site: the Onsets and Frames checkpoint (about 60 MB, `storage.googleapis.com`, G13 U8) and the Google fonts of the Korean, Japanese and Chinese text (G13-4b). To change a
 version: replace the folder, the `?h=` values and the CDN address in `PPP_LIBS` of the app and the rows above; the tests say which of them is out of step.
