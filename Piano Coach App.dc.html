@@ -131,7 +131,8 @@
 <script>
 /* G13-7b (U5, G13-D11): anonymous counters - how a broken release is seen without waiting for a complaint. Per visit, in this page's memory: uncaught errors and unhandled rejections (the
    CLASS of the error, never its message, stack or address), a script or stylesheet that did not load (this site's: `load`, another's: `thirdparty`), the engraver's and the practice plan's
-   fallbacks (codes), lazy groups that failed, time to first paint and to "app ready" in buckets, language, mobile or desktop. Sent when the page is hidden or closed (again only if something new
+   fallbacks (codes), the optional libraries (pdf.js, TensorFlow.js, Magenta.js, Basic Pitch) that came from their CDN address because PPP's own copy could not be fetched (G13-8: `lib`, the
+   names of PPP.libFallbacks), lazy groups that failed, time to first paint and to "app ready" in buckets, language, mobile or desktop. Sent when the page is hidden or closed (again only if something new
    happened, at most 5 a page load) as one POST of under 1 KB to this site's /api/stats: no cookie, no identifier; the server keeps totals in memory and prints them in its hourly `stats:` line
    (client-stats.js). NEVER the request that wakes a sleeping server: the server must have answered this page in the last 10 minutes, else the counts wait in localStorage
    ('ppp.counts.pending.v1', numbers only, 3 bodies, 7 days) and go with the next visit. Nothing is sent when a person turned it off (Settings > About & licences: 'ppp.counts.v1' = '0'), on Do Not
@@ -145,7 +146,9 @@
   /* the codes the server knows (client-stats.js); any other is counted as `other`, so a body is never over 1 KB */
   var ENG = { SOURCE_THREW: 1, SOURCE_NONE: 1, SOURCE_DISAGREES: 1, LINK_FAILED: 1, PLAN_THREW: 1, LAYOUT_THREW: 1, SYNC_THREW: 1 };
   var PRC = { NOT_LOADED: 1, NO_ENGRAVER: 1, EMPTY: 1, RESOLVE_ERROR: 1, NO_GRAPH: 1, LINK_FAILED: 1, MEASURES: 1, IDENTITY: 1, ABS_MISMATCH: 1, BUILD_ERROR: 1, NOT_READY: 1 };
-  var err = {}, any = false, rej = 0, first = true, readyAt = null, base = { eng: {}, prc: {}, lz: 0 }, mem = null, posts = 0, contactAt = 0;
+  /* G13-8: the library names of PPP.libFallbacks */
+  var LIB = { 'pdfjs': 1, 'tfjs-2.8.6': 1, 'magenta-music': 1, 'basic-pitch': 1 };
+  var err = {}, any = false, rej = 0, first = true, readyAt = null, base = { eng: {}, prc: {}, lib: {}, lz: 0 }, mem = null, posts = 0, contactAt = 0;
   var has = function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); };
   /* a person's choice: this page's memory first (a storage that cannot be written still keeps it for the visit), then the stored one */
   function userOn() {
@@ -197,9 +200,10 @@
     return out;
   }
   function late() {
-    var o = { eng: {}, prc: {}, lz: 0 };
+    var o = { eng: {}, prc: {}, lib: {}, lz: 0 };
     try { var P = peek('PPPEngravePage'); nums(P && P.stats && P.stats.fallbacks, ENG, o.eng); } catch (x) { /* none */ }
     try { var S = W.PPP && W.PPP.practiceStats; nums(S && S.practiceFallback && S.practiceFallback.reasons, PRC, o.prc); } catch (x) { /* none */ }
+    try { nums(W.PPP && W.PPP.libFallbacks, LIB, o.lib); } catch (x) { /* none */ }
     try { var g = W.PPP_LAZY.status().groups; for (var i = 0; i < g.length; i++) if (g[i].failed) o.lz++; } catch (x) { /* none */ }
     return o;
   }
@@ -208,7 +212,7 @@
     var lang = String(D.documentElement.lang || '').slice(0, 2).toLowerCase();
     b.loc = lang === 'ko' || lang === 'ja' || lang === 'zh' ? lang : 'en';
     b.mob = /Mobi|Android|iPhone|iPad|iPod/i.test(String(N.userAgent)) || (/Macintosh/.test(String(N.userAgent)) && N.maxTouchPoints > 1) ? 1 : 0;
-    ['eng', 'prc'].forEach(function (g) {
+    ['eng', 'prc', 'lib'].forEach(function (g) {
       for (k in now[g]) { n = now[g][k] - (base[g][k] || 0); if (n > 0) { (b[g] = b[g] || {})[k] = Math.min(CAP, n); news = true; } }
     });
     n = now.lz - base.lz; if (n > 0) { b.lz = Math.min(CAP, n); news = true; }
