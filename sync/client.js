@@ -191,7 +191,7 @@
     const trash = env.trash || makeTrash(env.indexedDB === undefined ? (typeof indexedDB !== 'undefined' ? indexedDB : null) : env.indexedDB, now);
 
     let S = null;                       /* the persisted state, read again at the start of every call that uses it */
-    let running = null, again = false, timer = null, started = false, destroyed = false;
+    let running = null, again = false, timer = null, started = false, destroyed = false, lastCycleEnd = 0;
     const listeners = [];
     /* what is true now and is not kept: where a cycle is, what went wrong, what the person is being asked, what they should be told */
     const rt = { phase: 'idle', error: null, asks: [], notices: [], remoteApply: false, pulled: 0, pushed: 0, pullTotal: 0, waitUntil: 0 };
@@ -652,18 +652,28 @@
       });
       if (!go.length) return false;
       const total = Object.keys(cards).length;
-      if (M.needsAsk(go.length, total) && !S.okDeleteIn) {
-        asks.push({ kind: 'delete-in', n: go.length, total: total, titles: go.slice(0, 8).map(x => x.title), keys: go.map(x => x.key), revs: go.map(x => x.rev) });
-        return true;
-      }
+      /* the yes of the person is for the songs they were asked about: others that came since are asked about as well */
+      const okKeys = Array.isArray(S.okDeleteIn) ? S.okDeleteIn : [];
       S.okDeleteIn = false;
-      await removeHere(go, 'remote');
-      return false;
+      const rest = go.filter(x => okKeys.indexOf(x.key) < 0);
+      const held = rest.length > 0 && M.needsAsk(rest.length, total);
+      if (held) asks.push({ kind: 'delete-in', n: rest.length, total: total, titles: rest.slice(0, 8).map(x => x.title), keys: rest.map(x => x.key), revs: rest.map(x => x.rev) });
+      const doNow = held ? go.filter(x => okKeys.indexOf(x.key) >= 0) : go;
+      if (doNow.length) await removeHere(doNow, 'remote');
+      return held;
     }
-    async function removeHere(list, why) {
-      for (const x of list) await trashPut(x.id, x.card, x.raw, why);
+    async function removeHere(all, why) {
+      /* nothing is removed here that could not be kept for 30 days: a browser that cannot hold the copy (a private window, a full disk) keeps the song and says so */
+      const list = [];
+      for (const x of all) {
+        if (!x.raw || await trashPut(x.id, x.card, x.raw, why)) { list.push(x); continue; }
+        S.only[x.id] = 1;
+        tomb(rec(x.key), x.rev);
+        notice({ code: 'not-removed', title: x.title || '' });
+      }
+      if (!list.length) return;
       rt.remoteApply = true;
-      try { if (adapter.removeSongs) adapter.removeSongs(list.map(x => x.id)); } finally { rt.remoteApply = false; }
+      try { if (adapter.removeSongs) adapter.removeSongs(list.map(x => x.id), { keepVideo: true }); } finally { rt.remoteApply = false; }
       list.forEach(x => {
         tomb(rec(x.key), x.rev);
         removedDel(x.id);
@@ -710,7 +720,7 @@
         const id = idForKey(key);
         if (!r.rev || r.del || S.only[id]) return;
         if (rm[id]) removed.push({ key: key, id: id, rev: r.rev });
-        else if (r.hash) vanished.push(key);
+        else if (r.hash && !r.bad) vanished.push(key);
       });
       return { dirty: dirty, removed: removed, vanished: vanished };
     }
@@ -851,11 +861,15 @@
     async function sendRemovals(removed, asks) {
       if (!removed.length) return;
       const total = adapter.libraryRead().songs.length + removed.length;
-      if (M.needsAsk(removed.length, total) && !S.okDeleteOut) {
-        asks.push({ kind: 'delete-out', n: removed.length, total: total, titles: removed.slice(0, 8).map(x => { const m = removedMap()[x.id]; return (m && m.title) || ''; }), ids: removed.map(x => x.id) });
-        return;
+      const okIds = Array.isArray(S.okDeleteOut) ? S.okDeleteOut : [];
+      S.okDeleteOut = false;
+      const rest = removed.filter(x => okIds.indexOf(x.id) < 0);
+      let todo = removed;
+      if (rest.length > 0 && M.needsAsk(rest.length, total)) {
+        asks.push({ kind: 'delete-out', n: rest.length, total: total, titles: rest.slice(0, 8).map(x => { const m = removedMap()[x.id]; return (m && m.title) || ''; }), ids: rest.map(x => x.id) });
+        todo = removed.filter(x => okIds.indexOf(x.id) >= 0);
       }
-      for (const x of removed) {
+      for (const x of todo) {
         if (destroyed || frozen() || writeRoom(now()) <= 0) return;
         let r;
         try {
@@ -868,7 +882,7 @@
         if (r.status === 409) {
           /* the item moved on after this device last saw it: the library's change stands, and the song is brought back */
           const c = (r.body.conflicts || [])[0];
-          if (c) { rr.rev = c.rev; rr.hash = ''; rr.del = c.deleted ? 1 : 0; if (c.deleted) rr.delAt = now(); }
+          if (c) { rr.rev = c.rev; rr.hash = c.hash || 'unknown'; rr.del = c.deleted ? 1 : 0; if (c.deleted) { rr.delAt = now(); rr.hash = ''; } }
           removedDel(x.id);
           notice({ code: 'changed-elsewhere', id: x.id });
           continue;
@@ -880,7 +894,6 @@
         if (isNum(r.body.rev) && isNum(r.body.maxRev) && r.body.rev === S.since + 1 && r.body.maxRev === r.body.rev) S.since = r.body.maxRev;
         if (isObj(r.body.library)) setLibrary(r.body.library);
       }
-      S.okDeleteOut = false;
     }
 
     /* songs that were lost here (the card went and nobody asked) and that the library has: fetched again */
@@ -1015,7 +1028,7 @@
       if (!online()) { rt.error = 'offline'; emit(); return Promise.resolve(false); }
       if (!acquire()) { schedule(15 * 1000); return Promise.resolve(false); }
       running = (async () => {
-        try { await cycleOnce(reason || 'poll', !!opts.keepalive); } finally { release(); running = null; }
+        try { await cycleOnce(reason || 'poll', !!opts.keepalive); } finally { release(); running = null; lastCycleEnd = now(); }
         if (again) { again = false; schedule(1500); } else after();
         return true;
       })();
@@ -1200,7 +1213,7 @@
       wake(reason) {
         if (!started || destroyed || running) return;
         S = load();
-        if (!S.code || S.next > now()) return;
+        if (!S.code || S.next > now() || now() - lastCycleEnd < 30000) return;
         syncNow(reason || 'wake');
       },
       status: status,
@@ -1226,10 +1239,10 @@
         if (!ask) return { ok: false };
         rt.asks = rt.asks.filter(a => a.kind !== kind);
         if (kind === 'delete-in') {
-          if (choice === 'yes') S.okDeleteIn = true;
+          if (choice === 'yes') S.okDeleteIn = ask.keys.slice();
           else ask.keys.forEach((k, i) => { tomb(rec(k), ask.revs[i]); S.only[idForKey(k)] = 1; });
         } else if (kind === 'delete-out') {
-          if (choice === 'yes') S.okDeleteOut = true;
+          if (choice === 'yes') S.okDeleteOut = ask.ids.slice();
           else await restoreFromTrash(ask.ids);
         } else if (kind === 'gone') {
           if (choice === 'yes') S.okKeepGone = true;

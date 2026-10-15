@@ -178,9 +178,17 @@ const heading = t => console.log('\n── ' + t + ' ──');
     const titlesB = (await B.cards()).map(c => c.title), titlesA = (await A.cards()).map(c => c.title);
     const copyName = ko('{{title}} (copy from another device)', { title: 'Song 9' });
     ok('both devices have 34 songs: one is a copy, with the visible name of a copy', titlesB.length === 34 && titlesA.length === 34 && titlesB.includes(copyName) && titlesA.includes(copyName), titlesB.filter(t => /Song 9/.test(t)).join(' | '));
-    ok('the song itself is the newer edit (B\'s) on both devices', (await A.page.evaluate(() => JSON.parse(localStorage.getItem('ppp.song.v1.song-pa9')).score.title)) === 'Edited 201' && (await B.page.evaluate(() => JSON.parse(localStorage.getItem('ppp.song.v1.song-pa9')).score.title)) === 'Edited 201');
+    /* which device sees the clash first depends on who looked first: the song is one of the two edits on both, the copy is the other, the notice is on the device that made it */
+    const scoreTitleOf = (d, id) => d.page.evaluate(i => { const s = localStorage.getItem('ppp.song.v1.' + i); return s ? JSON.parse(s).score.title : null; }, id);
+    const copyIdB = (await B.cards()).find(c => c.title === copyName).id;
+    const songTitles = [await scoreTitleOf(A, 'song-pa9'), await scoreTitleOf(B, 'song-pa9')];
+    const copyTitles = [await scoreTitleOf(A, copyIdB), await scoreTitleOf(B, copyIdB)];
+    ok('both devices agree on the song, and on the copy, and these are the two edits (nothing is lost)', songTitles[0] === songTitles[1] && copyTitles[0] === copyTitles[1] && [songTitles[0], copyTitles[0]].sort().join() === 'Edited 200,Edited 201', JSON.stringify([songTitles, copyTitles]));
     await A.settings();
-    ok('and the section tells A, in Korean, that both versions were kept', (await A.text('[data-sync-notices]') || '').includes('두 기기에서'), await A.text('[data-sync-notices]'));
+    const noteA = (await A.text('[data-sync-notices]')) || '';
+    await B.settings();
+    const noteB = (await B.text('[data-sync-notices]')) || '';
+    ok('the device that kept both versions says so, in Korean', noteA.includes('두 기기에서') || noteB.includes('두 기기에서'), noteA + ' | ' + noteB);
 
     /* ------------------------------------------------------------------ 17 removals */
     heading('17 removals are asked about; one is not; Recently deleted brings a song back');
@@ -265,6 +273,21 @@ const heading = t => console.log('\n── ' + t + ' ──');
     await sleep(500);
     const idleCalls = H.store.total() - idle0;
     ok('opening A with nothing changed: ' + idleCalls + ' store calls (≤ 4)', idleCalls <= 4, JSON.stringify(H.store.calls));
+
+    /* ------------------------------------------------------------------ a frozen page */
+    heading('a page that is frozen (a restore or a delete is on its way to a reload) is left alone');
+    {
+      await A.synced(30000);
+      await A.page.evaluate(() => { PPP.app.freezeStorage(); });
+      const puts0 = H.syncSeen.filter(x => x.method === 'PUT').length, all0 = H.syncSeen.length;
+      await A.page.evaluate(() => { const s = JSON.parse(localStorage.getItem('ppp.song.v1.song-pa7')); s.tempo = 33; localStorage.setItem('ppp.song.v1.song-pa7', JSON.stringify(s)); });
+      await A.engine();
+      ok('frozen: nothing was sent for the change, and no request was made at all', H.syncSeen.filter(x => x.method === 'PUT').length === puts0 && H.syncSeen.length === all0, String(H.syncSeen.length - all0));
+      await A.page.evaluate(() => { PPP.app.thawStorage(); });
+      await A.engine();
+      ok('thawed: the change goes', H.syncSeen.filter(x => x.method === 'PUT').length > puts0);
+      await A.synced(30000);
+    }
 
     /* ------------------------------------------------------------------ a new code, the recovery code, stop, delete */
     heading('a new code, the recovery code, stop syncing, delete the library');

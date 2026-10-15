@@ -57,7 +57,7 @@ function makeDevice(svc, name, opts) {
   opts = opts || {};
   const storage = opts.storage || new FakeStorage();
   const st = { xp: 0, minutes: 0, streak: 1, sessions: [0, 0, 0, 0, 0, 0, 0], skillMs: { treble: 1 }, learnDone: {}, learnLesson: 'keys', learnStep: 0, course: null };
-  const dev = { name: name, storage: storage, st: st, open: 'demo', frozen: false, online: true, requests: [], openProgress: [], removedByPage: [], trashRows: new Map(), failNext: null, intercept: null, ip: opts.ip || ('10.9.' + (name.charCodeAt(0) % 200) + '.1') };
+  const dev = { name: name, storage: storage, st: st, open: 'demo', frozen: false, online: true, requests: [], openProgress: [], removedByPage: [], trashRows: new Map(), failNext: null, intercept: null, trashFail: false, ip: opts.ip || ('10.9.' + (name.charCodeAt(0) % 200) + '.1') };
   const parse = s => { try { return JSON.parse(s); } catch (e) { return null; } };
   const adapter = {
     libraryRead: () => { const d = parse(storage.getItem('ppp.library.v1') || 'null'); return d && Array.isArray(d.songs) ? d : { songs: [], current: 'demo', demo: null }; },
@@ -73,7 +73,7 @@ function makeDevice(svc, name, opts) {
   };
   const trash = {
     available: () => true,
-    put: async e => { dev.trashRows.set(e.tid, e); },
+    put: async e => { if (dev.trashFail) throw new Error('quota'); dev.trashRows.set(e.tid, e); },
     list: async () => Array.from(dev.trashRows.values()).sort((a, b) => b.at - a.at),
     get: async tid => dev.trashRows.get(tid) || null,
     del: async tid => { dev.trashRows.delete(tid); },

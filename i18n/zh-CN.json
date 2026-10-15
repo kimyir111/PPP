@@ -2513,6 +2513,7 @@
     "The library on the server was older than this device, so this device sent its songs again.": "服务器上的曲库比本设备更旧，因此本设备重新发送了它的曲目。",
     "{{n}} songs that were missing here came back from the library.": "本设备上缺失的 {{n}} 首曲目已从曲库中恢复。",
     "A song in the library could not be read and was skipped.": "曲库中有一首曲目无法读取，已跳过。",
-    "A song you removed was changed on another device, so it came back.": "您删除的一首曲目在其他设备上被修改过，所以又回来了。"
+    "A song you removed was changed on another device, so it came back.": "您删除的一首曲目在其他设备上被修改过，所以又回来了。",
+    "\"{{title}}\" was removed on another device, but this browser could not keep a copy in Recently deleted, so it was kept here.": "“{{title}}”已在其他设备上被删除，但此浏览器无法在“最近删除”中保留副本，所以保留在了本设备上。"
   }
 }

@@ -51,6 +51,8 @@
   const TEXT = 'font-size:12.5px;line-height:1.55;';
   const box = bad => 'display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:12px;background:var(--bg);border:1px solid ' + (bad ? 'var(--bad)' : 'var(--accent-2)') + ';';
   const INPUT = 'flex:1;min-width:0;flex-basis:220px;padding:9px 11px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:\'JetBrains Mono\',monospace;font-size:11.5px;';
+  /* the same field where it stands alone in a column (flex-basis would make it tall there) */
+  const INPUT_FULL = INPUT.replace('flex:1;min-width:0;flex-basis:220px;', 'width:100%;box-sizing:border-box;');
   const ROW = 'display:flex;gap:8px;flex-wrap:wrap;align-items:center;';
   const SPLIT = 'display:flex;flex-direction:column;gap:8px;padding-top:14px;border-top:1px solid var(--line);';
 
@@ -343,7 +345,7 @@
         wrap.appendChild(h('div', { 'data-sync-recovery-box': '', style: box(true) }, [
           h('div', { style: TEXT + 'font-weight:600;' }, [tx('Recovery code - shown only now')]),
           h('div', { style: TEXT }, [tx('If you lose the library code and every device that has it, this code gives the library a new code. Whoever has it can take the library over, so keep it somewhere other than the code. PPP cannot show it again.')]),
-          h('input', { type: 'text', readonly: true, 'data-sync-recovery-value': '', 'aria-label': tx('Recovery code'), value: view.recovery, style: INPUT, onFocus: e => e.target.select() }),
+          h('input', { type: 'text', readonly: true, 'data-sync-recovery-value': '', 'aria-label': tx('Recovery code'), value: view.recovery, style: INPUT_FULL, onFocus: e => e.target.select() }),
           h('div', { style: ROW }, [
             h('button', { type: 'button', 'data-sync-recovery-copy': '', style: SEC, onClick: e => { const inp = e.target.closest('[data-sync-recovery-box]').querySelector('input'); copyText(view.recovery, inp).then(ok => { view.copied = ok ? 'rc' : ''; if (ok) say(tx('Copied.')); }); } }, [tx('Copy')]),
             h('button', { type: 'button', 'data-sync-recovery-saved': '', style: PRIM, onClick: confirmRecoverySaved }, [tx('I saved it')])
@@ -499,6 +501,7 @@
         else if (n.code === 'recovered') text = tx('{{n}} songs that were missing here came back from the library.', { n: n.n });
         else if (n.code === 'unreadable') text = tx('A song in the library could not be read and was skipped.');
         else if (n.code === 'changed-elsewhere') text = tx('A song you removed was changed on another device, so it came back.');
+        else if (n.code === 'not-removed') text = tx('"{{title}}" was removed on another device, but this browser could not keep a copy in Recently deleted, so it was kept here.', { title: n.title || '' });
         if (text && !seen[text]) { seen[text] = 1; lines.push(h('div', { style: NOTE }, [text])); }
       });
       return h('div', { 'data-sync-notices': '', style: 'display:flex;flex-direction:column;gap:4px;' }, lines);
@@ -514,6 +517,8 @@
       try { if (root.PPP_I18N && root.PPP_I18N.onChange) offI18n = root.PPP_I18N.onChange(() => render()); } catch (e) { offI18n = null; }
     }
     function unmount() {
+      /* a code that was shown is put away when Settings is left (a recovery code that is not saved yet stays until it is) */
+      if (view.panel === 'code' && !view.recovery) view.panel = null;
       if (offStatus) { offStatus(); offStatus = null; }
       if (offI18n && typeof offI18n === 'function') { try { offI18n(); } catch (e) { /* gone */ } }
       offI18n = null;

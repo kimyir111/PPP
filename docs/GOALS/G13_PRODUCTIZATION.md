@@ -890,7 +890,7 @@ that holds it (files in `tests/sync/`; `sync.test.js` = unit, `sync-abuse.test.j
 | Phase | What | Effort | Acceptance | Rollback |
 | --- | --- | --- | --- | --- |
 | **G13-S0 Server** *(built: 7.9)* | `sync-store.js`, `sync.js` (routes), migration, limits, purge, in-memory rev cache; **routes 404 unless `PPP_SYNC=1`** | 2 + full and security review | unit + Postgres tests in the G10b-2 style: **100 idle `changes` polls = 0 statements**; old/new/rollback boots identical; every limit of 7.3/7.7 mutation-tested (target >= 60 mutants; 145 built, all killed); a zip bomb refused; cross-library isolation | `PPP_SYNC=0` (default); revert boots on the migrated DB |
-| **G13-S1 Page** | Settings section, `#lib=` pairing, upload/migration, pull/push engine, merge rules, conflict copies, recently-deleted, bulk-delete check; behind `PPP.sync` (off), 4 languages | 3 + full review | two puppeteer contexts against a local server: **30 songs migrate**, edits converge after ≤ 2 opens, a concurrent score edit forks with both kept, a 17-song deletion asks, offline edits push later, **SQL statements per session ≤ 4**; with the switch off the page is byte-identical to main | switch off |
+| **G13-S1 Page** *(built: 7.10)* | Settings section, `#lib=` pairing, upload/migration, pull/push engine, merge rules, conflict copies, recently-deleted, bulk-delete check; behind `PPP.sync` (off), 4 languages | 3 + full review | two puppeteer contexts against a local server: **30 songs migrate**, edits converge after ≤ 2 opens, a concurrent score edit forks with both kept, a 17-song deletion asks, offline edits push later, **SQL statements per session ≤ 4**; with the switch off the page is byte-identical to main | switch off |
 | **G13-S2 Graphs travel** | the graph in sync items and (optional field) in shares; the reader prefers it when `scoreHash` matches | 1.5 | an imported song with ties/tuplets/8va opens on the second device with the same `fingerprint` as the first (not projected); old shares open unchanged | ignore the field |
 | **G13-S3 On by default** | the Settings section visible for everyone (the H-13 two-device run first) | 0.5 | H-13 sync steps pass | hide again |
 
@@ -1001,6 +1001,107 @@ may be 6 MB; an item 1 MB of gzip. (7) `server-stats.js` gains `addGauge`; the c
 
 **What could not be tested.** Production and a real Neon (egress, history, compute hours); Render's proxy with 6 MB bodies; a page (S1: two browsers, QR, the merge); Node 22 (the Dockerfile
 says 22; every run here and the gate use 24 - nothing here needs a 24 API); Linux for the Postgres and abuse suites (they ran on Windows 11; the gate runs the Node ones on Linux).
+
+### 7.10 G13-S1 as built (Implementer, Sonnet, 2026-10-16)
+
+Worktree `D:/PPP-g13s1`, branch `g13-s1-sync-page` from `origin/main` `284cc5e` (= the S0 server, flag `PPP_SYNC` default OFF, no-login, vendored libraries). The page's side of 7.1-7.5. **Nothing was deployed or merged.**
+
+**Files.** `sync/merge.js` (the rules, pure), `sync/client.js` (the engine: pairing, upload, pull and push, conflicts, removals, Recently deleted), `sync/ui.js` (the section of Settings),
+`sync/qr.js` (a small QR encoder). Small hunks in `Piano Coach App.dc.html` (all additive, **no template node**: the section's place is made by the script, so with the switch off the
+page's DOM is `origin/main`'s down to the numbering of its nodes: `tests/load-app/dom-identity.js` against an `origin/main` archive, Home, Practice and Settings, en-US and ko-KR: identical,
+0 page errors). `library-backup.js` learns the sync code (never in a backup: the second wall) and the `ppp-sync` database (the wipe). `static-allow.js` lists the four files.
+Tests in `tests/sync-page/`. i18n: 109 strings in ko, ja and zh (gaps checker baseline 0; 해요체 in Korean).
+
+**The switch.** `PPP.sync = 'off'` (default) | `'on'` (the semantics of `PPP.recording`: `?sync=` for the visit, the remembered `localStorage ppp.sync.v1`, the default). **Off**: the page is
+byte-identical in behaviour: none of `sync/`'s files is asked for, no request of the feature is made (`/sync/*`, `/api/libs`, `/api/sync`), no entry in Settings, a `#lib=` in the address is
+left alone (the head script only takes it while the switch is on). **On**: one section "Sync between devices (beta)" in Settings, after My data. Turning syncing on, or joining, remembers
+'on'. The link another device shows is `https://<site>/?sync=on#lib=<code>`: `?sync=on` switches the beta on for that visit; the fragment is taken off the address bar before any request.
+
+**What a person sees** (all in 4 languages):
+1. *Turn on.* A library is made (POST /api/libs). The panel shows the link and a QR code (drawn in the page), the code in groups of 8, a warning that anyone who has it can see and
+   change the songs, and - once - the **recovery code** with Copy and "I saved it" (it is kept in `sessionStorage` until then and is nowhere else; after it, nothing on the device holds it).
+2. *The first upload* runs in the background and resumes after a reload: the state item first, then the song on the screen, then the latest. The section says "N of M songs are synced. The
+   rest takes about H hours: PPP sends a limited number each hour. You can keep practising." The page is never held (measured: the section opens in 0.2 s while it waits).
+3. *Join* by link or by typing/pasting a code (spaces, dashes and a whole link are read). A question comes first: "Join this song library? Your N songs on this device will be added...
+   Nothing on this device is removed or replaced", with "Join and add my songs" / "Join, but keep my songs only on this device" / Cancel; a device that already has a library says it will leave it.
+4. *Synced 2 min ago*, "the server keeps your library until <date>, 180 days after the last sync. Your songs on this device and in your backup files stay in any case" (U2), what is
+   synced and what is not (settings, MIDI devices and the language stay on each device).
+5. *Questions*, never answered for the person: 4 or more removals at once, or more than a fifth of the library (and 2 or more), here or there; a device that was away for more than 30 days
+   (the library lost songs it has); and notices (a copy was kept, a song was removed there and is in Recently deleted, a song was kept because it was changed here).
+6. *Add another device*, *Sync now*, *Recently deleted* (30 days, Restore), *Change the code* (asks; says the others must enter the new one), *Stop syncing on this device* (asks; nothing
+   local is touched), *Delete the library on the server* (asks twice). A device told "rotated" shows a field for the new code or link; "deleted" says so and keeps the songs. "I lost
+   the code but I have the recovery code" gives the library a new code and a new recovery code.
+
+**What travels.** One item per song (the card without its id and without its `share` mark, the packed Score, everything else of the slot as `progress`, the hash of the canonical score,
+the time) and one `state` item (the counters, the weekly bars, the lesson, the course, the sample's practice). No graph (S2). The **name** of a song's item is `song:<id>`; an id the library
+would refuse (80 characters, spaces) is named `song:x<hash>` and the id is kept with it. `hash` = the canonical text of everything but the time and the score's own text (so a slot that the
+page packed or unpacked meanwhile is the same song). Bodies are gzip (CompressionStream), base64; a browser without it says so. What arrives is **hostile input** (a code is all it takes
+to write an item): the backup module's bounds (nesting, size, a `__proto__` key, ids), unknown fields refused, links that are not web addresses blanked, the score hash made here.
+
+**Merging (7.5, as built; `sync/merge.js`, every rule commutative and idempotent).**
+
+| Part | Rule as built |
+| --- | --- |
+| Score | one side changed it since the two last agreed (the score hash at that point is kept): that one. **Both**: the newer (by the time this device saw its change) stays the song, the other becomes a **copy** with the deterministic id `song-f<hash of name + losing score>` (two devices that fork the same pair make the same copy), titled "<title> (copy from another device)" |
+| Practice | per-measure record with more attempts, then the later; runs by their key; per section the higher level; per field the larger count; `mastered` if either; the backup module's merges, with their arguments put in a canonical order |
+| Loop, tempo, file | the newer side's, as a pair |
+| Card | what belongs to the score follows the score; `addedAt` the earlier, `lastAt` the later (with `prog` and `mem`) |
+| xp, minutes | **per-device counters** `{device: {v, at}}`; each device writes only its own entry (what it added itself: its value moves by what is added, a merge does not count as its own); the shown value is the sum; a reset lowers only this device's entry |
+| Identity (a join) | a song that is not linked yet is the same song as an arriving one by `courseFrom`, `sharedFrom`, `arrangedFrom` + level, then the score hash: it keeps its own id and is linked to the library's name; the same id with another song gets a new id |
+| Deletion | a tombstone. **An edit beats a deletion** (a song changed here is kept and sent again over the tombstone; a removal that the library does not agree with brings the song back). Removals that arrive go to Recently deleted (IndexedDB `ppp-sync`, 30 days) first; **a song that cannot be kept there is not removed** |
+
+**The song on the screen** is never replaced under the person's hands: practice from the library is merged into what the page holds (the adapter: history, memory, sections, levels), its
+score waits (`defer`) until they leave it. The page saves it, and what it saves is compared with the library's version (a send is made only if it differs).
+
+**The engine** (`sync/client.js`). A cycle: the page saves what is open; what changed here is looked at (a fingerprint of the stored text: unchanged text is not parsed again); `changes?since=`;
+bodies in batches of 25; applied in one synchronous block (slots first, then the list, once; a full disk puts everything back and says so); tombstones; what changed here is sent in
+batches of 25 and 3 MB; conflicts are merged and sent again (3 rounds, then a wait); removals. A `409` whose conflict carries **the hash that was sent is "applied"**. `gone` and `tooOld`
+ask. `reset` forgets the revisions (not the hashes) and says so. Waits: `Retry-After` (up to 2 h) + 10 %, else 30 s doubling to 15 min, with jitter; **a request is given up after 45 s (120 s
+for a PUT)**; offline: nothing is tried. The client keeps **234 item writes an hour** (the library's 240 less 6), so a refusal is the exception. **Polling**: at open (after 2.5 s), on
+becoming visible and on `online` (not within 30 s of the last cycle), every 5 minutes while visible (the timer does nothing while hidden); a hide sends what changed in one request
+(`keepalive` when it is under 48 KB). **The cursor follows the device's own writes** when nobody wrote in between, so the next poll is answered from memory: **an idle visit costs the
+tables 0 statements; the first visit after a restart of the server 1** (counted in the database's own log, `tests/sync-page/pg.test.js`: turning on with 30 songs 5 statements, joining and
+reading them 5). Cycles are one at a time across the tabs of a browser (a lock key, stale after 2 minutes). The state is kept in `ppp.syncstate.v1`; the removals the person made in
+`ppp.syncremoved.v1` (a save of the state cannot lose one that another tab wrote).
+
+**Safety, in one place.** The code is only in the header `X-PPP-Lib` (`credentials: 'omit'`), never in a URL, a log or a backup (the backup module's second wall and the engine's: an item that
+holds the code, the PC link or the guest key is not sent); the QR code is drawn by `sync/qr.js` (byte mode, L and M, versions 1-10, tested against an independent reader), no service sees
+the link; the recovery code is shown once. Removals: asked before 4 or more, or a fifth of the library (2 or more), in both directions; the yes is for the songs that were asked about. A
+song a device has and the library has not (after a purge of tombstones) is asked about, never sent or dropped silently. A song that was lost here (its card went and nobody asked) comes
+back from the library.
+
+**Measured** (a machine of the author; waits are the library's, by design):
+
+| | |
+| --- | --- |
+| First sync, 30 songs (browser, local server) | 0.1-0.4 s of work, 31 items, 2 requests |
+| First sync, 500 songs (browser, 6-note tunes; Node, 20-30 notes: 1.4-2.0 s) | 3 rounds: 233, 234 and 33 items, 0.4 s, 0.2 s, 0.1 s of work; the waits are 2 hours ("about 2 h left", then "about 1 h left") |
+| A second device reading 500 | 299 songs at once (300 an hour), the rest an hour later; 0.3 s + 0.1 s of work |
+| Statements (Postgres, the real server) | turn on + 30 songs 5; join + read 30 songs 5; idle visit **0**; first visit after a restart **1** |
+| Convergence (three devices, random operations) | 150 seeds x 150 operations (22,500 operations, 5,779 cycles, 241 forks): the same songs with the same content on all three, the counters the sum, nothing left to say |
+
+**Tests** (`npm run test:sync-page` is Node only and a step of shard-q; `tests/sync-page/page.test.js` and the mutants of the page are the CI job `sync-page-suite`, not a gate job):
+`merge.test.js` (59 checks), `qr.test.js` (structure read back by a reader that is not the encoder, golden symbols, jsQR where installed: 144 symbols), `engine.test.js` (40) and
+`engine-edge.test.js` (86: offline and a flaky network, 31 days away, reset, rotated, deleted, the recovery code, 500 songs under the hour's room, an idle poll, a full disk, hostile
+items, a secret in a title, a stuck conflict, a frozen page, two tabs, a request that hangs, a yes that is for the songs asked about, a copy that cannot be kept), `converge.test.js`
+(property: 16 seeds in CI, `PPP_SYNC_SEEDS`/`PPP_SYNC_OPS` for more), `page.test.js` (75, two browser contexts: the switch off, the link, the question, converging edits, both score edits
+kept, 17 removals asked, Recently deleted, 31 days, busy and 429 with Retry-After, a new code, the recovery code on a 360 px phone, no code in any URL or log, idle store calls),
+`big.test.js` (500 songs with the clock moved), `pg.test.js` (real server.js and Postgres, by hand). **Mutants** (`tests/sync-page/mutants.js`): 59 of `merge.js` and `client.js` (each rule of
+7.5 and each check above) and 10 of the page and `ui.js` (the switch, the head script, the removal hook, the question before joining, the recovery code, stop, delete in two steps, change of
+code with a question, a frozen page, the code in a query): all killed by a check about that rule.
+
+**Where this differs from 7.1-7.5.** (1) The copy is named "(copy from another device)": a device has no name (16 random hex). (2) An edit beats a deletion in both directions. (3) The
+trash is per device (IndexedDB); a removal that arrives is removed only after a copy was kept. (4) The first upload sends the state, then the open song, then by last use: there is no
+"cards first": a song is one item. (5) Duplicates are merged by identity only for songs that are not linked yet (a join, a recovery); two songs added on two devices after they joined are two
+songs (each device then has both). (6) The page-level switch is `?sync=on` / the remembered `ppp.sync.v1`; there is no entry anywhere with it off (S3 shows it for everyone).
+
+**Residual risks and what could not be tested.** (a) "Newer" is by the time a device *saw* its edit change (at its next cycle or hide), not the time of the edit: two edits minutes apart can be
+ordered by who opened the page first. Nothing is lost (both are kept). (b) A removed song's uploaded video is kept on the device that removed it because another did (a video is never
+synced); it is orphaned until "Delete everything". (c) Two songs added independently on two joined devices are duplicates. (d) A recovery code that was not saved and a code that was lost
+make the library unreachable (180 days, then purged). (e) xp after "Stop syncing" and joining another library counts only this device's own contribution. (f) The QR code was read by jsQR and
+the structure checks, not by a phone's camera. (g) Safari and Firefox were not run (Chromium only); `CompressionStream` is needed (Safari 16.4+, Firefox 113+). (h) Nothing was run on
+production, a real Neon, Render's proxy with large bodies, or a phone on a slow line; the 500-song timings are this machine's. (i) The Korean was written by the implementer; a person who
+reads Korean should read the section once.
 
 ---
 

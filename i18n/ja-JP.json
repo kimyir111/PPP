@@ -2513,6 +2513,7 @@
     "The library on the server was older than this device, so this device sent its songs again.": "サーバー上のライブラリがこの端末より古い状態だったため、この端末の曲を再送しました。",
     "{{n}} songs that were missing here came back from the library.": "この端末から消えていた{{n}}曲をライブラリから復元しました。",
     "A song in the library could not be read and was skipped.": "ライブラリの曲1曲を読み取れなかったためスキップしました。",
-    "A song you removed was changed on another device, so it came back.": "削除した曲が他の端末で変更されたため、元に戻りました。"
+    "A song you removed was changed on another device, so it came back.": "削除した曲が他の端末で変更されたため、元に戻りました。",
+    "\"{{title}}\" was removed on another device, but this browser could not keep a copy in Recently deleted, so it was kept here.": "「{{title}}」は他の端末で削除されましたが、このブラウザーが「最近削除した曲」にコピーを保管できなかったため、この端末には残しました。"
   }
 }

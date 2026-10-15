@@ -406,6 +406,45 @@ const dump = async (svc, code) => {
       D.intercept = null;
     }
 
+    /* ------------------------------------------------------------------ the yes of a question, and a copy that cannot be kept */
+    heading('a yes is for the songs that were asked about; a song that cannot be kept is not removed');
+    {
+      const { A, B, made } = await pair(svc, 30, 'y');
+      const first = Array.from({ length: 6 }, (_, i) => 'sy' + i), more = Array.from({ length: 5 }, (_, i) => 'sy' + (10 + i));
+      first.forEach(id => A.removeSong(id));
+      await A.engine.syncNow('test');
+      ok('6 removals are asked about', A.engine.status().asks.some(a => a.kind === 'delete-out' && a.n === 6));
+      more.forEach(id => A.removeSong(id));              /* more are removed before the answer */
+      await A.engine.answer('delete-out', 'yes');
+      const dels = (await dump(svc, made.code)).items.filter(i => i.deleted).map(i => i.key.slice(5)).sort();
+      ok('the yes sent the 6 that were asked about, and not the 5 that came after', JSON.stringify(dels) === JSON.stringify(first.slice().sort()), dels.join());
+      ok('and the 5 are asked about in their turn', A.engine.status().asks.some(a => a.kind === 'delete-out' && a.n === 5), JSON.stringify(A.engine.status().asks.map(a => a.kind + a.n)));
+      await A.engine.answer('delete-out', 'yes');
+      ok('after the second yes all 11 are in the library', (await dump(svc, made.code)).items.filter(i => i.deleted).length === 11);
+      /* a removal the library does not agree with: another device changed the song between this device's look at the library and its removal: the change stands, the song comes back */
+      svc.clock.t += 1000;
+      B.editSlot('sy25', s => { s.tempo = 144; });
+      A.removeSong('sy25');
+      let raced = false;
+      A.intercept = async (url, init) => {
+        if (!raced && init && init.method === 'DELETE') { raced = true; A.intercept = null; await B.engine.syncNow('test'); }
+        return null;
+      };
+      await A.engine.syncNow('test');
+      A.intercept = null;
+      await A.engine.syncNow('test');
+      ok('the song is back on A with the change that was made meanwhile (and the library has no tombstone for it)', !!A.card('sy25') && A.slot('sy25').tempo === 144 && !(await dump(svc, made.code)).items.find(i => i.key === 'song:sy25').deleted, String(!!A.card('sy25')));
+      /* a removal that came from another device is not carried out here when no copy can be kept */
+      A.removeSong('sy20');
+      await A.engine.syncNow('test');
+      B.trashFail = true;
+      await B.engine.syncNow('test');
+      await B.engine.answer('delete-in', 'yes').catch(() => {});
+      const st = B.engine.status();
+      ok('B (that could not keep a copy) kept sy20 and says so', !!B.card('sy20') && st.notices.some(n => n.code === 'not-removed') && B.engine._load().only['sy20'] === 1, JSON.stringify(st.notices.map(n => n.code)));
+      B.trashFail = false;
+    }
+
     /* ------------------------------------------------------------------ a stuck conflict, a frozen page, two tabs */
     heading('a conflict that does not end is bounded; a frozen page is left alone; two tabs take turns');
     {

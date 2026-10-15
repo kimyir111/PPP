@@ -19210,7 +19210,7 @@ class Component extends DCLogic {
     lib.songs = lib.songs.filter(s => s.id !== id);
     this.libraryWrite(lib);
     try { localStorage.removeItem(SONG_KEY + id); } catch (e) {}
-    MediaStore.del(id);
+    if (!opts.keepVideo) MediaStore.del(id);   /* G13-S1: a song removed because another device removed it keeps the video of this one (a video is never synced, so nothing else has it) */
     engraveForget(id);
     forgetRunLog(id);
     this.setState({ armedRemove: null });
@@ -19236,7 +19236,7 @@ class Component extends DCLogic {
       },
       applyOpenProgress: p => A.syncApplyOpenProgress(p),
       /* a removal that came from another device goes through the page's own, with its cleanups (videos, the engraving cache, the practice log) */
-      removeSongs: ids => ids.forEach(id => A.removeSong(id, { quiet: true })),
+      removeSongs: (ids, o) => ids.forEach(id => A.removeSong(id, { quiet: true, keepVideo: !!(o && o.keepVideo) })),
       forgetThumbs: ids => { if (A._thumbs) ids.forEach(id => { delete A._thumbs[id]; }); }
     };
   }
