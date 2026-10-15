@@ -53,6 +53,8 @@
   const fail = (code, message, detail) => { throw new EditError(code, message, detail); };
 
   const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const samePitch = (a, b) => !!a && !!b && a.step === b.step && a.oct === b.oct && (a.alter || 0) === (b.alter || 0);
+  const sameAcc = (a, b) => (a ? a.type : null) === (b ? b.type : null);
   const cp = x => JSON.parse(JSON.stringify(x));
   const rat = x => (typeof x === 'string' ? R.parse(x) : x);
   const num = x => R.toNumber(rat(x));
@@ -280,7 +282,7 @@
         if (!x || !x.h.pitch) return;
         const p = { step: at.h.pitch.step, oct: at.h.pitch.oct };
         if (alterOf(at.h)) p.alter = alterOf(at.h);
-        if (!sameJson(x.h.pitch, p)) { x.h.pitch = p; d.markProv(x.h, ['pitch'], 'edited'); d.touch(); }
+        if (!samePitch(x.h.pitch, p)) { x.h.pitch = p; d.markProv(x.h, ['pitch'], 'edited'); d.touch(); }
       });
     });
   }
@@ -310,9 +312,9 @@
       if (alter) next.alter = alter;
       anchor.h.pitch = next;
       if (midiOf(next) < LOW || midiOf(next) > HIGH) { anchor.h.pitch = was; if (wasAcc) anchor.h.acc = wasAcc; else delete anchor.h.acc; fail('out-of-range', 'outside a piano'); }
-      if (sameJson(was, next) && sameJson(wasAcc, anchor.h.acc || null)) return null;
+      if (samePitch(was, next) && sameAcc(wasAcc, anchor.h.acc)) { anchor.h.pitch = was; return null; }
       d.markProv(anchor.h, ['pitch'], 'edited');
-      if (!sameJson(wasAcc, anchor.h.acc || null)) d.markProv(anchor.h, ['spelling'], 'edited');
+      if (!sameAcc(wasAcc, anchor.h.acc)) d.markProv(anchor.h, ['spelling'], 'edited');
       d.touch();
       syncChains(d, [anchor.h.id]);
       reconcile(d, before, mids, { skip: new Set(chain) });
@@ -406,6 +408,7 @@
     {
       if (e.kind !== 'note') fail('no-target', 'not a note');
       if (e.grace) fail('no-target', 'a grace note');
+      if (inTuplet(d, e)) fail('in-tuplet', 'the note is in a tuplet');
       const before = snapshot(d, [e.m]);
       let made = null;
       rewrite(d, e.voice, e.m, plan => {
@@ -482,6 +485,7 @@
     return run(g, (d, touched) => {
       const x = findEvent(d, args.event), e = x.e;
       if (e.kind !== 'rest') fail('no-target', 'not a rest');
+      if (inTuplet(d, e)) fail('in-tuplet', 'the rest is in a tuplet');
       const part = x.part;
       const before = snapshot(d, [e.m]);
       const len = R.parse(e.dur), at = R.parse(e.at);
@@ -550,14 +554,17 @@
           return { event: same.id, head: nh.id };
         }
       }
-      /* else the first voice with a rest over the place */
+      /* else the first voice with nothing but a rest (or nothing at all, a hole the engine left) over the place */
       let target = null;
       for (const v of voices) {
-        const cover = d.voiceMeasure(v.id, m.id).find(e => e.kind === 'rest' && R.le(R.parse(e.at), at) && R.lt(at, endOf(e)));
-        if (cover) { target = { v: v, rest: cover }; break; }
+        const evs = d.voiceMeasure(v.id, m.id);
+        if (evs.some(e => e.kind !== 'rest' && R.le(R.parse(e.at), at) && R.lt(at, endOf(e)))) continue;
+        const next = evs.filter(e => e.kind !== 'rest' && R.gt(R.parse(e.at), at)).reduce((a, e) => (a === null || R.lt(R.parse(e.at), a) ? R.parse(e.at) : a), null);
+        target = { v: v, end: next === null ? mdur : next };
+        break;
       }
       if (!target) fail('occupied', 'no free place');
-      const room = R.sub(endOf(target.rest), at);
+      const room = R.sub(target.end, at);
       let len = want, disp = displayOf({ type: vd.type, dots: vd.dots || 0 });
       if (R.gt(len, room)) { const pc = pieceFor(room); len = pc.len; disp = pc.display; }
       let newId = null;
@@ -974,6 +981,19 @@
       });
       const nid = d.newId('m');
       const nm = { id: nid, number: '0', dur: R.format(R.sub(mdur, at)), prov: d.provRefOf({ source: SOURCE, op: 'edited' }) };
+      /* a beam over notes of both bars is cut; a tuplet over them cannot be */
+      d.doc.parts.forEach(part => {
+        const startsLate = new Set(part.events.filter(e => e.m === m.id && R.ge(R.parse(e.at), at)).map(e => e.id));
+        const early = new Set(part.events.filter(e => e.m === m.id && R.lt(R.parse(e.at), at)).map(e => e.id));
+        part.spanners = part.spanners.filter(s => {
+          if (s.type !== 'beam' && s.type !== 'tuplet') return true;
+          const late = s.events.some(id => startsLate.has(id)), soon = s.events.some(id => early.has(id));
+          if (!(late && soon)) return true;
+          if (s.type === 'tuplet') fail('in-tuplet', 'a tuplet stands across the place');
+          d.retire(s.id);
+          return false;
+        });
+      });
       /* what starts at or after the place goes to the new bar */
       d.doc.parts.forEach(part => {
         part.events.forEach(e => {

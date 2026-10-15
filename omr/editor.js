@@ -321,7 +321,28 @@
         const g = cur().graph;
         const flags = {};
         g.timeline.measures.forEach((m, i) => { if (importFlags[m.id]) flags[i + 1] = importFlags[m.id]; });
-        const res = FL.analyze(g, { normalize: { flags: flags } });
+        const reviewed = EO.reviewedBars(g);
+        let res;
+        if (!reviewed.size || typeof FL.extract !== 'function' || typeof FL.derive !== 'function' || typeof FL.decide !== 'function') res = FL.analyze(g, { normalize: { flags: flags } });
+        else {
+          /* a bar a person has looked at and accepted has no doubt in it, and so none for its neighbours or for the page: its facts are taken out before the rule is run
+             (omr/flags.js: extract, derive, decide: the same steps analyze takes) */
+          try {
+            const feat = FL.derive(FL.extract(g));
+            g.timeline.measures.forEach((m, i) => {
+              if (!reviewed.has(m.id) || !feat.bars[i]) return;
+              const b = feat.bars[i];
+              ['short', 'hole', 'over', 'lenDiff', 'overlap', 'emptyStaff', 'nc5', 'nc6', 'nc7', 'nc8', 'xMis', 'cross', 'leap', 'dup', 'offKey', 'ledger'].forEach(k => { if (typeof b[k] === 'number') b[k] = 0; });
+              b.voices = Math.min(b.voices || 0, 2); b.hLocal = 1; b.vbDoc = 1;
+              delete flags[i + 1];
+            });
+            const bars = FL.decide(feat, { normalize: { flags: flags } }, FL.PARAMS);
+            const suspect = bars.filter(b => b.suspect).map(b => b.n);
+            const counts = {};
+            bars.forEach(b => b.reasons.forEach(r => { counts[r.code] = (counts[r.code] || 0) + 1; }));
+            res = { ok: true, version: FL.VERSION, bars: bars, suspect: suspect, counts: counts, confidence: FL.confidenceOf(suspect.length, bars.length, 1), features: feat, params: FL.PARAMS };
+          } catch (e) { res = FL.analyze(g, { normalize: { flags: flags } }); }
+        }
         checkCache = { graph: g, res: res };
         return res;
       },
