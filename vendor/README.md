@@ -120,6 +120,12 @@ photo is added (`loadPdfJs`), as `./vendor/pdfjs-3.11.174/<file>?h=<12 hex of th
 
 Tarball: `https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-3.11.174.tgz`, integrity `sha512-TdTZPf1trZ8/UFu5Cx/GXB7GZM30LT+wWUNfsi6Bq8ePLnb+woNKtDymI2mxZYBpMbonNFqKmiz684DIfnd8dA==` (the registry's `dist.integrity`). Each file above is byte for byte the file of that name in the tarball, and the bytes jsDelivr served on 2026-10-15 are the same (`tools/notices/verify-tarballs.js` re-checks both from the registry; `tests/engrave/vendor-optional.test.js` checks the sha256 above, every run).
 
+Embedded in both files (compiled into it by its authors; the file is not changed, and their licence texts are in `LICENSE-embedded.txt`):
+
+| Embedded | Version | Licence | Copyright | From | How it is known to be in the file |
+| --- | --- | --- | --- | --- | --- |
+| core-js | 3.32.2 | MIT | Copyright (c) 2014-2023 Denis Pushkarev (zloirock.ru) | https://github.com/zloirock/core-js | the files' own text names it: version 3.32.2, the copyright and the licence URL (github.com/zloirock/core-js/blob/v3.32.2/LICENSE); the package's source maps list core-js as the only package compiled in |
+
 Used for: reading a PDF or a photo of a score (the import screen); loaded only when one is added.
 
 Licence: Apache-2.0, `pdfjs-3.11.174/LICENSE.txt` (the package's own `LICENSE`, byte for byte). The package has no NOTICE file.
@@ -138,6 +144,14 @@ the browser (`loadPianoAmt`), as `./vendor/tfjs-2.8.6/tf.min.js?h=<12 hex of the
 | `tfjs-2.8.6/tf.min.js` | `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.8.6/dist/tf.min.js` (npm `@tensorflow/tfjs@2.8.6`) | 1,167,497 bytes | `0082fff8188ab64a65fd02a936d3f97bdf388a11ae2ba0b9a58ae7d48fa85b14` | `package/dist/tf.min.js` |
 
 Tarball: `https://registry.npmjs.org/@tensorflow/tfjs/-/tfjs-2.8.6.tgz`, integrity `sha512-/Hk3YCAreNicuQJsAIG32UGHaQj8UwX8y8ZrKVb/CrXOhrRyZmxGSZt9KMVe8MDoydenuGhZCqJUIaWdIKIA5g==` (the registry's `dist.integrity`). The file is byte for byte the one in the tarball and the one jsDelivr served on 2026-10-15.
+
+Embedded in this file (compiled into it by its authors; the file is not changed, and their licence texts are in `LICENSE-embedded.txt`):
+
+| Embedded | Version | Licence | Copyright | From | How it is known to be in the file |
+| --- | --- | --- | --- | --- | --- |
+| core-js | 3.6.5 | MIT | Copyright (c) 2014-2020 Denis Pushkarev (zloirock.ru) | https://github.com/zloirock/core-js | the file's own text names version 3.6.5 and "(c) 2020 Denis Pushkarev (zloirock.ru)"; the package's rollup report lists it |
+| seedrandom (with its alea, xor128, xorwow, xorshift7, xor4096 and tychei generators) | 2.4.3 | MIT | Copyright 2014 David Bau; alea: Copyright (C) 2010 Johannes Baagøe | https://github.com/davidbau/seedrandom | tfjs-core 2.8.6 pins seedrandom 2.4.3; the generators' names are in the file; the package's rollup report lists it |
+| regenerator-runtime | 0.13.x (the file does not say which; tfjs 2.8.6 asks for ^0.13.5) | MIT | Copyright (c) 2014-present, Facebook, Inc. | https://github.com/facebook/regenerator | the package's rollup report lists it |
 
 Used for: the in-browser recording transcription (Onsets and Frames, with Magenta.js); loaded only when a recording is converted in the browser.
 
@@ -158,6 +172,17 @@ the PC worker is the strong path).
 
 Tarball: `https://registry.npmjs.org/@magenta/music/-/music-1.23.1.tgz`, integrity `sha512-MKIf5nU5fJg/j0y+zCeuQuhA5D4TD0hWv+crOpNQLq7TRJ5GQnlz4WuShYzSw/gXj2ncWuYGr6ftP9DvqSsQkA==` (the registry's `dist.integrity`). The file is byte for byte the one in the tarball and the one jsDelivr served on 2026-10-15.
 
+Embedded in this file (compiled into it by its authors; the file is not changed, and their licence texts are in `LICENSE-embedded.txt`):
+
+| Embedded | Version | Licence | Copyright | From | How it is known to be in the file |
+| --- | --- | --- | --- | --- | --- |
+| protobufjs (its minimal runtime and the @protobufjs/* packages it uses) | 6.x (the file does not say which; Magenta.js asks for ^6.8.6) | BSD-3-Clause | Copyright (c) 2016, Daniel Wirtz | https://github.com/protobufjs/protobuf.js | the runtime's code is in the file ("illegal buffer", the Long lookup); the module graph of the package's unbundled build imports protobufjs/minimal |
+| buffer | 4.x or 6.x (webpack's browser Buffer; the file does not say which) | MIT | Copyright (c) Feross Aboukhadijeh, and other contributors | https://github.com/feross/buffer | the file carries its notice ("@license MIT", "@author Feross Aboukhadijeh") |
+| ieee754 | 1.x | BSD-3-Clause | Copyright 2008 Fair Oaks Labs, Inc. | https://github.com/feross/ieee754 | the file carries its notice ("ieee754. BSD-3-Clause License. Feross Aboukhadijeh") |
+| base64-js | 1.x | MIT | Copyright (c) 2014 Jameson Little | https://github.com/beatgammit/base64-js | its error text ("Invalid string. Length must be a multiple of 4") is in the file; buffer uses it |
+| fft.js | 4.0.x (Magenta.js asks for ^4.0.3) | MIT | Copyright Fedor Indutny, 2017 | https://github.com/indutny/fft.js | its error text ("FFT size must be a power of two") is in the file |
+| ndarray-resample, ndarray, cwise and the packages they use | 1.0.x, 1.x, 1.0.x | MIT | Copyright (c) 2013 Mikola Lysenko (ndarray: 2013-2016) | https://github.com/scijs/ndarray-resample | "ndarray-resample" error text and cwise's generated-function names are in the file; the module graph imports ndarray and ndarray-resample |
+
 Used for: the in-browser recording transcription (Onsets and Frames); loaded only when a recording is converted in the browser.
 
 Licence: Apache-2.0, `magenta-music-1.23.1/LICENSE.txt` (the `LICENSE` of github.com/magenta/magenta-js, byte for byte: the npm tarball carries no licence file, and that file has had one commit, of 2018-03-27). The package has no NOTICE file.
@@ -175,6 +200,13 @@ The UMD build of the same package (`dist/tf.min.js`) is not used: it would put a
 | `tfjs-3.21.0/tf.fesm.min.js` | npm `@tensorflow/tfjs@3.21.0`, `dist/tf.fesm.min.js` | 1,069,735 bytes | `2b719ce53b3de9798b23836074de66ac38edadf61066e4d04d7929d100a2a03a` | `package/dist/tf.fesm.min.js` |
 
 Tarball: `https://registry.npmjs.org/@tensorflow/tfjs/-/tfjs-3.21.0.tgz`, integrity `sha512-khcARd3/872llL/oF4ouR40qlT71mylU66PGT8kHP/GJ5YKj44sv8lDRjU7lOVlJK7jsJFWEsNVHI3eMc/GWNQ==` (the registry's `dist.integrity`). The file is byte for byte the one in the tarball.
+
+Embedded in this file (compiled into it by its authors; the file is not changed, and their licence texts are in `LICENSE-embedded.txt`):
+
+| Embedded | Version | Licence | Copyright | From | How it is known to be in the file |
+| --- | --- | --- | --- | --- | --- |
+| seedrandom (with its alea, xor128, xorwow, xorshift7, xor4096 and tychei generators) | 3.0.5 | MIT | Copyright 2019 David Bau; alea: Copyright (C) 2010 Johannes Baagøe | https://github.com/davidbau/seedrandom | tfjs-core 3.21.0 asks for ^3.0.5 (3.0.5 is the last 3.0.x); the generators' names are in the file; the package's rollup report lists it |
+| long | 4.0.0 | Apache-2.0 | Daniel Wirtz (the package names no copyright line; derived from the Closure Library) | https://github.com/dcodeIO/long.js | tfjs-core 3.21.0 pins long 4.0.0; the package's rollup report lists it |
 
 Used for: the Basic Pitch note-detection path of the in-browser recording transcription; loaded only when a recording is converted in the browser as a full song (arrangement mode) or when the Onsets and Frames model could not run.
 
@@ -212,6 +244,12 @@ The five sections above (pdf.js, TensorFlow.js 2.8.6, Magenta.js, TensorFlow.js 
 address (this visit), or `localStorage['ppp.cdn'] = '1'` (this device), puts the jsDelivr / esm.sh addresses the page used before G13-8 back; `?cdn=0` is "vendored" for one visit; any other value is no
 choice, and no choice is the default: vendored. In the default, a vendored file that cannot be fetched is asked for once more at its CDN address. The switch is removed one release after G13-8 has been
 live (G13-D3).
+
+A CDN copy of a plain `<script>` (pdf.js, TensorFlow.js 2.8.6, `transcription.js`) is loaded with its `integrity` (the sha384 of the published file, which is the vendored file) and `crossorigin="anonymous"`, so a CDN that
+answered with anything else is refused by the browser. SRI cannot be put on what is not a `<script>`: pdf.js starts its worker itself (a blob wrapper that calls `importScripts` on a CDN worker), and the Basic Pitch
+fallback is `import()` of esm.sh / jsDelivr `+esm` builds, which are those services' builds and not the published files: those two are taken on the CDN's word, as they were before G13-8.
+A fallback is not silent: `PPP.libFallbacks` (read-only) counts, per library (`pdfjs`, `tfjs-2.8.6`, `magenta-music`, `basic-pitch`), the times PPP's own copy could not be fetched; it is `{}` on a healthy site
+(`tests/live/smoke.js` and the browser suites read it). A pdf.js whose worker cannot be fetched is not handed out: the worker is asked for first and, failing that, taken from the CDN too.
 
 What still comes from another site: the Onsets and Frames checkpoint (about 60 MB, `storage.googleapis.com`, G13 U8) and the Google fonts of the Korean, Japanese and Chinese text (G13-4b). To change a
 version: replace the folder, the `?h=` values and the CDN address in `PPP_LIBS` of the app and the rows above; the tests say which of them is out of step.

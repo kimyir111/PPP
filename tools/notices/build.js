@@ -104,6 +104,8 @@ function readVendor(root, problems) {
 
   const sections = [];
   const families = [];
+  /* the licence texts of what is compiled into the vendored files: one block per package, its name in the block's title */
+  const embeddedTexts = exists(root, 'vendor/LICENSE-embedded.txt') ? read(root, 'vendor/LICENSE-embedded.txt') : null;
   secs.forEach(s => {
     const name = s.heading.replace(/\/$/, '');
     if (!exists(root, 'vendor/' + name)) { problems.push('vendor/README.md has a section "' + s.heading + '" but vendor/' + name + ' is not there'); return; }
@@ -138,6 +140,14 @@ function readVendor(root, problems) {
       /* optional paragraphs (G13-8): what it is used for, and the copyright notice as the files carry it (an Apache LICENSE file holds only the template line) */
       sec.use = plain(paragraphStarting(s.body, 'Used for:').replace(/^Used for:\s*/, ''));
       sec.copyright = plain(paragraphStarting(s.body, 'Copyright:').replace(/^Copyright:\s*/, ''));
+      /* what is compiled into the files (G13-8): a table "Embedded | Version | Licence | Copyright | From | How it is known"; each one's licence text must be in vendor/LICENSE-embedded.txt */
+      const emb = tables.find(t => /^Embedded/.test(t.header[0]));
+      sec.embedded = emb ? emb.rows.map(r => ({ name: plain(r[0]), version: plain(r[1]), licence: plain(r[2]), copyright: plain(r[3]), from: plain(r[4]), how: plain(r[5]) })) : [];
+      sec.embedded.forEach(e => {
+        if (!e.name || !e.version || !e.licence || !e.copyright || !e.from || !e.how) problems.push('vendor/README.md section "' + s.heading + '": an Embedded row (' + (e.name || '?') + ') has an empty cell (name, version, licence, copyright, from, how it is known)');
+        const key = e.name.split(/[\s,(]/)[0];
+        if (!embeddedTexts || embeddedTexts.indexOf(key) < 0) problems.push('vendor/README.md section "' + s.heading + '": the embedded package ' + key + ' has no licence text in vendor/LICENSE-embedded.txt');
+      });
       if (!/^Licence:/.test(p)) problems.push('vendor/README.md section "' + s.heading + '" has no "Licence:" paragraph');
     } else if (filesTable && /^Family/.test(filesTable.header[1] || '') && famTable) {
       sec.kind = 'fonts';
@@ -426,7 +436,7 @@ function build(root) {
 
   /* 2. what PPP serves itself */
   p('## Code and fonts PPP serves itself (`vendor/`)', '',
-    'Each file is kept byte for byte as its authors published it (hashes in `vendor/README.md`). The licence text of each travels with it in `vendor/`.', '');
+    'Each file is kept byte for byte as its authors published it (hashes in `vendor/README.md`). The licence text of each travels with it in `vendor/`; the licences of the packages some of them have compiled in are in `vendor/LICENSE-embedded.txt`.', '');
   vendor.sections.forEach(s => {
     if (s.kind === 'library') {
       p('### ' + s.title + ' - ' + (s.licence.split(',')[0] || ''), '',
@@ -442,6 +452,10 @@ function build(root) {
     } else if (s.kind === 'package') {
       p('### ' + s.title + ' - ' + (s.licence.split(/[\s,]/)[0] || ''), '',
         list(['File', 'From', 'sha256'], s.files.map(f => ['`vendor/' + f.file + '`', plain(f.from), '`' + f.sha256 + '`'])), '');
+      if (s.embedded && s.embedded.length) {
+        p('Compiled into the file' + (s.files.length > 1 ? 's' : '') + ' above by their authors (the licence texts are `vendor/LICENSE-embedded.txt`):', '',
+          list(['Package', 'Version', 'Licence', 'Copyright', 'From'], s.embedded.map(e => [e.name, e.version, e.licence, e.copyright, e.from])), '');
+      }
       if (s.use) p('- Used for: ' + s.use);
       p('- Licence: ' + s.licence,
         '- Copyright: ' + (s.copyright || s.licenceFiles.map(f => copyrightLine(root, 'vendor/' + f)).filter(Boolean)[0] || ''), '');

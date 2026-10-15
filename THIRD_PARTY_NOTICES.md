@@ -14,7 +14,7 @@ The files are `audio/piano/*.mp3`. Licence: Creative Commons Attribution 3.0 (CC
 
 ## Code and fonts PPP serves itself (`vendor/`)
 
-Each file is kept byte for byte as its authors published it (hashes in `vendor/README.md`). The licence text of each travels with it in `vendor/`.
+Each file is kept byte for byte as its authors published it (hashes in `vendor/README.md`). The licence text of each travels with it in `vendor/`; the licences of the packages some of them have compiled in are in `vendor/LICENSE-embedded.txt`.
 
 ### VexFlow 4.2.3 - MIT
 
@@ -64,6 +64,10 @@ The woff2 files are Google Fonts' own, unmodified. The licence permits redistrib
 - `vendor/pdfjs-3.11.174/pdf.min.js` - From: https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js (npm pdfjs-dist@3.11.174); sha256: `978fd1b2d134a98e98966186a97777bebf87d8e770dadab1ece3687e21a5aa6c`
 - `vendor/pdfjs-3.11.174/pdf.worker.min.js` - From: https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js (npm pdfjs-dist@3.11.174); sha256: `38cde5311957b86bc3669f93e7d2566de333a90055ed6635bef60d9bf00e96f2`
 
+Compiled into the files above by their authors (the licence texts are `vendor/LICENSE-embedded.txt`):
+
+- core-js - Version: 3.32.2; Licence: MIT; Copyright: Copyright (c) 2014-2023 Denis Pushkarev (zloirock.ru); From: https://github.com/zloirock/core-js
+
 - Used for: reading a PDF or a photo of a score (the import screen); loaded only when one is added.
 - Licence: Apache-2.0, pdfjs-3.11.174/LICENSE.txt (the package's own LICENSE, byte for byte). The package has no NOTICE file.
 - Copyright: Copyright 2023 Mozilla Foundation (the notice in the header of both files).
@@ -71,6 +75,12 @@ The woff2 files are Google Fonts' own, unmodified. The licence permits redistrib
 ### TensorFlow.js 2.8.6 - Apache-2.0
 
 - `vendor/tfjs-2.8.6/tf.min.js` - From: https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.8.6/dist/tf.min.js (npm @tensorflow/tfjs@2.8.6); sha256: `0082fff8188ab64a65fd02a936d3f97bdf388a11ae2ba0b9a58ae7d48fa85b14`
+
+Compiled into the file above by their authors (the licence texts are `vendor/LICENSE-embedded.txt`):
+
+- core-js - Version: 3.6.5; Licence: MIT; Copyright: Copyright (c) 2014-2020 Denis Pushkarev (zloirock.ru); From: https://github.com/zloirock/core-js
+- seedrandom (with its alea, xor128, xorwow, xorshift7, xor4096 and tychei generators) - Version: 2.4.3; Licence: MIT; Copyright: Copyright 2014 David Bau; alea: Copyright (C) 2010 Johannes Baagøe; From: https://github.com/davidbau/seedrandom
+- regenerator-runtime - Version: 0.13.x (the file does not say which; tfjs 2.8.6 asks for ^0.13.5); Licence: MIT; Copyright: Copyright (c) 2014-present, Facebook, Inc.; From: https://github.com/facebook/regenerator
 
 - Used for: the in-browser recording transcription (Onsets and Frames, with Magenta.js); loaded only when a recording is converted in the browser.
 - Licence: Apache-2.0, tfjs-2.8.6/LICENSE.txt (the LICENSE of github.com/tensorflow/tfjs at the tag tfjs-v2.8.6, byte for byte: the npm tarball carries no licence file). The package has no NOTICE file.
@@ -80,6 +90,15 @@ The woff2 files are Google Fonts' own, unmodified. The licence permits redistrib
 
 - `vendor/magenta-music-1.23.1/transcription.js` - From: https://cdn.jsdelivr.net/npm/@magenta/music@1.23.1/es6/transcription.js (npm @magenta/music@1.23.1); sha256: `7284bdbf628aa7e58bd8509a6de80886bf0f1564a58775ec413034229c6c0733`
 
+Compiled into the file above by their authors (the licence texts are `vendor/LICENSE-embedded.txt`):
+
+- protobufjs (its minimal runtime and the @protobufjs/* packages it uses) - Version: 6.x (the file does not say which; Magenta.js asks for ^6.8.6); Licence: BSD-3-Clause; Copyright: Copyright (c) 2016, Daniel Wirtz; From: https://github.com/protobufjs/protobuf.js
+- buffer - Version: 4.x or 6.x (webpack's browser Buffer; the file does not say which); Licence: MIT; Copyright: Copyright (c) Feross Aboukhadijeh, and other contributors; From: https://github.com/feross/buffer
+- ieee754 - Version: 1.x; Licence: BSD-3-Clause; Copyright: Copyright 2008 Fair Oaks Labs, Inc.; From: https://github.com/feross/ieee754
+- base64-js - Version: 1.x; Licence: MIT; Copyright: Copyright (c) 2014 Jameson Little; From: https://github.com/beatgammit/base64-js
+- fft.js - Version: 4.0.x (Magenta.js asks for ^4.0.3); Licence: MIT; Copyright: Copyright Fedor Indutny, 2017; From: https://github.com/indutny/fft.js
+- ndarray-resample, ndarray, cwise and the packages they use - Version: 1.0.x, 1.x, 1.0.x; Licence: MIT; Copyright: Copyright (c) 2013 Mikola Lysenko (ndarray: 2013-2016); From: https://github.com/scijs/ndarray-resample
+
 - Used for: the in-browser recording transcription (Onsets and Frames); loaded only when a recording is converted in the browser.
 - Licence: Apache-2.0, magenta-music-1.23.1/LICENSE.txt (the LICENSE of github.com/magenta/magenta-js, byte for byte: the npm tarball carries no licence file, and that file has had one commit, of 2018-03-27). The package has no NOTICE file.
 - Copyright: Copyright 2018 The Magenta Team. All rights reserved. (the first line of that LICENSE; the bundle has no header of its own).
@@ -87,6 +106,11 @@ The woff2 files are Google Fonts' own, unmodified. The licence permits redistrib
 ### TensorFlow.js 3.21.0 - Apache-2.0
 
 - `vendor/tfjs-3.21.0/tf.fesm.min.js` - From: npm @tensorflow/tfjs@3.21.0, dist/tf.fesm.min.js; sha256: `2b719ce53b3de9798b23836074de66ac38edadf61066e4d04d7929d100a2a03a`
+
+Compiled into the file above by their authors (the licence texts are `vendor/LICENSE-embedded.txt`):
+
+- seedrandom (with its alea, xor128, xorwow, xorshift7, xor4096 and tychei generators) - Version: 3.0.5; Licence: MIT; Copyright: Copyright 2019 David Bau; alea: Copyright (C) 2010 Johannes Baagøe; From: https://github.com/davidbau/seedrandom
+- long - Version: 4.0.0; Licence: Apache-2.0; Copyright: Daniel Wirtz (the package names no copyright line; derived from the Closure Library); From: https://github.com/dcodeIO/long.js
 
 - Used for: the Basic Pitch note-detection path of the in-browser recording transcription; loaded only when a recording is converted in the browser as a full song (arrangement mode) or when the Onsets and Frames model could not run.
 - Licence: Apache-2.0, tfjs-3.21.0/LICENSE.txt (the LICENSE of github.com/tensorflow/tfjs at the tag tfjs-v3.21.0, byte for byte: the npm tarball carries no licence file). The package has no NOTICE file.
