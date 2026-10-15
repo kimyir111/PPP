@@ -107,7 +107,7 @@ test('isServed: the examples that matter', () => {
     'vendor/pdfjs-3.11.174/pdf.min.js', 'vendor/pdfjs-3.11.174/pdf.worker.min.js', 'vendor/pdfjs-3.11.174/LICENSE.txt', 'vendor/tfjs-2.8.6/tf.min.js',
     'vendor/magenta-music-1.23.1/transcription.js', 'vendor/tfjs-3.21.0/tf.fesm.min.js', 'vendor/basic-pitch-1.0.1/esm/toMidi.js',
     'vendor/basic-pitch-1.0.1/model/model.json', 'vendor/basic-pitch-1.0.1/model/group1-shard1of1.bin'].forEach(rel => assert.equal(allow.isServed(rel), true, rel));
-  ['server.js', 'render.yaml', 'package.json', 'package-lock.json', 'Dockerfile', 'README.md', 'index.html', 'static-allow.js', 'static-assets.js', 'home-jobs.js', 'home-omr.js', 'body-reader.js', 'home-result.js', 'share-guest.js', 'omr-service.js', 'omr/engine.js',
+  ['server.js', 'render.yaml', 'package.json', 'package-lock.json', 'Dockerfile', 'README.md', 'index.html', 'static-allow.js', 'static-assets.js', 'home-jobs.js', 'home-omr.js', 'body-reader.js', 'home-result.js', 'share-guest.js', 'server-stats.js', 'client-stats.js', 'omr-service.js', 'omr/engine.js',
     'arrange_score.py', 'transcribe.py', 'omr/helper-output.js', 'omr/normalize.js.map', 'omr/README.md', DOCS + '/PPP_MASTER_ROADMAP.md', WORKER_DIR + '/worker.js', 'tests/boot.js', 'tools/anything', 'rec/tools/train.js', 'rec/tools/key-eval.js', 'scoregraph/README.md',
     'scoregraph/tools/ledger-stats.js', 'omr/flags.js.map', 'difficulty/tools/train.js', 'audio/piano/README.md', 'catalog/shared-seeds.json', 'catalog/build-shared-seeds.js',
     'catalog/hymns/build.js', 'catalog/method/books.json', 'catalog/method/build.py', 'catalog/method/src/beyer/001.abc', 'vendor/README.md', 'vendor/.gitattributes',

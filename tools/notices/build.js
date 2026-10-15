@@ -475,7 +475,7 @@ function build(root) {
       cdn.packages.map(c => [plain(c.name) + ' (`' + c.pkg + '`)', c.versions.join(', '), plain(c.licence), plain(c.use)])), '');
   }
   if (cdn.googleFamilies.length) {
-    p('Fonts from Google Fonts for Korean, Japanese and Chinese text: ' + cdn.googleFamilies.join(', ') + '. Licence: ' + registry.cdn.fonts.licence + ' (OFL-1.1), fetched from ' + registry.cdn.fonts.host + ' after the page has loaded.', '');
+    p('Fonts from Google Fonts for Korean, Japanese and Chinese text: ' + cdn.googleFamilies.join(', ') + '. Licence: ' + registry.cdn.fonts.licence + ' (OFL-1.1), fetched from ' + registry.cdn.fonts.host + ' only on a device that has no font of its own for that script, after the page has loaded. Everywhere else the text is drawn in the fonts of your device.', '');
   }
   cdn.other.forEach(o => p('- ' + o.name + ' - ' + o.host + ': ' + o.use + '. Licence: ' + o.licence + '.'));
   if (cdn.other.length) p('');

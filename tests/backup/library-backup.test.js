@@ -10,7 +10,8 @@
      P5  the wipe leaves no ppp* key and no ppp* database (ppp-media and ppp-engrave included), and reports a database another tab holds open
      P6  a storage that refuses a write leaves the profile as it was
      P7  a song whose id is a name of Object.prototype ('constructor', 'toString') is kept like any other
-     P8  a link that is not a web address is taken out of the file and counted, and the file is still read */
+     P8  a link that is not a web address is taken out of the file and counted, and the file is still read
+     P9  a person's opt-out of the anonymous counters ('ppp.counts.v1' = '0', G13-7b) is a choice, not data: the wipe keeps it, removes everything else, and is still ok */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
@@ -269,7 +270,27 @@ async function p8(mod) {
   if (!ok.ok || ok.blanked !== 0) return 'a clean file reports blanked links';
   return null;
 }
-const PROPS = { P1: p1, P2: p2, P3: p3, P4: p4, P5: async mod => (await p5(mod)) || (await p5b(mod)), P6: p6, P7: p7, P8: p8 };
+/* "Delete everything" must never turn the anonymous counters back on: the opt-out survives the wipe, the counts kept for the next visit and every other key do not */
+async function p9(mod) {
+  const st = profile(2);
+  st.setItem('ppp.counts.v1', '0');
+  st.setItem('ppp.counts.pending.v1', '[{"t":1,"b":"{}"}]');
+  const rep = await mod.wipe({ storage: st, indexedDB: new FakeIDB(['ppp-engrave']), blockedMs: 30 });
+  if (!rep.ok) return 'the report is not ok with the opt-out kept: ' + JSON.stringify(rep);
+  if (st.getItem('ppp.counts.v1') !== '0') return 'the opt-out was removed: the counters are on again';
+  const left = mod.pppKeys(st).filter(k => k !== 'ppp.counts.v1');
+  if (left.length) return 'other keys are left: ' + left.join(',');
+  if (JSON.stringify(rep.kept) !== '["ppp.counts.v1"]') return 'the report does not say what was kept: ' + JSON.stringify(rep.kept);
+  if (rep.left.keys.length) return 'the kept key is reported as left: ' + rep.left.keys.join(',');
+  /* a value that is not a choice is not kept, and nothing is reported kept */
+  const other = profile(1);
+  other.setItem('ppp.counts.v1', 'yes');
+  const r2 = await mod.wipe({ storage: other, indexedDB: new FakeIDB([]), blockedMs: 30 });
+  if (!r2.ok || other.getItem('ppp.counts.v1') !== null) return 'a counters key that is not an opt-out was kept';
+  if (r2.kept.length) return 'something is reported kept: ' + JSON.stringify(r2.kept);
+  return null;
+}
+const PROPS = { P1: p1, P2: p2, P3: p3, P4: p4, P5: async mod => (await p5(mod)) || (await p5b(mod)), P6: p6, P7: p7, P8: p8, P9: p9 };
 
 /* ------------------------------------------------------------------------------------------------ the real module holds every property */
 for (const name of Object.keys(PROPS)) {

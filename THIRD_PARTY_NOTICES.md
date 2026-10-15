@@ -134,7 +134,7 @@ These are fetched by your browser from the host named, only when the feature tha
 
 - Babel standalone (`@babel/standalone`) - Versions: 7.29.0; Licence: MIT; Used for: named by support.js for JSX templates; this page has none and never requests it
 
-Fonts from Google Fonts for Korean, Japanese and Chinese text: Noto Sans JP, Noto Sans KR, Noto Sans SC. Licence: SIL Open Font License 1.1 (OFL-1.1), fetched from fonts.googleapis.com after the page has loaded.
+Fonts from Google Fonts for Korean, Japanese and Chinese text: Noto Sans JP, Noto Sans KR, Noto Sans SC. Licence: SIL Open Font License 1.1 (OFL-1.1), fetched from fonts.googleapis.com only on a device that has no font of its own for that script, after the page has loaded. Everywhere else the text is drawn in the fonts of your device.
 
 - Onsets and Frames checkpoint (Magenta model weights) - storage.googleapis.com: the in-browser recording transcription; about 60 MB, fetched only when a recording is converted in the browser. Licence: see the checkpoint's own terms (this repository does not restate them).
 

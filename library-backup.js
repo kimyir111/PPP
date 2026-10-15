@@ -29,7 +29,8 @@
 
    WIPE  wipe(env): the page's own database handles are closed, every IndexedDB database named ppp* is deleted (a database another tab holds open is reported
    as blocked, not skipped), every ppp* localStorage key is removed (settings included), the language cookie and the session keys go, and the result is
-   checked: report.left must be empty. */
+   checked: report.left must be empty. One key is not data and stays: 'ppp.counts.v1' when it is '0' - a person's choice not to send the page's anonymous
+   counters (G13-7b, U5) - so that "delete everything" never turns the counters back on; report.kept names it and report.left does not count it. */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) module.exports = factory(root);
@@ -66,6 +67,10 @@
     return out;
   }
   const pppKeys = storage => allKeys(storage).filter(k => /^ppp/i.test(k));
+  /* G13-7b: the opt-out of the anonymous counters is a privacy choice, not data: kept by the wipe while it is '0' */
+  const OPT_OUT_KEY = 'ppp.counts.v1';
+  const isKept = (storage, k) => k === OPT_OUT_KEY && getItem(storage, k) === '0';
+  const wipeKeys = storage => pppKeys(storage).filter(k => !isKept(storage, k));
 
   /* canonical JSON: keys sorted, so two scores that say the same thing compare equal whatever order a build wrote them in */
   function stable(v) {
@@ -585,7 +590,7 @@
   /* -> {ok, removed:{keys, dbs}, failed:[{kind:'key'|'db', name, why}], left:{keys, dbs}}; ok only when nothing is left */
   async function wipe(envIn) {
     const env = envOf(envIn);
-    const report = { ok: false, removed: { keys: 0, dbs: 0 }, failed: [], left: { keys: [], dbs: [] } };
+    const report = { ok: false, removed: { keys: 0, dbs: 0 }, failed: [], left: { keys: [], dbs: [] }, kept: [] };
     if (typeof env.closeHandles === 'function') { try { await env.closeHandles(); } catch (e) { /* the delete reports a handle that stays open */ } }
     for (let round = 0; round < 3; round++) {          /* a write that was already on its way can bring a name back: look again */
       const failed = [];
@@ -595,19 +600,20 @@
           if (r.ok) report.removed.dbs++; else failed.push({ kind: 'db', name: name, why: r.why });
         }
       }
-      for (const k of pppKeys(env.storage)) {
+      for (const k of wipeKeys(env.storage)) {
         try { env.storage.removeItem(k); } catch (e) { /* checked below */ }
         if (getItem(env.storage, k) === null) report.removed.keys++; else failed.push({ kind: 'key', name: k, why: 'error' });
       }
       try { if (env.session) allKeys(env.session).filter(k => /^ppp/i.test(k)).forEach(k => env.session.removeItem(k)); } catch (e) { /* session keys are not data */ }
       try { if (env.document) env.document.cookie = 'ppp_locale=; Path=/; Max-Age=0; SameSite=Lax'; } catch (e) { /* a cookie is not data */ }
       report.failed = failed;
-      report.left.keys = pppKeys(env.storage);
+      report.left.keys = wipeKeys(env.storage);
       const dl = await dbsLeft(env);
       report.left.dbs = dl || [];
       if (!failed.length && !report.left.keys.length && !report.left.dbs.length) break;
       if (failed.some(f => f.why === 'blocked')) break;
     }
+    report.kept = pppKeys(env.storage).filter(k => isKept(env.storage, k));
     report.ok = !report.failed.length && !report.left.keys.length && !report.left.dbs.length;
     return report;
   }
