@@ -89,6 +89,11 @@ Every deploy gets a row in `docs/RELEASES.md`.
 - **In the server's log**, once an hour of being awake and once when the instance stops, one line of numbers: `render logs -r srv-dalt5s6k1f9s739cuetg --limit 500 -o text --confirm | grep stats:`
   (`requests`, `4xx`, `tooMany` = the 429s among them, `5xx`, `storeErrors`, each by route class, and `idlePoolErrors` for dropped idle database connections; no address or id).
   Look at it after a deploy: a `5xx` or `storeErrors` above 0 where the line before had none, or a `tooMany` where a limiter should not have fired, is the thing to explain.
+- **The same line has a `client` key** (G13-7b, U5) when a page sent its anonymous counts in that hour: `beacons`, `visits`, `stale` (pages of another build than the server's: they have not reloaded since
+  the deploy), `mobile`/`desktop`, `locale`, `fcp` and `ready` in the buckets `lt2` `lt4` `lt8` `ge8` `none` (`none` = the page was left before the app was ready), `errors` by class (`type` `reference`
+  `range` `syntax` `load` `other`), `rejections`, `lazyFailed`, and the engraver's `engrave` and the practice plan's `practice` fallbacks by code. After a deploy compare `errors` with `visits` of the
+  line before: a class that was 0 and is not, a `load` (a script of the page did not load), an `engrave` code other than none, `lazyFailed` above 0, or a `ready.none` or `ge8` that grew is the thing
+  to explain. Numbers only, no address, no id; a person can turn it off in Settings > About & licences (so the numbers are a floor, not a head count).
 
 ## Rollback
 
