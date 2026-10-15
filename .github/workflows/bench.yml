@@ -939,20 +939,25 @@ jobs:
   # tests/practice/policy-validate.js puts 10^4 random states (the model, the policy's own state, the page's memory picture, pieces with pickups, gaps and rest bars; a fifth in the
   # app's own page methods) through the app's OWN Coach.validate (cut out of the app file): every plan must come back with no issue, every task must name bars, hands, tempos and
   # modes the piece and the app have (about 20-40 s); tests/practice-sim/policy-eval.js --set gate --check runs the policy, its negative controls and the legacy arms with the model
-  # watching on k = 0 of the simulator's eight pieces and compares every row with tests/practice-sim/baselines/policy-gate.json (determinism, Windows = Linux; about 1-2 minutes on
-  # four threads). The unit and mutation tests of both modules (45 mutants) are in npm run test:practice, a step of the gate. On a pull request when practice-plan says run; every
-  # night and on a manual run.
+  # watching on k = 0 of the simulator's eight pieces and compares every row with tests/practice-sim/baselines/policy-gate.json (determinism, Windows = Linux), in two slices
+  # (--part K/2: half the rows each, and both rebuild the whole document from the committed rows; the unsliced check took 3.6 minutes on a runner's four threads). The unit and
+  # mutation tests of both modules (46 mutants) are in npm run test:practice, a step of the gate. On a pull request when practice-plan says run; every night and on a manual run.
   practice-learner:
     needs: practice-plan
     if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.practice-plan.outputs.run == 'true')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '24' }
-      - run: node tests/practice/policy-validate.js
-      - run: node tests/practice-sim/policy-eval.js --set gate --check --workers 4
+      - if: ${{ matrix.part == 1 }}
+        run: node tests/practice/policy-validate.js
+      - run: node tests/practice-sim/policy-eval.js --set gate --check --part ${{ matrix.part }}/2 --workers 4
 
   # backup-suite (G13-6): the browser suite of Settings > My data (tests/backup-ui.test.js: back up, restore, refuse, delete everything, on fresh profiles, in
   # Korean, with mutants of library-backup.js served to the page). Like the practice suites it needs puppeteer (npm ci), serves this tree on a free port itself

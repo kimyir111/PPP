@@ -1240,8 +1240,10 @@ The simulator: the tuning report (14,400 runs) 36 minutes and the hold-out repor
   driver is handed the page and a seed of its own, never the learner; the split and the once-only hold-out guard. Part of `npm run test:practice-sim` (the gate, shard-m).
   The legacy baselines: `node tests/practice-sim/baseline.js --check` identical (144 runs).
 - CI: **`practice-learner`**, a Node-only practice job (no `npm ci`), waits for `practice-plan` like the others and is not a gate job (`tests/bench/unit/test_practice_plan.py` knows
-  the eleventh job): `node tests/practice/policy-validate.js` and `node tests/practice-sim/policy-eval.js --set gate --check --workers 4` (288 rows: the policy, the three controls and
-  the two legacy arms with the model watching, k = 0 on the eight pieces, row for row against `policy-gate.json`). `npm run test:practice-learner` runs the same locally.
+  the eleventh job): `node tests/practice/policy-validate.js` and `node tests/practice-sim/policy-eval.js --set gate --check --part K/2 --workers 4` (288 rows: the policy, the three
+  controls and the two legacy arms with the model watching, k = 0 on the eight pieces, row for row against `policy-gate.json`, in two slices that each rebuild the whole document from
+  the committed rows). On the first CI run (PR 278) the unsliced check reproduced all 288 rows on Linux in 214 s (4 threads), the 10^4 states took 28 s; the slices keep each check
+  under about 3 minutes. `npm run test:practice-learner` runs the same locally.
 
 **For G11b-3.** (1) Build the model per epoch from the run log (`PPPLearner.fold(piece, evidence)`, about 0.01-0.03 ms an entry) when a song opens, update it with each logged run;
 the piece is the Score's measures (number, `lenQ`, the notes each hand strikes in one written pass, as `tests/practice-sim/drivers.js` `pieceOf` counts them). (2) Keep the policy's state

@@ -313,6 +313,34 @@ async function main() {
       if (why) { console.error('policy-eval: ' + why); process.exit(3); }
     }
   }
+  /* the gate check in N slices (CI runs two): the K-th slice recomputes the rows K-1 mod N and compares them with the committed rows, and every
+     slice rebuilds the whole document from the committed rows (aggregates, parameters, the modules' source hash) and compares that - the N
+     slices together check what the unsliced check does */
+  const part = val('--part');
+  if (set === 'gate' && argv.includes('--check') && part) {
+    const m = /^(\d+)\/(\d+)$/.exec(part);
+    const K = m ? +m[1] : 0, N = m ? +m[2] : 0;
+    if (!(K >= 1 && K <= N)) { console.error('--part K/N with 1 <= K <= N'); process.exit(2); }
+    const file = OUT.gate;
+    const committedText = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
+    const committed = JSON.parse(committedText);
+    const all = jobsFor('gate');
+    const t1 = Date.now();
+    const rows = await rowsFor(all.filter((_, i) => i % N === K - 1), { workers: workers });
+    const byKey = new Map((committed.rows || []).map(r => [r.key, r]));
+    const bad = [];
+    rows.forEach(r => { const c = byKey.get(r.key); if (!c) bad.push(r.key + ': not in the committed rows'); else B.diffs(c, r, r.key, bad); });
+    if ((committed.rows || []).length !== all.length) bad.push('the committed file has ' + (committed.rows || []).length + ' rows, the gate set ' + all.length);
+    const rebuilt = canonical(docFrom('gate', committed.rows || [], { over: null, seeds: '0' }));
+    if (rebuilt !== committedText) B.diffs(committed, JSON.parse(rebuilt), '', bad);
+    if (bad.length) {
+      console.error('policy-eval gate, part ' + K + '/' + N + ': DIFFERENT from ' + path.relative(REPO, file) + ':');
+      bad.slice(0, 12).forEach(d => console.error('  ' + d));
+      process.exit(1);
+    }
+    console.log('policy-eval gate, part ' + K + '/' + N + ': ' + rows.length + ' runs identical to ' + path.relative(REPO, file) + '; aggregates, parameters and source consistent (' + ((Date.now() - t1) / 1000).toFixed(1) + ' s)');
+    return;
+  }
   const jobs = jobsFor(set, { arms: arms, ks: ks, seeds: seeds });
   const t0 = Date.now();
   const rows = await rowsFor(jobs, { workers: workers, over: over });

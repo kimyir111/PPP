@@ -284,7 +284,9 @@ class PracticeJobs(unittest.TestCase):
     def test_the_learner_job_is_node_only_and_runs_both_checks(self):
         body = self.jobs["practice-learner"]
         got = commands_of(body)
-        self.assertEqual(got, ["node tests/practice/policy-validate.js", "node tests/practice-sim/policy-eval.js --set gate --check --workers 4"])
+        self.assertEqual(got, ["node tests/practice/policy-validate.js", "node tests/practice-sim/policy-eval.js --set gate --check --part ${{ matrix.part }}/2 --workers 4"])
+        self.assertIn("part: [1, 2]", body)
+        self.assertIn("- if: ${{ matrix.part == 1 }}\n        run: node tests/practice/policy-validate.js", body)
         self.assertIn("actions/setup-node@v4", body)
         self.assertNotIn("npm ci", got)
 
