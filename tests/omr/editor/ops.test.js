@@ -134,6 +134,31 @@ test('clef: the notes of that staff under it mean the pitch of their place in th
   assert.deepEqual(L.names(L.notesOf(r2.graph, 1).filter(x => x.staff === lh)), ['A4']);
 });
 
+test('clef: a tied note is read from the start of its tie, whichever end of the tie the clef moves', () => {
+  const g = L.graphOf([{ rh: [q('C5'), q('D5'), q('E5'), q('F#5', { tie: 'start', acc: 'sharp' })], lh: [w('C3')] }, { rh: [q('F#5', { tie: 'stop' }), q('G5'), h('A5')], lh: [w('C3')] }]);
+  const rh = staves(g)[0];
+  const tied = gr => { const n = L.notesOf(gr, 0).concat(L.notesOf(gr, 1)).filter(x => x.staff === rh); return [n[3].pitches[0], n[4].pitches[0]]; };
+  /* the clef from bar 1: both ends move, the printed sharp is still read, and the end is the start */
+  const a = ok(OPS.setClef(g, { measure: g.timeline.measures[0].id, staff: rh, sign: 'F' }));
+  const ta = tied(a.graph);
+  assert.equal(ta[0], ta[1], 'both ends of the tie sound one pitch');
+  assert.ok(/#/.test(ta[0]), 'the sharp that is printed is read: ' + ta[0]);
+  /* the clef from bar 2: only the end moves, and it goes on from the start, which was not touched */
+  const b = ok(OPS.setClef(g, { measure: g.timeline.measures[1].id, staff: rh, sign: 'F' }));
+  const tb = tied(b.graph);
+  assert.equal(tb[0], 'F#5');
+  assert.equal(tb[1], 'F#5', 'the end follows the start');
+  /* the end of the tie on the other staff (a note moved across), the clef on that staff: the start is not on it and is not moved */
+  const end = L.notesOf(g, 1).find(x => x.staff === rh && x.pitches[0] === 'F#5');
+  const across = ok(OPS.moveStaff(g, { event: end.id }));
+  const lh = staves(g)[1];
+  const c = ok(OPS.setClef(across.graph, { measure: g.timeline.measures[0].id, staff: lh, sign: 'G' }));
+  const startNote = L.notesOf(c.graph, 0).find(x => x.staff === rh && x.pitches[0] === 'F#5');
+  const endNote = L.notesOf(c.graph, 1).find(x => x.staff === lh && /F#|F♯/.test(x.pitches[0]));
+  assert.ok(startNote, 'the start still sounds F#5');
+  assert.ok(endNote, 'the end went on from it: ' + L.names(L.notesOf(c.graph, 1)));
+});
+
 /* --------------------------------------------------------------------------------------------- rhythm */
 test('value: halve leaves a rest where the time was; the bar is as full as it was', () => {
   const g = L.plain(1);

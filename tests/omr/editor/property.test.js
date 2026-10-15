@@ -115,7 +115,7 @@ function inconsistent(g) {
   const idx = new Map(g.timeline.measures.map((m, i) => [m.id, i]));
   let n = 0;
   g.parts.forEach(p => p.staves.forEach(st => g.timeline.measures.forEach(m => {
-    L.OPS.walk(g, idx, p, st.id, m.id).forEach(x => { if (x.implied !== undefined && (x.h.pitch.alter || 0) !== x.implied) n++; });
+    L.OPS.walk(g, idx, p, st.id, m.id).forEach(x => { if (x.implied !== undefined && !x.tieEnd && (x.h.pitch.alter || 0) !== x.implied) n++; });
   })));
   return n;
 }

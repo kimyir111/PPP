@@ -52,6 +52,16 @@ def('refusesBrokenGraph', 'an edit is validated: a graph that is not valid is no
   const c = code(() => OPS.step(bad, { head: bad.parts[0].events.find(e => e.kind === 'note' && e.voice !== 'v999').heads[0].id, by: 1 }));
   return res(c === 'invalid' || c === 'no-target', 'got ' + c);
 });
+def('clefTieFollowsStart', 'a tied note whose bar gets a clef is read from the start of its tie, not the other way', ({ OPS }) => {
+  const g = L.graphOf([{ rh: [q('C5'), q('D5'), q('E5'), q('F#5', { tie: 'start', acc: 'sharp' })], lh: [w('C3')] }, { rh: [q('F#5', { tie: 'stop' }), q('G5'), h('A5')], lh: [w('C3')] }]);
+  /* the end of the tie on the other staff, and the clef on that staff: the start is not on it and does not move */
+  const end = rh0(g, 1)[0];
+  const across = OPS.moveStaff(g, { event: end.id });
+  const r = OPS.setClef(across.graph, { measure: g.timeline.measures[0].id, staff: staffs(g)[1], sign: 'G' });
+  const a = rh0(r.graph, 0)[3].pitches[0];
+  const lh = L.notesOf(r.graph, 1).filter(e => e.staff === staffs(g)[1]).find(e => e.pitches.length && e.dur === end.dur);
+  return res(a === 'F#5' && lh && lh.pitches[0] === 'F#5' && !valid(r.graph), 'got ' + a + ' ' + (lh && lh.pitches[0]));
+});
 def('clefReadsAgain', 'a clef from a bar means the notes stand where they stand and sound what their place means, in the key', ({ OPS }) => {
   const g = L.graphOf([{ rh: [w('C5')], lh: [q('C3'), q('E3'), q('A3'), q('B3')] }], { fifths: 1 });
   const r = OPS.setClef(g, { measure: g.timeline.measures[0].id, staff: staffs(g)[1], sign: 'G' });

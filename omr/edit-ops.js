@@ -228,23 +228,59 @@
       if (x.h.acc) {
         implied = ACC_ALTER[x.h.acc.type];                      /* a quarter tone: undefined, not read */
         if (implied !== undefined) carry.set(k, implied);
-      } else if (tie.from.has(x.h.id)) implied = undefined;     /* follows its tie's start (syncChains) */
-      else if (carry.has(k)) implied = carry.get(k);
+      } else if (carry.has(k)) implied = carry.get(k);
       else implied = keyAlter(fifths, p.step);
       x.implied = implied;
+      /* the end of a tie goes on from its start (syncChains): its own notation does not decide what it sounds, as long as the tie is there */
+      x.tieEnd = !x.h.acc && tie.from.has(x.h.id);
     });
     return list;
   }
   const alterOf = h => (h.pitch && h.pitch.alter) || 0;
   const staffsOf = part => part.staves.map(s => s.id);
 
+  /* the bars, and the bars of every note tied to a note of them (an edit that breaks a tie leaves its far end to be read from its own notation) */
+  function withTies(d, measureIds) {
+    const ids = new Set(measureIds);
+    d.doc.parts.forEach(part => {
+      const where = new Map();
+      part.events.forEach(e => (e.heads || []).forEach(h => where.set(h.id, e.m)));
+      const links = new Map();
+      part.spanners.forEach(s => {
+        if (s.type !== 'tie' || s.from === undefined || s.to === undefined) return;
+        if (!links.has(s.from)) links.set(s.from, []);
+        if (!links.has(s.to)) links.set(s.to, []);
+        links.get(s.from).push(s.to); links.get(s.to).push(s.from);
+      });
+      const seen = new Set();
+      part.events.forEach(e => {
+        if (!ids.has(e.m)) return;
+        (e.heads || []).forEach(h => {
+          const stack = [h.id];
+          while (stack.length) {
+            const id = stack.pop();
+            if (seen.has(id)) continue;
+            seen.add(id);
+            if (where.has(id)) ids.add(where.get(id));
+            (links.get(id) || []).forEach(n => stack.push(n));
+          }
+        });
+      });
+    });
+    return ids;
+  }
+
   /* before an edit: which heads of these bars sound what their notation implies (by head ID) */
   function snapshot(d, measureIds) {
     const out = new Map();
-    const ids = new Set(measureIds);
+    const ids = withTies(d, measureIds);
+    out.mids = ids;
     d.doc.parts.forEach(part => staffsOf(part).forEach(st => ids.forEach(mid => {
       if (!d.mIdx.has(mid)) return;
-      walk(d.doc, d.mIdx, part, st, mid).forEach(x => { if (x.implied !== undefined) out.set(x.h.id, alterOf(x.h) === x.implied); });
+      walk(d.doc, d.mIdx, part, st, mid).forEach(x => {
+        if (x.tieEnd) out.set(x.h.id, true);                      /* sounds what its tie says (E-TIE-PITCH): if the tie goes, its own notation reads it again */
+        else if (x.implied !== undefined) out.set(x.h.id, alterOf(x.h) === x.implied);
+      });
     })));
     return out;
   }
@@ -262,13 +298,14 @@
     opts = opts || {};
     const skip = opts.skip || new Set();
     const ids = new Set(measureIds);
+    if (before && before.mids) before.mids.forEach(x => ids.add(x));
     const changed = [];
     d.doc.parts.forEach(part => staffsOf(part).forEach(st => {
       if (opts.staff && opts.staff !== st) return;
       ids.forEach(mid => {
         if (!d.mIdx.has(mid)) return;
         walk(d.doc, d.mIdx, part, st, mid).forEach(x => {
-          if (x.implied === undefined || skip.has(x.h.id)) return;
+          if (x.implied === undefined || x.tieEnd || skip.has(x.h.id)) return;
           if (before.get(x.h.id) === true && alterOf(x.h) !== x.implied && setAlter(d, x, x.implied)) { changed.push(x.h.id); d.touch(); }
         });
       });
@@ -277,12 +314,20 @@
   }
   /* a tie joins notes of one pitch: the ends follow the start */
   function syncChains(d, headIds) {
-    headIds.forEach(id => {
+    const done = new Set();
+    headIds.forEach(id0 => {
+      const at0 = d.hd.get(id0);
+      if (!at0) return;
+      const part = d.doc.parts.find(p => p.events.some(e => e === at0.e));
+      if (!part) return;
+      /* always from the start of the chain: a note that was moved with its tie's start never decides what the start sounds */
+      const chain = tieChain(part, id0);
+      const id = chain[0];
+      if (done.has(id)) return;
+      done.add(id);
       const at = d.hd.get(id);
       if (!at) return;
-      const part = d.doc.parts.find(p => p.events.some(e => e === at.e));
-      if (!part) return;
-      tieChain(part, id).forEach(o => {
+      chain.forEach(o => {
         if (o === id) return;
         const x = d.hd.get(o);
         if (!x || !x.h.pitch) return;
@@ -849,6 +894,9 @@
       const dur = meter ? nominalOf(meter) : R.make(1, 1);
       const nid = d.newId('m');
       const nm = { id: nid, number: '0', dur: R.format(dur), prov: d.provRefOf({ source: SOURCE, op: 'edited' }) };
+      /* the bars on either side: a note whose tie the new bar ends is read from its own notation */
+      const nb = [ms[at - 1], ms[at]].filter(Boolean).map(x => x.id);
+      const before = snapshot(d, nb);
       dropTiesAcross(d, at);
       if (at === 0) {
         /* ahead of the first bar: what stands at the start of the score stands at the new first bar */
@@ -866,6 +914,7 @@
       else renumber(d, at);
       newBarRests(d, nid);
       d.touch();
+      reconcile(d, before, nb, {});
       touched.add(nid);
       return { measure: nid };
     });
@@ -881,15 +930,29 @@
       if (ms.length <= 1) fail('last-bar', 'the only bar');
       const i = d.mIdx.get(m.id);
       const prev = i > 0 ? ms[i - 1] : null, next = i + 1 < ms.length ? ms[i + 1] : null;
+      /* the notes that were tied to a note of this bar are read from their own notation when the tie is gone */
+      const before = snapshot(d, [m.id].concat(next ? [next.id] : []));
       const evIds = [];
       d.doc.parts.forEach(p => p.events.forEach(e => { if (e.m === m.id) evIds.push(e.id); }));
       d.removeEvents(evIds);
+      /* what is in force at the end of the bar (the last key, clef or tempo of it, by scope or staff) is what the next bar starts with, unless it says its own */
+      const lastOf = (list, keyOf) => {
+        const best = new Map();
+        (list || []).forEach(x => {
+          if (x.m !== m.id) return;
+          const k = keyOf(x), cur = best.get(k);
+          if (!cur || R.ge(R.parse(x.at === undefined ? '0' : x.at), R.parse(cur.at === undefined ? '0' : cur.at))) best.set(k, x);
+        });
+        return new Set(best.values());
+      };
+      const atZero = x => R.eq(R.parse(x.at === undefined ? '0' : x.at), R.ZERO);
       d.doc.parts.forEach(part => {
         part.directions = part.directions.filter(x => { if (x.m === m.id) { d.retire(x.id); return false; } return true; });
+        const lastClef = lastOf(part.clefs, c => c.staff);
         part.clefs = part.clefs.filter(c => {
           if (c.m !== m.id) return true;
-          const clash = next && part.clefs.some(o => o !== c && o.staff === c.staff && o.m === next.id && R.eq(R.parse(o.at), R.ZERO));
-          if (next && R.eq(R.parse(c.at), R.ZERO) && !clash) { c.m = next.id; return true; }
+          const clash = next && part.clefs.some(o => o !== c && o.staff === c.staff && o.m === next.id && atZero(o));
+          if (next && lastClef.has(c) && !clash) { c.m = next.id; c.at = '0'; return true; }
           d.retire(c.id); return false;
         });
         part.spanners = part.spanners.filter(s => {
@@ -902,9 +965,9 @@
           return true;
         });
       });
-      const move = (list, keep) => (list || []).filter(x => {
+      const move = (list, keep, last) => (list || []).filter(x => {
         if (x.m !== m.id) return true;
-        if (next && R.eq(R.parse(x.at === undefined ? '0' : x.at), R.ZERO) && keep(x)) { x.m = next.id; return true; }
+        if (next && last.has(x) && keep(x)) { x.m = next.id; x.at = '0'; return true; }
         d.retire(x.id); return false;
       });
       tl.meters = tl.meters.filter(x => {
@@ -912,8 +975,8 @@
         if (next && !tl.meters.some(o => o !== x && o.m === next.id)) { x.m = next.id; return true; }
         d.retire(x.id); return false;
       });
-      tl.keys = move(tl.keys, k => !tl.keys.some(o => o !== k && o.m === next.id && R.eq(R.parse(o.at), R.ZERO) && sameJson(o.scope || null, k.scope || null)));
-      tl.tempos = move(tl.tempos, () => !tl.tempos.some(o => o.m === (next && next.id) && R.eq(R.parse(o.at), R.ZERO)));
+      tl.keys = move(tl.keys, k => !tl.keys.some(o => o !== k && o.m === next.id && atZero(o) && sameJson(o.scope || null, k.scope || null)), lastOf(tl.keys, k => JSON.stringify(k.scope || null)));
+      tl.tempos = move(tl.tempos, () => !tl.tempos.some(o => o.m === (next && next.id) && atZero(o)), lastOf(tl.tempos, () => 't'));
       tl.jumps = (tl.jumps || []).filter(j => { if (j.m === m.id) { d.retire(j.id); return false; } return true; });
       const jumpIds = new Set(tl.jumps.map(j => j.id));
       tl.jumps.forEach(j => { if (j.target !== undefined && !jumpIds.has(j.target)) delete j.target; });
@@ -952,6 +1015,7 @@
       if (i === 0) ms[0].number = m.number;
       renumber(d, 1);
       d.touch();
+      reconcile(d, before, next ? [next.id] : [], {});
       if (next) touched.add(next.id); else if (prev) touched.add(prev.id);
       return { removed: m.id };
     });

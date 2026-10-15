@@ -200,7 +200,7 @@ Design: `docs/GOALS/G12_OMR.md` sections 9 and 25 (gate A4).
 
 ```
 npm run test:omr-editor                                  # Node, about 25 s, a step of shard-g: every op, the session, random edit/undo sequences
-                                                         # (undo gives back the original bytes), 48 mutants of the op wiring
+                                                         # (undo gives back the original bytes), 49 mutants of the op wiring
 OMR_EDITOR_SEEDS=40 OMR_EDITOR_STEPS=45 npm run test:omr-editor    # the stress size of the property test (a few minutes)
 NODE_ENV=production HOST=127.0.0.1 PORT=<p> node server.js &       # then, with Chrome and puppeteer:
 PPP_PORT=<p> node -r ./tests/engrave/tools/with-port.js tests/omr-editor-app.test.js   # every edit kind on a phone-sized page, drawn = played, persistence, Korean, timing
