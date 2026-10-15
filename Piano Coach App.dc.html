@@ -56,45 +56,161 @@
 @font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:500;font-display:swap;src:url(./vendor/fonts/jetbrains-mono-v24-latin-ext.woff2?v=1) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
 @font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:500;font-display:swap;src:url(./vendor/fonts/jetbrains-mono-v24-latin.woff2?v=1) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
 @font-face{font-family:'Noto Music';font-style:normal;font-weight:400;font-display:swap;src:url(./vendor/fonts/noto-music-v21-music.woff2?v=1) format('woff2');unicode-range:U+25CC, U+2669-266F, U+1D000-1D0F5, U+1D100-1D245}
+/* G13-4b2 (U7): Korean, Japanese and Chinese text is drawn in the device's own fonts first (no request, there at the first paint, works offline). --ppp-cjk is the list the font stacks use
+   after Figtree: the language in use first (:lang follows <html lang>, set by i18n.js), the others after it, Google's Noto Sans (installed, or the web face the script below adds) last. */
+:root { --ppp-cjk: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo UI", "Meiryo", "Noto Sans CJK JP", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans KR", "Noto Sans JP", "Noto Sans SC"; }
+:root:lang(ja) { --ppp-cjk: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo UI", "Meiryo", "Noto Sans CJK JP", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans CJK KR", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans JP", "Noto Sans KR", "Noto Sans SC"; }
+:root:lang(zh) { --ppp-cjk: "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", "Hiragino Sans GB", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo UI", "Meiryo", "Noto Sans CJK JP", "Noto Sans SC", "Noto Sans KR", "Noto Sans JP"; }
 </style>
 <script>
-/* G13-4b: Korean, Japanese and Chinese text stays in Google's Noto Sans (U7: not self-hosted), but its stylesheet (331 KB) no longer blocks the first paint: it is asked for once the page has loaded and the browser
-   is idle. Until it is in, the text is drawn in the system font (the font stack of body is unchanged: Figtree, Noto Sans KR, Noto Sans JP, Noto Sans SC, system-ui). Offline, or if Google is unreachable, it stays so. */
+/* G13-4b2 (U7): Google's Noto Sans for a script only when the device has no font for it (bare Linux, a stripped container), asked for after load and an idle moment, the page's language first,
+   the others a second later (not on a data saver): nothing waits for it and a device with fonts of its own makes no request at all. 'Has a font' = in a canvas each character of a short sample
+   measures (width and the box of its ink) otherwise than a code point no font has, which every browser draws as one "no glyph" box; the generic sans-serif is read, i.e. whatever the system falls
+   back to. The width alone is not enough: on Windows that box is as wide as a kana. No canvas, or any doubt: "has none" (the web font, as it always was). PPP_CJK_SETTLED resolves shortly after
+   the first stylesheet, or at once when none is wanted (G13-4d: the piano recordings wait for it). docs/GOALS/G13_PRODUCTIZATION.md, G13-4b2. */
 (function () {
-  var CJK = 'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap';
-  /* PPP_CJK_SETTLED: resolved shortly after that stylesheet has arrived or failed (G13-4d: the piano recordings wait for it, so they do not hold it up) */
+  var URLS = {
+    ko: 'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap',
+    ja: 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap',
+    zh: 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap'
+  };
+  var SAMPLES = { ko: '\ud55c\uae00\uac00\ub098', ja: '\u3042\u30a2\u65e5\u672c', zh: '\u6c49\u5b57\u7b80\u4f53' };
+  var NOGLYPH = '\ud7fc';   /* Hangul Jamo Extended-B, unassigned: every browser draws its "no glyph" box for it */
   var settle; window.PPP_CJK_SETTLED = new Promise(function (r) { settle = r; });
-  /* A family this device already has is not asked for. A web face of the same name SHADOWS the installed font while it loads, and the text then goes through a third look (the system's
-     default) before it comes back to the same Noto Sans: a layout shift of the whole page, and 100+ KB for nothing. 'Installed' = the family alone draws a sample differently from the
-     generic fallbacks (the same under two of them) AND has a real bold (a Latin string is wider at 700 than at 400): a regular-only install is not enough, it would draw the bold faked. */
-  var FAMILIES = [['Noto+Sans+KR', 'Noto Sans KR', '\ud55c\uae00\uac00\ub098'], ['Noto+Sans+JP', 'Noto Sans JP', '\u3042\u30a2\u65e5\u672c'], ['Noto+Sans+SC', 'Noto Sans SC', '\u6c49\u5b57\u7b80\u4f53']];
-  function installed(name, sample) {
+  var added = {}, armed = false;
+  function shape(ctx, ch) {
+    var m = ctx.measureText(ch);
+    return [m.width, m.actualBoundingBoxLeft, m.actualBoundingBoxRight, m.actualBoundingBoxAscent, m.actualBoundingBoxDescent].map(function (n) { return Math.round(n * 100); }).join();
+  }
+  function has(script) {
     try {
-      var ctx = document.createElement('canvas').getContext('2d'), latin = 'Hamburgefonstiv';
-      var w = function (font, text) { ctx.font = font; return ctx.measureText(text).width; };
-      var a = w('40px "' + name + '", monospace', sample), b = w('40px "' + name + '", serif', sample);
-      var m = w('40px monospace', sample), s = w('40px serif', sample);
-      if (!(a === b && (a !== m || b !== s))) return false;
-      var r = w('400 40px "' + name + '", monospace', latin);
-      return r !== w('400 40px monospace', latin) && w('700 40px "' + name + '", monospace', latin) !== r;
+      var ctx = document.createElement('canvas').getContext('2d'), s = SAMPLES[script];
+      ctx.font = '32px sans-serif';
+      var none = shape(ctx, NOGLYPH);
+      for (var i = 0; i < s.length; i++) if (shape(ctx, s.charAt(i)) === none) return false;
+      return true;
     } catch (e) { return false; }
   }
-  function wanted() {
-    var parts = [];
-    FAMILIES.forEach(function (f) { if (!installed(f[1], f[2])) parts.push('family=' + f[0] + ':wght@400;500;600;700'); });
-    return parts.length ? CJK.split('?')[0] + '?' + parts.join('&') + '&display=swap' : null;
-  }
-  function add() {
-    if (document.querySelector('link[data-ppp-cjk]')) return;
-    var url = wanted();
-    if (!url) { settle(); return; }
+  function add(script, done) {
+    if (added[script]) return;
+    added[script] = true;
     var l = document.createElement('link');
-    l.rel = 'stylesheet'; l.href = url; l.setAttribute('data-ppp-cjk', '');
-    l.onload = l.onerror = function () { setTimeout(settle, 600); };
+    l.rel = 'stylesheet'; l.href = URLS[script]; l.setAttribute('data-ppp-cjk', script);
+    if (done) l.onload = l.onerror = function () { setTimeout(done, 600); };
     document.head.appendChild(l);
   }
-  function later() { if (window.requestIdleCallback) window.requestIdleCallback(add, { timeout: 4000 }); else setTimeout(add, 1500); }
+  function inUse() {
+    var l = String(document.documentElement.lang || '').slice(0, 2).toLowerCase();
+    return Object.prototype.hasOwnProperty.call(URLS, l) ? l : null;
+  }
+  function run() {
+    var mine = inUse();
+    var need = ['ko', 'ja', 'zh'].filter(function (s) { return !has(s); });
+    armed = true;
+    if (!need.length) { settle(); return; }
+    var saving = false;
+    try { saving = !!(navigator.connection && navigator.connection.saveData); } catch (e) { /* no network information */ }
+    /* the script of the page's own language first, if the device lacks it; the other scripts it lacks (a title in another language is rarer than the page's own) a moment later, and not on a data saver */
+    var primary = need.indexOf(mine) >= 0 ? mine : null;
+    var rest = need.filter(function (s) { return s !== primary; });
+    function others() { if (!saving && rest.length) setTimeout(function () { rest.forEach(function (s) { add(s); }); }, 1000); }
+    if (primary) add(primary, function () { settle(); others(); });
+    else { settle(); others(); }
+  }
+  /* the language is changed in Settings: that script's face, if the device lacks it and it was not asked for yet */
+  function onLang() { var s = inUse(); if (armed && s && !added[s] && !has(s)) add(s); }
+  try { new MutationObserver(onLang).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] }); } catch (e) { /* no observer: the next visit */ }
+  function later() { if (window.requestIdleCallback) window.requestIdleCallback(run, { timeout: 4000 }); else setTimeout(run, 1500); }
   if (document.readyState === 'complete') later(); else window.addEventListener('load', later);
+})();
+</script>
+<script>
+/* G13-7b (U5, G13-D11): anonymous counters - how a broken release is seen without waiting for a complaint. Per visit, in this page's memory: uncaught errors and unhandled rejections (the
+   CLASS of the error, never its message, stack or address), a script or stylesheet of the page that did not load, the engraver's and the practice plan's fallbacks (codes), lazy groups that failed,
+   time to first paint and to "app ready" in buckets, language, mobile or desktop. Sent once, when the page is hidden or closed (again only if something new happened), as one POST of under 1 KB to
+   this site's /api/stats: no cookie, no identifier; the server keeps totals in memory and prints them in its hourly `stats:` line (client-stats.js). Nothing is sent when a person turned it off
+   (Settings > About & licences: 'ppp.counts.v1' = '0'), on Do Not Track or Global Privacy Control, or when there is nothing to say. Nothing throws or waits. In the head, not in a lazy group: a
+   release that breaks the boot never loads a lazy group, and that is the visit that most needs counting. */
+(function () {
+  var W = window, D = document, N = navigator;
+  var KEY = 'ppp.counts.v1', CAP = 20;
+  var ERRS = { TypeError: 'type', ReferenceError: 'reference', RangeError: 'range', SyntaxError: 'syntax' };
+  var err = {}, any = false, rej = 0, first = true, readyAt = null, base = { eng: {}, prc: {}, lz: 0 }, mem = null;
+  /* a person's choice: this page's memory first (a storage that cannot be written still keeps it for the visit), then the stored one */
+  function userOn() {
+    if (mem !== null) return mem;
+    try { return W.localStorage.getItem(KEY) !== '0'; } catch (e) { return true; }
+  }
+  function signal() {
+    try { return N.doNotTrack === '1' || N.doNotTrack === 'yes' || W.doNotTrack === '1' || N.msDoNotTrack === '1' || N.globalPrivacyControl === true; } catch (e) { return false; }
+  }
+  function enabled() { return userOn() && !signal(); }
+  function bump(k) { err[k] = Math.min(CAP, (err[k] || 0) + 1); any = true; }
+  /* capture: a script or stylesheet that failed to load does not bubble */
+  W.addEventListener('error', function (e) {
+    try {
+      var t = e && e.target;
+      if (t && t !== W && t.nodeType === 1) {
+        var n = String(t.tagName).toLowerCase();
+        if (n === 'script' || n === 'link') bump('load');
+        return;
+      }
+      if (/^(?:chrome|moz|safari-web|safari)-extension:/.test(String(e && e.filename || ''))) return;   /* a browser extension's, not the page's */
+      var name = e && e.error && e.error.name;
+      bump(Object.prototype.hasOwnProperty.call(ERRS, name) ? ERRS[name] : 'other');
+    } catch (x) { /* counting never throws */ }
+  }, true);
+  W.addEventListener('unhandledrejection', function () { try { rej = Math.min(CAP, rej + 1); } catch (x) { /* none */ } });
+  function bucket(ms) { return typeof ms !== 'number' || ms !== ms ? 4 : ms < 2000 ? 0 : ms < 4000 ? 1 : ms < 8000 ? 2 : 3; }
+  function fcp() {
+    try { var e = W.performance.getEntriesByName('first-contentful-paint'); return e.length ? e[0].startTime : null; } catch (x) { return null; }
+  }
+  /* what the page's own counters hold now; a deferred global is read through PPP_LAZY.peek, which never loads anything */
+  function peek(name) { try { var L = W.PPP_LAZY; return (L && L.peek ? L.peek(name) : W[name]) || null; } catch (x) { return null; } }
+  function nums(o, out) { if (o && typeof o === 'object') for (var k in o) if (typeof o[k] === 'number' && o[k] > 0) out[k] = o[k]; return out; }
+  function late() {
+    var o = { eng: {}, prc: {}, lz: 0 };
+    try { var P = peek('PPPEngravePage'); nums(P && P.stats && P.stats.fallbacks, o.eng); } catch (x) { /* none */ }
+    try { var S = W.PPP && W.PPP.practiceStats; nums(S && S.practiceFallback && S.practiceFallback.reasons, o.prc); } catch (x) { /* none */ }
+    try { var g = W.PPP_LAZY.status().groups; for (var i = 0; i < g.length; i++) if (g[i].failed) o.lz++; } catch (x) { /* none */ }
+    return o;
+  }
+  function body() {
+    var now = late(), b = { v: 1, b: String(W.PPP_BUILD || '').slice(0, 12) }, news = false, k, n;
+    var lang = String(D.documentElement.lang || '').slice(0, 2).toLowerCase();
+    b.loc = lang === 'ko' || lang === 'ja' || lang === 'zh' ? lang : 'en';
+    b.mob = /Mobi|Android|iPhone|iPad|iPod/i.test(String(N.userAgent)) || (/Macintosh/.test(String(N.userAgent)) && N.maxTouchPoints > 1) ? 1 : 0;
+    ['eng', 'prc'].forEach(function (g) {
+      for (k in now[g]) { n = now[g][k] - (base[g][k] || 0); if (n > 0) { (b[g] = b[g] || {})[k] = Math.min(CAP, n); news = true; } }
+    });
+    n = now.lz - base.lz; if (n > 0) { b.lz = Math.min(CAP, n); news = true; }
+    if (any) { b.err = err; news = true; }
+    if (rej) { b.rej = rej; news = true; }
+    if (!first && !news) return null;
+    if (first) { b.pv = 1; b.fcp = bucket(fcp()); b.rdy = bucket(readyAt); }
+    first = false; err = {}; any = false; rej = 0; base = now;
+    return JSON.stringify(b);
+  }
+  function post(s) {
+    try {
+      if (W.fetch && W.Request && 'keepalive' in W.Request.prototype) { W.fetch('/api/stats', { method: 'POST', body: s, keepalive: true, credentials: 'omit', cache: 'no-store' }).catch(function () { /* nobody waits for it */ }); return; }
+    } catch (x) { /* the beacon below */ }
+    try { if (N.sendBeacon) N.sendBeacon('/api/stats', s); } catch (x) { /* nobody waits for it */ }
+  }
+  function flush() { try { if (!enabled()) return; var s = body(); if (s) post(s); } catch (x) { /* none */ } }
+  D.addEventListener('visibilitychange', function () { if (D.visibilityState === 'hidden') flush(); });
+  W.addEventListener('pagehide', flush);
+  W.PPP_COUNTS = {
+    ready: function () { try { if (readyAt === null) readyAt = W.performance.now(); } catch (x) { /* none */ } },
+    enabled: enabled,
+    signal: signal,
+    on: userOn,
+    set: function (on) {
+      mem = !!on;
+      try { if (on) W.localStorage.removeItem(KEY); else W.localStorage.setItem(KEY, '0'); } catch (x) { /* not remembered: this visit only */ }
+    },
+    flush: flush
+  };
 })();
 </script>
 <script src="./i18n.js"></script>
@@ -217,12 +333,12 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
 <helmet>
 <title>PPP — Piano Practice Partner</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231b1a18'/%3E%3Crect x='9' y='13' width='4' height='11' rx='2' fill='%23fffefc'/%3E%3Crect x='14' y='7' width='4' height='17' rx='2' fill='%237c5cd6'/%3E%3Crect x='19' y='16' width='4' height='8' rx='2' fill='%23fffefc'/%3E%3C/svg%3E" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-<link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+<meta name="application-name" content="PPP" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<link rel="license" href="./THIRD_PARTY_NOTICES.md" />
 <style>
   html, body { margin: 0; padding: 0; }
-  body { background: #f7f5f2; font-family: Figtree, "Noto Sans KR", "Noto Sans JP", "Noto Sans SC", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { background: #f7f5f2; font-family: Figtree, var(--ppp-cjk), system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
   a { color: oklch(0.52 0.19 285); text-decoration: none; }
   a:hover { color: oklch(0.44 0.19 285); }
   [data-app], [data-auth] {
@@ -754,7 +870,7 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
 </helmet>
 
 <sc-if value="{{ isAuthGate }}" hint-placeholder-val="{{ false }}">
-  <div data-auth="{{ theme }}" style="position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 24px; background: var(--bg); color: var(--ink); font-family: Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif;">
+  <div data-auth="{{ theme }}" style="position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 24px; background: var(--bg); color: var(--ink); font-family: Figtree, var(--ppp-cjk), system-ui, sans-serif;">
     <div style="width: min(420px, 100%); border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow); padding: 28px 28px 24px;">
       <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 22px;">
         <div style="width: 32px; height: 32px; border-radius: 10px; background: var(--ink); display: flex; align-items: flex-end; justify-content: center; gap: 3px; padding-bottom: 8px; box-sizing: border-box;">
@@ -807,7 +923,7 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
   </div>
 </sc-if>
 
-<div data-app="{{ theme }}" ref="{{ rootRef }}" class="ppp-shell" data-focus="{{ focusAttr }}" data-learn-focus="{{ learnFocusAttr }}" data-learn-course="{{ learnCourseAttr }}" data-keys="{{ keysAttr }}" data-sidebar-collapsed="{{ sidebarCollapsedAttr }}" data-sidebar-open="{{ sidebarOpenAttr }}" style="background: var(--bg); color: var(--ink); font-family: Figtree, 'Noto Sans KR', 'Noto Sans JP', 'Noto Sans SC', system-ui, sans-serif;{{ kbVar }}">
+<div data-app="{{ theme }}" ref="{{ rootRef }}" class="ppp-shell" data-focus="{{ focusAttr }}" data-learn-focus="{{ learnFocusAttr }}" data-learn-course="{{ learnCourseAttr }}" data-keys="{{ keysAttr }}" data-sidebar-collapsed="{{ sidebarCollapsedAttr }}" data-sidebar-open="{{ sidebarOpenAttr }}" style="background: var(--bg); color: var(--ink); font-family: Figtree, var(--ppp-cjk), system-ui, sans-serif;{{ kbVar }}">
 
   <button type="button" class="ppp-backdrop" onClick="{{ closeSidebar }}" aria-label="{{ hideSidebarLabel }}"></button>
 
@@ -2805,6 +2921,13 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
               <div data-about-build style="font-size: 12.5px; line-height: 1.5; color: var(--ink3); margin-top: 3px;">{{ aboutBuild }}</div>
             </div>
             <div data-about-local style="font-size: 12.5px; line-height: 1.55; color: var(--ink2);">{{ aboutLocal }}</div>
+            <div data-about-counts style="display: flex; flex-direction: column; gap: 8px; font-size: 12.5px; line-height: 1.55; color: var(--ink2);">
+              <div data-about-counts-text>{{ aboutCounts }}</div>
+              <div>
+                <button type="button" onClick="{{ toggleCounts }}" data-counts-toggle aria-pressed="{{ countsPressed }}" style="{{ countsStyle }}">{{ countsLabel }}</button>
+              </div>
+              <div data-counts-note style="font-size: 12px; line-height: 1.5; color: var(--ink3);">{{ countsNote }}</div>
+            </div>
             <div data-about-youtube style="font-size: 12.5px; line-height: 1.55; color: var(--ink2);">{{ aboutYoutube }}</div>
             <div data-about-sounds style="font-size: 12.5px; line-height: 1.55; color: var(--ink2);">
               <span>{{ aboutSounds }}</span>
@@ -13894,6 +14017,7 @@ class Component extends DCLogic {
        (PianoPlayer.synth), and a tap or key starts them at once (wake()). */
     /* G13-4e: the first frame is this component's mount: the page's other code (lazy-load.js: the engraver, the library, the arranger, the lessons) starts coming in once the
        frame after it has been produced, before the piano recordings below, which wait for it (codeIn) so that the 1.3 MB of sound never holds up the 450 KB of code */
+    try { if (window.PPP_COUNTS) window.PPP_COUNTS.ready(); } catch (e) { /* G13-7b: the counters' "app is ready" mark (head script); counting never matters here */ }
     if (lazyOn()) window.PPP_LAZY.start();
     {
       const go = () => { if (!this._dead) PianoSamples.load(); };
@@ -14433,6 +14557,9 @@ class Component extends DCLogic {
       aboutTitle: tx('About & licences'),
       aboutBuild: [tx('PPP — Piano Practice Partner'), build].filter(Boolean).join(' · '),
       aboutLocal: tx('Your songs are saved only in this browser. PPP\'s server receives a song only when you share it or ask it to arrange or read it.'),
+      /* G13-7b (U5): the anonymous counters of the head script (PPP_COUNTS) and the one switch that turns them off. The label is the same in both states (aria-pressed carries it); the line under it says what is so now. */
+      aboutCounts: tx('To see when a page breaks or loads slowly, PPP sends a few anonymous counts (errors, load times) when you leave the page. They have no name, address or ID, and no songs. The server only adds them up.'),
+      ...this.countsVals(),
       aboutYoutube: tx('Use recordings you have the right to use. The score PPP writes is for your own practice.') + ' '
         + tx('A score made from a YouTube link cannot be posted to Shared Scores. You can still send its link.'),
       aboutSounds: tx('Piano sounds: Salamander Grand Piano V3 by Alexander Holm, licensed under CC BY 3.0. Notes longer than nine seconds are shortened.'),
@@ -14440,6 +14567,21 @@ class Component extends DCLogic {
       aboutSourceHref: 'https://archive.org/details/SalamanderGrandPianoV3', aboutSourceLabel: tx('Source'),
       aboutNoticesHref: './THIRD_PARTY_NOTICES.md', aboutNoticesLabel: tx('Open-source licences and notices'),
       aboutNoticesSub: tx('Code, fonts, sounds and score catalogues, with their licences.')
+    };
+  }
+  /* G13-7b: the switch of Settings > About & licences. PPP_COUNTS (head script) owns the choice and the browser's own signal; nothing is sent when either says no. */
+  countsVals() {
+    const C = typeof window !== 'undefined' ? window.PPP_COUNTS : null;
+    const mine = !C || C.on();
+    const signal = !!(C && C.signal());
+    const sending = mine && !signal;
+    return {
+      countsLabel: tx('Send anonymous counts'),
+      countsPressed: sending ? 'true' : 'false',
+      countsStyle: this.chip(sending),
+      countsNote: signal ? tx('Your browser\'s Do Not Track or Global Privacy Control setting is on, so nothing is sent.')
+        : mine ? tx('On. Press to stop sending.') : tx('Off. Nothing is sent. Press to turn it on.'),
+      toggleCounts: () => { try { if (C) C.set(!C.on()); } catch (e) { /* the choice is kept for this visit at least */ } this.setState({ countsTick: (this.state.countsTick || 0) + 1 }); }
     };
   }
   backupVals() {

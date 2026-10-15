@@ -12,7 +12,7 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 const REPO = path.resolve(__dirname, '..', '..');
-const SERVER = ['server.js', 'static-allow.js', 'static-assets.js', 'share-guest.js', 'home-jobs.js', 'home-jobs-store.js', 'home-result.js', 'home-omr.js', 'body-reader.js', 'signup-limit.js', 'server-stats.js'];
+const SERVER = ['server.js', 'static-allow.js', 'static-assets.js', 'share-guest.js', 'home-jobs.js', 'home-jobs-store.js', 'home-result.js', 'home-omr.js', 'body-reader.js', 'signup-limit.js', 'server-stats.js', 'client-stats.js'];
 const ROOT_FILES = ['Piano Coach App.dc.html', 'i18n.js', 'lazy-load.js', 'support.js', 'lessons.js', 'course.js', 'score-search.js', 'library-backup.js', 'audio-score.js', 'package.json', 'render.yaml'];
 const DIRS = ['scoregraph', 'playability', 'difficulty', 'songgraph', 'arrangement', 'realize', 'engrave', 'vendor', 'i18n', 'candidates', 'critics', 'repair', 'rec', 'practice'];   /* practice/ since G11a-5: practice/plan.js is a deferred group of the head */
 const SINGLES = ['audio/piano/A0.mp3', 'assets/hands/hand-right-black.png', 'catalog/shared-seeds.json', 'catalog/hymns/all-creatures.musicxml', 'difficulty/tools/dataset/method-books.json'];
@@ -38,7 +38,7 @@ function makeCopy() {
 }
 
 const SPLITN = 'lazy-load.test.js', SPLITB = 'load-app/split.test.js';
-const LAZY = 'i18n-lazy.test.js', HASH = 'content-hash.test.js', FONTS = 'fonts.test.js', SAMPLES = 'load-app/samples.test.js', TEMPLATE = 'load-app/template.test.js', CJK = 'load-app/cjk-fonts.test.js';
+const LAZY = 'i18n-lazy.test.js', HASH = 'content-hash.test.js', FONTS = 'fonts.test.js', SAMPLES = 'load-app/samples.test.js', TEMPLATE = 'load-app/template.test.js', CJK = 'load-app/cjk-fonts.test.js', CJKD = 'cjk-detect.test.js', CNT = 'counters.test.js', CNTAPP = 'load-app/counters.test.js';
 
 /* id, file, what the mutant breaks, [from, to] or a list of them (each replaced once), the test that must fail */
 const M = [
@@ -58,15 +58,39 @@ const M = [
   ['B1', 'Piano Coach App.dc.html', 'a font face blocks text again (display: block)', ["font-weight:700;font-display:swap;src:url(./vendor/fonts/figtree-v9-latin.woff2", "font-weight:700;font-display:block;src:url(./vendor/fonts/figtree-v9-latin.woff2"], FONTS],
   ['B2', 'Piano Coach App.dc.html', 'a weight range replaces Google\'s steps (650 would draw as 650, not 700)', ["font-weight:600;font-display:swap;src:url(./vendor/fonts/figtree-v9-latin.woff2", "font-weight:400 700;font-display:swap;src:url(./vendor/fonts/figtree-v9-latin.woff2"], FONTS],
   ['B3', 'Piano Coach App.dc.html', 'a blocking stylesheet from another site is back in the template', ["<helmet>", "<helmet>\n<link href=\"https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap\" rel=\"stylesheet\" />"], FONTS],
-  ['B4', 'Piano Coach App.dc.html', 'the CJK stylesheet is asked for at once, not after load', ["if (document.readyState === 'complete') later(); else window.addEventListener('load', later);", "add();"], FONTS],
-  ['B5', 'Piano Coach App.dc.html', 'the CJK request names the Latin families too (fetched twice)', ["family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+JP", "family=Figtree&family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Sans+JP"], FONTS],
   ['B6', 'vendor/README.md', 'a font\'s sha256 in the README is not the file\'s', ["| `4ba7d3d096695818fe0686be4f1e82c6b05134e18a22260336130335027462dd` |", "| `0ba7d3d096695818fe0686be4f1e82c6b05134e18a22260336130335027462dd` |"], FONTS],
   ['B7', 'Piano Coach App.dc.html', 'the unicode-range of a latin face is not Google\'s (a glyph would not use it)', ["unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}\n@font-face{font-family:'Instrument Serif';font-style:italic", "unicode-range:U+0000-007F}\n@font-face{font-family:'Instrument Serif';font-style:italic"], FONTS],
-  ['B8', 'Piano Coach App.dc.html', 'a Google link of the helmet is removed (the template has one element fewer: every data-dc-tpl stamp shifts)', ["<link rel=\"dns-prefetch\" href=\"https://fonts.googleapis.com\" />", ""], FONTS],
-  ['B9', 'Piano Coach App.dc.html', 'a font is preloaded from the body (the browser finds it at once and it takes bandwidth from the scripts)', ["<link rel=\"dns-prefetch\" href=\"https://fonts.googleapis.com\" />", "<link rel=\"preload\" as=\"font\" type=\"font/woff2\" crossorigin=\"anonymous\" href=\"./vendor/fonts/figtree-v9-latin.woff2?v=1\" />"], FONTS],
-  ['F1', 'Piano Coach App.dc.html', 'an installed Noto family is asked for anyway (it shadows the installed font while it loads)', ["if (!(a === b && (a !== m || b !== s))) return false;", "return false;"], CJK],
-  ['F2', 'Piano Coach App.dc.html', 'a regular-only install counts (the bold would be faked)', ["return r !== w('400 40px monospace', latin) && w('700 40px \"' + name + '\", monospace', latin) !== r;", "return r !== w('400 40px monospace', latin);"], CJK],
-  ['F3', 'Piano Coach App.dc.html', 'with every family installed the stylesheet is still asked for', ["return parts.length ? CJK.split('?')[0] + '?' + parts.join('&') + '&display=swap' : null;", "return CJK;"], CJK],
+  ['B4', 'Piano Coach App.dc.html', 'the CJK stylesheet is asked for at once, not after load', ["if (document.readyState === 'complete') later(); else window.addEventListener('load', later);", "run();"], FONTS],
+  ['B5', 'Piano Coach App.dc.html', 'the CJK request names a Latin family too (fetched twice)', ["css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap", "css2?family=Figtree&family=Noto+Sans+KR:wght@400;500;600;700&display=swap"], FONTS],
+  ['B8', 'Piano Coach App.dc.html', 'a link of the helmet is removed (the template has one element fewer: every data-dc-tpl stamp shifts)', ["<link rel=\"license\" href=\"./THIRD_PARTY_NOTICES.md\" />", ""], FONTS],
+  ['B9', 'Piano Coach App.dc.html', 'a font is preloaded from the body (the browser finds it at once and it takes bandwidth from the scripts)', ["<link rel=\"license\" href=\"./THIRD_PARTY_NOTICES.md\" />", "<link rel=\"preload\" as=\"font\" type=\"font/woff2\" crossorigin=\"anonymous\" href=\"./vendor/fonts/figtree-v9-latin.woff2?v=1\" />"], FONTS],
+  ['B10', 'Piano Coach App.dc.html', 'a connection hint to Google Fonts is back (every device would talk to that site at once)', ["<link rel=\"license\" href=\"./THIRD_PARTY_NOTICES.md\" />", "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" />"], FONTS],
+  ['B11', 'Piano Coach App.dc.html', 'the body\'s stack names the Noto families before the device\'s own', ["font-family: Figtree, var(--ppp-cjk), system-ui, sans-serif; -webkit-font-smoothing", "font-family: Figtree, \"Noto Sans KR\", var(--ppp-cjk), system-ui, sans-serif; -webkit-font-smoothing"], FONTS],
+  ['B12', 'Piano Coach App.dc.html', 'the Korean stack starts with a Noto family (the installed one, or the web one, is first)', [":root { --ppp-cjk: \"Malgun Gothic\",", ":root { --ppp-cjk: \"Noto Sans KR\", \"Malgun Gothic\","], FONTS],
+  ['F1', 'Piano Coach App.dc.html', 'a device that has the glyphs is asked for the web font anyway', ["for (var i = 0; i < s.length; i++) if (shape(ctx, s.charAt(i)) === none) return false;\n      return true;", "return false;"], CJKD],
+  ['F2', 'Piano Coach App.dc.html', 'the width alone decides (on Windows the box of a missing character is as wide as a kana: every script would look missing)', ["return [m.width, m.actualBoundingBoxLeft, m.actualBoundingBoxRight, m.actualBoundingBoxAscent, m.actualBoundingBoxDescent].map(function (n) { return Math.round(n * 100); }).join();", "return String(Math.round(m.width * 100));"], CJKD],
+  ['F3', 'Piano Coach App.dc.html', 'with every script drawable the stylesheets are still asked for', ["if (!need.length) { settle(); return; }", "if (!need.length) need = ['ko', 'ja', 'zh'];"], CJKD],
+  ['F4', 'Piano Coach App.dc.html', 'the other scripts are asked for with the first, not after it has settled', ["if (primary) add(primary, function () { settle(); others(); });", "if (primary) add(primary, function () { settle(); }); rest.forEach(function (s) { add(s); });"], CJKD],
+  ['F5', 'Piano Coach App.dc.html', 'a data saver is not respected', ["if (!saving && rest.length) setTimeout", "if (rest.length) setTimeout"], CJKD],
+  ['F6', 'Piano Coach App.dc.html', 'a language change is not followed', ["try { new MutationObserver(onLang).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] }); } catch (e) { /* no observer: the next visit */ }", ""], CJKD],
+  ['F7', 'Piano Coach App.dc.html', 'a failed canvas is taken for a device that has the font (tofu, and nothing asked for)', ["    } catch (e) { return false; }\n  }\n  function add(script, done) {", "    } catch (e) { return true; }\n  }\n  function add(script, done) {"], CJKD],
+  ['F8', 'Piano Coach App.dc.html', 'the page\'s own language is not asked for first', ["var primary = need.indexOf(mine) >= 0 ? mine : null;", "var primary = need[0] || null;"], CJKD],
+  ['F9', 'Piano Coach App.dc.html', 'a stylesheet that is added is never settled', ["if (done) l.onload = l.onerror = function () { setTimeout(done, 600); };", ""], CJKD],
+  ['K1', 'Piano Coach App.dc.html', 'the message of an error travels with the beacon', ["var name = e && e.error && e.error.name;", "var name = e && e.error && e.error.name; err['m:' + String(e && e.message)] = 1;"], CNT],
+  ['K2', 'Piano Coach App.dc.html', 'a person\'s opt-out is ignored', ["function enabled() { return userOn() && !signal(); }", "function enabled() { return !signal(); }"], CNT],
+  ['K3', 'Piano Coach App.dc.html', 'Do Not Track and Global Privacy Control are ignored', ["function enabled() { return userOn() && !signal(); }", "function enabled() { return userOn(); }"], CNT],
+  ['K4', 'Piano Coach App.dc.html', 'the beacon carries the cookies', ["body: s, keepalive: true, credentials: 'omit'", "body: s, keepalive: true, credentials: 'include'"], CNT],
+  ['K5', 'Piano Coach App.dc.html', 'every hide sends again, with nothing new in it', ["if (!first && !news) return null;", ""], CNT],
+  ['K6', 'Piano Coach App.dc.html', 'the engraver\'s global is read directly (it would load its group synchronously)', ["var P = peek('PPPEngravePage');", "var P = W.PPPEngravePage;"], CNT],
+  ['K7', 'Piano Coach App.dc.html', 'the counts have no cap', ["err[k] = Math.min(CAP, (err[k] || 0) + 1);", "err[k] = (err[k] || 0) + 1;"], CNT],
+  ['K8', 'Piano Coach App.dc.html', 'the first beacon carries no timing', ["if (first) { b.pv = 1; b.fcp = bucket(fcp()); b.rdy = bucket(readyAt); }", "if (first) { b.pv = 1; }"], CNT],
+  ['K9', 'Piano Coach App.dc.html', 'a picture that fails to load counts as an error of the page', ["if (n === 'script' || n === 'link') bump('load');", "bump('load');"], CNT],
+  ['K10', 'Piano Coach App.dc.html', 'a thrown error is counted twice', ["err[k] = Math.min(CAP, (err[k] || 0) + 1);", "err[k] = Math.min(CAP, (err[k] || 0) + 2);"], CNT],
+  ['K11', 'Piano Coach App.dc.html', 'no keepalive: a beacon sent while the page closes may be cancelled', ["keepalive: true, credentials", "credentials"], CNT],
+  ['K12', 'Piano Coach App.dc.html', 'a browser extension\'s errors are counted as the page\'s', ["if (/^(?:chrome|moz|safari-web|safari)-extension:/.test(String(e && e.filename || ''))) return;", ""], CNT],
+  ['K13', 'Piano Coach App.dc.html', 'the build is not the only thing the beacon says about the visit: the address is sent', ["var now = late(), b = { v: 1, b: String(W.PPP_BUILD || '').slice(0, 12) }, news = false, k, n;", "var now = late(), b = { v: 1, b: String(W.PPP_BUILD || '').slice(0, 12), u: String(W.location && W.location.href) }, news = false, k, n;"], CNT],
+  ['K14', 'Piano Coach App.dc.html', 'the counters are not turned off in the page\'s own memory when the storage cannot be written', ["      mem = !!on;\n", ""], CNT],
+  ['K15', 'Piano Coach App.dc.html', 'the app\'s "ready" mark is not made', ["try { if (window.PPP_COUNTS) window.PPP_COUNTS.ready(); } catch (e) { /* G13-7b: the counters' \"app is ready\" mark (head script); counting never matters here */ }", ""], CNTAPP],
   /* G13-4d: the piano recordings, in the app's componentDidMount (a browser test: load-app/samples.test.js; not part of the unmutated-copy check above) */
   ['D1', 'Piano Coach App.dc.html', 'the recordings are asked for at mount again (not after the load event)', ["if (document.readyState === 'complete') start(); else window.addEventListener('load', start, { once: true });", "go();"], SAMPLES],
   ['D2', 'Piano Coach App.dc.html', 'the recordings do not wait for the CJK stylesheet', ["idle(() => fontsIn().then(go))", "idle(go)"], SAMPLES],
@@ -169,7 +193,7 @@ function run(m, dir) {
   const base = makeCopy();
   let bad = 0;
   try {
-    for (const t of [LAZY, HASH, FONTS, SPLITN]) {
+    for (const t of [LAZY, HASH, FONTS, SPLITN, CJKD, CNT]) {
       const r = spawnSync(process.execPath, ['--test', '--test-timeout=20000', path.join(REPO, 'tests', 'load', t)], { env: Object.assign({}, process.env, { PPP_LOAD_ROOT: base }), encoding: 'utf8', timeout: 120000 });
       console.log((r.status === 0 ? 'ok      ' : 'FAIL    ') + 'unmutated copy: ' + t);
       if (r.status !== 0) { bad++; console.log((r.stdout || '').split('\n').filter(l => /✖|Error|expected|actual/.test(l)).slice(0, 12).join('\n')); }
