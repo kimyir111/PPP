@@ -16,7 +16,7 @@ const { spawnSync } = require('child_process');
 const REPO = path.resolve(__dirname, '..');
 /* what server.js needs to start (and what the test reads): a copy without them does not run */
 const FILES = ['server.js', 'share-guest.js', 'home-jobs.js', 'home-jobs-store.js', 'home-result.js', 'home-omr.js', 'body-reader.js', 'static-allow.js', 'static-assets.js',
-  'signup-limit.js', 'server-stats.js', 'catalog/shared-seeds.json', 'tools/shares-admin/list.js', 'package.json'];
+  'signup-limit.js', 'server-stats.js', 'client-stats.js', 'catalog/shared-seeds.json', 'tools/shares-admin/list.js', 'package.json'];
 
 const TEST = 'guest-post.test.js', PG = 'guest-post-pg.test.js';
 const PAGE_FILE = 'Piano Coach App.dc.html';
@@ -49,7 +49,7 @@ const M = [
   ['S5', 'server.js', 'the post caps are not asked when a post is made (POST)', ["const refuse = guestShare.decide(prev, held.mine, held.usage, row.bytes, row.listed ? guestListing(guests, ownerId, row.addrTag) : null);", "const refuse = guestShare.decide(prev, held.mine, held.usage, row.bytes, null);"], TEST],
   ['L3', 'share-guest.js', 'the site takes 15000 posts a day, not 150', ['POST_GLOBAL_PER_DAY: 150,', 'POST_GLOBAL_PER_DAY: 15000,'], TEST],
   ['N1', 'share-guest.js', 'a name passes for the site when it is not at the start ("The PPP team")', ["NOT_A_GUEST_KEYS.some(w => key.indexOf(w) > -1)", "NOT_A_GUEST_KEYS.some(w => key.indexOf(w) === 0)"], TEST],
-  ['N1b', 'share-guest.js', 'look-alike letters (Cyrillic, Greek) are not folded', [".replace(/[\u0370-\u03ff\u0400-\u04ff\u0250-\u02af\u0131]/g, c => LOOKALIKE[c] || c);", ";"], TEST],
+  ['N1b', 'share-guest.js', 'look-alike letters (Cyrillic, Greek) are not folded', [".replace(/[\\u0370-\\u03ff\\u0400-\\u04ff\\u0250-\\u02af\\u0131]/g, c => LOOKALIKE[c] || c);", ";"], TEST],
   ['N1c', 'share-guest.js', 'fullwidth and styled letters are not folded (no NFKC)', ["let t = String(s == null ? '' : s).normalize('NFKC').normalize('NFD')", "let t = String(s == null ? '' : s).normalize('NFD')"], TEST],
   ['N1d', 'share-guest.js', 'the owner\'s and the staff\'s names are not on the list (admin, support, ...)', ["'admin', 'administrator', 'moderator', 'support', 'official', 'staff', 'owner', 'system', 'operator', 'webmaster', 'helpdesk',", ""], TEST],
   ['N1e', 'share-guest.js', 'zalgo: any number of combining marks is kept', ["replace(/(\\p{M}{2})\\p{M}+/gu, '$1')", "replace(/(\\p{M}{200})\\p{M}+/gu, '$1')"], TEST],
@@ -120,9 +120,20 @@ function main() {
   if (args.includes('--list')) { M.forEach(m => console.log(m[0].padEnd(4) + m[1].padEnd(16) + m[2])); return 0; }
   const want = args.filter(a => !a.startsWith('--'));
   const pg = !!process.env.PPP_TEST_PG_URL;
-  const chosen = M.filter(m => (!want.length || want.indexOf(m[0]) > -1) && (m[4] !== PG || pg));
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-guest-post-mut-'));
+  let chosen = M.filter(m => (!want.length || want.indexOf(m[0]) > -1) && (m[4] !== PG || pg));
   let bad = 0;
+  /* a pattern that is no longer in its file (or is in it twice) is a STALE row: said at once, for every row, and it fails the run - it is not a mutant that was killed */
+  const stale = [];
+  chosen = chosen.filter(m => {
+    try {
+      const pairs = Array.isArray(m[3][0]) ? m[3] : [m[3]];
+      mutate(m[1], fs.readFileSync(path.join(REPO, m[1]), 'utf8'), pairs);
+      return true;
+    } catch (e) { stale.push(m[0] + ' STALE: ' + String(e.message).slice(0, 110)); return false; }
+  });
+  stale.forEach(s => { bad++; console.log(s); });
+  if (args.includes('--check')) { console.log(stale.length ? stale.length + ' stale row(s)' : 'every pattern is in its file, once (' + chosen.length + ' rows)'); return stale.length ? 1 : 0; }
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ppp-guest-post-mut-'));
   try {
     const clean = path.join(root, 'clean');
     copyTo(clean);

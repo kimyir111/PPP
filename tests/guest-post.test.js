@@ -587,6 +587,9 @@ async function hardening() {
     ok('stored cleaned (title, composer, name, kind)', t.status === 201 && trow.title === 'Moon light' && trow.composer === 'Bee thoven' && trow.ownerName === 'Pa t' && !/[\u0000-\u001f\u202e]/.test(trow.kind), JSON.stringify([trow.title, trow.composer, trow.ownerName, trow.kind]));
     const t2 = await postAs(P, secretOf(), { listed: true, score: smallScore('Inner\u202etitle', { composer: 'In\u0007ner' }) });
     ok('and the score\'s own title and composer too', !/[\u202e\u0007]/.test(JSON.stringify(readRows(srv.dir).find(x => x.id === t2.body.id).score)));
+    const t3 = await postAs(P, secretOf(), { listed: false, score: smallScore('Staves', { staves: 1e6, notes: [{ m: 1, b: 1, midi: 60, dur: 1, staff: 1e6 }, { m: 1, b: 2, midi: 62, dur: 1, staff: -3 }, { m: 1, b: 3, midi: 64, dur: 1, staff: 2 }] }) });
+    const sc3 = readRows(srv.dir).find(x => x.id === t3.body.id).score;
+    ok('a whole score is stored with its staves and every staff bounded (1..8): 1e6 and -3 are neutralised, 2 is left', t3.status === 201 && sc3.staves === 8 && sc3.notes.map(n => n.staff).join() === '8,1,2', JSON.stringify([sc3.staves, sc3.notes.map(n => n.staff)]));
 
     console.log('\n── the address is the /48: a new /64 or a new key is not a new place ──');
     const v6 = [];
