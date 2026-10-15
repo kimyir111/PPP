@@ -34,7 +34,12 @@ class Manifest(unittest.TestCase):
     def test_the_committed_manifest_is_well_formed(self):
         d = F.load_manifest()
         self.assertEqual(F.check_manifest(d), [])
-        self.assertEqual(d["entries"], [], "no file's licence has been read on its host yet: the list stays empty until someone has")
+        # G12-6 filled it: the two editions the catalogue was transcribed from, each read on its host and pinned
+        self.assertEqual([e["id"] for e in d["entries"]], ["beyer-op101-peters-1895", "czerny-op599-schirmer-1893"])
+        self.assertEqual([e["source"] for e in d["entries"]], ["commons", "archive"])
+        for e in d["entries"]:
+            self.assertNotEqual(e["sha256"], "0" * 64, "pinned")
+            self.assertTrue(e["pages"])
 
     def test_a_good_entry_passes(self):
         self.assertEqual(F.check_manifest(doc(GOOD)), [])
@@ -108,11 +113,24 @@ class NoNetworkByDefault(unittest.TestCase):
         self.assertFalse(ok)
 
     def test_the_command_line_check_is_offline_and_exits_zero_on_the_empty_manifest(self):
+        import tempfile
+        out = io.StringIO()
+        with tempfile.TemporaryDirectory() as d:
+            empty = os.path.join(d, "empty.json")
+            with open(empty, "w", encoding="utf-8") as h:
+                h.write('{"schema": "%s", "entries": []}' % F.SCHEMA)
+            with contextlib.redirect_stdout(out):
+                self.assertEqual(F.main(["--check"]), 0)
+                self.assertEqual(F.main(["--check", "--manifest", empty]), 0)
+                self.assertEqual(F.main(["--fetch", "--manifest", empty]), 0, "an empty manifest has nothing to fetch")
+        self.assertIn("2 entries, 0 problems", out.getvalue())
+        self.assertIn("0 entries", out.getvalue())
+
+    def test_fetch_without_the_network_flag_downloads_nothing(self):
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            self.assertEqual(F.main(["--check"]), 0)
-            self.assertEqual(F.main(["--fetch"]), 0, "an empty manifest has nothing to fetch")
-        self.assertIn("0 entries", out.getvalue())
+            self.assertEqual(F.main(["--verify"]), 1, "every entry is refused: the network is not touched without --allow-network")
+        self.assertEqual(out.getvalue().count("REFUSED"), 2)
 
     def test_a_folder_that_is_not_git_ignored_is_refused(self):
         import tempfile

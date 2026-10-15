@@ -1,10 +1,18 @@
 {
  "schema": "ppp.omr-real-scan/1",
  "bench": "omr-live-2",
- "about": "Public-domain page images of the editions the catalogue was transcribed from (catalog/method/books.json). The images are never committed; omrbench/fetch_real.py downloads the entries below to a git-ignored folder after the host itself says the file is public domain and the bytes match the pinned sha256. The list is EMPTY on purpose: no file's licence has been read on its host yet, and an id or URL written down from memory would be a guess (tests/omr/README.md, 'The real-scan tier').",
+ "about": "Public-domain page images of the editions the catalogue was transcribed from (catalog/method/books.json). The images are never committed; omrbench/fetch_real.py downloads the entries below to a git-ignored folder after the host itself says the file is public domain and the bytes match the pinned sha256, and renders only the pages listed. G12-6 filled the list (docs/GOALS/G12_OMR.md section 25): a page is in it when every piece on it is in the catalogue, registered, not a G0 hold-out, and nothing but those pieces is engraved on it (small note-name diagrams in the margin excepted); two cases are two pages each (a piece runs over the page). A case's truth is its pieces' catalogue bars, in page order.",
  "editions": [
-  {"work": "method/beyer", "edition": "Beyer, Vorschule im Klavierspiel Op. 101: Peters, Leipzig 1895 (rev. A. Ruthardt)", "transcribed_in": "catalog/method/beyer/"},
-  {"work": "method/czerny599", "edition": "Czerny, 100 Progressive Studies Op. 599: Schirmer, New York 1893 (ed. G. Buonamici)", "transcribed_in": "catalog/method/czerny599/"}
+  {
+   "work": "method/beyer",
+   "edition": "Beyer, Vorschule im Klavierspiel Op. 101: Peters, Leipzig 1895 (rev. A. Ruthardt)",
+   "transcribed_in": "catalog/method/beyer/"
+  },
+  {
+   "work": "method/czerny599",
+   "edition": "Czerny, 100 Progressive Studies Op. 599: Schirmer, New York 1893 (ed. G. Buonamici)",
+   "transcribed_in": "catalog/method/czerny599/"
+  }
  ],
  "entry_example": {
   "id": "beyer-op101-peters-1895",
@@ -16,8 +24,509 @@
   "licence_evidence": "https://<the https page of the host that states the licence>",
   "edition": "Peters, Leipzig 1895",
   "work": "method/beyer",
-  "pages": [{"pdf_page": 12, "piece": "method/beyer/012", "bars": [1, 8]}]
+  "pages": [
+   {
+    "pdf_page": 12,
+    "piece": "method/beyer/012",
+    "bars": [
+     1,
+     8
+    ]
+   }
+  ]
  },
  "known_differences": [],
- "entries": []
+ "entries": [
+  {
+   "id": "beyer-op101-peters-1895",
+   "source": "commons",
+   "title": "File:Vorschule im Klavierspiel, Op.101 (IA imslp-im-klavierspiel-op101-beyer-ferdinand).pdf",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/a/aa/Vorschule_im_Klavierspiel%2C_Op.101_%28IA_imslp-im-klavierspiel-op101-beyer-ferdinand%29.pdf",
+   "sha256": "369d3800bc8ad42c97fb4312b92060060a6d42aee4e642c35de797fb65ff23c2",
+   "sha1": "abf7b9c44703b2e994dad63e7b50ab01df4c1377",
+   "licence": "Public domain (Commons: 'Public domain', Copyrighted False, category PD-old-100-expired). The same bytes as IMSLP #81208 (sha1 abf7b9c4..., IMSLP 'Copyright: Public Domain'): Leipzig, Edition Peters No. 2721, n.d. [1895], plate 8033, rev. A. Ruthardt",
+   "licence_evidence": "https://commons.wikimedia.org/wiki/File:Vorschule_im_Klavierspiel,_Op.101_(IA_imslp-im-klavierspiel-op101-beyer-ferdinand).pdf",
+   "edition": "Peters, Leipzig 1895 (Ed. 2721, plate 8033)",
+   "work": "method/beyer",
+   "bytes": 10301776,
+   "cases": [
+    [
+     21
+    ],
+    [
+     24
+    ],
+    [
+     25
+    ],
+    [
+     31
+    ],
+    [
+     32
+    ],
+    [
+     35
+    ],
+    [
+     42
+    ],
+    [
+     43
+    ],
+    [
+     44
+    ]
+   ],
+   "pages": [
+    {
+     "pdf_page": 21,
+     "piece": "method/beyer/008",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 21,
+     "piece": "method/beyer/009",
+     "bars": [
+      1,
+      32
+     ]
+    },
+    {
+     "pdf_page": 24,
+     "piece": "method/beyer/012",
+     "bars": [
+      1,
+      8
+     ]
+    },
+    {
+     "pdf_page": 24,
+     "piece": "method/beyer/013",
+     "bars": [
+      1,
+      8
+     ]
+    },
+    {
+     "pdf_page": 24,
+     "piece": "method/beyer/014",
+     "bars": [
+      1,
+      8
+     ]
+    },
+    {
+     "pdf_page": 24,
+     "piece": "method/beyer/015",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 25,
+     "piece": "method/beyer/016",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 25,
+     "piece": "method/beyer/017",
+     "bars": [
+      1,
+      24
+     ]
+    },
+    {
+     "pdf_page": 25,
+     "piece": "method/beyer/018",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 31,
+     "piece": "method/beyer/032",
+     "bars": [
+      1,
+      24
+     ]
+    },
+    {
+     "pdf_page": 31,
+     "piece": "method/beyer/033",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 31,
+     "piece": "method/beyer/034",
+     "bars": [
+      1,
+      24
+     ]
+    },
+    {
+     "pdf_page": 32,
+     "piece": "method/beyer/035",
+     "bars": [
+      1,
+      20
+     ]
+    },
+    {
+     "pdf_page": 32,
+     "piece": "method/beyer/036",
+     "bars": [
+      1,
+      20
+     ]
+    },
+    {
+     "pdf_page": 32,
+     "piece": "method/beyer/037",
+     "bars": [
+      1,
+      24
+     ]
+    },
+    {
+     "pdf_page": 35,
+     "piece": "method/beyer/041",
+     "bars": [
+      1,
+      20
+     ]
+    },
+    {
+     "pdf_page": 35,
+     "piece": "method/beyer/042",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 35,
+     "piece": "method/beyer/043",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 42,
+     "piece": "method/beyer/055",
+     "bars": [
+      1,
+      20
+     ]
+    },
+    {
+     "pdf_page": 42,
+     "piece": "method/beyer/056",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 42,
+     "piece": "method/beyer/057",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 43,
+     "piece": "method/beyer/058",
+     "bars": [
+      1,
+      13
+     ]
+    },
+    {
+     "pdf_page": 43,
+     "piece": "method/beyer/059",
+     "bars": [
+      1,
+      32
+     ]
+    },
+    {
+     "pdf_page": 44,
+     "piece": "method/beyer/060",
+     "bars": [
+      1,
+      24
+     ]
+    },
+    {
+     "pdf_page": 44,
+     "piece": "method/beyer/061",
+     "bars": [
+      1,
+      16
+     ]
+    }
+   ]
+  },
+  {
+   "id": "czerny-op599-schirmer-1893",
+   "source": "archive",
+   "title": "PMLP08821-Practical_Method_for_Beginners.pdf",
+   "url": "https://archive.org/download/imslp-exercises-for-beginners-op599-czerny-carl/PMLP08821-Practical_Method_for_Beginners.pdf",
+   "sha256": "a24a9d33d16e435b7a56e7d1e42b2da5b26bb7b6479439f7eaca74f8db0a1b03",
+   "sha1": "dd60f2c2740fa0edbb7243cd12bb6fe93b3276cd",
+   "licence": "Public domain (IMSLP #105466, 'Copyright: Public Domain'): New York, G. Schirmer 1893, Library of Musical Classics No. 146, plate 11038, ed. G. Buonamici; the Internet Archive item of IMSLP's collection holds IMSLP's file byte for byte",
+   "licence_evidence": "https://imslp.org/wiki/Practical_Exercises_for_Beginners,_Op.599_(Czerny,_Carl)",
+   "licence_text": "Plate 11038. Copyright Public Domain",
+   "edition": "Schirmer, New York 1893 (Library of Musical Classics 146, plate 11038)",
+   "work": "method/czerny599",
+   "bytes": 5427559,
+   "cases": [
+    [
+     3
+    ],
+    [
+     4
+    ],
+    [
+     7
+    ],
+    [
+     10
+    ],
+    [
+     14,
+     15
+    ],
+    [
+     18,
+     19
+    ],
+    [
+     20
+    ],
+    [
+     25
+    ],
+    [
+     26
+    ]
+   ],
+   "pages": [
+    {
+     "pdf_page": 3,
+     "piece": "method/czerny599/001",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 3,
+     "piece": "method/czerny599/002",
+     "bars": [
+      1,
+      32
+     ]
+    },
+    {
+     "pdf_page": 4,
+     "piece": "method/czerny599/003",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 4,
+     "piece": "method/czerny599/004",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 4,
+     "piece": "method/czerny599/005",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 7,
+     "piece": "method/czerny599/013",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 7,
+     "piece": "method/czerny599/014",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 10,
+     "piece": "method/czerny599/018",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 14,
+     "piece": "method/czerny599/026",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 14,
+     "piece": "method/czerny599/027",
+     "bars": [
+      1,
+      8
+     ]
+    },
+    {
+     "pdf_page": 14,
+     "piece": "method/czerny599/028",
+     "bars": [
+      1,
+      4
+     ]
+    },
+    {
+     "pdf_page": 15,
+     "piece": "method/czerny599/028",
+     "bars": [
+      5,
+      16
+     ]
+    },
+    {
+     "pdf_page": 15,
+     "piece": "method/czerny599/029",
+     "bars": [
+      1,
+      24
+     ]
+    },
+    {
+     "pdf_page": 18,
+     "piece": "method/czerny599/034",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 18,
+     "piece": "method/czerny599/035",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 18,
+     "piece": "method/czerny599/036",
+     "bars": [
+      1,
+      10
+     ]
+    },
+    {
+     "pdf_page": 19,
+     "piece": "method/czerny599/036",
+     "bars": [
+      11,
+      16
+     ]
+    },
+    {
+     "pdf_page": 19,
+     "piece": "method/czerny599/037",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 19,
+     "piece": "method/czerny599/038",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 20,
+     "piece": "method/czerny599/039",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 20,
+     "piece": "method/czerny599/040",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 25,
+     "piece": "method/czerny599/048",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 25,
+     "piece": "method/czerny599/049",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 26,
+     "piece": "method/czerny599/050",
+     "bars": [
+      1,
+      16
+     ]
+    },
+    {
+     "pdf_page": 26,
+     "piece": "method/czerny599/051",
+     "bars": [
+      1,
+      16
+     ]
+    }
+   ]
+  }
+ ]
 }
