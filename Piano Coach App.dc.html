@@ -19212,7 +19212,9 @@ class Component extends DCLogic {
     lib.songs = lib.songs.filter(s => s.id !== id);
     this.libraryWrite(lib);
     try { localStorage.removeItem(SONG_KEY + id); } catch (e) {}
-    if (!opts.keepVideo) MediaStore.del(id);   /* G13-S1: a song removed because another device removed it keeps the video of this one (a video is never synced, so nothing else has it) */
+    /* G13-S1: a song removed because another device removed it keeps the video of this one (a video is never synced, so nothing else has it); the two lines below stay as they were */
+    if (opts.keepVideo) { /* kept */ } else
+    MediaStore.del(id);
     engraveForget(id);
     forgetRunLog(id);
     this.setState({ armedRemove: null });

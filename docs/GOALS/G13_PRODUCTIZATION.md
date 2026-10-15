@@ -1010,7 +1010,7 @@ Worktree `D:/PPP-g13s1`, branch `g13-s1-sync-page` from `origin/main` `284cc5e` 
 `sync/qr.js` (a small QR encoder). Small hunks in `Piano Coach App.dc.html` (all additive, **no template node**: the section's place is made by the script, so with the switch off the
 page's DOM is `origin/main`'s down to the numbering of its nodes: `tests/load-app/dom-identity.js` against an `origin/main` archive, Home, Practice and Settings, en-US and ko-KR: identical,
 0 page errors). `library-backup.js` learns the sync code (never in a backup: the second wall) and the `ppp-sync` database (the wipe). `static-allow.js` lists the four files.
-Tests in `tests/sync-page/`. i18n: 109 strings in ko, ja and zh (gaps checker baseline 0; 해요체 in Korean).
+Tests in `tests/sync-page/`. i18n: 110 strings in ko, ja and zh (gaps checker baseline 0; 해요체 in Korean).
 
 **The switch.** `PPP.sync = 'off'` (default) | `'on'` (the semantics of `PPP.recording`: `?sync=` for the visit, the remembered `localStorage ppp.sync.v1`, the default). **Off**: the page is
 byte-identical in behaviour: none of `sync/`'s files is asked for, no request of the feature is made (`/sync/*`, `/api/libs`, `/api/sync`), no entry in Settings, a `#lib=` in the address is
@@ -1078,13 +1078,13 @@ back from the library.
 | First sync, 500 songs (browser, 6-note tunes; Node, 20-30 notes: 1.4-2.0 s) | 3 rounds: 233, 234 and 33 items, 0.4 s, 0.2 s, 0.1 s of work; the waits are 2 hours ("about 2 h left", then "about 1 h left") |
 | A second device reading 500 | 299 songs at once (300 an hour), the rest an hour later; 0.3 s + 0.1 s of work |
 | Statements (Postgres, the real server) | turn on + 30 songs 5; join + read 30 songs 5; idle visit **0**; first visit after a restart **1** |
-| Convergence (three devices, random operations) | 150 seeds x 150 operations (22,500 operations, 5,779 cycles, 241 forks): the same songs with the same content on all three, the counters the sum, nothing left to say |
+| Convergence (three devices, random operations) | 150 seeds x 150 operations (22,500 operations, 5,729 cycles, 247 forks): the same songs with the same content on all three, the counters the sum, nothing left to say |
 
 **Tests** (`npm run test:sync-page` is Node only and a step of shard-q; `tests/sync-page/page.test.js` and the mutants of the page are the CI job `sync-page-suite`, not a gate job):
 `merge.test.js` (59 checks), `qr.test.js` (structure read back by a reader that is not the encoder, golden symbols, jsQR where installed: 144 symbols), `engine.test.js` (40) and
 `engine-edge.test.js` (86: offline and a flaky network, 31 days away, reset, rotated, deleted, the recovery code, 500 songs under the hour's room, an idle poll, a full disk, hostile
 items, a secret in a title, a stuck conflict, a frozen page, two tabs, a request that hangs, a yes that is for the songs asked about, a copy that cannot be kept), `converge.test.js`
-(property: 16 seeds in CI, `PPP_SYNC_SEEDS`/`PPP_SYNC_OPS` for more), `page.test.js` (75, two browser contexts: the switch off, the link, the question, converging edits, both score edits
+(property: 16 seeds in CI, `PPP_SYNC_SEEDS`/`PPP_SYNC_OPS` for more), `page.test.js` (80, two browser contexts: the switch off, the link, the question, converging edits, both score edits
 kept, 17 removals asked, Recently deleted, 31 days, busy and 429 with Retry-After, a new code, the recovery code on a 360 px phone, no code in any URL or log, idle store calls),
 `big.test.js` (500 songs with the clock moved), `pg.test.js` (real server.js and Postgres, by hand). **Mutants** (`tests/sync-page/mutants.js`): 59 of `merge.js` and `client.js` (each rule of
 7.5 and each check above) and 10 of the page and `ui.js` (the switch, the head script, the removal hook, the question before joining, the recovery code, stop, delete in two steps, change of
