@@ -17042,7 +17042,9 @@ class Component extends DCLogic {
   }
   /* the Loop panel's next step has another tempo than the page: applied while the automatic switch is on, offered otherwise (hands are set as they always were) */
   adaptiveStepTempo(S, patch, nx) {
-    const ad = this._ad;
+    const ad = this._ad, dt = ad.decision && ad.decision.task;
+    /* the passage the policy works on has its own ladder (the card, the suggestion, the switch), which follows the accuracy: the steps' lap counts do not move its tempo */
+    if (dt && dt.mode === 'practice' && dt.range.start === S.loopFrom && dt.range.end === S.loopTo) return;
     if (ad.auto) { patch.tempo = clamp(R0((S.score.tempo || 84) * nx.tempoPct / 100), 30, 200); return; }
     const cur = R0((S.tempo / (S.score.tempo || 84)) * 100);
     if (Math.abs(cur - nx.tempoPct) >= 3) ad.suggest = { id: ++ad.sugSeq, from: S.loopFrom, to: S.loopTo, pct: nx.tempoPct };

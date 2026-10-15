@@ -368,6 +368,38 @@ async function run(browser, h, want) {
     }
     ok('while it is on the policy\'s step is applied between laps (autoApplied counted, no chip left over)', !!moved && !moved.chip, JSON.stringify(moved));
     await p.close();
+    /* a passage the person picked: the Loop panel's next step carries a tempo; with the switch off it is offered, with it on it is applied at the lap boundary */
+    for (const auto of [false, true]) {
+      const r = await pageWith({ query: '?learner=adaptive', init: auto ? [[() => { localStorage.setItem('ppp.adaptiveTempo.v1', 'on'); }, null]] : [] },
+        { xml: XML24, type: 'even', seed: 21, dR: 0.6, dL: 0.7, hard: [{ from: 9, to: 12, hand: 'r', add: 3.2 }, { from: 9, to: 12, hand: 'l', add: 3.2 }, { from: 17, to: 20, hand: 'r', add: 2.6 }, { from: 17, to: 20, hand: 'l', add: 2.6 }] });
+      await laps(r, { n: 1 });
+      /* two laps of the passage at the score tempo, so that the model knows it is hard */
+      await r.page.evaluate(async () => {
+        const A = PPP.app;
+        A.setLoop(17, 20);
+        A.setState({ hands: 'both', tempo: A.state.score.tempo, loop: true, practiceMode: 'practice', seqStep: 0, seqReps: 0 });
+        await new Promise(x => setTimeout(x, 60));
+        for (let i = 0; i < 4; i++) await window.__lapInPage({});
+      });
+      const st = await r.page.evaluate(async () => {
+        const A = PPP.app, sl = ms => new Promise(x => setTimeout(x, ms));
+        const rows = A.seq().map(x => ({ h: x.hands, p: x.tempoPct, n: x.reps }));
+        const ownTask = PPP.adaptive.decision && PPP.adaptive.decision.task;
+        A.setState({ seqStep: 0, seqReps: 0, tempo: Math.round(A.state.score.tempo * rows[0].p / 100), hands: rows[0].h });
+        await sl(80);
+        const owns = !!(ownTask && ownTask.range.start === 17 && ownTask.range.end === 20);
+        const before = A.state.tempo;
+        for (let i = 0; i < rows[0].n; i++) await window.__lapInPage({});
+        await sl(120);
+        return { rows: rows, owns: owns, before: before, after: A.state.tempo, want: rows[1] ? Math.round(A.state.score.tempo * rows[1].p / 100) : null, suggest: PPP.adaptive.suggest, step: A.state.seqStep };
+      });
+      const label = auto ? 'on' : 'off';
+      ok('a passage a person picked, switch ' + label + ': the Loop panel has steps whose tempos differ (the plan for a hard passage)', st.rows.length >= 2 && st.rows[1].p !== st.rows[0].p && !st.owns, JSON.stringify(st.rows) + ' policy owns: ' + st.owns);
+      if (auto) ok('switch on: when its repetitions are done the next step\'s tempo is applied at the lap boundary', st.rows.length >= 2 && st.after === st.want && st.step === 1, JSON.stringify(st));
+      else ok('switch off: the next step\'s tempo is not applied, it is offered as a suggestion (one tap)', st.rows.length >= 2 && st.after === st.before && !!st.suggest && st.suggest.pct === st.rows[1].p && st.step === 1, JSON.stringify(st));
+      ok('no page error', r.probe.errors.length === 0, r.probe.errors.join('|'));
+      await r.close();
+    }
     /* a new page: the choice is remembered, and turned off again, forgotten */
     const q = await pageWith({ query: '?learner=adaptive', init: [[() => { localStorage.setItem('ppp.adaptiveTempo.v1', 'on'); }, null]] }, { xml: XML24, type: 'even', seed: 21 });
     const rem = await q.page.evaluate(() => ({ auto: PPP.adaptive.auto }));
