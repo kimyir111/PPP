@@ -239,7 +239,8 @@ async function main() {
   console.log('practice-sim ' + set + ' baseline: identical (' + rel + ')');
 }
 
-if (!isMainThread) {
+/* a worker of this file (not of another tool that requires it, such as policy-eval.js) */
+if (!isMainThread && require.main === module) {
   runJobs(workerData.jobs, row => parentPort.postMessage({ row }))
     .then(() => parentPort.postMessage({ done: true }), e => parentPort.postMessage({ error: (e && e.stack) || String(e) }));
 } else if (require.main === module) {
