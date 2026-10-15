@@ -1768,6 +1768,23 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
               </div>
             </sc-if>
 
+            <!-- G11b-3 (PPP.learner 'adaptive' only): the tempo PPP suggests next, with one tap, and the switch that lets it change the tempo between runs by itself (off until a person turns it on). -->
+            <sc-if value="{{ showAdaptiveRow }}" hint-placeholder-val="{{ false }}">
+              <div data-adaptive-row style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                <sc-if value="{{ adaptiveHasSuggest }}" hint-placeholder-val="{{ false }}">
+                  <div data-adaptive-suggest style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--accent-2); background: var(--accent-3);">
+                    <span data-adaptive-suggest-text style="flex: 1 1 150px; font-size: 12.5px; line-height: 1.45; color: var(--ink);">{{ adaptiveSuggestText }}</span>
+                    <button onClick="{{ adaptiveSuggestApply }}" data-adaptive-apply style="padding: 6px 12px; border-radius: 9px; border: 0; background: var(--accent); color: #fff; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">{{ adaptiveSuggestLabel }}</button>
+                    <button onClick="{{ adaptiveSuggestDismiss }}" data-adaptive-dismiss aria-label="{{ adaptiveDismissLabel }}" title="{{ adaptiveDismissLabel }}" style="padding: 3px 8px; border: 0; background: transparent; color: var(--ink3); font-family: inherit; font-size: 14px; cursor: pointer;">×</button>
+                  </div>
+                </sc-if>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                  <button type="button" onClick="{{ toggleAdaptiveAuto }}" data-adaptive-auto aria-pressed="{{ adaptiveAutoPressed }}" style="{{ adaptiveAutoStyle }}">{{ adaptiveAutoLabel }}</button>
+                </div>
+                <div data-adaptive-auto-note style="font-size: 12px; line-height: 1.45; color: var(--ink3);">{{ adaptiveAutoNote }}</div>
+              </div>
+            </sc-if>
+
             <!-- A passage you picked yourself: why it is hard and the steps for
                  it. Shown only when the session is not already driving this
                  passage, so there is never more than one instruction at a time. -->
@@ -2824,6 +2841,23 @@ window.PPP_CDN = (function () { var c = null; try { c = localStorage.getItem('pp
               <button onClick="{{ exportRunLog }}" data-run-log-export style="margin-left: auto; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;" style-hover="border-color: var(--ink3);">{{ runLogExportLabel }}</button>
             </div>
           </sc-if>
+          <!-- G11b-3: Labs - features that are still being tested, each off until a person turns it on. One row per feature (labsRows); the list is built in adaptiveVals(). -->
+          <div data-labs-section style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px 22px; display: flex; flex-direction: column; gap: 12px;">
+            <div>
+              <div style="font-size: 14.5px; font-weight: 600;">{{ labsTitle }}</div>
+              <div style="font-size: 12.5px; line-height: 1.5; color: var(--ink3); margin-top: 3px;">{{ labsSub }}</div>
+            </div>
+            <sc-for list="{{ labsRows }}" as="lab" hint-placeholder-count="1">
+              <div data-labs-row="{{ lab.id }}" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--line);">
+                <div style="min-width: 0; flex: 1; flex-basis: 260px;">
+                  <div style="font-size: 13.5px; font-weight: 500;">{{ lab.title }}</div>
+                  <div style="font-size: 12px; line-height: 1.5; color: var(--ink3); margin-top: 2px;">{{ lab.sub }}</div>
+                  <div data-labs-note style="font-size: 12px; color: var(--ink2); margin-top: 4px;">{{ lab.note }}</div>
+                </div>
+                <button type="button" onClick="{{ lab.on }}" data-labs-toggle="{{ lab.id }}" aria-pressed="{{ lab.pressed }}" style="{{ lab.style }}">{{ lab.title }}</button>
+              </div>
+            </sc-for>
+          </div>
           <sc-if value="{{ showHomeSettings }}" hint-placeholder-val="{{ false }}">
             <div data-home-settings style="border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 20px 22px; display: flex; flex-direction: column; gap: 12px;">
               <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
@@ -6147,11 +6181,22 @@ function setRecordingArrangeMode(v) {
    the weekly bars or the run log (an epoch still counts it). It holds under 'legacy' and 'typed' alike; 'count' is an explicit opt-out (?demoRuns=count, PPP.demoRuns = 'count'), today's behaviour before U4. */
 const LEARNER_KEY = 'ppp.learner.v1';
 const LEARNER_DEFAULT = 'legacy';
-function learnerChoice(v) { return v === 'typed' || v === 'legacy' ? v : null; }
+/* G11b-3: 'adaptive' (the policy of practice/policy.js feeds the cards) implies the typed log, so it reads as 'typed' here - LEARNER_MODE is what the evidence path asks, and stays 'legacy' | 'typed'.
+   LEARNER_CHOICE (below) keeps the third word. */
+function learnerChoice(v) { return v === 'typed' || v === 'legacy' ? v : v === 'adaptive' ? 'typed' : null; }
 let LEARNER_MODE = (() => {
   let m = LEARNER_DEFAULT;
   try { m = learnerChoice(localStorage.getItem(LEARNER_KEY)) || m; } catch (e) { /* no storage: the default */ }
   try { const u = learnerChoice(new URLSearchParams(location.search).get('learner')); if (u) m = u; } catch (e) { /* no address to read */ }
+  return m;
+})();
+/* G11b-3: PPP.learner as a person sees it: 'legacy' (default) | 'typed' | 'adaptive'. The same layers as LEARNER_MODE (the address, the remembered choice, the default); the extracted engines
+   of the practice simulator never name it - the page's methods ask `this._ad`, which is set only while this is 'adaptive'. */
+function learnerWord(v) { return v === 'adaptive' || v === 'typed' || v === 'legacy' ? v : null; }
+let LEARNER_CHOICE = (() => {
+  let m = LEARNER_DEFAULT;
+  try { m = learnerWord(localStorage.getItem(LEARNER_KEY)) || m; } catch (e) { /* no storage: the default */ }
+  try { const u = learnerWord(new URLSearchParams(location.search).get('learner')); if (u) m = u; } catch (e) { /* no address to read */ }
   return m;
 })();
 const DEMO_RUNS_KEY = 'ppp.demoRuns.v1';
@@ -6165,11 +6210,15 @@ let DEMO_RUNS_MODE = (() => {
 })();
 /* a choice is remembered; a value that is no choice puts the default back and forgets the remembered one */
 function setLearnerMode(v) {
-  const c = learnerChoice(v);
+  const c = learnerChoice(v), w = learnerWord(v);
   LEARNER_MODE = c || LEARNER_DEFAULT;
-  try { if (c) localStorage.setItem(LEARNER_KEY, c); else localStorage.removeItem(LEARNER_KEY); } catch (e) { /* not remembered */ }
+  LEARNER_CHOICE = w || LEARNER_DEFAULT;
+  try { if (w) localStorage.setItem(LEARNER_KEY, w); else localStorage.removeItem(LEARNER_KEY); } catch (e) { /* not remembered */ }
   if (LEARNER_MODE === 'typed') loadRunLogModule();
-  return LEARNER_MODE;
+  if (LEARNER_CHOICE === 'adaptive') loadAdaptiveModules();
+  /* the page of this visit follows at once (G11b-3): the cards, the sequence and the coach read the policy from the next draw on, or the legacy ones again */
+  try { const A = typeof window !== 'undefined' && window.PPP && window.PPP.app; if (A && A.adaptiveSwitch) A.adaptiveSwitch(); } catch (e) { /* the page is not up yet: componentDidUpdate asks */ }
+  return LEARNER_CHOICE;
 }
 function setDemoRunsMode(v) {
   const c = demoRunsChoice(v);
@@ -6210,6 +6259,71 @@ if (LEARNER_MODE === 'typed') loadRunLogModule();
 /* a song removed from My Songs takes its run log with it (a no-op under 'legacy', which never wrote one) */
 function forgetRunLog(songId) {
   try { if (LEARNER_MODE === 'typed' && window.PPPRunLog) window.PPPRunLog.pageLog(window).forget(songId); } catch (e) { /* the log is not the song's problem */ }
+  adaptiveForgetSong(songId);
+}
+/* ============================ G11b-3: adaptive practice (PPP.learner 'adaptive') ============================
+   docs/GOALS/G11_ADAPTIVE_PRACTICE.md section 7.3, 20 and 21 (G11b-3). Under 'adaptive' - and only then - the learner model of practice/learner.js, fed by the typed run log, and the policy of
+   practice/policy.js decide what to practise next: the recommendation card, the Loop panel's sequence and what the deterministic coach is told. 'adaptive' implies the typed log (LEARNER_MODE is 'typed').
+   The two files are fetched only under 'adaptive' (practice/learner.js, then practice/policy.js, which reads the first), by script element, like practice/runlog.js; under 'legacy' and 'typed' nothing is
+   requested and every method below is out of the way (`this._ad` is not set). The tempo is SUGGESTED (decision U6): the switch that lets the policy change it between laps is off until a person turns it on.
+   The LLM coach stays off (U8): under 'adaptive' the deterministic coach answers and the model's summary is never sent to a service. Practice data stays on the device (U5).
+   What is kept: the policy's own small state per (song id, music hash) - the run log's epoch - in localStorage 'ppp.adaptive.v1' (at most ADAPTIVE_KEEP songs); the model is rebuilt from the run log. */
+const ADAPTIVE_SCRIPTS = ['practice/learner.js', 'practice/policy.js'];
+const ADAPTIVE_FILE_V = 1; /* the ?v= of both files: bump it when one changes */
+const ADAPTIVE_STATE_KEY = 'ppp.adaptive.v1';
+const ADAPTIVE_AUTO_KEY = 'ppp.adaptiveTempo.v1';   /* 'on' | absent: the policy may change the tempo between laps by itself (U6, off) */
+const ADAPTIVE_KEEP = 24;
+let _adaptivePromise = null;
+/* resolves true when window.PPPLearner and window.PPPPolicy are there; never rejects; a failed download is asked for again next time */
+function loadAdaptiveModules() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return Promise.resolve(false);
+  if (window.PPPLearner && window.PPPPolicy) return Promise.resolve(true);
+  if (_adaptivePromise) return _adaptivePromise;
+  const add = file => new Promise(resolve => {
+    try {
+      const el = document.createElement('script');
+      el.src = './' + file + '?v=' + ADAPTIVE_FILE_V;
+      el.onload = () => resolve(true);
+      el.onerror = () => resolve(false);
+      document.head.appendChild(el);
+    } catch (e) { resolve(false); }
+  });
+  _adaptivePromise = (window.PPPLearner ? Promise.resolve(true) : add(ADAPTIVE_SCRIPTS[0]))
+    .then(ok => (ok ? add(ADAPTIVE_SCRIPTS[1]) : false))
+    .then(ok => { _adaptivePromise = null; return !!(ok && window.PPPLearner && window.PPPPolicy); });
+  return _adaptivePromise;
+}
+if (LEARNER_CHOICE === 'adaptive') loadAdaptiveModules();
+/* the policy's state of one epoch (song id + music hash): a small JSON, kept next to the run log's epochs; a new music hash is a new epoch and starts again */
+function adaptiveEpoch(songId, hash) { return String(songId) + '|' + String(hash); }
+function adaptiveStateRead(key) {
+  try {
+    const all = JSON.parse(localStorage.getItem(ADAPTIVE_STATE_KEY) || 'null');
+    const e = all && all.songs && all.songs[key];
+    return e && e.st && typeof e.st === 'object' ? e.st : null;
+  } catch (e) { return null; }
+}
+function adaptiveStateWrite(key, st, at) {
+  try {
+    let all = null;
+    try { all = JSON.parse(localStorage.getItem(ADAPTIVE_STATE_KEY) || 'null'); } catch (e) { all = null; }
+    if (!all || typeof all !== 'object' || !all.songs || typeof all.songs !== 'object') all = { v: 1, songs: {} };
+    all.songs[key] = { at: at, st: st };
+    const keys = Object.keys(all.songs);
+    if (keys.length > ADAPTIVE_KEEP) keys.sort((a, b) => (all.songs[a].at || 0) - (all.songs[b].at || 0)).slice(0, keys.length - ADAPTIVE_KEEP).forEach(k => { delete all.songs[k]; });
+    localStorage.setItem(ADAPTIVE_STATE_KEY, JSON.stringify(all));
+  } catch (e) { /* full or blocked: the state is rebuilt from the log next time */ }
+}
+/* a song removed from My Songs takes its policy state with it (the run log's rule); a page that is not adaptive never touches the key */
+function adaptiveForgetSong(songId) {
+  if (LEARNER_CHOICE !== 'adaptive') return;
+  try {
+    const all = JSON.parse(localStorage.getItem(ADAPTIVE_STATE_KEY) || 'null');
+    if (!all || !all.songs) return;
+    const prefix = String(songId) + '|';
+    Object.keys(all.songs).forEach(k => { if (k.indexOf(prefix) === 0) delete all.songs[k]; });
+    localStorage.setItem(ADAPTIVE_STATE_KEY, JSON.stringify(all));
+  } catch (e) { /* nothing kept, or storage refused */ }
 }
 /* ============================ G12-1: PPP.omr (docs/GOALS/G12_OMR.md G12-D10) ============================
    PPP.omr = 'legacy' (default) | 'v2'. A choice is one of those two strings; anything else is no choice, and no choice is the default (PPP.recording's rule).
@@ -10671,6 +10785,8 @@ const Coach = {
     walk(ctx.song, 'song'); walk(ctx.practice, 'practice'); walk(ctx.learning, 'learning');
     walk(ctx.memory, 'memory'); walk(ctx.recommendation, 'recommendation');
     walk(ctx.session, 'session'); walk(ctx.structural, 'structural');
+    /* G11b-3: the learner model's summary (a context made under PPP.learner 'adaptive'), as measured percentages; its plan is checked by validate, not read for numbers */
+    walk(ctx.adaptive && ctx.adaptive.summary, 'adaptive');
     return Object.keys(out).map(Number);
   },
 
@@ -10738,6 +10854,8 @@ const Coach = {
      This is the fallback, and it is also the yardstick: anything the AI
      proposes has to be at least as executable as this. */
   deterministicPlan(ctx) {
+    /* G11b-3: under PPP.learner 'adaptive' the policy's plan (practice/policy.js, already through validate once) is what the deterministic coach answers; validate checks it again in plan() */
+    if (ctx.adaptive && ctx.adaptive.plan && ctx.adaptive.plan.tasks && ctx.adaptive.plan.tasks.length) return JSON.parse(JSON.stringify(ctx.adaptive.plan));
     const tasks = [];
     const rec = ctx.recommendation;
     const weak = ctx.learning.weakRanges[0];
@@ -10951,9 +11069,12 @@ const Coach = {
           .catch(() => false);
       },
       generate(ctx) {
+        /* G11b-3 (U8): the learner model's summary and the policy's plan never leave the device */
+        const sent = Object.assign({}, ctx);
+        delete sent.adaptive;
         return fetch(COACH_URL + '/coach', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ context: ctx })
+          body: JSON.stringify({ context: sent })
         }).then(r => r.json().then(j => {
           if (!r.ok || !j.ok) throw new Error(j && j.error ? j.error : tx('The coach service failed.'));
           /* the answer says who wrote it; trust that over what /health said */
@@ -11015,6 +11136,7 @@ const Coach = {
   shouldReplan(prev, next) {
     if (!prev) return true;
     if (!next) return false;
+    if (prev.focus !== next.focus) return true;                     /* G11b-3: the policy chose another passage, hand or tempo step (undefined on both sides unless adaptive) */
     if (prev.weakTop !== next.weakTop) return true;                 /* a different passage is now worst */
     if (prev.dueCount !== next.dueCount) return true;               /* a review came due or was cleared */
     if (Math.abs((prev.accuracy || 0) - (next.accuracy || 0)) >= 8) return true;  /* meaningful swing */
@@ -11024,12 +11146,15 @@ const Coach = {
   fingerprint(ctx) {
     const w = ctx.learning.weakRanges[0];
     const memorizing = ctx.memory.sections.filter(s => s.state === 'memorizing' || s.state === 'memory-ready')[0];
-    return {
+    const fp = {
       weakTop: w ? w.from + '-' + w.to : null,
       accuracy: w ? w.accuracy : (ctx.learning.songAccuracy || 0),
       dueCount: ctx.memory.dueReviews.length,
       memoryLevel: memorizing ? memorizing.memory.level : null
     };
+    const af = ctx.adaptive && ctx.adaptive.summary && ctx.adaptive.summary.focus;
+    if (af) fp.focus = af.from + '-' + af.to + ':' + af.hand + ':' + af.tempoPercent + ':' + af.mode;
+    return fp;
   }
 };
 
@@ -11998,8 +12123,10 @@ window.PPP = {
   /* G11b-1 (docs/GOALS/G11 G11-D5, G11-D6): 'legacy' (default: the learner history exactly as it was) | 'typed' (every run is named, and the measured, follow and memory runs go into the run log, practice/runlog.js).
      Any other value is no choice: the default comes back and the remembered choice is forgotten (PPP.recording's rule). A choice is remembered on this device; ?learner= in the address is for that visit only.
      PPP.demoRuns is decision U4, decided YES (2026-10-13): 'separate' (default: a run without a keyboard moves the screen and writes no evidence, under 'legacy' and 'typed') | 'count' (explicit opt-out: folded in as before U4). runLog is for tests and the console. */
-  get learner() { return LEARNER_MODE; },
+  get learner() { return LEARNER_CHOICE; },   /* G11b-3: 'legacy' | 'typed' | 'adaptive' (the policy of practice/policy.js feeds the cards; implies the typed log); another word is no choice */
   set learner(v) { setLearnerMode(v); },
+  get adaptive() { const A = window.PPP && window.PPP.app; return A && A.adaptiveReport ? A.adaptiveReport() : null; },   /* for tests and the console: what the adaptive path did */
+  loadAdaptiveModules,
   get demoRuns() { return DEMO_RUNS_MODE; },
   set demoRuns(v) { setDemoRunsMode(v); },
   get runLog() { const A = window.PPP && window.PPP.app; return { log: LEARNER_MODE === 'typed' && window.PPPRunLog ? window.PPPRunLog.pageLog(window) : null, laps: A && A._runLogLaps ? A._runLogLaps.slice() : [] }; },
@@ -14356,6 +14483,7 @@ class Component extends DCLogic {
     this.persist();
     this.maybeReplan();
     if (LEARNER_MODE === 'typed') this.warmRunLog(this.state.score);   /* G11b-1: the Score's music hash and note ids are worked out in idle time, not at the end of a lap */
+    if (LEARNER_CHOICE === 'adaptive') this.adaptiveWarm(this.state);   /* G11b-3: the model of the open song is rebuilt from its run log in idle time (a no-op until the score changes) */
     if (PRACTICE_MODE === 'graph') this.warmPractice(this.state);       /* G11a-5 (TD31): the source of the open song is worked out in idle time, not on the first Play */
     this.followKeyboard();
     this.followStaff();
@@ -14986,6 +15114,7 @@ class Component extends DCLogic {
       /* what PPP learned from the history (model()), the drill sequence (seq()) and the memory eligibility (memEligible()) are kept per history, and hold
          sentences made by tx(): made before the catalogs arrived, or in the other language, they would stay as they are */
       this._model = null; this._seq = null; this._elig = null;
+      if (this._ad) this.adaptiveText();   /* G11b-3: the policy's sentences (card, steps, plan) were made by tx() too */
       this.setState({ locale: this._locale });
       this.applyI18n();
       /* the plan's sentences were written in the old language */
@@ -15198,23 +15327,32 @@ class Component extends DCLogic {
   /* ============================ coach ============================ */
   /* Everything the coach may know, assembled from facts the engines already
      decided. No raw MIDI, no per-note history — summaries only. */
-  coachContext() {
+  coachContext(plain) {
     const S = this.state;
-    return Coach.context({
-      score: S.score, history: S.history, memory: S.memory,
-      model: this.model(), state: S,
-      recommendation: this.recommendation(),
-      songProgress: this.songProgress(), songMemory: this.songMemory(),
-      completed: S.coachDone,
-      /* G06 §11 G6b: null under PPP.difficulty = 'legacy' (default), so Coach.context falls back to its
-         own Coach.structural(score) exactly as before G6b. */
-      difficulty: this.difficultyAssessment()
-    });
+    const ad = this._ad;
+    let ctx;
+    /* G11b-3 (PPP.learner 'adaptive' only): `plain` is the context a policy decision or a card is CHECKED against: it carries the legacy recommendation, never its own, and no model summary */
+    if (ad && plain) ad.busy = true;
+    try {
+      ctx = Coach.context({
+        score: S.score, history: S.history, memory: S.memory,
+        model: this.model(), state: S,
+        recommendation: this.recommendation(),
+        songProgress: this.songProgress(), songMemory: this.songMemory(),
+        completed: S.coachDone,
+        /* G06 §11 G6b: null under PPP.difficulty = 'legacy' (default), so Coach.context falls back to its
+           own Coach.structural(score) exactly as before G6b. */
+        difficulty: this.difficultyAssessment()
+      });
+    } finally { if (ad) ad.busy = false; }
+    if (ad && !plain) this.adaptiveBlock(ctx);
+    return ctx;
   }
   /* A test seam: a fake provider can be installed here without touching the
      application's own selection logic. */
   coachProvider() {
     if (window.__pppCoachProvider) return window.__pppCoachProvider;
+    if (this._ad) return Coach.providers.local;   /* G11b-3 (U8): under PPP.learner 'adaptive' the deterministic coach answers */
     return this.state.coachAi ? Coach.providers.service : Coach.providers.local;
   }
   requestPlan(opts) {
@@ -15414,6 +15552,11 @@ class Component extends DCLogic {
   seq() {
     const S = this.state;
     const key = S.score.id + ':' + (S.history.rev || 0) + ':' + S.loopFrom + '-' + S.loopTo;
+    if (this._ad) {
+      /* G11b-3: under PPP.learner 'adaptive' the steps are the policy's plan for this passage (the same shape), the legacy ones when the model has nothing to say yet */
+      const steps = this.adaptiveSteps();
+      if (steps) return steps;
+    }
     if (this._seq && this._seq.key === key) return this._seq.steps;
     this._seq = { key: key, steps: Learning.practiceSequence(S.score, S.history, S.loopFrom, S.loopTo) };
     return this._seq.steps;
@@ -15424,6 +15567,8 @@ class Component extends DCLogic {
   recommendation() {
     const S = this.state;
     const m = this.model();
+    /* G11b-3: under PPP.learner 'adaptive' the card is the policy's task, as Coach.validate returns it; the legacy recommendation when there is none (counted) */
+    if (this._ad && !this._ad.busy) { const a = this.adaptiveRec(); if (a) return a; }
     return Memory.nextTask(S.score, S.history, S.memory, {
       now: Clock.now(), base: m.rec, ranges: m.ranges
     });
@@ -16548,6 +16693,8 @@ class Component extends DCLogic {
       patch.history = Learning.record(S.history, measured, meta);
     }
     if (kind) this.logRun(S, kind, result, measured, from, to, acc);
+    /* G11b-3: under PPP.learner 'adaptive' the lap just logged has been folded into the model and the policy has decided (logRun -> adaptiveFeed); what it asks of this lap boundary is merged here */
+    if (this._ad && this._adLap) { Object.assign(patch, this._adLap); this._adLap = null; }
 
     if (S.practiceMode === 'memory') {
       /* A recall attempt is scored and recorded separately from practice, and
@@ -16585,7 +16732,9 @@ class Component extends DCLogic {
         const nx = steps[patch.seqStep];
         if (nx) {
           patch.hands = nx.hands;
-          patch.tempo = clamp(R0((S.score.tempo || 84) * nx.tempoPct / 100), 30, 200);
+          /* G11b-3 (U6): under 'adaptive' the next step's tempo is applied only while the automatic switch is on; otherwise it is offered as a suggestion */
+          if (this._ad) this.adaptiveStepTempo(S, patch, nx);
+          else patch.tempo = clamp(R0((S.score.tempo || 84) * nx.tempoPct / 100), 30, 200);
         }
         this.say(tx('{{label}} done.', { label: stp.label }));
       } else patch.seqReps = reps;
@@ -16644,6 +16793,7 @@ class Component extends DCLogic {
         accuracy: result ? result.accuracy : acc / 100, rows: rr.rows, wrongs: L.wrongsFromResult(result, info)
       });
       this.noteRunLogTime(t0, kind);
+      if (this._ad) this._adLap = this.adaptiveFeed(S, key, built.entry);   /* G11b-3: the same entry, folded into the model and decided on, before the (background) write */
       log.append(key.songId, key.hash, built.entry, key.meta, key.hashV).then(r => {
         if (r && r.ok && !this._dead) this.setState({ ratingRun: { songId: key.songId, hash: key.hash, n: r.n } });
       });
@@ -16687,6 +16837,470 @@ class Component extends DCLogic {
       P.download(P.exportText(r.file), P.fileName(r.file.exportedAt));
       this.say(tx('Practice log exported.'));
     });
+  }
+
+  /* ============================ G11b-3: adaptive practice (PPP.learner 'adaptive') ============================
+     These methods run only while `this._ad` is set, which is only while PPP.learner is 'adaptive'; under 'legacy' and 'typed' none of them is called and the page is as it was.
+     What `this._ad` holds for the open song:
+       score, songId, hash   what the model was built for: the run log's epoch is (song id, music hash), so a rewrite, an edit or a variant copy starts again
+       model                 practice/learner.js, folded from the epoch's run log and updated with every logged lap (one entry: a row per measure index and hand)
+       state                 practice/policy.js's own small state (focus, session, stuck), kept in localStorage per epoch
+       decision              the policy's last decision; its task is the card
+       rec, steps            what the page makes of it (the card, the Loop panel's sequence), kept per decision and per language and thrown away when the language changes
+     Every task a person sees went through Coach.validate (PPPPolicy.checked). When it does not pass, or there is no model yet, the legacy recommendation and sequence are used and the reason is
+     counted (stats.fallbacks). The tempo is a suggestion (U6): the policy's step is offered with one tap and applied between laps only while the automatic switch is on. */
+  adaptiveNew() {
+    let auto = false;
+    try { auto = localStorage.getItem(ADAPTIVE_AUTO_KEY) === 'on'; } catch (e) { auto = false; }
+    return {
+      score: null, songId: null, hash: null, byNumber: null, piece: null, model: null, state: null, decision: null,
+      ready: false, token: 0, version: 0, busy: false, auto: auto,
+      seen: new Set(), seenList: [], queue: [], rec: null, steps: null, focusId: 0, focusKey: null, focusStart: null, lastLaps: 0, sig: null,
+      suggest: null, dismissed: 0, sugSeq: 0, saveTimer: null,
+      stats: { updates: 0, refused: {}, decisions: 0, fallbacks: {}, repaired: 0, errors: 0, loads: 0, ms: [], ctxMs: [], tempoSteps: 0, autoApplied: 0 }
+    };
+  }
+  adaptiveFallback(reason) {
+    const ad = this._ad;
+    if (ad) ad.stats.fallbacks[reason] = (ad.stats.fallbacks[reason] || 0) + 1;
+  }
+  adaptiveLocale() { return String(this._locale || ''); }
+  /* the sentences made by tx() (the card, the steps, the plan) are thrown away: the language or the catalogs changed */
+  adaptiveText() {
+    const ad = this._ad;
+    if (!ad) return;
+    ad.rec = null; ad.steps = null;
+  }
+  /* the page was switched (PPP.learner = ..., Settings > Labs): the model of the open song is built, or dropped, and the cards are drawn again */
+  adaptiveSwitch() {
+    if (LEARNER_CHOICE === 'adaptive') {
+      if (!this._ad) this._ad = this.adaptiveNew();
+      this.adaptiveWarm(this.state);
+    } else {
+      this._ad = null; this._adLap = null;
+    }
+    this._model = null; this._seq = null;
+    this.setState({ adaptiveRev: (this.state.adaptiveRev || 0) + 1 });
+    setTimeout(() => { if (!this._dead && this.state.coachPlan) this.requestPlan({ keepDone: true }); }, 0);
+  }
+  adaptiveSeen(id) {
+    const ad = this._ad;
+    if (typeof id !== 'string' || ad.seen.has(id)) return;
+    ad.seen.add(id); ad.seenList.push(id);
+    if (ad.seenList.length > 400) ad.seen.delete(ad.seenList.shift());
+  }
+  /* the page as the policy compares tasks with it: measure numbers, hand, tempo as a percent of the score tempo, mode */
+  adaptiveCurrent(S) {
+    return { from: S.loopFrom, to: S.loopTo, hands: S.hands, tempoPct: R0((S.tempo / (S.score.tempo || 84)) * 100), mode: S.practiceMode === 'memory' ? 'memory' : 'practice' };
+  }
+  adaptiveIndex(number) {
+    const ad = this._ad;
+    const i = ad && ad.byNumber ? ad.byNumber.get(number) : null;
+    return i == null ? -1 : i;
+  }
+  /* the learner model's piece, as the simulator counts it: every measure's number, length and the notes each hand strikes in one written pass */
+  adaptivePiece(score) {
+    const ms = score.measures || [];
+    const plan = PianoScore.of(score, Score.first(score), Score.last(score));
+    const idx = new Map();
+    ms.forEach((mm, i) => { if (!idx.has(mm.number)) idx.set(mm.number, i); });
+    const notes = ms.map(() => ({ r: 0, l: 0 }));
+    const seen = new Set();
+    (plan.strikes || []).forEach(s => {
+      if (s.hand !== 'r' && s.hand !== 'l') return;
+      if (seen.has(s.note)) return;
+      seen.add(s.note);
+      const i = idx.get(s.m);
+      if (i != null) notes[i][s.hand]++;
+    });
+    return { scoreTempo: score.tempo || 84, measures: ms.map((mm, i) => ({ number: mm.number, q: mm.lenQ, notes: notes[i] })), byNumber: idx };
+  }
+  /* componentDidUpdate: a different song (or a different Score of it: an edit, a rewrite) asks for its model; a no-op while it is the same */
+  adaptiveWarm(S) {
+    if (LEARNER_CHOICE !== 'adaptive' || !S.score) return;
+    const ad = this._ad || (this._ad = this.adaptiveNew());
+    const id = S.songId || 'demo';
+    if (ad.score === S.score && ad.songId === id) return;
+    if (ad.ready && ad.state && ad.hash) adaptiveStateWrite(adaptiveEpoch(ad.songId, ad.hash), ad.state, Clock.now());   /* the epoch being left keeps its state */
+    ad.score = S.score; ad.songId = id; ad.ready = false;
+    ad.model = null; ad.state = null; ad.decision = null; ad.hash = null; ad.piece = null; ad.byNumber = null;
+    ad.rec = null; ad.steps = null; ad.suggest = null; ad.queue = []; ad.focusKey = null; ad.focusStart = null; ad.sig = null;
+    const token = ad.token = ad.token + 1;
+    const go = () => { if (!this._dead) this.adaptiveLoad(S.score, id, token); };
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: 800 }); else setTimeout(go, 200);
+  }
+  /* The model of one epoch: the modules, the piece, the run log's runs folded in time order (in slices, so that no task is long), the policy's saved state, a first decision. Never throws. */
+  async adaptiveLoad(score, songId, token) {
+    const ad = this._ad;
+    const live = () => !this._dead && this._ad === ad && ad.token === token && LEARNER_CHOICE === 'adaptive' && this.state.score === score;
+    const tick = () => new Promise(r => setTimeout(r, 0));
+    try {
+      const mods = await loadAdaptiveModules();
+      if (!live()) return;
+      if (!mods) { this.adaptiveFallback('modules'); return; }
+      const logMod = await loadRunLogModule();
+      if (!live()) return;
+      if (!logMod || !window.PPPRunLog) { this.adaptiveFallback('runlog'); return; }
+      const L = window.PPPLearner, P = window.PPPPolicy;
+      const piece = this.adaptivePiece(score);
+      await tick();
+      if (!live()) return;
+      const key = this.runLogKey(Object.assign({}, this.state, { score: score, songId: songId }));
+      let runs = [];
+      try {
+        const r = await window.PPPRunLog.pageLog(window).evidence(key.songId, key.hash);
+        if (r && r.ok && Array.isArray(r.runs)) runs = r.runs.map(x => x.run).filter(e => e && e.src !== 'simulated');
+        else this.adaptiveFallback('log-read');
+      } catch (e) { this.adaptiveFallback('log-read'); }
+      if (!live()) return;
+      const model = L.create({ scoreTempo: piece.scoreTempo, measures: piece.measures });
+      runs.sort((x, y) => (+x.at || 0) - (+y.at || 0));
+      for (let i = 0; i < runs.length; i++) {
+        L.update(model, runs[i]);
+        this.adaptiveSeen(runs[i].id);
+        if (i % 40 === 39) { await tick(); if (!live()) return; }
+      }
+      ad.model = model; ad.piece = piece; ad.byNumber = piece.byNumber; ad.hash = key.hash;
+      const saved = adaptiveStateRead(adaptiveEpoch(key.songId, key.hash));
+      ad.state = saved && saved.v === P.VERSION ? saved : P.initState();
+      ad.ready = true;
+      ad.stats.loads++;
+      /* the laps that ended while this was being built (the log may have them already: the run ids say) */
+      const q = ad.queue; ad.queue = [];
+      q.forEach(x => { if (x.songId === key.songId && x.hash === key.hash && !ad.seen.has(x.e.id)) this.adaptiveFold(x.e); });
+      this.adaptiveDecide(this.state, Clock.now());
+      this.adaptiveSave();
+      this._replanAfter = false;
+      this.setState({ adaptiveRev: (this.state.adaptiveRev || 0) + 1 });
+      setTimeout(() => { if (live()) this.requestPlan({ keepDone: true }); }, 0);
+    } catch (e) { ad.stats.errors++; this.adaptiveFallback('load'); }
+  }
+  adaptiveFold(entry) {
+    const ad = this._ad, r = window.PPPLearner.update(ad.model, entry);
+    this.adaptiveSeen(entry.id);
+    if (!r.ok) { ad.stats.refused[r.code] = (ad.stats.refused[r.code] || 0) + 1; return false; }
+    ad.stats.updates++;
+    return true;
+  }
+  /* the policy's state is written a moment after the decision, never in the lap's own task */
+  adaptiveSave() {
+    const ad = this._ad;
+    if (!ad || !ad.ready) return;
+    clearTimeout(ad.saveTimer);
+    ad.saveTimer = setTimeout(() => {
+      if (ad.ready && ad.state && ad.songId != null && ad.hash) adaptiveStateWrite(adaptiveEpoch(ad.songId, ad.hash), ad.state, Clock.now());
+    }, 600);
+  }
+  /* one decision of the policy, from the model as it is now; its cost (without the page's own context, which it asks for only near a memory decision) is counted */
+  adaptiveDecide(S, now) {
+    const ad = this._ad, P = window.PPPPolicy;
+    const t0 = nowMs();
+    let ctx = null, ctxMs = 0;
+    const ctxOf = () => {
+      if (!ctx) { const c0 = nowMs(); ctx = this.coachContext(true); ctxMs = nowMs() - c0; }
+      return ctx;
+    };
+    const d = P.decide(ad.model, now, ad.state, { current: this.adaptiveCurrent(S), ctx: ctxOf, opts: { autoTempo: ad.auto } });
+    ad.state = d.state; ad.decision = d; ad.version++; ad.stats.decisions++;
+    ad.stats.ms.push(Math.max(0, nowMs() - t0 - ctxMs)); if (ad.stats.ms.length > 200) ad.stats.ms.shift();
+    if (ctxMs) { ad.stats.ctxMs.push(ctxMs); if (ad.stats.ctxMs.length > 200) ad.stats.ctxMs.shift(); }
+    /* a focus is the same while its kind and window are; the steps of its ladder are made once, from where it began */
+    const f = d.state.focus;
+    const fk = f ? f.kind + ':' + f.a + '-' + f.b : null;
+    if (fk !== ad.focusKey || (f && f.laps < ad.lastLaps)) {
+      ad.focusId++; ad.focusKey = fk; ad.focusStart = f ? Object.assign(JSON.parse(JSON.stringify(f)), { laps: 0 }) : null;
+    }
+    ad.lastLaps = f ? f.laps : 0;
+    const t = d.task, sig = t.range.start + '-' + t.range.end + ':' + t.hand + ':' + t.tempoPercent + ':' + t.mode;
+    if (ad.sig !== null && ad.sig !== sig) this._replanAfter = true;   /* the session's list is made again at the next draw, when the picture changed */
+    ad.sig = sig;
+    return d;
+  }
+  /* A finished lap, as logRun built its entry: into the model, then a decision. Returns what this lap boundary should do (a tempo, only while the automatic switch is on) or null. Never throws. */
+  adaptiveFeed(S, key, entry) {
+    const ad = this._ad;
+    try {
+      if (!ad.ready || ad.songId !== key.songId || ad.hash !== key.hash) {
+        if (ad.queue.length < 60) ad.queue.push({ e: entry, songId: key.songId, hash: key.hash });
+        return null;
+      }
+      if (ad.seen.has(entry.id)) return null;
+      if (!this.adaptiveFold(entry)) return null;
+      const d = this.adaptiveDecide(S, entry.at);
+      const cur = this.adaptiveCurrent(S), t = d.task;
+      let patch = null;
+      ad.suggest = null;
+      /* the same passage in the same mode with another tempo: a tempo step (the ladder's, or the first one of a passage) */
+      if (cur.from === t.range.start && cur.to === t.range.end && cur.mode === 'practice' && t.mode === 'practice' && Math.abs(cur.tempoPct - t.tempoPercent) >= 3) {
+        ad.stats.tempoSteps++;
+        if (ad.auto) { patch = { tempo: clamp(R0((S.score.tempo || 84) * t.tempoPercent / 100), 30, 200) }; ad.stats.autoApplied++; }
+        else ad.suggest = { id: ++ad.sugSeq, from: t.range.start, to: t.range.end, pct: t.tempoPercent };
+      }
+      this.adaptiveSave();
+      return patch;
+    } catch (e) { ad.stats.errors++; this.adaptiveFallback('lap'); return null; }
+  }
+  /* the Loop panel's next step has another tempo than the page: applied while the automatic switch is on, offered otherwise (hands are set as they always were) */
+  adaptiveStepTempo(S, patch, nx) {
+    const ad = this._ad;
+    if (ad.auto) { patch.tempo = clamp(R0((S.score.tempo || 84) * nx.tempoPct / 100), 30, 200); return; }
+    const cur = R0((S.tempo / (S.score.tempo || 84)) * 100);
+    if (Math.abs(cur - nx.tempoPct) >= 3) ad.suggest = { id: ++ad.sugSeq, from: S.loopFrom, to: S.loopTo, pct: nx.tempoPct };
+  }
+  /* the suggestion of a tempo, while it is still about this passage and not what the page has */
+  adaptiveSuggestion() {
+    const ad = this._ad, S = this.state, g = ad && ad.suggest;
+    if (!g || !ad.ready || ad.dismissed === g.id) return null;
+    if (S.loopFrom !== g.from || S.loopTo !== g.to || S.practiceMode === 'memory') return null;
+    if (Math.abs(R0((S.tempo / (S.score.tempo || 84)) * 100) - g.pct) < 3) return null;
+    return g;
+  }
+  /* Why this task: a sentence in the person's language, without a figure (Coach.validate would have to know it). `why` is the policy's reason key; where: the bars. */
+  adaptiveSentence(why, t) {
+    const from = t.range.start, to = t.range.end;
+    const where = from === to ? tx('bar {{n}}', { n: from }) : tx('measures {{from}}–{{to}}', { from: from, to: to });
+    switch (why) {
+      case 'review': return t.mode === 'memory' ? tx('This was memorized and is due for a check before it fades.') : tx('Check {{where}} again: it was clean before.', { where: where });
+      case 'read': return tx('PPP has not heard {{where}} yet. Play it through once.', { where: where });
+      case 'slow': return tx('Still shaky: {{where}}. Slow down until the notes land.', { where: where });
+      case 'left': return tx('Your left hand in {{where}} is still shaky.', { where: where });
+      case 'right': return tx('Your right hand in {{where}} is still shaky.', { where: where });
+      case 'both': return tx('Now both hands together in {{where}}, at the same tempo.', { where: where });
+      case 'up': return tx('{{where}}: clean at this tempo, so one step faster.', { where: where });
+      case 'down': return tx('{{where}}: too many notes are lost, so one step slower.', { where: where });
+      case 'memory': return tx('{{where}}: steady enough to try from memory.', { where: where });
+      case 'through': return tx('Everything you practised is holding. Play it through to keep it that way.');
+      default: return tx('Still shaky: {{where}}.', { where: where });
+    }
+  }
+  /* the policy's reason text (its REASON table) back to its key */
+  adaptiveWhyOf(reason) {
+    const R = window.PPPPolicy.REASON;
+    const k = Object.keys(R).filter(x => R[x] === reason)[0];
+    return k || 'weak';
+  }
+  /* the line under the title of the card: what to do, in the app's own words for it */
+  adaptiveAction(t, kind) {
+    const from = t.range.start, to = t.range.end;
+    if (t.mode === 'memory') return kind === 'memory' && t.repetitions > 1 ? tx('Start Memory Mode on measures {{from}}–{{to}}', { from: from, to: to }) : tx('Play measures {{from}}–{{to}} from memory', { from: from, to: to });
+    if (kind === 'read' && t.tempoPercent >= 100) return tx('Play it once at full tempo so PPP can find your weak spots');
+    const pct = t.tempoPercent;
+    if (t.hand === 'left') return tx('Left hand at {{pct}}% tempo', { pct: pct });
+    if (t.hand === 'right') return tx('Right hand at {{pct}}% tempo', { pct: pct });
+    return pct >= 100 ? tx('Both hands at full tempo') : tx('Both hands at {{pct}}% tempo', { pct: pct });
+  }
+  /* The recommendation of the card: the policy's task, as Coach.validate returns it, in the shape Memory.nextTask has (cached per decision and language). null = the legacy one. */
+  adaptiveRec() {
+    const ad = this._ad, S = this.state;
+    if (!ad || !ad.ready || !ad.decision || !window.PPPPolicy || ad.score !== S.score) return null;
+    const loc = this.adaptiveLocale();
+    if (ad.rec && ad.rec.ver === ad.version && ad.rec.loc === loc) return ad.rec.value;
+    let value = null;
+    try {
+      const d = ad.decision, P = window.PPPPolicy, t = d.task;
+      const sentence = this.adaptiveSentence(this.adaptiveWhyOf(t.reason), t);
+      ad.busy = true;
+      let ctx;
+      try { ctx = this.coachContext(true); } finally { ad.busy = false; }
+      const ok = P.checked({ summary: '', todayGoal: '', tasks: [Object.assign({}, t, { reason: sentence })], coachNote: '', sessionMinutes: 10 }, ctx, Coach.validate);
+      if (!ok.ok) this.adaptiveFallback('rec-rejected');
+      else {
+        if (ok.issues && ok.issues.length) ad.stats.repaired++;   /* validate changed something: the card shows the task as it returned it */
+        const v = ok.plan.tasks[0], from = v.range.start, to = v.range.end, why = v.reason || sentence;
+        value = {
+          from: from, to: to, hands: v.hand, tempoPct: v.tempoPercent,
+          tempo: clamp(R0((S.score.tempo || 84) * v.tempoPercent / 100), 30, 200), mode: v.mode,
+          minutes: Math.max(3, Math.min(12, R0((to - from + 1) * 0.8) + 2)),
+          title: tx('Measures {{from}}–{{to}}', { from: from, to: to }),
+          headline: why, action: this.adaptiveAction(v, d.kind), reasons: [why],
+          kind: d.kind === 'read' ? 'assess' : d.kind === 'focus' ? (v.hand === 'both' ? 'both' : 'hand') : d.kind, adaptive: true
+        };
+      }
+    } catch (e) { ad.stats.errors++; this.adaptiveFallback('rec-error'); value = null; }
+    ad.rec = { ver: ad.version, loc: loc, value: value };
+    return value;
+  }
+  /* the label of a step of the Loop panel (strings the page already has) */
+  adaptiveStepLabel(hand, pct) {
+    if (hand === 'left') return tx('Left hand alone');
+    if (hand === 'right') return tx('Right hand alone');
+    return pct >= 100 ? tx('Full tempo') : pct <= 60 ? tx('Hands together, slowly') : tx('Hands together');
+  }
+  /* The Loop panel's sequence for the passage in the loop: the policy's plan for it, in Learning.practiceSequence's shape [{label, hands, tempoPct, reps}]. The passage the policy works on
+     keeps the steps it was made with (from where it began); a passage a person picked gets the plan the model makes for it, once per session. null = the legacy steps. */
+  adaptiveSteps() {
+    const ad = this._ad, S = this.state;
+    if (!ad.ready || !ad.model || !ad.state || ad.score !== S.score || S.practiceMode === 'memory' || !window.PPPPolicy) return null;
+    const loc = this.adaptiveLocale();
+    const a = this.adaptiveIndex(S.loopFrom), b = this.adaptiveIndex(S.loopTo);
+    if (a < 0 || b < a) return null;
+    const f = ad.state.focus;
+    const own = !!(f && f.kind === 'focus' && f.a === a && f.b === b && ad.focusStart);
+    const key = S.loopFrom + '-' + S.loopTo + '|' + loc + '|' + (own ? 'f' + ad.focusId : 's' + ad.state.session);
+    if (ad.steps && ad.steps.key === key) return ad.steps.value;
+    let value = null;
+    try {
+      const P = window.PPPPolicy, L = window.PPPLearner, m = ad.model, now = Clock.now();
+      let focus;
+      if (own) focus = Object.assign({}, ad.focusStart);
+      else {
+        const D = P.DEFAULTS, snap = P._internal.snapshot(m, now, D, L, false);
+        focus = P._internal.newFocus(m, snap, D, L, 'focus', a, b);
+      }
+      const plan = P.plan(m, now, { focus: focus }, null, { autoTempo: ad.auto });
+      const rows = plan.tasks.filter(t => t.mode === 'practice' && t.range.start === S.loopFrom && t.range.end === S.loopTo);
+      if (rows.length) {
+        value = rows.map((t, i) => ({
+          label: this.adaptiveStepLabel(t.hand, t.tempoPercent), hands: t.hand, tempoPct: t.tempoPercent,
+          reps: i === 0 && t.hand !== 'both' && focus.alone ? Math.max(1, focus.alone) : t.repetitions
+        }));
+      } else this.adaptiveFallback('steps-empty');
+    } catch (e) { ad.stats.errors++; this.adaptiveFallback('steps-error'); value = null; }
+    ad.steps = { key: key, value: value };
+    return value;
+  }
+  /* What the deterministic coach is told (Coach.context, adaptive only, never sent to a service): the model's summary as measured percentages and the policy's plan, through validate. */
+  adaptiveBlock(ctx) {
+    const ad = this._ad;
+    if (!ad.ready || !ad.model || !ad.state || !ad.decision || ad.score !== this.state.score) { this.adaptiveFallback('no-model'); return; }
+    try {
+      ctx.adaptive = { summary: this.adaptiveSummary() };
+      ctx.allowed.percentages = Coach.numbersIn(ctx);
+      const plan = this.adaptivePlan(ctx);
+      if (plan) ctx.adaptive.plan = plan; else this.adaptiveFallback('plan-rejected');
+    } catch (e) {
+      ad.stats.errors++;
+      delete ctx.adaptive;
+      ctx.allowed.percentages = Coach.numbersIn(ctx);
+      this.adaptiveFallback('block-error');
+    }
+  }
+  adaptiveSummary() {
+    const ad = this._ad, L = window.PPPLearner, m = ad.model, now = Clock.now(), pl = L.pools(m, now);
+    const num = i => m.measures[i].number, pct = x => R0(x * 100);
+    const weak = [];
+    let cur = null;
+    m.measures.forEach((mm, i) => {
+      const n = mm.r.n + mm.l.n;
+      if (!n || !(mm.r.runs || mm.l.runs)) return;
+      const acc = L.predictMeasure(m, i, { ratio: 1, hands: 'both' }, now, pl);
+      if (acc == null || acc >= 0.8) return;
+      if (cur && cur.last === i - 1) { cur.last = i; cur.s += acc * n; cur.n += n; } else { cur = { first: i, last: i, s: acc * n, n: n }; weak.push(cur); }
+    });
+    const hand = (r, h) => {
+      let s = 0, n = 0;
+      for (let i = r.first; i <= r.last; i++) {
+        const k = m.measures[i][h === 'left' ? 'l' : 'r'].n;
+        if (k) { s += k * L.predictMeasure(m, i, { ratio: 1, hands: h }, now, pl); n += k; }
+      }
+      return n ? pct(s / n) : null;
+    };
+    const clean = r => {
+      let lo = null;
+      for (let i = r.first; i <= r.last; i++) {
+        if (!(m.measures[i].r.n + m.measures[i].l.n)) continue;
+        const c = L.cleanTempo(m, i, now, pl);
+        if (c == null) return null;
+        lo = lo == null ? c : Math.min(lo, c);
+      }
+      return lo == null ? null : pct(lo);
+    };
+    const passages = weak.sort((x, y) => x.s / x.n - y.s / y.n).slice(0, 3).map(r => ({
+      from: num(r.first), to: num(r.last), accuracy: pct(r.s / r.n), cleanTempoPercent: clean(r), leftAccuracy: hand(r, 'left'), rightAccuracy: hand(r, 'right')
+    }));
+    const due = L.due(m, now), reviews = [];
+    due.forEach(i => {
+      const last = reviews[reviews.length - 1];
+      if (last && last.i === i - 1) { last.i = i; last.to = num(i); } else reviews.push({ i: i, from: num(i), to: num(i) });
+    });
+    const t = ad.decision && ad.decision.task;
+    return {
+      version: 1, runs: m.runs,
+      focus: t ? { from: t.range.start, to: t.range.end, hand: t.hand, tempoPercent: t.tempoPercent, mode: t.mode, kind: ad.decision.kind } : null,
+      passages: passages,
+      reviewsDue: reviews.slice(0, 3).map(r => ({ from: r.from, to: r.to }))
+    };
+  }
+  /* the session plan from here, in the coach's schema, in the person's language, only as Coach.validate returns it (null when it does not pass) */
+  adaptivePlan(ctx) {
+    const ad = this._ad, P = window.PPPPolicy, sum = ctx.adaptive.summary;
+    const raw = P.plan(ad.model, Clock.now(), ad.state, ctx, { autoTempo: ad.auto });
+    raw.tasks.forEach(t => { t.reason = this.adaptiveSentence(this.adaptiveWhyOf(t.reason), t); });
+    const top = sum.passages[0], first = raw.tasks[0];
+    raw.summary = !sum.runs ? tx('No practice data for this score yet.')
+      : top ? tx('Measures {{from}}–{{to}} are the weakest part of the piece at {{pct}}%.', { from: top.from, to: top.to, pct: top.accuracy })
+        : tx('Everything you have practised is holding together.');
+    raw.todayGoal = first ? this.adaptiveAction(first, first.mode === 'memory' ? 'memory' : 'focus') : '';
+    raw.coachNote = first ? first.reason : '';
+    const ok = P.checked(raw, ctx, Coach.validate);
+    if (ok.ok && ok.issues && ok.issues.length) ad.stats.repaired++;
+    return ok.ok ? ok.plan : null;
+  }
+  /* for tests and the console (PPP.adaptive) */
+  adaptiveReport() {
+    const ad = this._ad;
+    if (!ad) return null;
+    const d = ad.decision, st = ad.stats;
+    return {
+      ready: ad.ready, songId: ad.songId, hash: ad.hash, version: ad.version, auto: ad.auto, runs: ad.model ? ad.model.runs : 0,
+      updates: st.updates, refused: Object.assign({}, st.refused), decisions: st.decisions, fallbacks: Object.assign({}, st.fallbacks), repaired: st.repaired, errors: st.errors, loads: st.loads,
+      tempoSteps: st.tempoSteps, autoApplied: st.autoApplied, ms: st.ms.slice(), ctxMs: st.ctxMs.slice(), queued: ad.queue.length,
+      decision: d ? { task: d.task, kind: d.kind, changed: d.changed, stuck: d.stuck } : null,
+      state: ad.state ? JSON.parse(JSON.stringify(ad.state)) : null,
+      suggest: ad.suggest ? Object.assign({}, ad.suggest) : null, rec: ad.rec && ad.rec.value ? Object.assign({}, ad.rec.value) : null,
+      stored: (() => { try { return adaptiveStateRead(adaptiveEpoch(ad.songId, ad.hash)); } catch (e) { return null; } })()
+    };
+  }
+  toggleAdaptive() {
+    /* off: back to what it was (typed), or to no choice at all, which is the default and forgets the remembered word */
+    if (LEARNER_CHOICE === 'adaptive') setLearnerMode(this._learnerBefore === 'typed' ? 'typed' : null);
+    else { this._learnerBefore = LEARNER_CHOICE; setLearnerMode('adaptive'); }
+  }
+  toggleAdaptiveAuto() {
+    const ad = this._ad;
+    if (!ad) return;
+    ad.auto = !ad.auto;
+    try { if (ad.auto) localStorage.setItem(ADAPTIVE_AUTO_KEY, 'on'); else localStorage.removeItem(ADAPTIVE_AUTO_KEY); } catch (e) { /* kept for this visit */ }
+    if (ad.auto) ad.suggest = null;
+    this.setState({ adaptiveRev: (this.state.adaptiveRev || 0) + 1 });
+  }
+  applyAdaptiveSuggestion() {
+    const g = this.adaptiveSuggestion();
+    if (!g) return;
+    this._ad.suggest = null;
+    this.setState({ tempo: clamp(R0((this.state.score.tempo || 84) * g.pct / 100), 30, 200) });
+    this.say(tx('Tempo set to {{pct}}%.', { pct: g.pct }));
+  }
+  dismissAdaptiveSuggestion() {
+    const g = this._ad && this._ad.suggest;
+    if (!g) return;
+    this._ad.dismissed = g.id;
+    this.setState({ adaptiveRev: (this.state.adaptiveRev || 0) + 1 });
+  }
+  /* Settings > Labs (a list of features still being tested; each row is one entry of labsRows) and the practice card's row (the suggestion, the automatic switch). Under 'legacy' and 'typed' the
+     practice card's row is not shown and none of its strings is made. */
+  adaptiveVals() {
+    const S = this.state, on = LEARNER_CHOICE === 'adaptive', ad = on ? this._ad : null;
+    const labsRows = [{
+      id: 'adaptive', title: tx('Adaptive practice'),
+      sub: tx('PPP chooses what to practise next from the runs you play on a MIDI keyboard. Your practice data stays on this device.'),
+      note: on ? tx('On. Press to turn it off.') : tx('Off. Press to turn it on.'),
+      pressed: on ? 'true' : 'false', style: this.chip(on), on: () => this.toggleAdaptive()
+    }];
+    const g = on ? this.adaptiveSuggestion() : null;
+    const auto = !!(ad && ad.auto);
+    return {
+      labsTitle: tx('Labs'), labsSub: tx('Features that are still being tested. Each one stays off until you turn it on.'), labsRows: labsRows,
+      showAdaptiveRow: !!(on && S.screen === 'player'),
+      adaptiveHasSuggest: !!g,
+      adaptiveSuggestText: g ? tx('PPP suggests {{pct}}% tempo next.', { pct: g.pct }) : '',
+      adaptiveSuggestLabel: on ? tx('Change tempo') : '', adaptiveDismissLabel: on ? tx('Dismiss') : '',
+      adaptiveSuggestApply: () => this.applyAdaptiveSuggestion(), adaptiveSuggestDismiss: () => this.dismissAdaptiveSuggestion(),
+      adaptiveAutoLabel: on ? tx('Change the tempo by itself between runs') : '',
+      adaptiveAutoPressed: auto ? 'true' : 'false', adaptiveAutoStyle: this.chip(auto),
+      adaptiveAutoNote: !on ? '' : auto ? tx('On. Press to turn it off.') : tx('PPP only suggests a tempo. Press to let it change the tempo by itself.'),
+      toggleAdaptiveAuto: () => this.toggleAdaptiveAuto()
+    };
   }
 
   say(msg) {
@@ -21646,6 +22260,7 @@ class Component extends DCLogic {
       addYoutube: () => this.addYoutube(),
       hasYtError: !!S.ytError, ytError: S.ytError || '',
       ...this.homeView(S),   /* G10b-1 */
+      ...this.adaptiveVals(),   /* G11b-3: Settings > Labs, and the practice card's suggestion row (adaptive only) */
       helperNote: (() => {
         const hp = S.helper;
         const hosted = typeof location !== 'undefined' && !/^(localhost|127\.0\.0\.1)$/i.test(location.hostname || '');
