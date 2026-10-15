@@ -73,6 +73,7 @@ function rng(seed) {
   return { next: next, int: n => Math.floor(next() * n), pick: arr => arr[Math.floor(next() * arr.length)], bytes: n => { const b = Buffer.alloc(n); for (let i = 0; i < n; i++) b[i] = Math.floor(next() * 256); return b; } };
 }
 const hexOf = r => Buffer.from(r).toString('hex');
+const safe = st => { const o = {}; Object.keys(st).forEach(k => { o[k] = typeof st[k] === 'function' ? function () { return Promise.resolve(st[k].apply(st, arguments)).catch(e => ({ threw: String(e.code || e.message) })); } : st[k]; }); return o; };
 const normBody = x => (x.body ? hexOf(x.body) : null);
 const strip = (o, drop) => JSON.stringify(o, (k, v) => (drop.indexOf(k) >= 0 ? undefined : (v && v.type === 'Buffer' && Array.isArray(v.data) ? Buffer.from(v.data).toString('hex') : v)));
 
@@ -146,7 +147,8 @@ const strip = (o, drop) => JSON.stringify(o, (k, v) => (drop.indexOf(k) >= 0 ? u
       for (const seed of [1, 2, 3, 4, 5, 6]) {
         await dropSync(); await SS.migrate(pool);
         const f = SS.fileSyncStore(L.tmpDir('ppp-sync-twin-'), { memory: true });
-        const p = SS.pgSyncStore(q);
+        /* (a call of the Postgres store that throws is an answer that differs - { threw } - not a crashed run) */
+        const p = safe(SS.pgSyncStore(q));
         const R = rng(seed * 7919);
         let t = Date.parse('2026-10-15T12:00:00Z');
         const libIds = ['lib_' + 'a'.repeat(22), 'lib_' + 'b'.repeat(22), 'lib_' + 'c'.repeat(22)];

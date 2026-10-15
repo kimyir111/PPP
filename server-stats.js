@@ -50,6 +50,8 @@ function classify(rawUrl) {
   return 'static';
 }
 
+const classifyRoute = classify;
+
 function createStats(opts) {
   opts = opts || {};
   const log = opts.log || (line => console.log(line));
@@ -64,6 +66,8 @@ function createStats(opts) {
   const classes = CLASSES.slice();
   const gauges = {};
   let c = fresh();
+  /* the route class of a request line for THIS instance: the module's, or `other` for a class this instance has not got (api-sync while its feature is off) */
+  const classify = rawUrl => { const k = classifyRoute(rawUrl); return c.by[k] ? k : 'other'; };
 
   function fresh() {
     const o = { idlePoolErrors: 0, by: {} };
@@ -126,8 +130,7 @@ function createStats(opts) {
   /* a request has arrived: count it, and its answer when it is sent. Never throws: counting must not touch a request. */
   function track(req, res) {
     try {
-      let cls = classify(req && req.url);
-      if (!c.by[cls]) cls = 'other';          /* (api-sync, when its feature is not on) */
+      const cls = classify(req && req.url);
       c.by[cls].requests++;
       const ctx = { cls: cls, open: true };
       als.enterWith(ctx);
