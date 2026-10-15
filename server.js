@@ -547,6 +547,10 @@ const guestShare = require('./share-guest');
    secrets any browser can make (/api/pc-links), and the queue is keyed by the link */
 const homeJobs = require('./home-jobs');
 const homeJobsStore = require('./home-jobs-store');
+/* G13-S0 (docs/GOALS/G13_PRODUCTIZATION.md section 7): "use my songs on other devices", a library behind a secret code, no account. NOT MOUNTED unless PPP_SYNC=1: its routes
+   are 404 like any unknown path, its modules are not even loaded, and the boot makes none of its tables. */
+const SYNC_ON = process.env.PPP_SYNC === '1';
+const syncStoreMod = SYNC_ON ? require('./sync-store') : null;
 const GUEST = guestShare.GUEST;
 const guestLimits = {
   /* creates per address; creates for the whole server; requests that failed validation, per address */
@@ -716,6 +720,7 @@ function fileStore() {
   }
   return {
     jobStore: homeJobsStore.fileJobStore(DATA_DIR),
+    syncStore: SYNC_ON ? syncStoreMod.fileSyncStore(DATA_DIR) : null,
     async ready() { return true; },
     async findByEmail(email) {
       return load().users.find(u => u.email === email) || null;
@@ -900,6 +905,13 @@ function postgresStore(url) {
   async function q(sql, params) {
     return getPool().query(sql, params);
   }
+  /* G13-S0: the song-library store's queries have a time-out. node-pg drops the connection of a query that does not answer in query_timeout and fails the query, so a hung
+     connection ends one request with a 503 (and the next read of the libraries), instead of holding the library's one writer for ever. Only these queries have it: nothing
+     else of the site is changed. PPP_SYNC_QUERY_MS (10 s; 1 s at least) is for a slower database. */
+  const SYNC_QUERY_MS = Math.max(1000, parseInt(process.env.PPP_SYNC_QUERY_MS, 10) || 10000);
+  async function qs(sql, params) {
+    return getPool().query({ text: sql, values: params, query_timeout: SYNC_QUERY_MS });
+  }
   const INSERT_SHARE = `INSERT INTO ppp_shares (id, owner_id, owner_name, song_key, title, composer, genre, kind, measures, listed, preview, score, created_at, updated_at, expires_at, bytes, addr_tag)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
          ON CONFLICT (id) DO UPDATE SET owner_name = EXCLUDED.owner_name, title = EXCLUDED.title,
@@ -911,6 +923,7 @@ function postgresStore(url) {
     row.createdAt, row.updatedAt, row.expiresAt || null, row.bytes || 0, row.addrTag || null];
   return {
     jobStore: homeJobsStore.pgJobStore(q),
+    syncStore: SYNC_ON ? syncStoreMod.pgSyncStore(qs) : null,
     async ready() {
       /* the whole schema work of a boot - this SQL, then the home-PC queue's two tables - runs in one transaction under an advisory lock (home-jobs-store.js): two
          instances booting together take turns instead of racing or deadlocking. This SQL is fatal when it fails, as it always was; the queue's tables are
@@ -973,6 +986,17 @@ function postgresStore(url) {
         const why = String(e0.code || e0.name || 'error') + ' ' + String(e0.message || '').split(/\r?\n/)[0].replace(/postgres(?:ql)?:\/\/\S+/gi, 'postgres://...').slice(0, 160);
         console.error('Home-PC worker queue: OFF - its tables could not be created (' + why.trim() + '). Everything else is running; /api/jobs and /api/worker answer 503 until this is fixed and the server restarts.');
         jobsService.disable(why);
+      }
+      /* G13-S0: the sync tables, in a transaction of their own under their own advisory lock (sync-store.js migrate), only when the feature is on; a failure switches the feature
+         off and leaves the site as it was (the same rule as the queue's), a lost connection is fatal as the boot's */
+      if (SYNC_ON) {
+        const sm = await syncStoreMod.migrate(getPool());
+        if (!sm.ok) {
+          const e1 = sm.error || {};
+          const why1 = String(e1.code || e1.name || 'error') + ' ' + String(e1.message || '').split(/\r?\n/)[0].replace(/postgres(?:ql)?:\/\/\S+/gi, 'postgres://...').slice(0, 160);
+          console.error('Song sync: OFF - its tables could not be created (' + why1.trim() + '). Everything else is running; the sync routes answer 503 until this is fixed and the server restarts.');
+          syncService.disable(why1);
+        }
       }
     },
     async findByEmail(email) {
@@ -1164,6 +1188,12 @@ const jobsService = homeJobs.create({
   clientIp: guestShare.clientIp, ipSecret: SECRET, logError: logStoreError,
   warn: w => console.warn('Home-PC worker queue: ' + w)
 });
+
+/* G13-S0: the song libraries (sync.js). One instance holds them in memory, like the queue; the database is the durable copy. Its numbers go into the hourly stats line. */
+const syncService = SYNC_ON ? require('./sync').create({
+  store: store.syncStore, send: send, jsonError: jsonError, clientIp: guestShare.clientIp, ipSecret: SECRET, logError: logStoreError
+}) : null;
+if (syncService) serverStats.addGauge('sync', syncService.gauge);
 
 /* ---- the seed library ----
    One score per genre, so Shared Scores is never an empty shelf and every
@@ -1485,6 +1515,9 @@ async function handleApi(req, res, url) {
 
   /* G10b-1 / G10b-2: /api/jobs..., /api/pc-links... (no sign-in: the link's client code is the key) and /api/worker/... for the worker script on the person's own PC */
   if (jobsService.owns(p)) return jobsService.handle(req, res, url);
+
+  /* G13-S0: /api/libs..., /api/sync/... (only with PPP_SYNC=1; without it these are unknown paths: the 404 below) */
+  if (syncService && syncService.owns(p)) return syncService.handle(req, res, url);
 
   jsonError(res, 404, 'Not found');
 }
@@ -1933,6 +1966,8 @@ store.ready().then(() => {
     if (!jobsService.isDisabled()) console.log('Home-PC worker queue: an idle worker is told to wait ' + jobsService.config.idlePollS + ' s, a busy one ' + jobsService.config.activePollS + ' s (PPP_WORKER_IDLE_POLL_S, PPP_WORKER_ACTIVE_POLL_S)');
     if (!process.env.SESSION_SECRET) console.warn('SESSION_SECRET is not set: sessions and the keyed address tags use the public development secret.' + (GUEST_POSTS_NO_SECRET ? ' Guest posts to Shared Scores are OFF until it is set (links and accounts are not affected).' : ''));
     if (process.env.PPP_GUEST_POSTS === '0') console.log('Guest posts to Shared Scores are OFF (PPP_GUEST_POSTS=0): links and accounts are not affected.');
+    if (syncService && !syncService.isDisabled()) console.log('Song sync: on (PPP_SYNC=1): a library is kept ' + Math.round(syncService.config.keepMs / 86400000) + ' days from its last sync, '
+      + Math.round(syncService.config.totalBytes / 1048576) + ' MB in all');
     console.log('Guest links: the client address is read from ' + (process.env.RENDER ? 'CF-Connecting-IP, then True-Client-IP, then ' : '')
       + 'X-Forwarded-For (' + (Math.max(1, parseInt(process.env.PPP_PROXY_HOPS, 10) || 1)) + ' from the right), then the socket');
     if (HOST === '127.0.0.1' || HOST === 'localhost') startHelperIfMissing();

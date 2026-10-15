@@ -22,6 +22,13 @@ for a visitor; "Sign in (optional)" is one row in Settings; a guest posts to Sha
 duckscope services; Neon Free). Nothing on the site may force a login (G10b-2, 2026-10-07): sync works with
 **capability codes** like the PC link, not with accounts. Replies and review pages for the user are Korean.
 
+**G13-S0 (the sync server) is built (Implementer, Sonnet, 2026-10-15; section 7.9 is its record).** `sync-store.js` and `sync.js`, behind `PPP_SYNC=1` (unset: its routes
+are 404, its modules are not loaded, no table is made - merging it changes nothing live). Decisions taken by the Lead with the user's go-ahead of 2026-10-15: **U1 yes** (sync
+by a secret code or QR link the person keeps, no account), **U2** (the server keeps a library 180 days from the last sync of any device, shown as "kept until <date>"; the
+device copy and the backup file stay), **U3** (inside the free tiers: a sync cap of 128 MB of Neon's 0.5 GB, a warning at 80 % in the hourly stats line, refuse - never evict -
+at the cap). The page (S1) is not part of it. An independent security review of the first version (PR #276) found two major and six smaller problems; all eight are fixed in the same
+PR and described in 7.9, "After the security review".
+
 ---
 
 ## 1. What was measured before designing (evidence)
@@ -821,29 +828,179 @@ Wrong codes: 401 `bad-code`, counted per address, **failures only**, 20/h then 4
 - Today a cold phone visit is 2.4 MB of our own bytes, and a repeat visit about 2 MB.
 - After G13-4 a repeat visit is ≤ 0.45 MB: about 5x more visits for the same bandwidth.
 
-### 7.7 Abuse analysis (what a stranger with no account can do)
+### 7.7 Abuse analysis (what a stranger with no account can do; one test per row - the G12-5 table, with its three review rounds built in from the start)
 
-| Capability | Bound |
-| --- | --- |
-| Make libraries | 5/h and 20/day per address (/48), 100/h site, 2,000 live; past it, 503 `busy` (honest visitors are refused, not evicted: a deliberate difference from the PC links, because a library holds a person's songs; the cost is that a sustained attack at 100/h fills the 2,000 places in 20 hours and then blocks new libraries until the 14-day purge of empty ones; existing libraries keep working) |
-| Store data | 16 MB per library, **48 MB per address**, 128 MB site; bodies are gzip JSON of the song shape (no arbitrary files); unreadable without the code, so **not a public distribution channel** (unlike listed shares) |
-| Read data | only with the code; read limits per library/address/site (7.3) bound egress |
-| Guess a code | 256 bits; failures-only limiter 20/h per address; constant-time compare; id derived with a domain prefix (no other secret of the site hashes to a library id) |
-| Hold up the server | body limits, bounded gzip inflate (a zip bomb stops at 8 MB), JSON depth/NUL checks (`share-guest.js` `inspect`), 25 items per batch |
-| **A leaked code** | full read and write of that library. The remedy is **Change code** on any device. An attacker who rotates first locks the owner out, and there is no recovery channel (no email): that is the price of no account. Mitigations: local copies stay on every device; the backup file (G13-6); bulk deletions ask (7.5); tombstones last 30 days. |
-| **A lost code** (all devices cleared) | unrecoverable; the library expires after the keeping time. The UI asks to save the code or a backup when sync is turned on, and once more after the 10th song. |
+Everything a stranger can do with no account is "make a library" (free, bounded) and then whatever a library of their own may do. Each row names its bound as built and the test
+that holds it (files in `tests/sync/`; `sync.test.js` = unit, `sync-abuse.test.js` = abuse, `server.test.js`, `sync-pg.test.js` = Postgres twin; mutants `S L I Q R B P K M N G C T O` are in
+`tests/sync/mutants.js`: each breaks the rule of its row and the test must fail).
+
+| Threat | What stops it (as built) | Tested by |
+| --- | --- | --- |
+| a request with no code, or a code in a query, a body, a cookie, a bearer header, another site's header | `401 no-lib` before anything else is read: **no body is read** (a PUT that announces 4 GB and sends nothing is answered at once); none of those is a code | unit "who may ask", "long answers"; mutants S1, S13 |
+| a page of another site, or a script with a stolen code | `403 cross-site` BEFORE the code is read (an `Origin` that is not this host, `null` too), reads as well as writes; CORS closed: no `Access-Control-*` on any answer, a preflight fails; no cookie is read or set | unit "who may ask"; `server.test.js`; mutants S3-S5, S12, S15 |
+| guess a code | 256 random bits made by the server; only `sha256('ppp-lib-v1:' + code)` is stored; the **whole hash** is compared in constant time (a row found by the id alone is refused); a wrong code is `401 bad-code`, counted per address (an IPv6 /48 is one), **20 an hour then 429, failures only**: a valid code is never refused for other people's wrong ones; the code of a library that was rotated or deleted is told so (`401 rotated` / `deleted`) and not counted | unit "who may ask"; mutants S2, S6-S11, S14 |
+| read or change another library's items | an item is addressed by (library, key): the library is in every statement; a name only another library has is answered **byte for byte** as a name nobody wrote (read: `missing`; delete: 404); a write to such a name is a plain new item (no conflict that would say it exists) | unit "isolation"; Postgres "the store's own guards"; mutants I6-I10 |
+| make libraries (a library is free) | **5 an hour and 20 a day per address (IPv6 as /48), 100 an hour for the site, 2,000 live**; at the cap `503 busy`: nobody is evicted; counted from the rows (a restart does not forget); a deleted library counts two days (making and deleting is no way round); a new code is not a new library; the place is taken before anything is awaited (12 at once: exactly 5) | unit "making libraries", "races"; mutants L1-L7, I14 |
+| store data (bodies are gzip JSON of the song shape: not a file store) | **16 MB a library, 48 MB an address, 128 MB the site, 3,000 rows a library, 60,000 the site**; a row costs 256 bytes besides its body; a batch that does not fit is refused whole, `503 quota` (library, address, rows) or `503 busy` (site); **refuse, never evict**: what was kept is read back unchanged; a replacement that is smaller is taken at the cap; a tombstone is a row until it is purged | unit "what a library may hold"; mutants Q1-Q12 |
+| write amplification (Neon: every byte is also WAL and history) | **240 items an hour a library, 60 deletions an hour, 120 write requests an hour a library and 480 an address** (counted whatever came of them); bytes accepted: the site 64 MB an hour and 128 MB a day, **a quarter of each for a library and for an address**; conflicts give their places back | unit "rates", "bytes in and out"; mutants R1-R4b, B1-B5, B8 |
+| read amplification (Neon egress) | **300 items an hour a library**; bytes sent: the site 64 MB an hour and 150 MB a day, a quarter for a library and an address (**what an answer may weigh at the most is reserved BEFORE the database is asked** and the difference given back after - six at once cannot all pass a look at the budget before any is counted, which served 34.5 MB against a 2 MB share in the review; the one answer that crosses a budget is served, the next is `429 share`, Retry-After); **a page of `changes` is charged by what it weighs** (500 rows are 84 KB) and looked at before the database is asked; 6 answers with bodies at a time, an answer holds at most 6 MB of bodies (the rest `deferred`), a reader that does not take its answer in 120 s is cut and its place freed | unit "bytes in and out", "long answers"; abuse "what the site sends"; unit "the position a device is given, what a page of changes costs ...", "a hung store does not freeze the writer"; mutants R7, B6, B7, B9-B12, N4, N5, P21-P23 |
+| **a JSON body that is small in bytes and huge in objects** (G12-5's blocker: 16 MB of `[{},{},...]` is 5.6 million objects, 357 MB of heap) | the structure is counted **as the bytes arrive** (`jsonGuard`: tokens, containers, depth outside strings) on every body - a batch has 25 items, 33 containers - and **again over the unpacked bytes of every item** (a container per 16 bytes at the most, 24 deep); both before anything is parsed. Child process, 200 MB heap: 5.9 MB of `{}` refused in 38 ms, a 6 KB gzip of 2 million `{}` in 54 ms, heap +0 MB, loop gap < 150 ms; an item AT the bound parses in 190 ms and peaks at 68 MB | abuse "the shape of a body" (child); unit "what an item must be"; mutants P1-P3 |
+| **a body sent one byte at a time** (G12-5's second review: 1.4 million writes held ~350 bytes each) | the one reader of the site (`body-reader.js`): chunks coalesced as they arrive; 900,000 one-byte writes: heap 7 -> 7 MB in a child capped at 200 MB | abuse "the shape of a body" (child); mutant P25 |
+| **a slow sender holds the places** (G12-5's slow-loris: 311 s each) | a body has **60 s in all and 10 s without a byte** (408, the connection closed); places for a body being received: **1 a library, 1 an address, 8 the site**, taken before the first byte and given back whichever way the request ends; the unpacking of items is a separate ceiling of 2 that no sender can hold | abuse "the time of a body and the places for it"; mutants P15-P20 |
+| a zip bomb | `gunzip` with `maxOutputLength`: **8 MB an item, 16 MB a request** (413); 1 MB of gzip an item and 4 MB a request; 512 MB of zeros in 510 KB of gzip stops at 8 MB in 0.7 s with the heap flat; only a gzip stream is taken (zlib and raw deflate are 422) | unit "what an item must be"; abuse (child); mutants P4-P7 |
+| text that cannot be kept or made to look like something else | a NUL or a lone surrogate (Postgres cannot keep them), nesting past 24; an item is a **song** (`v card score progress graph scoreHash savedAt` and nothing else; the score is a score: measures and notes) or the `state` object (64 fields at most); names are `state` or `song:` + 64 characters of `A-Za-z0-9_.:-` | unit "what an item must be", "items"; mutants P8-P14 |
+| two writers, or one writer twice | one writer at a time (a queue of 24, then 503); a write names the revision it saw: **the statement re-checks it** (a revision never goes backwards, no lost update, whatever the caller got wrong); a retried delete is `200 already` | unit "races"; Postgres twin (260 random calls x 6 seeds, both stores, same answers); mutants I1-I5 |
+| **a device is handed a position past rows it was never given** (review, major: `changes` read the library's revision after its awaited query, so a write that committed meanwhile was skipped for ever) | the revision an answer is about is read ONCE, before the store is asked; the position handed on (`nextSince`, `maxRev`) is the highest of that revision and the last row listed, never a number read later; a write that commits during a fetch is in the next answer (a store that answers slowly, a write in between) | unit "the position a device is given"; mutants N1 |
+| **a device that was away** (tombstones are purged at 30 days; a stale device would push deleted songs back, and a write over a revision of a row that is not there would bring one back unasked) | the library keeps the highest revision it purged (`purged_through`, a column, carried over by a new code, `GREATEST` in the purge statement): `changes` answers `tooOld: true, purgedThrough` to a device whose `since` is below it, and the device must ask before it pushes; a write over a revision (> 0) of a key that is not there is a conflict `gone` (409, nothing written, the others of the batch applied) and says again with base 0 to bring the song back; a retried write whose answer was lost is `409` with the server's metadata and the same hash: that is "applied" | unit "a device that was away"; Postgres "the store's own guards", the twin; mutants N3, G1-G4, K12-K14 |
+| **a store call that never comes back** (a hung Neon connection would hold the one writer, and so every write of every library) | every store call has a time-out (15 s) and a query of the real store has its own (10 s, node-pg drops the connection that hung): a call that does not answer is a `503 store`, the memory is read again, the writer goes on to the next write; a read gives back what it reserved | unit "a hung store does not freeze the writer"; Postgres "server.js ..." (a table locked by another session: 503 after 1.5 s, then served); mutants T1-T4, B12 |
+| a leaked code | full read and write of that library. Remedy: **change the code** on any device (the old code is dead at once: `401 rotated`); delete the library; **60 deletions an hour**, tombstones kept 30 days, `deletions` in every answer so a device asks before removing more than a few; the backup file and every device's own copy stay. An attacker who changes the code first would lock the owner out of the library: so a library has a **recovery code**, a second 256-bit secret shown once at creation (`POST /api/libs/recover`, header `X-PPP-Recovery`): it can **only** give the library a new code (and a new recovery code, it is used up), never read or write an item; only its hash is stored (its own domain); a wrong one is `401 bad-recovery`, counted with the wrong codes of the address (20 an hour) and a right one shares the 5 an hour of changes of code. It is a second key to the library: whoever has it can take the library over, so it is to be kept as the code is (and an attacker who has only the code cannot lock out the owner who kept it) | unit "changing the code, and deleting the library", "the recovery code"; mutants R8, R9, C1-C8, K15 |
+| a lost code (every device cleared) | the recovery code, if it was kept, gives the library a new code; with neither it is unrecoverable and the library expires 180 days after its last use ("kept until" is in every answer); an empty library 14 days after its last use | unit "the keeping times", "the recovery code"; mutants K1-K3 |
+| the database filled by what nobody can read any more | tombstones 30 days, deleted libraries two days, libraries 180 days, empty ones 14: ONE statement, at the boot read and at a write (at most every 6 hours, none when memory says nothing is due); item rows no library names are found at the boot read and deleted; the operator sees the libraries by size with `tools/sync-admin/list.js` (read only, refuses a database that is not on this machine without `--allow-remote`, shows no item name and no hash) and removes one with `delete.js --id lib_... --confirm` (one statement) | unit "the keeping times", "the operator's tools"; Postgres "statements", "the operator's tools"; mutants K4-K11, O1, O2 |
+| the idle poll keeps the database awake | `changes` with the revision the device already has is answered from memory: **0 statements** (100 polls); a device that says it is AHEAD of the library costs one select of the library's own row per poll and is told `reset` only after it (a restored database or a second process is not read from a stale cache); the first request after a boot is one round trip; a library's use is written at most once a day | unit "an idle poll"; Postgres "statements" (counted, and in the database's own log); mutants R6, R10, R11, N2 |
+| the free database made to fail the site | the tables are made only with the flag, in their own transaction under an advisory lock and a savepoint: a failure switches the feature off (503 `store`, `disabled`) and leaves the site and the PC queue as they were; a store that fails mid-write is a 503 and the memory is read again | Postgres "server.js ... the feature is optional"; unit "a restart, and a store that fails"; mutants M1-M5 |
+
+**Residual risks, said plainly.**
+
+1. **Three addresses can fill the site's 128 MB** (48 MB each) and keep it full by using their libraries once in 180 days. Every write of everyone is then `503 busy` until an operator
+   deletes those libraries (no eviction: G13-D8) - the owner's songs stay readable. The same shape as the PC queue's 64 MB, with a cap that is kept for months. Choices for the Lead:
+   a lower per-address cap (16 MB makes it eight addresses), a larger site cap, a way to delete a library by its id (`tools/sync-admin/delete.js`, 7.9; no route; `list.js` shows them by size and by address tag).
+2. **Neon compute.** A route that touches the database can be used to keep it awake, as `/api/shares` already can; the new routes need a code and cost nothing when idle, but a
+   stranger's own library may ask for changes 120 times an hour. Not preventable by a rate.
+3. **The budgets, the places and the limits are in memory.** A restart (a deploy, or Render's sleep after 15 idle minutes) forgets them: a patient attacker gets the hourly number per
+   restart cycle. What a restart does not forget is what is IN the tables (libraries made, bytes and rows held, counted from the rows).
+4. **Eight addresses with a library each can hold all eight places for a body for 60 s** at a time (six answers for 120 s): sync writes are then `503 busy` for everyone else in
+   those windows; no memory is at risk (a stalled body holds the bytes it has sent).
+5. **One instance.** Two instances would keep every row right (the SQL re-checks the revision) but their counters could drift and their limiters would be separate. Not supported, as for the queue.
+6. **A device offline for more than 30 days misses deletions** (their tombstones are purged). The server now says so (`tooOld: true`, `purgedThrough`; a write over a revision of a row that
+   is gone is a conflict `gone`), but the page (S1) must act on it: ask before it pushes songs the library does not have after such a gap.
+7. **Two people behind one address** (a school, a family) share an address's quarter of the budgets and its 48 MB; one abuser there uses it up for the others.
+8. **An item at the structure bound** takes ~190 ms of the event loop to parse and peaks at 68 MB of heap; two at once (the ceiling) are 136 MB. Everything at its ceiling at once is
+   about 300 MB above the idle 60 MB of an instance with 512 MB: not measured as a whole.
+9. **What Neon keeps of a deleted or rewritten body** (history for point-in-time restore) counts toward the plan in a way that was not measured; the ingress budgets are what bound it.
+10. **Twenty addresses use up the site's hundred libraries an hour** (5 an hour each): for that hour nobody can make a new library (`429`); libraries that exist are not affected.
+11. **A first sync is slow by design.** 500 songs of about 20 KB (9.3 MB, measured) are written at 240 items an hour: 240 at once, 240 an hour later, 20 an hour after that - **the
+    device waits 2 hours** (the limiter's windows are an hour; it follows `Retry-After`); the second device reads 300 an hour: 300 at once and 200 an hour later - **1 hour**. Listing
+    the 500 items is one answer of 84 KB (charged to the read budgets: a library's quarter of an hour is 16 MB, so it costs 0.5 %). A person with 100 songs is synced in one go.
+12. **The recovery code is a second master secret** (it can take the library over by giving it a new code): kept as the code is kept. A person who loses both has lost the library.
+13. **A wrong recovery code is counted with the wrong codes of its address** (20 an hour): an attacker on a shared address can use up that address's count and so delay the people on it
+    who made a typing mistake - failures only: a right code or a right recovery code is never refused for other people's wrong ones.
 
 ### 7.8 Phases (Track B)
 
 | Phase | What | Effort | Acceptance | Rollback |
 | --- | --- | --- | --- | --- |
-| **G13-S0 Server** | `sync-store.js`, `sync.js` (routes), migration, limits, purge, in-memory rev cache; **routes 404 unless `PPP_SYNC=1`** | 2 + full and security review | unit + Postgres tests in the G10b-2 style: **100 idle `changes` polls = 0 statements**; old/new/rollback boots identical; every limit of 7.3/7.7 mutation-tested (target ≥ 60 mutants); a zip bomb refused; cross-library isolation | `PPP_SYNC=0` (default); revert boots on the migrated DB |
+| **G13-S0 Server** *(built: 7.9)* | `sync-store.js`, `sync.js` (routes), migration, limits, purge, in-memory rev cache; **routes 404 unless `PPP_SYNC=1`** | 2 + full and security review | unit + Postgres tests in the G10b-2 style: **100 idle `changes` polls = 0 statements**; old/new/rollback boots identical; every limit of 7.3/7.7 mutation-tested (target >= 60 mutants; 145 built, all killed); a zip bomb refused; cross-library isolation | `PPP_SYNC=0` (default); revert boots on the migrated DB |
 | **G13-S1 Page** | Settings section, `#lib=` pairing, upload/migration, pull/push engine, merge rules, conflict copies, recently-deleted, bulk-delete check; behind `PPP.sync` (off), 4 languages | 3 + full review | two puppeteer contexts against a local server: **30 songs migrate**, edits converge after ≤ 2 opens, a concurrent score edit forks with both kept, a 17-song deletion asks, offline edits push later, **SQL statements per session ≤ 4**; with the switch off the page is byte-identical to main | switch off |
 | **G13-S2 Graphs travel** | the graph in sync items and (optional field) in shares; the reader prefers it when `scoreHash` matches | 1.5 | an imported song with ties/tuplets/8va opens on the second device with the same `fingerprint` as the first (not projected); old shares open unchanged | ignore the field |
 | **G13-S3 On by default** | the Settings section visible for everyone (the H-13 two-device run first) | 0.5 | H-13 sync steps pass | hide again |
 
 Accounts (U4): unchanged in S0-S3. The account progress blob (0 rows) is left as it is; folding accounts into
 libraries is not proposed.
+
+### 7.9 G13-S0 as built (Implementer, Sonnet, 2026-10-15)
+
+Worktree `D:/PPP-g13s0`, branch `g13-s0-sync-server` from `origin/main` `610d97e` (= live `fab0ba3` + docs). Server only; the page is S1. **Nothing was deployed or merged.**
+
+**Files.** `sync-store.js` (the two tables, the migration, a Postgres store and a file store with the same methods), `sync.js` (the routes, the limits, the in-memory libraries, the purge, the
+gauge), small wiring in `server.js` (the flag, the store, the tables at the boot, one route), `server-stats.js` (`addGauge`: a block of numbers and the class `api-sync`, only when the
+feature is on), `home-jobs.js` (one word added to its exports: `byteWindow`). The body reader and `jsonGuard` of G12-5 are used as they are. Tests in `tests/sync/`, run by
+`npm run test:sync` (a part of `npm test`) and, in the gate, by a shard of its own (`shard-q` in `.github/workflows/bench.yml`: every other shard is already at 190-217 s). The operator's tools are `tools/sync-admin/{list,delete}.js` (sharing `lib.js`); they are not
+loaded by the server.
+
+**The flag.** `PPP_SYNC=1` mounts it. Without it: the routes are 404 like any unknown path (the same body), the modules are not even `require`d, no table is made, the boot says nothing and the
+hourly line is what it was (no `sync` block, no `api-sync` class). With it: the boot line "Song sync: on ...", the tables, the routes, the block in the hourly line. Env: `PPP_SYNC_TOTAL_MB`
+(128; 4..400), `PPP_SYNC_KEEP_DAYS` (180; 14..730), `PPP_SYNC_INGRESS_MB_HOUR/DAY` (64/128), `PPP_SYNC_EGRESS_MB_HOUR/DAY` (64/150), `PPP_SYNC_QUERY_MS` (10000; 1000 at least: the time-out of
+one query of the store).
+
+**The tables** are made by `sync-store.js` `migrate`, in a transaction of their own under advisory lock 727003 and a savepoint, **not inside `homeJobsStore.migrate`'s transaction** as 7.2 said:
+that function and the boot SQL that the Postgres tests of the queue extract from `server.js` stay byte for byte what they were, and the two parts are independent (a failure of one does not turn the
+other off). `CREATE ... IF NOT EXISTS` only; no foreign key. As built: `ppp_sync_libs (id, client_hash, created_at, last_used_at, created_ip_tag, revoked_at, rotated_from, bytes, items, tombs, max_rev, purged_through, recovery_hash)`
+(7.2's, plus `tombs`: `items` counts live items, `tombs` tombstones, `bytes` is the **accounted** size - every row 256 bytes plus its body; `purged_through` the highest revision of a
+tombstone that was purged; `recovery_hash` the hash of the recovery code, nullable) and `ppp_sync_items (lib_id, key, rev, deleted_at,
+content_hash, device, bytes, body, updated_at)` with the index on `(lib_id, rev)` and a partial one on `deleted_at`. **Boots** (`sync-pg.test.js`, real `server.js` processes on production-shaped
+data): main -> PR with the flag unset: schema and every row identical; PR with the flag: the schema differs only by the two tables (22 columns, two primary keys, five indexes); rollback (main
+boots on it: health, sign-up, shares, a PC link; the sync routes are 404; no table, column, constraint, index or sync row touched); roll forward (the library made before is whole); the flag
+unset again (routes 404, data untouched); a first boot on an empty database and a second (nothing changes); twelve real servers at once; a view in the way of `ppp_sync_items` (the server
+starts, says once that sync is off and why, the queue and the site work, the next boot makes the tables).
+
+**Routes** (all JSON, `Cache-Control: no-store`; `X-PPP-Lib: <code>` except the first):
+
+| Route | Answers |
+| --- | --- |
+| `POST /api/libs` `{}` | `201 {id, code, recovery, tag, createdAt, keptUntil}` - the only time the code and the recovery code are shown. `tag` is the last 6 hex of the id (a non-secret name to recognise a library by) |
+| `GET /api/sync/changes?since=<rev>` | `{maxRev, items: [{key, rev, deleted, hash, bytes, device, updatedAt, deletedAt?}], more, nextSince, deletions, library: {tag, bytes, items, tombs, capBytes, maxItems, keptUntil}}`, at most 500 items oldest first; `reset: true` when `since` is ahead of the library (a restored database; the library's own row was read first); `tooOld: true, purgedThrough: <rev>` when `since` is below a revision whose tombstone was purged (the device may have missed deletions). `nextSince` and `maxRev` are never past the last row listed unless the library was at that revision before the rows were fetched. Answered from memory when `since >= maxRev` |
+| `GET /api/sync/items?keys=a,b` (at most 25) | `{items: [{...metadata, body: <base64 gzip>}], missing: [...], maxRev}`; a tombstone has no body; an item that does not fit in 6 MB of bodies is `deferred: true` (asked again). A name another library has is `missing` |
+| `PUT /api/sync/items` `{device?, items: [{key, baseRev, hash, body}]}` (at most 25) | `200 {maxRev, applied: [{key, rev}], conflicts: [], library}`; **`409`** with the same shape when an item was written over a revision the server has moved past: `conflicts` carries the server's metadata, the others in the batch ARE applied. A write with `baseRev > 0` for a key the library has no row for (its tombstone was purged) is a conflict `{key, gone: true}`: nothing is written, say again with `baseRev: 0` to bring the song back. A retried write whose first answer was lost comes back `409` with the server's own metadata: **a conflict whose `hash` equals the hash that was sent is "applied"**. The whole batch is refused (`422` for a bad item, `503 quota`/`busy`, `429`) when it is malformed or does not fit |
+| `DELETE /api/sync/items/:key?baseRev=<n>&device=<16 hex>` | `200 {key, rev, deleted: true, maxRev, library}`; `200 already: true` for a tombstone; `409` as above when the item moved on; `404` for a name that is not there; `baseRev` is required |
+| `POST /api/libs/me/rotate` | `201 {id, code, tag, createdAt, keptUntil, maxRev, rotated: true}`; the old code is `401 rotated` from that moment; items, revisions, counters and the recovery code carry over |
+| `POST /api/libs/recover` `{}` with `X-PPP-Recovery: <recovery code>` (no `X-PPP-Lib`) | `201 {id, code, recovery, tag, createdAt, keptUntil, maxRev, rotated: true, recovered: true}`: a new code AND a new recovery code (this one is used up); the old code is `401 rotated`. `401 bad-recovery` (counted with the wrong codes), `401 no-recovery`, `403 cross-site`. It opens nothing else |
+| `DELETE /api/libs/me` | `200 {ok: true}`; the code is `401 deleted` |
+
+Errors: `401 no-lib | bad-code | rotated | deleted | bad-recovery | no-recovery`, `403 cross-site`, `404 not-found`, `408 slow`, `409` (conflict), `413 too-large | item-too-large | batch-too-large`, `422 bad-body | bad-key |
+dup-key | bad-rev | bad-hash | bad-device | bad-item | bad-gzip | no-items | too-many-items | no-keys`, `429 too-many | in-flight | share` (Retry-After), `503 busy | quota | budget | store`.
+
+**What the server decides and what it leaves to the client (7.5).** The server stores. A write names `baseRev`, the revision of the item the device last saw (0 for a new one); the item is written
+when the server's revision is `<= baseRev`, else it is a conflict (the client fetches the body, merges by 7.5 and writes again over the server's revision). A tombstone is an item; writing over it
+needs its revision. Revisions are one counter per library (consecutive within a batch). **The bulk-delete guard fields** are `deletions` (the number of tombstones in an answer: more than 3 at
+once and the client asks, 7.5), every tombstone's `deletedAt` and `device` ("changed on <device>", "recently deleted"), and the server's own bound of 60 deletions an hour.
+
+**Where this differs from 7.3, and why** (the numbers were written before the G12-5 reviews): (1) 7.3 gave **256 MB an hour per address and 64 MB per library**, which are more than the
+site's own 150 MB a day: one library could use the whole of the site's day. Every byte budget (written and read) is now held three ways - the site's, and **a quarter of it for each library
+and for each creating address** - as G12-5 did after its second review. (2) Added, from the same reviews: places for bodies, a ceiling for unpacking, a ceiling for answers, write requests
+counted whatever came of them, a limit on the changes that ask the database, rows capped apart from bytes, a 60-deletion limit. (3) `changes` is not rate limited when it asks nothing.
+(4) A library's limits are held under its **key** (the id of the first library of its chain of codes), not its id: changing the code (5 an hour) would otherwise make every budget whole again
+(mutant R9). (5) Reads count items per library (300 an hour); the bytes are the budgets.
+
+**Free-tier arithmetic, checked.** A session is the first request after a boot (one round trip), `changes` (0 or 1 statement), one read per 25 items fetched, one write per batch pushed: 3-4
+statements, as 7.8's S1 target needs. The 128 MB cap holds about 60-250 libraries as 7.6 estimated (a row costs 256 bytes on top of its 5-60 KB). The stats line shows the cap and the warning.
+
+**Operations.** Turn on: set `PPP_SYNC=1` in Render (a restart; the tables are made at that boot). Verify beyond `/health`: the log has "Song sync: on"; `GET /api/sync/changes?since=0` with no
+header is `401 no-lib`; `POST /api/libs` with `{}` is `201` (then remove it: `DELETE /api/libs/me` with its code); the hourly line has `"sync":{...}` and `by["api-sync"]`.
+Switch off: unset `PPP_SYNC` and restart: routes 404, tables and data stay (switching it off is not a deletion). Roll back: deploy the previous sha (it boots on the migrated database);
+optionally `DROP TABLE ppp_sync_items, ppp_sync_libs;`. What is in the database (read only; a database that is not on this machine needs `--allow-remote`, and the URL is `--url` or `DATABASE_URL`):
+`node tools/sync-admin/list.js [--json]` - one row per library (id, MB, items, tombstones, revision, made, last used, the keyed tag of its address, state), the totals, and what each address
+holds against its 48 MB. A library by id: `node tools/sync-admin/delete.js --id lib_<22 hex>` says what it would delete and exits 3; with `--confirm` one statement removes its items and its
+row; then restart the server (the libraries are read once per boot; until then the owner's next write is refused as not valid). By hand the same is `DELETE FROM ppp_sync_items WHERE lib_id =
+'<id>'; DELETE FROM ppp_sync_libs WHERE id = '<id>';`. Watch: the line's `pct` and `refused` (`quota`, `busy`, `budget`, `share`, `store`).
+
+**After the security review (PR #276, 2026-10-15; reproductions were run against the first version and are tests now).** (1) **Major - a device could be handed a position past rows it
+was never given:** `changes` read `lib.maxRev` after the awaited query, so a write that committed meanwhile moved `nextSince` past a row the page did not hold (items 1 and 2 listed, a
+write of 3, `nextSince` 3). The revision is read once before the store is asked; the position is `max(that revision, last row listed)` (7.7, row "a device is handed a position"). (2)
+**Major - the rows of `changes` were not charged:** a library could poll 500 rows as often as 120 an hour for nothing. The page is now looked at against the read budgets before the
+database is asked and charged by what it weighs (500 rows: 84 KB, measured). (3) **Concurrent reads passed the look at the budget together:** six answers at once served 34.5 MB against a
+2 MB share (they counted after serving). The worst an answer can weigh (`min(6 MB, the library's bytes, keys x 1 MB)`) is reserved before the database is asked and the difference given
+back after, also when the call fails; the "at most one answer more than the share" is what is true now. (4) `reset: true` is not answered from a cache: a device that says it is ahead
+costs one select of the library's own row (a restored database or a second process raises the cached revision). (5) **A device that was away:** `purged_through`, `tooOld`, `gone`
+conflicts (7.7). A write that is retried after its answer was lost is `409` with the same hash: that is "applied" (G13-S1 must read it so). (6) **The recovery code** (7.7 and the routes).
+Not built: an idempotency nonce for a lost response to a change of code - the recovery code answers the lock-out it would have prevented, and a nonce would need a place to keep the answer
+(which would be a code). (7) **A hung store:** every call has a time-out (15 s), and the Postgres store has a query time-out (10 s) that drops the hung connection, so `exclusive()` writes
+are not frozen behind a statement that never answers (a table locked by another session: 503 after 1.5 s with the time-out set to that, the next request served). (8) **Operator tools**
+(`list.js`, `delete.js`; Operations above) and the twin's `strip` sorts the keys of the tombstone map (two stores built it in an order of their own: a false mismatch of the reviewer's seed 505).
+
+*Measured, as the review asked.* First sync of 500 songs (2,000 packed rows each, 9.3 MB): upload 2 hours of waiting (240, 240, 20), read on a second device 1 hour (300, 200), the listing
+84 KB in one answer (7.7, residual 11; a test: "a first sync of 500 songs"). Mutants: 145 (the review's fixes have mutants N, B10-B12, G, K12-K15, C, T, O).
+
+**Notes for G13-S1 (the page).** Send `baseRev` of the revision seen, 0 for a new item. A `409` whose conflict has the hash that was sent is applied. A conflict `gone: true` is the device's
+song that the library has no row for: ask the person, then send it again with `baseRev: 0`. `tooOld: true` in a `changes` answer: ask before pushing songs the library lacks. Show the
+recovery code once, with the code and the link, and say it takes the library over. A `reset: true` answer: forget the revision and list again. Wait with the `Retry-After` of a `429`: a
+first sync of many songs takes hours by design (7.7, residual 11).
+
+**Verification** (`npm run test:sync`; Node only, the Postgres part skips without `PPP_TEST_PG_URL`): `sync.test.js` 341 checks (who may ask, libraries, items, revisions, deletion, shape and
+size, quotas, rates, budgets, idle polls, isolation, new code, keeping times, races, restart, a failing store, the position a device is given, a device that was away, the recovery code,
+a hung store, the operator's tools, a first sync of 500 songs, the hourly line), `sync-abuse.test.js` 43 (the amplification, the one-byte flood,
+the zip bomb and the slow senders in a child process with a 200 MB heap, the places, the answers), `server.test.js` 19 (the real `server.js` on its file store: the flag, the routes, the stats
+line and its warning, the data file, a restart), `sync-pg.test.js` 88 (on a throwaway Postgres 17: the migration, six random sequences of 260 calls each answered the same by both stores and
+leaving the same rows, the guards, one script of 25 requests answered the same by both, the statements counted and in the database's own log, the operator's tools, a statement that hangs,
+the boots above). **Mutants: 145, all killed**
+(`node tests/sync/mutants.js`: three at a time, Postgres ones each on a database of their own; the unmutated copy passes first).
+
+**Choices the Lead may want to change.** (1) The per-address cap of 48 MB (residual risk 1). (2) `song` fields are an allowlist (`v card score progress graph scoreHash savedAt`), so that an item is a
+song: S1 adds a field with its test. (3) Tombstones are purged at 30 days, and a device that was away longer is told (`tooOld`, `gone`; residual risk 6). (4) The code is `401 deleted`/`rotated` for its old
+holders, not counted as wrong: it tells them what happened, and tells nobody else anything. (5) The library's use is written at most once a day (a day's slack in "kept until"). (6) A body
+may be 6 MB; an item 1 MB of gzip. (7) `server-stats.js` gains `addGauge`; the class `api-sync` exists only with the feature.
+
+**What could not be tested.** Production and a real Neon (egress, history, compute hours); Render's proxy with 6 MB bodies; a page (S1: two browsers, QR, the merge); Node 22 (the Dockerfile
+says 22; every run here and the gate use 24 - nothing here needs a 24 API); Linux for the Postgres and abuse suites (they ran on Windows 11; the gate runs the Node ones on Linux).
 
 ---
 
