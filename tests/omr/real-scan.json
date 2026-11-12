@@ -35,7 +35,11 @@
    }
   ]
  },
- "known_differences": [],
+ "known_differences": [
+  {"case": "czerny-op599-schirmer-1893-p25", "piece": "method/czerny599/049", "what": "the page has 8va lines over the right hand's runs; the catalogue writes those notes at sounding pitch (no octave-shift), so an engine that reads the written notes (and does not apply the 8va) is an octave off in those bars. The same for every engine."},
+  {"case": "beyer-op101-peters-1895 (pages 21, 24, 25, 31, 32, 35, 42)", "piece": "-", "what": "small note-name diagrams in the left margin (a few notes on a short staff, with 'ut re mi'); they are engraved music that is not in the truth: an engine that reads them adds notes or bars. The same for every engine."},
+  {"case": "all", "piece": "-", "what": "the catalogue is the transcriber's reading of these very pages (catalog/method/src: '%ppp book=.. no=.. pages=..'); G12-6 checked the page-to-piece map and the bar ranges of the two pieces that run over a page (Czerny 28 and 36) against the page images, not every bar of every piece."}
+ ],
  "entries": [
   {
    "id": "beyer-op101-peters-1895",

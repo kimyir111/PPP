@@ -173,12 +173,51 @@ the parameters `omr/flags.js` holds (a unit test compares them), the tuning numb
 `omrbench/fetch_real.py` downloads public-domain page images of the editions the catalogue was transcribed from (Beyer, Peters, Leipzig 1895; Czerny
 Op. 599, Schirmer, New York 1893 - `catalog/method/books.json`) to a git-ignored folder, by the id listed in `tests/omr/real-scan.json`. It downloads
 nothing the host does not itself mark public domain (Commons: not copyrighted and a public-domain licence; IMSLP: "Copyright Status: Public Domain"
-on the evidence page), checks every file against its pinned sha256, and never writes inside a tracked path. **The list is empty**: no file's licence
-has been read on its host yet, and an id or URL written from memory would be a guess. To add one: read the licence on the host's page; write the entry
+on the evidence page; the Internet Archive's IMSLP mirror: IMSLP's own file by its sha1, IMSLP's record "Public Domain" and the words of the work page),
+checks every file against its pinned sha256, and never writes inside a tracked path. To add an entry: read the licence on the host's page; write the entry
 (`real-scan.json` shows the shape) with a sha256 of 64 zeros; run `omr-live-2 fetch-real --pin ID --allow-network` (it asks the host, downloads once,
-prints the sha256); look at the file; commit the entry. `--fetch --allow-network` then fetches and renders the pages at 300 DPI. Scoring the tier needs
-the page-to-bars map of each entry (`pages`) and a `known_differences` list after one check against the catalogue's transcription: that is G12-6's work
-(the engine bake-off) and the design document's tier row, not G12-0's numbers.
+prints the sha256); look at the file; commit the entry.
+
+```
+python tests/bench/run.py omr-live-2 fetch-real --check                      # offline: the manifest is well formed
+python tests/bench/run.py omr-live-2 fetch-real --fetch --allow-network      # 15.7 MB: both PDFs, verified on their hosts, the 20 listed pages rendered at 300 DPI
+python tests/bench/run.py omr-live-2 run --tiers real-scan                   # Audiveris on them (any engine: --engine NAME)
+```
+
+**What is in it (G12-6).** Two entries: Beyer from Wikimedia Commons (the bytes of IMSLP #81208) and Czerny from the Internet Archive's copy of IMSLP
+#105466 (IMSLP itself now answers a script with a CAPTCHA, which this tool does not try to pass). 20 pages make **18 cases** (two cases are two pages:
+a piece runs over the page); a page is in when every piece on it is in the catalogue, registered, not a G0 hold-out, and nothing but those pieces is
+engraved on it (the small note-name diagrams in Beyer's margins excepted: they are part of the page an engine sees). A case's truth is its pieces'
+catalogue bars in page order (`omrbench/realscan.py`); 6 of the 18 (the smallest hashes) are the held-out half. Known differences between the scans
+and the truth, the same for every engine: Czerny No. 49 has `8va` passages the catalogue writes at sounding pitch (an engine that reads the written
+notes is an octave off there); Beyer's margin diagrams are notes that are not in the truth; the catalogue is the transcriber's reading of these very
+pages (no bar was checked against them one by one for G12-6).
+
+## The bake-off (G12-6: Audiveris against learned engines)
+
+Each learned engine runs in its own Python environment outside the repository (packages and weights never committed); the repository holds a runner
+for each (`tests/omr/engines/run_<name>.py`) and `omrbench/engines.py` starts it at below-normal priority, one process for many pages, stopping a page
+that answers nothing for 900 s (by PID) and recording a page whose runner dies as crashed. The engines are used as shipped; what a runner adds is only
+what it takes to get MusicXML out (its docstring says what). The SMT answers Humdrum kern, which `omrbench/kern.py` turns into MusicXML.
+
+```
+# environments (Windows 11, Python 3.13, RTX 5070 Ti; the commands of the record in docs/GOALS/G12_OMR.md section 25)
+set PPP_OMR_HOMR_PYTHON=D:\PPP-omr-bakeoff\venv-homr\Scripts\python.exe        (homr 0.7.0 + onnxruntime-gpu 1.26.0)
+set PPP_OMR_OEMER_PYTHON=D:\PPP-omr-bakeoff\venv-oemer\Scripts\python.exe      (oemer 0.1.8 + onnxruntime-gpu 1.26.0 + opencv-python-headless 4.14)
+set PPP_OMR_SMT_PYTHON=D:\PPP-omr-bakeoff\venv-smt\Scripts\python.exe          (torch 2.11.0+cu128, transformers 4.49.0)
+set PPP_OMR_SMT_SRC=D:\PPP-omr-bakeoff\src\smt                                 (a clone of github.com/antoniorv6/SMT)
+set PPP_OMR_CUDA_DLLS=<a folder of CUDA 12 / cuDNN 9 DLLs, e.g. a torch +cu128 install's torch\lib>
+set HF_HOME=D:\PPP-omr-bakeoff\hf-cache
+
+python tests/bench/run.py omr-live-2 run --cases tune --tiers all+real                      # Audiveris, the tuning half (out/engine)
+python tests/bench/run.py omr-live-2 run --engine homr --cases tune --tiers all+real        # each learned engine likewise (out/engine-homr, ...)
+python tests/bench/run.py omr-live-2 bakeoff --half tune                                    # side by side, raw and normalised; NOT the gate
+python tests/bench/run.py omr-live-2 run --engine homr --cases held --tiers all+real        # the held-out half (prints no numbers)
+python tests/bench/run.py omr-live-2 bakeoff --half held --record tests/omr/bakeoff/g12-6.json   # gate A7, once (a second time is refused)
+```
+
+`bakeoff` reads nothing again: it scores the recorded page reads of each engine, the MusicXML as the engine wrote it ("raw") and through
+`omr/normalize.js` ("normalised": what the app does under `PPP.omr = 'v2'`), and judges A7 on the normalised path of the held-out half.
 
 ## Files
 
@@ -189,6 +228,8 @@ the page-to-bars map of each entry (`pages`) and a `known_differences` list afte
 | `omrbench/metrics.py`, `baseline.py` | the omr.* metrics; baseline recording and `check` |
 | `omrbench/degrade.py`, `render.py`, `node/ppp-print.js`, `node/raster.js` | engravers, Chrome raster, photo / scan |
 | `omrbench/engine.py`, `appmode.py`, `suite.py` | Audiveris alone, the app path, the CLI behind `run.py omr-live-2` |
-| `omrbench/fetch_real.py`, `real-scan.json` | the real-scan tier's fetch script and its (empty) list |
+| `omrbench/fetch_real.py`, `real-scan.json`, `omrbench/realscan.py` | the real-scan tier: the fetch script, its two entries, the cases and their truth (G12-6) |
+| `omrbench/engines.py`, `engines/run_*.py`, `omrbench/kern.py`, `omrbench/bakeoff.py` | G12-6: the learned engines' runners and how they are started, the SMT's kern -> MusicXML, the bake-off and gate A7 |
+| `bakeoff/g12-6.json` | G12-6: the bake-off's numbers (aggregates only), both halves |
 | `omrbench/flagdata.py`, `node/flags-cli.js`, `node/flags-fit.js` | G12-3: the per-bar dataset of omr/flags.js on a recorded run, its CLI, the fit and the held-out judgement |
 | `baselines/*.json` | committed numbers of Audiveris 5.11.0  |

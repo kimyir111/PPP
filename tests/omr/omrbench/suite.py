@@ -4,13 +4,16 @@
     flags-data [--cases S] [--tiers T]   (G12-3) the bars of a recorded engine run with omr/flags.js' signals and whether each is wrong (tests/omr/out/flags/)
     render [--cases S] [--tiers T] the page images (cached; tests/omr/out/render/)
     run    [--cases S] [--tiers T] [--mode engine|app] ...   render, read, judge; writes tests/omr/out/<mode>/results.json
+           [--engine homr|oemer|smt [--engine-python P]]      (G12-6) a learned engine in its own environment instead of Audiveris: out/engine-<name>/
     check  [--results P] [--baseline P]                       a run against the committed baseline (exit 1 on a regression)
     baseline --reason R [--results P]                         record a results file as the baseline (tests/omr/baselines/)
+    bakeoff [--half tune|held] [--engines E] [--record P]     (G12-6) every engine's recorded reads side by side, raw and normalised; gate A7
     determinism [--cases S]        render twice, the second time in reverse order, and compare every byte
     fetch-real ...                 the real-scan tier's page images (tests/omr/omrbench/fetch_real.py; never run by the gate)
 
     --cases   all | tune | held | s1 | s1-app | id,id,...  (an id, a case name, or tag:<name>)
-    --tiers   clean-A,clean-B,scan150-A,scan150-B,scan200-A,scan200-B,photo-A,photo-B,brace-less (default: all nine); scan and photo are also reported merged (A + B)
+    --tiers   clean-A,clean-B,scan150-A,scan150-B,scan200-A,scan200-B,photo-A,photo-B,brace-less (default: all nine); scan and photo are also reported merged (A + B);
+              real-scan (G12-6: the fetched public-domain scans; all+real = the nine and it)
 
 It is a LOCAL tool: it needs Audiveris 5.11, Java (Audiveris brings its own), Verovio, NumPy, OpenCV and puppeteer (tests/omr/README.md).
 Where one is missing it prints ``SKIPPED: <reason>`` and exits 0 (2 with --require-env); the CI gate never runs it, only the unit tests of its
@@ -30,13 +33,15 @@ import tempfile
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional, Tuple
 
-from . import BENCH, BENCH_VERSION, baseline as bl, cases as casesmod, degrade, engine, envinfo, metrics, render, xmlscore
+from . import BENCH, BENCH_VERSION, baseline as bl, cases as casesmod, degrade, engine, engines as learned, envinfo, metrics, realscan, render, xmlscore
 
+ENGINE_NAMES = tuple(learned.names())
 HERE = envinfo.HERE
 OUT = os.path.join(HERE, "out")
 BASELINE_DIR = os.path.join(HERE, "baselines")
 PAGE_TIERS = ("clean-A", "clean-B", "scan150-A", "scan150-B", "scan200-A", "scan200-B", "photo-A", "photo-B")
 TIERS = PAGE_TIERS + ("brace-less",)
+EXTRA_TIERS = ("real-scan",)        # G12-6: public-domain scans (tests/omr/real-scan.json, fetched by fetch-real); only when asked for
 MODES = ("engine", "app", "app-nohelper")
 MERGED = {"scan": ("scan150-A", "scan150-B", "scan200-A", "scan200-B"), "photo": ("photo-A", "photo-B")}
 
@@ -78,10 +83,15 @@ def select_cases(doc: Dict[str, Any], selector: str) -> List[Dict[str, Any]]:
 
 
 def parse_tiers(text: str) -> List[str]:
-    tiers = list(TIERS) if text in ("all", "", None) else [t.strip() for t in text.split(",")]
+    """``all`` = the nine tiers of G12-0; ``all+real`` adds the real-scan tier (G12-6); or a list."""
+    if text in ("all", "", None):
+        return list(TIERS)
+    if text == "all+real":
+        return list(TIERS + EXTRA_TIERS)
+    tiers = [t.strip() for t in text.split(",")]
     for t in tiers:
-        if t not in TIERS:
-            raise SystemExit(f"--tiers: {t!r} is not one of {', '.join(TIERS)}")
+        if t not in TIERS + EXTRA_TIERS:
+            raise SystemExit(f"--tiers: {t!r} is not one of {', '.join(TIERS + EXTRA_TIERS)}")
     return tiers
 
 
@@ -140,8 +150,11 @@ def read_pages(recs: List[Dict[str, Any]], divisions: str = "as-read", movements
         for f in files:
             try:
                 with open(f, "rb") as h:
-                    docs.append(xmlscore.parse_score(xmlscore.mxl_text(h.read()), divisions))
-            except (OSError, xmlscore.ScoreError, ValueError, KeyError):
+                    data = h.read()
+                # Audiveris writes .mxl (zip); a learned engine of the bake-off writes plain MusicXML (G12-6)
+                text = xmlscore.mxl_text(data) if data[:2] == b"PK" else data.decode("utf-8-sig")
+                docs.append(xmlscore.parse_score(text, divisions))
+            except (OSError, xmlscore.ScoreError, ValueError, KeyError, UnicodeDecodeError):
                 continue
     return xmlscore.join(docs) if docs else None
 
@@ -194,13 +207,24 @@ def fixture_truth() -> xmlscore.Score:
         return xmlscore.parse_score(h.read())
 
 
+def engine_out_dir(args) -> str:
+    """out/engine for Audiveris (as since G12-0), out/engine-<name> for a learned engine of the bake-off (G12-6)."""
+    name = getattr(args, "engine", "audiveris") or "audiveris"
+    return os.path.join(args.out or OUT, ("engine" if name == "audiveris" else f"engine-{name}") + render.SUFFIX)
+
+
 def run_engine(args) -> int:
+    if (getattr(args, "engine", "audiveris") or "audiveris") != "audiveris":
+        return run_learned(args)
     doc = casesmod.load()
     sel = select_cases(doc, args.cases or "all")
     tiers = parse_tiers(args.tiers)
-    page_tiers = [t for t in tiers if t != "brace-less"]
+    page_tiers = [t for t in tiers if t in PAGE_TIERS]
     engravers = sorted({tier_parts(t)[1] for t in page_tiers})
     problem = env_problem(True, "A" in engravers) if page_tiers else (None if envinfo.audiveris_path(args.audiveris) else "Audiveris is not installed")
+    if problem:
+        return skip(problem, args.require_env)
+    real, problem = real_selection(args, tiers)
     if problem:
         return skip(problem, args.require_env)
     exe = envinfo.audiveris_path(args.audiveris)
@@ -209,8 +233,61 @@ def run_engine(args) -> int:
     variants = sorted({tier_parts(t)[0] for t in page_tiers})
     print(f"omr-live-2 engine: {len(sel)} cases x {len(tiers)} tiers, Audiveris {eng['version']} ({exe})")
     report = render.render_cases(sel, engravers=engravers, variants=tuple(variants), force=args.force) if page_tiers else {}
+    jobs, order, inputs = page_jobs(doc, sel, tiers, report, out_dir, real)
+    print(f"engine: {len(jobs)} pages")
+    eng["options"] = engine.engine_options(args.step_timeout)
+    recs = engine.run_pages(exe, jobs, eng, workers=args.jobs, force=args.force, timeout=args.timeout, step_timeout=args.step_timeout)
+    results = score_engine(doc, sel, tiers, order, inputs, recs, eng, args, real)
+    os.makedirs(out_dir, exist_ok=True)
+    with open(os.path.join(out_dir, "results.json"), "w", encoding="utf-8", newline="\n") as h:
+        h.write(bl.dumps(results))
+    with open(os.path.join(out_dir, "summary.txt"), "w", encoding="utf-8", newline="\n") as h:
+        h.write(bl.table(results) + "\n")
+    print(bl.table(results))
+    if results["timeouts"]:
+        print(f"WARNING: {len(results['timeouts'])} pages timed out and count as unread; run the same command again (finished pages are kept)")
+    print(f"wrote {rel(os.path.join(out_dir, 'results.json'))}")
+    if args.check:
+        return do_check(results, args.baseline or baseline_path("engine", eng["version"]))
+    return 0
+
+
+def real_selection(args, tiers):
+    """(the real-scan cases of the --cases selector, a reason to skip) when the real-scan tier is asked for (G12-6)."""
+    if realscan.TIER not in tiers:
+        return [], None
+    real = realscan.select(realscan.cases(), args.cases or "all")
+    gone = realscan.missing_images(real)
+    if gone:
+        return real, (f"the real-scan pages are not here ({len(gone)} missing, e.g. {rel(gone[0])}): "
+                      "python tests/bench/run.py omr-live-2 fetch-real --fetch --allow-network")
+    return real, None
+
+
+def tier_units(doc, sel, tier, real=None):
+    """(case, truth) of every case of a tier: the fixtures (brace-less), the real-scan cases, or the excerpts."""
+    if tier == "brace-less":
+        return [(dict(f, tags=["brace-less"]), fixture_truth()) for f in doc.get("fixtures", []) if f["engine"]]
+    if tier == realscan.TIER:
+        paths = realscan._registry_paths()
+        return [(c, realscan.truth(c, paths=paths)) for c in real or []]
+    return [(c, truth_score(c)) for c in sel]
+
+
+def page_jobs(doc, sel, tiers, report, out_dir, real=None):
+    """The page images of the selection as engine jobs [{key, image, out}], the keys of each (case, tier) in page order, and the
+    sha256 of each (case, tier)'s page set. Shared by Audiveris and the learned engines: the same pages, the same keys.
+    ``real``: the real-scan cases of the selection (G12-6), when the real-scan tier is asked for."""
     jobs, order, inputs = [], {}, {}
     for tier in tiers:
+        if tier == realscan.TIER:
+            for c in real or []:
+                for k, image in enumerate(c["images"], 1):
+                    key = f"{c['case']}|{tier}|p{k}"
+                    jobs.append({"key": key, "image": image, "out": os.path.join(out_dir, c["case"], f"{tier}-p{k}")})
+                    order.setdefault((c["case"], tier), []).append(key)
+                inputs[(c["case"], tier)] = hashlib.sha256("|".join(render.sha256_file(p) for p in c["images"]).encode()).hexdigest()
+            continue
         if tier == "brace-less":
             for f in doc.get("fixtures", []):
                 if f["engine"]:
@@ -226,25 +303,61 @@ def run_engine(args) -> int:
                 jobs.append({"key": key, "image": entry[v]["file"], "out": os.path.join(out_dir, c["case"], f"{tier}-p{entry['page']}")})
                 order.setdefault((c["case"], tier), []).append(key)
             inputs[(c["case"], tier)] = hashlib.sha256("|".join(p[v]["sha256"] for p in report[c["case"]][e]).encode()).hexdigest()
+    return jobs, order, inputs
+
+
+def run_learned(args) -> int:
+    """A learned engine of the bake-off (G12-6) on the same pages: its runner in its own environment (omrbench/engines.py), then the
+    same scoring as Audiveris. A selection that holds held-out cases prints no numbers: those are judged once, by `bakeoff --half held`."""
+    from . import engines
+    name = args.engine
+    doc = casesmod.load()
+    sel = select_cases(doc, args.cases or "all")
+    tiers = parse_tiers(args.tiers)
+    page_tiers = [t for t in tiers if t in PAGE_TIERS]
+    engravers = sorted({tier_parts(t)[1] for t in page_tiers})
+    python = engines.python_for(name, args.engine_python)
+    if python is None:
+        return skip(f"{name}: no Python environment for it (set {engines.ENGINES[name]['env']} or --engine-python; tests/omr/README.md, 'The bake-off')",
+                    args.require_env)
+    problem = env_problem(False, "A" in engravers) if page_tiers else None
+    if problem:
+        return skip(problem, args.require_env)
+    real, problem = real_selection(args, tiers)
+    if problem:
+        return skip(problem, args.require_env)
+    out_dir = engine_out_dir(args)
+    variants = sorted({tier_parts(t)[0] for t in page_tiers})
+    inf = engines.info(name, python)
+    if inf.get("error"):
+        print(f"ERROR ENGINE: {name} --info failed: {inf['error']}")
+        return 2
+    eng = engines.describe(name, inf)
+    print(f"omr-live-2 engine: {len(sel)} cases x {len(tiers)} tiers, {name} {eng['version']} ({python})")
+    report = render.render_cases(sel, engravers=engravers, variants=tuple(variants), force=args.force) if page_tiers else {}
+    jobs, order, inputs = page_jobs(doc, sel, tiers, report, out_dir, real)
     print(f"engine: {len(jobs)} pages")
-    eng["options"] = engine.engine_options(args.step_timeout)
-    recs = engine.run_pages(exe, jobs, eng, workers=args.jobs, force=args.force, timeout=args.timeout, step_timeout=args.step_timeout)
-    results = score_engine(doc, sel, tiers, order, inputs, recs, eng, args)
+    run = engines.run_pages(name, python, jobs, force=args.force, timeout=args.timeout)
+    eng["run"] = {"gpu": run["gpu"], "restarts": run["restarts"], "wall_s": run["wall_s"]}
+    results = score_engine(doc, sel, tiers, order, inputs, run["records"], eng, args, real)
+    results["pages_records"] = {k: {x: r.get(x) for x in ("ms", "rc", "timed_out", "crashed", "error", "cold", "peak_rss_mb", "gpu_peak_mb")}
+                                for k, r in sorted(run["records"].items())}
     os.makedirs(out_dir, exist_ok=True)
     with open(os.path.join(out_dir, "results.json"), "w", encoding="utf-8", newline="\n") as h:
         h.write(bl.dumps(results))
-    with open(os.path.join(out_dir, "summary.txt"), "w", encoding="utf-8", newline="\n") as h:
-        h.write(bl.table(results) + "\n")
-    print(bl.table(results))
-    if results["timeouts"]:
-        print(f"WARNING: {len(results['timeouts'])} pages timed out and count as unread; run the same command again (finished pages are kept)")
-    print(f"wrote {rel(os.path.join(out_dir, 'results.json'))}")
-    if args.check:
-        return do_check(results, args.baseline or baseline_path("engine", eng["version"]))
+    held = sum(1 for c in list(sel) + list(real or []) if c["split"] == "held")
+    if held:
+        print(f"{held} held-out cases in the selection: no numbers are printed (they are judged once, by `bakeoff --half held`)")
+    else:
+        with open(os.path.join(out_dir, "summary.txt"), "w", encoding="utf-8", newline="\n") as h:
+            h.write(bl.table(results) + "\n")
+        print(bl.table(results))
+    bad = sum(1 for r in run["records"].values() if r["rc"] != 0)
+    print(f"{bad} of {len(jobs)} pages gave no MusicXML; wrote {rel(os.path.join(out_dir, 'results.json'))}")
     return 0
 
 
-def score_engine(doc, sel, tiers, order, inputs, recs, eng, args) -> Dict[str, Any]:
+def score_engine(doc, sel, tiers, order, inputs, recs, eng, args, real=None) -> Dict[str, Any]:
     results: Dict[str, Any] = {"schema": bl.RESULTS_SCHEMA, "bench": BENCH, "bench_version": BENCH_VERSION, "mode": "engine", "engine": eng,
                                "created": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"), "git": git_info(),
                                "versions": render.tool_versions(), "cases_sha256": cases_digest(), "movements": args.movements,
@@ -254,17 +367,14 @@ def score_engine(doc, sel, tiers, order, inputs, recs, eng, args) -> Dict[str, A
         results["normalize"] = True          # a diagnostic run: omr/normalize.js on the engine's files (G12-1); never a baseline
         units: Dict[str, List[List[str]]] = {}
         for tier in tiers:
-            for c in ([dict(f, tags=["brace-less"]) for f in doc.get("fixtures", []) if f["engine"]] if tier == "brace-less" else sel):
+            for c, _ in tier_units(doc, sel, tier, real):
                 units[f"{c['case']}|{tier}"] = [recs[k].get("mxl") or [] for k in order[(c["case"], tier)]]
         norm = normalize_units(units)
     scored: Dict[str, List[Tuple[Dict[str, Any], metrics.CaseResult]]] = {}
     pages_of: Dict[str, int] = {}
     ms_of: Dict[str, float] = {}
     for tier in tiers:
-        if tier == "brace-less":
-            units = [(dict(f, tags=["brace-less"]), fixture_truth()) for f in doc.get("fixtures", []) if f["engine"]]
-        else:
-            units = [(c, truth_score(c)) for c in sel]
+        units = tier_units(doc, sel, tier, real)
         rows, extra, pages, ms = [], [], 0, 0.0
         for c, truth in units:
             rs = [recs[k] for k in order[(c["case"], tier)]]
@@ -328,7 +438,7 @@ def cmd_baseline(args) -> int:
     if not want_tiers <= set(results["tiers"]):
         print(f"ERROR PARTIAL_RUN: a baseline is recorded from a run of {', '.join(sorted(want_tiers))} (missing: {sorted(want_tiers - set(results['tiers']))})")
         return 2
-    page_cases = {c for t, blk in results["tiers"].items() if t != "brace-less" for c in blk.get("cases", {})}
+    page_cases = {c for t, blk in results["tiers"].items() if t in PAGE_TIERS for c in blk.get("cases", {})}
     if args.mode == "engine" and page_cases != want_cases:
         print(f"ERROR PARTIAL_RUN: a baseline is recorded from a run of every case (run without --cases); got {len(page_cases)} of {len(want_cases)}")
         return 2
@@ -356,7 +466,7 @@ def cmd_baseline(args) -> int:
 def cmd_render(args) -> int:
     doc = casesmod.load()
     sel = select_cases(doc, args.cases or "all")
-    tiers = [t for t in parse_tiers(args.tiers) if t != "brace-less"]
+    tiers = [t for t in parse_tiers(args.tiers) if t in PAGE_TIERS]
     engravers = sorted({tier_parts(t)[1] for t in tiers})
     problem = env_problem(False, "A" in engravers)
     if problem:
@@ -413,7 +523,7 @@ def cmd_flags_data(args) -> int:
     from . import flagdata
     doc = casesmod.load()
     sel = select_cases(doc, args.cases or "all")
-    tiers = [t for t in parse_tiers(args.tiers) if t != "brace-less"]
+    tiers = [t for t in parse_tiers(args.tiers) if t in PAGE_TIERS]
     base = args.out or OUT
     engine_root = os.path.join(base, "engine" + render.SUFFIX)
     if not os.path.isdir(engine_root):
@@ -425,6 +535,122 @@ def cmd_flags_data(args) -> int:
     out_dir = os.path.join(base, "flags")
     counts = flagdata.write_dataset(out_dir, rows, truth)
     print(f"flags-data: {len(rows)} bars from {len(sel)} cases x {len(tiers)} tiers ({skipped}); {counts}; wrote {rel(out_dir)}")
+    return 0
+
+
+# ---------------------------------------------------------------------------------------- the bake-off (G12-6)
+def _load_records(name: str, jobs: List[Dict[str, str]]) -> Tuple[Dict[str, Dict[str, Any]], List[str]]:
+    """The recorded page reads of an engine for these jobs; a page with no record, or a record of another image, is missing."""
+    recs, missing = {}, []
+    for j in jobs:
+        path = os.path.join(j["out"], "engine.json")
+        try:
+            with open(path, encoding="utf-8") as h:
+                raw = json.load(h)
+        except (OSError, ValueError):
+            missing.append(j["key"])
+            continue
+        sha = raw.get("image_sha256")
+        if sha and sha != render.sha256_file(j["image"]):
+            missing.append(j["key"])
+            continue
+        if name == "audiveris":
+            raw.setdefault("mxl", [])
+            recs[j["key"]] = raw
+        else:
+            recs[j["key"]] = learned.to_record(raw, cached=True)
+    return recs, missing
+
+
+def cmd_bakeoff(args) -> int:
+    from . import bakeoff as bk
+    doc = casesmod.load()
+    half = args.half
+    out_root = args.out or OUT
+    if half == "held" and args.cases:
+        print("REFUSED: the held-out half is judged whole, never a part of it (G0 rules: its cases are not looked at one by one)")
+        return 2
+    if half == "held":
+        prev = bk.held_already(out_root)
+        if prev and not args.again:
+            print(f"REFUSED: the held-out half was judged on {prev['runs'][0]['at']} ({bk.marker_path(out_root)}); it is judged once "
+                  "(--again REASON to judge it again; the reason is recorded)")
+            return 2
+    names = [n.strip() for n in args.engines.split(",") if n.strip()]
+    if names[:1] != ["audiveris"]:
+        names = ["audiveris"] + [n for n in names if n != "audiveris"]
+    tiers = parse_tiers(args.tiers or "all+real")
+    sel = [c for c in select_cases(doc, args.cases or "all") if c["split"] == half]
+    real = [c for c in realscan.select(realscan.cases(), args.cases or "all") if c["split"] == half] if realscan.TIER in tiers else []
+    page_tiers = [t for t in tiers if t in PAGE_TIERS]
+    engravers = sorted({tier_parts(t)[1] for t in page_tiers})
+    variants = sorted({tier_parts(t)[0] for t in page_tiers})
+    report = render.render_cases(sel, engravers=engravers, variants=tuple(variants), log=lambda *x: None) if page_tiers else {}
+    paths = {"raw": argparse.Namespace(normalize=False, divisions="as-read", movements="all"),
+             "normalised": argparse.Namespace(normalize=True, divisions="as-read", movements="all")}
+    out: Dict[str, Any] = {"schema": "ppp.omr-bakeoff/1", "bench": BENCH, "half": half, "tiers": tiers, "git": git_info(),
+                           "cases_sha256": cases_digest(), "created": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+                           "cases": len(sel), "real_scan_cases": len(real), "engines": {}}
+    for name in names:
+        jobs, order, inputs = page_jobs(doc, sel, tiers, report, engine_out_dir(argparse.Namespace(out=args.out, engine=name)), real)
+        recs, missing = _load_records(name, jobs)
+        if missing:
+            print(f"ERROR NO_READS: {name} has no read of {len(missing)} of {len(jobs)} pages of the {half} half (e.g. {missing[0]}); "
+                  f"run: python tests/bench/run.py omr-live-2 run --engine {name} --cases {half} --tiers {','.join(tiers)}")
+            return 2
+        eng = {"name": name}
+        blocks = {}
+        for pname, ns in paths.items():
+            res = score_engine(doc, sel, tiers, order, inputs, recs, eng, ns, real)
+            blocks[pname] = {t: {k: v for k, v in blk["subsets"].get(half, blk["subsets"].get("all", {})).items() if k != "structures"}
+                             for t, blk in res["tiers"].items()}
+        ms = [r["ms"] for r in recs.values()]
+        cold = [r["ms"] for r in recs.values() if r.get("cold")]
+        out["engines"][name] = {
+            "pages": len(recs), "no_musicxml": sum(1 for r in recs.values() if r.get("rc") not in (0, None) or not r.get("mxl")),
+            "timed_out": sum(1 for r in recs.values() if r.get("timed_out")), "crashed": sum(1 for r in recs.values() if r.get("crashed")),
+            "timing": bk.timing(ms), "cold_s": [round(x / 1000, 1) for x in cold][:5],
+            "peak_rss_mb": max([r.get("peak_rss_mb") or 0 for r in recs.values()] or [0]) or None,
+            "gpu_peak_mb": max([r.get("gpu_peak_mb") or 0 for r in recs.values()] or [0]) or None,
+            "tiers": blocks}
+    for pname in paths:
+        print(f"\n{half} half, {pname} path: omr.bar_exact (exact / truth bars), pooled")
+        print(bk.format_table({n: e["tiers"][pname] for n, e in out["engines"].items()}))
+        print(f"{half} half, {pname} path: omr.note_f1 (mean over cases)")
+        print(bk.format_table({n: e["tiers"][pname] for n, e in out["engines"].items()}, metric="omr.note_f1"))
+    print("\nengine      pages  no MusicXML  timed out  crashed   s/page median   p90    max   peak RSS MB")
+    for n, e in out["engines"].items():
+        t = e["timing"]
+        print(f"{n:10} {e['pages']:6d} {e['no_musicxml']:12d} {e['timed_out']:10d} {e['crashed']:8d}   {t['median_s']!s:>13} {t['p90_s']!s:>6} {t['max_s']!s:>6}"
+              f"   {e['peak_rss_mb']!s:>10}")
+    verdicts = {}
+    ref = out["engines"]["audiveris"]["tiers"]["normalised"]
+    for n in names[1:]:
+        e = out["engines"][n]
+        verdicts[n] = bk.verdict(n, e["tiers"]["normalised"], ref, e["timing"]["p90_s"])
+    out["verdicts"] = verdicts
+    label = "GATE A7 (held-out half, normalised path)" if half == "held" else "NOT THE GATE: the tuning half (A7 is judged on the held-out half)"
+    print(f"\n{label}")
+    for n, v in verdicts.items():
+        print(f"  {n}: {'PASS' if v['pass'] else 'FAIL'} -> {v['decision']}")
+        for c in v["clauses"]:
+            nums = "" if "delta" not in c else f"  ({c['engine']} vs {c['audiveris']}, delta {c['delta']})"
+            if "delta" not in c and c.get("engine") is not None:
+                nums = f"  ({c['engine']} s)"
+            print(f"    {'ok  ' if c['pass'] else 'FAIL'} {c['clause']}{nums}")
+    if half == "held":
+        bk.mark_held(out_root, {"engines": names, "tiers": tiers, "again": args.again, "git": out["git"]})
+    if args.record:
+        os.makedirs(os.path.dirname(os.path.abspath(args.record)), exist_ok=True)
+        prev = {}
+        if os.path.isfile(args.record):
+            with open(args.record, encoding="utf-8") as h:
+                prev = json.load(h)
+        prev.setdefault("schema", "ppp.omr-bakeoff-record/1")
+        prev[half] = out
+        with open(args.record, "w", encoding="utf-8", newline="\n") as h:
+            h.write(json.dumps(prev, indent=1, sort_keys=True, ensure_ascii=False) + "\n")
+        print(f"recorded the {half} half in {rel(args.record)}")
     return 0
 
 
@@ -445,6 +671,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--mode", choices=MODES, default="engine")
     p.add_argument("--jobs", type=int, default=1, help="Audiveris processes at a time (engine mode)")
     p.add_argument("--audiveris")
+    p.add_argument("--engine", choices=("audiveris",) + tuple(sorted(ENGINE_NAMES)), default="audiveris",
+                   help="(engine mode, G12-6) the engine: Audiveris, or a learned engine of the bake-off run in its own environment; results in <out>/engine-<name>")
+    p.add_argument("--engine-python", default=None, help="(G12-6) the Python of the learned engine's environment (default: its PPP_OMR_<NAME>_PYTHON)")
     p.add_argument("--timeout", type=int, default=engine.TIMEOUT_S, help="seconds Audiveris may take for one page (default %(default)s)")
     p.add_argument("--step-timeout", type=int, default=engine.STEP_TIMEOUT_S, dest="step_timeout",
                    help="seconds Audiveris may take for one step of a sheet (its own default is 120; default %(default)s)")
@@ -486,6 +715,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--tiers", default=None)
     p.add_argument("--out", default=None)
     p.set_defaults(fn=cmd_flags_data)
+    p = sub.add_parser("bakeoff", help="(G12-6) every engine's recorded reads, scored side by side, raw and normalised; gate A7 on the held-out half")
+    p.add_argument("--half", choices=("tune", "held"), default="tune")
+    p.add_argument("--cases", default=None, help="a part of the half (default: all of it); the gate is judged on the whole held-out half only")
+    p.add_argument("--engines", default="audiveris," + ",".join(sorted(ENGINE_NAMES)))
+    p.add_argument("--tiers", default=None, help="default: all+real (the nine tiers and the real-scan tier)")
+    p.add_argument("--out", default=None)
+    p.add_argument("--again", default=None, metavar="REASON", help="judge the held-out half again (the reason is recorded)")
+    p.add_argument("--record", default=None, help="write the numbers (aggregates only) to this JSON file (tests/omr/bakeoff/g12-6.json)")
+    p.set_defaults(fn=cmd_bakeoff)
     p = sub.add_parser("fetch-real", help="the real-scan tier's page images (never run by the gate)")
     p.add_argument("rest", nargs=argparse.REMAINDER)
     p.set_defaults(fn=lambda a: __import__("omrbench.fetch_real", fromlist=["main"]).main(a.rest))
@@ -498,6 +736,10 @@ def run_app(args) -> int:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv[:1] == ["fetch-real"]:          # its options are its own: argparse's REMAINDER does not take a first argument that starts with --
+        from . import fetch_real
+        return fetch_real.main(argv[1:])
     args = build_parser().parse_args(argv)
     return args.fn(args)
 
