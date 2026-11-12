@@ -43,7 +43,8 @@ const EN = {
   connectBtn: 'Connect this PC', idle: 'My PC is connected ✓ · Idle', off: 'The PC program is not running', none: 'Not connected yet', other: 'This PC uses another PC link',
   help: 'The PPP program is not running on this PC. Run tools/home-worker/install-startup.cmd once, then press the button again.',
   allow: 'If your browser asked to allow access to this device, choose Allow.',
-  busyMsg: 'A conversion is running on this PC. Connect after it finishes.', left: 'Left as it was.', started: 'Started on your PC.', asked: 'Asked this PC to start. If nothing happens, run the desktop shortcut.',
+  busyMsg: 'A conversion is running on this PC. Connect after it finishes.',
+  unrec: 'This device holds a PC link that the site does not recognise right now.', left: 'Left as it was.', started: 'Started on your PC.', asked: 'Asked this PC to start. If nothing happens, run the desktop shortcut.',
   noconv: 'Connected, but this PC cannot convert yet. Run node tools/home-worker/worker.js --check on it.',
   phone: 'Connect a phone or tablet', warning: 'Anyone with this link can send conversions to your PC, read their results, replace the PC token and remove the link: send it only to yourself.',
   askOther: (old, id) => 'This PC is connected to PC link …' + old + '. Use this device\'s link …' + id + ' instead?', askUnknown: id => 'This PC is connected to another PC link. Use this device\'s link …' + id + ' instead?'
@@ -331,7 +332,11 @@ const typeLink = async (p, url) => {
       const P = await mkProgram();
       const p = await open({ program: P.port, store: linkStore(dead) });
       await goSettings(p); await press(p);
-      ok('a link the site no longer knows is forgotten, a new one is made and handed over', await wantLine(p, connectedLine) && P.connected.length === 1 && P.connected[0] !== dead && (await storedCode(p)) === P.connected[0]);
+      ok('G10b-5: a link the site does not recognise is NOT forgotten on one answer: the sentence is shown, the card says so (Check again / Remove it), the code is kept, nothing was made or handed over', await waitFor(p, w => (document.querySelector('[data-bridge-msg]') || {}).innerText === w, EN.unrec) && await waitFor(p, () => !!document.querySelector('[data-home-unrec]')) && (await storedCode(p)) === dead && P.connected.length === 0 && !p.__rec.requests.some(r => r.method === 'POST' && /\/api\/pc-links/.test(r.url)) && (await lsGet(p, 'ppp.bridge.v1')) === null);
+      await click(p, '[data-home-unrec-remove]');
+      await sleep(400);
+      await press(p);
+      ok('after the person removes it ("Remove it") the next press makes a new link and hands it over', await wantLine(p, connectedLine) && P.connected.length === 1 && P.connected[0] !== dead && (await storedCode(p)) === P.connected[0]);
       await p.close();
       const P2 = await mkProgram({ link: { has: true, tag: 'abcdef', rejected: false, shareable: true }, code: dead });
       const p2 = await open({ program: P2.port });
@@ -353,7 +358,11 @@ const typeLink = async (p, url) => {
       const P2 = await mkProgram({ connectReply: () => { if (first) { first = false; return { status: 422, body: { ok: false, error: 'code-rejected' } }; } return null; } });
       const p2 = await open({ program: P2.port, store: linkStore(B2.code) });
       await goSettings(p2); await press(p2);
-      ok('code-rejected for an old link: the page makes a new link and hands THAT over', await wantLine(p2, connectedLine) && P2.connected.length === 2 && P2.connected[1] !== B2.code && (await storedCode(p2)) === P2.connected[1]);
+      ok('code-rejected for this browser\'s link: kept (G10b-5: one "not valid" forgets nothing), the sentence says the site does not recognise it, no new link is made', await waitFor(p2, w => (document.querySelector('[data-bridge-msg]') || {}).innerText === w, EN.unrec) && (await storedCode(p2)) === B2.code && P2.connected.length === 1 && !p2.__rec.requests.some(r => r.method === 'POST' && /\/api\/pc-links/.test(r.url)));
+      await sleep(7000);
+      ok('the site does know it, so the card\'s own look (now, +5 s) clears the "unrecognised" state again by itself', !(await has(p2, '[data-home-unrec]')));
+      await press(p2);
+      ok('and the next press hands the same code over and connects', await wantLine(p2, connectedLine) && P2.connected.length === 2 && P2.connected[1] === B2.code);
       await p2.close();
     }
 

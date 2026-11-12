@@ -12905,6 +12905,12 @@ class Component extends DCLogic {
     try { const r = await this.homeApi('/api/worker/status', { code: code }); return { tag: this.pairTagOf(r.worker) }; }
     catch (e) { return e.status === 401 && e.code === 'bad-code' ? { dead: true } : { error: true }; }
   }
+  /* G10b-5: the site does not recognise this browser's PC link right now. It is NOT forgotten on this answer (this browser holds the only copy): the Settings card says so with Check again / Remove it, the
+     site is asked again (homeNotRecognized), and the press stops here - a link nobody recognises cannot be handed to the program. */
+  bridgeNotRecognized(code) {
+    this.bridgeFail({ bridgeMsg: { kind: 'err', text: tx('This device holds a PC link that the site does not recognise right now.') } });
+    this.homeNotRecognized(code);
+  }
   bridgeFail(patch) { if (!this._dead) this.setState(Object.assign({ bridgeBusy: false }, patch)); }
   bridgeError(text) { this.bridgeFail({ bridgeMsg: { kind: 'err', text: text || tx('Could not connect. Try again in a moment.') } }); }
   async bridgeConnect(replaceOk) {
@@ -12923,7 +12929,8 @@ class Component extends DCLogic {
         const t = await this.bridgeTagOf(mine);
         if (this._dead) return;
         if (t.error) return this.bridgeError(tx('Could not reach the server.'));
-        if (t.dead) { PcLink.clear(); mine = null; } else mineTag = t.tag;       /* a link the site no longer knows is no link */
+        if (t.dead) return this.bridgeNotRecognized(mine);        /* G10b-5: not forgotten on one answer */
+        mineTag = t.tag;
       }
       if (workerLive && mine && wTag && wTag === mineTag) return this.bridgeDone(st, mine);
       if (workerLive && !mine) {
@@ -12967,14 +12974,15 @@ class Component extends DCLogic {
     if (!r.reached) return this.bridgeFail({ bridge: { reach: false, st: null }, bridgeMsg: { kind: 'off' } });
     if (r.ok && r.body && r.body.ok) return this.bridgeDone(null, code);
     const why = r.body && r.body.error;
-    if (why === 'code-rejected' && !fresh) { PcLink.clear(); return this.bridgeMake(); }       /* the site has dropped this link meanwhile: a new one */
+    if (why === 'code-rejected' && !fresh) return this.bridgeNotRecognized(code);       /* the site does not know this link just now: kept, the card says so */
     return this.bridgeError(why === 'busy' ? tx('A conversion is running on this PC. Connect after it finishes.') : why === 'site-busy' ? tx('Too many tokens were made just now. Try again later.') : null);
   }
   /* connected: this browser is on the PC that runs the program */
   async bridgeDone(st, code) {
     PcLocal.set(true); PcBridge.mark(true); PcLink.clearPrev();
     clearTimeout(this._homeTimer); this._homeTimer = 0; this._homeSeen = {};
-    this.setState({ bridgeBusy: false, bridgeMsg: null, bridgeAsk: null, bridge: st ? { reach: true, st: st } : this.state.bridge, homeGone: false, homeError: '', homeNew: null, homeOff: false, homeLocalTick: (this.state.homeLocalTick || 0) + 1 });
+    this.homeClearUnrec();
+    this.setState({ bridgeBusy: false, bridgeMsg: null, bridgeAsk: null, bridge: st ? { reach: true, st: st } : this.state.bridge, homeGone: false, homeError: '', homeNew: null, homeOff: false, homeUnrec: false, homeCheck: '', homeLocalTick: (this.state.homeLocalTick || 0) + 1 });
     this.say(tx('This PC is connected now.'));
     await this.bridgeLook(true);
     this.homeRefresh();

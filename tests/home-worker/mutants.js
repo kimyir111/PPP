@@ -379,6 +379,8 @@ const M = [
   ['V15', PAGE, 'the connect body carries more than the code', ["{ clientCode: code }, 30000);", "{ clientCode: code, workerToken: 'x' }, 30000);"], BRPAGE],
   ['V16', PAGE, 'a success does not mark this browser as the PC (ppp.pclocal.v1)', ['    PcLocal.set(true); PcBridge.mark(true); PcLink.clearPrev();', '    PcBridge.mark(true); PcLink.clearPrev();'], BRPAGE],
   ['V17', PAGE, 'the line ignores which link the program has (always "connected")', ['const same = live && (!myTag || !/^[0-9a-f]{6}$/.test(String(wl.tag)) || wl.tag === myTag);', 'const same = live;'], BRPAGE],
+  ['V19', PAGE, 'G10b-5 broken: a link the site does not recognise is forgotten on the first answer, and a new one is made', ['if (t.dead) return this.bridgeNotRecognized(mine);', 'if (t.dead) { PcLink.clear(); return this.bridgeMake(); }'], BRPAGE],
+  ['V20', PAGE, 'G10b-5 broken: the program\'s "code-rejected" makes the page forget the browser\'s link', ["if (why === 'code-rejected' && !fresh) return this.bridgeNotRecognized(code);", "if (why === 'code-rejected' && !fresh) { PcLink.clear(); return this.bridgeMake(); }"], BRPAGE],
   ['V18', PAGE, 'a link that the site no longer knows (a rejected one) is asked about like a live one', ['const workerLive = !!(wl.has && !wl.rejected);\n      let mine', 'const workerLive = !!wl.has;\n      let mine'], BRPAGE],
 ];
 
